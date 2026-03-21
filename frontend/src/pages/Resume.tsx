@@ -1,38 +1,25 @@
 import { motion } from "motion/react";
-import { Briefcase, GraduationCap, Code, Palette, ArrowUpRight } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import { Briefcase, GraduationCap, Code, Palette, Printer } from "lucide-react";
+import PageShell from "@/components/PageShell";
 
 const Resume = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-3xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+    <PageShell
+      eyebrow="Profile"
+      title="Felix"
+      description="网页设计与前端开发并行，关注视觉秩序、动效节奏与内容呈现的精度。"
+      metaTitle="简历"
+      metaDescription="Felix 的个人简历，包含设计、前端与工作经历。"
+      headerAside={
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex items-center gap-2 text-xs text-foreground/42 transition-colors hover:text-foreground/68"
         >
-          <div>
-            <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-              Felix
-            </h1>
-            <p className="mt-2 text-sm text-foreground/40">
-              UI/UX Designer · Frontend Developer
-            </p>
-          </div>
-          <a
-            href="#"
-            className="flex items-center gap-2 rounded-full liquid-glass px-4 py-2 text-xs font-body text-foreground/50 hover:text-foreground/70 transition-colors active:scale-[0.97] self-start sm:self-auto"
-          >
-            下载 PDF <ArrowUpRight className="h-3 w-3" />
-          </a>
-        </motion.div>
+          打印 / 导出 <Printer className="h-3 w-3" />
+        </button>
+      }
+    >
 
         {/* Bio */}
         <motion.p
@@ -134,9 +121,7 @@ const Resume = () => {
             ))}
           </div>
         </motion.div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

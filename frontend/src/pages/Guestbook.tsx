@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Send } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import PageShell from "@/components/PageShell";
 
 interface Message {
   id: number;
@@ -64,24 +62,13 @@ const Guestbook = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-            留言板
-          </h1>
-          <p className="mt-3 text-sm text-foreground/35">
-            留下你的足迹，说点什么吧。
-          </p>
-        </motion.div>
+    <PageShell
+      eyebrow="Guestbook"
+      title="留言板"
+      description="留下一点话语和气味，让这座个人站不只是独白，也有你来过的痕迹。"
+      metaDescription="Felix 的留言板，欢迎留下你的足迹与想法。"
+      width="narrow"
+    >
 
         {/* Form */}
         <motion.form
@@ -159,9 +146,7 @@ const Guestbook = () => {
             </motion.div>
           ))}
         </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

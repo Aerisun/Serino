@@ -1,8 +1,6 @@
 import { motion } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import PageShell from "@/components/PageShell";
 
 interface Thought {
   id: number;
@@ -87,24 +85,13 @@ const thoughts: Thought[] = [
 
 const Thoughts = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-            碎碎念
-          </h1>
-          <p className="mt-3 text-sm text-foreground/35">
-            一些不成文的想法，随手记下的片段。
-          </p>
-        </motion.div>
+    <PageShell
+      eyebrow="Dispatches"
+      title="碎碎念"
+      description="短句、片段、当下感受，像是从工作和生活里捞出来的一些微光。"
+      metaDescription="Felix 的碎碎念时间线，记录设计、生活与日常想法。"
+      width="narrow"
+    >
 
         {/* Timeline */}
         <div className="relative mt-10">
@@ -155,9 +142,7 @@ const Thoughts = () => {
             </motion.div>
           ))}
         </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

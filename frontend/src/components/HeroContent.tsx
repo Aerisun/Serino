@@ -56,6 +56,27 @@ const socialLinks = [
   },
 ];
 
+const ctas = [
+  {
+    href: "/resume",
+    label: "简历",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-[18px] w-[18px] shrink-0">
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/guestbook",
+    label: "留言板",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-[18px] w-[18px] shrink-0">
+        <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+];
+
 const HeroContent = () => {
   const [poem, setPoem] = useState(() => poems[Math.floor(Math.random() * poems.length)]);
   const [flipped, setFlipped] = useState(false);
@@ -74,6 +95,15 @@ const HeroContent = () => {
     <section className="flex-1 flex flex-col px-6 lg:px-16">
       {/* Centered content */}
       <div className="flex flex-1 flex-col items-center justify-center gap-8">
+        <motion.p
+          className="text-[10px] sm:text-[11px] uppercase tracking-[0.32em] text-white/30 text-center"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        >
+          UI / UX Designer · Frontend Developer
+        </motion.p>
+
         {/* Coin — click to flip between name & avatar */}
         <motion.div
           className="cursor-pointer select-none"
@@ -122,13 +152,13 @@ const HeroContent = () => {
 
         {/* Bio */}
         <motion.p
-          className="max-w-[26rem] text-center text-base leading-7 text-white/55 sm:text-lg"
+          className="max-w-[30rem] text-center text-[0.98rem] leading-7 text-white/72 sm:text-lg"
           style={{ fontFamily: "'Instrument Serif', serif" }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。
+          我做网页设计，也写前端，喜欢把视觉、节奏、内容和交互整理成一个自然流动的个人空间。
         </motion.p>
 
         {/* Social icons */}
@@ -152,35 +182,27 @@ const HeroContent = () => {
           ))}
         </motion.div>
 
-        {/* CTA buttons — icon-only, expand on hover */}
+        {/* CTA buttons — always readable, no hover dependency */}
         <motion.div
-          className="flex flex-wrap justify-center gap-3"
+          className="grid w-full max-w-[22rem] grid-cols-2 gap-3 sm:flex sm:max-w-none sm:justify-center"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
         >
-          <a
-            href="/resume"
-            className="group flex h-10 items-center justify-center rounded-full liquid-glass text-white/60 hover:text-white transition-all duration-300 ease-out w-10 hover:w-[6.5rem] active:scale-[0.97] overflow-hidden"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-[18px] w-[18px] shrink-0">
-              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="max-w-0 overflow-hidden group-hover:max-w-[4rem] transition-all duration-300 ease-out whitespace-nowrap text-sm font-body font-medium opacity-0 group-hover:opacity-100 group-hover:ml-1.5">
-              简历
-            </span>
-          </a>
-          <a
-            href="/guestbook"
-            className="group flex h-10 items-center justify-center rounded-full liquid-glass text-white/60 hover:text-white transition-all duration-300 ease-out w-10 hover:w-[7rem] active:scale-[0.97] overflow-hidden"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-[18px] w-[18px] shrink-0">
-              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="max-w-0 overflow-hidden group-hover:max-w-[4rem] transition-all duration-300 ease-out whitespace-nowrap text-sm font-body font-medium opacity-0 group-hover:opacity-100 group-hover:ml-1.5">
-              留言板
-            </span>
-          </a>
+          {ctas.map((cta) => (
+            <a
+              key={cta.label}
+              href={cta.href}
+              className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full liquid-glass text-white/70 transition-[width,color] duration-300 ease-out hover:w-[7rem] hover:text-white focus-visible:w-[7rem] focus-visible:text-white active:scale-[0.97]"
+            >
+              <span className="absolute inset-y-0 left-0 flex w-11 items-center justify-center">
+                {cta.icon}
+              </span>
+              <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 pr-0 text-sm font-body font-medium opacity-0 transition-all duration-300 ease-out group-hover:max-w-[4.5rem] group-hover:pl-11 group-hover:pr-4 group-hover:opacity-100 group-focus-visible:max-w-[4.5rem] group-focus-visible:pl-11 group-focus-visible:pr-4 group-focus-visible:opacity-100">
+                {cta.label}
+              </span>
+            </a>
+          ))}
         </motion.div>
       </div>
 
@@ -191,7 +213,7 @@ const HeroContent = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="max-w-[44rem] text-center text-sm leading-6 text-white/34 sm:text-[0.95rem]">
+        <p className="max-w-[44rem] text-center text-sm leading-6 text-white/42 sm:text-[0.95rem]">
           {poem}
         </p>
         <svg

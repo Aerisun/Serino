@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
+import PageMeta from "@/components/PageMeta";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
@@ -129,6 +130,7 @@ const DiaryDetail = () => {
   if (!entry) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <PageMeta title="日记不存在" description="你访问的日记暂时不存在。" />
         <p className="text-foreground/30">日记不存在</p>
       </div>
     );
@@ -138,6 +140,7 @@ const DiaryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageMeta title={entry.title} description={entry.paragraphs[0]} />
       <FallingPetals />
       <Navbar />
 

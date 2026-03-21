@@ -2,9 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import PageShell from "@/components/PageShell";
 
 interface Post {
   id: number;
@@ -113,23 +111,17 @@ const Posts = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-3xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <p className="text-xs uppercase tracking-[0.25em] text-foreground/30">Blog</p>
-          <h1 className="mt-2 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-            Posts
-          </h1>
-          <p className="mt-1 text-sm text-foreground/35">{posts.length} 篇文章</p>
-        </motion.div>
+    <PageShell
+      eyebrow="Journal"
+      title="Posts"
+      description="文章、设计笔记与前端思考，按主题和节奏慢慢展开。"
+      metaDescription="Felix 的文章列表，收纳设计、前端与个人写作。"
+      headerAside={
+        <span className="text-xs tracking-[0.18em] text-foreground/28">
+          {posts.length} 篇文章
+        </span>
+      }
+    >
 
         {/* Search + Filters */}
         <motion.div
@@ -211,9 +203,7 @@ const Posts = () => {
             <p className="py-16 text-center text-sm text-foreground/25">没有找到匹配的文章</p>
           )}
         </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

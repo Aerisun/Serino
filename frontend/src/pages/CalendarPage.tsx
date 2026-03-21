@@ -1,9 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import PageShell from "@/components/PageShell";
 
 interface CalendarEvent {
   date: string; // YYYY-MM-DD
@@ -89,23 +87,13 @@ const CalendarPage = () => {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-4xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <p className="text-xs uppercase tracking-[0.25em] text-foreground/30">Calendar</p>
-          <h1 className="mt-2 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-            日历
-          </h1>
-          <p className="mt-1 text-sm text-foreground/35">记录每一天的痕迹</p>
-        </motion.div>
+    <PageShell
+      eyebrow="Calendar"
+      title="日历"
+      description="把帖子、日记和文摘按日期铺开，回看最近一段时间的节奏变化。"
+      metaDescription="Felix 的内容日历，按日期浏览帖子、日记与文摘。"
+      width="wide"
+    >
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
           {/* Calendar grid */}
@@ -257,9 +245,7 @@ const CalendarPage = () => {
             )}
           </motion.div>
         </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 
