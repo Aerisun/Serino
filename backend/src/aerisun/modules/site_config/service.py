@@ -95,3 +95,7 @@ def get_resume(session: Session) -> ResumeRead:
         experiences=[ResumeExperienceRead.model_validate(item) for item in experiences],
     )
 
+
+load_site_bundle = get_site_config
+load_pages_bundle = get_page_copy
+load_resume_bundle = get_resume

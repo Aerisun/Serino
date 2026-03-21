@@ -1,9 +1,7 @@
+"""Legacy compatibility import for the early api.v1 router path."""
+
 from __future__ import annotations
 
-from fastapi import APIRouter
+from aerisun.api.router import api_router as api_v1_router
 
-from aerisun.api.v1.public import router as public_router
-
-api_v1_router = APIRouter(prefix="/api/v1")
-api_v1_router.include_router(public_router)
-
+__all__ = ["api_v1_router"]
