@@ -78,8 +78,24 @@ class ResumeRead(ModelBase):
     experiences: list[ResumeExperienceRead]
 
 
+class ContentEntryRead(ModelBase):
+    slug: str
+    title: str
+    summary: str | None
+    body: str
+    tags: list[str]
+    status: str
+    visibility: str
+    published_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ContentCollectionRead(ModelBase):
+    items: list[ContentEntryRead]
+
+
 class HealthRead(ModelBase):
     status: str
     database_path: str
     timestamp: datetime
-
