@@ -57,12 +57,8 @@ if [[ -n "${AERISUN_BACKUP_RSYNC_URI:-}" ]]; then
   SSH_CMD_STR="${SSH_CMD[*]}"
 
   rsync -a -e "${SSH_CMD_STR}" \
-    "${REMOTE_HOST}:${REMOTE_PATH}/media/" \
-    "${AERISUN_MEDIA_DIR:-/srv/aerisun/media}/"
-
-  rsync -a -e "${SSH_CMD_STR}" \
-    "${REMOTE_HOST}:${REMOTE_PATH}/secrets/" \
-    "${AERISUN_SECRETS_DIR:-/srv/aerisun/secrets}/"
+    "${REMOTE_HOST}:${REMOTE_PATH}/store/" \
+    "${AERISUN_STORE_DIR:-/srv/aerisun/store}/"
 fi
 
 compose up -d api litestream

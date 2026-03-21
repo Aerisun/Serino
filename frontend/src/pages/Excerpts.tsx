@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 
 interface Excerpt {
@@ -81,8 +82,6 @@ const fallbackExcerpts: Excerpt[] = [
     date: "2026-03-01",
   },
 ];
-const config = pageConfig.excerpts;
-
 const fallbackByTitle = Object.fromEntries(
   fallbackExcerpts.map((item) => [item.title.trim().toLowerCase(), item]),
 );
@@ -103,6 +102,7 @@ const mapRemoteExcerpt = (entry: PublicContentEntry, index: number): Excerpt => 
 };
 
 const Excerpts = () => {
+  const config = usePageConfig().excerpts as Record<string, any>;
   const [items, setItems] = useState<Excerpt[]>(fallbackExcerpts);
   const [selectedId, setSelectedId] = useState<number | string | null>(null);
   const selected = useMemo(

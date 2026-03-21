@@ -20,10 +20,11 @@ class Settings(BaseSettings):
     environment: str = "development"
     host: str = "0.0.0.0"
     port: int = 8000
-    data_dir: Path = BACKEND_ROOT / ".data"
-    media_dir: Path = BACKEND_ROOT / ".media"
-    secrets_dir: Path = BACKEND_ROOT / ".secrets"
-    db_path: Path = BACKEND_ROOT / ".data" / "aerisun.db"
+    store_dir: Path = BACKEND_ROOT / ".store"
+    data_dir: Path = BACKEND_ROOT / ".store"
+    media_dir: Path = BACKEND_ROOT / ".store" / "media"
+    secrets_dir: Path = BACKEND_ROOT / ".store" / "secrets"
+    db_path: Path = BACKEND_ROOT / ".store" / "aerisun.db"
     litestream_config_path: Path = BACKEND_ROOT / "litestream.yml"
     litestream_replica_url: str = Field(
         default="sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db"
@@ -43,7 +44,7 @@ class Settings(BaseSettings):
         return f"sqlite+pysqlite:///{self.db_path.expanduser().resolve()}"
 
     def ensure_directories(self) -> None:
-        self.data_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
+        self.store_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.media_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)

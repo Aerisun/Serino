@@ -2,14 +2,15 @@ import { useLocation, Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Home, Sparkles } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
-import { pageConfig } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 
 const NotFound = () => {
   const location = useLocation();
+  const config = usePageConfig().notFound as Record<string, any>;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 text-foreground">
-      <PageMeta title={pageConfig.notFound.metaTitle} description={pageConfig.notFound.metaDescription} />
+      <PageMeta title={config.metaTitle} description={config.metaDescription} />
       <div
         className="absolute inset-0 opacity-70"
         aria-hidden="true"
@@ -36,7 +37,7 @@ const NotFound = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-foreground/25">404</p>
             <h1 className="mt-2 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-              {pageConfig.notFound.title}
+              {config.title}
             </h1>
           </div>
           <p className="max-w-sm text-sm leading-7 text-foreground/45">
@@ -44,7 +45,7 @@ const NotFound = () => {
             <span className="rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[0.8em] text-foreground/70">
               {location.pathname}
             </span>{" "}
-            {pageConfig.notFound.description}
+            {config.description}
           </p>
         </div>
 

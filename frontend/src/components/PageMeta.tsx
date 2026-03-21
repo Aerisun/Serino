@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { SITE_AUTHOR, SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, buildPageTitle } from "@/config";
+import { buildPageTitle } from "@/config";
+import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 
 interface PageMetaProps {
   title?: string;
@@ -16,22 +17,26 @@ const setMeta = (selector: string, value: string, attr = "content") => {
 
 const PageMeta = ({
   title,
-  description = SITE_DESCRIPTION,
-  image = SITE_OG_IMAGE,
+  description,
+  image,
 }: PageMetaProps) => {
-  useEffect(() => {
-    document.title = buildPageTitle(title);
+  const site = useSiteConfig();
+  const resolvedDescription = description ?? site.metaDescription;
+  const resolvedImage = image ?? site.ogImage;
 
-    setMeta('meta[name="description"]', description);
-    setMeta('meta[name="author"]', SITE_AUTHOR);
-    setMeta('meta[property="og:title"]', buildPageTitle(title));
-    setMeta('meta[property="og:description"]', description);
-    setMeta('meta[property="og:image"]', image);
-    setMeta('meta[property="og:site_name"]', SITE_NAME);
-    setMeta('meta[name="twitter:title"]', buildPageTitle(title));
-    setMeta('meta[name="twitter:description"]', description);
-    setMeta('meta[name="twitter:image"]', image);
-  }, [description, image, title]);
+  useEffect(() => {
+    document.title = buildPageTitle(site.name, title);
+
+    setMeta('meta[name="description"]', resolvedDescription);
+    setMeta('meta[name="author"]', site.author);
+    setMeta('meta[property="og:title"]', buildPageTitle(site.name, title));
+    setMeta('meta[property="og:description"]', resolvedDescription);
+    setMeta('meta[property="og:image"]', resolvedImage);
+    setMeta('meta[property="og:site_name"]', site.name);
+    setMeta('meta[name="twitter:title"]', buildPageTitle(site.name, title));
+    setMeta('meta[name="twitter:description"]', resolvedDescription);
+    setMeta('meta[name="twitter:image"]', resolvedImage);
+  }, [resolvedDescription, resolvedImage, title, site]);
 
   return null;
 };

@@ -31,6 +31,7 @@ fi
 : "${AERISUN_DB_PATH:?AERISUN_DB_PATH is required}"
 : "${AERISUN_BACKUP_RSYNC_URI:?AERISUN_BACKUP_RSYNC_URI is required}"
 : "${AERISUN_BACKUP_SSH_PORT:=22}"
+: "${AERISUN_STORE_DIR:=/srv/aerisun/store}"
 
 if [[ -z "${AERISUN_BACKUP_SSH_KEY:-}" ]]; then
   SSH_KEY_ARGS=()
@@ -47,15 +48,14 @@ cat > "${MANIFEST_FILE}" <<EOF
 timestamp=${MANIFEST_TS}
 db_path=${AERISUN_DB_PATH}
 replica_url=${AERISUN_LITESTREAM_REPLICA_URL:-}
-media_dir=${AERISUN_MEDIA_DIR:-/srv/aerisun/media}
-secrets_dir=${AERISUN_SECRETS_DIR:-/srv/aerisun/secrets}
+store_dir=${AERISUN_STORE_DIR}
 compose_project=${ROOT_DIR}
 EOF
 
 compose exec -T api sqlite3 "${AERISUN_DB_PATH}" "PRAGMA wal_checkpoint(FULL);"
 
 ssh -p "${AERISUN_BACKUP_SSH_PORT}" "${SSH_KEY_ARGS[@]}" "${REMOTE_HOST}" \
-  "mkdir -p '${REMOTE_PATH}/media' '${REMOTE_PATH}/secrets' '${REMOTE_PATH}/manifests'"
+  "mkdir -p '${REMOTE_PATH}/store' '${REMOTE_PATH}/manifests'"
 
 SSH_CMD=(ssh -p "${AERISUN_BACKUP_SSH_PORT}")
 if [[ -n "${AERISUN_BACKUP_SSH_KEY:-}" ]]; then
@@ -64,12 +64,8 @@ fi
 SSH_CMD_STR="${SSH_CMD[*]}"
 
 rsync -a --delete -e "${SSH_CMD_STR}" \
-  "${AERISUN_MEDIA_DIR:-/srv/aerisun/media}/" \
-  "${REMOTE_HOST}:${REMOTE_PATH}/media/"
-
-rsync -a --delete -e "${SSH_CMD_STR}" \
-  "${AERISUN_SECRETS_DIR:-/srv/aerisun/secrets}/" \
-  "${REMOTE_HOST}:${REMOTE_PATH}/secrets/"
+  "${AERISUN_STORE_DIR}/" \
+  "${REMOTE_HOST}:${REMOTE_PATH}/store/"
 
 rsync -a -e "${SSH_CMD_STR}" \
   "${MANIFEST_FILE}" \

@@ -1,10 +1,15 @@
 import { motion } from "motion/react";
 import { Briefcase, GraduationCap, Code, Palette, Printer } from "lucide-react";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import type { ResumeExperienceConfig, PageMotionConfig } from "@/config";
 
 const Resume = () => {
-  const config = pageConfig.resume;
+  const config = usePageConfig().resume as Record<string, any>;
+  const skills = (config.skills ?? []) as string[];
+  const experience = (config.experience ?? []) as ResumeExperienceConfig[];
+  const motionConfig = config.motion as PageMotionConfig;
 
   return (
     <PageShell
@@ -31,7 +36,7 @@ const Resume = () => {
           {...staggerItem(0, {
             baseDelay: 0.06,
             step: 0,
-            duration: config.motion.duration,
+            duration: motionConfig.duration,
           })}
         >
           {config.bio}
@@ -43,14 +48,14 @@ const Resume = () => {
           {...staggerItem(1, {
             baseDelay: 0.1,
             step: 0,
-            duration: config.motion.duration,
+            duration: motionConfig.duration,
           })}
         >
           <h2 className="text-xs font-body font-medium text-foreground/25 uppercase tracking-[0.2em] mb-4">
             技能
           </h2>
           <div className="flex flex-wrap gap-2">
-            {config.skills.map((skill) => (
+            {skills.map((skill) => (
               <span
                 key={skill}
                 className="text-xs font-body text-foreground/45 px-3 py-1.5 rounded-full liquid-glass"
@@ -67,7 +72,7 @@ const Resume = () => {
           {...staggerItem(2, {
             baseDelay: 0.14,
             step: 0,
-            duration: config.motion.duration,
+            duration: motionConfig.duration,
           })}
         >
           <h2 className="text-xs font-body font-medium text-foreground/25 uppercase tracking-[0.2em] mb-6">
@@ -75,7 +80,7 @@ const Resume = () => {
           </h2>
 
           <div className="flex flex-col gap-0">
-            {config.experience.map((item, i) => {
+            {experience.map((item, i) => {
               const Icon = [Palette, Code, Briefcase, GraduationCap][i] ?? Briefcase;
 
               return (

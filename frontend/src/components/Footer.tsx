@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { siteConfig } from "@/config";
+import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 
 interface InternalLinkItem {
   label: string;
@@ -16,25 +16,6 @@ const pickByHref = <T extends { href: string }>(items: T[], hrefs: string[]) => 
     return item ? [item] : [];
   });
 };
-
-const internalLinks = dedupeByHref([
-  ...siteConfig.navigation.flatMap((item) =>
-    item.href ? [{ label: item.label, href: item.href }] : []
-  ),
-  ...siteConfig.navigation.flatMap((item) => item.children ?? []),
-  ...siteConfig.heroActions.map((item) => ({ label: item.label, href: item.href })),
-]);
-
-const footerPrimaryLinks: InternalLinkItem[] = pickByHref(internalLinks, [
-  "/posts",
-  "/friends",
-  "/thoughts",
-  "/diary",
-  "/excerpts",
-  "/resume",
-  "/guestbook",
-  "/calendar",
-]);
 
 const renderSocialIcon = (iconKey: string) => {
   switch (iconKey) {
@@ -68,11 +49,27 @@ const renderSocialIcon = (iconKey: string) => {
 };
 
 const Footer = () => {
+  const site = useSiteConfig();
   const currentYear = new Date().getFullYear();
-  const yearLabel =
-    siteConfig.footer.since < currentYear
-      ? `© ${siteConfig.footer.since}-${currentYear}`
-      : `© ${currentYear}`;
+
+  const internalLinks = dedupeByHref([
+    ...site.navigation.flatMap((item) =>
+      item.href ? [{ label: item.label, href: item.href }] : []
+    ),
+    ...site.navigation.flatMap((item) => item.children ?? []),
+    ...site.heroActions.map((item) => ({ label: item.label, href: item.href })),
+  ]);
+
+  const footerPrimaryLinks: InternalLinkItem[] = pickByHref(internalLinks, [
+    "/posts",
+    "/friends",
+    "/thoughts",
+    "/diary",
+    "/excerpts",
+    "/resume",
+    "/guestbook",
+    "/calendar",
+  ]);
 
   return (
     <footer className="mt-20 w-full">
@@ -86,20 +83,20 @@ const Footer = () => {
                   className="inline-flex flex-col items-start no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <span className="text-[1.9rem] font-heading italic tracking-tight text-foreground">
-                    {siteConfig.name}
+                    {site.name}
                   </span>
                   <span className="mt-1 text-[11px] uppercase tracking-[0.24em] text-foreground/30">
-                    {siteConfig.role}
+                    {site.role}
                   </span>
                 </Link>
 
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-foreground/42">
-                  {siteConfig.description}
+                  {site.metaDescription || site.bio}
                 </p>
               </div>
 
               <div className="flex items-center gap-1 sm:shrink-0">
-                {siteConfig.socialLinks.map((link) => {
+                {site.socialLinks.map((link) => {
                   const icon = renderSocialIcon(link.iconKey);
 
                   return (
@@ -118,7 +115,7 @@ const Footer = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div className="flex flex-wrap items-center gap-y-2 text-sm">
                 {footerPrimaryLinks.map((link, index) => (
                   <span key={link.href} className="text-foreground/48">
@@ -135,13 +132,18 @@ const Footer = () => {
                 ))}
               </div>
 
-              <p className="text-xs leading-6 text-foreground/34">
-                <span>{yearLabel}</span>
-                <span className="mx-2 text-foreground/24">·</span>
-                <span>{siteConfig.name}</span>
-                <span className="mx-2 text-foreground/24">·</span>
-                <span>{siteConfig.footer.copyright}</span>
-              </p>
+              <div className="text-xs leading-6 text-foreground/34 sm:text-right">
+                <p>
+                  <span>{`© ${currentYear}`}</span>
+                  <span className="mx-2 text-foreground/24">·</span>
+                  <span>{site.name}</span>
+                  <span className="mx-2 text-foreground/24">·</span>
+                  <span>{site.footer.copyright}</span>
+                </p>
+                {site.footer.slogan ? (
+                  <p className="text-foreground/24">{site.footer.slogan}</p>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

@@ -3,7 +3,9 @@ import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { formatPostCount } from "@/lib/format";
 import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 
 interface Post {
@@ -105,8 +107,6 @@ const fallbackPosts: Post[] = [
   },
 ];
 
-const config = pageConfig.posts;
-
 const categoryMap: Record<string, string> = {
   "design-system": "设计",
   frontend: "设计",
@@ -144,6 +144,7 @@ const mapRemotePost = (entry: PublicContentEntry, index: number): Post => {
 };
 
 const Posts = () => {
+  const config = usePageConfig().posts as Record<string, any>;
   const [items, setItems] = useState<Post[]>(fallbackPosts);
   const [isRemote, setIsRemote] = useState(false);
   const [search, setSearch] = useState("");
@@ -200,7 +201,7 @@ const Posts = () => {
       width={config.width}
       headerAside={
         <span className="text-xs tracking-[0.18em] text-foreground/28">
-          {config.headerCountLabel(items.length)}
+          {formatPostCount(items.length)}
         </span>
       }
     >

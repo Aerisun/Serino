@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
@@ -34,6 +36,17 @@ DEFAULT_SITE_PROFILE = {
     "bio": "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。",
     "role": "UI/UX Designer · Frontend Developer",
     "footer_text": "Aerisun · Built with care and a small stack.",
+    "author": "Felix",
+    "og_image": "/images/hero_bg.jpeg",
+    "meta_description": "Felix 的个人网站 - UI/UX 设计师与前端开发者",
+    "copyright": "All rights reserved",
+    "hero_actions": json.dumps(
+        [
+            {"label": "简历", "href": "/resume", "icon_key": "resume"},
+            {"label": "留言板", "href": "/guestbook", "icon_key": "guestbook"},
+        ],
+        ensure_ascii=False,
+    ),
 }
 
 DEFAULT_SOCIAL_LINKS = [
@@ -59,14 +72,14 @@ DEFAULT_POEMS = [
 ]
 
 DEFAULT_PAGE_COPIES = [
-    {"page_key": "posts", "label": "Blog", "title": "Posts", "subtitle": "整理过的想法与实践记录。", "description": "文章列表与文章详情页文案。", "search_placeholder": "搜索文章...", "empty_message": "没有找到匹配的文章", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {"category_all_label": "全部"}},
-    {"page_key": "diary", "label": None, "title": "日记", "subtitle": "每天一点点，记录生活的温度。", "description": "日记页文案。", "search_placeholder": None, "empty_message": "今天还没有新的日记", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "friends", "label": None, "title": "朋友们", "subtitle": "海内存知己，天涯若比邻。", "description": "友链与 Friend Circle 页面文案。", "search_placeholder": None, "empty_message": "暂时没有友链内容", "max_width": "max-w-4xl", "page_size": 10, "download_label": None, "extras": {"circle_title": "Friend Circle"}},
-    {"page_key": "excerpts", "label": None, "title": "文摘", "subtitle": "摘录那些让我停下来想一想的文字。", "description": "文摘页文案。", "search_placeholder": None, "empty_message": "还没有整理好的文摘", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "thoughts", "label": None, "title": "碎碎念", "subtitle": "一些不成文的想法，随手记下的片段。", "description": "碎碎念页文案。", "search_placeholder": None, "empty_message": "最近没有新的碎碎念", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "guestbook", "label": None, "title": "留言板", "subtitle": "留下你的足迹，说点什么吧。", "description": "留言板页文案。", "search_placeholder": None, "empty_message": "还没有人留言", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "resume", "label": None, "title": "Felix", "subtitle": "UI/UX Designer · Frontend Developer", "description": "简历页配置。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-3xl", "page_size": None, "download_label": "下载 PDF", "extras": {}},
-    {"page_key": "calendar", "label": None, "title": "日历", "subtitle": "记录每一天的痕迹。", "description": "日历与活动投影页面文案。", "search_placeholder": None, "empty_message": "日历里还没有内容", "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "posts", "label": "Blog", "nav_label": "帖子", "title": "Posts", "subtitle": "整理过的想法与实践记录。", "description": "文章列表与文章详情页文案。", "search_placeholder": "搜索文章...", "empty_message": "没有找到匹配的文章", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {"category_all_label": "全部"}},
+    {"page_key": "diary", "label": None, "nav_label": "日记", "title": "日记", "subtitle": "每天一点点，记录生活的温度。", "description": "日记页文案。", "search_placeholder": None, "empty_message": "今天还没有新的日记", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "friends", "label": None, "nav_label": "友链", "title": "朋友们", "subtitle": "海内存知己，天涯若比邻。", "description": "友链与 Friend Circle 页面文案。", "search_placeholder": None, "empty_message": "暂时没有友链内容", "max_width": "max-w-4xl", "page_size": 10, "download_label": None, "extras": {"circle_title": "Friend Circle"}},
+    {"page_key": "excerpts", "label": None, "nav_label": "文摘", "title": "文摘", "subtitle": "摘录那些让我停下来想一想的文字。", "description": "文摘页文案。", "search_placeholder": None, "empty_message": "还没有整理好的文摘", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "thoughts", "label": None, "nav_label": "碎碎念", "title": "碎碎念", "subtitle": "一些不成文的想法，随手记下的片段。", "description": "碎碎念页文案。", "search_placeholder": None, "empty_message": "最近没有新的碎碎念", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "guestbook", "label": None, "nav_label": "留言板", "title": "留言板", "subtitle": "留下你的足迹，说点什么吧。", "description": "留言板页文案。", "search_placeholder": None, "empty_message": "还没有人留言", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "resume", "label": None, "nav_label": "简历", "title": "Felix", "subtitle": "UI/UX Designer · Frontend Developer", "description": "简历页配置。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-3xl", "page_size": None, "download_label": "下载 PDF", "extras": {}},
+    {"page_key": "calendar", "label": None, "nav_label": "日历", "title": "日历", "subtitle": "记录每一天的痕迹。", "description": "日历与活动投影页面文案。", "search_placeholder": None, "empty_message": "日历里还没有内容", "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {}},
 ]
 
 DEFAULT_PAGE_OPTIONS = [
