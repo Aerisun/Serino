@@ -24,6 +24,9 @@
 *.sw?
 
 
+# Unified data store
+/.store
+
 # vibe coding
 /temp
 /openspec
