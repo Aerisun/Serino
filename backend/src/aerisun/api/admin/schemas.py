@@ -250,6 +250,59 @@ class PageDisplayOptionAdminRead(ModelBase):
 
 
 # ---------------------------------------------------------------------------
+# CommunityConfig
+# ---------------------------------------------------------------------------
+
+class CommunitySurfaceRead(BaseModel):
+    key: str
+    label: str
+    path: str
+    enabled: bool = True
+
+
+class CommunitySurfaceUpdate(BaseModel):
+    key: str | None = None
+    label: str | None = None
+    path: str | None = None
+    enabled: bool | None = None
+
+
+class CommunityConfigUpdate(BaseModel):
+    provider: str | None = None
+    server_url: str | None = None
+    surfaces: list[CommunitySurfaceUpdate] | None = None
+    meta: list[str] | None = None
+    required_meta: list[str] | None = None
+    emoji_presets: list[str] | None = None
+    enable_enjoy_search: bool | None = None
+    image_uploader: bool | None = None
+    login_mode: str | None = None
+    oauth_url: str | None = None
+    avatar_strategy: str | None = None
+    avatar_helper_copy: str | None = None
+    migration_state: str | None = None
+
+
+class CommunityConfigAdminRead(ModelBase):
+    id: str
+    provider: str
+    server_url: str
+    surfaces: list[CommunitySurfaceRead]
+    meta: list[str]
+    required_meta: list[str]
+    emoji_presets: list[str]
+    enable_enjoy_search: bool
+    image_uploader: bool
+    login_mode: str
+    oauth_url: str | None
+    avatar_strategy: str
+    avatar_helper_copy: str
+    migration_state: str
+    created_at: datetime
+    updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
 # Resume
 # ---------------------------------------------------------------------------
 

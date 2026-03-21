@@ -14,8 +14,11 @@ import type {
   PageDisplayOption,
   PageDisplayOptionCreate,
   PageDisplayOptionUpdate,
+  CommunityConfig,
+  CommunityConfigUpdate,
   PaginatedResponse,
 } from "@/types/models";
+import { COMMUNITY_CONFIG_ENDPOINTS } from "@/lib/community-config";
 
 // --- Profile ---
 export async function getProfile(): Promise<SiteProfile> {
@@ -106,4 +109,30 @@ export async function updateDisplayOption(id: string, data: PageDisplayOptionUpd
 
 export async function deleteDisplayOption(id: string): Promise<void> {
   await client.delete(`/site-config/display-options/${id}`);
+}
+
+// --- Community / Comment System ---
+async function requestCommunityConfig<T>(method: "get" | "put", data?: CommunityConfigUpdate): Promise<T> {
+  let lastError: unknown = null;
+
+  for (const endpoint of COMMUNITY_CONFIG_ENDPOINTS) {
+    try {
+      const res = method === "get"
+        ? await client.get(endpoint)
+        : await client.put(endpoint, data);
+      return (res.data?.item ?? res.data) as T;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Unable to load community config");
+}
+
+export async function getCommunityConfig(): Promise<CommunityConfig> {
+  return requestCommunityConfig<CommunityConfig>("get");
+}
+
+export async function updateCommunityConfig(data: CommunityConfigUpdate): Promise<CommunityConfig> {
+  return requestCommunityConfig<CommunityConfig>("put", data);
 }
