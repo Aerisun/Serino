@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Eye, MessageCircle, Clock, Tag } from "lucide-react";
@@ -6,8 +7,10 @@ import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
 import PageMeta from "@/components/PageMeta";
+import { fetchPublicContentEntry, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 interface PostData {
+  slug: string;
   title: string;
   date: string;
   category: string;
@@ -20,6 +23,7 @@ interface PostData {
 
 const postsData: Record<string, PostData> = {
   "1": {
+    slug: "from-zero-design-system",
     title: "从零搭建个人设计系统的完整思路",
     date: "2026 年 3 月 18 日",
     category: "设计",
@@ -42,6 +46,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "2": {
+    slug: "liquid-glass-css-notes",
     title: "液态玻璃效果的 CSS 实现与优化",
     date: "2026 年 3 月 12 日",
     category: "技术",
@@ -61,6 +66,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "3": {
+    slug: "why-i-choose-indie-design",
     title: "为什么我选择做独立设计师",
     date: "2026 年 3 月 7 日",
     category: "随想",
@@ -81,6 +87,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "4": {
+    slug: "react-19-design-pattern-shifts",
     title: "React 19 中值得关注的设计模式变化",
     date: "2025 年 12 月 18 日",
     category: "技术",
@@ -99,6 +106,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "5": {
+    slug: "typographic-rhythm-and-spacing",
     title: "网页排版中的节奏感：间距与留白",
     date: "2025 年 12 月 5 日",
     category: "设计",
@@ -117,6 +125,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "6": {
+    slug: "framer-motion-page-transitions",
     title: "用 Framer Motion 做有质感的页面过渡",
     date: "2025 年 11 月 22 日",
     category: "技术",
@@ -135,6 +144,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "7": {
+    slug: "solo-workflow-tools-and-rhythm",
     title: "一个人的工作流：工具、习惯与心态",
     date: "2025 年 11 月 10 日",
     category: "随想",
@@ -153,6 +163,7 @@ const postsData: Record<string, PostData> = {
     ],
   },
   "8": {
+    slug: "dark-mode-design-details",
     title: "深色模式设计的七个容易忽略的细节",
     date: "2025 年 10 月 28 日",
     category: "设计",
@@ -176,10 +187,65 @@ const postsData: Record<string, PostData> = {
   },
 };
 
+const fallbackBySlug = Object.fromEntries(
+  Object.values(postsData).map((item) => [item.slug, item]),
+);
+
+const estimateReadTime = (value: string) => `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
+
+const buildRemotePost = (entry: PublicContentEntry, fallback?: PostData): PostData => ({
+  slug: entry.slug,
+  title: entry.title,
+  date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+  category: fallback?.category ?? "内容",
+  tags: entry.tags.length ? entry.tags : (fallback?.tags ?? []),
+  views: fallback?.views ?? 0,
+  comments: fallback?.comments ?? 0,
+  readTime: fallback?.readTime ?? estimateReadTime(entry.body),
+  content: splitContentParagraphs(entry.body),
+});
+
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const post = postsData[id || ""];
+  const initialFallback = (id ? postsData[id] : undefined) ?? (id ? fallbackBySlug[id] : undefined) ?? null;
+  const [post, setPost] = useState<PostData | null>(initialFallback);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fallback = (id ? postsData[id] : undefined) ?? (id ? fallbackBySlug[id] : undefined) ?? null;
+    const targetSlug = fallback?.slug ?? id;
+
+    setPost(fallback);
+
+    if (!targetSlug) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadPost = async () => {
+      try {
+        const entry = await fetchPublicContentEntry("posts", targetSlug);
+        if (cancelled) {
+          return;
+        }
+
+        setPost(buildRemotePost(entry, fallback ?? undefined));
+      } catch {
+        if (!cancelled) {
+          setPost(fallback);
+        }
+      }
+    };
+
+    void loadPost();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (!post) {
     return (
