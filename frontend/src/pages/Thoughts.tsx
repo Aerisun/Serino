@@ -10,6 +10,7 @@ import {
   splitContentParagraphs,
   type PublicContentEntry,
 } from "@/lib/api";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Thought {
   id: string;
@@ -20,6 +21,8 @@ interface Thought {
   reposts: number;
   mood?: string;
 }
+
+type ThoughtsPageConfig = BaseViewPageConfig;
 
 const mapRemoteThought = (entry: PublicContentEntry): Thought => {
   const paragraphs = splitContentParagraphs(entry.body);
@@ -36,7 +39,7 @@ const mapRemoteThought = (entry: PublicContentEntry): Thought => {
 };
 
 const Thoughts = () => {
-  const config = usePageConfig().thoughts as Record<string, any>;
+  const config = usePageConfig().thoughts as ThoughtsPageConfig;
   const [items, setItems] = useState<Thought[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -83,7 +86,7 @@ const Thoughts = () => {
       width={config.width}
     >
       <div className="relative mt-10">
-        <div className="absolute bottom-0 left-5 top-0 w-px bg-foreground/6" />
+        <div className="absolute bottom-0 left-5 top-0 w-px bg-[rgb(var(--shiro-divider-rgb)/0.26)]" />
 
         {status === "loading" &&
           Array.from({ length: 6 }, (_, index) => (
@@ -102,7 +105,7 @@ const Thoughts = () => {
 
         {status === "error" && (
           <div className="relative pb-10 pl-14">
-            <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-foreground/12 bg-background" />
+            <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
               <span>刚刚</span>
             </div>
@@ -122,7 +125,7 @@ const Thoughts = () => {
 
         {status === "empty" && (
           <div className="relative pb-10 pl-14">
-            <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-foreground/12 bg-background" />
+            <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
               <span>今天</span>
             </div>
@@ -136,34 +139,34 @@ const Thoughts = () => {
           items.map((thought, index) => (
             <motion.div
               key={thought.id}
-              className="relative pb-10 pl-14 last:pb-0"
+              className="group relative pb-10 pl-14 last:pb-0"
               {...staggerItem(index, {
                 baseDelay: config.motion.delay,
                 step: config.motion.stagger,
                 duration: config.motion.duration,
               })}
             >
-              <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-foreground/15 bg-background" />
+              <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.32)] bg-background transition-colors group-hover:border-[rgb(var(--shiro-accent-rgb)/0.56)] group-hover:bg-[rgb(var(--shiro-accent-rgb)/0.12)]" />
 
-              <div className="flex items-center gap-2 text-xs text-foreground/25">
-                {thought.date && <span>{thought.date}</span>}
-                {thought.mood && <span>{thought.mood}</span>}
+              <div className="flex items-center gap-2 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+                {thought.date && <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.84)]">{thought.date}</span>}
+                {thought.mood && <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">{thought.mood}</span>}
               </div>
 
-              <p className="mt-2 text-[0.935rem] leading-7 text-foreground/65">
+              <p className="mt-2 text-[0.935rem] leading-7 text-foreground/65 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
                 {thought.content}
               </p>
 
-              <div className="mt-3 flex items-center gap-5 text-xs text-foreground/20">
-                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-foreground/45 active:scale-[0.95]">
+              <div className="mt-3 flex items-center gap-5 text-xs text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.42)]">
+                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
                   <Heart className="h-3.5 w-3.5" />
                   {thought.likes}
                 </button>
-                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-foreground/45 active:scale-[0.95]">
+                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
                   <MessageCircle className="h-3.5 w-3.5" />
                   {thought.comments}
                 </button>
-                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-foreground/45 active:scale-[0.95]">
+                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
                   <Repeat2 className="h-3.5 w-3.5" />
                   {thought.reposts}
                 </button>

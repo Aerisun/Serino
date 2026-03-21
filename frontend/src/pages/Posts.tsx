@@ -7,6 +7,7 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { formatPostCount } from "@/lib/format";
 import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Post {
   slug: string;
@@ -17,6 +18,13 @@ interface Post {
   tags: string[];
   views: number;
   comments: number;
+}
+
+interface PostsPageConfig extends BaseViewPageConfig {
+  searchPlaceholder?: string;
+  categories?: {
+    all?: string;
+  };
 }
 
 const categoryMap: Record<string, string> = {
@@ -45,7 +53,7 @@ const mapRemotePost = (entry: PublicContentEntry): Post => ({
 });
 
 const Posts = () => {
-  const config = usePageConfig().posts as Record<string, any>;
+  const config = usePageConfig().posts as PostsPageConfig;
   const allCategoryLabel = config.categories?.all ?? "全部";
   const [items, setItems] = useState<Post[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
@@ -120,14 +128,14 @@ const Posts = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: config.motion.duration + 0.05, delay: config.motion.delay, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="relative max-w-xs flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25" />
+        <div className="group relative max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
           <input
             type="text"
             placeholder={config.searchPlaceholder}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-foreground/15 focus:bg-foreground/[0.05]"
+            className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
           />
         </div>
 
@@ -139,8 +147,8 @@ const Posts = () => {
               onClick={() => setActiveCategory(cat)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
                 activeCategory === cat
-                  ? "bg-foreground/10 text-foreground"
-                  : "text-foreground/35 hover:text-foreground/55"
+                  ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
+                  : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
               }`}
             >
               {cat}
@@ -192,7 +200,7 @@ const Posts = () => {
           filtered.map((post, i) => (
             <motion.article
               key={post.slug}
-              className="group cursor-pointer border-t border-foreground/6 py-6 transition-colors first:border-t-0 hover:bg-foreground/[0.02]"
+              className="group cursor-pointer border-t border-foreground/6 py-6 transition-[background-color,border-color,box-shadow] first:border-t-0 hover:bg-[rgb(var(--shiro-panel-rgb)/0.18)] hover:border-[rgb(var(--shiro-border-rgb)/0.2)]"
               onClick={() => navigate(`/posts/${post.slug}`)}
               {...staggerItem(i, {
                 baseDelay: config.motion.delay + 0.04,
@@ -200,25 +208,25 @@ const Posts = () => {
                 duration: config.motion.duration,
               })}
             >
-              <h2 className="text-base font-medium leading-snug text-foreground/90 transition-colors group-hover:text-foreground sm:text-lg">
+              <h2 className="text-base font-medium leading-snug text-foreground/90 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-lg">
                 {post.title}
               </h2>
-              <p className="mt-2 line-clamp-1 text-sm leading-relaxed text-foreground/35">
+              <p className="mt-2 line-clamp-1 text-sm leading-relaxed text-foreground/35 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
                 {post.excerpt}
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/25">
-                <span>{post.date}</span>
-                <span>{post.category}</span>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.7)]">
+                <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">{post.date}</span>
+                <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">{post.category}</span>
                 {post.tags.map((tag) => (
-                  <span key={tag} className="text-foreground/20">
+                  <span key={tag} className="text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]">
                     /{tag}
                   </span>
                 ))}
-                <span className="ml-auto flex items-center gap-1">
+                <span className="ml-auto flex items-center gap-1 text-foreground/22 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.34)]">
                   <Eye className="h-3 w-3" />
                   {post.views.toLocaleString()}
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 text-foreground/22 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.34)]">
                   <MessageCircle className="h-3 w-3" />
                   {post.comments}
                 </span>

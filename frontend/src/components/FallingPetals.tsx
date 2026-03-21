@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTheme } from "@/contexts/useTheme";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface Petal {
@@ -15,24 +16,36 @@ interface Petal {
   color: string;
 }
 
-const PETAL_COUNT = 25;
+const PETAL_COUNT = {
+  light: 22,
+  dark: 26,
+} as const;
 
-const PETAL_COLORS = [
-  "rgba(255, 182, 193, 0.55)",  // pink
-  "rgba(255, 218, 185, 0.50)",  // peach
-  "rgba(221, 160, 221, 0.45)",  // plum
-  "rgba(173, 216, 230, 0.45)",  // light blue
-  "rgba(255, 250, 205, 0.50)",  // lemon
-  "rgba(255, 200, 200, 0.55)",  // salmon
-  "rgba(200, 180, 255, 0.45)",  // lavender
-  "rgba(180, 230, 200, 0.40)",  // mint
-];
+const PETAL_COLORS = {
+  light: [
+    "rgb(246, 191, 205)",
+    "rgb(248, 214, 198)",
+    "rgb(230, 206, 241)",
+    "rgb(201, 223, 238)",
+    "rgb(246, 231, 191)",
+    "rgb(205, 229, 210)",
+  ],
+  dark: [
+    "rgb(255, 191, 205)",
+    "rgb(255, 220, 194)",
+    "rgb(229, 184, 236)",
+    "rgb(183, 223, 240)",
+    "rgb(255, 241, 189)",
+    "rgb(192, 235, 208)",
+  ],
+} as const;
 
 const FallingPetals = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const petalsRef = useRef<Petal[]>([]);
   const animRef = useRef<number>(0);
   const prefersReducedMotion = useReducedMotionPreference();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     if (prefersReducedMotion) return;
@@ -43,6 +56,10 @@ const FallingPetals = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const theme = resolvedTheme;
+    const petalColors = PETAL_COLORS[theme];
+    const petalCount = PETAL_COUNT[theme];
+
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -50,30 +67,36 @@ const FallingPetals = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    // Initialize petals
-    petalsRef.current = Array.from({ length: PETAL_COUNT }, () => createPetal(canvas.width, canvas.height, true));
+    petalsRef.current = Array.from({ length: petalCount }, () =>
+      createPetal(canvas.width, canvas.height, theme, petalColors, true),
+    );
 
-    const drawPetal = (p: Petal) => {
+    const drawPetal = (petal: Petal) => {
       ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate((p.rotation * Math.PI) / 180);
-      ctx.globalAlpha = p.opacity;
+      ctx.translate(petal.x, petal.y);
+      ctx.rotate((petal.rotation * Math.PI) / 180);
+      ctx.globalAlpha = petal.opacity;
 
-      // Draw a simple petal shape
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.bezierCurveTo(
-        p.size * 0.4, -p.size * 0.3,
-        p.size * 0.8, -p.size * 0.15,
-        p.size, 0
+        petal.size * 0.4,
+        -petal.size * 0.3,
+        petal.size * 0.8,
+        -petal.size * 0.15,
+        petal.size,
+        0,
       );
       ctx.bezierCurveTo(
-        p.size * 0.8, p.size * 0.15,
-        p.size * 0.4, p.size * 0.3,
-        0, 0
+        petal.size * 0.8,
+        petal.size * 0.15,
+        petal.size * 0.4,
+        petal.size * 0.3,
+        0,
+        0,
       );
 
-      ctx.fillStyle = p.color;
+      ctx.fillStyle = petal.color;
       ctx.fill();
       ctx.restore();
     };
@@ -81,18 +104,23 @@ const FallingPetals = () => {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      petalsRef.current.forEach((p, i) => {
-        p.wobble += p.wobbleSpeed;
-        p.x += p.speedX + Math.sin(p.wobble) * 0.3;
-        p.y += p.speedY;
-        p.rotation += p.rotationSpeed;
+      petalsRef.current.forEach((petal, index) => {
+        petal.wobble += petal.wobbleSpeed;
+        petal.x += petal.speedX + Math.sin(petal.wobble) * 0.22;
+        petal.y += petal.speedY;
+        petal.rotation += petal.rotationSpeed;
 
-        // Reset when off screen
-        if (p.y > canvas.height + 20 || p.x < -20 || p.x > canvas.width + 20) {
-          petalsRef.current[i] = createPetal(canvas.width, canvas.height, false);
+        if (petal.y > canvas.height + 20 || petal.x < -20 || petal.x > canvas.width + 20) {
+          petalsRef.current[index] = createPetal(
+            canvas.width,
+            canvas.height,
+            theme,
+            petalColors,
+            false,
+          );
         }
 
-        drawPetal(p);
+        drawPetal(petal);
       });
 
       animRef.current = requestAnimationFrame(animate);
@@ -104,7 +132,7 @@ const FallingPetals = () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", resize);
     };
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, resolvedTheme]);
 
   if (prefersReducedMotion) {
     return null;
@@ -119,19 +147,27 @@ const FallingPetals = () => {
   );
 };
 
-function createPetal(w: number, h: number, initial: boolean): Petal {
+function createPetal(
+  width: number,
+  height: number,
+  theme: "light" | "dark",
+  petalColors: readonly string[],
+  initial: boolean,
+): Petal {
+  const isLight = theme === "light";
+
   return {
-    x: Math.random() * w,
-    y: initial ? Math.random() * h : -10 - Math.random() * 40,
-    size: 3 + Math.random() * 5,
+    x: Math.random() * width,
+    y: initial ? Math.random() * height : -8 - Math.random() * 28,
+    size: isLight ? 3.8 + Math.random() * 4 : 4.2 + Math.random() * 4.4,
     rotation: Math.random() * 360,
-    rotationSpeed: (Math.random() - 0.5) * 1.2,
-    speedX: (Math.random() - 0.5) * 0.4,
-    speedY: 0.25 + Math.random() * 0.45,
-    opacity: 0.12 + Math.random() * 0.22,
+    rotationSpeed: (Math.random() - 0.5) * (isLight ? 1 : 1.2),
+    speedX: (Math.random() - 0.5) * (isLight ? 0.34 : 0.42),
+    speedY: isLight ? 0.24 + Math.random() * 0.34 : 0.28 + Math.random() * 0.4,
+    opacity: isLight ? 0.2 + Math.random() * 0.16 : 0.24 + Math.random() * 0.18,
     wobble: Math.random() * Math.PI * 2,
-    wobbleSpeed: 0.02 + Math.random() * 0.02,
-    color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)],
+    wobbleSpeed: isLight ? 0.016 + Math.random() * 0.016 : 0.018 + Math.random() * 0.018,
+    color: petalColors[Math.floor(Math.random() * petalColors.length)],
   };
 }
 

@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
+import ShiroAccentController from "@/components/ShiroAccentController";
 import Index from "./pages/Index.tsx";
 import Posts from "./pages/Posts.tsx";
 import Friends from "./pages/Friends.tsx";
@@ -18,6 +19,7 @@ const App = () => (
   <ThemeProvider>
     <RuntimeConfigProvider>
       <BrowserRouter>
+        <ShiroAccentController />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Posts />} />

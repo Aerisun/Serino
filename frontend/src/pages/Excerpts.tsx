@@ -5,6 +5,7 @@ import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Excerpt {
   id: string;
@@ -14,6 +15,10 @@ interface Excerpt {
   content: string;
   tags: string[];
   date: string;
+}
+
+interface ExcerptsPageConfig extends BaseViewPageConfig {
+  modalCloseLabel?: string;
 }
 
 const mapRemoteExcerpt = (entry: PublicContentEntry): Excerpt => {
@@ -29,7 +34,7 @@ const mapRemoteExcerpt = (entry: PublicContentEntry): Excerpt => {
 };
 
 const Excerpts = () => {
-  const config = usePageConfig().excerpts as Record<string, any>;
+  const config = usePageConfig().excerpts as ExcerptsPageConfig;
   const [items, setItems] = useState<Excerpt[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -103,12 +108,12 @@ const Excerpts = () => {
         {status === "error" && (
           <div className="liquid-glass rounded-2xl p-5 sm:col-span-2">
             <div className="mb-3 flex items-center gap-2">
-              <BookOpen className="h-3.5 w-3.5 text-foreground/20" />
-              <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25">
+              <BookOpen className="h-3.5 w-3.5 text-foreground/20 transition-colors" />
+              <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25 transition-colors">
                 {String(config.eyebrow ?? "")}
               </span>
             </div>
-            <h3 className="text-base font-body font-medium leading-snug text-foreground/70">
+            <h3 className="text-base font-body font-medium leading-snug text-foreground/70 transition-colors">
               文摘加载失败
             </h3>
             <p className="mt-2 text-[12px] font-body leading-relaxed text-foreground/30">
@@ -118,7 +123,7 @@ const Excerpts = () => {
               <button
                 type="button"
                 onClick={() => setReloadKey((value) => value + 1)}
-                className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] text-foreground/25 transition-colors hover:text-foreground/50"
+                className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] text-foreground/25 transition-colors hover:border-[rgb(var(--shiro-divider-rgb)/0.26)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
               >
                 重试
               </button>
@@ -146,7 +151,7 @@ const Excerpts = () => {
               key={excerpt.id}
               type="button"
               onClick={() => setSelectedId(excerpt.id)}
-              className="group text-left liquid-glass rounded-2xl p-5 transition-colors hover:bg-foreground/[0.03] active:scale-[0.98]"
+              className="group text-left liquid-glass rounded-2xl p-5 transition-[background-color,border-color,box-shadow] hover:bg-[rgb(var(--shiro-panel-rgb)/0.18)] hover:border-[rgb(var(--shiro-border-rgb)/0.14)] active:scale-[0.98]"
               {...staggerItem(index, {
                 baseDelay: config.motion.delay,
                 step: config.motion.stagger,
@@ -154,17 +159,17 @@ const Excerpts = () => {
               })}
             >
               <div className="mb-3 flex items-center gap-2">
-                <BookOpen className="h-3.5 w-3.5 text-foreground/20" />
-                <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25">
+                <BookOpen className="h-3.5 w-3.5 text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.52)]" />
+                <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
                   {formatSourceLine(excerpt)}
                 </span>
               </div>
 
-              <h3 className="text-base font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-foreground">
+              <h3 className="text-base font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)]">
                 {excerpt.title}
               </h3>
 
-              <p className="mt-2 line-clamp-3 text-[12px] font-body leading-relaxed text-foreground/30">
+              <p className="mt-2 line-clamp-3 text-[12px] font-body leading-relaxed text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]">
                 {excerpt.content}
               </p>
 
@@ -172,7 +177,7 @@ const Excerpts = () => {
                 {excerpt.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full border border-foreground/[0.06] px-2 py-0.5 text-[10px] font-body text-foreground/20"
+                    className="rounded-full border border-foreground/[0.06] px-2 py-0.5 text-[10px] font-body text-foreground/20 transition-colors group-hover:border-[rgb(var(--shiro-divider-rgb)/0.24)] group-hover:text-[rgb(var(--shiro-accent-rgb)/0.56)]"
                   >
                     {tag}
                   </span>
@@ -197,7 +202,7 @@ const Excerpts = () => {
             />
 
             <motion.div
-              className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-3xl p-8 liquid-glass scrollbar-hide"
+              className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-3xl p-8 liquid-glass scrollbar-hide transition-[background-color,border-color,box-shadow]"
               initial={{ scale: 0.95, opacity: 0, y: 16 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 16 }}
@@ -207,26 +212,26 @@ const Excerpts = () => {
                 type="button"
                 onClick={() => setSelectedId(null)}
                 aria-label={String(config.modalCloseLabel ?? "")}
-                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-foreground/30 transition-colors hover:bg-foreground/[0.05] hover:text-foreground/60"
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-foreground/30 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="mb-4 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-foreground/25" />
-                <span className="text-xs font-body text-foreground/30">
+                <BookOpen className="h-4 w-4 text-foreground/25 transition-colors" />
+                <span className="text-xs font-body text-foreground/30 transition-colors">
                   {selected.source}
                 </span>
               </div>
-              <h2 className="mt-4 text-xl font-heading italic leading-snug text-foreground">
+              <h2 className="mt-4 text-xl font-heading italic leading-snug text-foreground transition-colors">
                 {selected.title}
               </h2>
-              <p className="mt-1 text-xs font-body text-foreground/25">
+              <p className="mt-1 text-xs font-body text-foreground/25 transition-colors">
                 {[selected.author, selected.date].filter(Boolean).join(" · ")}
               </p>
-              <div className="my-5 border-t border-foreground/[0.06]" />
+              <div className="my-5 border-t border-foreground/[0.06] transition-colors" />
               <p
-                className="text-[0.935rem] font-body leading-8 text-foreground/60"
+                className="text-[0.935rem] font-body leading-8 text-foreground/60 transition-colors"
                 style={{ fontFamily: "'Instrument Serif', serif" }}
               >
                 {selected.content}
@@ -236,7 +241,7 @@ const Excerpts = () => {
                   {selected.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] font-body text-foreground/25"
+                      className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] font-body text-foreground/25 transition-colors hover:border-[rgb(var(--shiro-divider-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
                     >
                       {tag}
                     </span>

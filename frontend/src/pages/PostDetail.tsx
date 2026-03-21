@@ -117,7 +117,7 @@ const PostDetail = () => {
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm font-body text-foreground/30 hover:text-foreground/60 transition-colors mb-8 active:scale-95"
+          className="mb-8 flex items-center gap-1.5 text-sm font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] active:scale-95"
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -170,7 +170,9 @@ const PostDetail = () => {
             >
               <div className="mb-4 flex flex-wrap items-center gap-3 text-xs font-body text-foreground/25">
                 <span>{post.date}</span>
-                <span className="rounded-md bg-foreground/5 px-2 py-0.5">{post.category}</span>
+                <span className="rounded-md border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-2 py-0.5 text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+                  {post.category}
+                </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {post.readTime}
@@ -193,7 +195,7 @@ const PostDetail = () => {
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 rounded-lg bg-foreground/5 px-2.5 py-1 text-[11px] font-body text-foreground/30"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-foreground/5 px-2.5 py-1 text-[11px] font-body text-foreground/30 transition-colors hover:border-[rgb(var(--shiro-accent-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
                   >
                     <Tag className="h-3 w-3" />
                     {tag}
@@ -211,21 +213,27 @@ const PostDetail = () => {
               {post.content.map((block, index) => {
                 if (block.startsWith("## ")) {
                   return (
-                    <h2 key={index} className="mb-4 mt-10 text-lg font-heading italic text-foreground/90">
+                    <h2
+                      key={index}
+                      className="mb-4 mt-10 border-l-2 border-[rgb(var(--shiro-accent-rgb)/0.34)] pl-3 text-lg font-heading italic text-foreground/90"
+                    >
                       {block.replace("## ", "")}
                     </h2>
                   );
                 }
 
                 return (
-                  <p key={index} className="mb-5 text-sm font-body leading-[1.85] text-foreground/50">
+                  <p
+                    key={index}
+                    className="mb-5 text-sm font-body leading-[1.85] text-foreground/50 first-letter:text-[rgb(var(--shiro-accent-rgb)/0.78)] first-letter:text-base"
+                  >
                     {block}
                   </p>
                 );
               })}
             </motion.article>
 
-            <div className="mt-12 border-t border-foreground/5 pt-8">
+            <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
               <p className="text-center text-xs font-body text-foreground/20">— 完 —</p>
             </div>
 
@@ -238,7 +246,7 @@ const PostDetail = () => {
           </>
         ) : (
           <motion.div
-            className="border-t border-foreground/5 pt-8"
+            className="border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -252,7 +260,7 @@ const PostDetail = () => {
             <button
               type="button"
               onClick={status === "error" ? () => setReloadKey((value) => value + 1) : () => navigate("/posts")}
-              className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-foreground/55"
+              className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
               {status === "error" ? "重试" : "返回列表"}
             </button>

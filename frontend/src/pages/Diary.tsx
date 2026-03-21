@@ -6,6 +6,7 @@ import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface DiaryEntry {
   id: number;
@@ -20,6 +21,8 @@ interface DiaryEntry {
 }
 
 type WeatherIconComponent = typeof Sun;
+
+type DiaryPageConfig = BaseViewPageConfig;
 
 const weatherIcons: Record<string, WeatherIconComponent> = {
   sunny: Sun,
@@ -70,7 +73,7 @@ const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEnt
 };
 
 const Diary = () => {
-  const config = usePageConfig().diary as Record<string, any>;
+  const config = usePageConfig().diary as DiaryPageConfig;
   const navigate = useNavigate();
   const [items, setItems] = useState<DiaryEntry[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
@@ -182,41 +185,43 @@ const Diary = () => {
                   className="w-full text-left"
                 >
                   <div
-                    className={`liquid-glass rounded-2xl px-5 py-4 cursor-pointer transition-colors ${
-                      isExpanded ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.02]"
+                    className={`group liquid-glass rounded-2xl px-5 py-4 cursor-pointer transition-[background-color,border-color,box-shadow] ${
+                      isExpanded
+                        ? "border border-[rgb(var(--shiro-border-rgb)/0.14)] bg-[rgb(var(--shiro-panel-rgb)/0.22)]"
+                        : "hover:border hover:border-[rgb(var(--shiro-border-rgb)/0.12)] hover:bg-[rgb(var(--shiro-panel-rgb)/0.16)]"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex min-w-[42px] flex-col items-center">
-                          <span className="text-lg font-body font-medium leading-none text-foreground/80 tabular-nums">
+                          <span className="text-lg font-body font-medium leading-none text-foreground/80 tabular-nums transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)]">
                             {entry.day || "--"}
                           </span>
-                          <span className="mt-0.5 text-[10px] font-body text-foreground/25">
+                          <span className="mt-0.5 text-[10px] font-body text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
                             {entry.weekday}
                           </span>
                         </div>
 
-                        <div className="h-8 w-px bg-foreground/[0.08]" />
+                        <div className="h-8 w-px bg-foreground/[0.08] transition-colors group-hover:bg-[rgb(var(--shiro-divider-rgb)/0.34)]" />
 
                         <div className="flex items-center gap-2">
-                          {WeatherIcon ? <WeatherIcon className="h-4 w-4 text-foreground/30" /> : null}
+                          {WeatherIcon ? <WeatherIcon className="h-4 w-4 text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.5)]" /> : null}
                           {entry.weatherLabel ? (
-                            <span className="text-xs font-body text-foreground/30">{entry.weatherLabel}</span>
+                            <span className="text-xs font-body text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.7)]">{entry.weatherLabel}</span>
                           ) : null}
-                          {entry.mood && <span className="text-sm">{entry.mood}</span>}
+                          {entry.mood && <span className="text-sm transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">{entry.mood}</span>}
                         </div>
                       </div>
 
                       <ChevronDown
-                        className={`h-4 w-4 text-foreground/20 transition-transform duration-300 ${
+                        className={`h-4 w-4 text-foreground/20 transition-transform duration-300 group-hover:text-[rgb(var(--shiro-accent-rgb)/0.36)] ${
                           isExpanded ? "rotate-180" : ""
                         }`}
                       />
                     </div>
 
                     {!isExpanded && (
-                      <p className="mt-3 line-clamp-1 text-sm font-body leading-relaxed text-foreground/35">
+                      <p className="mt-3 line-clamp-1 text-sm font-body leading-relaxed text-foreground/35 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
                         {entry.content}
                       </p>
                     )}
@@ -230,11 +235,11 @@ const Diary = () => {
                           transition={{ duration: config.motion.duration - 0.1, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
-                          <p className="mt-4 text-[0.935rem] font-body leading-7 text-foreground/60">
+                          <p className="mt-4 text-[0.935rem] font-body leading-7 text-foreground/60 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
                             {entry.content}
                           </p>
-                          <div className="mt-4 flex items-center justify-between border-t border-foreground/[0.05] pt-3">
-                            <span className="text-[10px] font-body uppercase tracking-wider text-foreground/15">
+                          <div className="mt-4 flex items-center justify-between border-t border-foreground/[0.05] pt-3 transition-colors group-hover:border-[rgb(var(--shiro-divider-rgb)/0.28)]">
+                            <span className="text-[10px] font-body uppercase tracking-wider text-foreground/15 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.48)]">
                               {[entry.date, entry.weatherLabel].filter(Boolean).join(" · ")}
                             </span>
                             <button
@@ -243,7 +248,7 @@ const Diary = () => {
                                 event.stopPropagation();
                                 navigate(`/diary/${entry.slug}`);
                               }}
-                              className="text-[11px] font-body text-foreground/30 transition-colors hover:text-foreground/60"
+                              className="text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
                             >
                               查看详情 →
                             </button>

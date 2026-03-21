@@ -195,7 +195,7 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
               {comment.author}
             </span>
             {isAuthor && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/8 text-foreground/30 font-body">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgb(var(--shiro-panel-rgb)/0.38)] text-[rgb(var(--shiro-accent-rgb)/0.75)] font-body">
                 作者
               </span>
             )}
@@ -209,7 +209,9 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
               type="button"
               onClick={handleLike}
               className={`flex items-center gap-1 text-[11px] font-body transition-colors active:scale-95 ${
-                liked ? "text-red-400/70" : "text-foreground/20 hover:text-foreground/40"
+                liked
+                  ? "text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                  : "text-foreground/20 hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
               }`}
             >
               <Heart className={`h-3.5 w-3.5 ${liked ? "fill-current" : ""}`} />
@@ -218,7 +220,7 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
             <button
               type="button"
               onClick={() => onReply(comment)}
-              className="flex items-center gap-1 text-[11px] font-body text-foreground/20 hover:text-foreground/40 transition-colors active:scale-95"
+              className="flex items-center gap-1 text-[11px] font-body text-foreground/20 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.72)] active:scale-95"
             >
               <Reply className="h-3.5 w-3.5" />
               回复
@@ -231,7 +233,7 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
                 <button
                   type="button"
                   onClick={() => setShowReplies(!showReplies)}
-                  className="flex items-center gap-1 text-[11px] font-body text-foreground/25 hover:text-foreground/40 transition-colors mb-2"
+                  className="mb-2 flex items-center gap-1 text-[11px] font-body text-foreground/25 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
                 >
                   <ChevronDown className={`h-3 w-3 transition-transform ${showReplies ? "rotate-180" : ""}`} />
                   {showReplies ? "收起回复" : `展开 ${comment.replies.length} 条回复`}
@@ -244,8 +246,8 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="overflow-hidden border-l border-foreground/5 pl-4 flex flex-col gap-4"
-                  >
+                    className="flex flex-col gap-4 overflow-hidden border-l border-[rgb(var(--shiro-divider-rgb)/0.34)] pl-4"
+                    >
                     {comment.replies.map((reply) => (
                       <CommentItem key={reply.id} comment={reply} isReply onReply={onReply} />
                     ))}
@@ -480,8 +482,10 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
           type="button"
           onClick={handleLikeToggle}
           disabled={liked || isReacting || !contentContext?.slug}
-          className={`liquid-glass rounded-2xl px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] disabled:opacity-50 ${
-            liked ? "text-red-400/80" : "text-foreground/40 hover:text-foreground/60"
+          className={`liquid-glass rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.18)] px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] disabled:opacity-50 ${
+            liked
+              ? "text-[rgb(var(--shiro-accent-rgb)/0.85)]"
+              : "text-foreground/40 hover:border-[rgb(var(--shiro-accent-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
           }`}
         >
           <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
@@ -493,11 +497,13 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
         <button
           type="button"
           onClick={() => setShowComments((value) => !value)}
-          className={`liquid-glass rounded-2xl px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] ${
-            showComments ? "text-foreground/70" : "text-foreground/40 hover:text-foreground/60"
+          className={`liquid-glass rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.18)] px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] ${
+            showComments
+              ? "text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+              : "text-foreground/40 hover:border-[rgb(var(--shiro-accent-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
           }`}
         >
-          <MessageCircle className={`h-4 w-4 ${showComments ? "fill-foreground/10" : ""}`} />
+          <MessageCircle className={`h-4 w-4 ${showComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
           <span className="text-sm font-body font-medium tabular-nums">{total}</span>
         </button>
       </div>
@@ -512,12 +518,12 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
             className="overflow-hidden"
           >
             <div className="liquid-glass rounded-2xl p-4 mb-8">
-              <div className="flex items-center gap-3 mb-3 pb-3 border-b border-foreground/5">
+              <div className="flex items-center gap-3 mb-3 pb-3 border-b border-[rgb(var(--shiro-divider-rgb)/0.28)]">
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                    className="w-9 h-9 rounded-full bg-foreground/5 flex items-center justify-center text-lg hover:bg-foreground/10 transition-colors active:scale-95 overflow-hidden"
+                    className="w-9 h-9 rounded-full bg-foreground/5 flex items-center justify-center overflow-hidden text-lg transition-[background-color,box-shadow,transform] hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:ring-1 hover:ring-[rgb(var(--shiro-accent-rgb)/0.16)] active:scale-95"
                   >
                     {isImageAvatar(selectedAvatar) ? (
                       <img src={selectedAvatar} alt="avatar" className="h-full w-full object-cover" />
@@ -532,7 +538,7 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 4 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 mt-2 z-10 liquid-glass rounded-xl p-2 grid grid-cols-6 gap-1 min-w-[180px]"
+                        className="absolute top-full left-0 z-10 mt-2 grid min-w-[180px] grid-cols-6 gap-1 rounded-xl liquid-glass p-2"
                       >
                         {AVATAR_OPTIONS.map((emoji) => (
                           <button
@@ -542,8 +548,10 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
                               setSelectedAvatar(emoji);
                               setShowAvatarPicker(false);
                             }}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm hover:bg-foreground/10 transition-colors active:scale-90 ${
-                              selectedAvatar === emoji ? "bg-foreground/15 ring-1 ring-foreground/20" : ""
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-[background-color,box-shadow,transform,color] hover:bg-[rgb(var(--shiro-panel-rgb)/0.26)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)] active:scale-90 ${
+                              selectedAvatar === emoji
+                                ? "bg-[rgb(var(--shiro-panel-rgb)/0.36)] ring-1 ring-[rgb(var(--shiro-accent-rgb)/0.22)]"
+                                : ""
                             }`}
                           >
                             {emoji}
@@ -560,14 +568,14 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
                   onChange={(event) => setNickname(event.target.value.slice(0, 20))}
                   placeholder="你的昵称"
                   maxLength={20}
-                  className="flex-1 bg-transparent text-sm font-body text-foreground/60 placeholder:text-foreground/15 outline-none"
+                  className="flex-1 bg-transparent text-sm font-body text-foreground/60 placeholder:text-foreground/15 outline-none transition-colors focus:text-foreground focus:placeholder:text-foreground/18"
                 />
                 <span className="text-[10px] font-body text-foreground/15 shrink-0">{nickname.length}/20</span>
               </div>
 
               {replyTo && (
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[11px] font-body text-foreground/25">回复 {replyTo}</span>
+                  <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb)/0.68)]">回复 {replyTo}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -575,7 +583,7 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
                       setReplyTargetId(null);
                       setNewComment("");
                     }}
-                    className="text-[11px] font-body text-foreground/20 hover:text-foreground/40 transition-colors"
+                    className="text-[11px] font-body text-foreground/20 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
                   >
                     取消
                   </button>
@@ -588,16 +596,16 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
                 placeholder="写下你的想法..."
                 rows={3}
                 maxLength={500}
-                className="w-full bg-transparent text-sm font-body text-foreground/60 placeholder:text-foreground/15 outline-none resize-none leading-relaxed"
+                className="w-full resize-none bg-transparent text-sm font-body leading-relaxed text-foreground/60 placeholder:text-foreground/15 outline-none transition-colors focus:text-foreground focus:placeholder:text-foreground/18"
               />
 
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-foreground/5">
+              <div className="mt-3 flex items-center justify-between border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-3">
                 <span className="text-[11px] font-body text-foreground/15">{newComment.length}/500</span>
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={!newComment.trim() || !nickname.trim() || isSubmitting}
-                  className="px-4 py-1.5 rounded-xl text-xs font-body font-medium transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed bg-foreground/10 text-foreground/60 hover:bg-foreground/15 hover:text-foreground/80"
+                  className="rounded-xl border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-foreground/10 px-4 py-1.5 text-xs font-body font-medium text-foreground/60 transition-[border-color,background-color,color,transform] hover:border-[rgb(var(--shiro-accent-rgb)/0.3)] hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   发表评论
                 </button>
@@ -629,7 +637,7 @@ const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: C
                       <button
                         type="button"
                         onClick={() => setReloadKey((value) => value + 1)}
-                        className="text-[11px] font-body text-foreground/25 transition-colors hover:text-foreground/45"
+                        className="text-[11px] font-body text-foreground/25 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
                       >
                         重试
                       </button>

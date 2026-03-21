@@ -134,7 +134,7 @@ const DiaryDetail = () => {
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm font-body text-foreground/30 hover:text-foreground/60 transition-colors mb-8 active:scale-95"
+          className="mb-8 flex items-center gap-1.5 text-sm font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] active:scale-95"
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -146,7 +146,7 @@ const DiaryDetail = () => {
         {status === "loading" ? (
           <>
             <motion.div
-              className="mb-10 rounded-2xl liquid-glass p-6 sm:p-8"
+              className="mb-10 rounded-2xl liquid-glass border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -179,14 +179,14 @@ const DiaryDetail = () => {
         ) : entry ? (
           <>
             <motion.div
-              className="liquid-glass rounded-2xl p-6 sm:p-8 mb-10"
+              className="liquid-glass mb-10 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="mb-4 flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-body text-foreground/25 uppercase tracking-wider">
+                  <p className="text-xs font-body uppercase tracking-wider text-[rgb(var(--shiro-accent-rgb)/0.54)]">
                     {entry.weekday ? `${entry.weekday} · ` : ""}
                     {entry.date}
                   </p>
@@ -197,9 +197,9 @@ const DiaryDetail = () => {
                 <div className="ml-4 flex shrink-0 items-center gap-2">
                   {entry.mood ? <span className="text-2xl">{entry.mood}</span> : null}
                   {WeatherIcon ? (
-                    <div className="flex items-center gap-1 rounded-lg bg-foreground/5 px-2.5 py-1">
-                      <WeatherIcon className="h-3.5 w-3.5 text-foreground/35" />
-                      <span className="text-[11px] font-body text-foreground/30">{weatherLabel}</span>
+                    <div className="flex items-center gap-1 rounded-lg border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.24)] px-2.5 py-1">
+                      <WeatherIcon className="h-3.5 w-3.5 text-[rgb(var(--shiro-accent-rgb)/0.7)]" />
+                      <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb)/0.68)]">{weatherLabel}</span>
                     </div>
                   ) : null}
                 </div>
@@ -214,7 +214,7 @@ const DiaryDetail = () => {
               {entry.paragraphs.map((paragraph, index) => (
                 <motion.p
                   key={index}
-                  className="text-sm font-body text-foreground/50 leading-[1.9] mb-6 first-letter:text-foreground/70 first-letter:text-base"
+                  className="mb-6 text-sm font-body leading-[1.9] text-foreground/50 first-letter:text-[rgb(var(--shiro-accent-rgb)/0.78)] first-letter:text-base"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.15 + index * 0.06, ease: [0.16, 1, 0.3, 1] }}
@@ -226,17 +226,17 @@ const DiaryDetail = () => {
 
             {entry.poem && (
               <motion.div
-                className="mt-10 border-b border-t border-foreground/5 py-6 text-center"
+                className="mt-10 border-b border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] py-6 text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
               >
-                <p className="text-sm font-heading italic tracking-wide text-foreground/25">{entry.poem}</p>
+                <p className="text-sm font-heading italic tracking-wide text-[rgb(var(--shiro-accent-rgb)/0.5)]">{entry.poem}</p>
               </motion.div>
             )}
 
             <div className="mt-10 text-center">
-              <p className="text-xs font-body text-foreground/15">— 今日份记录 —</p>
+              <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">— 今日份记录 —</p>
             </div>
 
             <CommentSection
@@ -248,7 +248,7 @@ const DiaryDetail = () => {
           </>
         ) : (
           <motion.div
-            className="border-t border-foreground/5 pt-8"
+            className="border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -262,7 +262,7 @@ const DiaryDetail = () => {
             <button
               type="button"
               onClick={status === "error" ? () => setReloadKey((value) => value + 1) : () => navigate("/diary")}
-              className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-foreground/55"
+              className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
               {status === "error" ? "重试" : "返回列表"}
             </button>

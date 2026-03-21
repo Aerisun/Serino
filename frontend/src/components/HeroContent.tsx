@@ -13,7 +13,7 @@ const HeroContent = () => {
 
   useEffect(() => {
     setPoem(site.poems[Math.floor(Math.random() * site.poems.length)]);
-  }, []);
+  }, [site.poems]);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
@@ -26,13 +26,13 @@ const HeroContent = () => {
     }, 8000);
 
     return () => window.clearInterval(timer);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, site.poems]);
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
       <div className="flex flex-1 flex-col items-center justify-center gap-8">
         <motion.p
-          className="text-[10px] sm:text-[11px] uppercase tracking-[0.32em] text-white/30 text-center"
+          className="text-center text-[10px] uppercase tracking-[0.32em] text-white/32 sm:text-[11px]"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({ duration: 0.45, reducedMotion: prefersReducedMotion })}
@@ -55,15 +55,15 @@ const HeroContent = () => {
             style={{ transformStyle: "preserve-3d" }}
           >
             <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden" }}>
-              <div className="h-full w-full rounded-full liquid-glass-coin flex items-center justify-center">
-                <span className="text-5xl sm:text-6xl text-white select-none" style={{ fontFamily: "'Pinyon Script', cursive" }}>
+              <div className="h-full w-full rounded-full liquid-glass-coin-hero flex items-center justify-center">
+                <span className="select-none text-5xl text-white sm:text-6xl" style={{ fontFamily: "'Pinyon Script', cursive" }}>
                   {site.name}
                 </span>
               </div>
             </div>
 
             <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
-              <div className="h-full w-full rounded-full overflow-hidden liquid-glass-coin">
+              <div className="h-full w-full rounded-full overflow-hidden liquid-glass-coin-hero">
                 <img src="/images/avatar.png" alt={site.name} className="h-full w-full object-cover" />
               </div>
             </div>
@@ -71,7 +71,7 @@ const HeroContent = () => {
         </motion.div>
 
         <motion.p
-          className="max-w-[30rem] text-center text-[0.98rem] leading-7 text-white/72 sm:text-lg"
+          className="max-w-[30rem] text-center text-[0.98rem] leading-7 text-white/76 sm:text-lg"
           style={{ fontFamily: "'Instrument Serif', serif" }}
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -101,7 +101,7 @@ const HeroContent = () => {
               target="_blank"
               rel="noopener noreferrer"
               title={link.name}
-              className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass text-white/60 transition-colors duration-200 hover:text-white active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-colors duration-200 hover:text-white focus-visible:text-white active:scale-95"
             >
               <SocialIcon iconKey={link.iconKey} className="h-[18px] w-[18px]" />
             </a>
@@ -122,7 +122,7 @@ const HeroContent = () => {
             <a
               key={cta.label}
               href={cta.href}
-              className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full liquid-glass text-white/70 transition-[width,color] duration-300 ease-out hover:w-[7rem] hover:text-white focus-visible:w-[7rem] focus-visible:text-white active:scale-[0.97]"
+              className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full liquid-glass-hero text-white/72 transition-[width,color] duration-300 ease-out hover:w-[7rem] hover:text-white focus-visible:w-[7rem] focus-visible:text-white active:scale-[0.97]"
             >
               <span className="absolute inset-y-0 left-0 flex w-11 items-center justify-center">
                 <SocialIcon iconKey={cta.iconKey} className="h-[18px] w-[18px] shrink-0" />
@@ -149,7 +149,7 @@ const HeroContent = () => {
           {poem}
         </p>
         <svg
-          className="h-5 w-5 text-white/20 animate-bounce"
+          className="h-5 w-5 animate-bounce text-white/22"
           style={{ animationDuration: "2s" }}
           viewBox="0 0 20 20"
           fill="none"

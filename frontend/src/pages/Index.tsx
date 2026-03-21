@@ -12,6 +12,7 @@ const Index = () => {
   const { resolvedTheme } = useTheme();
   const site = useSiteConfig();
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
+  const heroOverlayClass = resolvedTheme === "dark" ? "bg-black/12" : "bg-black/18";
 
   return (
     <div
@@ -19,9 +20,8 @@ const Index = () => {
       className="h-[100svh] overflow-x-hidden overflow-y-auto"
     >
       <PageMeta description={site.metaDescription} />
-      <Navbar />
-      {/* Hero Section — full viewport, always dark styled */}
-      <div className="relative min-h-screen flex flex-col overflow-hidden dark">
+      <Navbar glassVariant="hero" />
+      <div className="relative min-h-screen flex flex-col overflow-hidden">
         {/* Background Video */}
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
@@ -36,7 +36,7 @@ const Index = () => {
         </video>
 
         {/* Overlay */}
-        <div className="absolute inset-0 bg-black/5 z-0" />
+        <div className={`absolute inset-0 z-0 ${heroOverlayClass}`} />
 
         {/* Bottom fade — uses actual page background, not the forced-dark --background */}
         <div
@@ -44,8 +44,7 @@ const Index = () => {
           style={{ background: `linear-gradient(to bottom, transparent, ${fadeTo})` }}
         />
 
-        {/* Content — force white text for video overlay */}
-        <div className="relative z-10 flex flex-col min-h-screen text-white">
+        <div className="relative z-10 flex flex-col min-h-screen">
           <HeroContent />
         </div>
       </div>

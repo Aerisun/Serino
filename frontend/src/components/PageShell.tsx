@@ -47,41 +47,62 @@ const PageShell = ({
         <FallingPetals />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[440px]">
-          <div className="absolute inset-x-[-8%] top-[-7rem] h-[20rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(133,182,255,0.16),transparent_62%)] dark:bg-[radial-gradient(circle_at_center,rgba(180,210,255,0.12),transparent_60%)]" />
+          <div
+            className="absolute inset-x-[-8%] top-[-7rem] h-[20rem] rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at center, rgb(var(--shiro-glow-rgb) / 0.12) 0%, transparent 64%)",
+            }}
+          />
         </div>
 
         <main className={`${widths[width]} relative mx-auto px-6 pt-28 pb-20 lg:px-8`}>
-        <motion.header
-          className="relative pb-8"
-          {...entrance}
-        >
-          <div className="pointer-events-none absolute -left-10 top-0 h-24 w-32 bg-[radial-gradient(circle_at_center,rgba(143,190,255,0.16),transparent_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(143,190,255,0.10),transparent_72%)]" />
+          <motion.header
+            className="relative pb-8"
+            {...entrance}
+          >
+            <div
+              className="pointer-events-none absolute -left-10 top-0 h-24 w-32"
+              style={{
+                background:
+                  "radial-gradient(circle at center, rgb(var(--shiro-glow-rgb) / 0.1) 0%, transparent 72%)",
+              }}
+            />
 
-          <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-foreground/28">
-                {eyebrow}
-              </p>
-              <h1 className="mt-3 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-                {title}
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-7 text-foreground/42 sm:text-[0.95rem]">
-                {description}
-              </p>
-            </div>
-
-            {headerAside ? (
-              <div className="relative flex shrink-0 items-start text-sm text-foreground/28 md:items-end">
-                {headerAside}
+            <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2.5">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{
+                      backgroundColor: "rgb(var(--shiro-accent-rgb) / 0.56)",
+                      boxShadow: "0 0 16px rgb(var(--shiro-glow-rgb) / 0.16)",
+                    }}
+                  />
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-foreground/34">
+                    {eyebrow}
+                  </p>
+                </div>
+                <h1 className="mt-4 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
+                  {title}
+                </h1>
+                <p className="mt-3 max-w-xl text-sm leading-7 text-foreground/42 sm:text-[0.95rem]">
+                  {description}
+                </p>
               </div>
-            ) : null}
-          </div>
-        </motion.header>
 
-        <div className={contentClassName}>{children}</div>
-      </main>
+              {headerAside ? (
+                <div className="relative flex shrink-0 items-start text-sm text-foreground/28 md:items-end">
+                  {headerAside}
+                </div>
+              ) : null}
+            </div>
+          </motion.header>
 
-      <Footer />
+          <div className={contentClassName}>{children}</div>
+        </main>
+
+        <Footer />
       </div>
     </>
   );

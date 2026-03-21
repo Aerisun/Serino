@@ -28,6 +28,14 @@ const WAVE_H = 180;
 const COL_W = 22;
 const COL_GAP = 2;
 const PARTICLE_COUNT = 40;
+const ACCENT_FALLBACK = "60 100 200";
+const PANEL_STRONG_FALLBACK = "255 255 255";
+const BORDER_FALLBACK = "185 194 211";
+const DIVIDER_FALLBACK = "202 210 226";
+const GLOW_FALLBACK = "180 198 255";
+
+const tokenRgb = (name: string, fallback: string, alpha: number) =>
+  `rgb(var(${name}, ${fallback}) / ${alpha})`;
 
 const blobPath = (cx: number, cy: number, r: number, seed: number) => {
   const pts = 6;
@@ -79,12 +87,14 @@ const ActivityHeatmap = () => {
   const maxVal = Math.max(...data.map((d) => d.total), 1);
   const hasData = status === "ready" && data.length > 0;
 
-  const accentColor = isDark ? "140,170,255" : "60,100,200";
-  const lineColor = isDark ? "200,220,255" : "40,80,180";
-  const particleColor = isDark ? "white" : "hsl(222, 47%, 11%)";
-  const gridLineColor = isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.04)";
-  const tooltipBg = isDark ? "rgba(20,24,40,0.7)" : "rgba(255,255,255,0.85)";
-  const tooltipStroke = isDark ? `rgba(${accentColor},0.15)` : `rgba(${accentColor},0.25)`;
+  const accentSoft = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.16);
+  const accentGhost = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.06);
+  const lineColor = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.88);
+  const particleColor = isDark ? "rgba(255,255,255,0.42)" : "rgba(20,24,40,0.18)";
+  const tooltipBg = tokenRgb("--shiro-panel-strong-rgb", PANEL_STRONG_FALLBACK, isDark ? 0.82 : 0.9);
+  const tooltipStroke = tokenRgb("--shiro-border-rgb", BORDER_FALLBACK, isDark ? 0.44 : 0.58);
+  const statValueColor = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.86);
+  const statLabelColor = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.34);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -182,22 +192,29 @@ const ActivityHeatmap = () => {
       phase: Math.random() * Math.PI * 2,
       opacity: Math.random() * 0.3 + 0.05,
     }));
-  }, [data.length, totalWidth]);
+  }, [totalWidth]);
 
   const monthMarkers = useMemo(() => buildMonthMarkers(data), [data]);
-  const dayLabels = ["一", "三", "五"];
   const totalContributions = remoteStats?.total_contributions ?? 0;
   const thisWeek = data[data.length - 1]?.total ?? 0;
   const peakWeek = remoteStats?.peak_week ?? 0;
   const averagePerWeek = remoteStats?.average_per_week ?? 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-sm font-body font-medium text-foreground/50 uppercase tracking-widest">
+    <div className="relative flex flex-col gap-4">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-32"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 80% at 50% 0%, rgb(var(--shiro-glow-rgb, 180 198 255) / 0.16) 0%, transparent 72%)",
+        }}
+      />
+
+      <div className="relative flex items-baseline justify-between gap-4">
+        <h3 className="text-sm font-body font-medium uppercase tracking-[0.28em] text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.68)]">
           Activity
         </h3>
-        <span className="text-xs font-body text-foreground/30 tabular-nums">
+        <span className="text-xs font-body tabular-nums text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.54)]">
           {status === "loading"
             ? "加载中"
             : status === "error"
@@ -206,34 +223,37 @@ const ActivityHeatmap = () => {
         </span>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="relative flex flex-wrap items-end gap-x-8 gap-y-3 sm:gap-x-12">
         {[
           { label: "This week", value: hasData ? thisWeek : "—" },
           { label: "Peak week", value: hasData ? peakWeek : "—" },
           { label: "Avg / week", value: hasData ? averagePerWeek : "—" },
         ].map((stat) => (
-          <div key={stat.label} className="flex flex-col">
-            <span className="text-xl font-body font-medium text-foreground tabular-nums">
+          <div key={stat.label} className="min-w-[6.5rem]">
+            <span className="block text-xl font-body font-medium tabular-nums" style={{ color: statValueColor }}>
               {stat.value}
             </span>
-            <span className="text-[10px] font-body text-foreground/25 uppercase tracking-wider">
+            <span
+              className="text-[10px] font-body uppercase tracking-wider"
+              style={{ color: statLabelColor }}
+            >
               {stat.label}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="relative">
+      <div className="relative pt-1">
         <div
           ref={scrollRef}
-          className="overflow-x-auto scrollbar-hide -mx-2 px-2"
+          className="scrollbar-hide -mx-2 overflow-x-auto px-2"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <svg width={totalWidth + 20} height={WAVE_H + 36} className="block">
+          <svg width={totalWidth + 20} height={WAVE_H + 40} className="block">
             <defs>
               <linearGradient id="waveFillGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={`rgba(${accentColor},0.15)`} />
-                <stop offset="50%" stopColor={`rgba(${accentColor},0.04)`} />
+                <stop offset="0%" stopColor={accentSoft} />
+                <stop offset="50%" stopColor={accentGhost} />
                 <stop offset="100%" stopColor="transparent" />
               </linearGradient>
               <filter id="waveGlow">
@@ -254,18 +274,6 @@ const ActivityHeatmap = () => {
                 <path d={fillPath} />
               </clipPath>
             </defs>
-
-            {[0.25, 0.5, 0.75].map((r) => (
-              <line
-                key={r}
-                x1={20}
-                y1={WAVE_H - r * (WAVE_H - 40)}
-                x2={totalWidth}
-                y2={WAVE_H - r * (WAVE_H - 40)}
-                stroke={gridLineColor}
-                strokeDasharray="2 10"
-              />
-            ))}
 
             {hasData && (
               <>
@@ -297,7 +305,7 @@ const ActivityHeatmap = () => {
                     <path
                       key={`blob-${i}`}
                       d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + displayTime * 0.5)}
-                      fill={`rgba(${accentColor},${isHovered ? 0.15 : 0.04 + intensity * 0.04})`}
+                      fill={tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, isHovered ? 0.15 : 0.04 + intensity * 0.05)}
                       className="transition-opacity duration-300"
                     />
                   );
@@ -306,14 +314,14 @@ const ActivityHeatmap = () => {
                 <path
                   d={wavePath}
                   fill="none"
-                  stroke={`rgba(${accentColor},0.12)`}
+                  stroke={tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.14)}
                   strokeWidth={4}
                   strokeLinecap="round"
                 />
                 <path
                   d={wavePath}
                   fill="none"
-                  stroke={`rgba(${lineColor},0.5)`}
+                  stroke={lineColor}
                   strokeWidth={1.5}
                   strokeLinecap="round"
                   filter="url(#waveGlow)"
@@ -340,7 +348,7 @@ const ActivityHeatmap = () => {
                           y1={points[i].y}
                           x2={points[i].x}
                           y2={WAVE_H}
-                          stroke={`rgba(${accentColor},0.15)`}
+                          stroke={tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.18)}
                           strokeWidth={1}
                           strokeDasharray="2 4"
                         />
@@ -349,7 +357,7 @@ const ActivityHeatmap = () => {
                         cx={points[i].x}
                         cy={points[i].y}
                         r={isHovered ? 5 : d.total > maxVal * 0.5 ? 2 : 0}
-                        fill={isHovered ? `rgba(${lineColor},0.9)` : `rgba(${lineColor},0.5)`}
+                        fill={isHovered ? lineColor : tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.6)}
                         filter={isHovered ? "url(#dotGlow)" : undefined}
                         className="transition-all duration-200"
                       />
@@ -367,7 +375,11 @@ const ActivityHeatmap = () => {
                                 width={2.5}
                                 height={barH}
                                 rx={1.25}
-                                fill={`rgba(${accentColor},${0.2 + (dayVal / Math.max(...d.days, 1)) * 0.4})`}
+                                fill={tokenRgb(
+                                  "--shiro-accent-rgb",
+                                  ACCENT_FALLBACK,
+                                  0.2 + (dayVal / Math.max(...d.days, 1)) * 0.42,
+                                )}
                               />
                             );
                           })}
@@ -393,7 +405,8 @@ const ActivityHeatmap = () => {
                       x={points[hoveredWeek].x}
                       y={points[hoveredWeek].y - 21}
                       textAnchor="middle"
-                      className="fill-foreground/80 font-body"
+                      className="font-body"
+                      fill={tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.78)}
                       fontSize={10}
                       fontWeight={500}
                     >
@@ -408,23 +421,11 @@ const ActivityHeatmap = () => {
                     x={m.x}
                     y={WAVE_H + 22}
                     textAnchor="middle"
-                    className="fill-foreground/20 font-body"
+                    className="font-body"
+                    fill={tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.2)}
                     fontSize={9}
                   >
                     {m.label}
-                  </text>
-                ))}
-
-                {dayLabels.map((label, i) => (
-                  <text
-                    key={label}
-                    x={12}
-                    y={WAVE_H - (i + 1) * (WAVE_H / 5) + 4}
-                    textAnchor="middle"
-                    className="fill-foreground/10 font-body"
-                    fontSize={8}
-                  >
-                    {label}
                   </text>
                 ))}
               </>
@@ -437,7 +438,11 @@ const ActivityHeatmap = () => {
             <button
               type="button"
               onClick={() => setReloadKey((value) => value + 1)}
-              className="pointer-events-auto rounded-full border border-foreground/10 px-3 py-1 text-[10px] text-foreground/55 transition-colors hover:text-foreground/75"
+              className="pointer-events-auto rounded-full border px-3 py-1 text-[10px] transition-colors"
+              style={{
+                borderColor: tokenRgb("--shiro-border-rgb", BORDER_FALLBACK, isDark ? 0.42 : 0.56),
+                color: tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.66),
+              }}
             >
               重试
             </button>

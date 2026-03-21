@@ -6,6 +6,7 @@ import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicCalendar, type PublicCalendarEvent } from "@/lib/api";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface CalendarEvent {
@@ -15,10 +16,31 @@ interface CalendarEvent {
   href?: string;
 }
 
+interface CalendarPageConfig extends BaseViewPageConfig {
+  weekdayLabels?: unknown;
+  monthLabels?: unknown;
+  todayLabel?: string;
+}
+
 const typeConfig = {
-  post: { icon: FileText, label: "帖子", color: "bg-blue-500/20 text-blue-300" },
-  diary: { icon: BookOpen, label: "日记", color: "bg-emerald-500/20 text-emerald-300" },
-  excerpt: { icon: Feather, label: "文摘", color: "bg-amber-500/20 text-amber-300" },
+  post: {
+    icon: FileText,
+    label: "帖子",
+    chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.88)]",
+    dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.72)]",
+  },
+  diary: {
+    icon: BookOpen,
+    label: "日记",
+    chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.1)] text-[rgb(var(--shiro-accent-rgb)/0.78)]",
+    dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.5)]",
+  },
+  excerpt: {
+    icon: Feather,
+    label: "文摘",
+    chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.08)] text-[rgb(var(--shiro-accent-rgb)/0.7)]",
+    dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.38)]",
+  },
 } as const;
 
 function getDaysInMonth(year: number, month: number) {
@@ -87,7 +109,7 @@ const getMonthLabels = (value: unknown) => {
 };
 
 const CalendarPage = () => {
-  const config = usePageConfig().calendar as Record<string, any>;
+  const config = usePageConfig().calendar as CalendarPageConfig;
   const weekdayLabels = getWeekdayLabels(config.weekdayLabels);
   const monthLabels = getMonthLabels(config.monthLabels);
   const today = new Date();
@@ -177,7 +199,7 @@ const CalendarPage = () => {
     >
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
         <motion.div
-          className="rounded-2xl p-6 liquid-glass"
+          className="rounded-2xl p-6 liquid-glass transition-[background-color,border-color,box-shadow]"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -198,7 +220,7 @@ const CalendarPage = () => {
 
                 setMonth((value) => value - 1);
               }}
-              className="rounded-xl p-2 text-foreground/40 transition-colors hover:bg-foreground/5 hover:text-foreground/70 active:scale-95"
+              className="rounded-xl p-2 text-foreground/40 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] active:scale-95"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -216,7 +238,7 @@ const CalendarPage = () => {
 
                 setMonth((value) => value + 1);
               }}
-              className="rounded-xl p-2 text-foreground/40 transition-colors hover:bg-foreground/5 hover:text-foreground/70 active:scale-95"
+              className="rounded-xl p-2 text-foreground/40 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] active:scale-95"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -248,16 +270,16 @@ const CalendarPage = () => {
                   onClick={() => setSelectedDate(isSelected ? null : dateKey)}
                   className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-xl transition-all active:scale-95 ${
                     isSelected
-                      ? "bg-foreground/15 ring-1 ring-foreground/20"
+                      ? "bg-[rgb(var(--shiro-accent-rgb)/0.14)] ring-1 ring-[rgb(var(--shiro-accent-rgb)/0.22)]"
                       : isToday
-                        ? "bg-foreground/8"
-                        : "hover:bg-foreground/5"
+                        ? "bg-[rgb(var(--shiro-panel-rgb)/0.16)]"
+                        : "hover:bg-[rgb(var(--shiro-panel-rgb)/0.12)]"
                   }`}
                 >
                   <span
                     className={`text-sm font-body tabular-nums ${
                       isToday
-                        ? "font-medium text-foreground"
+                        ? "font-medium text-[rgb(var(--shiro-accent-rgb)/0.9)]"
                         : dayEvents.length > 0
                           ? "text-foreground/70"
                           : "text-foreground/30"
@@ -272,10 +294,10 @@ const CalendarPage = () => {
                           key={`${dateKey}-${markerIndex}`}
                           className={`h-1 w-1 rounded-full ${
                             event.type === "post"
-                              ? "bg-blue-400/70"
+                              ? typeConfig.post.dotClass
                               : event.type === "diary"
-                                ? "bg-emerald-400/70"
-                                : "bg-amber-400/70"
+                                ? typeConfig.diary.dotClass
+                                : typeConfig.excerpt.dotClass
                           }`}
                         />
                       ))}
@@ -290,9 +312,7 @@ const CalendarPage = () => {
             {Object.entries(typeConfig).map(([key, item]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <span
-                  className={`h-2 w-2 rounded-full ${
-                    key === "post" ? "bg-blue-400/70" : key === "diary" ? "bg-emerald-400/70" : "bg-amber-400/70"
-                  }`}
+                  className={`h-2 w-2 rounded-full ${item.dotClass}`}
                 />
                 <span className="text-[11px] font-body text-foreground/30">{item.label}</span>
               </div>
@@ -301,7 +321,7 @@ const CalendarPage = () => {
         </motion.div>
 
         <motion.div
-          className="h-fit rounded-2xl p-5 liquid-glass lg:sticky lg:top-24"
+          className="h-fit rounded-2xl p-5 liquid-glass transition-[background-color,border-color,box-shadow] lg:sticky lg:top-24"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -348,7 +368,7 @@ const CalendarPage = () => {
                   <motion.button
                     type="button"
                     key={`${event.href}-${index}`}
-                    className={`group rounded-xl p-3 text-left transition-colors ${event.href ? "hover:bg-foreground/5" : ""}`}
+                    className={`group rounded-xl p-3 text-left transition-[background-color,border-color,box-shadow] ${event.href ? "hover:bg-[rgb(var(--shiro-panel-rgb)/0.16)] hover:shadow-[inset_0_1px_0_rgb(var(--shiro-accent-rgb)/0.04)]" : ""}`}
                     onClick={() => {
                       if (event.href) {
                         navigate(event.href);
@@ -362,12 +382,12 @@ const CalendarPage = () => {
                     })}
                   >
                     <div className="mb-1.5 flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-body ${item.color}`}>
+                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-body ${item.chipClass}`}>
                         <Icon className="h-3 w-3" />
                         {item.label}
                       </span>
                     </div>
-                    <p className="text-sm font-body leading-snug text-foreground/70 transition-colors group-hover:text-foreground/90">
+                    <p className="text-sm font-body leading-snug text-foreground/70 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]">
                       {event.title}
                     </p>
                   </motion.button>

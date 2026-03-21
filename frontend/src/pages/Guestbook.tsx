@@ -5,6 +5,7 @@ import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { createPublicGuestbookEntry, fetchPublicGuestbook, type PublicGuestbookEntry } from "@/lib/api";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Message {
   id: string;
@@ -12,6 +13,12 @@ interface Message {
   avatar: string;
   content: string;
   date: string;
+}
+
+interface GuestbookPageConfig extends BaseViewPageConfig {
+  namePlaceholder?: string;
+  contentPlaceholder?: string;
+  submitLabel?: string;
 }
 
 const formatDate = (value: string | number | Date | null | undefined) => {
@@ -53,7 +60,7 @@ const normalizeGuestbookMessage = (entry: unknown): Message => {
 };
 
 const Guestbook = () => {
-  const config = usePageConfig().guestbook as Record<string, any>;
+  const config = usePageConfig().guestbook as GuestbookPageConfig;
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -171,7 +178,7 @@ const Guestbook = () => {
             placeholder={config.namePlaceholder}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="flex-1 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2.5 text-sm font-body text-foreground placeholder:text-foreground/20 outline-none transition-colors focus:border-foreground/15 focus:bg-foreground/[0.05]"
+            className="flex-1 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2.5 text-sm font-body text-foreground placeholder:text-foreground/20 outline-none transition-[border-color,box-shadow,background-color,color] focus:border-[rgb(var(--shiro-accent-rgb)/0.44)] focus:bg-foreground/[0.05] focus:ring-2 focus:ring-[rgb(var(--shiro-accent-rgb)/0.12)]"
           />
         </div>
         <textarea
@@ -179,13 +186,13 @@ const Guestbook = () => {
           value={content}
           onChange={(event) => setContent(event.target.value)}
           rows={3}
-          className="w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-3 text-sm font-body text-foreground placeholder:text-foreground/20 outline-none transition-colors focus:border-foreground/15 focus:bg-foreground/[0.05] resize-none"
+          className="w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-3 text-sm font-body text-foreground placeholder:text-foreground/20 outline-none transition-[border-color,box-shadow,background-color,color] focus:border-[rgb(var(--shiro-accent-rgb)/0.44)] focus:bg-foreground/[0.05] focus:ring-2 focus:ring-[rgb(var(--shiro-accent-rgb)/0.12)] resize-none"
         />
         <div className="mt-3 flex justify-end">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 rounded-full liquid-glass px-5 py-2.5 text-sm font-body font-medium text-foreground/60 hover:text-foreground transition-colors active:scale-[0.97] disabled:opacity-60"
+            className="flex items-center gap-2 rounded-full liquid-glass border border-[rgb(var(--shiro-border-rgb)/0.18)] px-5 py-2.5 text-sm font-body font-medium text-foreground/60 transition-[border-color,background-color,color,transform] hover:border-[rgb(var(--shiro-accent-rgb)/0.34)] hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.86)] active:scale-[0.97] disabled:opacity-60"
           >
             <Send className="h-3.5 w-3.5" />
             {config.submitLabel}
@@ -220,7 +227,7 @@ const Guestbook = () => {
                 <button
                   type="button"
                   onClick={() => setReloadKey((value) => value + 1)}
-                  className="text-[10px] font-body text-foreground/20 transition-colors hover:text-foreground/40"
+                  className="text-[10px] font-body text-foreground/20 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
                 >
                   {String(config.retryLabel ?? "")}
                 </button>

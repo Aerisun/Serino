@@ -5,6 +5,7 @@ import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 import {
   fetchPublicFriendFeed,
   fetchPublicFriends,
@@ -28,6 +29,13 @@ interface CirclePost {
   url: string;
 }
 
+interface FriendsPageConfig extends BaseViewPageConfig {
+  pageSize?: number;
+  circleTitle?: string;
+  statusLabel?: string;
+  loadMoreLabel?: string;
+}
+
 const toFriend = (value: PublicFriend): Friend => ({
   name: value.name,
   desc: value.description?.trim() ?? "",
@@ -44,7 +52,7 @@ const toCirclePost = (value: PublicFriendFeedItem): CirclePost => ({
 });
 
 const Friends = () => {
-  const config = usePageConfig().friends as Record<string, any>;
+  const config = usePageConfig().friends as FriendsPageConfig;
   const pageSize = Number(config.pageSize ?? 10);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>([]);
@@ -174,7 +182,7 @@ const Friends = () => {
                   href={friend.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="group flex flex-col items-center rounded-2xl px-4 py-8 text-center transition-colors hover:bg-foreground/[0.04]"
+                  className="group flex flex-col items-center rounded-2xl px-4 py-8 text-center transition-[background-color,border-color,box-shadow] hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:shadow-[inset_0_1px_0_rgb(var(--shiro-accent-rgb)/0.05)]"
                   {...staggerItem(index, {
                     baseDelay: config.motion.delay,
                     step: config.motion.stagger,
@@ -191,11 +199,11 @@ const Friends = () => {
                       />
                     ) : null}
                   </div>
-                  <p className="mt-4 text-sm font-medium text-foreground/80 transition-colors group-hover:text-foreground">
+                  <p className="mt-4 text-sm font-medium text-foreground/80 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.9)]">
                     {friend.name}
                   </p>
                   {friend.desc ? (
-                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/30">
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]">
                       {friend.desc}
                     </p>
                   ) : null}
@@ -210,7 +218,7 @@ const Friends = () => {
                   <button
                     type="button"
                     onClick={() => setReloadKey((value) => value + 1)}
-                    className="mt-3 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70"
+                    className="mt-3 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
                   >
                     {String(config.retryLabel ?? "")}
                   </button>
@@ -227,7 +235,7 @@ const Friends = () => {
         transition={{ duration: config.motion.duration + 0.05, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
         <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-2xl font-heading italic tracking-tight text-foreground sm:text-3xl">
+          <h2 className="text-2xl font-heading italic tracking-tight text-foreground transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-3xl">
             {String(config.circleTitle ?? "")}
           </h2>
           <div className="flex items-center gap-1.5 text-xs font-body text-foreground/25">
@@ -270,7 +278,7 @@ const Friends = () => {
               href={post.url}
               target="_blank"
               rel="noreferrer"
-              className="group -mx-3 flex items-start gap-3.5 rounded-lg border-t border-foreground/[0.05] px-3 py-4 transition-colors hover:bg-foreground/[0.02]"
+              className="group -mx-3 flex items-start gap-3.5 rounded-lg border-t border-foreground/[0.05] px-3 py-4 transition-[background-color,border-color] hover:bg-[rgb(var(--shiro-panel-rgb)/0.14)] hover:border-[rgb(var(--shiro-divider-rgb)/0.24)]"
               {...staggerItem(index, {
                 baseDelay: 0,
                 step: 0.03,
@@ -289,15 +297,15 @@ const Friends = () => {
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-body text-foreground/25">
+                <p className="truncate text-sm font-body text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]">
                   {post.blogName}
                 </p>
-                <p className="mt-0.5 line-clamp-2 text-[15px] font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-foreground">
+                <p className="mt-0.5 line-clamp-2 text-[15px] font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.9)]">
                   {post.title}
                 </p>
               </div>
 
-              <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20">
+              <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.48)]">
                 {post.date ? `📅 ${post.date}` : ""}
               </span>
             </motion.a>
@@ -318,13 +326,13 @@ const Friends = () => {
               </p>
             </div>
             {status === "error" ? (
-              <button
-                type="button"
-                onClick={() => setReloadKey((value) => value + 1)}
-                className="mt-1 shrink-0 rounded-full liquid-glass px-3 py-1.5 text-[11px] font-medium text-foreground/55"
-              >
-                {String(config.retryLabel ?? "")}
-              </button>
+            <button
+              type="button"
+              onClick={() => setReloadKey((value) => value + 1)}
+              className="mt-1 shrink-0 rounded-full liquid-glass px-3 py-1.5 text-[11px] font-medium text-foreground/55 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
+            >
+              {String(config.retryLabel ?? "")}
+            </button>
             ) : (
               <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20">
                 --
@@ -340,7 +348,7 @@ const Friends = () => {
             type="button"
             onClick={loadMore}
             disabled={loadingMore}
-            className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-body text-foreground/50 liquid-glass hover:text-foreground/70 transition-colors active:scale-[0.97] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-body text-foreground/50 liquid-glass transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] active:scale-[0.97] disabled:opacity-50"
           >
             {loadingMore ? (
               <>
