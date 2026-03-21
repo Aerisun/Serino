@@ -95,3 +95,14 @@ export const modalEntrance = (reducedMotion = false) => ({
     reducedMotion,
   }),
 });
+
+/** Modal preset — backdrop + content pair for overlay modals */
+export const modalPreset = (reducedMotion = false) => ({
+  backdrop: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+    transition: transition({ duration: 0.25, reducedMotion }),
+  },
+  content: modalEntrance(reducedMotion),
+});
