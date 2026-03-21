@@ -48,7 +48,7 @@ const diaryData: Record<string, DiaryData> = {
     poem: "春风如贵客，一到便繁华。——袁枚",
   },
   "2": {
-    slug: "rain-day-and-lofi",
+    slug: "motion-curve-notes",
     date: "2026 年 3 月 20 日",
     weekday: "周五",
     weather: "cloudy",
@@ -62,7 +62,7 @@ const diaryData: Record<string, DiaryData> = {
     ],
   },
   "3": {
-    slug: "windy-library-day",
+    slug: "rain-day-and-lofi",
     date: "2026 年 3 月 19 日",
     weekday: "周四",
     weather: "rainy",
@@ -90,7 +90,7 @@ const diaryData: Record<string, DiaryData> = {
     ],
   },
   "5": {
-    slug: "windy-day-notes",
+    slug: "windy-library-day",
     date: "2026 年 3 月 17 日",
     weekday: "周二",
     weather: "windy",
@@ -287,7 +287,7 @@ const DiaryDetail = () => {
           <p className="text-xs font-body text-foreground/15">— 今日份记录 —</p>
         </div>
 
-        <CommentSection />
+        <CommentSection contentType="diary" contentSlug={entry.slug} />
       </main>
       <Footer />
     </div>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { pageConfig, staggerItem } from "@/config";
-import { fetchPublicContentCollection, type PublicContentEntry } from "@/lib/api";
+import { fetchPublicContentCollection, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
@@ -50,7 +50,7 @@ const fallbackDiaryEntries: DiaryEntry[] = [
   },
   {
     id: 2,
-    slug: "rain-day-and-lofi",
+    slug: "motion-curve-notes",
     title: "关于缓动曲线的思考",
     date: "2026-03-20",
     weekday: "周五",
@@ -60,7 +60,7 @@ const fallbackDiaryEntries: DiaryEntry[] = [
   },
   {
     id: 3,
-    slug: "windy-library-day",
+    slug: "rain-day-and-lofi",
     title: "雨天，面条，和意外的高效",
     date: "2026-03-19",
     weekday: "周四",
@@ -80,7 +80,7 @@ const fallbackDiaryEntries: DiaryEntry[] = [
   },
   {
     id: 5,
-    slug: "windy-day-notes",
+    slug: "windy-library-day",
     title: "风很大的一天",
     date: "2026-03-17",
     weekday: "周二",
@@ -129,6 +129,7 @@ const formatWeekday = (value: string | null) => {
 
 const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEntry => {
   const fallback = fallbackBySlug[entry.slug];
+  const preview = entry.summary?.trim() || splitContentParagraphs(entry.body)[0] || fallback?.content || "";
 
   return {
     id: fallback?.id ?? index + 1,
@@ -138,7 +139,7 @@ const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEnt
     weekday: formatWeekday(entry.published_at) || fallback?.weekday || "",
     weather: fallback?.weather ?? "cloudy",
     mood: fallback?.mood ?? "📝",
-    content: entry.body,
+    content: preview,
   };
 };
 

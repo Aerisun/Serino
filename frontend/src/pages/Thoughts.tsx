@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { pageConfig, staggerItem } from "@/config";
+import { fetchPublicContentCollection, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 interface Thought {
-  id: number;
+  id: number | string;
+  slug?: string;
   content: string;
   date: string;
   likes: number;
@@ -13,7 +16,7 @@ interface Thought {
   mood?: string;
 }
 
-const thoughts: Thought[] = [
+const fallbackThoughts: Thought[] = [
   {
     id: 1,
     content: "今天把博客的排版重新调了一遍，字间距从 -0.02em 改到 -0.03em，整个页面的气质都不一样了。设计就是这种细微到像素级的偏执。",
@@ -85,7 +88,49 @@ const thoughts: Thought[] = [
 ];
 const config = pageConfig.thoughts;
 
+const mapRemoteThought = (entry: PublicContentEntry, index: number): Thought => {
+  const fallback = fallbackThoughts[index];
+
+  return {
+    id: fallback?.id ?? entry.slug,
+    slug: entry.slug,
+    content: entry.summary?.trim() || splitContentParagraphs(entry.body)[0] || entry.title,
+    date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+    likes: fallback?.likes ?? 0,
+    comments: fallback?.comments ?? 0,
+    reposts: fallback?.reposts ?? 0,
+    mood: fallback?.mood,
+  };
+};
+
 const Thoughts = () => {
+  const [items, setItems] = useState<Thought[]>(fallbackThoughts);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadThoughts = async () => {
+      try {
+        const payload = await fetchPublicContentCollection("thoughts", 40);
+        if (cancelled || payload.items.length === 0) {
+          return;
+        }
+
+        setItems(payload.items.map(mapRemoteThought));
+      } catch {
+        if (!cancelled) {
+          setItems(fallbackThoughts);
+        }
+      }
+    };
+
+    void loadThoughts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <PageShell
       eyebrow={config.eyebrow}
@@ -100,7 +145,7 @@ const Thoughts = () => {
           {/* Vertical line */}
           <div className="absolute left-5 top-0 bottom-0 w-px bg-foreground/6" />
 
-          {thoughts.map((thought, i) => (
+          {items.map((thought, i) => (
             <motion.div
               key={thought.id}
               className="relative pl-14 pb-10 last:pb-0"

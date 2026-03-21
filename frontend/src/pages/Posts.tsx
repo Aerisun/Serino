@@ -147,23 +147,23 @@ const Posts = () => {
   const [items, setItems] = useState<Post[]>(fallbackPosts);
   const [isRemote, setIsRemote] = useState(false);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("全部");
+  const [activeCategory, setActiveCategory] = useState(config.categories.all);
   const navigate = useNavigate();
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     const loadPosts = async () => {
       try {
-        const payload = await fetchPublicContentCollection("posts", 20);
-        if (cancelled || payload.items.length === 0) {
+        const payload = await fetchPublicContentCollection("posts", 20, { signal: controller.signal });
+        if (controller.signal.aborted || payload.items.length === 0) {
           return;
         }
 
         setItems(payload.items.map(mapRemotePost));
         setIsRemote(true);
       } catch {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setItems(fallbackPosts);
           setIsRemote(false);
         }
@@ -173,18 +173,21 @@ const Posts = () => {
     void loadPosts();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, []);
 
-  const allCategories = ["全部", ...Array.from(new Set(items.map((item) => item.category)))];
+  const allCategories = [
+    config.categories.all,
+    ...Array.from(new Set(items.map((item) => item.category))),
+  ];
 
   const filtered = items.filter((post) => {
     const matchSearch =
       !search ||
       post.title.toLowerCase().includes(search.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(search.toLowerCase());
-    const matchCategory = activeCategory === "全部" || post.category === activeCategory;
+    const matchCategory = activeCategory === config.categories.all || post.category === activeCategory;
     return matchSearch && matchCategory;
   });
 
@@ -231,7 +234,7 @@ const Posts = () => {
                     : "text-foreground/35 hover:text-foreground/55"
                 }`}
               >
-                {cat === "全部" ? config.categories.all : cat}
+                {cat === config.categories.all ? config.categories.all : cat}
               </button>
             ))}
           </div>
@@ -241,9 +244,9 @@ const Posts = () => {
         <div className="mt-8">
           {filtered.map((post, i) => (
             <motion.article
-              key={post.id}
+              key={post.slug || post.id}
               className="group cursor-pointer border-t border-foreground/6 py-6 transition-colors first:border-t-0 hover:bg-foreground/[0.02]"
-              onClick={() => navigate(`/posts/${post.slug}`)}
+              onClick={() => navigate(`/posts/${post.slug || post.id}`)}
               {...staggerItem(i, {
                 baseDelay: config.motion.delay + 0.04,
                 step: config.motion.stagger,

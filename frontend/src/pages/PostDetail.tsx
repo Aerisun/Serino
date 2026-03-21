@@ -327,7 +327,11 @@ const PostDetail = () => {
           <p className="text-xs font-body text-foreground/20 text-center">— 完 —</p>
         </div>
 
-        <CommentSection commentCount={post.comments} />
+        <CommentSection
+          commentCount={post.comments}
+          contentType="posts"
+          contentSlug={post.slug}
+        />
       </main>
       <Footer />
     </div>

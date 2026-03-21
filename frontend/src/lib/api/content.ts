@@ -47,16 +47,20 @@ export const splitContentParagraphs = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-export async function fetchPublicContentCollection(kind: PublicContentKind, limit?: number) {
+export async function fetchPublicContentCollection(kind: PublicContentKind, limit?: number, init?: RequestInit) {
   const path = new URL(publicContentPaths[kind], "http://localhost");
   if (limit) {
     path.searchParams.set("limit", String(limit));
   }
 
-  return apiClient.get<PublicContentCollection>(`${path.pathname}${path.search}`);
+  return apiClient.get<PublicContentCollection>(`${path.pathname}${path.search}`, init);
 }
 
-export async function fetchPublicContentEntry(kind: Exclude<PublicContentKind, "thoughts" | "excerpts">, slug: string) {
+export async function fetchPublicContentEntry(
+  kind: Exclude<PublicContentKind, "thoughts" | "excerpts">,
+  slug: string,
+  init?: RequestInit,
+) {
   const normalizedSlug = encodeURIComponent(slug);
-  return apiClient.get<PublicContentEntry>(`${publicContentPaths[kind]}/${normalizedSlug}`);
+  return apiClient.get<PublicContentEntry>(`${publicContentPaths[kind]}/${normalizedSlug}`, init);
 }

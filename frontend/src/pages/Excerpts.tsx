@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { pageConfig, staggerItem } from "@/config";
+import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 
 interface Excerpt {
-  id: number;
+  id: number | string;
+  slug?: string;
   title: string;
   author: string;
   source: string;
@@ -14,7 +16,7 @@ interface Excerpt {
   date: string;
 }
 
-const excerpts: Excerpt[] = [
+const fallbackExcerpts: Excerpt[] = [
   {
     id: 1,
     title: "关于白",
@@ -81,9 +83,57 @@ const excerpts: Excerpt[] = [
 ];
 const config = pageConfig.excerpts;
 
+const fallbackByTitle = Object.fromEntries(
+  fallbackExcerpts.map((item) => [item.title.trim().toLowerCase(), item]),
+);
+
+const mapRemoteExcerpt = (entry: PublicContentEntry, index: number): Excerpt => {
+  const fallback = fallbackByTitle[entry.title.trim().toLowerCase()] ?? fallbackExcerpts[index];
+
+  return {
+    id: fallback?.id ?? entry.slug,
+    slug: entry.slug,
+    title: entry.title,
+    author: fallback?.author ?? "Public API",
+    source: fallback?.source ?? "Aerisun Archive",
+    content: entry.body,
+    tags: entry.tags.length > 0 ? entry.tags : fallback?.tags ?? [],
+    date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+  };
+};
+
 const Excerpts = () => {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const selected = excerpts.find((e) => e.id === selectedId);
+  const [items, setItems] = useState<Excerpt[]>(fallbackExcerpts);
+  const [selectedId, setSelectedId] = useState<number | string | null>(null);
+  const selected = useMemo(
+    () => items.find((excerpt) => excerpt.id === selectedId),
+    [items, selectedId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadExcerpts = async () => {
+      try {
+        const payload = await fetchPublicContentCollection("excerpts", 40);
+        if (cancelled || payload.items.length === 0) {
+          return;
+        }
+
+        setItems(payload.items.map(mapRemoteExcerpt));
+      } catch {
+        if (!cancelled) {
+          setItems(fallbackExcerpts);
+        }
+      }
+    };
+
+    void loadExcerpts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <PageShell
@@ -96,7 +146,7 @@ const Excerpts = () => {
 
         {/* Excerpt cards */}
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {excerpts.map((excerpt, i) => (
+          {items.map((excerpt, i) => (
             <motion.button
               key={excerpt.id}
               onClick={() => setSelectedId(excerpt.id)}
