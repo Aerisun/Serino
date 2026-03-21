@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
-import logo from "@/assets/logo.png";
 import { siteConfig, transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
@@ -111,7 +110,7 @@ const NavDropdown = ({
               {open && (
                 <div
                   ref={menuRef}
-                  className="fixed z-[200] pt-2"
+                  className="fixed z-[1100] pt-2"
                   style={{
                     top: menuPosition.top,
                     left: menuPosition.left,
@@ -196,6 +195,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const lastScrollY = useRef(0);
   const prefersReducedMotion = useReducedMotionPreference();
 
@@ -209,11 +209,6 @@ const Navbar = () => {
     };
 
     const handleScroll = () => {
-      if (window.innerWidth < 768) {
-        setVisible(true);
-        return;
-      }
-
       const currentY = getScrollY();
       const delta = currentY - lastScrollY.current;
 
@@ -251,6 +246,7 @@ const Navbar = () => {
 
   const goTo = (path: string) => {
     setMobileOpen(false);
+    setMobileExpanded(null);
     navigate(path);
   };
 
@@ -259,7 +255,7 @@ const Navbar = () => {
       ? createPortal(
           <AnimatePresence>
             {mobileOpen && (
-              <div className="fixed inset-0 z-[180] md:hidden">
+              <div className="fixed inset-0 z-[1000] md:hidden">
                 <motion.button
                   type="button"
                   aria-label="关闭导航菜单"
@@ -277,68 +273,45 @@ const Navbar = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -12, scale: 0.98 }}
                   transition={transition({ duration: 0.22, reducedMotion: prefersReducedMotion })}
-                  className="absolute left-4 right-4 top-20 liquid-glass-strong rounded-[28px] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
+                  className="absolute left-4 top-16 max-w-[16rem] liquid-glass-strong rounded-[28px] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
                 >
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-foreground/30">
-                        Navigation
-                      </p>
-                      <p className="mt-1 text-sm font-heading italic text-foreground/80">
-                        {siteConfig.name}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label="关闭导航菜单"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full liquid-glass text-foreground/55"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-
                   <div className="grid gap-2">
                     {siteConfig.navigation.map((item) =>
                       item.children ? (
-                        <div key={item.label} className="rounded-2xl bg-foreground/[0.02] p-3">
-                          <button
-                            type="button"
-                            onClick={() => item.href && goTo(item.href)}
-                            className="flex w-full items-center justify-between px-1 text-left text-sm font-body text-foreground/78"
-                          >
-                            <span>{item.label}</span>
-                            <span className="text-[10px] uppercase tracking-[0.22em] text-foreground/22">
-                              分组
-                            </span>
-                          </button>
-                          <div className="mt-2 grid gap-1">
-                            {item.children.map((child) => (
-                              <button
-                                key={child.label}
-                                type="button"
-                                onClick={() => goTo(child.href)}
-                                className="flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-body text-foreground/72 transition-colors hover:bg-foreground/[0.05]"
-                              >
-                                <span>{child.label}</span>
-                                <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/18">
-                                  进入
-                                </span>
-                              </button>
-                            ))}
+                        <div key={item.label} className="rounded-2xl bg-foreground/[0.03] overflow-hidden">
+                          <div className="flex items-center">
+                            <button type="button" onClick={() => {
+                              if (item.trigger === "arrow" && item.href) { goTo(item.href); }
+                              else { setMobileExpanded((prev) => prev === item.label ? null : item.label); }
+                            }} className="flex-1 px-4 py-3 text-left text-sm font-body font-medium text-foreground/80 transition-colors hover:text-foreground">
+                              {item.label}
+                            </button>
+                            <button type="button" aria-label={`展开${item.label}`}
+                              onClick={() => setMobileExpanded((prev) => prev === item.label ? null : item.label)}
+                              className="flex h-full items-center px-4 py-3 text-foreground/30 hover:text-foreground/60 transition-colors">
+                              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${mobileExpanded === item.label ? "rotate-180" : ""}`} />
+                            </button>
                           </div>
+                          <AnimatePresence>
+                            {mobileExpanded === item.label && (
+                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                transition={transition({ duration: 0.3, reducedMotion: prefersReducedMotion })} className="overflow-hidden">
+                                <div className="px-2 pb-2 grid gap-0.5">
+                                  {item.children!.map((child) => (
+                                    <button key={child.label} type="button" onClick={() => goTo(child.href)}
+                                      className="rounded-xl px-3 py-2.5 text-left text-sm font-body text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground/80">
+                                      {child.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       ) : (
-                        <button
-                          key={item.label}
-                          type="button"
-                          onClick={() => item.href && goTo(item.href)}
-                          className="flex items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-body text-foreground/78 transition-colors hover:bg-foreground/[0.04]"
-                        >
-                          <span>{item.label}</span>
-                          <span className="text-[10px] uppercase tracking-[0.22em] text-foreground/22">
-                            入口
-                          </span>
+                        <button key={item.label} type="button" onClick={() => item.href && goTo(item.href)}
+                          className="rounded-2xl px-4 py-3 text-left text-sm font-body font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04] hover:text-foreground">
+                          {item.label}
                         </button>
                       )
                     )}
@@ -353,7 +326,7 @@ const Navbar = () => {
 
   return (
     <motion.nav
-      className="fixed top-4 left-0 right-0 z-[100] px-4 sm:px-6 lg:px-16"
+      className="fixed top-4 left-0 right-0 z-[999] px-4 sm:px-6 lg:px-16"
       initial={{ y: 0, opacity: 1 }}
       animate={{
         y: visible ? 0 : -80,
@@ -362,9 +335,18 @@ const Navbar = () => {
       transition={transition({ duration: 0.35, reducedMotion: prefersReducedMotion })}
     >
       <div className="flex items-center justify-between gap-3">
-        <button onClick={() => goTo("/")} className="shrink-0 active:scale-[0.97]">
-          <img src={logo} alt="Logo" className="h-12 w-12" />
-        </button>
+        <div className="w-9 md:w-9">
+          <button
+            type="button"
+            aria-label="打开导航菜单"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="flex h-9 w-9 items-center justify-center rounded-full liquid-glass text-foreground/60 hover:text-foreground transition-colors active:scale-95 md:hidden"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
 
         <div className="hidden md:flex items-center liquid-glass rounded-full px-2 py-1.5 gap-1">
           {siteConfig.navigation.map((item) =>
@@ -382,19 +364,7 @@ const Navbar = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            type="button"
-            aria-label="打开导航菜单"
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-navigation"
-            onClick={() => setMobileOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center rounded-full liquid-glass text-foreground/60 hover:text-foreground transition-colors active:scale-95 md:hidden"
-          >
-            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
-        </div>
+        <div className="mr-1 md:mr-0"><ThemeToggle /></div>
       </div>
       {mobileMenu}
     </motion.nav>

@@ -18,6 +18,7 @@ const Index = () => {
       className="h-[100svh] overflow-x-hidden overflow-y-auto"
     >
       <PageMeta description={siteConfig.description} />
+      <Navbar />
       {/* Hero Section — full viewport, always dark styled */}
       <div className="relative min-h-screen flex flex-col overflow-hidden dark">
         {/* Background Video */}
@@ -44,7 +45,6 @@ const Index = () => {
 
         {/* Content — force white text for video overlay */}
         <div className="relative z-10 flex flex-col min-h-screen text-white">
-          <Navbar />
           <HeroContent />
         </div>
       </div>

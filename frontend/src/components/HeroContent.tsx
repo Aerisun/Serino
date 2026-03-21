@@ -139,7 +139,7 @@ const HeroContent = () => {
         </motion.div>
 
         <motion.div
-          className="grid w-full max-w-[22rem] grid-cols-2 gap-3 sm:flex sm:max-w-none sm:justify-center"
+          className="flex w-full justify-center gap-3"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({

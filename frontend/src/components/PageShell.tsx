@@ -40,17 +40,17 @@ const PageShell = ({
   const entrance = pageEntrance(prefersReducedMotion);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <PageMeta title={metaTitle ?? title} description={metaDescription ?? description} />
-      <FallingPetals />
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[440px]">
-        <div className="absolute inset-x-[-8%] top-[-7rem] h-[20rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(133,182,255,0.16),transparent_62%)] dark:bg-[radial-gradient(circle_at_center,rgba(180,210,255,0.12),transparent_60%)]" />
-      </div>
-
+    <>
       <Navbar />
+      <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+        <PageMeta title={metaTitle ?? title} description={metaDescription ?? description} />
+        <FallingPetals />
 
-      <main className={`${widths[width]} relative mx-auto px-6 pt-28 pb-20 lg:px-8`}>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[440px]">
+          <div className="absolute inset-x-[-8%] top-[-7rem] h-[20rem] rounded-full bg-[radial-gradient(circle_at_center,rgba(133,182,255,0.16),transparent_62%)] dark:bg-[radial-gradient(circle_at_center,rgba(180,210,255,0.12),transparent_60%)]" />
+        </div>
+
+        <main className={`${widths[width]} relative mx-auto px-6 pt-28 pb-20 lg:px-8`}>
         <motion.header
           className="relative pb-8"
           {...entrance}
@@ -82,7 +82,8 @@ const PageShell = ({
       </main>
 
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 
