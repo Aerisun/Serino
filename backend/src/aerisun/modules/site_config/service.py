@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,8 +31,21 @@ def get_site_config(session: Session) -> SiteConfigRead:
         select(Poem).where(Poem.site_profile_id == site.id).order_by(Poem.order_index.asc())
     ).all()
 
+    hero_actions = json.loads(site.hero_actions) if site.hero_actions else []
+
     return SiteConfigRead(
-        site=SiteProfileRead.model_validate(site),
+        site=SiteProfileRead(
+            name=site.name,
+            title=site.title,
+            bio=site.bio,
+            role=site.role,
+            footer_text=site.footer_text,
+            author=site.author,
+            og_image=site.og_image,
+            meta_description=site.meta_description,
+            copyright=site.copyright,
+            hero_actions=hero_actions,
+        ),
         social_links=[SocialLinkRead.model_validate(link) for link in links],
         poems=[PoemRead.model_validate(poem) for poem in poems],
     )
@@ -47,6 +62,7 @@ def get_page_copy(session: Session) -> PageCollectionRead:
             PageCopyRead(
                 page_key=page.page_key,
                 label=page.label,
+                nav_label=page.nav_label,
                 title=page.title,
                 subtitle=page.subtitle,
                 description=page.description,

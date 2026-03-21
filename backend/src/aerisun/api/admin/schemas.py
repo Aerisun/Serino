@@ -81,6 +81,11 @@ class SiteProfileCreate(BaseModel):
     bio: str
     role: str
     footer_text: str
+    author: str = ""
+    og_image: str = "/images/hero_bg.jpeg"
+    meta_description: str = ""
+    copyright: str = "All rights reserved"
+    hero_actions: str = "[]"
 
 
 class SiteProfileUpdate(BaseModel):
@@ -89,6 +94,11 @@ class SiteProfileUpdate(BaseModel):
     bio: str | None = None
     role: str | None = None
     footer_text: str | None = None
+    author: str | None = None
+    og_image: str | None = None
+    meta_description: str | None = None
+    copyright: str | None = None
+    hero_actions: str | None = None
 
 
 class SiteProfileAdminRead(ModelBase):
@@ -98,6 +108,11 @@ class SiteProfileAdminRead(ModelBase):
     bio: str
     role: str
     footer_text: str
+    author: str
+    og_image: str
+    meta_description: str
+    copyright: str
+    hero_actions: str
     created_at: datetime
     updated_at: datetime
 
@@ -166,6 +181,7 @@ class PoemAdminRead(ModelBase):
 class PageCopyCreate(BaseModel):
     page_key: str
     label: str | None = None
+    nav_label: str | None = None
     title: str
     subtitle: str
     description: str | None = None
@@ -179,6 +195,7 @@ class PageCopyCreate(BaseModel):
 
 class PageCopyUpdate(BaseModel):
     label: str | None = None
+    nav_label: str | None = None
     title: str | None = None
     subtitle: str | None = None
     description: str | None = None
@@ -194,6 +211,7 @@ class PageCopyAdminRead(ModelBase):
     id: str
     page_key: str
     label: str | None
+    nav_label: str | None
     title: str
     subtitle: str
     description: str | None

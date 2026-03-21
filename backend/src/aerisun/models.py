@@ -43,6 +43,11 @@ class SiteProfile(Base, TimestampMixin):
     bio: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[str] = mapped_column(String(160), nullable=False)
     footer_text: Mapped[str] = mapped_column(Text, nullable=False)
+    author: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    og_image: Mapped[str] = mapped_column(String(500), nullable=False, default="/images/hero_bg.jpeg")
+    meta_description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    copyright: Mapped[str] = mapped_column(String(200), nullable=False, default="All rights reserved")
+    hero_actions: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
 
 
 class SocialLink(Base, TimestampMixin):
@@ -80,6 +85,7 @@ class PageCopy(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     page_key: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
     label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    nav_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     subtitle: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

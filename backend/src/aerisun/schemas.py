@@ -28,6 +28,11 @@ class SiteProfileRead(ModelBase):
     bio: str
     role: str
     footer_text: str
+    author: str
+    og_image: str
+    meta_description: str
+    copyright: str
+    hero_actions: list[dict[str, object]]
 
 
 class SiteConfigRead(ModelBase):
@@ -39,6 +44,7 @@ class SiteConfigRead(ModelBase):
 class PageCopyRead(ModelBase):
     page_key: str
     label: str | None
+    nav_label: str | None
     title: str
     subtitle: str
     description: str | None
