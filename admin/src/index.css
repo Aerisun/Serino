@@ -1,0 +1,309 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* ===== Login Page – Apple Liquid Glass ===== */
+
+.login-bg {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #0a0a1a;
+}
+
+/* Animated gradient blobs */
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.6;
+  will-change: transform;
+}
+
+.login-blob-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+  top: -10%;
+  left: -10%;
+  animation: blob-drift-1 20s ease-in-out infinite;
+}
+
+.login-blob-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #2563eb 0%, transparent 70%);
+  bottom: -10%;
+  right: -10%;
+  animation: blob-drift-2 24s ease-in-out infinite;
+}
+
+.login-blob-3 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: blob-drift-3 18s ease-in-out infinite;
+}
+
+.login-blob-4 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #14b8a6 0%, transparent 70%);
+  bottom: 10%;
+  left: 20%;
+  animation: blob-drift-4 22s ease-in-out infinite;
+}
+
+@keyframes blob-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(80px, 60px) scale(1.15); }
+  66% { transform: translate(-40px, 100px) scale(0.9); }
+}
+
+@keyframes blob-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-100px, -50px) scale(1.1); }
+  66% { transform: translate(60px, -80px) scale(0.95); }
+}
+
+@keyframes blob-drift-3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  33% { transform: translate(-40%, -60%) scale(1.2); }
+  66% { transform: translate(-60%, -40%) scale(0.85); }
+}
+
+@keyframes blob-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(100px, -60px) scale(1.1); }
+}
+
+/* Glass card */
+.login-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 16px;
+  padding: 44px 36px 36px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+  overflow: hidden;
+}
+
+/* Shine / reflection overlay */
+.login-card-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 40%,
+    transparent 60%
+  );
+}
+
+/* Brand */
+.login-brand {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-brand-text {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #c084fc, #60a5fa, #2dd4bf);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 6s ease-in-out infinite;
+}
+
+.login-brand-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Grouped input fields with divider (Apple-style) */
+.login-field-group {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.login-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 16px;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 16px;
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.login-input-wrap:focus-within .login-input-icon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.login-input {
+  width: 100%;
+  padding: 14px 16px 14px 46px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
+}
+
+.login-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.login-input:focus {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Error */
+.login-error {
+  font-size: 13px;
+  color: #f87171;
+  text-align: center;
+  padding: 0 4px;
+}
+
+/* Button */
+.login-btn {
+  position: relative;
+  width: 100%;
+  padding: 13px 0;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  box-shadow:
+    0 4px 16px rgba(99, 102, 241, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 24px rgba(99, 102, 241, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-btn-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive – slightly smaller on very small screens */
+@media (max-width: 420px) {
+  .login-card {
+    padding: 36px 24px 28px;
+    border-radius: 20px;
+  }
+
+  .login-brand-text {
+    font-size: 28px;
+  }
+}
