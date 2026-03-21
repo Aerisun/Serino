@@ -2,7 +2,9 @@ import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { RefreshCw, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
 import {
   fetchPublicFriendFeed,
   fetchPublicFriends,
@@ -70,8 +72,6 @@ const LOCAL_CIRCLE_POSTS: CirclePost[] = [
   { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya", blogName: "轻雅阁", title: "前往 2026", date: "2026-01-04" },
 ];
 
-const config = pageConfig.friends;
-
 const toFriend = (value: PublicFriend): Friend => ({
   name: value.name,
   desc: value.description?.trim() || "记录生活与技术的小站",
@@ -90,6 +90,7 @@ const toCirclePost = (value: PublicFriendFeedItem): CirclePost => ({
 });
 
 const Friends = () => {
+  const config = usePageConfig().friends as Record<string, any>;
   const [friends, setFriends] = useState<Friend[]>(LOCAL_FRIENDS);
   const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>(LOCAL_CIRCLE_POSTS);
   const [visibleCount, setVisibleCount] = useState(config.pageSize);
@@ -159,7 +160,7 @@ const Friends = () => {
       width={config.width}
       headerAside={
         <span className="text-xs tracking-[0.18em] text-foreground/28">
-          {config.headerCountLabel(friends.length)}
+          {formatSiteCount(friends.length)}
         </span>
       }
     >
@@ -213,7 +214,7 @@ const Friends = () => {
             </div>
           </div>
           <p className="text-xs font-body text-foreground/20 mb-8">
-            {config.circleSubtitle(friends.length, allCirclePosts.length)}
+            {formatFriendCircleSubtitle(friends.length, allCirclePosts.length)}
           </p>
         </motion.div>
 

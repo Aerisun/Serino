@@ -3,7 +3,8 @@ import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem, transition } from "@/config";
+import { staggerItem, transition } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicCalendar, type PublicCalendarEvent } from "@/lib/api";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
@@ -39,10 +40,6 @@ const typeConfig = {
   diary: { icon: BookOpen, label: "日记", color: "bg-emerald-500/20 text-emerald-300" },
   excerpt: { icon: Feather, label: "文摘", color: "bg-amber-500/20 text-amber-300" },
 };
-const config = pageConfig.calendar;
-const WEEKDAYS = config.weekdayLabels;
-const MONTHS = config.monthLabels;
-
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -97,6 +94,9 @@ const normalizeCalendarEvent = (item: PublicCalendarEvent): CalendarEvent | null
 };
 
 const CalendarPage = () => {
+  const config = usePageConfig().calendar as Record<string, any>;
+  const WEEKDAYS = (config.weekdayLabels ?? []) as string[];
+  const MONTHS = (config.monthLabels ?? []) as string[];
   const today = new Date();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotionPreference();

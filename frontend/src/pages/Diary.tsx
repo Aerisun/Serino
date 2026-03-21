@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
@@ -109,8 +110,6 @@ const fallbackDiaryEntries: DiaryEntry[] = [
     content: "周末的最后一天，去公园走了走。树上的花苞已经鼓鼓的了，再过几天应该就会开了。拍了几张照片，光线特别好。回来后把照片调了调色，想放到博客的相册里。一个人的周末，安静但不孤单。",
   },
 ];
-const config = pageConfig.diary;
-
 const fallbackBySlug = Object.fromEntries(fallbackDiaryEntries.map((item) => [item.slug, item]));
 
 const formatDateKey = (value: string | null) => {
@@ -144,6 +143,7 @@ const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEnt
 };
 
 const Diary = () => {
+  const config = usePageConfig().diary as Record<string, any>;
   const [items, setItems] = useState<DiaryEntry[]>(fallbackDiaryEntries);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const navigate = useNavigate();

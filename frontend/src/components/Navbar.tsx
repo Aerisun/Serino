@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { siteConfig, transition } from "@/config";
+import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-
-type NavItem = (typeof siteConfig.navigation)[number];
+import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import type { NavItem } from "@/lib/runtime-config";
 
 const NavDropdown = ({
   item,
@@ -193,6 +193,7 @@ const NavDropdown = ({
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const site = useSiteConfig();
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
@@ -276,7 +277,7 @@ const Navbar = () => {
                   className="absolute left-4 top-16 max-w-[16rem] liquid-glass-strong rounded-[28px] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
                 >
                   <div className="grid gap-2">
-                    {siteConfig.navigation.map((item) =>
+                    {site.navigation.map((item) =>
                       item.children ? (
                         <div key={item.label} className="rounded-2xl bg-foreground/[0.03] overflow-hidden">
                           <div className="flex items-center">
@@ -349,7 +350,7 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center liquid-glass rounded-full px-2 py-1.5 gap-1">
-          {siteConfig.navigation.map((item) =>
+          {site.navigation.map((item) =>
             item.children ? (
               <NavDropdown key={item.label} item={item} navigate={goTo} />
             ) : (

@@ -1,6 +1,7 @@
-import { siteConfig } from "@/config";
+import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 
 const Footer = () => {
+  const site = useSiteConfig();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -8,11 +9,11 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto px-8 lg:px-16 py-10">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs font-body text-foreground/25">
-            © {currentYear} {siteConfig.name} · {siteConfig.footer.copyright}
+            © {currentYear} {site.name} · {site.footer.copyright}
           </p>
 
           <div className="flex items-center gap-5">
-            {siteConfig.socialLinks.map((link) => (
+            {site.socialLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
@@ -25,7 +26,7 @@ const Footer = () => {
             ))}
           </div>
 
-          <p className="text-xs font-body text-foreground/20">{siteConfig.footer.slogan}</p>
+          <p className="text-xs font-body text-foreground/20">{site.footer.slogan}</p>
         </div>
       </div>
     </footer>

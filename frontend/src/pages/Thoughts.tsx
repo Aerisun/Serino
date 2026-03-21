@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 interface Thought {
@@ -86,8 +87,6 @@ const fallbackThoughts: Thought[] = [
     reposts: 11,
   },
 ];
-const config = pageConfig.thoughts;
-
 const mapRemoteThought = (entry: PublicContentEntry, index: number): Thought => {
   const fallback = fallbackThoughts[index];
 
@@ -104,6 +103,7 @@ const mapRemoteThought = (entry: PublicContentEntry, index: number): Thought => 
 };
 
 const Thoughts = () => {
+  const config = usePageConfig().thoughts as Record<string, any>;
   const [items, setItems] = useState<Thought[]>(fallbackThoughts);
 
   useEffect(() => {

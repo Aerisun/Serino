@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { motion } from "motion/react";
 import { Send } from "lucide-react";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { staggerItem } from "@/config";
+import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { createPublicGuestbookEntry, fetchPublicGuestbook } from "@/lib/api";
 
 interface Message {
@@ -92,9 +93,8 @@ const normalizeGuestbookMessage = (entry: unknown): Message => {
   };
 };
 
-const config = pageConfig.guestbook;
-
 const Guestbook = () => {
+  const config = usePageConfig().guestbook as Record<string, any>;
   const [messages, setMessages] = useState<Message[]>(fallbackMessages);
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
