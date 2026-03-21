@@ -121,6 +121,19 @@ class ContentEntryRead(ModelBase):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    category: str | None = None
+    read_time: str | None = None
+    display_date: str | None = None
+    relative_date: str | None = None
+    view_count: int | None = None
+    comment_count: int | None = None
+    like_count: int | None = None
+    repost_count: int | None = None
+    mood: str | None = None
+    weather: str | None = None
+    poem: str | None = None
+    author: str | None = None
+    source: str | None = None
 
 
 class ContentCollectionRead(ModelBase):
@@ -134,6 +147,8 @@ class GuestbookEntryRead(ModelBase):
     body: str
     status: str
     created_at: datetime
+    avatar: str | None = None
+    avatar_url: str | None = None
 
 
 class GuestbookCreate(ModelBase):
@@ -159,6 +174,11 @@ class CommentRead(ModelBase):
     body: str
     status: str
     created_at: datetime
+    avatar: str | None = None
+    avatar_url: str | None = None
+    like_count: int = 0
+    liked: bool = False
+    is_author: bool = False
     replies: list["CommentRead"] = Field(default_factory=list)
 
 

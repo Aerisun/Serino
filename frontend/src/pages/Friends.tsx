@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { RefreshCw, ChevronDown } from "lucide-react";
+import { ChevronDown, RefreshCw } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
@@ -17,6 +17,7 @@ interface Friend {
   name: string;
   desc: string;
   avatar: string;
+  url: string;
 }
 
 interface CirclePost {
@@ -24,82 +25,51 @@ interface CirclePost {
   blogName: string;
   title: string;
   date: string;
+  url: string;
 }
-
-const LOCAL_FRIENDS: Friend[] = [
-  { name: "Miku's Blog", desc: "记录生活与技术的小站", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku" },
-  { name: "AkaraChen", desc: "位于互联网边缘的小站。", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara" },
-  { name: "夏目的博客", desc: "总有人间一两风，填我十万八千梦。", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume" },
-  { name: "保罗的小宇宙", desc: "Still single, still waiting...", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul" },
-  { name: "猫羽のブログ", desc: "空中有颗星为你而亮", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Nekoha" },
-  { name: "Erhecy's Blog", desc: "欢迎来到咱的博客！", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy" },
-  { name: "轻雅阁", desc: "新时代教师的日常", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya" },
-  { name: "柏园猫のBlog", desc: "人与人虽然相距遥远，但又彼此相依", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan" },
-  { name: "Lucifer's Blog", desc: "Keep moving", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Lucifer" },
-];
-
-// All circle posts data (simulating paginated API)
-const LOCAL_CIRCLE_POSTS: CirclePost[] = [
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume", blogName: "夏目的博客", title: "网络流算法详解", date: "2026-03-18" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku", blogName: "喵二の小博客", title: "\u201C糖\u201D", date: "2026-03-16" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume", blogName: "夏目的博客", title: "一些思考", date: "2026-03-14" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy", blogName: "Erhecy's Blog", title: "在博客中优雅地添加 Bilibili 追番页面", date: "2026-03-13" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan", blogName: "空山灵雨", title: "一招解决 Origin 运行报错：找不到 mfc140u.dll", date: "2026-03-11" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara", blogName: "AkaraChen", title: "如何使用 Cloudflare API 為網站新增數據監測大屏", date: "2026-03-10" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul", blogName: "保罗的小宇宙", title: "Hand Motion Retargeting", date: "2026-03-10" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Lucifer", blogName: "Lucifer's Blog", title: "To panic! or Not to panic!", date: "2026-03-10" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya", blogName: "轻雅阁", title: "碎碎念：找实习、生病与一块薯饼的治愈", date: "2026-03-10" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy", blogName: "Erhecy's Blog", title: "从零开始的随机算法", date: "2026-03-10" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Nekoha", blogName: "猫羽のブログ", title: "AI 时代的重构方式：从 RFC 到五个 Plan", date: "2026-03-10" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan", blogName: "空山灵雨", title: "使用 Python 绘制中国省份管网老化分布地图", date: "2026-03-06" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan", blogName: "空山灵雨", title: "边缘世界新手生存指南：活过第一个殖民地", date: "2026-03-02" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Nekoha", blogName: "猫羽のブログ", title: "键盘上的春节", date: "2026-03-02" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Nekoha", blogName: "猫羽のブログ", title: "AI 时代的效率悖论：当生产力提升反而带来疲惫", date: "2026-03-01" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul", blogName: "保罗的小宇宙", title: "TraceDiary 开发复盘：我如何并行协作 4 个 Agent", date: "2026-02-27" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara", blogName: "AkaraChen", title: "Astrbot / 夕颜是如何炼成的", date: "2026-02-27" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul", blogName: "保罗的小宇宙", title: "我用 Vibe Coding 开发了一个照片标注工具 ImgStamp", date: "2026-02-26" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul", blogName: "保罗的小宇宙", title: "格式刷失灵？解决 Word 段落样式异常的问题", date: "2026-02-26" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara", blogName: "AkaraChen", title: "Gravatar Mirror", date: "2026-02-25" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan", blogName: "空山灵雨", title: "又重构了，这次用 Next.js 16", date: "2026-02-24" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Lucifer", blogName: "Lucifer's Blog", title: "ArrayBuffer 与 TypedArray 在 MP4 Box 解析中的运用", date: "2026-02-21" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya", blogName: "轻雅阁", title: "RIA Expo#8 子夜港摊位后日谈", date: "2026-02-18" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Nekoha", blogName: "猫羽のブログ", title: "年味渐淡的春节记忆", date: "2026-02-17" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku", blogName: "喵二の小博客", title: "新年快乐", date: "2026-02-12" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume", blogName: "夏目的博客", title: "Rust Programming Language -- Notes", date: "2026-02-09" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy", blogName: "Erhecy's Blog", title: "SSH Directly into Slurm Job", date: "2026-01-15" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy", blogName: "Erhecy's Blog", title: "从零开始的 Proxy Lab", date: "2026-01-11" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku", blogName: "喵二の小博客", title: "飞牛吐槽，反馈无门却被管理团队坑！", date: "2026-01-04" },
-  { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya", blogName: "轻雅阁", title: "前往 2026", date: "2026-01-04" },
-];
 
 const toFriend = (value: PublicFriend): Friend => ({
   name: value.name,
-  desc: value.description?.trim() || "记录生活与技术的小站",
-  avatar:
-    value.avatar?.trim() ||
-    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(value.name)}`,
+  desc: value.description?.trim() ?? "",
+  avatar: value.avatar?.trim() ?? "",
+  url: value.url,
 });
 
 const toCirclePost = (value: PublicFriendFeedItem): CirclePost => ({
   blogName: value.blogName,
   title: value.title,
-  date: formatFriendFeedDate(value.publishedAt) || new Date().toISOString().slice(0, 10),
-  avatar:
-    value.avatar?.trim() ||
-    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(value.blogName)}`,
+  date: formatFriendFeedDate(value.publishedAt),
+  url: value.url,
+  avatar: value.avatar?.trim() ?? "",
 });
 
 const Friends = () => {
   const config = usePageConfig().friends as Record<string, any>;
-  const [friends, setFriends] = useState<Friend[]>(LOCAL_FRIENDS);
-  const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>(LOCAL_CIRCLE_POSTS);
-  const [visibleCount, setVisibleCount] = useState(config.pageSize);
-  const [loading, setLoading] = useState(false);
+  const pageSize = Number(config.pageSize ?? 10);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>([]);
+  const [visibleCount, setVisibleCount] = useState(pageSize);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const loadMoreTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (loadMoreTimerRef.current !== null) {
+        window.clearTimeout(loadMoreTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
 
     const loadRemoteData = async () => {
+      setStatus("loading");
+      setErrorMessage("");
+
       try {
         const [friendsPayload, feedPayload] = await Promise.all([
           fetchPublicFriends(undefined, { signal: controller.signal }),
@@ -113,17 +83,20 @@ const Friends = () => {
         const nextFriends = friendsPayload.items.map(toFriend).filter((item) => Boolean(item.name));
         const nextCirclePosts = feedPayload.items
           .map(toCirclePost)
-          .filter((item) => Boolean(item.blogName && item.title));
+          .filter((item) => Boolean(item.blogName && item.title && item.url));
 
-        setFriends(nextFriends.length > 0 ? nextFriends : LOCAL_FRIENDS);
-        setAllCirclePosts(nextCirclePosts.length > 0 ? nextCirclePosts : LOCAL_CIRCLE_POSTS);
-      } catch {
-        if (controller.signal.aborted) {
-          return;
+        setFriends(nextFriends);
+        setAllCirclePosts(nextCirclePosts);
+        setVisibleCount(pageSize);
+        setStatus(nextFriends.length > 0 || nextCirclePosts.length > 0 ? "ready" : "empty");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setFriends([]);
+          setAllCirclePosts([]);
+          setVisibleCount(pageSize);
+          setStatus("error");
+          setErrorMessage(error instanceof Error ? error.message : "友链页面加载失败");
         }
-
-        setFriends(LOCAL_FRIENDS);
-        setAllCirclePosts(LOCAL_CIRCLE_POSTS);
       }
     };
 
@@ -132,24 +105,35 @@ const Friends = () => {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [pageSize, reloadKey]);
 
   useEffect(() => {
-    setVisibleCount((current) => Math.min(Math.max(current, config.pageSize), allCirclePosts.length));
-  }, [allCirclePosts.length]);
+    setVisibleCount((current) =>
+      Math.min(Math.max(current, pageSize), Math.max(allCirclePosts.length, pageSize)),
+    );
+  }, [allCirclePosts.length, pageSize]);
 
-  const loadMore = useCallback(() => {
-    if (loading || visibleCount >= allCirclePosts.length) return;
-    setLoading(true);
-    // Simulate network delay
-    setTimeout(() => {
-      setVisibleCount((c) => Math.min(c + config.pageSize, allCirclePosts.length));
-      setLoading(false);
-    }, 600);
-  }, [loading, visibleCount, allCirclePosts.length]);
-
+  const visiblePosts = useMemo(
+    () => allCirclePosts.slice(0, visibleCount),
+    [allCirclePosts, visibleCount],
+  );
   const hasMore = visibleCount < allCirclePosts.length;
-  const visiblePosts = allCirclePosts.slice(0, visibleCount);
+
+  const loadMore = () => {
+    if (loadingMore || !hasMore) {
+      return;
+    }
+
+    setLoadingMore(true);
+    loadMoreTimerRef.current = window.setTimeout(() => {
+      setVisibleCount((current) => Math.min(current + pageSize, allCirclePosts.length));
+      setLoadingMore(false);
+      loadMoreTimerRef.current = null;
+    }, 600);
+  };
+
+  const friendSkeletonCount = 9;
+  const circleSkeletonCount = Math.min(4, Math.max(1, pageSize > 0 ? 3 : 1));
 
   return (
     <PageShell
@@ -164,128 +148,220 @@ const Friends = () => {
         </span>
       }
     >
-
-        {/* Friend Grid */}
-        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-5">
-          {friends.map((friend, i) => (
-            <motion.div
-              key={friend.name}
-              className="group flex flex-col items-center rounded-2xl px-4 py-8 text-center transition-colors hover:bg-foreground/[0.04]"
-              {...staggerItem(i, {
-                baseDelay: config.motion.delay,
-                step: config.motion.stagger,
-                duration: config.motion.duration,
-              })}
-            >
-              <div className="h-16 w-16 overflow-hidden rounded-full bg-foreground/[0.04]">
-                <img
-                  src={friend.avatar}
-                  alt={friend.name}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  loading="lazy"
-                />
+      <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-5">
+        {status === "loading" && friends.length === 0
+          ? Array.from({ length: friendSkeletonCount }).map((_, index) => (
+              <motion.div
+                key={`friend-skeleton-${index}`}
+                className="group flex flex-col items-center rounded-2xl px-4 py-8 text-center"
+                {...staggerItem(index, {
+                  baseDelay: config.motion.delay,
+                  step: config.motion.stagger,
+                  duration: config.motion.duration,
+                })}
+              >
+                <div className="h-16 w-16 animate-pulse rounded-full bg-foreground/[0.04]" />
+                <div className="mt-4 h-4 w-20 animate-pulse rounded-full bg-foreground/[0.05]" />
+                <div className="mt-2 h-3 w-full max-w-[8rem] animate-pulse rounded-full bg-foreground/[0.035]" />
+                <div className="mt-1.5 h-3 w-4/5 animate-pulse rounded-full bg-foreground/[0.035]" />
+                <div className="mt-3 h-3 w-14 animate-pulse rounded-full bg-foreground/[0.03]" />
+              </motion.div>
+            ))
+          : friends.length > 0
+            ? friends.map((friend, index) => (
+                <motion.a
+                  key={friend.name}
+                  href={friend.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex flex-col items-center rounded-2xl px-4 py-8 text-center transition-colors hover:bg-foreground/[0.04]"
+                  {...staggerItem(index, {
+                    baseDelay: config.motion.delay,
+                    step: config.motion.stagger,
+                    duration: config.motion.duration,
+                  })}
+                >
+                  <div className="h-16 w-16 overflow-hidden rounded-full bg-foreground/[0.04]">
+                    {friend.avatar ? (
+                      <img
+                        src={friend.avatar}
+                        alt={friend.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    ) : null}
+                  </div>
+                  <p className="mt-4 text-sm font-medium text-foreground/80 transition-colors group-hover:text-foreground">
+                    {friend.name}
+                  </p>
+                  {friend.desc ? (
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/30">
+                      {friend.desc}
+                    </p>
+                  ) : null}
+                </motion.a>
+              ))
+            : (
+              <div className="col-span-full rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-8 text-center">
+                <p className="text-sm text-foreground/35">
+                  {status === "error" ? errorMessage || String(config.emptyMessage ?? "") : String(config.emptyMessage ?? "")}
+                </p>
+                {status === "error" && (
+                  <button
+                    type="button"
+                    onClick={() => setReloadKey((value) => value + 1)}
+                    className="mt-3 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70"
+                  >
+                    {String(config.retryLabel ?? "")}
+                  </button>
+                )}
               </div>
-              <p className="mt-4 text-sm font-medium text-foreground/80 group-hover:text-foreground transition-colors">
-                {friend.name}
-              </p>
-              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/30">
-                {friend.desc}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+            )}
+      </div>
 
-        {/* Divider */}
-        <div className="mt-16 mb-10 border-t border-foreground/[0.06]" />
+      <div className="mb-10 mt-16 border-t border-foreground/[0.06]" />
 
-        {/* Friend Circle Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: config.motion.duration + 0.05, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="flex items-baseline justify-between mb-2">
-            <h2 className="text-2xl font-heading italic tracking-tight text-foreground sm:text-3xl">
-              {config.circleTitle}
-            </h2>
-            <div className="text-xs font-body text-foreground/25 flex items-center gap-1.5">
-              <RefreshCw className="h-3 w-3" />
-              {config.statusLabel}
-            </div>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: config.motion.duration + 0.05, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="mb-2 flex items-baseline justify-between">
+          <h2 className="text-2xl font-heading italic tracking-tight text-foreground sm:text-3xl">
+            {String(config.circleTitle ?? "")}
+          </h2>
+          <div className="flex items-center gap-1.5 text-xs font-body text-foreground/25">
+            <RefreshCw className={`h-3 w-3 ${status === "loading" ? "animate-spin" : ""}`} />
+            {String(config.statusLabel ?? "")}
           </div>
-          <p className="text-xs font-body text-foreground/20 mb-8">
-            {formatFriendCircleSubtitle(friends.length, allCirclePosts.length)}
-          </p>
-        </motion.div>
+        </div>
+        <p className="mb-8 text-xs font-body text-foreground/20">
+          {formatFriendCircleSubtitle(friends.length, allCirclePosts.length)}
+        </p>
+      </motion.div>
 
-        {/* Circle Posts */}
+      {status === "loading" && visiblePosts.length === 0 ? (
         <div className="flex flex-col">
-          {visiblePosts.map((post, i) => (
+          {Array.from({ length: circleSkeletonCount }).map((_, index) => (
             <motion.div
-              key={`${post.blogName}-${post.date}-${i}`}
-              className="group flex items-start gap-3.5 py-4 border-t border-foreground/[0.05] transition-colors hover:bg-foreground/[0.02] -mx-3 px-3 rounded-lg"
-              {...staggerItem(i, {
+              key={`circle-skeleton-${index}`}
+              className="group -mx-3 flex items-start gap-3.5 rounded-lg border-t border-foreground/[0.05] px-3 py-4"
+              {...staggerItem(index, {
                 baseDelay: 0,
                 step: 0.03,
                 duration: 0.35,
               })}
             >
-              {/* Avatar */}
-              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06] mt-0.5">
-                <img
-                  src={post.avatar}
-                  alt={post.blogName}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
+              <div className="mt-0.5 h-9 w-9 shrink-0 animate-pulse overflow-hidden rounded-full bg-foreground/[0.06]" />
+              <div className="min-w-0 flex-1">
+                <div className="h-3.5 w-24 animate-pulse rounded-full bg-foreground/[0.04]" />
+                <div className="mt-2 h-4 w-[80%] animate-pulse rounded-full bg-foreground/[0.035]" />
+                <div className="mt-1.5 h-4 w-[68%] animate-pulse rounded-full bg-foreground/[0.035]" />
+              </div>
+              <div className="mt-1 h-3.5 w-12 shrink-0 animate-pulse rounded-full bg-foreground/[0.03]" />
+            </motion.div>
+          ))}
+        </div>
+      ) : visiblePosts.length > 0 ? (
+        <div className="flex flex-col">
+          {visiblePosts.map((post, index) => (
+            <motion.a
+              key={`${post.blogName}-${post.date}-${index}`}
+              href={post.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group -mx-3 flex items-start gap-3.5 rounded-lg border-t border-foreground/[0.05] px-3 py-4 transition-colors hover:bg-foreground/[0.02]"
+              {...staggerItem(index, {
+                baseDelay: 0,
+                step: 0.03,
+                duration: 0.35,
+              })}
+            >
+              <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]">
+                {post.avatar ? (
+                  <img
+                    src={post.avatar}
+                    alt={post.blogName}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : null}
               </div>
 
-              {/* Content */}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-body text-foreground/25 truncate">
+                <p className="truncate text-sm font-body text-foreground/25">
                   {post.blogName}
                 </p>
-                <p className="text-[15px] font-body font-medium text-foreground/80 group-hover:text-foreground transition-colors leading-snug mt-0.5 line-clamp-2">
+                <p className="mt-0.5 line-clamp-2 text-[15px] font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-foreground">
                   {post.title}
                 </p>
               </div>
 
-              {/* Date */}
-              <span className="text-[11px] font-body text-foreground/20 shrink-0 mt-1 tabular-nums">
-                📅 {post.date}
+              <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20">
+                {post.date ? `📅 ${post.date}` : ""}
               </span>
-            </motion.div>
+            </motion.a>
           ))}
         </div>
-
-        {/* Load More */}
-        {hasMore && (
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={loadMore}
-              disabled={loading}
-              className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-body text-foreground/50 liquid-glass hover:text-foreground/70 transition-colors active:scale-[0.97] disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  {config.loadingLabel}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3.5 w-3.5" />
-                  {config.loadMoreLabel}
-                </>
-              )}
-            </button>
+      ) : (
+        <div className="flex flex-col">
+          <div className="group -mx-3 flex items-start gap-3.5 rounded-lg border-t border-foreground/[0.05] px-3 py-4">
+            <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-body text-foreground/25">
+                {status === "error" ? String(config.retryLabel ?? "") : String(config.emptyMessage ?? "")}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[15px] font-body font-medium leading-snug text-foreground/35">
+                {status === "error"
+                  ? errorMessage || String(config.emptyMessage ?? "")
+                  : String(config.emptyMessage ?? "")}
+              </p>
+            </div>
+            {status === "error" ? (
+              <button
+                type="button"
+                onClick={() => setReloadKey((value) => value + 1)}
+                className="mt-1 shrink-0 rounded-full liquid-glass px-3 py-1.5 text-[11px] font-medium text-foreground/55"
+              >
+                {String(config.retryLabel ?? "")}
+              </button>
+            ) : (
+              <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20">
+                --
+              </span>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {!hasMore && (
-          <p className="mt-8 text-center text-xs font-body text-foreground/15">
-            {friends.length} links with {friends.length} active · {allCirclePosts.length} articles in total
-          </p>
-        )}
+      {hasMore && (
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-body text-foreground/50 liquid-glass hover:text-foreground/70 transition-colors active:scale-[0.97] disabled:opacity-50"
+          >
+            {loadingMore ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                {String(config.loadingLabel ?? "")}
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" />
+                {String(config.loadMoreLabel ?? "")}
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {!hasMore && status === "ready" && (
+        <p className="mt-8 text-center text-xs font-body text-foreground/15">
+          {friends.length} links with {friends.length} active · {allCirclePosts.length} articles in total
+        </p>
+      )}
     </PageShell>
   );
 };

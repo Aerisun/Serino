@@ -6,11 +6,14 @@ import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 
 const NotFound = () => {
   const location = useLocation();
-  const config = usePageConfig().notFound as Record<string, any>;
+  const config = (usePageConfig().notFound as Record<string, unknown> | undefined) ?? {};
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 text-foreground">
-      <PageMeta title={config.metaTitle} description={config.metaDescription} />
+      <PageMeta
+        title={String(config.metaTitle ?? config.title ?? "")}
+        description={String(config.metaDescription ?? config.description ?? "")}
+      />
       <div
         className="absolute inset-0 opacity-70"
         aria-hidden="true"
@@ -37,7 +40,7 @@ const NotFound = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-foreground/25">404</p>
             <h1 className="mt-2 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-              {config.title}
+              {String(config.title ?? "")}
             </h1>
           </div>
           <p className="max-w-sm text-sm leading-7 text-foreground/45">
@@ -45,7 +48,7 @@ const NotFound = () => {
             <span className="rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[0.8em] text-foreground/70">
               {location.pathname}
             </span>{" "}
-            {config.description}
+            {String(config.description ?? "")}
           </p>
         </div>
 

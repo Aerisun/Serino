@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Reply, ChevronDown } from "lucide-react";
 import { transition } from "@/config";
-import { apiClient } from "@/lib/api";
+import {
+  createPublicComment,
+  createPublicReaction,
+  fetchPublicComments,
+  fetchPublicReaction,
+  type PublicComment,
+} from "@/lib/api";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -14,6 +20,7 @@ interface Comment {
   content: string;
   likes: number;
   liked?: boolean;
+  isAuthor?: boolean;
   replies?: Comment[];
 }
 
@@ -31,75 +38,32 @@ type RemoteCommentRecord = {
   content?: string;
   message?: string;
   likes?: number;
+  like_count?: number;
   liked?: boolean;
+  is_author?: boolean;
   replies?: RemoteCommentRecord[];
   children?: RemoteCommentRecord[];
 };
-
-type ReactionResponse = {
-  total?: number;
-};
-
-const mockComments: Comment[] = [
-  {
-    id: "1",
-    author: "林小北",
-    avatar: "北",
-    date: "2 小时前",
-    content: "写得真好，尤其是关于节奏感的那段，让我重新思考了自己的排版方式。",
-    likes: 12,
-    replies: [
-      {
-        id: "11",
-        author: "博主",
-        avatar: "我",
-        date: "1 小时前",
-        content: "谢谢！排版确实是一个容易被忽略但影响很大的部分。",
-        likes: 3,
-      },
-    ],
-  },
-  {
-    id: "2",
-    author: "设计小白",
-    avatar: "白",
-    date: "5 小时前",
-    content: "作为刚入行的设计师，这篇文章给了我很多启发。收藏了！",
-    likes: 8,
-  },
-  {
-    id: "3",
-    author: "代码诗人",
-    avatar: "诗",
-    date: "昨天",
-    content: "从技术实现的角度来说，这些思路也完全适用于组件化开发。好的组件和好的排版一样，都需要节奏。",
-    likes: 15,
-    replies: [
-      {
-        id: "31",
-        author: "林小北",
-        avatar: "北",
-        date: "昨天",
-        content: "同意！设计和开发本质上是相通的。",
-        likes: 4,
-      },
-      {
-        id: "32",
-        author: "博主",
-        avatar: "我",
-        date: "12 小时前",
-        content: "没错，我一直觉得写代码和做设计的思维方式很像，都是在约束中寻找最优解。",
-        likes: 6,
-      },
-    ],
-  },
-];
 
 interface CommentItemProps {
   comment: Comment;
   isReply?: boolean;
   onReply: (comment: Comment) => void;
 }
+
+interface CommentSectionProps {
+  commentCount?: number;
+  likeCount?: number;
+  contentType?: "posts" | "diary";
+  contentSlug?: string;
+}
+
+const AVATAR_OPTIONS = ["🐱", "🐶", "🦊", "🐼", "🐨", "🦁", "🐸", "🐧", "🦋", "🌸", "🍀", "⭐"];
+
+const VIEWER_TOKEN_STORAGE_KEY = "aerisun:engagement:viewer-token";
+
+const getContentReactionStorageKey = (contentType: string, slug: string) =>
+  `aerisun:engagement:reaction:${contentType}:${slug}:like`;
 
 const isImageAvatar = (avatar: string) => /^https?:\/\//.test(avatar);
 
@@ -133,11 +97,6 @@ const extractCommentItems = (payload: unknown): RemoteCommentRecord[] => {
 const countCommentTree = (items: Comment[]) =>
   items.reduce((total, item) => total + 1 + countCommentTree(item.replies ?? []), 0);
 
-const VIEWER_TOKEN_STORAGE_KEY = "aerisun:engagement:viewer-token";
-
-const getContentReactionStorageKey = (contentType: string, slug: string) =>
-  `aerisun:engagement:reaction:${contentType}:${slug}:like`;
-
 const getViewerToken = () => {
   if (typeof window === "undefined") {
     return undefined;
@@ -158,17 +117,17 @@ const getViewerToken = () => {
 
 const normalizeCommentNode = (record: RemoteCommentRecord): Comment => {
   const author = String(record.author_name ?? record.author ?? record.name ?? record.nickname ?? "访客");
-  const avatar = String(record.avatar ?? record.avatar_url ?? (author.slice(0, 1) || "访客"));
   const children = record.replies ?? record.children ?? [];
 
   return {
     id: String(record.id ?? `${author}-${record.created_at ?? record.date ?? Date.now()}`),
     author,
-    avatar,
+    avatar: String(record.avatar ?? record.avatar_url ?? (author.slice(0, 1) || "访")),
     date: formatDisplayDate(record.date ?? record.created_at),
     content: String(record.body ?? record.content ?? record.message ?? ""),
-    likes: Number(record.likes ?? 0),
+    likes: Number(record.like_count ?? record.likes ?? 0),
     liked: Boolean(record.liked),
+    isAuthor: Boolean(record.is_author) || author === "博主",
     replies: children.map(normalizeCommentNode),
   };
 };
@@ -191,26 +150,36 @@ const insertReply = (items: Comment[], parentId: string | null, reply: Comment):
   });
 };
 
+const replaceComment = (items: Comment[], targetId: string, nextComment: Comment): Comment[] =>
+  items.map((item) => {
+    if (item.id === targetId) {
+      return nextComment;
+    }
+
+    if (item.replies?.length) {
+      return { ...item, replies: replaceComment(item.replies, targetId, nextComment) };
+    }
+
+    return item;
+  });
+
 const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) => {
   const [liked, setLiked] = useState(comment.liked || false);
   const [likes, setLikes] = useState(comment.likes);
   const [showReplies, setShowReplies] = useState(true);
-  const isAuthor = comment.author === "博主";
+  const isAuthor = Boolean(comment.isAuthor) || comment.author === "博主";
 
   const handleLike = () => {
     setLiked(!liked);
-    setLikes((l) => (liked ? l - 1 : l + 1));
+    setLikes((value) => (liked ? value - 1 : value + 1));
   };
 
   return (
-    <div className={isReply ? "" : ""}>
+    <div>
       <div className="flex gap-3">
-        {/* Avatar */}
         <div
           className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden text-xs font-body font-medium ${
-            isAuthor
-              ? "bg-foreground/15 text-foreground/70"
-              : "bg-foreground/5 text-foreground/35"
+            isAuthor ? "bg-foreground/15 text-foreground/70" : "bg-foreground/5 text-foreground/35"
           }`}
         >
           {isImageAvatar(comment.avatar) ? (
@@ -221,7 +190,6 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* Author + date */}
           <div className="flex items-center gap-2">
             <span className={`text-sm font-body font-medium ${isAuthor ? "text-foreground/70" : "text-foreground/55"}`}>
               {comment.author}
@@ -234,14 +202,11 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
             <span className="text-[11px] font-body text-foreground/20">{comment.date}</span>
           </div>
 
-          {/* Content */}
-          <p className="mt-1.5 text-sm font-body text-foreground/45 leading-relaxed">
-            {comment.content}
-          </p>
+          <p className="mt-1.5 text-sm font-body text-foreground/45 leading-relaxed">{comment.content}</p>
 
-          {/* Actions */}
           <div className="mt-2 flex items-center gap-4">
             <button
+              type="button"
               onClick={handleLike}
               className={`flex items-center gap-1 text-[11px] font-body transition-colors active:scale-95 ${
                 liked ? "text-red-400/70" : "text-foreground/20 hover:text-foreground/40"
@@ -251,6 +216,7 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
               {likes > 0 && likes}
             </button>
             <button
+              type="button"
               onClick={() => onReply(comment)}
               className="flex items-center gap-1 text-[11px] font-body text-foreground/20 hover:text-foreground/40 transition-colors active:scale-95"
             >
@@ -259,11 +225,11 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
             </button>
           </div>
 
-          {/* Replies */}
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-3">
               {!isReply && comment.replies.length > 1 && (
                 <button
+                  type="button"
                   onClick={() => setShowReplies(!showReplies)}
                   className="flex items-center gap-1 text-[11px] font-body text-foreground/25 hover:text-foreground/40 transition-colors mb-2"
                 >
@@ -294,33 +260,22 @@ const CommentItem = ({ comment, isReply = false, onReply }: CommentItemProps) =>
   );
 };
 
-interface CommentSectionProps {
-  commentCount?: number;
-  likeCount?: number;
-  contentType?: "posts" | "diary";
-  contentSlug?: string;
-}
-
-const AVATAR_OPTIONS = ["🐱", "🐶", "🦊", "🐼", "🐨", "🦁", "🐸", "🐧", "🦋", "🌸", "🍀", "⭐"];
-
-const CommentSection = ({
-  commentCount,
-  likeCount = 42,
-  contentType,
-  contentSlug,
-}: CommentSectionProps) => {
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+const CommentSection = ({ commentCount, likeCount, contentType, contentSlug }: CommentSectionProps) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
   const [newComment, setNewComment] = useState("");
   const [nickname, setNickname] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState("🐱");
+  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_OPTIONS[0]);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(likeCount);
-  const [hasRemoteComments, setHasRemoteComments] = useState(false);
+  const [likeTotal, setLikeTotal] = useState<number | null>(typeof likeCount === "number" ? likeCount : null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReacting, setIsReacting] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const prefersReducedMotion = useReducedMotionPreference();
   const location = useLocation();
   const { id } = useParams();
@@ -352,9 +307,14 @@ const CommentSection = ({
   }, [contentContext?.contentType, contentContext?.slug]);
 
   useEffect(() => {
-    setComments(mockComments);
-    setHasRemoteComments(false);
-    setLikes(likeCount);
+    setComments([]);
+    setStatus(contentContext?.slug ? "loading" : "empty");
+    setErrorMessage("");
+    setLikeTotal(typeof likeCount === "number" ? likeCount : null);
+    setNewComment("");
+    setReplyTo(null);
+    setReplyTargetId(null);
+    setShowAvatarPicker(false);
   }, [contentContext?.contentType, contentContext?.slug, likeCount]);
 
   useEffect(() => {
@@ -362,43 +322,66 @@ const CommentSection = ({
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
 
     const loadComments = async () => {
       try {
-        const payload = await apiClient.get<unknown>(
-          `/api/v1/public/comments/${contentContext.contentType}/${encodeURIComponent(contentContext.slug)}`,
-        );
-        const remoteComments = extractCommentItems(payload).map(normalizeCommentNode);
-
-        if (!cancelled) {
-          setComments(remoteComments);
-          setHasRemoteComments(true);
+        const payload = await fetchPublicComments(contentContext.contentType, contentContext.slug, {
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) {
+          return;
         }
-      } catch {
-        if (!cancelled) {
-          setHasRemoteComments(false);
+
+        const nextComments = extractCommentItems(payload).map(normalizeCommentNode);
+        setComments(nextComments);
+        setStatus(nextComments.length > 0 ? "ready" : "empty");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setComments([]);
+          setStatus("error");
+          setErrorMessage(error instanceof Error ? error.message : "评论加载失败");
         }
       }
     };
 
+    const loadReactionTotal = async () => {
+      try {
+        const payload = await fetchPublicReaction(contentContext.contentType, contentContext.slug, "like", {
+          signal: controller.signal,
+        });
+        if (!controller.signal.aborted && typeof payload.total === "number") {
+          setLikeTotal(payload.total);
+        }
+      } catch {
+        // Keep the externally supplied count if the read endpoint is unavailable.
+      }
+    };
+
     void loadComments();
+    void loadReactionTotal();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [contentContext?.contentType, contentContext?.slug]);
+  }, [contentContext?.contentType, contentContext?.slug, reloadKey]);
 
   const handleReply = (comment: Comment) => {
     setReplyTo(comment.author);
     setReplyTargetId(comment.id);
-    setNewComment(`@${comment.author} `);
-    if (!showComments) setShowComments(true);
+    setNewComment((current) => (current.startsWith(`@${comment.author} `) ? current : `@${comment.author} `));
+    setShowComments(true);
   };
 
   const handleSubmit = async () => {
-    if (!newComment.trim() || !nickname.trim() || isSubmitting) return;
+    if (!contentContext?.slug || !newComment.trim() || !nickname.trim() || isSubmitting) {
+      return;
+    }
 
+    const draftComment = newComment;
+    const draftReplyTo = replyTo;
+    const draftReplyTargetId = replyTargetId;
+    const previousComments = comments;
     const optimisticComment: Comment = {
       id: `local-${Date.now()}`,
       author: nickname.trim(),
@@ -409,49 +392,57 @@ const CommentSection = ({
       replies: [],
     };
 
+    setErrorMessage("");
+    setIsSubmitting(true);
     setComments((current) => insertReply(current, replyTargetId, optimisticComment));
+    setStatus("ready");
     setNewComment("");
     setReplyTo(null);
     setReplyTargetId(null);
-    setIsSubmitting(true);
+    setShowAvatarPicker(false);
 
-    if (contentContext?.slug) {
-      try {
-        await apiClient.post(
-          `/api/v1/public/comments/${contentContext.contentType}/${encodeURIComponent(contentContext.slug)}`,
-          {
-            author_name: optimisticComment.author,
-            body: optimisticComment.content,
-            parent_id: replyTargetId,
-          },
-          { credentials: "include" },
-        );
-      } catch {
-        // Keep the optimistic local entry as fallback if the backend is unavailable.
-      }
+    try {
+      const response = await createPublicComment(
+        contentContext.contentType,
+        contentContext.slug,
+        {
+          author_name: optimisticComment.author,
+          body: optimisticComment.content,
+          parent_id: draftReplyTargetId,
+        },
+        { credentials: "include" },
+      );
+
+      const savedComment = normalizeCommentNode(response.item as PublicComment);
+      setComments((current) =>
+        replaceComment(current, optimisticComment.id, {
+          ...savedComment,
+          avatar: optimisticComment.avatar,
+        }),
+      );
+    } catch (error) {
+      setComments(previousComments);
+      setStatus(previousComments.length > 0 ? "ready" : "empty");
+      setErrorMessage(error instanceof Error ? error.message : "评论提交失败");
+      setNewComment(draftComment);
+      setReplyTo(draftReplyTo);
+      setReplyTargetId(draftReplyTargetId);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   const handleLikeToggle = async () => {
-    if (liked) {
+    if (!contentContext?.slug || liked || isReacting) {
       return;
     }
 
-    const nextLikes = likes + 1;
-    setLiked(true);
-    setLikes(nextLikes);
-
-    if (!contentContext?.slug) {
-      return;
-    }
-
-    const reactionStorageKey = getContentReactionStorageKey(contentContext.contentType, contentContext.slug);
+    const previousTotal = likeTotal;
+    setIsReacting(true);
+    setErrorMessage("");
 
     try {
-      const payload = await apiClient.post<ReactionResponse>(
-        "/api/v1/public/reactions",
+      const payload = await createPublicReaction(
         {
           content_type: contentContext.contentType,
           content_slug: contentContext.slug,
@@ -460,18 +451,22 @@ const CommentSection = ({
         },
         { credentials: "include" },
       );
-      setLikes(typeof payload.total === "number" ? payload.total : nextLikes);
+      setLiked(true);
+      setLikeTotal(typeof payload.total === "number" ? payload.total : (previousTotal ?? 0) + 1);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(reactionStorageKey, "true");
+        const storageKey = getContentReactionStorageKey(contentContext.contentType, contentContext.slug);
+        window.localStorage.setItem(storageKey, "true");
       }
-    } catch {
-      // Keep the local optimistic state if the backend is unavailable.
+    } catch (error) {
+      setLiked(false);
+      setLikeTotal(previousTotal);
+      setErrorMessage(error instanceof Error ? error.message : "点赞失败");
+    } finally {
+      setIsReacting(false);
     }
   };
 
-  const total = hasRemoteComments
-    ? countCommentTree(comments)
-    : commentCount ?? countCommentTree(comments);
+  const total = status === "ready" ? countCommentTree(comments) : commentCount ?? countCommentTree(comments);
 
   return (
     <motion.div
@@ -480,20 +475,24 @@ const CommentSection = ({
       animate={{ opacity: 1, y: 0 }}
       transition={transition({ duration: 0.5, delay: 0.2, reducedMotion: prefersReducedMotion })}
     >
-      {/* Action buttons */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="mb-6 flex items-center gap-3">
         <button
+          type="button"
           onClick={handleLikeToggle}
-          className={`liquid-glass rounded-2xl px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] ${
+          disabled={liked || isReacting || !contentContext?.slug}
+          className={`liquid-glass rounded-2xl px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] disabled:opacity-50 ${
             liked ? "text-red-400/80" : "text-foreground/40 hover:text-foreground/60"
           }`}
         >
           <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-          <span className="text-sm font-body font-medium tabular-nums">{likes}</span>
+          <span className="text-sm font-body font-medium tabular-nums">
+            {typeof likeTotal === "number" ? likeTotal : 0}
+          </span>
         </button>
 
         <button
-          onClick={() => setShowComments(!showComments)}
+          type="button"
+          onClick={() => setShowComments((value) => !value)}
           className={`liquid-glass rounded-2xl px-5 py-3 flex items-center gap-2 transition-all active:scale-[0.97] ${
             showComments ? "text-foreground/70" : "text-foreground/40 hover:text-foreground/60"
           }`}
@@ -503,7 +502,6 @@ const CommentSection = ({
         </button>
       </div>
 
-      {/* Comments area — toggled */}
       <AnimatePresence>
         {showComments && (
           <motion.div
@@ -513,11 +511,11 @@ const CommentSection = ({
             transition={transition({ duration: 0.35, reducedMotion: prefersReducedMotion })}
             className="overflow-hidden"
           >
-            {/* Input */}
             <div className="liquid-glass rounded-2xl p-4 mb-8">
               <div className="flex items-center gap-3 mb-3 pb-3 border-b border-foreground/5">
                 <div className="relative">
                   <button
+                    type="button"
                     onClick={() => setShowAvatarPicker(!showAvatarPicker)}
                     className="w-9 h-9 rounded-full bg-foreground/5 flex items-center justify-center text-lg hover:bg-foreground/10 transition-colors active:scale-95 overflow-hidden"
                   >
@@ -539,6 +537,7 @@ const CommentSection = ({
                         {AVATAR_OPTIONS.map((emoji) => (
                           <button
                             key={emoji}
+                            type="button"
                             onClick={() => {
                               setSelectedAvatar(emoji);
                               setShowAvatarPicker(false);
@@ -558,20 +557,19 @@ const CommentSection = ({
                 <input
                   type="text"
                   value={nickname}
-                  onChange={(e) => setNickname(e.target.value.slice(0, 20))}
+                  onChange={(event) => setNickname(event.target.value.slice(0, 20))}
                   placeholder="你的昵称"
                   maxLength={20}
                   className="flex-1 bg-transparent text-sm font-body text-foreground/60 placeholder:text-foreground/15 outline-none"
                 />
-                <span className="text-[10px] font-body text-foreground/15 shrink-0">
-                  {nickname.length}/20
-                </span>
+                <span className="text-[10px] font-body text-foreground/15 shrink-0">{nickname.length}/20</span>
               </div>
 
               {replyTo && (
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[11px] font-body text-foreground/25">回复 {replyTo}</span>
                   <button
+                    type="button"
                     onClick={() => {
                       setReplyTo(null);
                       setReplyTargetId(null);
@@ -583,19 +581,20 @@ const CommentSection = ({
                   </button>
                 </div>
               )}
+
               <textarea
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                onChange={(event) => setNewComment(event.target.value)}
                 placeholder="写下你的想法..."
                 rows={3}
                 maxLength={500}
                 className="w-full bg-transparent text-sm font-body text-foreground/60 placeholder:text-foreground/15 outline-none resize-none leading-relaxed"
               />
+
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-foreground/5">
-                <span className="text-[11px] font-body text-foreground/15">
-                  {newComment.length}/500
-                </span>
+                <span className="text-[11px] font-body text-foreground/15">{newComment.length}/500</span>
                 <button
+                  type="button"
                   onClick={handleSubmit}
                   disabled={!newComment.trim() || !nickname.trim() || isSubmitting}
                   className="px-4 py-1.5 rounded-xl text-xs font-body font-medium transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed bg-foreground/10 text-foreground/60 hover:bg-foreground/15 hover:text-foreground/80"
@@ -605,22 +604,72 @@ const CommentSection = ({
               </div>
             </div>
 
-            {/* Comments list */}
             <div className="flex flex-col gap-6">
-              {comments.map((comment, i) => (
-                <motion.div
-                  key={comment.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={transition({
-                    duration: 0.35,
-                    delay: prefersReducedMotion ? 0 : 0.05 + i * 0.05,
-                    reducedMotion: prefersReducedMotion,
-                  })}
-                >
-                  <CommentItem comment={comment} onReply={handleReply} />
-                </motion.div>
-              ))}
+              {status === "loading" &&
+                Array.from({ length: 3 }, (_, index) => (
+                  <div key={`comment-skeleton-${index}`} className="flex gap-3">
+                    <div className="h-8 w-8 shrink-0 rounded-full bg-foreground/[0.05]" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3.5 w-20 rounded-full bg-foreground/[0.04]" />
+                        <div className="h-3 w-14 rounded-full bg-foreground/[0.03]" />
+                      </div>
+                      <div className="mt-2 h-3.5 w-[82%] rounded-full bg-foreground/[0.035]" />
+                      <div className="mt-1.5 h-3.5 w-[68%] rounded-full bg-foreground/[0.03]" />
+                    </div>
+                  </div>
+                ))}
+
+              {status === "error" && (
+                <div className="flex gap-3">
+                  <div className="h-8 w-8 shrink-0 rounded-full bg-foreground/[0.05]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-body font-medium text-foreground/55">评论加载失败</span>
+                      <button
+                        type="button"
+                        onClick={() => setReloadKey((value) => value + 1)}
+                        className="text-[11px] font-body text-foreground/25 transition-colors hover:text-foreground/45"
+                      >
+                        重试
+                      </button>
+                    </div>
+                    <p className="mt-1.5 text-sm font-body leading-relaxed text-foreground/35">
+                      {errorMessage || "请稍后再试。"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {status === "empty" && (
+                <div className="flex gap-3">
+                  <div className="h-8 w-8 shrink-0 rounded-full bg-foreground/[0.05]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-body font-medium text-foreground/50">还没有评论</span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-body leading-relaxed text-foreground/35">
+                      留下第一条吧。
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {status === "ready" &&
+                comments.map((comment, index) => (
+                  <motion.div
+                    key={comment.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={transition({
+                      duration: 0.35,
+                      delay: prefersReducedMotion ? 0 : 0.05 + index * 0.05,
+                      reducedMotion: prefersReducedMotion,
+                    })}
+                  >
+                    <CommentItem comment={comment} onReply={handleReply} />
+                  </motion.div>
+                ))}
             </div>
           </motion.div>
         )}

@@ -11,90 +11,43 @@ interface FriendPost {
   url?: string;
 }
 
-const LOCAL_FRIEND_POSTS: FriendPost[] = [
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume",
-    blogName: "夏目的博客",
-    title: "网络流算法详解",
-    date: "2026-03-18",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku",
-    blogName: "喵二の小博客",
-    title: "\u201C糖\u201D",
-    date: "2026-03-16",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume",
-    blogName: "夏目的博客",
-    title: "一些思考",
-    date: "2026-03-14",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy",
-    blogName: "Erhecy's Blog",
-    title: "在博客中优雅地添加 Bilibili 追番页面",
-    date: "2026-03-13",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan",
-    blogName: "空山灵雨",
-    title: "一招解决 Origin 运行报错：找不到 mfc140u.dll",
-    date: "2026-03-11",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara",
-    blogName: "AkaraChen",
-    title: "如何使用 Cloudflare API 為網站新增數據監測大屏",
-    date: "2026-03-10",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul",
-    blogName: "保罗的小宇宙",
-    title: "Hand Motion Retargeting",
-    date: "2026-03-10",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Lucifer",
-    blogName: "Lucifer's Blog",
-    title: "To panic! or Not to panic!",
-    date: "2026-03-10",
-  },
-  {
-    avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya",
-    blogName: "轻雅阁",
-    title: "Spring Boot 3 迁移指南",
-    date: "2026-03-08",
-  },
-];
-
 const normalizeFriendPost = (value: PublicFriendFeedItem): FriendPost => ({
-  avatar:
-    value.avatar?.trim() ||
-    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(value.blogName)}`,
+  avatar: value.avatar?.trim() ?? "",
   blogName: value.blogName,
   title: value.title,
-  date: formatFriendFeedDate(value.publishedAt) || "最近",
+  date: formatFriendFeedDate(value.publishedAt),
   url: value.url,
 });
 
 const FriendCircle = () => {
   const navigate = useNavigate();
-  const [friendPosts, setFriendPosts] = useState<FriendPost[]>(LOCAL_FRIEND_POSTS);
+  const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
 
     const loadFriendFeed = async () => {
+      setStatus("loading");
+      setErrorMessage("");
+
       try {
         const payload = await fetchPublicFriendFeed(12, { signal: controller.signal });
-        const remotePosts = payload.items.map(normalizeFriendPost);
-
-        if (!controller.signal.aborted && remotePosts.length > 0) {
-          setFriendPosts(remotePosts);
+        if (controller.signal.aborted) {
+          return;
         }
-      } catch {
-        // Keep the local mock fallback.
+
+        const nextPosts = payload.items.map(normalizeFriendPost);
+        setFriendPosts(nextPosts);
+        setStatus(nextPosts.length > 0 ? "ready" : "empty");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setFriendPosts([]);
+          setStatus("error");
+          setErrorMessage(error instanceof Error ? error.message : "友邻动态加载失败");
+        }
       }
     };
 
@@ -103,60 +56,109 @@ const FriendCircle = () => {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [reloadKey]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-baseline justify-between mb-5">
-        <h3 className="text-sm font-body font-medium text-foreground/50 uppercase tracking-widest">
+    <div className="flex h-full flex-col">
+      <div className="mb-5 flex items-baseline justify-between">
+        <h3 className="text-sm font-body font-medium uppercase tracking-widest text-foreground/50">
           朋友圈
         </h3>
         <button
           onClick={() => navigate("/friends")}
-          className="text-[11px] font-body text-foreground/30 hover:text-foreground/50 transition-colors flex items-center gap-1"
+          className="flex items-center gap-1 text-[11px] font-body text-foreground/30 transition-colors hover:text-foreground/50"
         >
           查看全部 <ArrowUpRight className="h-3 w-3" />
         </button>
       </div>
 
-      <div className="overflow-y-auto max-h-[420px] scrollbar-hide pr-1 -mr-1 flex flex-col gap-0.5">
-        {friendPosts.map((post, i) => (
-          <button
-            type="button"
-            key={i}
-            className="group flex w-full items-start gap-3 rounded-xl px-2.5 py-3 text-left transition-colors hover:bg-foreground/[0.04]"
-            onClick={() => {
-              if (post.url) {
-                window.open(post.url, "_blank", "noopener,noreferrer");
-              }
-            }}
-          >
-            {/* Avatar */}
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06] mt-0.5">
-              <img
-                src={post.avatar}
-                alt={post.blogName}
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            </div>
-
-            {/* Content */}
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-body font-medium text-foreground/80 group-hover:text-foreground transition-colors leading-snug truncate">
-                {post.title}
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] font-body text-foreground/30 truncate">
-                  {post.blogName}
-                </span>
-                <span className="text-[10px] font-body text-foreground/15">
-                  · {post.date}
-                </span>
+      <div className="scrollbar-hide -mr-1 flex max-h-[420px] flex-col gap-0.5 overflow-y-auto pr-1">
+        {status === "loading" &&
+          Array.from({ length: 8 }, (_, index) => (
+            <div
+              key={`friend-skeleton-${index}`}
+              className="group flex w-full items-start gap-3 rounded-xl px-2.5 py-3 text-left"
+            >
+              <div className="mt-0.5 h-9 w-9 shrink-0 animate-pulse overflow-hidden rounded-full bg-foreground/[0.06]" />
+              <div className="min-w-0 flex-1">
+                <div className="h-3.5 w-[78%] rounded-full bg-foreground/[0.06]" />
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="h-2.5 w-[32%] rounded-full bg-foreground/[0.04]" />
+                  <span className="h-2.5 w-[16%] rounded-full bg-foreground/[0.03]" />
+                </div>
               </div>
             </div>
-          </button>
-        ))}
+          ))}
+
+        {status === "error" && (
+          <div className="group flex w-full items-start gap-3 rounded-xl px-2.5 py-3 text-left">
+            <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-body font-medium leading-snug text-foreground/60">
+                友邻动态加载失败
+              </p>
+              <p className="mt-1 text-[10px] font-body text-foreground/20">
+                {errorMessage || "请稍后重试"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setReloadKey((value) => value + 1)}
+                className="mt-1.5 text-[10px] font-body text-foreground/28 transition-colors hover:text-foreground/45"
+              >
+                重试
+              </button>
+            </div>
+          </div>
+        )}
+
+        {status === "empty" && (
+          <div className="group flex w-full items-start gap-3 rounded-xl px-2.5 py-3 text-left">
+            <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-body font-medium leading-snug text-foreground/55">
+                还没有公开的友邻动态
+              </p>
+            </div>
+          </div>
+        )}
+
+        {status === "ready" &&
+          friendPosts.map((post) => (
+            <button
+              type="button"
+              key={`${post.blogName}-${post.title}-${post.date}`}
+              className="group flex w-full items-start gap-3 rounded-xl px-2.5 py-3 text-left transition-colors hover:bg-foreground/[0.04]"
+              onClick={() => {
+                if (post.url) {
+                  window.open(post.url, "_blank", "noopener,noreferrer");
+                }
+              }}
+            >
+              <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]">
+                {post.avatar ? (
+                  <img
+                    src={post.avatar}
+                    alt={post.blogName}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : null}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-foreground">
+                  {post.title}
+                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="truncate text-[10px] font-body text-foreground/30">
+                    {post.blogName}
+                  </span>
+                  {post.date ? (
+                    <span className="text-[10px] font-body text-foreground/15">· {post.date}</span>
+                  ) : null}
+                </div>
+              </div>
+            </button>
+          ))}
       </div>
     </div>
   );

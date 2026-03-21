@@ -7,6 +7,10 @@ from aerisun.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.schemas import FriendCollectionRead, FriendFeedCollectionRead, FriendFeedItemRead, FriendRead
 
 
+def _avatar_for_name(name: str) -> str:
+    return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
+
+
 def list_public_friends(session: Session, limit: int = 100) -> FriendCollectionRead:
     items = session.scalars(
         select(Friend)
@@ -19,7 +23,7 @@ def list_public_friends(session: Session, limit: int = 100) -> FriendCollectionR
             FriendRead(
                 name=item.name,
                 description=item.description,
-                avatar=item.avatar_url,
+                avatar=item.avatar_url or _avatar_for_name(item.name),
                 url=item.url,
                 status=item.status,
                 order_index=item.order_index,
@@ -45,8 +49,8 @@ def list_public_friend_feed(session: Session, limit: int = 20) -> FriendFeedColl
                 summary=item.summary,
                 url=item.url,
                 blogName=friend.name,
-                avatar=friend.avatar_url,
-                publishedAt=item.published_at,
+                avatar=friend.avatar_url or _avatar_for_name(friend.name),
+                publishedAt=item.published_at or item.created_at,
             )
             for item, friend in rows
         ]

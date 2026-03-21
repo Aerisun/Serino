@@ -7,8 +7,7 @@ import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 
 interface Excerpt {
-  id: number | string;
-  slug?: string;
+  id: string;
   title: string;
   author: string;
   source: string;
@@ -17,113 +16,53 @@ interface Excerpt {
   date: string;
 }
 
-const fallbackExcerpts: Excerpt[] = [
-  {
-    id: 1,
-    title: "关于白",
-    author: "原研哉",
-    source: "《白》",
-    content: "白不是一种颜色，而是一种感受力。它是在所有颜色消失之后，仍然存在的那种纯净。当我们说某个东西是白的，我们真正在说的是，它让我们看到了空间本身。白是容纳一切可能性的状态，是尚未被填满的画布，是沉默中蕴含的所有声音。",
-    tags: ["设计", "美学"],
-    date: "2026-03-20",
-  },
-  {
-    id: 2,
-    title: "少即是多",
-    author: "Dieter Rams",
-    source: "Less but Better",
-    content: "Good design is as little design as possible. Less, but better \u2013 because it concentrates on the essential aspects, and the products are not burdened with non-essentials. Back to purity, back to simplicity.",
-    tags: ["设计", "极简"],
-    date: "2026-03-18",
-  },
-  {
-    id: 3,
-    title: "创造的秘密",
-    author: "村上春树",
-    source: "《我的职业是小说家》",
-    content: "写长篇小说时，我每天早上四点起床，写五到六个小时。下午跑步或游泳，然后读书、听音乐，晚上九点就寝。这种生活我坚持了三十多年。重复本身就是一件了不起的事，重复之中隐藏着某种力量，这种力量会慢慢地、确实地改变我们。",
-    tags: ["写作", "生活"],
-    date: "2026-03-15",
-  },
-  {
-    id: 4,
-    title: "观看之道",
-    author: "John Berger",
-    source: "Ways of Seeing",
-    content: "Seeing comes before words. The child looks and recognizes before it can speak. But there is also another sense in which seeing comes before words. It is seeing which establishes our place in the surrounding world.",
-    tags: ["艺术", "视觉"],
-    date: "2026-03-12",
-  },
-  {
-    id: 5,
-    title: "留白的意义",
-    author: "李欧梵",
-    source: "《中国现代文学与现代性十讲》",
-    content: "中国画讲究留白，不是因为画家偷懒，而是因为空白本身就是意义的一部分。空白给了观者想象的空间，让画面从有限延伸到无限。最好的设计也是如此，不是填满每一个角落，而是知道在哪里停下来。",
-    tags: ["美学", "东方"],
-    date: "2026-03-08",
-  },
-  {
-    id: 6,
-    title: "工具与手",
-    author: "Richard Sennett",
-    source: "The Craftsman",
-    content: "The craftsman represents the special human condition of being engaged. Every good craftsman conducts a dialogue between concrete practices and thinking; this dialogue evolves into sustaining habits, and these habits establish a rhythm between problem solving and problem finding.",
-    tags: ["工艺", "思考"],
-    date: "2026-03-05",
-  },
-  {
-    id: 7,
-    title: "时间的形状",
-    author: "松浦弥太郎",
-    source: "《100 个基本》",
-    content: "每天做一件让自己开心的小事。不是什么了不起的大事，只是一件很小的事就好。泡一杯好茶，读几页喜欢的书，在笔记本上画一朵花。这些小事堆积起来，就构成了我们生活的质感。",
-    tags: ["生活", "日常"],
-    date: "2026-03-01",
-  },
-];
-const fallbackByTitle = Object.fromEntries(
-  fallbackExcerpts.map((item) => [item.title.trim().toLowerCase(), item]),
-);
-
-const mapRemoteExcerpt = (entry: PublicContentEntry, index: number): Excerpt => {
-  const fallback = fallbackByTitle[entry.title.trim().toLowerCase()] ?? fallbackExcerpts[index];
-
+const mapRemoteExcerpt = (entry: PublicContentEntry): Excerpt => {
   return {
-    id: fallback?.id ?? entry.slug,
-    slug: entry.slug,
+    id: entry.slug,
     title: entry.title,
-    author: fallback?.author ?? "Public API",
-    source: fallback?.source ?? "Aerisun Archive",
+    author: entry.author ?? "",
+    source: entry.source ?? "",
     content: entry.body,
-    tags: entry.tags.length > 0 ? entry.tags : fallback?.tags ?? [],
-    date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+    tags: entry.tags,
+    date: formatPublishedDate(entry.published_at) || "",
   };
 };
 
 const Excerpts = () => {
   const config = usePageConfig().excerpts as Record<string, any>;
-  const [items, setItems] = useState<Excerpt[]>(fallbackExcerpts);
-  const [selectedId, setSelectedId] = useState<number | string | null>(null);
+  const [items, setItems] = useState<Excerpt[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const selected = useMemo(
-    () => items.find((excerpt) => excerpt.id === selectedId),
+    () => items.find((excerpt) => excerpt.id === selectedId) ?? null,
     [items, selectedId],
   );
+  const formatSourceLine = (excerpt: Excerpt) => [excerpt.source, excerpt.author].filter(Boolean).join(" · ");
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     const loadExcerpts = async () => {
+      setStatus("loading");
+      setErrorMessage("");
+
       try {
-        const payload = await fetchPublicContentCollection("excerpts", 40);
-        if (cancelled || payload.items.length === 0) {
+        const payload = await fetchPublicContentCollection("excerpts", 40, { signal: controller.signal });
+        if (controller.signal.aborted) {
           return;
         }
 
-        setItems(payload.items.map(mapRemoteExcerpt));
-      } catch {
-        if (!cancelled) {
-          setItems(fallbackExcerpts);
+        const nextItems = payload.items.map(mapRemoteExcerpt);
+        setItems(nextItems);
+        setStatus(nextItems.length > 0 ? "ready" : "empty");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setItems([]);
+          setStatus("error");
+          setErrorMessage(error instanceof Error ? error.message : "文摘加载失败");
         }
       }
     };
@@ -131,9 +70,9 @@ const Excerpts = () => {
     void loadExcerpts();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [reloadKey]);
 
   return (
     <PageShell
@@ -143,44 +82,97 @@ const Excerpts = () => {
       metaDescription={config.metaDescription}
       width={config.width}
     >
+      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {status === "loading" &&
+          Array.from({ length: 6 }, (_, index) => (
+            <div key={`excerpt-skeleton-${index}`} className="liquid-glass rounded-2xl p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-3.5 w-3.5 rounded-full bg-foreground/[0.04]" />
+                <div className="h-3 w-28 rounded-full bg-foreground/[0.04]" />
+              </div>
+              <div className="h-5 w-[58%] rounded-full bg-foreground/[0.045]" />
+              <div className="mt-3 h-3.5 w-[92%] rounded-full bg-foreground/[0.035]" />
+              <div className="mt-2 h-3.5 w-[78%] rounded-full bg-foreground/[0.03]" />
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="h-6 w-12 rounded-full bg-foreground/[0.03]" />
+                <div className="h-6 w-14 rounded-full bg-foreground/[0.03]" />
+              </div>
+            </div>
+          ))}
 
-        {/* Excerpt cards */}
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {items.map((excerpt, i) => (
+        {status === "error" && (
+          <div className="liquid-glass rounded-2xl p-5 sm:col-span-2">
+            <div className="mb-3 flex items-center gap-2">
+              <BookOpen className="h-3.5 w-3.5 text-foreground/20" />
+              <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25">
+                {String(config.eyebrow ?? "")}
+              </span>
+            </div>
+            <h3 className="text-base font-body font-medium leading-snug text-foreground/70">
+              文摘加载失败
+            </h3>
+            <p className="mt-2 text-[12px] font-body leading-relaxed text-foreground/30">
+              {errorMessage}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setReloadKey((value) => value + 1)}
+                className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] text-foreground/25 transition-colors hover:text-foreground/50"
+              >
+                重试
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(status === "empty" || (status === "ready" && items.length === 0)) && (
+          <div className="liquid-glass rounded-2xl p-5 sm:col-span-2">
+            <div className="mb-3 flex items-center gap-2">
+              <BookOpen className="h-3.5 w-3.5 text-foreground/20" />
+              <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25">
+                {String(config.eyebrow ?? "")}
+              </span>
+            </div>
+            <h3 className="text-base font-body font-medium leading-snug text-foreground/70">
+              {config.emptyMessage ?? "还没有整理好的文摘"}
+            </h3>
+          </div>
+        )}
+
+        {status === "ready" &&
+          items.map((excerpt, index) => (
             <motion.button
               key={excerpt.id}
+              type="button"
               onClick={() => setSelectedId(excerpt.id)}
               className="group text-left liquid-glass rounded-2xl p-5 transition-colors hover:bg-foreground/[0.03] active:scale-[0.98]"
-              {...staggerItem(i, {
+              {...staggerItem(index, {
                 baseDelay: config.motion.delay,
                 step: config.motion.stagger,
                 duration: config.motion.duration,
               })}
             >
-              {/* Source info */}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="mb-3 flex items-center gap-2">
                 <BookOpen className="h-3.5 w-3.5 text-foreground/20" />
-                <span className="text-[10px] font-body text-foreground/25 uppercase tracking-wider truncate">
-                  {excerpt.source} · {excerpt.author}
+                <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25">
+                  {formatSourceLine(excerpt)}
                 </span>
               </div>
 
-              {/* Title */}
-              <h3 className="text-base font-body font-medium text-foreground/80 group-hover:text-foreground transition-colors leading-snug">
+              <h3 className="text-base font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-foreground">
                 {excerpt.title}
               </h3>
 
-              {/* Preview */}
-              <p className="mt-2 text-[12px] font-body text-foreground/30 leading-relaxed line-clamp-3">
+              <p className="mt-2 line-clamp-3 text-[12px] font-body leading-relaxed text-foreground/30">
                 {excerpt.content}
               </p>
 
-              {/* Tags */}
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {excerpt.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[10px] font-body text-foreground/20 px-2 py-0.5 rounded-full border border-foreground/[0.06]"
+                    className="rounded-full border border-foreground/[0.06] px-2 py-0.5 text-[10px] font-body text-foreground/20"
                   >
                     {tag}
                   </span>
@@ -188,8 +180,8 @@ const Excerpts = () => {
               </div>
             </motion.button>
           ))}
-        </div>
-      {/* Detail modal */}
+      </div>
+
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -199,67 +191,58 @@ const Excerpts = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-background/80 backdrop-blur-sm"
               onClick={() => setSelectedId(null)}
             />
 
-            {/* Content */}
-              <motion.div
-                className="relative liquid-glass rounded-3xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
-                initial={{ scale: 0.95, opacity: 0, y: 16 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 16 }}
+            <motion.div
+              className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-3xl p-8 liquid-glass scrollbar-hide"
+              initial={{ scale: 0.95, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 16 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              >
-              {/* Close */}
+            >
               <button
+                type="button"
                 onClick={() => setSelectedId(null)}
-                aria-label={config.modalCloseLabel}
-                className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-foreground/30 hover:text-foreground/60 hover:bg-foreground/[0.05] transition-colors"
+                aria-label={String(config.modalCloseLabel ?? "")}
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-foreground/30 transition-colors hover:bg-foreground/[0.05] hover:text-foreground/60"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              {/* Source */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="mb-4 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-foreground/25" />
                 <span className="text-xs font-body text-foreground/30">
                   {selected.source}
                 </span>
               </div>
-
-              {/* Title */}
-              <h2 className="text-xl font-heading italic text-foreground leading-snug">
+              <h2 className="mt-4 text-xl font-heading italic leading-snug text-foreground">
                 {selected.title}
               </h2>
               <p className="mt-1 text-xs font-body text-foreground/25">
-                {selected.author} · {selected.date}
+                {[selected.author, selected.date].filter(Boolean).join(" · ")}
               </p>
-
-              {/* Divider */}
               <div className="my-5 border-t border-foreground/[0.06]" />
-
-              {/* Content */}
               <p
-                className="text-[0.935rem] font-body text-foreground/60 leading-8"
+                className="text-[0.935rem] font-body leading-8 text-foreground/60"
                 style={{ fontFamily: "'Instrument Serif', serif" }}
               >
                 {selected.content}
               </p>
-
-              {/* Tags */}
-              <div className="mt-6 flex flex-wrap gap-2">
-                {selected.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-[11px] font-body text-foreground/25 px-3 py-1 rounded-full border border-foreground/[0.08]"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {selected.tags.length > 0 && (
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {selected.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] font-body text-foreground/25"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

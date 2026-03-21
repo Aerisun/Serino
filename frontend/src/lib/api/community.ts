@@ -47,6 +47,8 @@ export interface PublicGuestbookEntry {
   body: string;
   status: string;
   created_at: string;
+  avatar?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface PublicGuestbookCollection {
@@ -73,6 +75,11 @@ export interface PublicComment {
   status: string;
   created_at: string;
   replies: PublicComment[];
+  avatar?: string | null;
+  avatar_url?: string | null;
+  like_count?: number;
+  liked?: boolean;
+  is_author?: boolean;
 }
 
 export interface PublicCommentCollection {
@@ -121,12 +128,12 @@ export interface PublicCalendarRead {
 
 export interface PublicRecentActivityItem {
   kind: "comment" | "reply" | "like" | "guestbook";
-  actor_name: string;
-  actor_avatar: string;
-  target_title: string;
+  actor_name: string | null;
+  actor_avatar: string | null;
+  target_title: string | null;
   excerpt: string | null;
   created_at: string;
-  href: string;
+  href: string | null;
 }
 
 export interface PublicRecentActivityRead {
@@ -196,6 +203,18 @@ export async function createPublicComment(
 
 export async function createPublicReaction(payload: PublicReactionCreatePayload, init?: RequestInit) {
   return apiClient.post<PublicReactionRead>("/api/v1/public/reactions", payload, init);
+}
+
+export async function fetchPublicReaction(
+  contentType: string,
+  contentSlug: string,
+  reactionType: string,
+  init?: RequestInit,
+) {
+  return apiClient.get<PublicReactionRead>(
+    `/api/v1/public/reactions/${encodeURIComponent(contentType)}/${encodeURIComponent(contentSlug)}/${encodeURIComponent(reactionType)}`,
+    init,
+  );
 }
 
 export async function fetchPublicCalendar(from?: string, to?: string, init?: RequestInit) {

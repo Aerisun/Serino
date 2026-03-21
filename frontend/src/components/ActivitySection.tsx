@@ -5,7 +5,8 @@ import Footer from "./Footer";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 
 const ActivitySection = () => {
-  const config = usePageConfig().activity as Record<string, any>;
+  const config = usePageConfig().activity as Record<string, any> | undefined;
+
   return (
     <section className="relative w-full flex flex-col overflow-hidden bg-background">
       {/* Soft glow at top — echoes the hero video tones for continuity */}
@@ -22,10 +23,10 @@ const ActivitySection = () => {
         {/* Section header */}
         <div className="mb-10">
           <p className="text-xs font-body font-medium text-foreground/25 uppercase tracking-[0.2em] mb-2">
-            {config.dashboardLabel}
+            {config?.dashboardLabel}
           </p>
           <h2 className="text-3xl md:text-4xl font-heading italic text-foreground leading-[1.1]">
-            {config.title}
+            {config?.title}
           </h2>
         </div>
 

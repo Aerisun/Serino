@@ -7,6 +7,19 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = BACKEND_ROOT.parent
+
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://[::1]:3000",
+    "http://[::1]:5173",
+    "http://[::1]:8080",
+]
 
 
 class Settings(BaseSettings):
@@ -20,11 +33,11 @@ class Settings(BaseSettings):
     environment: str = "development"
     host: str = "0.0.0.0"
     port: int = 8000
-    store_dir: Path = BACKEND_ROOT / ".store"
-    data_dir: Path = BACKEND_ROOT / ".store"
-    media_dir: Path = BACKEND_ROOT / ".store" / "media"
-    secrets_dir: Path = BACKEND_ROOT / ".store" / "secrets"
-    db_path: Path = BACKEND_ROOT / ".store" / "aerisun.db"
+    store_dir: Path = PROJECT_ROOT / ".store"
+    data_dir: Path = PROJECT_ROOT / ".store"
+    media_dir: Path = PROJECT_ROOT / ".store" / "media"
+    secrets_dir: Path = PROJECT_ROOT / ".store" / "secrets"
+    db_path: Path = PROJECT_ROOT / ".store" / "aerisun.db"
     litestream_config_path: Path = BACKEND_ROOT / "litestream.yml"
     litestream_replica_url: str = Field(
         default="sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db"
@@ -36,7 +49,7 @@ class Settings(BaseSettings):
     backup_ssh_key: str | None = None
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())
     session_ttl_hours: int = 24
 
     @property

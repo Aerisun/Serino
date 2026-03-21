@@ -1,4 +1,9 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+const envApiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
+// Use same-origin API paths by default so the Vite dev proxy can forward
+// requests to the backend without tripping browser CORS enforcement.
+// Set VITE_API_BASE_URL only when you explicitly want a different origin.
+export const API_BASE_URL = envApiBaseUrl;
 
 export class ApiError extends Error {
   status: number;

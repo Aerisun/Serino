@@ -15,11 +15,12 @@ from aerisun.content import (
     list_public_thoughts,
 )
 from aerisun.db import get_session
-from aerisun.engagement import (
+from aerisun.engagement.service import (
     create_public_comment,
     create_public_guestbook_entry,
     list_public_comments,
     list_public_guestbook_entries,
+    read_public_reaction,
     register_public_reaction,
 )
 from aerisun.modules.site_config import get_page_copy, get_resume, get_site_config
@@ -176,6 +177,19 @@ def create_reaction(
 ) -> ReactionRead:
     try:
         return register_public_reaction(session, payload)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/reactions/{content_type}/{slug}/{reaction_type}", response_model=ReactionRead)
+def read_reaction(
+    content_type: str,
+    slug: str,
+    reaction_type: str,
+    session: Session = Depends(get_session),
+) -> ReactionRead:
+    try:
+        return read_public_reaction(session, content_type, slug, reaction_type)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

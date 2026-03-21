@@ -26,6 +26,22 @@ CONTENT_MODELS = {
 }
 
 
+def _avatar_for_name(name: str) -> str:
+    return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
+
+
+def _trim_excerpt(value: str | None, limit: int = 72) -> str | None:
+    if value is None:
+        return None
+
+    excerpt = " ".join(value.split()).strip()
+    if not excerpt:
+        return None
+    if len(excerpt) <= limit:
+        return excerpt
+    return f"{excerpt[: limit - 1]}…"
+
+
 def _content_events(session: Session) -> list[tuple[datetime, str, str, str, str]]:
     items: list[tuple[datetime, str, str, str, str]] = []
     mappings = [
@@ -76,11 +92,6 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
         events=events,
     )
 
-
-def _avatar_for_name(name: str) -> str:
-    return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
-
-
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
 
@@ -97,7 +108,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 actor_name=item.author_name,
                 actor_avatar=_avatar_for_name(item.author_name),
                 target_title=_resolve_content_title(session, item.content_type, item.content_slug),
-                excerpt=item.body,
+                excerpt=_trim_excerpt(item.body),
                 created_at=item.created_at,
                 href=f"/{item.content_type}/{item.content_slug}",
             )
@@ -116,7 +127,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 actor_name=item.name,
                 actor_avatar=_avatar_for_name(item.name),
                 target_title="留言板",
-                excerpt=item.body,
+                excerpt=_trim_excerpt(item.body),
                 created_at=item.created_at,
                 href="/guestbook",
             )
@@ -135,7 +146,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 actor_name=actor_name,
                 actor_avatar=_avatar_for_name(actor_name),
                 target_title=_resolve_content_title(session, item.content_type, item.content_slug),
-                excerpt=item.reaction_type,
+                excerpt="留下了一个赞" if item.reaction_type == "like" else item.reaction_type,
                 created_at=item.created_at,
                 href=f"/{item.content_type}/{item.content_slug}",
             )

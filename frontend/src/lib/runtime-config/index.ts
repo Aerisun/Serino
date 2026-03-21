@@ -25,6 +25,11 @@ type BackendSiteResponse = {
     meta_description: string;
     copyright: string;
     footer_text?: string;
+    hero_actions?: Array<{
+      label: string;
+      href: string;
+      icon_key: string;
+    }>;
   };
   social_links: Array<{
     name: string;
@@ -33,11 +38,6 @@ type BackendSiteResponse = {
   }>;
   poems: Array<{
     content: string;
-  }>;
-  hero_actions: Array<{
-    label: string;
-    href: string;
-    icon_key: string;
   }>;
 };
 
@@ -140,14 +140,14 @@ export const runtimeConfigPaths = {
 // Navigation template (route paths are code constants)
 // ---------------------------------------------------------------------------
 const NAV_TEMPLATE = [
-  { pageKey: "home", href: "/", trigger: "arrow" as const, children: [
+  { pageKey: "home", defaultLabel: "首页", href: "/", trigger: "arrow" as const, children: [
     { pageKey: "resume", href: "/resume" },
     { pageKey: "guestbook", href: "/guestbook" },
     { pageKey: "calendar", href: "/calendar" },
   ]},
-  { pageKey: "posts", href: "/posts", trigger: "none" as const },
-  { pageKey: "friends", href: "/friends", trigger: "none" as const },
-  { pageKey: "more", trigger: "hover" as const, children: [
+  { pageKey: "posts", defaultLabel: "帖子", href: "/posts", trigger: "none" as const },
+  { pageKey: "friends", defaultLabel: "友链", href: "/friends", trigger: "none" as const },
+  { pageKey: "more", defaultLabel: "更多", trigger: "hover" as const, children: [
     { pageKey: "thoughts", href: "/thoughts" },
     { pageKey: "diary", href: "/diary" },
     { pageKey: "excerpts", href: "/excerpts" },
@@ -188,7 +188,7 @@ const normalizeSiteConfig = (
   navLabels: Map<string, string>,
 ): RuntimeConfigSnapshot["site"] => {
   const navigation: NavItem[] = NAV_TEMPLATE.map((entry) => {
-    const label = navLabels.get(entry.pageKey) ?? entry.pageKey;
+    const label = navLabels.get(entry.pageKey) ?? entry.defaultLabel;
     const item: NavItem = { label, trigger: entry.trigger };
     if ("href" in entry) item.href = entry.href;
     if ("children" in entry && entry.children) {
@@ -215,7 +215,7 @@ const normalizeSiteConfig = (
       href: link.href,
       iconKey: normalizeIconKey(link.icon_key),
     })),
-    heroActions: (payload.hero_actions ?? []).map((action) => ({
+    heroActions: (payload.site.hero_actions ?? []).map((action) => ({
       label: action.label,
       href: action.href,
       iconKey: normalizeIconKey(action.icon_key),

@@ -72,17 +72,20 @@ DEFAULT_POEMS = [
 ]
 
 DEFAULT_PAGE_COPIES = [
+    {"page_key": "activity", "label": None, "nav_label": None, "title": "友邻与最近动态", "subtitle": "展示朋友动态、最近活动和贡献热力图。", "description": "首页活动区配置。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {"dashboardLabel": "Dashboard"}},
+    {"page_key": "notFound", "label": None, "nav_label": None, "title": "这个页面没有留下来", "subtitle": "似乎已经离开了当前的路径。", "description": "你访问的页面不存在，或者已经被移动。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {"metaTitle": "页面未找到", "metaDescription": "你访问的页面不存在，或者已经被移动。"}},
     {"page_key": "posts", "label": "Blog", "nav_label": "帖子", "title": "Posts", "subtitle": "整理过的想法与实践记录。", "description": "文章列表与文章详情页文案。", "search_placeholder": "搜索文章...", "empty_message": "没有找到匹配的文章", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {"category_all_label": "全部"}},
     {"page_key": "diary", "label": None, "nav_label": "日记", "title": "日记", "subtitle": "每天一点点，记录生活的温度。", "description": "日记页文案。", "search_placeholder": None, "empty_message": "今天还没有新的日记", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "friends", "label": None, "nav_label": "友链", "title": "朋友们", "subtitle": "海内存知己，天涯若比邻。", "description": "友链与 Friend Circle 页面文案。", "search_placeholder": None, "empty_message": "暂时没有友链内容", "max_width": "max-w-4xl", "page_size": 10, "download_label": None, "extras": {"circle_title": "Friend Circle"}},
-    {"page_key": "excerpts", "label": None, "nav_label": "文摘", "title": "文摘", "subtitle": "摘录那些让我停下来想一想的文字。", "description": "文摘页文案。", "search_placeholder": None, "empty_message": "还没有整理好的文摘", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "friends", "label": None, "nav_label": "友链", "title": "朋友们", "subtitle": "海内存知己，天涯若比邻。", "description": "友链与 Friend Circle 页面文案。", "search_placeholder": None, "empty_message": "暂时没有友链内容", "max_width": "max-w-4xl", "page_size": 10, "download_label": None, "extras": {"circle_title": "Friend Circle", "statusLabel": "状态", "loadingLabel": "正在加载...", "loadMoreLabel": "加载更多", "retryLabel": "重试加载"}},
+    {"page_key": "excerpts", "label": None, "nav_label": "文摘", "title": "文摘", "subtitle": "摘录那些让我停下来想一想的文字。", "description": "文摘页文案。", "search_placeholder": None, "empty_message": "还没有整理好的文摘", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {"modalCloseLabel": "关闭"}},
     {"page_key": "thoughts", "label": None, "nav_label": "碎碎念", "title": "碎碎念", "subtitle": "一些不成文的想法，随手记下的片段。", "description": "碎碎念页文案。", "search_placeholder": None, "empty_message": "最近没有新的碎碎念", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "guestbook", "label": None, "nav_label": "留言板", "title": "留言板", "subtitle": "留下你的足迹，说点什么吧。", "description": "留言板页文案。", "search_placeholder": None, "empty_message": "还没有人留言", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "guestbook", "label": None, "nav_label": "留言板", "title": "留言板", "subtitle": "留下你的足迹，说点什么吧。", "description": "留言板页文案。", "search_placeholder": None, "empty_message": "还没有人留言", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {"namePlaceholder": "你的名字", "contentPlaceholder": "想说的话", "submitLabel": "提交留言", "submittingLabel": "提交留言", "loadingLabel": "留言板正在更新", "retryLabel": "重试加载"}},
     {"page_key": "resume", "label": None, "nav_label": "简历", "title": "Felix", "subtitle": "UI/UX Designer · Frontend Developer", "description": "简历页配置。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-3xl", "page_size": None, "download_label": "下载 PDF", "extras": {}},
-    {"page_key": "calendar", "label": None, "nav_label": "日历", "title": "日历", "subtitle": "记录每一天的痕迹。", "description": "日历与活动投影页面文案。", "search_placeholder": None, "empty_message": "日历里还没有内容", "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {}},
+    {"page_key": "calendar", "label": None, "nav_label": "日历", "title": "日历", "subtitle": "记录每一天的痕迹。", "description": "日历与活动投影页面文案。", "search_placeholder": None, "empty_message": "日历里还没有内容", "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {"weekdayLabels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"], "monthLabels": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"], "loadingLabel": "正在加载日历", "retryLabel": "重试加载", "todayLabel": "今日"}},
 ]
 
 DEFAULT_PAGE_OPTIONS = [
+    {"page_key": "activity", "is_enabled": True, "settings": {}},
     {"page_key": "posts", "is_enabled": True, "settings": {"show_search": True}},
     {"page_key": "diary", "is_enabled": True, "settings": {}},
     {"page_key": "friends", "is_enabled": True, "settings": {"circle_page_size": 10}},
@@ -154,6 +157,56 @@ DEFAULT_POSTS = [
         "visibility": "public",
         "published_at": datetime(2026, 3, 14, 8, 15, tzinfo=UTC),
     },
+    {
+        "slug": "react-19-design-pattern-shifts",
+        "title": "React 19 中值得关注的设计模式变化",
+        "summary": "Server Components 和 Actions 正在重塑前端架构，这对设计师和前端开发者意味着什么。",
+        "body": "React 19 带来的变化，本质上是在重新分配界面、状态和数据之间的边界。对前端来说，这不是某个 API 的更新，而是对页面如何被拆分、何时响应、如何组织交互的一次整体提示。",
+        "tags": ["react", "architecture"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 12, 16, 0, tzinfo=UTC),
+    },
+    {
+        "slug": "typographic-rhythm-and-spacing",
+        "title": "网页排版中的节奏感：间距与留白",
+        "summary": "好的排版不是对齐和居中，而是建立阅读节奏。从音乐的角度理解视觉设计中的韵律。",
+        "body": "排版真正决定气质的，不是单个字体本身，而是段落之间、标题上下、内容前后那一连串被安排好的停顿。留白不是空着，而是在替阅读建立呼吸的间隔。",
+        "tags": ["typography", "layout"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 9, 10, 45, tzinfo=UTC),
+    },
+    {
+        "slug": "framer-motion-page-transitions",
+        "title": "用 Framer Motion 做有质感的页面过渡",
+        "summary": "动画不该是装饰，它是信息层级的一部分。分享几个常用过渡模式和背后的判断。",
+        "body": "页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，让视线知道自己正在从哪里离开、要往哪里抵达。",
+        "tags": ["animation", "react"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 6, 19, 20, tzinfo=UTC),
+    },
+    {
+        "slug": "solo-workflow-tools-and-rhythm",
+        "title": "一个人的工作流：工具、习惯与心态",
+        "summary": "作为独立设计师，我每天的工作流程是怎样的，用了哪些工具，踩过哪些坑。",
+        "body": "一个人的工作流最难的从来不是工具选择，而是如何给自己建立节奏。没有团队的默认结构之后，你需要自己决定什么时候深度创作，什么时候整理，什么时候停下来复盘。",
+        "tags": ["workflow", "productivity"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 3, 9, 50, tzinfo=UTC),
+    },
+    {
+        "slug": "dark-mode-design-details",
+        "title": "深色模式设计的七个容易忽略的细节",
+        "summary": "深色模式不是简单地把白换成黑。阴影、对比度、饱和度都需要重新审视。",
+        "body": "深色模式最大的误区，是把亮色模式的关系原样压暗。真正要被重新设计的，是层级感、边缘感和焦点落点。只有这些关系成立了，深色界面才会显得稳定而不刺眼。",
+        "tags": ["dark-mode", "ui"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 2, 28, 21, 5, tzinfo=UTC),
+    },
 ]
 
 DEFAULT_DIARY_ENTRIES = [
@@ -186,6 +239,46 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 17, 18, 10, tzinfo=UTC),
+    },
+    {
+        "slug": "evening-tram-and-orange-sky",
+        "title": "傍晚电车与橙色天光",
+        "summary": "夕阳落得很慢，车窗把每个人都镀成了柔和的轮廓。",
+        "body": "傍晚坐电车回家的路上，看到天边从浅金一点点沉进橙色。那种颜色很难描述，像刚刚被烤热的玻璃。我忽然意识到，最近网站里很多暖色过渡，其实都来自这种傍晚记忆。",
+        "tags": ["commute", "sunset"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 15, 18, 40, tzinfo=UTC),
+    },
+    {
+        "slug": "quiet-sunday-cleanup",
+        "title": "安静的周末整理",
+        "summary": "清理桌面、归档文件、擦掉屏幕边角的灰，一切都慢下来一点。",
+        "body": "今天没有写太多代码，只是把零散的文件和灵感卡片重新归了类。整理这种事很奇怪，它不直接产出什么，却会让脑子重新变得清楚。晚上顺手把日历页的细节也对齐了一遍。",
+        "tags": ["weekend", "cleanup"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 13, 11, 20, tzinfo=UTC),
+    },
+    {
+        "slug": "midnight-css-and-tea",
+        "title": "深夜 CSS 和一杯热茶",
+        "summary": "夜里安静到只剩键盘声，调细节时会比白天更专注。",
+        "body": "把一段 hover 过渡从 0.3 秒改到 0.45 秒，整个页面都像松了一口气。深夜做这种微调总有一点仪式感，像给页面悄悄盖上一层更柔软的光。茶喝到最后，已经有些凉了。",
+        "tags": ["night", "css"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 11, 0, 35, tzinfo=UTC),
+    },
+    {
+        "slug": "bookstore-after-rain",
+        "title": "雨后去了一趟书店",
+        "summary": "空气里有纸张和潮气混在一起的味道，很适合慢慢走。",
+        "body": "下午雨停后去了常去的那家独立书店，翻到几本关于版式和建筑的旧书。书店里很安静，灯也不亮，但有一种很稳定的秩序感。回来之后我把首页的分隔和留白又调整了一次。",
+        "tags": ["bookstore", "reading"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 9, 16, 5, tzinfo=UTC),
     },
 ]
 
@@ -220,6 +313,56 @@ DEFAULT_THOUGHTS = [
         "visibility": "public",
         "published_at": datetime(2026, 3, 16, 9, 35, tzinfo=UTC),
     },
+    {
+        "slug": "ui-is-editing",
+        "title": "界面设计本质上也像编辑",
+        "summary": "不是一味往里放内容，而是不断删去那些不该留下的句子。",
+        "body": "界面里每一个边界、间距和按钮文案，都像是在替用户做一次编辑判断。真正困难的不是加什么，而是删掉什么之后页面依然成立。",
+        "tags": ["ui", "editing"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 15, 9, 10, tzinfo=UTC),
+    },
+    {
+        "slug": "soft-motion-note",
+        "title": "柔一点的动效会更耐看",
+        "summary": "同样的位移，稍微慢一点、轻一点，页面气氛就会完全不同。",
+        "body": "最近越来越喜欢那些不抢戏的动效。它们不会立刻让人注意到，但会让整页的节奏变得更顺，像把一个句子的停顿放在了更对的位置。",
+        "tags": ["motion", "frontend"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 13, 22, 40, tzinfo=UTC),
+    },
+    {
+        "slug": "tiny-delight-matters",
+        "title": "那些很小的愉悦其实很重要",
+        "summary": "比如图标对齐一像素，比如 hover 之后多出来的一点呼吸。",
+        "body": "产品里真正留下来的记忆，很多时候都不是功能本身，而是那个刚刚好的小瞬间。它也许很小，但会让人觉得这个界面是被认真照顾过的。",
+        "tags": ["details", "product"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 12, 20, 15, tzinfo=UTC),
+    },
+    {
+        "slug": "interface-is-tone",
+        "title": "界面其实也有语气",
+        "summary": "同样一句提示，用什么排版、间距和色彩说出来，感觉完全不同。",
+        "body": "我越来越相信，界面不是纯信息容器，它也在说话。它的语气来自字重、留白、层级、边界和动效的速度，这些东西会一起决定用户感受到的是催促还是邀请。",
+        "tags": ["tone", "writing"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 10, 8, 25, tzinfo=UTC),
+    },
+    {
+        "slug": "shipping-beats-polish",
+        "title": "先落地，再打磨",
+        "summary": "很多细节只有真正上线之后，才知道值不值得继续抛光。",
+        "body": "不是说打磨不重要，而是有些判断必须在真实使用里完成。先把结构搭起来，再去看哪里值得继续投入，这比把每个角落都提前磨到极致更可靠。",
+        "tags": ["shipping", "workflow"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 8, 17, 50, tzinfo=UTC),
+    },
 ]
 
 DEFAULT_EXCERPTS = [
@@ -253,6 +396,46 @@ DEFAULT_EXCERPTS = [
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 19, 45, tzinfo=UTC),
     },
+    {
+        "slug": "slow-work-note",
+        "title": "慢工并不等于迟钝",
+        "summary": "真正慢下来时，你反而会更清楚自己为什么这么做。",
+        "body": "所谓慢，不是拖延，而是在每个决定落下之前，给它一点真正被看见的时间。很多表面上的效率，其实只是把判断推迟到更后面。",
+        "tags": ["reading", "pace"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 10, 14, 10, tzinfo=UTC),
+    },
+    {
+        "slug": "poetry-and-interface",
+        "title": "界面也需要一点诗意",
+        "summary": "不是为了装饰，而是为了让理性之外还留一点呼吸。",
+        "body": "当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，它是让系统从“可用”转向“愿意停留”的那一层温度。",
+        "tags": ["reading", "interface"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 8, 11, 5, tzinfo=UTC),
+    },
+    {
+        "slug": "honest-materials",
+        "title": "材料应该诚实地被使用",
+        "summary": "数字界面也一样，视觉语言不该伪装自己是什么。",
+        "body": "当一种材料被过度装饰，它原有的特质反而会消失。界面中的玻璃、纸感、金属感也应该如此，关键不在像不像，而在它是否帮助用户理解层级与关系。",
+        "tags": ["materials", "design"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 6, 10, 0, tzinfo=UTC),
+    },
+    {
+        "slug": "quiet-systems",
+        "title": "好的系统通常是安静的",
+        "summary": "它不会一直提醒你自己存在，但会在需要的时候稳稳接住。",
+        "body": "系统感并不意味着强烈的控制感。相反，真正成熟的结构往往很轻，它只是在背后默默让内容和行为都有了位置。",
+        "tags": ["systems", "product"],
+        "status": "published",
+        "visibility": "public",
+        "published_at": datetime(2026, 3, 4, 9, 25, tzinfo=UTC),
+    },
 ]
 
 DEFAULT_FRIENDS = [
@@ -281,12 +464,60 @@ DEFAULT_FRIENDS = [
         "order_index": 2,
     },
     {
+        "name": "保罗的小宇宙",
+        "url": "https://paul.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Paul",
+        "description": "Still single, still waiting...",
+        "status": "active",
+        "order_index": 3,
+    },
+    {
+        "name": "猫羽のブログ",
+        "url": "https://nekoha.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Nekoha",
+        "description": "空中有颗星为你而亮",
+        "status": "active",
+        "order_index": 4,
+    },
+    {
+        "name": "Erhecy's Blog",
+        "url": "https://erhecy.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy",
+        "description": "欢迎来到咱的博客！",
+        "status": "active",
+        "order_index": 5,
+    },
+    {
+        "name": "轻雅阁",
+        "url": "https://qingya.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya",
+        "description": "新时代教师的日常",
+        "status": "active",
+        "order_index": 6,
+    },
+    {
+        "name": "柏园猫のBlog",
+        "url": "https://baiyuan.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan",
+        "description": "人与人虽然相距遥远，但又彼此相依",
+        "status": "active",
+        "order_index": 7,
+    },
+    {
+        "name": "Lucifer's Blog",
+        "url": "https://lucifer.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Lucifer",
+        "description": "Keep moving",
+        "status": "active",
+        "order_index": 8,
+    },
+    {
         "name": "Quiet Terminal",
         "url": "https://quiet-terminal.example.com",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=QuietTerminal",
         "description": "偶尔更新系统、Linux 和小工具。",
         "status": "active",
-        "order_index": 3,
+        "order_index": 9,
     },
     {
         "name": "Sunset Archive",
@@ -294,7 +525,7 @@ DEFAULT_FRIENDS = [
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=SunsetArchive",
         "description": "停更中的旧站，但还留着一些文章。",
         "status": "archived",
-        "order_index": 4,
+        "order_index": 10,
     },
 ]
 
@@ -315,6 +546,42 @@ DEFAULT_FRIEND_FEED_SOURCES = [
         "friend_name": "夏目的博客",
         "feed_url": "https://natsume.example.com/atom.xml",
         "last_fetched_at": datetime(2026, 3, 18, 10, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "保罗的小宇宙",
+        "feed_url": "https://paul.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 16, 21, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "猫羽のブログ",
+        "feed_url": "https://nekoha.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 19, 13, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "Erhecy's Blog",
+        "feed_url": "https://erhecy.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 18, 18, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "轻雅阁",
+        "feed_url": "https://qingya.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 18, 7, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "柏园猫のBlog",
+        "feed_url": "https://baiyuan.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 17, 22, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "Lucifer's Blog",
+        "feed_url": "https://lucifer.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 17, 20, 0, tzinfo=UTC),
         "is_enabled": True,
     },
     {
@@ -354,6 +621,102 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "url": "https://natsume.example.com/posts/network-flow",
         "summary": "把几类经典网络流题型梳理成一份笔记。",
         "published_at": datetime(2026, 3, 18, 9, 30, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "Erhecy's Blog",
+        "title": "在博客中优雅地添加 Bilibili 追番页面",
+        "url": "https://erhecy.example.com/posts/bilibili-following",
+        "summary": "记录一次追番页面和数据同步的实现过程。",
+        "published_at": datetime(2026, 3, 13, 18, 45, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "柏园猫のBlog",
+        "title": "一招解决 Origin 运行报错：找不到 mfc140u.dll",
+        "url": "https://baiyuan.example.com/posts/fix-mfc140u",
+        "summary": "整理一次桌面软件依赖缺失的排查记录。",
+        "published_at": datetime(2026, 3, 11, 8, 20, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "保罗的小宇宙",
+        "title": "Hand Motion Retargeting",
+        "url": "https://paul.example.com/posts/hand-motion-retargeting",
+        "summary": "记录手部动作重定向的一些实验。",
+        "published_at": datetime(2026, 3, 10, 16, 10, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "Lucifer's Blog",
+        "title": "To panic! or Not to panic!",
+        "url": "https://lucifer.example.com/posts/to-panic-or-not",
+        "summary": "关于错误恢复和调试心态的一篇记录。",
+        "published_at": datetime(2026, 3, 10, 14, 25, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "轻雅阁",
+        "title": "碎碎念：找实习、生病与一块薯饼的治愈",
+        "url": "https://qingya.example.com/posts/internship-and-hashbrown",
+        "summary": "把最近一段时间的生活碎片整理成一篇短文。",
+        "published_at": datetime(2026, 3, 10, 9, 50, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "猫羽のブログ",
+        "title": "AI 时代的重构方式：从 RFC 到五个 Plan",
+        "url": "https://nekoha.example.com/posts/ai-refactor-rfc-plan",
+        "summary": "记录一次多人并行协作下的重构节奏。",
+        "published_at": datetime(2026, 3, 10, 8, 40, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "柏园猫のBlog",
+        "title": "使用 Python 绘制中国省份管网老化分布地图",
+        "url": "https://baiyuan.example.com/posts/pipeline-aging-map",
+        "summary": "一次数据可视化小练习。",
+        "published_at": datetime(2026, 3, 6, 16, 30, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "猫羽のブログ",
+        "title": "键盘上的春节",
+        "url": "https://nekoha.example.com/posts/spring-festival-on-keyboard",
+        "summary": "把节日气息写进键帽与输入法里。",
+        "published_at": datetime(2026, 3, 2, 11, 15, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "保罗的小宇宙",
+        "title": "TraceDiary 开发复盘：我如何并行协作 4 个 Agent",
+        "url": "https://paul.example.com/posts/tracediary-retro",
+        "summary": "一次 Agent 并行协作开发的过程记录。",
+        "published_at": datetime(2026, 2, 27, 20, 10, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "AkaraChen",
+        "title": "Astrbot / 夕颜是如何炼成的",
+        "url": "https://akara.example.com/posts/astrbot-build-log",
+        "summary": "一次机器人项目从想法到落地的复盘。",
+        "published_at": datetime(2026, 2, 27, 18, 20, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "保罗的小宇宙",
+        "title": "我用 Vibe Coding 开发了一个照片标注工具 ImgStamp",
+        "url": "https://paul.example.com/posts/imgstamp",
+        "summary": "一个小工具项目的从零到一。",
+        "published_at": datetime(2026, 2, 26, 21, 5, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "AkaraChen",
+        "title": "Gravatar Mirror",
+        "url": "https://akara.example.com/posts/gravatar-mirror",
+        "summary": "给头像服务做一次加速与镜像。",
+        "published_at": datetime(2026, 2, 25, 9, 0, tzinfo=UTC),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -458,48 +821,128 @@ def _is_empty(session: Session, model) -> bool:  # type: ignore[no-untyped-def]
 
 
 def _seed_content_entries(session: Session, model, entries: list[dict]) -> None:  # type: ignore[no-untyped-def]
-    if not _is_empty(session, model):
-        return
-    session.add_all([model(**entry) for entry in entries])
+    existing_slugs = set(session.scalars(select(model.slug)).all())
+    missing_entries = [entry for entry in entries if entry["slug"] not in existing_slugs]
+    if missing_entries:
+        session.add_all([model(**entry) for entry in missing_entries])
+
+
+def _merge_page_copy(existing: PageCopy, default_item: dict) -> bool:
+    changed = False
+    scalar_fields = (
+        "label",
+        "nav_label",
+        "title",
+        "subtitle",
+        "description",
+        "search_placeholder",
+        "empty_message",
+        "max_width",
+        "page_size",
+        "download_label",
+    )
+    for field in scalar_fields:
+        current_value = getattr(existing, field)
+        default_value = default_item.get(field)
+        if current_value is None and default_value is not None:
+            setattr(existing, field, default_value)
+            changed = True
+
+    default_extras = default_item.get("extras") or {}
+    existing_extras = dict(existing.extras or {})
+    for key, value in default_extras.items():
+        if key not in existing_extras or existing_extras[key] in (None, ""):
+            existing_extras[key] = value
+            changed = True
+
+    if (
+        existing.page_key == "calendar"
+        and existing_extras.get("weekdayLabels") == ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+    ):
+        existing_extras["weekdayLabels"] = default_extras.get("weekdayLabels", existing_extras["weekdayLabels"])
+        changed = True
+
+    if changed:
+        existing.extras = existing_extras
+    return changed
+
+
+def _seed_missing_page_copies(session: Session) -> None:
+    existing_by_key = {
+        page_copy.page_key: page_copy
+        for page_copy in session.scalars(select(PageCopy)).all()
+    }
+
+    for item in DEFAULT_PAGE_COPIES:
+        page_copy = existing_by_key.get(item["page_key"])
+        if page_copy is None:
+            session.add(PageCopy(**item))
+            continue
+        _merge_page_copy(page_copy, item)
+
+
+def _seed_missing_page_options(session: Session) -> None:
+    existing_keys = set(session.scalars(select(PageDisplayOption.page_key)).all())
+    missing_items = [item for item in DEFAULT_PAGE_OPTIONS if item["page_key"] not in existing_keys]
+    if missing_items:
+        session.add_all([PageDisplayOption(**item) for item in missing_items])
 
 
 def _seed_social_data(session: Session) -> None:
-    if _is_empty(session, Friend):
-        friend_records = [Friend(**item) for item in DEFAULT_FRIENDS]
-        session.add_all(friend_records)
-        session.flush()
-        friends_by_name = {friend.name: friend for friend in friend_records}
-    else:
-        friends_by_name = {
-            friend.name: friend
-            for friend in session.scalars(select(Friend)).all()
-        }
+    friends_by_name = {
+        friend.name: friend
+        for friend in session.scalars(select(Friend)).all()
+    }
+    for item in DEFAULT_FRIENDS:
+        friend = friends_by_name.get(item["name"])
+        if friend is None:
+            friend = Friend(**item)
+            session.add(friend)
+            session.flush()
+            friends_by_name[friend.name] = friend
+            continue
 
-    if _is_empty(session, FriendFeedSource):
-        source_records = [
-            FriendFeedSource(
+        if not friend.description:
+            friend.description = item["description"]
+        if not friend.avatar_url:
+            friend.avatar_url = item["avatar_url"]
+        if not friend.url:
+            friend.url = item["url"]
+        if friend.status in {"", "pending"}:
+            friend.status = item["status"]
+        if friend.order_index == 0:
+            friend.order_index = item["order_index"]
+
+    sources_by_name = {
+        friend.name: source
+        for source, friend in session.execute(
+            select(FriendFeedSource, Friend).join(Friend, FriendFeedSource.friend_id == Friend.id)
+        ).all()
+    }
+    for item in DEFAULT_FRIEND_FEED_SOURCES:
+        source = sources_by_name.get(item["friend_name"])
+        if source is None:
+            source = FriendFeedSource(
                 friend_id=friends_by_name[item["friend_name"]].id,
                 feed_url=item["feed_url"],
                 last_fetched_at=item["last_fetched_at"],
                 is_enabled=item["is_enabled"],
             )
-            for item in DEFAULT_FRIEND_FEED_SOURCES
-        ]
-        session.add_all(source_records)
-        session.flush()
-        sources_by_name = {
-            item["friend_name"]: source
-            for item, source in zip(DEFAULT_FRIEND_FEED_SOURCES, source_records, strict=True)
-        }
-    else:
-        sources_by_name = {
-            friend.name: source
-            for source, friend in session.execute(
-                select(FriendFeedSource, Friend).join(Friend, FriendFeedSource.friend_id == Friend.id)
-            ).all()
-        }
+            session.add(source)
+            session.flush()
+            sources_by_name[item["friend_name"]] = source
+            continue
 
-    if _is_empty(session, FriendFeedItem):
+        if not source.feed_url:
+            source.feed_url = item["feed_url"]
+        if source.last_fetched_at is None:
+            source.last_fetched_at = item["last_fetched_at"]
+
+    existing_feed_urls = set(session.scalars(select(FriendFeedItem.url)).all())
+    missing_feed_items = [
+        item for item in DEFAULT_FRIEND_FEED_ITEMS if item["url"] not in existing_feed_urls
+    ]
+    if missing_feed_items:
         session.add_all(
             [
                 FriendFeedItem(
@@ -510,33 +953,60 @@ def _seed_social_data(session: Session) -> None:
                     published_at=item["published_at"],
                     raw_payload=item["raw_payload"],
                 )
-                for item in DEFAULT_FRIEND_FEED_ITEMS
+                for item in missing_feed_items
             ]
         )
 
 
 def _seed_engagement_data(session: Session) -> None:
-    if _is_empty(session, GuestbookEntry):
-        session.add_all([GuestbookEntry(**item) for item in DEFAULT_GUESTBOOK_ENTRIES])
+    existing_guestbook = {
+        (item.name, item.body): item
+        for item in session.scalars(select(GuestbookEntry)).all()
+    }
+    missing_guestbook = [
+        item for item in DEFAULT_GUESTBOOK_ENTRIES if (item["name"], item["body"]) not in existing_guestbook
+    ]
+    if missing_guestbook:
+        session.add_all([GuestbookEntry(**item) for item in missing_guestbook])
 
-    if _is_empty(session, Comment):
-        created_comments: dict[str, Comment] = {}
-        for item in DEFAULT_COMMENTS:
-            comment = Comment(
-                content_type=item["content_type"],
-                content_slug=item["content_slug"],
-                parent_id=created_comments[item["parent_key"]].id if item["parent_key"] else None,
-                author_name=item["author_name"],
-                author_email=item["author_email"],
-                body=item["body"],
-                status=item["status"],
-            )
-            session.add(comment)
-            session.flush()
-            created_comments[item["key"]] = comment
+    existing_comments = {
+        (item.content_type, item.content_slug, item.author_name, item.body): item
+        for item in session.scalars(select(Comment)).all()
+    }
+    created_comments: dict[str, Comment] = {}
+    for item in DEFAULT_COMMENTS:
+        key = (item["content_type"], item["content_slug"], item["author_name"], item["body"])
+        existing = existing_comments.get(key)
+        if existing is not None:
+            created_comments[item["key"]] = existing
+            continue
 
-    if _is_empty(session, Reaction):
-        session.add_all([Reaction(**item) for item in DEFAULT_REACTIONS])
+        comment = Comment(
+            content_type=item["content_type"],
+            content_slug=item["content_slug"],
+            parent_id=created_comments[item["parent_key"]].id if item["parent_key"] else None,
+            author_name=item["author_name"],
+            author_email=item["author_email"],
+            body=item["body"],
+            status=item["status"],
+        )
+        session.add(comment)
+        session.flush()
+        created_comments[item["key"]] = comment
+        existing_comments[key] = comment
+
+    existing_reactions = {
+        (item.content_type, item.content_slug, item.reaction_type, item.client_token)
+        for item in session.scalars(select(Reaction)).all()
+    }
+    missing_reactions = [
+        item
+        for item in DEFAULT_REACTIONS
+        if (item["content_type"], item["content_slug"], item["reaction_type"], item["client_token"])
+        not in existing_reactions
+    ]
+    if missing_reactions:
+        session.add_all([Reaction(**item) for item in missing_reactions])
 
 
 def seed_reference_data() -> None:
@@ -565,8 +1035,9 @@ def seed_reference_data() -> None:
             session.add_all(
                 [ResumeExperience(resume_basics_id=resume.id, **experience) for experience in DEFAULT_EXPERIENCES]
             )
-        else:
-            session.rollback()
+
+        _seed_missing_page_copies(session)
+        _seed_missing_page_options(session)
 
         _seed_content_entries(session, PostEntry, DEFAULT_POSTS)
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)

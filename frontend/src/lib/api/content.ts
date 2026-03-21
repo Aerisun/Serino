@@ -13,6 +13,18 @@ export interface PublicContentEntry {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  category?: string | null;
+  read_time?: string | null;
+  relative_date?: string | null;
+  view_count?: number | null;
+  comment_count?: number | null;
+  like_count?: number | null;
+  repost_count?: number | null;
+  mood?: string | null;
+  weather?: string | null;
+  poem?: string | null;
+  author?: string | null;
+  source?: string | null;
 }
 
 export interface PublicContentCollection {

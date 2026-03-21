@@ -1,6 +1,10 @@
 import { useMemo, useRef, useEffect, useState } from "react";
 import { useTheme } from "@/contexts/useTheme";
-import { fetchActivityHeatmap, type PublicActivityHeatmapStats } from "@/lib/api";
+import {
+  fetchActivityHeatmap,
+  type PublicActivityHeatmapStats,
+  type PublicActivityHeatmapWeek,
+} from "@/lib/api";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface WeeklyData {
@@ -11,123 +15,14 @@ interface WeeklyData {
   label: string;
 }
 
-const generateWeeklyData = (): WeeklyData[] => {
-  const weeks: WeeklyData[] = [];
-  const now = new Date();
-  for (let w = 51; w >= 0; w--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - w * 7);
-    const month = date.toLocaleDateString("en-US", { month: "short" });
-    const label = `${month} ${date.getDate()}`;
-    const phase = Math.sin((52 - w) / 4.5) * 0.4 + 0.5;
-    const noise = Math.random() * 0.6 + 0.2;
-    const total = Math.max(0, Math.floor(phase * noise * 60));
-    const days: number[] = [];
-    let remaining = total;
-    for (let d = 0; d < 7; d++) {
-      if (d === 6) {
-        days.push(remaining);
-        break;
-      }
-      const dayVal = Math.floor(Math.random() * (remaining / (7 - d) * 2));
-      days.push(Math.min(dayVal, remaining));
-      remaining -= days[d];
-    }
-    weeks.push({ week: 51 - w, total, days, month, label });
-  }
-  return weeks;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const toNumber = (value: unknown, fallback = 0) => {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-
-  return fallback;
-};
-
-const toNumberArray = (value: unknown) =>
-  Array.isArray(value) ? value.map((item) => toNumber(item, 0)) : [];
-
-const extractArrayPayload = (payload: unknown) => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (!isRecord(payload)) {
-    return [];
-  }
-
-  for (const key of ["weeks", "items", "data", "list", "results"]) {
-    const value = payload[key];
-    if (Array.isArray(value)) {
-      return value;
-    }
-  }
-
-  return [];
-};
-
-const normalizeWeek = (value: unknown, index: number): WeeklyData | null => {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  const weekStartValue =
-    typeof value.week_start === "string"
-      ? value.week_start
-      : typeof value.weekStart === "string"
-        ? value.weekStart
-        : "";
-  const weekStart = weekStartValue ? new Date(weekStartValue) : null;
-  const isValidWeekStart = weekStart !== null && !Number.isNaN(weekStart.getTime());
-  const month =
-    typeof value.month_label === "string"
-      ? value.month_label
-      : typeof value.monthLabel === "string"
-        ? value.monthLabel
-        : isValidWeekStart
-          ? weekStart.toLocaleDateString("en-US", { month: "short" })
-          : "";
-  const label =
-    typeof value.label === "string"
-      ? value.label
-      : isValidWeekStart
-        ? `${weekStart.toLocaleDateString("en-US", { month: "short" })} ${weekStart.getDate()}`
-        : month
-          ? `${month} ${index + 1}`
-          : `Week ${index + 1}`;
-  const total = toNumber(value.total ?? value.count ?? value.value, 0);
-  const rawDays = toNumberArray(value.days ?? value.day_counts ?? value.dayCounts);
-  const days = rawDays.length > 0 ? rawDays.slice(0, 7) : [];
-
-  while (days.length < 7) {
-    days.push(0);
-  }
-
-  return {
-    week: toNumber(value.week ?? value.index ?? index, index),
-    total,
-    days,
-    month,
-    label,
-  };
-};
-
-const normalizeHeatmapWeeks = (payload: unknown) =>
-  extractArrayPayload(payload)
-    .map((item, index) => normalizeWeek(item, index))
-    .filter((item): item is WeeklyData => item !== null);
+const normalizeHeatmapWeeks = (weeks: PublicActivityHeatmapWeek[]): WeeklyData[] =>
+  weeks.map((week, index) => ({
+    week: index,
+    total: week.total,
+    days: Array.from({ length: 7 }, (_, dayIndex) => Math.max(0, week.days[dayIndex] ?? 0)),
+    month: week.month_label,
+    label: week.label,
+  }));
 
 const WAVE_H = 180;
 const COL_W = 22;
@@ -156,23 +51,34 @@ const blobPath = (cx: number, cy: number, r: number, seed: number) => {
   return d;
 };
 
+const buildMonthMarkers = (weeks: WeeklyData[]) => {
+  const markers: Array<{ label: string; x: number }> = [];
+  let lastMonth = "";
+  weeks.forEach((week, index) => {
+    if (week.month !== lastMonth) {
+      markers.push({ label: week.month, x: index * (COL_W + COL_GAP) + COL_W / 2 + 20 });
+      lastMonth = week.month;
+    }
+  });
+  return markers;
+};
+
 const ActivityHeatmap = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [data, setData] = useState<WeeklyData[]>(() => generateWeeklyData());
+  const [data, setData] = useState<WeeklyData[]>([]);
   const [remoteStats, setRemoteStats] = useState<PublicActivityHeatmapStats | null>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
+  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const prefersReducedMotion = useReducedMotionPreference();
-  const totalWidth = data.length * (COL_W + COL_GAP) + 40;
-  const maxVal = Math.max(...data.map((d) => d.total), 1);
-  const totalContributions = remoteStats?.total_contributions ?? data.reduce((sum, d) => sum + d.total, 0);
-  const peakWeek = remoteStats?.peak_week ?? maxVal;
-  const averagePerWeek =
-    remoteStats?.average_per_week ?? Math.round(totalContributions / Math.max(data.length, 1));
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const totalWidth = Math.max(data.length * (COL_W + COL_GAP) + 40, 160);
+  const maxVal = Math.max(...data.map((d) => d.total), 1);
+  const hasData = status === "ready" && data.length > 0;
 
-  // Theme-aware colors
   const accentColor = isDark ? "140,170,255" : "60,100,200";
   const lineColor = isDark ? "200,220,255" : "40,80,180";
   const particleColor = isDark ? "white" : "hsl(222, 47%, 11%)";
@@ -181,33 +87,49 @@ const ActivityHeatmap = () => {
   const tooltipStroke = isDark ? `rgba(${accentColor},0.15)` : `rgba(${accentColor},0.25)`;
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-    }
-  }, [data.length]);
-
-  useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     const loadHeatmap = async () => {
+      setStatus("loading");
+      setErrorMessage("");
+
       try {
-        const payload = await fetchActivityHeatmap(52);
-        const remoteWeeks = normalizeHeatmapWeeks(payload.weeks);
-        if (!cancelled && remoteWeeks.length > 0) {
-          setData(remoteWeeks);
-          setRemoteStats(payload.stats);
+        const payload = await fetchActivityHeatmap(52, { signal: controller.signal });
+        if (controller.signal.aborted) {
+          return;
         }
-      } catch {
-        // Keep the local generated fallback.
+
+        const remoteWeeks = normalizeHeatmapWeeks(payload.weeks);
+        setData(remoteWeeks);
+        setRemoteStats(payload.stats);
+        setStatus(remoteWeeks.length > 0 ? "ready" : "empty");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setData([]);
+          setRemoteStats(null);
+          setStatus("error");
+          setErrorMessage(error instanceof Error ? error.message : "热力图加载失败");
+        }
       }
     };
 
     void loadHeatmap();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [reloadKey]);
+
+  useEffect(() => {
+    if (!hasData) {
+      setHoveredWeek(null);
+      return;
+    }
+
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [hasData, data.length]);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
@@ -245,49 +167,50 @@ const ActivityHeatmap = () => {
   };
 
   const wavePath = buildPath(points);
-  const fillPath = `${wavePath} L ${points[points.length - 1].x} ${WAVE_H + 10} L ${points[0].x} ${WAVE_H + 10} Z`;
+  const fillPath =
+    points.length > 0
+      ? `${wavePath} L ${points[points.length - 1].x} ${WAVE_H + 10} L ${points[0].x} ${WAVE_H + 10} Z`
+      : "";
 
   const particles = useMemo(() => {
     return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
       id: i,
-      baseX: Math.random() * 52 * (COL_W + COL_GAP) + 20,
+      baseX: Math.random() * totalWidth,
       baseY: Math.random() * WAVE_H,
       r: Math.random() * 1.5 + 0.5,
       speed: Math.random() * 0.5 + 0.3,
       phase: Math.random() * Math.PI * 2,
       opacity: Math.random() * 0.3 + 0.05,
     }));
-  }, []);
+  }, [data.length, totalWidth]);
 
-  const monthMarkers: { label: string; x: number }[] = [];
-  let lastMonth = "";
-  data.forEach((d, i) => {
-    if (d.month !== lastMonth) {
-      monthMarkers.push({ label: d.month, x: i * (COL_W + COL_GAP) + COL_W / 2 + 20 });
-      lastMonth = d.month;
-    }
-  });
-
+  const monthMarkers = useMemo(() => buildMonthMarkers(data), [data]);
   const dayLabels = ["一", "三", "五"];
+  const totalContributions = remoteStats?.total_contributions ?? 0;
+  const thisWeek = data[data.length - 1]?.total ?? 0;
+  const peakWeek = remoteStats?.peak_week ?? 0;
+  const averagePerWeek = remoteStats?.average_per_week ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-baseline justify-between">
         <h3 className="text-sm font-body font-medium text-foreground/50 uppercase tracking-widest">
           Activity
         </h3>
         <span className="text-xs font-body text-foreground/30 tabular-nums">
-          {totalContributions.toLocaleString()} contributions
+          {status === "loading"
+            ? "加载中"
+            : status === "error"
+              ? "加载失败"
+              : `${totalContributions.toLocaleString()} contributions`}
         </span>
       </div>
 
-      {/* Stats row */}
       <div className="flex items-center gap-6">
         {[
-          { label: "This week", value: data[data.length - 1]?.total ?? 0 },
-          { label: "Peak week", value: peakWeek },
-          { label: "Avg / week", value: averagePerWeek },
+          { label: "This week", value: hasData ? thisWeek : "—" },
+          { label: "Peak week", value: hasData ? peakWeek : "—" },
+          { label: "Avg / week", value: hasData ? averagePerWeek : "—" },
         ].map((stat) => (
           <div key={stat.label} className="flex flex-col">
             <span className="text-xl font-body font-medium text-foreground tabular-nums">
@@ -300,218 +223,226 @@ const ActivityHeatmap = () => {
         ))}
       </div>
 
-      {/* Wave chart */}
-      <div
-        ref={scrollRef}
-        className="overflow-x-auto scrollbar-hide -mx-2 px-2"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <svg width={totalWidth + 20} height={WAVE_H + 36} className="block">
-          <defs>
-            <linearGradient id="waveFillGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={`rgba(${accentColor},0.15)`} />
-              <stop offset="50%" stopColor={`rgba(${accentColor},0.04)`} />
-              <stop offset="100%" stopColor="transparent" />
-            </linearGradient>
-            <filter id="waveGlow">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-            <filter id="dotGlow">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-            <clipPath id="waveClip">
-              <path d={fillPath} />
-            </clipPath>
-          </defs>
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto scrollbar-hide -mx-2 px-2"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <svg width={totalWidth + 20} height={WAVE_H + 36} className="block">
+            <defs>
+              <linearGradient id="waveFillGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={`rgba(${accentColor},0.15)`} />
+                <stop offset="50%" stopColor={`rgba(${accentColor},0.04)`} />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
+              <filter id="waveGlow">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="dotGlow">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <clipPath id="waveClip">
+                <path d={fillPath} />
+              </clipPath>
+            </defs>
 
-          {/* Grid lines */}
-          {[0.25, 0.5, 0.75].map((r) => (
-            <line
-              key={r}
-              x1={20}
-              y1={WAVE_H - r * (WAVE_H - 40)}
-              x2={totalWidth}
-              y2={WAVE_H - r * (WAVE_H - 40)}
-              stroke={gridLineColor}
-              strokeDasharray="2 10"
-            />
-          ))}
-
-          {/* Fill area */}
-          <path d={fillPath} fill="url(#waveFillGrad)" />
-
-          {/* Floating particles */}
-          <g clipPath="url(#waveClip)">
-            {particles.map((p) => {
-              const px = p.baseX + Math.sin(displayTime * p.speed + p.phase) * 8;
-              const py = p.baseY + Math.cos(displayTime * p.speed * 0.7 + p.phase) * 12;
-              return (
-                <circle
-                  key={p.id}
-                  cx={px}
-                  cy={py}
-                  r={p.r}
-                  fill={particleColor}
-                  opacity={p.opacity + Math.sin(displayTime * 2 + p.phase) * 0.05}
-                />
-              );
-            })}
-          </g>
-
-          {/* Organic blobs */}
-          {data.map((d, i) => {
-            if (d.total < maxVal * 0.3) return null;
-            const intensity = d.total / maxVal;
-            const r = 4 + intensity * 8;
-            const isHovered = hoveredWeek === i;
-            return (
-              <path
-                key={`blob-${i}`}
-                d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + displayTime * 0.5)}
-                fill={`rgba(${accentColor},${isHovered ? 0.15 : 0.04 + intensity * 0.04})`}
-                className="transition-opacity duration-300"
+            {[0.25, 0.5, 0.75].map((r) => (
+              <line
+                key={r}
+                x1={20}
+                y1={WAVE_H - r * (WAVE_H - 40)}
+                x2={totalWidth}
+                y2={WAVE_H - r * (WAVE_H - 40)}
+                stroke={gridLineColor}
+                strokeDasharray="2 10"
               />
-            );
-          })}
+            ))}
 
-          {/* Wave line */}
-          <path
-            d={wavePath}
-            fill="none"
-            stroke={`rgba(${accentColor},0.12)`}
-            strokeWidth={4}
-            strokeLinecap="round"
-          />
-          <path
-            d={wavePath}
-            fill="none"
-            stroke={`rgba(${lineColor},0.5)`}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            filter="url(#waveGlow)"
-          />
+            {hasData && (
+              <>
+                <path d={fillPath} fill="url(#waveFillGrad)" />
 
-          {/* Interactive columns */}
-          {data.map((d, i) => {
-            const x = i * (COL_W + COL_GAP) + 20;
-            const isHovered = hoveredWeek === i;
-            return (
-              <g key={i}>
-                <rect
-                  x={x}
-                  y={0}
-                  width={COL_W}
-                  height={WAVE_H}
-                  fill="transparent"
-                  onMouseEnter={() => setHoveredWeek(i)}
-                  onMouseLeave={() => setHoveredWeek(null)}
-                  style={{ cursor: "crosshair" }}
+                <g clipPath="url(#waveClip)">
+                  {particles.map((p) => {
+                    const px = p.baseX + Math.sin(displayTime * p.speed + p.phase) * 8;
+                    const py = p.baseY + Math.cos(displayTime * p.speed * 0.7 + p.phase) * 12;
+                    return (
+                      <circle
+                        key={p.id}
+                        cx={px}
+                        cy={py}
+                        r={p.r}
+                        fill={particleColor}
+                        opacity={p.opacity + Math.sin(displayTime * 2 + p.phase) * 0.05}
+                      />
+                    );
+                  })}
+                </g>
+
+                {data.map((d, i) => {
+                  if (d.total < maxVal * 0.3) return null;
+                  const intensity = d.total / maxVal;
+                  const r = 4 + intensity * 8;
+                  const isHovered = hoveredWeek === i;
+                  return (
+                    <path
+                      key={`blob-${i}`}
+                      d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + displayTime * 0.5)}
+                      fill={`rgba(${accentColor},${isHovered ? 0.15 : 0.04 + intensity * 0.04})`}
+                      className="transition-opacity duration-300"
+                    />
+                  );
+                })}
+
+                <path
+                  d={wavePath}
+                  fill="none"
+                  stroke={`rgba(${accentColor},0.12)`}
+                  strokeWidth={4}
+                  strokeLinecap="round"
                 />
-                {isHovered && (
-                  <line
-                    x1={points[i].x}
-                    y1={points[i].y}
-                    x2={points[i].x}
-                    y2={WAVE_H}
-                    stroke={`rgba(${accentColor},0.15)`}
-                    strokeWidth={1}
-                    strokeDasharray="2 4"
-                  />
-                )}
-                <circle
-                  cx={points[i].x}
-                  cy={points[i].y}
-                  r={isHovered ? 5 : d.total > maxVal * 0.5 ? 2 : 0}
-                  fill={isHovered ? `rgba(${lineColor},0.9)` : `rgba(${lineColor},0.5)`}
-                  filter={isHovered ? "url(#dotGlow)" : undefined}
-                  className="transition-all duration-200"
+                <path
+                  d={wavePath}
+                  fill="none"
+                  stroke={`rgba(${lineColor},0.5)`}
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  filter="url(#waveGlow)"
                 />
-                {isHovered && d.days && (
-                  <g>
-                    {d.days.map((dayVal, di) => {
-                      const barH = (dayVal / Math.max(...d.days, 1)) * 24;
-                      const bx = points[i].x - 10.5 + di * 3.5;
-                      const by = WAVE_H - 2 - barH;
-                      return (
-                        <rect
-                          key={di}
-                          x={bx}
-                          y={by}
-                          width={2.5}
-                          height={barH}
-                          rx={1.25}
-                          fill={`rgba(${accentColor},${0.2 + (dayVal / Math.max(...d.days, 1)) * 0.4})`}
+
+                {data.map((d, i) => {
+                  const x = i * (COL_W + COL_GAP) + 20;
+                  const isHovered = hoveredWeek === i;
+                  return (
+                    <g key={i}>
+                      <rect
+                        x={x}
+                        y={0}
+                        width={COL_W}
+                        height={WAVE_H}
+                        fill="transparent"
+                        onMouseEnter={() => setHoveredWeek(i)}
+                        onMouseLeave={() => setHoveredWeek(null)}
+                        style={{ cursor: "crosshair" }}
+                      />
+                      {isHovered && (
+                        <line
+                          x1={points[i].x}
+                          y1={points[i].y}
+                          x2={points[i].x}
+                          y2={WAVE_H}
+                          stroke={`rgba(${accentColor},0.15)`}
+                          strokeWidth={1}
+                          strokeDasharray="2 4"
                         />
-                      );
-                    })}
+                      )}
+                      <circle
+                        cx={points[i].x}
+                        cy={points[i].y}
+                        r={isHovered ? 5 : d.total > maxVal * 0.5 ? 2 : 0}
+                        fill={isHovered ? `rgba(${lineColor},0.9)` : `rgba(${lineColor},0.5)`}
+                        filter={isHovered ? "url(#dotGlow)" : undefined}
+                        className="transition-all duration-200"
+                      />
+                      {isHovered && d.days && (
+                        <g>
+                          {d.days.map((dayVal, di) => {
+                            const barH = (dayVal / Math.max(...d.days, 1)) * 24;
+                            const bx = points[i].x - 10.5 + di * 3.5;
+                            const by = WAVE_H - 2 - barH;
+                            return (
+                              <rect
+                                key={di}
+                                x={bx}
+                                y={by}
+                                width={2.5}
+                                height={barH}
+                                rx={1.25}
+                                fill={`rgba(${accentColor},${0.2 + (dayVal / Math.max(...d.days, 1)) * 0.4})`}
+                              />
+                            );
+                          })}
+                        </g>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {hoveredWeek !== null && points[hoveredWeek] && (
+                  <g>
+                    <rect
+                      x={points[hoveredWeek].x - 44}
+                      y={points[hoveredWeek].y - 38}
+                      width={88}
+                      height={26}
+                      rx={13}
+                      fill={tooltipBg}
+                      stroke={tooltipStroke}
+                      strokeWidth={0.5}
+                    />
+                    <text
+                      x={points[hoveredWeek].x}
+                      y={points[hoveredWeek].y - 21}
+                      textAnchor="middle"
+                      className="fill-foreground/80 font-body"
+                      fontSize={10}
+                      fontWeight={500}
+                    >
+                      {data[hoveredWeek].total} · {data[hoveredWeek].label}
+                    </text>
                   </g>
                 )}
-              </g>
-            );
-          })}
 
-          {/* Tooltip */}
-          {hoveredWeek !== null && (
-            <g>
-              <rect
-                x={points[hoveredWeek].x - 44}
-                y={points[hoveredWeek].y - 38}
-                width={88}
-                height={26}
-                rx={13}
-                fill={tooltipBg}
-                stroke={tooltipStroke}
-                strokeWidth={0.5}
-              />
-              <text
-                x={points[hoveredWeek].x}
-                y={points[hoveredWeek].y - 21}
-                textAnchor="middle"
-                className="fill-foreground/80 font-body"
-                fontSize={10}
-                fontWeight={500}
-              >
-                {data[hoveredWeek].total} · {data[hoveredWeek].label}
-              </text>
-            </g>
-          )}
+                {monthMarkers.map((m, i) => (
+                  <text
+                    key={i}
+                    x={m.x}
+                    y={WAVE_H + 22}
+                    textAnchor="middle"
+                    className="fill-foreground/20 font-body"
+                    fontSize={9}
+                  >
+                    {m.label}
+                  </text>
+                ))}
 
-          {/* Month labels */}
-          {monthMarkers.map((m, i) => (
-            <text
-              key={i}
-              x={m.x}
-              y={WAVE_H + 22}
-              textAnchor="middle"
-              className="fill-foreground/20 font-body"
-              fontSize={9}
+                {dayLabels.map((label, i) => (
+                  <text
+                    key={label}
+                    x={12}
+                    y={WAVE_H - (i + 1) * (WAVE_H / 5) + 4}
+                    textAnchor="middle"
+                    className="fill-foreground/10 font-body"
+                    fontSize={8}
+                  >
+                    {label}
+                  </text>
+                ))}
+              </>
+            )}
+          </svg>
+        </div>
+
+        {status === "error" && (
+          <div className="pointer-events-none absolute right-2 top-2">
+            <button
+              type="button"
+              onClick={() => setReloadKey((value) => value + 1)}
+              className="pointer-events-auto rounded-full border border-foreground/10 px-3 py-1 text-[10px] text-foreground/55 transition-colors hover:text-foreground/75"
             >
-              {m.label}
-            </text>
-          ))}
-
-          {/* Day labels */}
-          {dayLabels.map((label, i) => (
-            <text
-              key={label}
-              x={12}
-              y={WAVE_H - (i + 1) * (WAVE_H / 5) + 4}
-              textAnchor="middle"
-              className="fill-foreground/10 font-body"
-              fontSize={8}
-            >
-              {label}
-            </text>
-          ))}
-        </svg>
+              重试
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
