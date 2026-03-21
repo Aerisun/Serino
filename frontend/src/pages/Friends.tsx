@@ -1,8 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { RefreshCw, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { pageConfig, staggerItem } from "@/config";
+import {
+  fetchPublicFriendFeed,
+  fetchPublicFriends,
+  formatFriendFeedDate,
+  type PublicFriend,
+  type PublicFriendFeedItem,
+} from "@/lib/api";
 
 interface Friend {
   name: string;
@@ -17,7 +24,7 @@ interface CirclePost {
   date: string;
 }
 
-const friends: Friend[] = [
+const LOCAL_FRIENDS: Friend[] = [
   { name: "Miku's Blog", desc: "记录生活与技术的小站", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku" },
   { name: "AkaraChen", desc: "位于互联网边缘的小站。", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara" },
   { name: "夏目的博客", desc: "总有人间一两风，填我十万八千梦。", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume" },
@@ -30,7 +37,7 @@ const friends: Friend[] = [
 ];
 
 // All circle posts data (simulating paginated API)
-const allCirclePosts: CirclePost[] = [
+const LOCAL_CIRCLE_POSTS: CirclePost[] = [
   { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume", blogName: "夏目的博客", title: "网络流算法详解", date: "2026-03-18" },
   { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku", blogName: "喵二の小博客", title: "\u201C糖\u201D", date: "2026-03-16" },
   { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume", blogName: "夏目的博客", title: "一些思考", date: "2026-03-14" },
@@ -65,9 +72,70 @@ const allCirclePosts: CirclePost[] = [
 
 const config = pageConfig.friends;
 
+const toFriend = (value: PublicFriend): Friend => ({
+  name: value.name,
+  desc: value.description?.trim() || "记录生活与技术的小站",
+  avatar:
+    value.avatar?.trim() ||
+    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(value.name)}`,
+});
+
+const toCirclePost = (value: PublicFriendFeedItem): CirclePost => ({
+  blogName: value.blogName,
+  title: value.title,
+  date: formatFriendFeedDate(value.publishedAt) || new Date().toISOString().slice(0, 10),
+  avatar:
+    value.avatar?.trim() ||
+    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(value.blogName)}`,
+});
+
 const Friends = () => {
+  const [friends, setFriends] = useState<Friend[]>(LOCAL_FRIENDS);
+  const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>(LOCAL_CIRCLE_POSTS);
   const [visibleCount, setVisibleCount] = useState(config.pageSize);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadRemoteData = async () => {
+      try {
+        const [friendsPayload, feedPayload] = await Promise.all([
+          fetchPublicFriends(undefined, { signal: controller.signal }),
+          fetchPublicFriendFeed(undefined, { signal: controller.signal }),
+        ]);
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const nextFriends = friendsPayload.items.map(toFriend).filter((item) => Boolean(item.name));
+        const nextCirclePosts = feedPayload.items
+          .map(toCirclePost)
+          .filter((item) => Boolean(item.blogName && item.title));
+
+        setFriends(nextFriends.length > 0 ? nextFriends : LOCAL_FRIENDS);
+        setAllCirclePosts(nextCirclePosts.length > 0 ? nextCirclePosts : LOCAL_CIRCLE_POSTS);
+      } catch {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setFriends(LOCAL_FRIENDS);
+        setAllCirclePosts(LOCAL_CIRCLE_POSTS);
+      }
+    };
+
+    void loadRemoteData();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    setVisibleCount((current) => Math.min(Math.max(current, config.pageSize), allCirclePosts.length));
+  }, [allCirclePosts.length]);
 
   const loadMore = useCallback(() => {
     if (loading || visibleCount >= allCirclePosts.length) return;
@@ -77,7 +145,7 @@ const Friends = () => {
       setVisibleCount((c) => Math.min(c + config.pageSize, allCirclePosts.length));
       setLoading(false);
     }, 600);
-  }, [loading, visibleCount]);
+  }, [loading, visibleCount, allCirclePosts.length]);
 
   const hasMore = visibleCount < allCirclePosts.length;
   const visiblePosts = allCirclePosts.slice(0, visibleCount);

@@ -1,16 +1,20 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import { pageConfig, staggerItem } from "@/config";
+import { pageConfig, staggerItem, transition } from "@/config";
+import { fetchPublicCalendar, type PublicCalendarEvent } from "@/lib/api";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface CalendarEvent {
   date: string; // YYYY-MM-DD
   type: "post" | "diary" | "excerpt";
   title: string;
+  href?: string;
 }
 
-const events: CalendarEvent[] = [
+const LOCAL_EVENTS: CalendarEvent[] = [
   { date: "2026-03-21", type: "post", title: "从零搭建个人设计系统的完整思路" },
   { date: "2026-03-20", type: "diary", title: "春分，天气转暖" },
   { date: "2026-03-18", type: "post", title: "液态玻璃效果的 CSS 实现与优化" },
@@ -48,23 +52,94 @@ function getFirstDayOfMonth(year: number, month: number) {
   return day === 0 ? 6 : day - 1; // Monday = 0
 }
 
+const normalizeDateKey = (value: unknown) => {
+  if (typeof value !== "string" || !value) {
+    return "";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const normalizeType = (value: unknown): CalendarEvent["type"] | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const raw = value.toLowerCase();
+  if (raw === "post" || raw === "posts" || raw === "article") return "post";
+  if (raw === "diary" || raw === "diaries" || raw === "journal") return "diary";
+  if (raw === "excerpt" || raw === "excerpts" || raw === "quote") return "excerpt";
+  return null;
+};
+
+const normalizeCalendarEvent = (item: PublicCalendarEvent): CalendarEvent | null => {
+  const date = normalizeDateKey(item.date);
+  const type = normalizeType(item.type);
+
+  if (!date || !type || !item.title) {
+    return null;
+  }
+
+  return {
+    date,
+    type,
+    title: item.title,
+    href: item.href,
+  };
+};
+
 const CalendarPage = () => {
   const today = new Date();
+  const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotionPreference();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(LOCAL_EVENTS);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCalendarEvents = async () => {
+      try {
+        const payload = await fetchPublicCalendar(undefined, undefined);
+        const remoteEvents = payload.events
+          .map((item) => normalizeCalendarEvent(item))
+          .filter((item): item is CalendarEvent => item !== null);
+        if (!cancelled && remoteEvents.length > 0) {
+          setCalendarEvents(remoteEvents);
+        }
+      } catch {
+        // Keep the local mock fallback.
+      }
+    };
+
+    void loadCalendarEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const eventMap = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
-    events.forEach((e) => {
+    calendarEvents.forEach((e) => {
       if (!map[e.date]) map[e.date] = [];
       map[e.date].push(e);
     });
     return map;
-  }, []);
+  }, [calendarEvents]);
 
   const selectedEvents = selectedDate ? eventMap[selectedDate] || [] : [];
 
@@ -82,6 +157,7 @@ const CalendarPage = () => {
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const activeEvents = selectedDate ? selectedEvents : eventMap[todayKey] || [];
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
@@ -100,9 +176,13 @@ const CalendarPage = () => {
           {/* Calendar grid */}
           <motion.div
             className="liquid-glass rounded-2xl p-6"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: config.motion.duration, delay: config.motion.delay, ease: [0.16, 1, 0.3, 1] }}
+            transition={transition({
+              duration: config.motion.duration,
+              delay: config.motion.delay,
+              reducedMotion: prefersReducedMotion,
+            })}
           >
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-6">
@@ -203,9 +283,13 @@ const CalendarPage = () => {
           {/* Side panel — selected date events */}
           <motion.div
             className="liquid-glass rounded-2xl p-5 h-fit lg:sticky lg:top-24"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: config.motion.duration, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            transition={transition({
+              duration: config.motion.duration,
+              delay: 0.16,
+              reducedMotion: prefersReducedMotion,
+            })}
           >
             <h3 className="text-xs font-body uppercase tracking-widest text-foreground/30 mb-4">
               {selectedDate
@@ -213,19 +297,26 @@ const CalendarPage = () => {
                 : "今日"}
             </h3>
 
-            {(selectedDate ? selectedEvents : eventMap[todayKey] || []).length > 0 ? (
+            {activeEvents.length > 0 ? (
               <div className="flex flex-col gap-3">
-                {(selectedDate ? selectedEvents : eventMap[todayKey] || []).map((e, i) => {
+                {activeEvents.map((e, i) => {
                   const cfg = typeConfig[e.type];
                   const Icon = cfg.icon;
                   return (
-                    <motion.div
+                    <motion.button
+                      type="button"
                       key={i}
                       className="group cursor-pointer rounded-xl p-3 hover:bg-foreground/5 transition-colors"
+                      onClick={() => {
+                        if (e.href) {
+                          navigate(e.href);
+                        }
+                      }}
                       {...staggerItem(i, {
                         baseDelay: 0,
                         step: 0.05,
                         duration: 0.3,
+                        reducedMotion: prefersReducedMotion,
                       })}
                     >
                       <div className="flex items-center gap-2 mb-1.5">
@@ -237,7 +328,7 @@ const CalendarPage = () => {
                       <p className="text-sm font-body text-foreground/70 group-hover:text-foreground/90 transition-colors leading-snug">
                         {e.title}
                       </p>
-                    </motion.div>
+                    </motion.button>
                   );
                 })}
               </div>

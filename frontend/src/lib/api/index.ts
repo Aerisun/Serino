@@ -51,3 +51,4 @@ export const apiClient = {
 };
 
 export * from "./content";
+export * from "./community";

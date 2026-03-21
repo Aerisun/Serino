@@ -1,14 +1,17 @@
+import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { fetchPublicFriendFeed, formatFriendFeedDate, type PublicFriendFeedItem } from "@/lib/api";
 
 interface FriendPost {
   avatar: string;
   blogName: string;
   title: string;
   date: string;
+  url?: string;
 }
 
-const friendPosts: FriendPost[] = [
+const LOCAL_FRIEND_POSTS: FriendPost[] = [
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume",
     blogName: "夏目的博客",
@@ -65,8 +68,42 @@ const friendPosts: FriendPost[] = [
   },
 ];
 
+const normalizeFriendPost = (value: PublicFriendFeedItem): FriendPost => ({
+  avatar:
+    value.avatar?.trim() ||
+    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(value.blogName)}`,
+  blogName: value.blogName,
+  title: value.title,
+  date: formatFriendFeedDate(value.publishedAt) || "最近",
+  url: value.url,
+});
+
 const FriendCircle = () => {
   const navigate = useNavigate();
+  const [friendPosts, setFriendPosts] = useState<FriendPost[]>(LOCAL_FRIEND_POSTS);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadFriendFeed = async () => {
+      try {
+        const payload = await fetchPublicFriendFeed(12, { signal: controller.signal });
+        const remotePosts = payload.items.map(normalizeFriendPost);
+
+        if (!controller.signal.aborted && remotePosts.length > 0) {
+          setFriendPosts(remotePosts);
+        }
+      } catch {
+        // Keep the local mock fallback.
+      }
+    };
+
+    void loadFriendFeed();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -84,9 +121,15 @@ const FriendCircle = () => {
 
       <div className="overflow-y-auto max-h-[420px] scrollbar-hide pr-1 -mr-1 flex flex-col gap-0.5">
         {friendPosts.map((post, i) => (
-          <div
+          <button
+            type="button"
             key={i}
-            className="group flex items-start gap-3 rounded-xl px-2.5 py-3 transition-colors hover:bg-foreground/[0.04]"
+            className="group flex w-full items-start gap-3 rounded-xl px-2.5 py-3 text-left transition-colors hover:bg-foreground/[0.04]"
+            onClick={() => {
+              if (post.url) {
+                window.open(post.url, "_blank", "noopener,noreferrer");
+              }
+            }}
           >
             {/* Avatar */}
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06] mt-0.5">
@@ -112,7 +155,7 @@ const FriendCircle = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
