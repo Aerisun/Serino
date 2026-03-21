@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
+import PageMeta from "@/components/PageMeta";
 
 interface PostData {
   title: string;
@@ -183,6 +184,7 @@ const PostDetail = () => {
   if (!post) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <PageMeta title="文章不存在" description="你访问的文章暂时不存在。" />
         <p className="text-foreground/30">文章不存在</p>
       </div>
     );
@@ -190,6 +192,7 @@ const PostDetail = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageMeta title={post.title} description={post.content[0]} />
       <FallingPetals />
       <Navbar />
 

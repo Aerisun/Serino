@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ChevronDown, X } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ChevronDown } from "lucide-react";
+import PageShell from "@/components/PageShell";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
@@ -99,24 +97,13 @@ const Diary = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-            日记
-          </h1>
-          <p className="mt-3 text-sm text-foreground/35">
-            每天一点点，记录生活的温度。
-          </p>
-        </motion.div>
+    <PageShell
+      eyebrow="Diary"
+      title="日记"
+      description="每天一点点，记录生活的温度，也记录节奏如何从一天里慢慢长出来。"
+      metaDescription="Felix 的日记列表，记录天气、心情与每天的生活片段。"
+      width="narrow"
+    >
 
         {/* Diary entries */}
         <div className="mt-10 flex flex-col gap-3">
@@ -218,9 +205,7 @@ const Diary = () => {
             );
           })}
         </div>
-      </main>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 
