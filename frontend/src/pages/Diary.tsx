@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
@@ -91,6 +92,7 @@ const diaryEntries: DiaryEntry[] = [
     content: "周末的最后一天，去公园走了走。树上的花苞已经鼓鼓的了，再过几天应该就会开了。拍了几张照片，光线特别好。回来后把照片调了调色，想放到博客的相册里。一个人的周末，安静但不孤单。",
   },
 ];
+const config = pageConfig.diary;
 
 const Diary = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -98,11 +100,11 @@ const Diary = () => {
 
   return (
     <PageShell
-      eyebrow="Diary"
-      title="日记"
-      description="每天一点点，记录生活的温度，也记录节奏如何从一天里慢慢长出来。"
-      metaDescription="Felix 的日记列表，记录天气、心情与每天的生活片段。"
-      width="narrow"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         {/* Diary entries */}
@@ -114,13 +116,11 @@ const Diary = () => {
             return (
               <motion.div
                 key={entry.id}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.4,
-                  delay: 0.06 + i * 0.04,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
+                {...staggerItem(i, {
+                  baseDelay: config.motion.delay,
+                  step: config.motion.stagger,
+                  duration: config.motion.duration,
+                })}
               >
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -179,7 +179,7 @@ const Diary = () => {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          transition={{ duration: config.motion.duration - 0.1, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
                           <p className="mt-4 text-[0.935rem] font-body text-foreground/60 leading-7">

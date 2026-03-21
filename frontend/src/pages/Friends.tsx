@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { motion } from "motion/react";
 import { RefreshCw, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
 
 interface Friend {
   name: string;
@@ -62,10 +63,10 @@ const allCirclePosts: CirclePost[] = [
   { avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya", blogName: "轻雅阁", title: "前往 2026", date: "2026-01-04" },
 ];
 
-const PAGE_SIZE = 10;
+const config = pageConfig.friends;
 
 const Friends = () => {
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(config.pageSize);
   const [loading, setLoading] = useState(false);
 
   const loadMore = useCallback(() => {
@@ -73,7 +74,7 @@ const Friends = () => {
     setLoading(true);
     // Simulate network delay
     setTimeout(() => {
-      setVisibleCount((c) => Math.min(c + PAGE_SIZE, allCirclePosts.length));
+      setVisibleCount((c) => Math.min(c + config.pageSize, allCirclePosts.length));
       setLoading(false);
     }, 600);
   }, [loading, visibleCount]);
@@ -83,14 +84,14 @@ const Friends = () => {
 
   return (
     <PageShell
-      eyebrow="Circle"
-      title="朋友们"
-      description="海内存知己，天涯若比邻。把常看的小站和最近的回响轻轻放在一起。"
-      metaDescription="Felix 的友链与朋友圈，收纳常去的小站与最近更新。"
-      width="wide"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
       headerAside={
         <span className="text-xs tracking-[0.18em] text-foreground/28">
-          {friends.length} 个站点
+          {config.headerCountLabel(friends.length)}
         </span>
       }
     >
@@ -101,13 +102,11 @@ const Friends = () => {
             <motion.div
               key={friend.name}
               className="group flex flex-col items-center rounded-2xl px-4 py-8 text-center transition-colors hover:bg-foreground/[0.04]"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.08 + i * 0.04,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              {...staggerItem(i, {
+                baseDelay: config.motion.delay,
+                step: config.motion.stagger,
+                duration: config.motion.duration,
+              })}
             >
               <div className="h-16 w-16 overflow-hidden rounded-full bg-foreground/[0.04]">
                 <img
@@ -134,19 +133,19 @@ const Friends = () => {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: config.motion.duration + 0.05, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-2xl font-heading italic tracking-tight text-foreground sm:text-3xl">
-              Friend Circle
+              {config.circleTitle}
             </h2>
             <div className="text-xs font-body text-foreground/25 flex items-center gap-1.5">
               <RefreshCw className="h-3 w-3" />
-              整理中
+              {config.statusLabel}
             </div>
           </div>
           <p className="text-xs font-body text-foreground/20 mb-8">
-            {friends.length} links with {friends.length} active · {allCirclePosts.length} articles in total
+            {config.circleSubtitle(friends.length, allCirclePosts.length)}
           </p>
         </motion.div>
 
@@ -156,13 +155,11 @@ const Friends = () => {
             <motion.div
               key={`${post.blogName}-${post.date}-${i}`}
               className="group flex items-start gap-3.5 py-4 border-t border-foreground/[0.05] transition-colors hover:bg-foreground/[0.02] -mx-3 px-3 rounded-lg"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
+              {...staggerItem(i, {
+                baseDelay: 0,
+                step: 0.03,
                 duration: 0.35,
-                delay: Math.min(i * 0.03, 0.3),
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              })}
             >
               {/* Avatar */}
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06] mt-0.5">
@@ -203,12 +200,12 @@ const Friends = () => {
               {loading ? (
                 <>
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  加载中...
+                  {config.loadingLabel}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-3.5 w-3.5" />
-                  Load more
+                  {config.loadMoreLabel}
                 </>
               )}
             </button>

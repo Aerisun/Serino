@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
 
 interface Thought {
   id: number;
@@ -82,15 +83,16 @@ const thoughts: Thought[] = [
     reposts: 11,
   },
 ];
+const config = pageConfig.thoughts;
 
 const Thoughts = () => {
   return (
     <PageShell
-      eyebrow="Dispatches"
-      title="碎碎念"
-      description="短句、片段、当下感受，像是从工作和生活里捞出来的一些微光。"
-      metaDescription="Felix 的碎碎念时间线，记录设计、生活与日常想法。"
-      width="narrow"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         {/* Timeline */}
@@ -102,13 +104,11 @@ const Thoughts = () => {
             <motion.div
               key={thought.id}
               className="relative pl-14 pb-10 last:pb-0"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.08 + i * 0.04,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              {...staggerItem(i, {
+                baseDelay: config.motion.delay,
+                step: config.motion.stagger,
+                duration: config.motion.duration,
+              })}
             >
               {/* Dot */}
               <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-foreground/15 bg-background" />

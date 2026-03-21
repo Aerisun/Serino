@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
 
 interface CalendarEvent {
   date: string; // YYYY-MM-DD
@@ -34,9 +35,9 @@ const typeConfig = {
   diary: { icon: BookOpen, label: "日记", color: "bg-emerald-500/20 text-emerald-300" },
   excerpt: { icon: Feather, label: "文摘", color: "bg-amber-500/20 text-amber-300" },
 };
-
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-const MONTHS = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+const config = pageConfig.calendar;
+const WEEKDAYS = config.weekdayLabels;
+const MONTHS = config.monthLabels;
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -88,11 +89,11 @@ const CalendarPage = () => {
 
   return (
     <PageShell
-      eyebrow="Calendar"
-      title="日历"
-      description="把帖子、日记和文摘按日期铺开，回看最近一段时间的节奏变化。"
-      metaDescription="Felix 的内容日历，按日期浏览帖子、日记与文摘。"
-      width="wide"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_280px]">
@@ -101,7 +102,7 @@ const CalendarPage = () => {
             className="liquid-glass rounded-2xl p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: config.motion.duration, delay: config.motion.delay, ease: [0.16, 1, 0.3, 1] }}
           >
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-6">
@@ -204,7 +205,7 @@ const CalendarPage = () => {
             className="liquid-glass rounded-2xl p-5 h-fit lg:sticky lg:top-24"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: config.motion.duration, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
           >
             <h3 className="text-xs font-body uppercase tracking-widest text-foreground/30 mb-4">
               {selectedDate
@@ -221,9 +222,11 @@ const CalendarPage = () => {
                     <motion.div
                       key={i}
                       className="group cursor-pointer rounded-xl p-3 hover:bg-foreground/5 transition-colors"
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.05 }}
+                      {...staggerItem(i, {
+                        baseDelay: 0,
+                        step: 0.05,
+                        duration: 0.3,
+                      })}
                     >
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-body ${cfg.color}`}>

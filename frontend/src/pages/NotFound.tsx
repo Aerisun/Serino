@@ -2,13 +2,14 @@ import { useLocation, Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Home, Sparkles } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
+import { pageConfig } from "@/config";
 
 const NotFound = () => {
   const location = useLocation();
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 text-foreground">
-      <PageMeta title="页面未找到" description="你访问的页面不存在，返回 Felix 的个人网站继续浏览。" />
+      <PageMeta title={pageConfig.notFound.metaTitle} description={pageConfig.notFound.metaDescription} />
       <div
         className="absolute inset-0 opacity-70"
         aria-hidden="true"
@@ -35,7 +36,7 @@ const NotFound = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-foreground/25">404</p>
             <h1 className="mt-2 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-              页面不在这里
+              {pageConfig.notFound.title}
             </h1>
           </div>
           <p className="max-w-sm text-sm leading-7 text-foreground/45">
@@ -43,7 +44,7 @@ const NotFound = () => {
             <span className="rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[0.8em] text-foreground/70">
               {location.pathname}
             </span>{" "}
-            不属于当前网站壳层。先回到首页，再从主导航继续。
+            {pageConfig.notFound.description}
           </p>
         </div>
 

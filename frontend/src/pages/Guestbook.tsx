@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Send } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
 
 interface Message {
   id: number;
@@ -48,6 +49,7 @@ const messages: Message[] = [
     date: "2026-03-08",
   },
 ];
+const config = pageConfig.guestbook;
 
 const Guestbook = () => {
   const [name, setName] = useState("");
@@ -63,11 +65,11 @@ const Guestbook = () => {
 
   return (
     <PageShell
-      eyebrow="Guestbook"
-      title="留言板"
-      description="留下一点话语和气味，让这座个人站不只是独白，也有你来过的痕迹。"
-      metaDescription="Felix 的留言板，欢迎留下你的足迹与想法。"
-      width="narrow"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         {/* Form */}
@@ -76,19 +78,19 @@ const Guestbook = () => {
           className="mt-10 liquid-glass rounded-2xl p-6"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: config.motion.duration, delay: config.motion.delay, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="flex flex-col sm:flex-row gap-3 mb-3">
             <input
               type="text"
-              placeholder="你的名字"
+              placeholder={config.namePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="flex-1 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2.5 text-sm font-body text-foreground placeholder:text-foreground/20 outline-none transition-colors focus:border-foreground/15 focus:bg-foreground/[0.05]"
             />
           </div>
           <textarea
-            placeholder="写点什么..."
+            placeholder={config.contentPlaceholder}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={3}
@@ -100,7 +102,7 @@ const Guestbook = () => {
               className="flex items-center gap-2 rounded-full liquid-glass px-5 py-2.5 text-sm font-body font-medium text-foreground/60 hover:text-foreground transition-colors active:scale-[0.97]"
             >
               <Send className="h-3.5 w-3.5" />
-              发送
+              {config.submitLabel}
             </button>
           </div>
         </motion.form>
@@ -111,13 +113,11 @@ const Guestbook = () => {
             <motion.div
               key={msg.id}
               className="flex items-start gap-3.5 py-5 border-t border-foreground/[0.05]"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.1 + i * 0.04,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              {...staggerItem(i, {
+                baseDelay: config.motion.delay + 0.04,
+                step: config.motion.stagger,
+                duration: config.motion.duration,
+              })}
             >
               {/* Avatar */}
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06] mt-0.5">

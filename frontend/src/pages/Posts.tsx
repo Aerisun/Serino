@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
 
 interface Post {
   id: number;
@@ -95,6 +96,7 @@ const posts: Post[] = [
 ];
 
 const allCategories = ["全部", ...Array.from(new Set(posts.map((p) => p.category)))];
+const config = pageConfig.posts;
 
 const Posts = () => {
   const [search, setSearch] = useState("");
@@ -112,13 +114,14 @@ const Posts = () => {
 
   return (
     <PageShell
-      eyebrow="Journal"
-      title="Posts"
-      description="文章、设计笔记与前端思考，按主题和节奏慢慢展开。"
-      metaDescription="Felix 的文章列表，收纳设计、前端与个人写作。"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
       headerAside={
         <span className="text-xs tracking-[0.18em] text-foreground/28">
-          {posts.length} 篇文章
+          {config.headerCountLabel(posts.length)}
         </span>
       }
     >
@@ -128,13 +131,13 @@ const Posts = () => {
           className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: config.motion.duration + 0.05, delay: config.motion.delay, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="relative max-w-xs flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25" />
             <input
               type="text"
-              placeholder="搜索文章..."
+              placeholder={config.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-foreground/15 focus:bg-foreground/[0.05]"
@@ -152,7 +155,7 @@ const Posts = () => {
                     : "text-foreground/35 hover:text-foreground/55"
                 }`}
               >
-                {cat}
+                {cat === "全部" ? config.categories.all : cat}
               </button>
             ))}
           </div>
@@ -165,13 +168,11 @@ const Posts = () => {
               key={post.id}
               className="group cursor-pointer border-t border-foreground/6 py-6 transition-colors first:border-t-0 hover:bg-foreground/[0.02]"
               onClick={() => navigate(`/posts/${post.id}`)}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.1 + i * 0.04,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              {...staggerItem(i, {
+                baseDelay: config.motion.delay + 0.04,
+                step: config.motion.stagger,
+                duration: config.motion.duration,
+              })}
             >
               <h2 className="text-base font-medium leading-snug text-foreground/90 transition-colors group-hover:text-foreground sm:text-lg">
                 {post.title}
@@ -200,7 +201,7 @@ const Posts = () => {
           ))}
 
           {filtered.length === 0 && (
-            <p className="py-16 text-center text-sm text-foreground/25">没有找到匹配的文章</p>
+            <p className="py-16 text-center text-sm text-foreground/25">{config.emptyMessage}</p>
           )}
         </div>
     </PageShell>
