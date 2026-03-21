@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function(){var t=localStorage.getItem('theme')||'system';
+      var d=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light':t;
+      document.documentElement.classList.add(d)})();
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="preload" as="image" href="/images/hero_bg.jpeg" type="image/jpeg" />
+    <link rel="preload" as="video" href="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4" type="video/mp4" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cosmic Canvas</title>
+    <meta name="description" content="Cosmic Canvas frontend." />
+    <meta name="author" content="Cosmic Canvas" />
+
+    <meta property="og:title" content="Cosmic Canvas" />
+    <meta property="og:description" content="Cosmic Canvas frontend." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/images/hero_bg.jpeg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cosmic Canvas" />
+    <meta name="twitter:description" content="Cosmic Canvas frontend." />
+    <meta name="twitter:image" content="/images/hero_bg.jpeg" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

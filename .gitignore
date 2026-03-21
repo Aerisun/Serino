@@ -1,0 +1,32 @@
+# Frontend dependencies and build output
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# Local environment files
+/frontend/.env
+/frontend/.env.*
+!/frontend/.env.example
+/frontend/*.local
+
+# Logs
+*.log
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+# vibe coding
+/temp
+/openspec
+/.claude
+/.codex
+/.playwright-cli
