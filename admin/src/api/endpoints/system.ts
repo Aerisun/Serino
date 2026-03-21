@@ -1,0 +1,59 @@
+import client from "../client";
+import type {
+  ApiKey,
+  ApiKeyCreate,
+  ApiKeyUpdate,
+  ApiKeyCreateResponse,
+  AuditLog,
+  BackupSnapshot,
+  DashboardStats,
+  PaginatedResponse,
+} from "@/types/models";
+
+// --- Dashboard ---
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const res = await client.get("/system/dashboard/stats");
+  return res.data;
+}
+
+// --- API Keys ---
+export async function listApiKeys(): Promise<ApiKey[]> {
+  const res = await client.get("/system/api-keys");
+  return res.data;
+}
+
+export async function createApiKey(data: ApiKeyCreate): Promise<ApiKeyCreateResponse> {
+  const res = await client.post("/system/api-keys", data);
+  return res.data;
+}
+
+export async function updateApiKey(id: string, data: ApiKeyUpdate): Promise<ApiKey> {
+  const res = await client.put(`/system/api-keys/${id}`, data);
+  return res.data;
+}
+
+export async function deleteApiKey(id: string): Promise<void> {
+  await client.delete(`/system/api-keys/${id}`);
+}
+
+// --- Audit Logs ---
+export async function listAuditLogs(params?: { page?: number; page_size?: number }): Promise<PaginatedResponse<AuditLog>> {
+  const res = await client.get("/system/audit-logs", { params });
+  return res.data;
+}
+
+// --- Backups ---
+export async function listBackups(): Promise<BackupSnapshot[]> {
+  const res = await client.get("/system/backups");
+  return res.data;
+}
+
+export async function triggerBackup(): Promise<BackupSnapshot> {
+  const res = await client.post("/system/backups");
+  return res.data;
+}
+
+export async function restoreBackup(id: string): Promise<BackupSnapshot> {
+  const res = await client.post(`/system/backups/${id}/restore`);
+  return res.data;
+}
