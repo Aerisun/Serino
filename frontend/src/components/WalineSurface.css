@@ -1,0 +1,166 @@
+.aerisun-waline-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  background:
+    radial-gradient(circle at top left, hsl(var(--foreground) / 0.07), transparent 30%),
+    radial-gradient(circle at bottom right, hsl(var(--foreground) / 0.05), transparent 34%),
+    linear-gradient(180deg, hsl(var(--card) / 0.92), hsl(var(--background) / 0.82));
+  box-shadow:
+    0 24px 80px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--foreground) / 0.08);
+}
+
+.aerisun-waline-shell__glow {
+  position: absolute;
+  inset: -35% auto auto -18%;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, hsl(var(--foreground) / 0.08), transparent 70%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.aerisun-waline-shell__header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: 1.25rem 1.25rem 0.75rem;
+}
+
+.aerisun-waline-shell__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--foreground) / 0.45);
+}
+
+.aerisun-waline-shell__title {
+  margin: 0;
+  font-family: "Instrument Serif", serif;
+  font-size: clamp(1.6rem, 2vw, 2.2rem);
+  font-weight: 400;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}
+
+.aerisun-waline-shell__subtitle {
+  max-width: 56ch;
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: hsl(var(--foreground) / 0.58);
+}
+
+.aerisun-waline-shell__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aerisun-waline-shell__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  background: hsl(var(--background) / 0.55);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: hsl(var(--foreground) / 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.aerisun-waline-shell__body {
+  position: relative;
+  z-index: 1;
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.aerisun-waline-shell__loading,
+.aerisun-waline-shell__empty {
+  display: grid;
+  place-items: center;
+  min-height: 18rem;
+  border-radius: 1.4rem;
+  border: 1px dashed hsl(var(--foreground) / 0.12);
+  background: hsl(var(--background) / 0.38);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.aerisun-waline-shell__loading {
+  gap: 0.85rem;
+}
+
+.aerisun-waline-shell__spinner {
+  height: 1.3rem;
+  width: 1.3rem;
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--foreground) / 0.12);
+  border-top-color: hsl(var(--foreground) / 0.75);
+  animation: aerisun-waline-spin 0.8s linear infinite;
+}
+
+.aerisun-waline-host {
+  color: hsl(var(--foreground));
+}
+
+.aerisun-waline-host {
+  --waline-theme-color: hsl(var(--foreground));
+  --waline-active-color: hsl(var(--foreground));
+  --waline-color: hsl(var(--foreground));
+  --waline-info-color: hsl(var(--foreground) / 0.56);
+  --waline-bgcolor: hsl(var(--card) / 0.92);
+  --waline-bgcolor-light: hsl(var(--background) / 0.82);
+  --waline-border-color: hsl(var(--foreground) / 0.1);
+  --waline-code-bg-color: hsl(var(--foreground) / 0.06);
+  --waline-box-shadow: 0 18px 54px hsl(var(--foreground) / 0.08);
+  --waline-avatar-size: 3rem;
+  --waline-avatar-radius: 9999px;
+  --waline-font-size: 0.95rem;
+}
+
+.aerisun-waline-host :is(.wl-avatar, .wl-avatar img, .wl-avatar picture) {
+  border-radius: 9999px;
+  box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12);
+}
+
+.aerisun-waline-host :is(.wl-card, .wl-editor, .wl-content, .wl-panel, .wl-input-wrap, .wl-comment, .wl-item) {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.aerisun-waline-host :is(.wl-editor, .wl-input, .wl-textarea) {
+  border-radius: 1rem;
+}
+
+@keyframes aerisun-waline-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .aerisun-waline-shell__header,
+  .aerisun-waline-shell__body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .aerisun-waline-shell__subtitle {
+    font-size: 0.9rem;
+  }
+}
