@@ -1,0 +1,101 @@
+from __future__ import annotations
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from aerisun.models import PageCopy, PageDisplayOption, Poem, ResumeBasics, ResumeExperience, ResumeSkillGroup, SiteProfile, SocialLink
+from aerisun.schemas import (
+    PageCollectionRead,
+    PageCopyRead,
+    ResumeExperienceRead,
+    ResumeRead,
+    ResumeSkillGroupRead,
+    SiteConfigRead,
+    SiteProfileRead,
+    PoemRead,
+    SocialLinkRead,
+)
+
+
+def get_site_config(session: Session) -> SiteConfigRead:
+    site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    if site is None:
+        raise LookupError("site profile is missing")
+
+    links = session.scalars(
+        select(SocialLink).where(SocialLink.site_profile_id == site.id).order_by(SocialLink.order_index.asc())
+    ).all()
+    poems = session.scalars(
+        select(Poem).where(Poem.site_profile_id == site.id).order_by(Poem.order_index.asc())
+    ).all()
+
+    return SiteConfigRead(
+        site=SiteProfileRead.model_validate(site),
+        social_links=[SocialLinkRead.model_validate(link) for link in links],
+        poems=[PoemRead.model_validate(poem) for poem in poems],
+    )
+
+
+def get_page_copy(session: Session) -> PageCollectionRead:
+    copies = session.scalars(select(PageCopy).order_by(PageCopy.page_key.asc())).all()
+    options = {option.page_key: option for option in session.scalars(select(PageDisplayOption)).all()}
+
+    items = []
+    for page in copies:
+        option = options.get(page.page_key)
+        items.append(
+            PageCopyRead(
+                page_key=page.page_key,
+                label=page.label,
+                title=page.title,
+                subtitle=page.subtitle,
+                description=page.description,
+                search_placeholder=page.search_placeholder,
+                empty_message=page.empty_message,
+                max_width=page.max_width,
+                page_size=page.page_size,
+                download_label=page.download_label,
+                enabled=True if option is None else option.is_enabled,
+                extras=page.extras,
+            )
+        )
+
+    return PageCollectionRead(items=items)
+
+
+def get_resume(session: Session) -> ResumeRead:
+    basics = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
+    if basics is None:
+        raise LookupError("resume basics are missing")
+
+    skill_groups = session.scalars(
+        select(ResumeSkillGroup)
+        .where(ResumeSkillGroup.resume_basics_id == basics.id)
+        .order_by(ResumeSkillGroup.order_index.asc())
+    ).all()
+    experiences = session.scalars(
+        select(ResumeExperience)
+        .where(ResumeExperience.resume_basics_id == basics.id)
+        .order_by(ResumeExperience.order_index.asc())
+    ).all()
+
+    return ResumeRead(
+        title=basics.title,
+        subtitle=basics.subtitle,
+        summary=basics.summary,
+        download_label=basics.download_label,
+        skill_groups=[
+            ResumeSkillGroupRead(
+                category=group.category,
+                items=list(group.items),
+                order_index=group.order_index,
+            )
+            for group in skill_groups
+        ],
+        experiences=[ResumeExperienceRead.model_validate(item) for item in experiences],
+    )
+
+
+load_site_bundle = get_site_config
+load_pages_bundle = get_page_copy
+load_resume_bundle = get_resume

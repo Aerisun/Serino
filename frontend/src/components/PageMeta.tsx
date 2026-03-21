@@ -1,11 +1,5 @@
 import { useEffect } from "react";
-import {
-  SITE_AUTHOR,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  SITE_OG_IMAGE,
-  buildPageTitle,
-} from "@/config/site";
+import { SITE_AUTHOR, SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, buildPageTitle } from "@/config";
 
 interface PageMetaProps {
   title?: string;

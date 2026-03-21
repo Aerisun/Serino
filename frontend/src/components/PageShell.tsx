@@ -4,6 +4,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import PageMeta from "@/components/PageMeta";
+import { pageEntrance } from "@/config";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface PageShellProps {
   eyebrow: string;
@@ -34,6 +36,9 @@ const PageShell = ({
   width = "content",
   contentClassName = "mt-10",
 }: PageShellProps) => {
+  const prefersReducedMotion = useReducedMotionPreference();
+  const entrance = pageEntrance(prefersReducedMotion);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <PageMeta title={metaTitle ?? title} description={metaDescription ?? description} />
@@ -48,9 +53,7 @@ const PageShell = ({
       <main className={`${widths[width]} relative mx-auto px-6 pt-28 pb-20 lg:px-8`}>
         <motion.header
           className="relative pb-8"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          {...entrance}
         >
           <div className="pointer-events-none absolute -left-10 top-0 h-24 w-32 bg-[radial-gradient(circle_at_center,rgba(143,190,255,0.16),transparent_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(143,190,255,0.10),transparent_72%)]" />
 

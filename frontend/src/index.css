@@ -82,6 +82,21 @@
     @apply bg-background text-foreground;
     font-family: 'Barlow', sans-serif;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    html:focus-within {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
@@ -89,8 +104,8 @@
   .dark .liquid-glass {
     background: rgba(255, 255, 255, 0.01);
     background-blend-mode: luminosity;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: none;
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     position: relative;
@@ -105,12 +120,12 @@
     padding: 1.4px;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.45) 0%,
-      rgba(255, 255, 255, 0.15) 20%,
+      rgba(255, 255, 255, 0.25) 0%,
+      rgba(255, 255, 255, 0.08) 20%,
       rgba(255, 255, 255, 0) 40%,
       rgba(255, 255, 255, 0) 60%,
-      rgba(255, 255, 255, 0.15) 80%,
-      rgba(255, 255, 255, 0.45) 100%
+      rgba(255, 255, 255, 0.08) 80%,
+      rgba(255, 255, 255, 0.25) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -172,12 +187,12 @@
     padding: 1.4px;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.5) 0%,
-      rgba(255, 255, 255, 0.2) 20%,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0.1) 20%,
       rgba(255, 255, 255, 0) 40%,
       rgba(255, 255, 255, 0) 60%,
-      rgba(255, 255, 255, 0.2) 80%,
-      rgba(255, 255, 255, 0.5) 100%
+      rgba(255, 255, 255, 0.1) 80%,
+      rgba(255, 255, 255, 0.3) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;

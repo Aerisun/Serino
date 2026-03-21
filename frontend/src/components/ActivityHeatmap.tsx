@@ -1,8 +1,18 @@
 import { useMemo, useRef, useEffect, useState } from "react";
 import { useTheme } from "@/contexts/useTheme";
+import { fetchActivityHeatmap, type PublicActivityHeatmapStats } from "@/lib/api";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
-const generateWeeklyData = () => {
-  const weeks: { week: number; total: number; days: number[]; month: string; label: string }[] = [];
+interface WeeklyData {
+  week: number;
+  total: number;
+  days: number[];
+  month: string;
+  label: string;
+}
+
+const generateWeeklyData = (): WeeklyData[] => {
+  const weeks: WeeklyData[] = [];
   const now = new Date();
   for (let w = 51; w >= 0; w--) {
     const date = new Date(now);
@@ -15,7 +25,10 @@ const generateWeeklyData = () => {
     const days: number[] = [];
     let remaining = total;
     for (let d = 0; d < 7; d++) {
-      if (d === 6) { days.push(remaining); break; }
+      if (d === 6) {
+        days.push(remaining);
+        break;
+      }
       const dayVal = Math.floor(Math.random() * (remaining / (7 - d) * 2));
       days.push(Math.min(dayVal, remaining));
       remaining -= days[d];
@@ -24,6 +37,97 @@ const generateWeeklyData = () => {
   }
   return weeks;
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toNumber = (value: unknown, fallback = 0) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+};
+
+const toNumberArray = (value: unknown) =>
+  Array.isArray(value) ? value.map((item) => toNumber(item, 0)) : [];
+
+const extractArrayPayload = (payload: unknown) => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (!isRecord(payload)) {
+    return [];
+  }
+
+  for (const key of ["weeks", "items", "data", "list", "results"]) {
+    const value = payload[key];
+    if (Array.isArray(value)) {
+      return value;
+    }
+  }
+
+  return [];
+};
+
+const normalizeWeek = (value: unknown, index: number): WeeklyData | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const weekStartValue =
+    typeof value.week_start === "string"
+      ? value.week_start
+      : typeof value.weekStart === "string"
+        ? value.weekStart
+        : "";
+  const weekStart = weekStartValue ? new Date(weekStartValue) : null;
+  const isValidWeekStart = weekStart !== null && !Number.isNaN(weekStart.getTime());
+  const month =
+    typeof value.month_label === "string"
+      ? value.month_label
+      : typeof value.monthLabel === "string"
+        ? value.monthLabel
+        : isValidWeekStart
+          ? weekStart.toLocaleDateString("en-US", { month: "short" })
+          : "";
+  const label =
+    typeof value.label === "string"
+      ? value.label
+      : isValidWeekStart
+        ? `${weekStart.toLocaleDateString("en-US", { month: "short" })} ${weekStart.getDate()}`
+        : month
+          ? `${month} ${index + 1}`
+          : `Week ${index + 1}`;
+  const total = toNumber(value.total ?? value.count ?? value.value, 0);
+  const rawDays = toNumberArray(value.days ?? value.day_counts ?? value.dayCounts);
+  const days = rawDays.length > 0 ? rawDays.slice(0, 7) : [];
+
+  while (days.length < 7) {
+    days.push(0);
+  }
+
+  return {
+    week: toNumber(value.week ?? value.index ?? index, index),
+    total,
+    days,
+    month,
+    label,
+  };
+};
+
+const normalizeHeatmapWeeks = (payload: unknown) =>
+  extractArrayPayload(payload)
+    .map((item, index) => normalizeWeek(item, index))
+    .filter((item): item is WeeklyData => item !== null);
 
 const WAVE_H = 180;
 const COL_W = 22;
@@ -54,12 +158,17 @@ const blobPath = (cx: number, cy: number, r: number, seed: number) => {
 
 const ActivityHeatmap = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const data = useMemo(generateWeeklyData, []);
+  const [data, setData] = useState<WeeklyData[]>(() => generateWeeklyData());
+  const [remoteStats, setRemoteStats] = useState<PublicActivityHeatmapStats | null>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
+  const prefersReducedMotion = useReducedMotionPreference();
   const totalWidth = data.length * (COL_W + COL_GAP) + 40;
   const maxVal = Math.max(...data.map((d) => d.total), 1);
-  const totalContributions = data.reduce((sum, d) => sum + d.total, 0);
+  const totalContributions = remoteStats?.total_contributions ?? data.reduce((sum, d) => sum + d.total, 0);
+  const peakWeek = remoteStats?.peak_week ?? maxVal;
+  const averagePerWeek =
+    remoteStats?.average_per_week ?? Math.round(totalContributions / Math.max(data.length, 1));
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
@@ -67,7 +176,6 @@ const ActivityHeatmap = () => {
   const accentColor = isDark ? "140,170,255" : "60,100,200";
   const lineColor = isDark ? "200,220,255" : "40,80,180";
   const particleColor = isDark ? "white" : "hsl(222, 47%, 11%)";
-  const textMutedOpacity = isDark ? 0.5 : 0.45;
   const gridLineColor = isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.04)";
   const tooltipBg = isDark ? "rgba(20,24,40,0.7)" : "rgba(255,255,255,0.85)";
   const tooltipStroke = isDark ? `rgba(${accentColor},0.15)` : `rgba(${accentColor},0.25)`;
@@ -76,21 +184,47 @@ const ActivityHeatmap = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
+  }, [data.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadHeatmap = async () => {
+      try {
+        const payload = await fetchActivityHeatmap(52);
+        const remoteWeeks = normalizeHeatmapWeeks(payload.weeks);
+        if (!cancelled && remoteWeeks.length > 0) {
+          setData(remoteWeeks);
+          setRemoteStats(payload.stats);
+        }
+      } catch {
+        // Keep the local generated fallback.
+      }
+    };
+
+    void loadHeatmap();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
+
     let raf: number;
     const tick = () => {
-      setTime(t => t + 0.008);
+      setTime((t) => t + 0.008);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [prefersReducedMotion]);
 
+  const displayTime = prefersReducedMotion ? 0 : time;
   const points = data.map((d, i) => ({
     x: i * (COL_W + COL_GAP) + COL_W / 2 + 20,
-    y: WAVE_H - (d.total / maxVal) * (WAVE_H - 40) + Math.sin(time + i * 0.3) * 2,
+    y: WAVE_H - (d.total / maxVal) * (WAVE_H - 40) + Math.sin(displayTime + i * 0.3) * 2,
   }));
 
   const buildPath = (pts: { x: number; y: number }[]) => {
@@ -152,8 +286,8 @@ const ActivityHeatmap = () => {
       <div className="flex items-center gap-6">
         {[
           { label: "This week", value: data[data.length - 1]?.total ?? 0 },
-          { label: "Peak week", value: maxVal },
-          { label: "Avg / week", value: Math.round(totalContributions / 52) },
+          { label: "Peak week", value: peakWeek },
+          { label: "Avg / week", value: averagePerWeek },
         ].map((stat) => (
           <div key={stat.label} className="flex flex-col">
             <span className="text-xl font-body font-medium text-foreground tabular-nums">
@@ -217,8 +351,8 @@ const ActivityHeatmap = () => {
           {/* Floating particles */}
           <g clipPath="url(#waveClip)">
             {particles.map((p) => {
-              const px = p.baseX + Math.sin(time * p.speed + p.phase) * 8;
-              const py = p.baseY + Math.cos(time * p.speed * 0.7 + p.phase) * 12;
+              const px = p.baseX + Math.sin(displayTime * p.speed + p.phase) * 8;
+              const py = p.baseY + Math.cos(displayTime * p.speed * 0.7 + p.phase) * 12;
               return (
                 <circle
                   key={p.id}
@@ -226,7 +360,7 @@ const ActivityHeatmap = () => {
                   cy={py}
                   r={p.r}
                   fill={particleColor}
-                  opacity={p.opacity + Math.sin(time * 2 + p.phase) * 0.05}
+                  opacity={p.opacity + Math.sin(displayTime * 2 + p.phase) * 0.05}
                 />
               );
             })}
@@ -241,7 +375,7 @@ const ActivityHeatmap = () => {
             return (
               <path
                 key={`blob-${i}`}
-                d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + time * 0.5)}
+                d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + displayTime * 0.5)}
                 fill={`rgba(${accentColor},${isHovered ? 0.15 : 0.04 + intensity * 0.04})`}
                 className="transition-opacity duration-300"
               />

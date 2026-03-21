@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ChevronDown } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
+import { fetchPublicContentCollection, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
 interface DiaryEntry {
   id: number;
+  slug: string;
+  title: string;
   date: string;
   weekday: string;
   weather: Weather;
@@ -33,9 +37,11 @@ const weatherLabels: Record<Weather, string> = {
   windy: "大风",
 };
 
-const diaryEntries: DiaryEntry[] = [
+const fallbackDiaryEntries: DiaryEntry[] = [
   {
     id: 1,
+    slug: "spring-equinox-and-warm-light",
+    title: "春分后的第一个晴天",
     date: "2026-03-21",
     weekday: "周六",
     weather: "sunny",
@@ -44,6 +50,8 @@ const diaryEntries: DiaryEntry[] = [
   },
   {
     id: 2,
+    slug: "motion-curve-notes",
+    title: "关于缓动曲线的思考",
     date: "2026-03-20",
     weekday: "周五",
     weather: "cloudy",
@@ -52,6 +60,8 @@ const diaryEntries: DiaryEntry[] = [
   },
   {
     id: 3,
+    slug: "rain-day-and-lofi",
+    title: "雨天，面条，和意外的高效",
     date: "2026-03-19",
     weekday: "周四",
     weather: "rainy",
@@ -60,6 +70,8 @@ const diaryEntries: DiaryEntry[] = [
   },
   {
     id: 4,
+    slug: "burst-of-inspiration-day",
+    title: "灵感爆发的一天",
     date: "2026-03-18",
     weekday: "周三",
     weather: "sunny",
@@ -68,6 +80,8 @@ const diaryEntries: DiaryEntry[] = [
   },
   {
     id: 5,
+    slug: "windy-library-day",
+    title: "风很大的一天",
     date: "2026-03-17",
     weekday: "周二",
     weather: "windy",
@@ -76,6 +90,8 @@ const diaryEntries: DiaryEntry[] = [
   },
   {
     id: 6,
+    slug: "new-week-balance",
+    title: "新的一周",
     date: "2026-03-16",
     weekday: "周一",
     weather: "cloudy",
@@ -84,6 +100,8 @@ const diaryEntries: DiaryEntry[] = [
   },
   {
     id: 7,
+    slug: "quiet-weekend",
+    title: "安静的周末",
     date: "2026-03-15",
     weekday: "周日",
     weather: "sunny",
@@ -91,36 +109,93 @@ const diaryEntries: DiaryEntry[] = [
     content: "周末的最后一天，去公园走了走。树上的花苞已经鼓鼓的了，再过几天应该就会开了。拍了几张照片，光线特别好。回来后把照片调了调色，想放到博客的相册里。一个人的周末，安静但不孤单。",
   },
 ];
+const config = pageConfig.diary;
+
+const fallbackBySlug = Object.fromEntries(fallbackDiaryEntries.map((item) => [item.slug, item]));
+
+const formatDateKey = (value: string | null) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+};
+
+const formatWeekday = (value: string | null) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(parsed);
+};
+
+const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEntry => {
+  const fallback = fallbackBySlug[entry.slug];
+  const preview = entry.summary?.trim() || splitContentParagraphs(entry.body)[0] || fallback?.content || "";
+
+  return {
+    id: fallback?.id ?? index + 1,
+    slug: entry.slug,
+    title: entry.title,
+    date: formatDateKey(entry.published_at) || fallback?.date || "",
+    weekday: formatWeekday(entry.published_at) || fallback?.weekday || "",
+    weather: fallback?.weather ?? "cloudy",
+    mood: fallback?.mood ?? "📝",
+    content: preview,
+  };
+};
 
 const Diary = () => {
+  const [items, setItems] = useState<DiaryEntry[]>(fallbackDiaryEntries);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadDiary = async () => {
+      try {
+        const payload = await fetchPublicContentCollection("diary", 20);
+        if (cancelled || payload.items.length === 0) {
+          return;
+        }
+
+        setItems(payload.items.map(mapRemoteDiaryEntry));
+      } catch {
+        if (!cancelled) {
+          setItems(fallbackDiaryEntries);
+        }
+      }
+    };
+
+    void loadDiary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <PageShell
-      eyebrow="Diary"
-      title="日记"
-      description="每天一点点，记录生活的温度，也记录节奏如何从一天里慢慢长出来。"
-      metaDescription="Felix 的日记列表，记录天气、心情与每天的生活片段。"
-      width="narrow"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         {/* Diary entries */}
         <div className="mt-10 flex flex-col gap-3">
-          {diaryEntries.map((entry, i) => {
+          {items.map((entry, i) => {
             const isExpanded = expandedId === entry.id;
             const WeatherIcon = weatherIcons[entry.weather];
 
             return (
               <motion.div
                 key={entry.id}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.4,
-                  delay: 0.06 + i * 0.04,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
+                {...staggerItem(i, {
+                  baseDelay: config.motion.delay,
+                  step: config.motion.stagger,
+                  duration: config.motion.duration,
+                })}
               >
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -179,7 +254,7 @@ const Diary = () => {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          transition={{ duration: config.motion.duration - 0.1, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
                           <p className="mt-4 text-[0.935rem] font-body text-foreground/60 leading-7">
@@ -190,7 +265,7 @@ const Diary = () => {
                               {entry.date} · {weatherLabels[entry.weather]}
                             </span>
                             <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/diary/${entry.id}`); }}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/diary/${entry.slug}`); }}
                               className="text-[11px] font-body text-foreground/30 hover:text-foreground/60 transition-colors"
                             >
                               查看详情 →

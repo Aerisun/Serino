@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
+import { fetchPublicContentCollection, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 interface Thought {
-  id: number;
+  id: number | string;
+  slug?: string;
   content: string;
   date: string;
   likes: number;
@@ -12,7 +16,7 @@ interface Thought {
   mood?: string;
 }
 
-const thoughts: Thought[] = [
+const fallbackThoughts: Thought[] = [
   {
     id: 1,
     content: "今天把博客的排版重新调了一遍，字间距从 -0.02em 改到 -0.03em，整个页面的气质都不一样了。设计就是这种细微到像素级的偏执。",
@@ -82,15 +86,58 @@ const thoughts: Thought[] = [
     reposts: 11,
   },
 ];
+const config = pageConfig.thoughts;
+
+const mapRemoteThought = (entry: PublicContentEntry, index: number): Thought => {
+  const fallback = fallbackThoughts[index];
+
+  return {
+    id: fallback?.id ?? entry.slug,
+    slug: entry.slug,
+    content: entry.summary?.trim() || splitContentParagraphs(entry.body)[0] || entry.title,
+    date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+    likes: fallback?.likes ?? 0,
+    comments: fallback?.comments ?? 0,
+    reposts: fallback?.reposts ?? 0,
+    mood: fallback?.mood,
+  };
+};
 
 const Thoughts = () => {
+  const [items, setItems] = useState<Thought[]>(fallbackThoughts);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadThoughts = async () => {
+      try {
+        const payload = await fetchPublicContentCollection("thoughts", 40);
+        if (cancelled || payload.items.length === 0) {
+          return;
+        }
+
+        setItems(payload.items.map(mapRemoteThought));
+      } catch {
+        if (!cancelled) {
+          setItems(fallbackThoughts);
+        }
+      }
+    };
+
+    void loadThoughts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <PageShell
-      eyebrow="Dispatches"
-      title="碎碎念"
-      description="短句、片段、当下感受，像是从工作和生活里捞出来的一些微光。"
-      metaDescription="Felix 的碎碎念时间线，记录设计、生活与日常想法。"
-      width="narrow"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         {/* Timeline */}
@@ -98,17 +145,15 @@ const Thoughts = () => {
           {/* Vertical line */}
           <div className="absolute left-5 top-0 bottom-0 w-px bg-foreground/6" />
 
-          {thoughts.map((thought, i) => (
+          {items.map((thought, i) => (
             <motion.div
               key={thought.id}
               className="relative pl-14 pb-10 last:pb-0"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.08 + i * 0.04,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              {...staggerItem(i, {
+                baseDelay: config.motion.delay,
+                step: config.motion.stagger,
+                duration: config.motion.duration,
+              })}
             >
               {/* Dot */}
               <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-foreground/15 bg-background" />

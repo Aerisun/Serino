@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind } from "lucide-react";
@@ -6,6 +7,7 @@ import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
 import PageMeta from "@/components/PageMeta";
+import { fetchPublicContentEntry, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
@@ -19,6 +21,7 @@ const weatherLabels: Record<Weather, string> = {
 };
 
 interface DiaryData {
+  slug: string;
   date: string;
   weekday: string;
   weather: Weather;
@@ -30,6 +33,7 @@ interface DiaryData {
 
 const diaryData: Record<string, DiaryData> = {
   "1": {
+    slug: "spring-equinox-and-warm-light",
     date: "2026 年 3 月 21 日",
     weekday: "周六",
     weather: "sunny",
@@ -44,6 +48,7 @@ const diaryData: Record<string, DiaryData> = {
     poem: "春风如贵客，一到便繁华。——袁枚",
   },
   "2": {
+    slug: "motion-curve-notes",
     date: "2026 年 3 月 20 日",
     weekday: "周五",
     weather: "cloudy",
@@ -57,6 +62,7 @@ const diaryData: Record<string, DiaryData> = {
     ],
   },
   "3": {
+    slug: "rain-day-and-lofi",
     date: "2026 年 3 月 19 日",
     weekday: "周四",
     weather: "rainy",
@@ -71,6 +77,7 @@ const diaryData: Record<string, DiaryData> = {
     poem: "小楼一夜听春雨，深巷明朝卖杏花。——陆游",
   },
   "4": {
+    slug: "burst-of-inspiration-day",
     date: "2026 年 3 月 18 日",
     weekday: "周三",
     weather: "sunny",
@@ -83,6 +90,7 @@ const diaryData: Record<string, DiaryData> = {
     ],
   },
   "5": {
+    slug: "windy-library-day",
     date: "2026 年 3 月 17 日",
     weekday: "周二",
     weather: "windy",
@@ -96,6 +104,7 @@ const diaryData: Record<string, DiaryData> = {
     poem: "解落三秋叶，能开二月花。——李峤",
   },
   "6": {
+    slug: "new-week-balance",
     date: "2026 年 3 月 16 日",
     weekday: "周一",
     weather: "cloudy",
@@ -108,6 +117,7 @@ const diaryData: Record<string, DiaryData> = {
     ],
   },
   "7": {
+    slug: "quiet-weekend",
     date: "2026 年 3 月 15 日",
     weekday: "周日",
     weather: "sunny",
@@ -122,10 +132,69 @@ const diaryData: Record<string, DiaryData> = {
   },
 };
 
+const fallbackBySlug = Object.fromEntries(
+  Object.values(diaryData).map((item) => [item.slug, item]),
+);
+
+const formatWeekday = (value: string | null) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(parsed);
+};
+
+const buildRemoteDiaryEntry = (entry: PublicContentEntry, fallback?: DiaryData): DiaryData => ({
+  slug: entry.slug,
+  date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+  weekday: formatWeekday(entry.published_at) || fallback?.weekday || "",
+  weather: fallback?.weather ?? "cloudy",
+  mood: fallback?.mood ?? "📝",
+  title: entry.title,
+  paragraphs: splitContentParagraphs(entry.body),
+  poem: fallback?.poem,
+});
+
 const DiaryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const entry = diaryData[id || ""];
+  const initialFallback = (id ? diaryData[id] : undefined) ?? (id ? fallbackBySlug[id] : undefined) ?? null;
+  const [entry, setEntry] = useState<DiaryData | null>(initialFallback);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fallback = (id ? diaryData[id] : undefined) ?? (id ? fallbackBySlug[id] : undefined) ?? null;
+    const targetSlug = fallback?.slug ?? id;
+
+    setEntry(fallback);
+
+    if (!targetSlug) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadEntry = async () => {
+      try {
+        const payload = await fetchPublicContentEntry("diary", targetSlug);
+        if (cancelled) {
+          return;
+        }
+
+        setEntry(buildRemoteDiaryEntry(payload, fallback ?? undefined));
+      } catch {
+        if (!cancelled) {
+          setEntry(fallback);
+        }
+      }
+    };
+
+    void loadEntry();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (!entry) {
     return (
@@ -218,7 +287,7 @@ const DiaryDetail = () => {
           <p className="text-xs font-body text-foreground/15">— 今日份记录 —</p>
         </div>
 
-        <CommentSection />
+        <CommentSection contentType="diary" contentSlug={entry.slug} />
       </main>
       <Footer />
     </div>

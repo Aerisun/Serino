@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import { pageConfig, staggerItem } from "@/config";
+import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 
 interface Excerpt {
-  id: number;
+  id: number | string;
+  slug?: string;
   title: string;
   author: string;
   source: string;
@@ -13,7 +16,7 @@ interface Excerpt {
   date: string;
 }
 
-const excerpts: Excerpt[] = [
+const fallbackExcerpts: Excerpt[] = [
   {
     id: 1,
     title: "关于白",
@@ -78,33 +81,81 @@ const excerpts: Excerpt[] = [
     date: "2026-03-01",
   },
 ];
+const config = pageConfig.excerpts;
+
+const fallbackByTitle = Object.fromEntries(
+  fallbackExcerpts.map((item) => [item.title.trim().toLowerCase(), item]),
+);
+
+const mapRemoteExcerpt = (entry: PublicContentEntry, index: number): Excerpt => {
+  const fallback = fallbackByTitle[entry.title.trim().toLowerCase()] ?? fallbackExcerpts[index];
+
+  return {
+    id: fallback?.id ?? entry.slug,
+    slug: entry.slug,
+    title: entry.title,
+    author: fallback?.author ?? "Public API",
+    source: fallback?.source ?? "Aerisun Archive",
+    content: entry.body,
+    tags: entry.tags.length > 0 ? entry.tags : fallback?.tags ?? [],
+    date: formatPublishedDate(entry.published_at) || fallback?.date || "",
+  };
+};
 
 const Excerpts = () => {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const selected = excerpts.find((e) => e.id === selectedId);
+  const [items, setItems] = useState<Excerpt[]>(fallbackExcerpts);
+  const [selectedId, setSelectedId] = useState<number | string | null>(null);
+  const selected = useMemo(
+    () => items.find((excerpt) => excerpt.id === selectedId),
+    [items, selectedId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadExcerpts = async () => {
+      try {
+        const payload = await fetchPublicContentCollection("excerpts", 40);
+        if (cancelled || payload.items.length === 0) {
+          return;
+        }
+
+        setItems(payload.items.map(mapRemoteExcerpt));
+      } catch {
+        if (!cancelled) {
+          setItems(fallbackExcerpts);
+        }
+      }
+    };
+
+    void loadExcerpts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <PageShell
-      eyebrow="Reading Room"
-      title="文摘"
-      description="摘录那些让我停下来想一想的文字，留一段回声，也留一点空白。"
-      metaDescription="Felix 的文摘收藏，记录设计、美学与生活阅读中的片段。"
+      eyebrow={config.eyebrow}
+      title={config.title}
+      description={config.description}
+      metaDescription={config.metaDescription}
+      width={config.width}
     >
 
         {/* Excerpt cards */}
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {excerpts.map((excerpt, i) => (
+          {items.map((excerpt, i) => (
             <motion.button
               key={excerpt.id}
               onClick={() => setSelectedId(excerpt.id)}
               className="group text-left liquid-glass rounded-2xl p-5 transition-colors hover:bg-foreground/[0.03] active:scale-[0.98]"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.06 + i * 0.04,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              {...staggerItem(i, {
+                baseDelay: config.motion.delay,
+                step: config.motion.stagger,
+                duration: config.motion.duration,
+              })}
             >
               {/* Source info */}
               <div className="flex items-center gap-2 mb-3">
@@ -155,16 +206,17 @@ const Excerpts = () => {
             />
 
             {/* Content */}
-            <motion.div
-              className="relative liquid-glass rounded-3xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
-              initial={{ scale: 0.95, opacity: 0, y: 16 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 16 }}
+              <motion.div
+                className="relative liquid-glass rounded-3xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
+                initial={{ scale: 0.95, opacity: 0, y: 16 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 16 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            >
+              >
               {/* Close */}
               <button
                 onClick={() => setSelectedId(null)}
+                aria-label={config.modalCloseLabel}
                 className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-foreground/30 hover:text-foreground/60 hover:bg-foreground/[0.05] transition-colors"
               >
                 <X className="h-4 w-4" />
