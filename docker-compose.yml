@@ -1,0 +1,38 @@
+services:
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      AERISUN_HOST: ${AERISUN_HOST:-0.0.0.0}
+      AERISUN_PORT: ${AERISUN_PORT:-8000}
+      AERISUN_DATA_DIR: ${AERISUN_DATA_DIR:-/srv/aerisun/data}
+      AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/data/aerisun.db}
+      AERISUN_MEDIA_DIR: ${AERISUN_MEDIA_DIR:-/srv/aerisun/media}
+      AERISUN_SECRETS_DIR: ${AERISUN_SECRETS_DIR:-/srv/aerisun/secrets}
+      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL:-sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db}
+    volumes:
+      - ${AERISUN_DATA_DIR:-/srv/aerisun/data}:/srv/aerisun/data
+      - ${AERISUN_MEDIA_DIR:-/srv/aerisun/media}:/srv/aerisun/media
+      - ${AERISUN_SECRETS_DIR:-/srv/aerisun/secrets}:/srv/aerisun/secrets
+    ports:
+      - "${AERISUN_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  litestream:
+    image: litestream/litestream:latest-scratch
+    env_file:
+      - .env
+    environment:
+      AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/data/aerisun.db}
+      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL:-sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db}
+    volumes:
+      - ${AERISUN_DATA_DIR:-/srv/aerisun/data}:/srv/aerisun/data
+      - ./backend/litestream.yml.template:/etc/litestream.yml:ro
+    command:
+      - replicate
+      - -config
+      - /etc/litestream.yml
+    restart: unless-stopped
+

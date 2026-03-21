@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ROOT_DIR="$(cd "${BACKEND_DIR}/.." && pwd)"
+
+cd "${ROOT_DIR}"
+
+compose() {
+  if docker compose version >/dev/null 2>&1; then
+    docker compose "$@"
+    return
+  fi
+
+  if command -v docker-compose >/dev/null 2>&1; then
+    docker-compose "$@"
+    return
+  fi
+
+  echo "docker compose or docker-compose is required" >&2
+  exit 1
+}
+
+if [[ -f ".env" ]]; then
+  set -a
+  source ".env"
+  set +a
+fi
+
+: "${AERISUN_DB_PATH:?AERISUN_DB_PATH is required}"
+: "${AERISUN_LITESTREAM_REPLICA_URL:?AERISUN_LITESTREAM_REPLICA_URL is required}"
+
+STOPPED_BACKUP="${AERISUN_DB_PATH}.pre-restore.$(date -u +%Y%m%dT%H%M%SZ)"
+RESTORE_TMP="${AERISUN_DB_PATH}.restoring"
+
+compose stop api litestream || true
+
+if [[ -f "${AERISUN_DB_PATH}" ]]; then
+  mv "${AERISUN_DB_PATH}" "${STOPPED_BACKUP}"
+fi
+
+rm -f "${RESTORE_TMP}"
+
+compose run --rm --no-deps --entrypoint litestream litestream \
+  restore -o "${RESTORE_TMP}" "${AERISUN_LITESTREAM_REPLICA_URL}"
+
+mv "${RESTORE_TMP}" "${AERISUN_DB_PATH}"
+
+if [[ -n "${AERISUN_BACKUP_RSYNC_URI:-}" ]]; then
+  REMOTE_HOST="${AERISUN_BACKUP_RSYNC_URI%%:*}"
+  REMOTE_PATH="${AERISUN_BACKUP_RSYNC_URI#*:}"
+  SSH_CMD=(ssh -p "${AERISUN_BACKUP_SSH_PORT:-22}")
+  if [[ -n "${AERISUN_BACKUP_SSH_KEY:-}" ]]; then
+    SSH_CMD+=(-i "${AERISUN_BACKUP_SSH_KEY}")
+  fi
+  SSH_CMD_STR="${SSH_CMD[*]}"
+
+  rsync -a -e "${SSH_CMD_STR}" \
+    "${REMOTE_HOST}:${REMOTE_PATH}/media/" \
+    "${AERISUN_MEDIA_DIR:-/srv/aerisun/media}/"
+
+  rsync -a -e "${SSH_CMD_STR}" \
+    "${REMOTE_HOST}:${REMOTE_PATH}/secrets/" \
+    "${AERISUN_SECRETS_DIR:-/srv/aerisun/secrets}/"
+fi
+
+compose up -d api litestream
+
+echo "restore complete from ${AERISUN_LITESTREAM_REPLICA_URL}"
