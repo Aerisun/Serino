@@ -9,9 +9,11 @@ description = "Aerisun v1 backend skeleton"
 requires-python = ">=3.13"
 dependencies = [
   "alembic>=1.18.4",
+  "bcrypt>=4.2.0",
   "fastapi>=0.135.1",
   "pydantic>=2.12.5",
   "pydantic-settings>=2.8.0",
+  "python-multipart>=0.0.9",
   "sqlalchemy>=2.0.48",
   "uvicorn[standard]>=0.34.0",
 ]
@@ -24,6 +26,9 @@ dev = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[project.scripts]
+aerisun-create-admin = "aerisun.cli:create_admin"
 
 [tool.setuptools.packages.find]
 where = ["src"]

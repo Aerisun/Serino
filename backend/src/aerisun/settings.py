@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     backup_ssh_key: str | None = None
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    session_ttl_hours: int = 24
 
     @property
     def database_url(self) -> str:
