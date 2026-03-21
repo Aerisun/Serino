@@ -23,10 +23,11 @@ from aerisun.engagement.service import (
     read_public_reaction,
     register_public_reaction,
 )
-from aerisun.modules.site_config import get_page_copy, get_resume, get_site_config
+from aerisun.modules.site_config import get_community_config, get_page_copy, get_resume, get_site_config
 from aerisun.schemas import (
     ActivityHeatmapRead,
     CalendarRead,
+    CommunityConfigRead,
     CommentCollectionRead,
     CommentCreate,
     CommentCreateResponse,
@@ -58,6 +59,11 @@ def read_site_config(session: Session = Depends(get_session)) -> SiteConfigRead:
 @router.get("/pages", response_model=PageCollectionRead)
 def read_page_copy(session: Session = Depends(get_session)) -> PageCollectionRead:
     return get_page_copy(session)
+
+
+@router.get("/community-config", response_model=CommunityConfigRead)
+def read_community_config(session: Session = Depends(get_session)) -> CommunityConfigRead:
+    return get_community_config(session)
 
 
 @router.get("/resume", response_model=ResumeRead)

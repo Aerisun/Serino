@@ -106,6 +106,25 @@ class PageDisplayOption(Base, TimestampMixin):
     settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
+class CommunityConfig(Base, TimestampMixin):
+    __tablename__ = "community_config"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    provider: Mapped[str] = mapped_column(String(80), nullable=False, default="waline")
+    server_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    surfaces: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    meta: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    required_meta: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    emoji_presets: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    enable_enjoy_search: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    image_uploader: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    login_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="disable")
+    oauth_url: Mapped[str | None] = mapped_column(String(500))
+    avatar_strategy: Mapped[str] = mapped_column(String(80), nullable=False, default="identicon")
+    avatar_helper_copy: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    migration_state: Mapped[str] = mapped_column(String(40), nullable=False, default="not_started")
+
+
 class ResumeBasics(Base, TimestampMixin):
     __tablename__ = "resume_basics"
 
@@ -351,4 +370,3 @@ class RestorePoint(Base, TimestampMixin):
     db_path: Mapped[str] = mapped_column(String(500), nullable=False)
     point_in_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notes: Mapped[str | None] = mapped_column(Text)
-

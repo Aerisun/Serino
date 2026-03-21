@@ -8,6 +8,7 @@ of truth instead of a second, divergent schema copy.
 from __future__ import annotations
 
 from aerisun.models import (
+    CommunityConfig,
     PageCopy,
     PageDisplayOption,
     Poem,
@@ -22,6 +23,7 @@ ResumeBasic = ResumeBasics
 ResumeSkill = ResumeSkillGroup
 
 __all__ = [
+    "CommunityConfig",
     "PageCopy",
     "PageDisplayOption",
     "Poem",
