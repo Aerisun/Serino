@@ -44,6 +44,7 @@ export interface SiteConfig {
   heroActions: SiteActionLink[];
   navigation: SiteNavItem[];
   footer: {
+    since: number;
     copyright: string;
     slogan: string;
   };
@@ -105,6 +106,7 @@ export const siteConfig: SiteConfig = {
     },
   ],
   footer: {
+    since: 2024,
     copyright: "All rights reserved",
     slogan: "用 ♥ 与代码构建",
   },
