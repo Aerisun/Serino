@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { BookOpen, ExternalLink, X } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import FallingPetals from "@/components/FallingPetals";
+import { BookOpen, X } from "lucide-react";
+import PageShell from "@/components/PageShell";
 
 interface Excerpt {
   id: number;
@@ -86,24 +84,12 @@ const Excerpts = () => {
   const selected = excerpts.find((e) => e.id === selectedId);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <FallingPetals />
-      <Navbar />
-
-      <main className="mx-auto max-w-3xl px-6 pt-28 pb-20 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-            文摘
-          </h1>
-          <p className="mt-3 text-sm text-foreground/35">
-            摘录那些让我停下来想一想的文字。
-          </p>
-        </motion.div>
+    <PageShell
+      eyebrow="Reading Room"
+      title="文摘"
+      description="摘录那些让我停下来想一想的文字，留一段回声，也留一点空白。"
+      metaDescription="Felix 的文摘收藏，记录设计、美学与生活阅读中的片段。"
+    >
 
         {/* Excerpt cards */}
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -152,8 +138,6 @@ const Excerpts = () => {
             </motion.button>
           ))}
         </div>
-      </main>
-
       {/* Detail modal */}
       <AnimatePresence>
         {selected && (
@@ -228,9 +212,7 @@ const Excerpts = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

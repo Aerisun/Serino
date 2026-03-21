@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import HeroContent from "@/components/HeroContent";
 import ActivitySection from "@/components/ActivitySection";
+import PageMeta from "@/components/PageMeta";
 import { useTheme } from "@/contexts/useTheme";
 
 const VIDEO_URL =
@@ -11,7 +12,11 @@ const Index = () => {
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
 
   return (
-    <div className="h-screen overflow-x-hidden overflow-y-auto">
+    <div
+      data-home-scroll
+      className="h-[100svh] overflow-x-hidden overflow-y-auto"
+    >
+      <PageMeta description="Felix 的个人网站，收纳网页设计、前端、写作与生活记录。" />
       {/* Hero Section — full viewport, always dark styled */}
       <div className="relative min-h-screen flex flex-col overflow-hidden dark">
         {/* Background Video */}

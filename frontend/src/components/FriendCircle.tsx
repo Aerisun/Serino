@@ -6,7 +6,6 @@ interface FriendPost {
   blogName: string;
   title: string;
   date: string;
-  url: string;
 }
 
 const friendPosts: FriendPost[] = [
@@ -15,63 +14,54 @@ const friendPosts: FriendPost[] = [
     blogName: "夏目的博客",
     title: "网络流算法详解",
     date: "2026-03-18",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Miku",
     blogName: "喵二の小博客",
     title: "\u201C糖\u201D",
     date: "2026-03-16",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume",
     blogName: "夏目的博客",
     title: "一些思考",
     date: "2026-03-14",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Erhecy",
     blogName: "Erhecy's Blog",
     title: "在博客中优雅地添加 Bilibili 追番页面",
     date: "2026-03-13",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=BaiYuan",
     blogName: "空山灵雨",
     title: "一招解决 Origin 运行报错：找不到 mfc140u.dll",
     date: "2026-03-11",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Akara",
     blogName: "AkaraChen",
     title: "如何使用 Cloudflare API 為網站新增數據監測大屏",
     date: "2026-03-10",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Paul",
     blogName: "保罗的小宇宙",
     title: "Hand Motion Retargeting",
     date: "2026-03-10",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Lucifer",
     blogName: "Lucifer's Blog",
     title: "To panic! or Not to panic!",
     date: "2026-03-10",
-    url: "#",
   },
   {
     avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Qingya",
     blogName: "轻雅阁",
     title: "Spring Boot 3 迁移指南",
     date: "2026-03-08",
-    url: "#",
   },
 ];
 
@@ -94,12 +84,9 @@ const FriendCircle = () => {
 
       <div className="overflow-y-auto max-h-[420px] scrollbar-hide pr-1 -mr-1 flex flex-col gap-0.5">
         {friendPosts.map((post, i) => (
-          <a
+          <div
             key={i}
-            href={post.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-start gap-3 rounded-xl px-2.5 py-3 transition-colors hover:bg-foreground/[0.04] active:scale-[0.98]"
+            className="group flex items-start gap-3 rounded-xl px-2.5 py-3 transition-colors hover:bg-foreground/[0.04]"
           >
             {/* Avatar */}
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06] mt-0.5">
@@ -125,7 +112,7 @@ const FriendCircle = () => {
                 </span>
               </div>
             </div>
-          </a>
+          </div>
         ))}
       </div>
     </div>

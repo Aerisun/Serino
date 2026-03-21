@@ -80,12 +80,9 @@ const RecentActivity = () => {
         <h3 className="text-sm font-body font-medium text-foreground/50 uppercase tracking-widest">
           最近动态
         </h3>
-        <a
-          href="#"
-          className="text-[11px] font-body text-foreground/30 hover:text-foreground/50 transition-colors flex items-center gap-1"
-        >
-          查看全部 <ArrowUpRight className="h-3 w-3" />
-        </a>
+        <span className="text-[11px] font-body text-foreground/25 flex items-center gap-1">
+          静态流 <ArrowUpRight className="h-3 w-3" />
+        </span>
       </div>
 
       <div className="overflow-y-auto max-h-[420px] scrollbar-hide pr-1 -mr-1">
