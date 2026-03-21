@@ -1,34 +1,29 @@
-import { pageConfig } from "@/config/pages";
-import { siteConfig } from "@/config/site";
 import { apiClient } from "@/lib/api";
 
-export type RuntimeSiteConfig = typeof siteConfig;
-export type RuntimePageConfig = typeof pageConfig;
-
-export interface RuntimeConfigSnapshot {
-  site: RuntimeSiteConfig;
-  pages: RuntimePageConfig;
-  source: "fallback" | "remote";
-  fetchedAt: string;
-}
-
-export const runtimeConfigFallback = {
-  site: siteConfig,
-  pages: pageConfig,
+// ---------------------------------------------------------------------------
+// Width mapping (code constant — not personal data)
+// ---------------------------------------------------------------------------
+const widthMap = {
+  "max-w-2xl": "narrow",
+  "max-w-3xl": "content",
+  "max-w-4xl": "wide",
 } as const;
 
-export const runtimeConfigPaths = {
-  site: "/api/v1/public/site",
-  pages: "/api/v1/public/pages",
-  resume: "/api/v1/public/resume",
-} as const;
+type PageWidth = "narrow" | "content" | "wide";
 
+// ---------------------------------------------------------------------------
+// Backend response types
+// ---------------------------------------------------------------------------
 type BackendSiteResponse = {
   site: {
     name: string;
     title: string;
     bio: string;
     role: string;
+    author: string;
+    og_image: string;
+    meta_description: string;
+    copyright: string;
     footer_text?: string;
   };
   social_links: Array<{
@@ -39,21 +34,29 @@ type BackendSiteResponse = {
   poems: Array<{
     content: string;
   }>;
+  hero_actions: Array<{
+    label: string;
+    href: string;
+    icon_key: string;
+  }>;
+};
+
+type BackendPageCopyItem = {
+  page_key: string;
+  title: string;
+  subtitle: string;
+  description?: string | null;
+  search_placeholder?: string | null;
+  empty_message?: string | null;
+  max_width?: string | null;
+  page_size?: number | null;
+  download_label?: string | null;
+  nav_label?: string | null;
+  extras?: Record<string, unknown>;
 };
 
 type BackendPagesResponse = {
-  items: Array<{
-    page_key: keyof RuntimePageConfig;
-    title: string;
-    subtitle: string;
-    description?: string | null;
-    search_placeholder?: string | null;
-    empty_message?: string | null;
-    max_width?: string | null;
-    page_size?: number | null;
-    download_label?: string | null;
-    extras?: Record<string, unknown>;
-  }>;
+  items: BackendPageCopyItem[];
 };
 
 type BackendResumeResponse = {
@@ -72,143 +75,262 @@ type BackendResumeResponse = {
   }>;
 };
 
-const mergeConfig = <T extends Record<string, unknown>>(fallback: T, override?: Partial<T>) => ({
-  ...fallback,
-  ...(override ?? {}),
-}) as T;
+// ---------------------------------------------------------------------------
+// Frontend types
+// ---------------------------------------------------------------------------
+export interface NavChild {
+  label: string;
+  href: string;
+}
 
-const normalizeIconKey = (iconKey: string) => {
+export interface NavItem {
+  label: string;
+  trigger: "hover" | "arrow" | "none";
+  href?: string;
+  children?: NavChild[];
+}
+
+export interface PageMotionConfig {
+  duration: number;
+  delay: number;
+  stagger: number;
+}
+
+export interface ResumeExperienceConfig {
+  role: string;
+  org: string;
+  period: string;
+  desc: string;
+}
+
+export interface PageConfig {
+  [key: string]: unknown;
+}
+
+export interface RuntimeConfigSnapshot {
+  source: "remote";
+  site: {
+    name: string;
+    title: string;
+    bio: string;
+    role: string;
+    author: string;
+    ogImage: string;
+    metaDescription: string;
+    copyright: string;
+    socialLinks: Array<{ name: string; href: string; iconKey: string }>;
+    poems: string[];
+    heroActions: Array<{ label: string; href: string; iconKey: string }>;
+    navigation: NavItem[];
+    footer: { slogan: string; copyright: string };
+  };
+  pages: Record<string, PageConfig>;
+}
+
+// ---------------------------------------------------------------------------
+// API paths
+// ---------------------------------------------------------------------------
+export const runtimeConfigPaths = {
+  site: "/api/v1/public/site",
+  pages: "/api/v1/public/pages",
+  resume: "/api/v1/public/resume",
+} as const;
+
+// ---------------------------------------------------------------------------
+// Navigation template (route paths are code constants)
+// ---------------------------------------------------------------------------
+const NAV_TEMPLATE = [
+  { pageKey: "home", href: "/", trigger: "arrow" as const, children: [
+    { pageKey: "resume", href: "/resume" },
+    { pageKey: "guestbook", href: "/guestbook" },
+    { pageKey: "calendar", href: "/calendar" },
+  ]},
+  { pageKey: "posts", href: "/posts", trigger: "none" as const },
+  { pageKey: "friends", href: "/friends", trigger: "none" as const },
+  { pageKey: "more", trigger: "hover" as const, children: [
+    { pageKey: "thoughts", href: "/thoughts" },
+    { pageKey: "diary", href: "/diary" },
+    { pageKey: "excerpts", href: "/excerpts" },
+  ]},
+];
+
+// ---------------------------------------------------------------------------
+// Default motion configs (code constants — not personal data)
+// ---------------------------------------------------------------------------
+const DEFAULT_MOTION: PageMotionConfig = { duration: 0.4, delay: 0.06, stagger: 0.04 };
+
+const PAGE_DEFAULTS: Record<string, { width?: PageWidth; pageSize?: number; motion?: PageMotionConfig }> = {
+  posts:    { width: "content", motion: DEFAULT_MOTION },
+  diary:    { width: "narrow",  motion: DEFAULT_MOTION },
+  friends:  { width: "wide",    pageSize: 10, motion: { duration: 0.4, delay: 0.08, stagger: 0.04 } },
+  excerpts: { width: "content", motion: DEFAULT_MOTION },
+  thoughts: { width: "narrow",  motion: { duration: 0.4, delay: 0.08, stagger: 0.04 } },
+  guestbook:{ width: "narrow",  motion: { duration: 0.45, delay: 0.06, stagger: 0.04 } },
+  resume:   { width: "content", motion: { duration: 0.45, delay: 0.06, stagger: 0.04 } },
+  calendar: { width: "wide",    motion: { duration: 0.5, delay: 0.08, stagger: 0.05 } },
+};
+
+// ---------------------------------------------------------------------------
+// Icon key normalization
+// ---------------------------------------------------------------------------
+const normalizeIconKey = (iconKey: string): string => {
   if (iconKey === "netease" || iconKey === "netease-music") {
     return "music";
   }
-
   return iconKey;
 };
 
-const widthMap = {
-  "max-w-2xl": "narrow",
-  "max-w-3xl": "content",
-  "max-w-4xl": "wide",
-} as const;
-
-const normalizeSiteConfig = (payload: Partial<BackendSiteResponse> | undefined): RuntimeSiteConfig => {
-  if (!payload?.site) {
-    return runtimeConfigFallback.site;
-  }
+// ---------------------------------------------------------------------------
+// Normalize site config
+// ---------------------------------------------------------------------------
+const normalizeSiteConfig = (
+  payload: BackendSiteResponse,
+  navLabels: Map<string, string>,
+): RuntimeConfigSnapshot["site"] => {
+  const navigation: NavItem[] = NAV_TEMPLATE.map((entry) => {
+    const label = navLabels.get(entry.pageKey) ?? entry.pageKey;
+    const item: NavItem = { label, trigger: entry.trigger };
+    if ("href" in entry) item.href = entry.href;
+    if ("children" in entry && entry.children) {
+      item.children = entry.children.map((child) => ({
+        label: navLabels.get(child.pageKey) ?? child.pageKey,
+        href: child.href,
+      }));
+    }
+    return item;
+  });
 
   return {
-    ...runtimeConfigFallback.site,
-    name: payload.site.name ?? runtimeConfigFallback.site.name,
-    title: payload.site.title ?? runtimeConfigFallback.site.title,
-    bio: payload.site.bio ?? runtimeConfigFallback.site.bio,
-    role: payload.site.role ?? runtimeConfigFallback.site.role,
-    poems:
-      payload.poems?.map((item) => item.content).filter(Boolean) ??
-      runtimeConfigFallback.site.poems,
-    socialLinks:
-      payload.social_links?.map((link) => ({
-        name: link.name,
-        href: link.href,
-        iconKey: normalizeIconKey(link.icon_key) as RuntimeSiteConfig["socialLinks"][number]["iconKey"],
-      })) ?? runtimeConfigFallback.site.socialLinks,
+    name: payload.site.name,
+    title: payload.site.title,
+    bio: payload.site.bio,
+    role: payload.site.role,
+    author: payload.site.author,
+    ogImage: payload.site.og_image,
+    metaDescription: payload.site.meta_description,
+    copyright: payload.site.copyright,
+    poems: payload.poems.map((p) => p.content).filter(Boolean),
+    socialLinks: payload.social_links.map((link) => ({
+      name: link.name,
+      href: link.href,
+      iconKey: normalizeIconKey(link.icon_key),
+    })),
+    heroActions: (payload.hero_actions ?? []).map((action) => ({
+      label: action.label,
+      href: action.href,
+      iconKey: normalizeIconKey(action.icon_key),
+    })),
+    navigation,
     footer: {
-      ...runtimeConfigFallback.site.footer,
-      slogan: payload.site.footer_text ?? runtimeConfigFallback.site.footer.slogan,
+      slogan: payload.site.footer_text ?? "",
+      copyright: payload.site.copyright,
     },
   };
 };
 
-const normalizePagesConfig = (payload: Partial<BackendPagesResponse> | undefined): RuntimePageConfig => {
-  if (!payload?.items?.length) {
-    return runtimeConfigFallback.pages;
-  }
+// ---------------------------------------------------------------------------
+// Normalize pages config
+// ---------------------------------------------------------------------------
+const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, PageConfig> => {
+  const pages: Record<string, PageConfig> = {};
 
-  const next = { ...runtimeConfigFallback.pages };
-
-  payload.items.forEach((item) => {
-    if (!(item.page_key in next)) {
-      return;
-    }
-
-    const current = next[item.page_key];
+  for (const item of payload.items) {
+    const defaults = PAGE_DEFAULTS[item.page_key];
     const widthFromApi =
       item.max_width && item.max_width in widthMap
         ? widthMap[item.max_width as keyof typeof widthMap]
-        : current.width;
+        : defaults?.width;
 
-    next[item.page_key] = {
-      ...current,
-      title: item.title ?? current.title,
-      subtitle: item.subtitle ?? current.subtitle,
-      description: item.description ?? current.description,
-      searchPlaceholder: item.search_placeholder ?? current.searchPlaceholder,
-      emptyMessage: item.empty_message ?? current.emptyMessage,
-      width: widthFromApi,
-      pageSize: item.page_size ?? current.pageSize,
-      downloadLabel: item.download_label ?? current.downloadLabel,
-      categories: {
-        ...("categories" in current ? current.categories : {}),
-        all:
-          (item.extras?.category_all_label as string | undefined) ??
-          ("categories" in current ? current.categories?.all : undefined) ??
-          pageConfig.posts.categories.all,
-      },
-      circleTitle:
-        (item.extras?.circle_title as string | undefined) ??
-        ("circleTitle" in current ? current.circleTitle : undefined),
+    const page: PageConfig = {
+      title: item.title,
+      subtitle: item.subtitle,
+      description: item.description ?? undefined,
+      searchPlaceholder: item.search_placeholder ?? undefined,
+      emptyMessage: item.empty_message ?? undefined,
+      width: widthFromApi ?? defaults?.width,
+      pageSize: item.page_size ?? defaults?.pageSize,
+      downloadLabel: item.download_label ?? undefined,
+      motion: defaults?.motion ?? DEFAULT_MOTION,
     };
-  });
 
-  return next;
-};
+    // Merge extras
+    if (item.extras) {
+      if (typeof item.extras.category_all_label === "string") {
+        page.categories = { all: item.extras.category_all_label };
+      }
+      if (typeof item.extras.circle_title === "string") {
+        page.circleTitle = item.extras.circle_title;
+      }
+      if (typeof item.extras.eyebrow === "string") {
+        page.eyebrow = item.extras.eyebrow;
+      }
+      // Pass through remaining extras
+      for (const [key, value] of Object.entries(item.extras)) {
+        if (!(key in page) && key !== "category_all_label" && key !== "circle_title" && key !== "eyebrow") {
+          page[key] = value;
+        }
+      }
+    }
 
-const normalizeResumeConfig = (payload: Partial<BackendResumeResponse> | undefined) => {
-  if (!payload) {
-    return runtimeConfigFallback.pages.resume;
+    pages[item.page_key] = page;
   }
 
+  return pages;
+};
+
+// ---------------------------------------------------------------------------
+// Normalize resume config
+// ---------------------------------------------------------------------------
+const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
+  const defaults = PAGE_DEFAULTS.resume;
   return {
-    ...runtimeConfigFallback.pages.resume,
-    title: payload.title ?? runtimeConfigFallback.pages.resume.title,
-    description: payload.summary ?? runtimeConfigFallback.pages.resume.description,
-    downloadLabel: payload.download_label ?? runtimeConfigFallback.pages.resume.downloadLabel,
-    bio: payload.summary ?? runtimeConfigFallback.pages.resume.bio,
-    skills:
-      payload.skill_groups?.flatMap((group) => group.items) ??
-      runtimeConfigFallback.pages.resume.skills,
-    experience:
-      payload.experiences?.map((item) => ({
-        role: item.title,
-        org: item.company,
-        period: item.period,
-        desc: item.summary,
-      })) ?? runtimeConfigFallback.pages.resume.experience,
+    title: payload.title,
+    subtitle: payload.subtitle,
+    description: payload.summary,
+    downloadLabel: payload.download_label,
+    bio: payload.summary,
+    skills: payload.skill_groups.flatMap((group) => group.items),
+    experience: payload.experiences.map((item) => ({
+      role: item.title,
+      org: item.company,
+      period: item.period,
+      desc: item.summary,
+    })),
+    width: defaults?.width,
+    motion: defaults?.motion,
   };
 };
 
-export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
-  try {
-    const [site, pages, resume] = await Promise.all([
-      apiClient.get<BackendSiteResponse>(runtimeConfigPaths.site),
-      apiClient.get<BackendPagesResponse>(runtimeConfigPaths.pages),
-      apiClient.get<BackendResumeResponse>(runtimeConfigPaths.resume),
-    ]);
-
-    const normalizedPages = normalizePagesConfig(pages);
-    normalizedPages.resume = normalizeResumeConfig(resume);
-
-    return {
-      site: normalizeSiteConfig(site),
-      pages: normalizedPages,
-      source: "remote",
-      fetchedAt: new Date().toISOString(),
-    };
-  } catch {
-    return {
-      site: runtimeConfigFallback.site,
-      pages: runtimeConfigFallback.pages,
-      source: "fallback",
-      fetchedAt: new Date().toISOString(),
-    };
+// ---------------------------------------------------------------------------
+// Build nav_label lookup from page copy items
+// ---------------------------------------------------------------------------
+const buildNavLabels = (items: BackendPageCopyItem[]): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const item of items) {
+    if (item.nav_label) {
+      map.set(item.page_key, item.nav_label);
+    }
   }
+  return map;
+};
+
+// ---------------------------------------------------------------------------
+// Main loader — errors propagate to caller
+// ---------------------------------------------------------------------------
+export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
+  const [site, pages, resume] = await Promise.all([
+    apiClient.get<BackendSiteResponse>(runtimeConfigPaths.site),
+    apiClient.get<BackendPagesResponse>(runtimeConfigPaths.pages),
+    apiClient.get<BackendResumeResponse>(runtimeConfigPaths.resume),
+  ]);
+
+  const navLabels = buildNavLabels(pages.items);
+  const normalizedPages = normalizePagesConfig(pages);
+  normalizedPages.resume = normalizeResumeConfig(resume);
+
+  return {
+    source: "remote",
+    site: normalizeSiteConfig(site, navLabels),
+    pages: normalizedPages,
+  };
 }

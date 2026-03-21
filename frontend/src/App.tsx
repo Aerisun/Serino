@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import Index from "./pages/Index.tsx";
 import Posts from "./pages/Posts.tsx";
 import Friends from "./pages/Friends.tsx";
@@ -15,22 +16,24 @@ import NotFound from "./pages/NotFound.tsx";
 
 const App = () => (
   <ThemeProvider>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/posts" element={<Posts />} />
-        <Route path="/posts/:id" element={<PostDetail />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/thoughts" element={<Thoughts />} />
-        <Route path="/diary" element={<Diary />} />
-        <Route path="/diary/:id" element={<DiaryDetail />} />
-        <Route path="/excerpts" element={<Excerpts />} />
-        <Route path="/resume" element={<Resume />} />
-        <Route path="/guestbook" element={<Guestbook />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <RuntimeConfigProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/posts" element={<Posts />} />
+          <Route path="/posts/:id" element={<PostDetail />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/thoughts" element={<Thoughts />} />
+          <Route path="/diary" element={<Diary />} />
+          <Route path="/diary/:id" element={<DiaryDetail />} />
+          <Route path="/excerpts" element={<Excerpts />} />
+          <Route path="/resume" element={<Resume />} />
+          <Route path="/guestbook" element={<Guestbook />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </RuntimeConfigProvider>
   </ThemeProvider>
 );
 
