@@ -1,5 +1,6 @@
 import { useMemo, useRef, useEffect, useState } from "react";
 import { useTheme } from "@/contexts/useTheme";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 const generateWeeklyData = () => {
   const weeks: { week: number; total: number; days: number[]; month: string; label: string }[] = [];
@@ -57,6 +58,7 @@ const ActivityHeatmap = () => {
   const data = useMemo(generateWeeklyData, []);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
+  const prefersReducedMotion = useReducedMotionPreference();
   const totalWidth = data.length * (COL_W + COL_GAP) + 40;
   const maxVal = Math.max(...data.map((d) => d.total), 1);
   const totalContributions = data.reduce((sum, d) => sum + d.total, 0);
@@ -79,6 +81,8 @@ const ActivityHeatmap = () => {
   }, []);
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
+
     let raf: number;
     const tick = () => {
       setTime(t => t + 0.008);
@@ -86,11 +90,12 @@ const ActivityHeatmap = () => {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [prefersReducedMotion]);
 
+  const displayTime = prefersReducedMotion ? 0 : time;
   const points = data.map((d, i) => ({
     x: i * (COL_W + COL_GAP) + COL_W / 2 + 20,
-    y: WAVE_H - (d.total / maxVal) * (WAVE_H - 40) + Math.sin(time + i * 0.3) * 2,
+    y: WAVE_H - (d.total / maxVal) * (WAVE_H - 40) + Math.sin(displayTime + i * 0.3) * 2,
   }));
 
   const buildPath = (pts: { x: number; y: number }[]) => {
@@ -217,8 +222,8 @@ const ActivityHeatmap = () => {
           {/* Floating particles */}
           <g clipPath="url(#waveClip)">
             {particles.map((p) => {
-              const px = p.baseX + Math.sin(time * p.speed + p.phase) * 8;
-              const py = p.baseY + Math.cos(time * p.speed * 0.7 + p.phase) * 12;
+              const px = p.baseX + Math.sin(displayTime * p.speed + p.phase) * 8;
+              const py = p.baseY + Math.cos(displayTime * p.speed * 0.7 + p.phase) * 12;
               return (
                 <circle
                   key={p.id}
@@ -226,7 +231,7 @@ const ActivityHeatmap = () => {
                   cy={py}
                   r={p.r}
                   fill={particleColor}
-                  opacity={p.opacity + Math.sin(time * 2 + p.phase) * 0.05}
+                  opacity={p.opacity + Math.sin(displayTime * 2 + p.phase) * 0.05}
                 />
               );
             })}
@@ -241,7 +246,7 @@ const ActivityHeatmap = () => {
             return (
               <path
                 key={`blob-${i}`}
-                d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + time * 0.5)}
+                d={blobPath(points[i].x, points[i].y, isHovered ? r * 1.4 : r, i + displayTime * 0.5)}
                 fill={`rgba(${accentColor},${isHovered ? 0.15 : 0.04 + intensity * 0.04})`}
                 className="transition-opacity duration-300"
               />

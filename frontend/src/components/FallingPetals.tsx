@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface Petal {
   x: number;
@@ -31,8 +32,11 @@ const FallingPetals = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const petalsRef = useRef<Petal[]>([]);
   const animRef = useRef<number>(0);
+  const prefersReducedMotion = useReducedMotionPreference();
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -100,7 +104,11 @@ const FallingPetals = () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [prefersReducedMotion]);
+
+  if (prefersReducedMotion) {
+    return null;
+  }
 
   return (
     <canvas

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Reply, ChevronDown } from "lucide-react";
+import { transition } from "@/config";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface Comment {
   id: number;
@@ -190,6 +192,7 @@ const CommentSection = ({ commentCount, likeCount = 42 }: CommentSectionProps) =
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(likeCount);
+  const prefersReducedMotion = useReducedMotionPreference();
 
   const handleReply = (author: string) => {
     setReplyTo(author);
@@ -215,7 +218,7 @@ const CommentSection = ({ commentCount, likeCount = 42 }: CommentSectionProps) =
       className="mt-12"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={transition({ duration: 0.5, delay: 0.2, reducedMotion: prefersReducedMotion })}
     >
       {/* Action buttons */}
       <div className="flex items-center gap-3 mb-6">
@@ -247,7 +250,7 @@ const CommentSection = ({ commentCount, likeCount = 42 }: CommentSectionProps) =
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            transition={transition({ duration: 0.35, reducedMotion: prefersReducedMotion })}
             className="overflow-hidden"
           >
             {/* Input */}
@@ -338,7 +341,11 @@ const CommentSection = ({ commentCount, likeCount = 42 }: CommentSectionProps) =
                   key={comment.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, delay: 0.05 + i * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                  transition={transition({
+                    duration: 0.35,
+                    delay: prefersReducedMotion ? 0 : 0.05 + i * 0.05,
+                    reducedMotion: prefersReducedMotion,
+                  })}
                 >
                   <CommentItem comment={comment} onReply={handleReply} />
                 </motion.div>

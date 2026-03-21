@@ -5,37 +5,10 @@ import { ChevronDown, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import logo from "@/assets/logo.png";
+import { siteConfig, transition } from "@/config";
+import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
-interface NavItem {
-  label: string;
-  trigger: "hover" | "arrow" | "none";
-  children?: { label: string; href: string }[];
-  href?: string;
-}
-
-const navItems: NavItem[] = [
-  {
-    label: "首页",
-    trigger: "arrow",
-    href: "/",
-    children: [
-      { label: "简历", href: "/resume" },
-      { label: "留言板", href: "/guestbook" },
-      { label: "日历", href: "/calendar" },
-    ],
-  },
-  { label: "帖子", trigger: "none", href: "/posts" },
-  { label: "友链", trigger: "none", href: "/friends" },
-  {
-    label: "更多",
-    trigger: "hover",
-    children: [
-      { label: "碎碎念", href: "/thoughts" },
-      { label: "日记", href: "/diary" },
-      { label: "文摘", href: "/excerpts" },
-    ],
-  },
-];
+type NavItem = (typeof siteConfig.navigation)[number];
 
 const NavDropdown = ({
   item,
@@ -151,7 +124,7 @@ const NavDropdown = ({
                     initial={{ opacity: 0, scale: 0.92, y: 4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: 4 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    transition={transition({ duration: 0.2 })}
                     className="min-w-[120px] liquid-glass rounded-2xl py-2 px-1"
                   >
                     {item.children!.map((child) => (
@@ -224,6 +197,7 @@ const Navbar = () => {
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const lastScrollY = useRef(0);
+  const prefersReducedMotion = useReducedMotionPreference();
 
   useEffect(() => {
     const scrollContainer =
@@ -293,7 +267,7 @@ const Navbar = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
                   onClick={() => setMobileOpen(false)}
                 />
 
@@ -302,7 +276,7 @@ const Navbar = () => {
                   initial={{ opacity: 0, y: -12, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -12, scale: 0.98 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  transition={transition({ duration: 0.22, reducedMotion: prefersReducedMotion })}
                   className="absolute left-4 right-4 top-20 liquid-glass-strong rounded-[28px] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.14)]"
                 >
                   <div className="mb-4 flex items-center justify-between">
@@ -311,7 +285,7 @@ const Navbar = () => {
                         Navigation
                       </p>
                       <p className="mt-1 text-sm font-heading italic text-foreground/80">
-                        Felix
+                        {siteConfig.name}
                       </p>
                     </div>
                     <button
@@ -325,7 +299,7 @@ const Navbar = () => {
                   </div>
 
                   <div className="grid gap-2">
-                    {navItems.map((item) =>
+                    {siteConfig.navigation.map((item) =>
                       item.children ? (
                         <div key={item.label} className="rounded-2xl bg-foreground/[0.02] p-3">
                           <button
@@ -385,7 +359,7 @@ const Navbar = () => {
         y: visible ? 0 : -80,
         opacity: visible ? 1 : 0,
       }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      transition={transition({ duration: 0.35, reducedMotion: prefersReducedMotion })}
     >
       <div className="flex items-center justify-between gap-3">
         <button onClick={() => goTo("/")} className="shrink-0 active:scale-[0.97]">
@@ -393,7 +367,7 @@ const Navbar = () => {
         </button>
 
         <div className="hidden md:flex items-center liquid-glass rounded-full px-2 py-1.5 gap-1">
-          {navItems.map((item) =>
+          {siteConfig.navigation.map((item) =>
             item.children ? (
               <NavDropdown key={item.label} item={item} navigate={goTo} />
             ) : (

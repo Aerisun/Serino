@@ -2,6 +2,7 @@ import FriendCircle from "./FriendCircle";
 import RecentActivity from "./RecentActivity";
 import ActivityHeatmap from "./ActivityHeatmap";
 import Footer from "./Footer";
+import { pageConfig } from "@/config";
 
 const ActivitySection = () => {
   return (
@@ -20,10 +21,10 @@ const ActivitySection = () => {
         {/* Section header */}
         <div className="mb-10">
           <p className="text-xs font-body font-medium text-foreground/25 uppercase tracking-[0.2em] mb-2">
-            Dashboard
+            {pageConfig.activity.dashboardLabel}
           </p>
           <h2 className="text-3xl md:text-4xl font-heading italic text-foreground leading-[1.1]">
-            Recent Pulse
+            {pageConfig.activity.title}
           </h2>
         </div>
 
