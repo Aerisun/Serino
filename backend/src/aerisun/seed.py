@@ -7,12 +7,18 @@ from sqlalchemy.orm import Session
 
 from aerisun.db import get_session_factory, init_db
 from aerisun.models import (
+    Comment,
     DiaryEntry,
     ExcerptEntry,
+    Friend,
+    FriendFeedItem,
+    FriendFeedSource,
+    GuestbookEntry,
     PageCopy,
     PageDisplayOption,
     Poem,
     PostEntry,
+    Reaction,
     ResumeBasics,
     ResumeExperience,
     ResumeSkillGroup,
@@ -236,6 +242,203 @@ DEFAULT_EXCERPTS = [
     },
 ]
 
+DEFAULT_FRIENDS = [
+    {
+        "name": "Miku's Blog",
+        "url": "https://miku.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Miku",
+        "description": "记录生活与技术的小站",
+        "status": "active",
+        "order_index": 0,
+    },
+    {
+        "name": "AkaraChen",
+        "url": "https://akara.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Akara",
+        "description": "位于互联网边缘的小站。",
+        "status": "active",
+        "order_index": 1,
+    },
+    {
+        "name": "夏目的博客",
+        "url": "https://natsume.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Natsume",
+        "description": "总有人间一两风，填我十万八千梦。",
+        "status": "active",
+        "order_index": 2,
+    },
+    {
+        "name": "Quiet Terminal",
+        "url": "https://quiet-terminal.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=QuietTerminal",
+        "description": "偶尔更新系统、Linux 和小工具。",
+        "status": "active",
+        "order_index": 3,
+    },
+    {
+        "name": "Sunset Archive",
+        "url": "https://sunset-archive.example.com",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=SunsetArchive",
+        "description": "停更中的旧站，但还留着一些文章。",
+        "status": "archived",
+        "order_index": 4,
+    },
+]
+
+DEFAULT_FRIEND_FEED_SOURCES = [
+    {
+        "friend_name": "Miku's Blog",
+        "feed_url": "https://miku.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 16, 9, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "AkaraChen",
+        "feed_url": "https://akara.example.com/rss.xml",
+        "last_fetched_at": datetime(2026, 3, 10, 12, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "夏目的博客",
+        "feed_url": "https://natsume.example.com/atom.xml",
+        "last_fetched_at": datetime(2026, 3, 18, 10, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+    {
+        "friend_name": "Quiet Terminal",
+        "feed_url": "https://quiet-terminal.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 19, 11, 0, tzinfo=UTC),
+        "is_enabled": False,
+    },
+    {
+        "friend_name": "Sunset Archive",
+        "feed_url": "https://sunset-archive.example.com/feed.xml",
+        "last_fetched_at": datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+        "is_enabled": True,
+    },
+]
+
+DEFAULT_FRIEND_FEED_ITEMS = [
+    {
+        "friend_name": "Miku's Blog",
+        "title": "“糖”",
+        "url": "https://miku.example.com/posts/candy",
+        "summary": "一篇关于日常感受的短文。",
+        "published_at": datetime(2026, 3, 16, 8, 30, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "AkaraChen",
+        "title": "如何使用 Cloudflare API 为网站新增数据监测大屏",
+        "url": "https://akara.example.com/posts/cloudflare-dashboard",
+        "summary": "记录一次网站数据面板搭建过程。",
+        "published_at": datetime(2026, 3, 10, 11, 0, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "夏目的博客",
+        "title": "网络流算法详解",
+        "url": "https://natsume.example.com/posts/network-flow",
+        "summary": "把几类经典网络流题型梳理成一份笔记。",
+        "published_at": datetime(2026, 3, 18, 9, 30, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "Quiet Terminal",
+        "title": "这篇不会出现在公开接口里",
+        "url": "https://quiet-terminal.example.com/posts/private-feed-entry",
+        "summary": "用于验证禁用 feed source 不会被 public API 返回。",
+        "published_at": datetime(2026, 3, 19, 10, 30, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+    {
+        "friend_name": "Sunset Archive",
+        "title": "归档站点的旧文章",
+        "url": "https://sunset-archive.example.com/posts/archive-note",
+        "summary": "用于验证 archived 友链不会出现在 public feed。",
+        "published_at": datetime(2026, 3, 20, 7, 45, tzinfo=UTC),
+        "raw_payload": {"source": "seed"},
+    },
+]
+
+DEFAULT_GUESTBOOK_ENTRIES = [
+    {
+        "name": "Elena Torres",
+        "email": "elena@example.com",
+        "website": "https://elena.example.com",
+        "body": "你的博客设计真的太好看了，液态玻璃的质感非常克制。",
+        "status": "approved",
+    },
+    {
+        "name": "Kai Nakamura",
+        "email": "kai@example.com",
+        "website": None,
+        "body": "Your work on motion design is inspiring. The easing curves article changed how I think about animation.",
+        "status": "approved",
+    },
+    {
+        "name": "David Okoro",
+        "email": None,
+        "website": None,
+        "body": "偶然发现你的网站，被花瓣飘落的效果吸引了。整体氛围很棒。",
+        "status": "approved",
+    },
+]
+
+DEFAULT_COMMENTS = [
+    {
+        "content_type": "posts",
+        "content_slug": "from-zero-design-system",
+        "author_name": "林小北",
+        "author_email": None,
+        "body": "写得真好，尤其是关于节奏感的那段，让我重新思考了自己的排版方式。",
+        "status": "approved",
+        "key": "comment-1",
+        "parent_key": None,
+    },
+    {
+        "content_type": "posts",
+        "content_slug": "from-zero-design-system",
+        "author_name": "博主",
+        "author_email": None,
+        "body": "谢谢，排版确实是一个容易被忽略但影响很大的部分。",
+        "status": "approved",
+        "key": "comment-2",
+        "parent_key": "comment-1",
+    },
+    {
+        "content_type": "diary",
+        "content_slug": "spring-equinox-and-warm-light",
+        "author_name": "设计小白",
+        "author_email": None,
+        "body": "春天真的来了，这段日记读起来很有画面感。",
+        "status": "approved",
+        "key": "comment-3",
+        "parent_key": None,
+    },
+]
+
+DEFAULT_REACTIONS = [
+    {
+        "content_type": "posts",
+        "content_slug": "from-zero-design-system",
+        "reaction_type": "like",
+        "client_token": "Elena Torres",
+    },
+    {
+        "content_type": "posts",
+        "content_slug": "from-zero-design-system",
+        "reaction_type": "like",
+        "client_token": "Kai Nakamura",
+    },
+    {
+        "content_type": "diary",
+        "content_slug": "spring-equinox-and-warm-light",
+        "reaction_type": "like",
+        "client_token": "David Okoro",
+    },
+]
+
 
 def _is_empty(session: Session, model) -> bool:  # type: ignore[no-untyped-def]
     return session.scalar(select(func.count(model.id))) == 0
@@ -245,6 +448,82 @@ def _seed_content_entries(session: Session, model, entries: list[dict]) -> None:
     if not _is_empty(session, model):
         return
     session.add_all([model(**entry) for entry in entries])
+
+
+def _seed_social_data(session: Session) -> None:
+    if _is_empty(session, Friend):
+        friend_records = [Friend(**item) for item in DEFAULT_FRIENDS]
+        session.add_all(friend_records)
+        session.flush()
+        friends_by_name = {friend.name: friend for friend in friend_records}
+    else:
+        friends_by_name = {
+            friend.name: friend
+            for friend in session.scalars(select(Friend)).all()
+        }
+
+    if _is_empty(session, FriendFeedSource):
+        source_records = [
+            FriendFeedSource(
+                friend_id=friends_by_name[item["friend_name"]].id,
+                feed_url=item["feed_url"],
+                last_fetched_at=item["last_fetched_at"],
+                is_enabled=item["is_enabled"],
+            )
+            for item in DEFAULT_FRIEND_FEED_SOURCES
+        ]
+        session.add_all(source_records)
+        session.flush()
+        sources_by_name = {
+            item["friend_name"]: source
+            for item, source in zip(DEFAULT_FRIEND_FEED_SOURCES, source_records, strict=True)
+        }
+    else:
+        sources_by_name = {
+            friend.name: source
+            for source, friend in session.execute(
+                select(FriendFeedSource, Friend).join(Friend, FriendFeedSource.friend_id == Friend.id)
+            ).all()
+        }
+
+    if _is_empty(session, FriendFeedItem):
+        session.add_all(
+            [
+                FriendFeedItem(
+                    source_id=sources_by_name[item["friend_name"]].id,
+                    title=item["title"],
+                    url=item["url"],
+                    summary=item["summary"],
+                    published_at=item["published_at"],
+                    raw_payload=item["raw_payload"],
+                )
+                for item in DEFAULT_FRIEND_FEED_ITEMS
+            ]
+        )
+
+
+def _seed_engagement_data(session: Session) -> None:
+    if _is_empty(session, GuestbookEntry):
+        session.add_all([GuestbookEntry(**item) for item in DEFAULT_GUESTBOOK_ENTRIES])
+
+    if _is_empty(session, Comment):
+        created_comments: dict[str, Comment] = {}
+        for item in DEFAULT_COMMENTS:
+            comment = Comment(
+                content_type=item["content_type"],
+                content_slug=item["content_slug"],
+                parent_id=created_comments[item["parent_key"]].id if item["parent_key"] else None,
+                author_name=item["author_name"],
+                author_email=item["author_email"],
+                body=item["body"],
+                status=item["status"],
+            )
+            session.add(comment)
+            session.flush()
+            created_comments[item["key"]] = comment
+
+    if _is_empty(session, Reaction):
+        session.add_all([Reaction(**item) for item in DEFAULT_REACTIONS])
 
 
 def seed_reference_data() -> None:
@@ -280,6 +559,8 @@ def seed_reference_data() -> None:
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
         _seed_content_entries(session, ThoughtEntry, DEFAULT_THOUGHTS)
         _seed_content_entries(session, ExcerptEntry, DEFAULT_EXCERPTS)
+        _seed_social_data(session)
+        _seed_engagement_data(session)
         session.commit()
     finally:
         session.close()
