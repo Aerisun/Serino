@@ -16,9 +16,19 @@ dependencies = [
   "uvicorn[standard]>=0.34.0",
 ]
 
+[dependency-groups]
+dev = [
+  "httpx>=0.28",
+  "pytest>=8.3",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
