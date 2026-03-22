@@ -27,6 +27,7 @@ from aerisun.models import (
     SocialLink,
     ThoughtEntry,
 )
+from aerisun.settings import get_settings
 from aerisun.waline.service import connect_waline_db, make_waline_comment_row
 
 
@@ -96,25 +97,41 @@ DEFAULT_PAGE_OPTIONS = [
     {"page_key": "calendar", "is_enabled": True, "settings": {}},
 ]
 
-DEFAULT_COMMUNITY_CONFIG = {
-    "provider": "waline",
-    "server_url": "",
-    "surfaces": [
-        {"key": "posts", "label": "文章评论", "path": "/posts/{slug}", "enabled": True},
-        {"key": "diary", "label": "日记评论", "path": "/diary/{slug}", "enabled": True},
-        {"key": "guestbook", "label": "留言板", "path": "/guestbook", "enabled": True},
-    ],
-    "meta": ["nick", "mail"],
-    "required_meta": ["nick"],
-    "emoji_presets": ["twemoji", "qq", "bilibili"],
-    "enable_enjoy_search": True,
-    "image_uploader": False,
-    "login_mode": "disable",
-    "oauth_url": None,
-    "avatar_strategy": "identicon",
-    "avatar_helper_copy": "匿名评论默认使用 identicon 头像，邮箱可选。",
-    "migration_state": "not_started",
-}
+def build_default_community_config() -> dict[str, object]:
+    settings = get_settings()
+
+    return {
+        "provider": "waline",
+        "server_url": settings.waline_server_url.strip(),
+        "surfaces": [
+            {"key": "posts", "label": "文章评论", "path": "/posts/{slug}", "enabled": True},
+            {"key": "diary", "label": "日记评论", "path": "/diary/{slug}", "enabled": True},
+            {"key": "guestbook", "label": "留言板", "path": "/guestbook", "enabled": True},
+        ],
+        "meta": ["nick", "mail"],
+        "required_meta": ["nick"],
+        "emoji_presets": ["twemoji", "qq", "bilibili"],
+        "enable_enjoy_search": True,
+        "image_uploader": False,
+        "login_mode": "disable",
+        "oauth_url": None,
+        "avatar_strategy": "identicon",
+        "avatar_helper_copy": "匿名评论默认使用 identicon 头像，邮箱可选。",
+        "migration_state": "not_started",
+    }
+
+
+def _seed_community_config(session: Session) -> None:
+    default_config = build_default_community_config()
+    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+
+    if config is None:
+        session.add(CommunityConfig(**default_config))
+        return
+
+    default_server_url = str(default_config["server_url"]).strip()
+    if not (config.server_url or "").strip():
+        config.server_url = default_server_url
 
 DEFAULT_RESUME = {
     "title": "Felix",
@@ -1087,8 +1104,7 @@ def seed_reference_data() -> None:
         _seed_missing_page_copies(session)
         _seed_missing_page_options(session)
 
-        if _is_empty(session, CommunityConfig):
-            session.add(CommunityConfig(**DEFAULT_COMMUNITY_CONFIG))
+        _seed_community_config(session)
 
         _seed_content_entries(session, PostEntry, DEFAULT_POSTS)
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
