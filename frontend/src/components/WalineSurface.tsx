@@ -86,6 +86,11 @@ const WalineSurface = ({
   const noticeTimerRef = useRef<number | null>(null);
   const sortHydratedRef = useRef(false);
   const avatarHydratedRef = useRef(false);
+  const selectedAvatarIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    selectedAvatarIdRef.current = selectedAvatarId;
+  }, [selectedAvatarId]);
 
   useEffect(() => {
     let active = true;
@@ -337,16 +342,20 @@ const WalineSurface = ({
     const originalFetch = window.fetch.bind(window);
     const boundElements = new WeakSet<Element>();
     let restoredDraft = false;
+    let isRestoring = false;
     let saveTimer: number | null = null;
+    let scanTimer: number | null = null;
     let active = true;
 
     const persistDraft = () => {
+      if (isRestoring) return;
+
       if (saveTimer) {
         window.clearTimeout(saveTimer);
       }
 
       saveTimer = window.setTimeout(() => {
-        if (!active) return;
+        if (!active || isRestoring) return;
 
         const fields: Record<string, string> = {};
         let body = "";
@@ -377,7 +386,7 @@ const WalineSurface = ({
         const snapshot: CommentDraftSnapshot = {
           body,
           fields,
-          avatarId: selectedAvatarId,
+          avatarId: selectedAvatarIdRef.current,
           updatedAt: Date.now(),
         };
 
@@ -476,12 +485,16 @@ const WalineSurface = ({
 
     const scanComposer = () => {
       host.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(draftInputSelector).forEach(bindComposerField);
-      applyDraftSnapshot();
-      persistDraft();
+      if (!restoredDraft) {
+        isRestoring = true;
+        applyDraftSnapshot();
+        isRestoring = false;
+      }
     };
 
     const observer = new MutationObserver(() => {
-      scanComposer();
+      if (scanTimer) window.clearTimeout(scanTimer);
+      scanTimer = window.setTimeout(scanComposer, 60);
     });
 
     observer.observe(host, { childList: true, subtree: true });
@@ -562,6 +575,9 @@ const WalineSurface = ({
       observer.disconnect();
       if (saveTimer) {
         window.clearTimeout(saveTimer);
+      }
+      if (scanTimer) {
+        window.clearTimeout(scanTimer);
       }
       window.fetch = originalFetch;
     };

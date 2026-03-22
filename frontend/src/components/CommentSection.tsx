@@ -9,7 +9,7 @@ import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import WalineSurface from "@/components/WalineSurface";
 import type { CommentSurfaceActivity } from "@/lib/community-config";
 
-type CommentSurface = "posts" | "diary" | "guestbook";
+type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 
 interface CommentSectionProps {
   commentCount?: number;
@@ -18,6 +18,7 @@ interface CommentSectionProps {
   contentSlug?: string;
   commentDescription?: string;
   commentTitle?: string;
+  hideReactions?: boolean;
 }
 
 interface CommentContext {
@@ -40,7 +41,7 @@ const resolveCommentContext = (
     };
   }
 
-  if ((contentType === "posts" || contentType === "diary") && contentSlug) {
+  if ((contentType === "posts" || contentType === "diary" || contentType === "thoughts" || contentType === "excerpts") && contentSlug) {
     return {
       contentType,
       slug: contentSlug,
@@ -108,6 +109,7 @@ const CommentSection = ({
   contentSlug,
   commentDescription,
   commentTitle,
+  hideReactions,
 }: CommentSectionProps) => {
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -227,7 +229,7 @@ const CommentSection = ({
       transition={transition({ duration: 0.5, delay: 0.2, reducedMotion: prefersReducedMotion })}
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        {contentContext?.supportsReactions ? (
+        {contentContext?.supportsReactions && !hideReactions ? (
           <button
             type="button"
             onClick={handleLikeToggle}

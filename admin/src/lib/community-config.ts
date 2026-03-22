@@ -35,6 +35,8 @@ export const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceConfig[] = [
   { key: "posts", label: "Posts", path: "/posts/{slug}", enabled: true },
   { key: "diary", label: "Diary", path: "/diary/{slug}", enabled: true },
   { key: "guestbook", label: "Guestbook", path: "/guestbook", enabled: true },
+  { key: "thoughts", label: "Thoughts", path: "/thoughts/{slug}", enabled: true },
+  { key: "excerpts", label: "Excerpts", path: "/excerpts/{slug}", enabled: true },
 ];
 
 const DEFAULT_META = ["nick", "mail"];

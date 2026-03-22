@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/api";
 
-export type CommunitySurface = "posts" | "diary" | "guestbook";
+export type CommunitySurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 export type CommunityCommentSort = "latest" | "oldest" | "hottest";
 
 export interface CommentAvatarPreset {

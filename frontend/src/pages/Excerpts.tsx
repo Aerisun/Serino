@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { BookOpen, X } from "lucide-react";
+import { BookOpen, MessageCircle, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
@@ -44,12 +45,17 @@ const Excerpts = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 40;
+  const [showModalComments, setShowModalComments] = useState(false);
 
   const selected = useMemo(
     () => items.find((excerpt) => excerpt.id === selectedId) ?? null,
     [items, selectedId],
   );
   const formatSourceLine = (excerpt: Excerpt) => [excerpt.source, excerpt.author].filter(Boolean).join(" · ");
+
+  useEffect(() => {
+    setShowModalComments(false);
+  }, [selectedId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -285,6 +291,39 @@ const Excerpts = () => {
                   ))}
                 </div>
               )}
+
+              <div className="mt-6 border-t border-foreground/[0.06] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModalComments((v) => !v)}
+                  className={`flex items-center gap-2 text-xs font-body transition-colors ${
+                    showModalComments
+                      ? "text-[rgb(var(--shiro-accent-rgb)/0.78)]"
+                      : "text-foreground/30 hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
+                  }`}
+                >
+                  <MessageCircle className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
+                  {showModalComments ? "收起评论" : "查看评论"}
+                </button>
+
+                <AnimatePresence>
+                  {showModalComments && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                      className="mt-3 overflow-hidden"
+                    >
+                      <CommentSection
+                        contentType="excerpts"
+                        contentSlug={selected.id}
+                        hideReactions
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           </motion.div>
         )}
