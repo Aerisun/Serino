@@ -7,7 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.models import AdminSession, AdminUser
+from aerisun.domain.iam.models import AdminSession, AdminUser
 
 _bearer = HTTPBearer()
 

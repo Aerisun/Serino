@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aerisun.models import ResumeBasics, ResumeExperience, ResumeSkillGroup
+from aerisun.domain.site_config.models import ResumeBasics, ResumeExperience, ResumeSkillGroup
 
 from .content import build_crud_router
 from .schemas import (

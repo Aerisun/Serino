@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useTheme } from "@/contexts/useTheme";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface Petal {

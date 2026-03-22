@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.models import (
-    AdminUser,
+from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
     PageCopy,

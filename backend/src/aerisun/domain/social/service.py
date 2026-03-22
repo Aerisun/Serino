@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from aerisun.models import Friend, FriendFeedItem, FriendFeedSource
-from aerisun.schemas import FriendCollectionRead, FriendFeedCollectionRead, FriendFeedItemRead, FriendRead
+from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
+from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead, FriendFeedItemRead, FriendRead
 
 
 def _avatar_for_name(name: str) -> str:

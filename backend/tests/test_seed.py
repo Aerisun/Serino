@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aerisun.core.db import get_session_factory
-from aerisun.models import PageCopy
+from aerisun.domain.site_config.models import PageCopy
 from aerisun.core.seed import seed_reference_data
 
 

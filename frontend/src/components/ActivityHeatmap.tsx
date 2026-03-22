@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from "react";
-import { useTheme } from "@/contexts/useTheme";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   fetchActivityHeatmap,
   type PublicActivityHeatmapStats,
@@ -31,8 +31,6 @@ const PARTICLE_COUNT = 40;
 const ACCENT_FALLBACK = "60 100 200";
 const PANEL_STRONG_FALLBACK = "255 255 255";
 const BORDER_FALLBACK = "185 194 211";
-const DIVIDER_FALLBACK = "202 210 226";
-const GLOW_FALLBACK = "180 198 255";
 
 const tokenRgb = (name: string, fallback: string, alpha: number) =>
   `rgb(var(${name}, ${fallback}) / ${alpha})`;
@@ -78,7 +76,7 @@ const ActivityHeatmap = () => {
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [_errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const prefersReducedMotion = useReducedMotionPreference();
   const { resolvedTheme } = useTheme();

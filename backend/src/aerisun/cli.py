@@ -7,7 +7,7 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session_factory, init_db
-from aerisun.models import AdminUser
+from aerisun.domain.iam.models import AdminUser
 from aerisun.core.settings import get_settings
 
 

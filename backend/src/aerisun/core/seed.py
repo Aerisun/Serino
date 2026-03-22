@@ -9,27 +9,21 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.settings import get_settings
-from aerisun.models import (
+from aerisun.domain.site_config.models import (
     CommunityConfig,
-    DiaryEntry,
-    ExcerptEntry,
-    Friend,
-    FriendFeedItem,
-    FriendFeedSource,
-    GuestbookEntry,
     NavItem,
     PageCopy,
     PageDisplayOption,
     Poem,
-    PostEntry,
-    Reaction,
     ResumeBasics,
     ResumeExperience,
     ResumeSkillGroup,
     SiteProfile,
     SocialLink,
-    ThoughtEntry,
 )
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.engagement.models import GuestbookEntry, Reaction
+from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import connect_waline_db, make_waline_comment_row
 
 
