@@ -10,6 +10,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { ContentCreate, ContentUpdate } from "@/types/models";
 import { Trash2, Save, ExternalLink } from "lucide-react";
 
@@ -37,12 +38,14 @@ export default function DiaryEditPage() {
 
   const save = useMutation({
     mutationFn: () => isNew ? createDiary(form) : updateDiary(id!, form as ContentUpdate),
-    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["diary"] }); if (isNew) navigate(`/diary/${data.id}`, { replace: true }); },
+    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["diary"] }); toast.success(t("common.operationSuccess")); if (isNew) navigate(`/diary/${data.id}`, { replace: true }); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: () => deleteDiary(id!),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["diary"] }); navigate("/diary"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["diary"] }); toast.success(t("common.operationSuccess")); navigate("/diary"); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));

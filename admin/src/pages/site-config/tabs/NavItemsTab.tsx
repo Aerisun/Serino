@@ -4,6 +4,7 @@ import {
   listNavItems, createNavItem, updateNavItem, deleteNavItem,
 } from "@/api/endpoints/site-config";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -30,7 +31,8 @@ export function NavItemsTab() {
       page_key: form.page_key || null,
       parent_id: form.parent_id || null,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); setOpen(false); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const update = useMutation({
@@ -40,12 +42,14 @@ export function NavItemsTab() {
       page_key: form.page_key || null,
       parent_id: form.parent_id || null,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); setEditingId(null); setOpen(false); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteNavItem(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nav-items"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   function resetForm() {

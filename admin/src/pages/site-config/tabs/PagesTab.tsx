@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Plus, Save, Trash2, Pencil, X } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import { PAGE_KEYS } from "../constants";
 import type { PageCopy, PageDisplayOption } from "@/types/models";
 
@@ -41,7 +42,9 @@ export function PagesTab() {
       queryClient.invalidateQueries({ queryKey: ["page-copy"] });
       setCreateOpen(false);
       setCreateForm({ page_key: "", title: "", subtitle: "", label: "", description: "", search_placeholder: "", empty_message: "", page_size: "" });
+      toast.success(t("common.operationSuccess"));
     },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   // Merge copy + display by page_key
@@ -123,7 +126,8 @@ function PageRow({ copy, display }: { copy: PageCopy; display?: PageDisplayOptio
       empty_message: form.empty_message || null,
       page_size: form.page_size ? parseInt(form.page_size) : null,
     }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["page-copy"] }); setEditing(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["page-copy"] }); setEditing(false); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const toggleEnabled = useMutation({
@@ -131,7 +135,8 @@ function PageRow({ copy, display }: { copy: PageCopy; display?: PageDisplayOptio
       if (display) return updateDisplayOption(display.id, { is_enabled: !display.is_enabled });
       return createDisplayOption({ page_key: copy.page_key, is_enabled: true });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["display-options"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["display-options"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const saveSettings = useMutation({
@@ -140,12 +145,14 @@ function PageRow({ copy, display }: { copy: PageCopy; display?: PageDisplayOptio
       if (display) return updateDisplayOption(display.id, { settings: parsed });
       return createDisplayOption({ page_key: copy.page_key, settings: parsed });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["display-options"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["display-options"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const delCopy = useMutation({
     mutationFn: () => deletePageCopy(copy.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["page-copy"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["page-copy"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const formFieldLabels: Record<string, string> = {

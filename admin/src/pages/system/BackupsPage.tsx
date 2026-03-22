@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Database, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { BackupSnapshot } from "@/types/models";
 
 export default function BackupsPage() {
@@ -20,12 +21,14 @@ export default function BackupsPage() {
 
   const create = useMutation({
     mutationFn: triggerBackup,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["backups"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["backups"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const restore = useMutation({
     mutationFn: (id: string) => restoreBackup(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["backups"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["backups"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   return (

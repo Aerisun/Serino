@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/Label";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Save } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function ProfileTab() {
@@ -26,7 +27,8 @@ export function ProfileTab() {
 
   const save = useMutation({
     mutationFn: () => updateProfile({ ...form, feature_flags: featureFlags }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["site-profile"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["site-profile"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   if (isLoading) return <p className="py-4 text-muted-foreground">{t("common.loading")}</p>;

@@ -9,6 +9,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { ContentCreate, ContentUpdate } from "@/types/models";
 import { Trash2, Save } from "lucide-react";
 
@@ -34,12 +35,14 @@ export default function ThoughtEditPage() {
 
   const save = useMutation({
     mutationFn: () => isNew ? createThought(form) : updateThought(id!, form as ContentUpdate),
-    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["thoughts"] }); if (isNew) navigate(`/thoughts/${data.id}`, { replace: true }); },
+    onSuccess: (data) => { toast.success(t("common.operationSuccess")); queryClient.invalidateQueries({ queryKey: ["thoughts"] }); if (isNew) navigate(`/thoughts/${data.id}`, { replace: true }); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: () => deleteThought(id!),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["thoughts"] }); navigate("/thoughts"); },
+    onSuccess: () => { toast.success(t("common.operationSuccess")); queryClient.invalidateQueries({ queryKey: ["thoughts"] }); navigate("/thoughts"); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));

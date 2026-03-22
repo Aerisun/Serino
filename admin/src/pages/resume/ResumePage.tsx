@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { ResumeSkillGroup, ResumeExperience } from "@/types/models";
 
 export default function ResumePage() {
@@ -52,7 +53,8 @@ function BasicsTab() {
     mutationFn: () => existing
       ? updateResumeBasics(existing.id, form)
       : createResumeBasics(form),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["resume-basics"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-basics"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   if (isLoading) return <p className="py-4 text-muted-foreground">{t("common.loading")}</p>;
@@ -96,12 +98,14 @@ function SkillsTab() {
 
   const create = useMutation({
     mutationFn: () => createResumeSkill({ resume_basics_id: basicsId, category: form.category, items: form.items.split(",").map((s: string) => s.trim()).filter(Boolean), order_index: form.order_index }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-skills"] }); setOpen(false); setForm({ category: "", items: "", order_index: 0 }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-skills"] }); setOpen(false); setForm({ category: "", items: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteResumeSkill(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["resume-skills"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-skills"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   return (
@@ -149,12 +153,14 @@ function ExperienceTab() {
 
   const create = useMutation({
     mutationFn: () => createResumeExperience({ resume_basics_id: basicsId, ...form }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-experiences"] }); setOpen(false); setForm({ title: "", company: "", period: "", summary: "", order_index: 0 }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-experiences"] }); setOpen(false); setForm({ title: "", company: "", period: "", summary: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteResumeExperience(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["resume-experiences"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-experiences"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const fieldLabels: Record<string, string> = {

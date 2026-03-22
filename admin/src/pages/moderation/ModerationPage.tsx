@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatDate } from "@/lib/utils";
 import { Check, History, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { Comment, GuestbookEntry, ModerateAction, PaginatedResponse } from "@/types/models";
 
 type ModerationRecord = Comment | GuestbookEntry;
@@ -469,6 +470,11 @@ function ModerationQueue({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [kind] });
       dialog.close();
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
     },
   });
 

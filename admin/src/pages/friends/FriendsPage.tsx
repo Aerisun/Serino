@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Pencil, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { Friend, FriendFeedSource } from "@/types/models";
 
 export default function FriendsPage() {
@@ -31,17 +32,20 @@ export default function FriendsPage() {
 
   const create = useMutation({
     mutationFn: () => createFriend(form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); setCreateOpen(false); setForm(emptyForm); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); setCreateOpen(false); setForm(emptyForm); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const update = useMutation({
     mutationFn: () => updateFriend(editingFriend!.id, form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); setEditOpen(false); setEditingFriend(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); setEditOpen(false); setEditingFriend(null); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteFriend(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["friends"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   function startEdit(friend: Friend) {
@@ -150,17 +154,20 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
 
   const createFeed = useMutation({
     mutationFn: () => createFriendFeed(friendId, { friend_id: friendId, feed_url: feedForm.feed_url, is_enabled: feedForm.is_enabled }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); setAddOpen(false); setFeedForm({ feed_url: "", is_enabled: true }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); setAddOpen(false); setFeedForm({ feed_url: "", is_enabled: true }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const updateFeed = useMutation({
     mutationFn: () => updateFriendFeed(editingFeedId!, { feed_url: feedForm.feed_url, is_enabled: feedForm.is_enabled }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); setEditingFeedId(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); setEditingFeedId(null); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const delFeed = useMutation({
     mutationFn: (id: string) => deleteFriendFeed(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   function startEditFeed(feed: FriendFeedSource) {

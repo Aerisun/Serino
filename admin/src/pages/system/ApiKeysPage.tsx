@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Copy } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { ApiKey } from "@/types/models";
 
 export default function ApiKeysPage() {
@@ -29,12 +30,15 @@ export default function ApiKeysPage() {
     onSuccess: (res) => {
       setRawKey(res.raw_key);
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
+      toast.success(t("common.operationSuccess"));
     },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteApiKey(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["api-keys"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["api-keys"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   return (

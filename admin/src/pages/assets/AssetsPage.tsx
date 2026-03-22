@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Upload, Trash2 } from "lucide-react";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { Asset } from "@/types/models";
 
 export default function AssetsPage() {
@@ -22,12 +23,14 @@ export default function AssetsPage() {
 
   const upload = useMutation({
     mutationFn: (file: File) => uploadAsset(file),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["assets"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteAsset(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["assets"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const handleUpload = () => {

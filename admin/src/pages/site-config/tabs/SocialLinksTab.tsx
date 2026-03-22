@@ -11,6 +11,7 @@ import { DataTable } from "@/components/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { toast } from "sonner";
 import type { SocialLink } from "@/types/models";
 
 export function SocialLinksTab() {
@@ -26,17 +27,20 @@ export function SocialLinksTab() {
 
   const create = useMutation({
     mutationFn: () => createSocialLink({ ...form, site_profile_id: profileId }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setOpen(false); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const update = useMutation({
     mutationFn: () => updateSocialLink(editingId!, form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setEditingId(null); setOpen(false); resetForm(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteSocialLink(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["social-links"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); toast.success(t("common.operationSuccess")); },
+    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
   function resetForm() {
