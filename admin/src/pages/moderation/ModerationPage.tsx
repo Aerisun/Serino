@@ -56,11 +56,11 @@ const GUESTBOOK_SURFACE_OPTIONS = ["", "guestbook"] as const;
 const STATUS_OPTIONS = ["", "pending", "approved", "rejected"] as const;
 const SORT_OPTIONS = ["created_desc", "created_asc", "status", "path"] as const;
 
-function getModerationAuthor(item: ModerationRecord) {
+function getModerationAuthor(item: ModerationRecord, fallback: string = "访客") {
   if ("author_name" in item && item.author_name) return item.author_name;
   if ("nickname" in item && item.nickname) return item.nickname;
   if ("name" in item && item.name) return item.name;
-  return "访客";
+  return fallback;
 }
 
 function getModerationBody(item: ModerationRecord) {
@@ -210,7 +210,7 @@ function ModerationHistory({ item }: { item: ModerationRecord }) {
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground">{t("common.author")}</dt>
-          <dd>{getModerationAuthor(item)}</dd>
+          <dd>{getModerationAuthor(item, t("moderation.guest"))}</dd>
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground">{t("common.email")}</dt>
@@ -262,7 +262,7 @@ function ThreadTree({
         onClick={() => onSelect(node.item.id)}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{getModerationAuthor(node.item)}</span>
+          <span className="text-sm font-medium">{getModerationAuthor(node.item, t("moderation.guest"))}</span>
           <StatusBadge status={normalizeModerationStatus(node.item.status)} />
           <Badge variant="outline">{getModerationSurface(node.item)}</Badge>
         </div>
@@ -599,7 +599,7 @@ function ModerationQueue({
                   ),
                   className: "w-12",
                 },
-                { header: t("common.author"), accessor: (row) => getModerationAuthor(row) },
+                { header: t("common.author"), accessor: (row) => getModerationAuthor(row, t("moderation.guest")) },
                 { header: t("moderation.source"), accessor: (row) => <Badge variant="outline">{getModerationSource(row)}</Badge> },
                 { header: t("moderation.path"), accessor: (row) => <span className="break-all">{getModerationPath(row)}</span> },
                 { header: t("common.body"), accessor: (row) => <span className="line-clamp-2 max-w-md">{getModerationBody(row)}</span> },

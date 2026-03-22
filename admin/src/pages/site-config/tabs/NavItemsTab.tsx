@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listNavItems, createNavItem, updateNavItem, deleteNavItem,
 } from "@/api/endpoints/site-config";
+import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -11,6 +12,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import type { NavItem } from "@/types/models";
 
 export function NavItemsTab() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data } = useQuery({ queryKey: ["nav-items"], queryFn: () => listNavItems() });
   const [open, setOpen] = useState(false);
@@ -81,41 +83,41 @@ export function NavItemsTab() {
     <div className="mt-4">
       <div className="flex justify-end mb-4">
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); resetForm(); } }}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> 添加导航项</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> {t("navItems.add")}</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editingId ? "编辑导航项" : "新建导航项"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? t("navItems.edit") : t("navItems.create")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div className="space-y-1"><Label>标签</Label><Input value={form.label} onChange={(e) => setForm((p) => ({ ...p, label: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>链接 (href)</Label><Input value={form.href} onChange={(e) => setForm((p) => ({ ...p, href: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>触发器 (trigger)</Label><Input value={form.trigger} onChange={(e) => setForm((p) => ({ ...p, trigger: e.target.value }))} placeholder="可选，如 dropdown" /></div>
-              <div className="space-y-1"><Label>页面键 (page_key)</Label><Input value={form.page_key} onChange={(e) => setForm((p) => ({ ...p, page_key: e.target.value }))} placeholder="可选" /></div>
+              <div className="space-y-1"><Label>{t("navItems.label")}</Label><Input value={form.label} onChange={(e) => setForm((p) => ({ ...p, label: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>{t("navItems.href")}</Label><Input value={form.href} onChange={(e) => setForm((p) => ({ ...p, href: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>{t("navItems.trigger")}</Label><Input value={form.trigger} onChange={(e) => setForm((p) => ({ ...p, trigger: e.target.value }))} placeholder={t("navItems.triggerPlaceholder")} /></div>
+              <div className="space-y-1"><Label>{t("navItems.pageKey")}</Label><Input value={form.page_key} onChange={(e) => setForm((p) => ({ ...p, page_key: e.target.value }))} placeholder={t("navItems.pageKeyPlaceholder")} /></div>
               <div className="space-y-1">
-                <Label>父级菜单</Label>
+                <Label>{t("navItems.parent")}</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={form.parent_id}
                   onChange={(e) => setForm((p) => ({ ...p, parent_id: e.target.value }))}
                 >
-                  <option value="">无 (顶级)</option>
+                  <option value="">{t("navItems.parentNone")}</option>
                   {items.filter((i) => !i.parent_id && i.id !== editingId).map((i) => (
                     <option key={i.id} value={i.id}>{i.label}</option>
                   ))}
                 </select>
               </div>
-              <div className="space-y-1"><Label>排序</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
+              <div className="space-y-1"><Label>{t("navItems.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" checked={form.is_enabled} onChange={(e) => setForm((p) => ({ ...p, is_enabled: e.target.checked }))} />
-                <Label>启用</Label>
+                <Label>{t("navItems.enabled")}</Label>
               </div>
               <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={create.isPending || update.isPending}>
-                {editingId ? "保存" : "创建"}
+                {editingId ? t("navItems.save") : t("common.create")}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
       <div className="border rounded-lg">
-        {topLevel.length === 0 && <p className="p-4 text-muted-foreground text-sm">暂无导航项</p>}
+        {topLevel.length === 0 && <p className="p-4 text-muted-foreground text-sm">{t("navItems.empty")}</p>}
         {topLevel.map((item) => renderItem(item))}
       </div>
     </div>

@@ -63,7 +63,7 @@ export default function ThoughtEditPage() {
         </div>
         <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={8} required /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
-        <div className="space-y-2"><Label>心情</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder="如：开心、平静、思考" /></div>
+        <div className="space-y-2"><Label>{t("thoughts.mood")}</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder={t("thoughts.moodPlaceholder")} /></div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>{t("posts.status")}</Label>

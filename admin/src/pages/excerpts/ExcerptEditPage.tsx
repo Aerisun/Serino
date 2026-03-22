@@ -65,8 +65,8 @@ export default function ExcerptEditPage() {
         <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={10} className="font-mono text-sm" required /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2"><Label>作者</Label><Input value={form.author_name || ""} onChange={(e) => setField("author_name", e.target.value)} placeholder="原文作者" /></div>
-          <div className="space-y-2"><Label>来源</Label><Input value={form.source || ""} onChange={(e) => setField("source", e.target.value)} placeholder="书名、文章等" /></div>
+          <div className="space-y-2"><Label>{t("excerpts.authorName")}</Label><Input value={form.author_name || ""} onChange={(e) => setField("author_name", e.target.value)} placeholder={t("excerpts.authorPlaceholder")} /></div>
+          <div className="space-y-2"><Label>{t("excerpts.source")}</Label><Input value={form.source || ""} onChange={(e) => setField("source", e.target.value)} placeholder={t("excerpts.sourcePlaceholder")} /></div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">

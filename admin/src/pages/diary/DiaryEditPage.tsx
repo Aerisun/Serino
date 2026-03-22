@@ -67,9 +67,9 @@ export default function DiaryEditPage() {
         <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={12} className="font-mono text-sm" required /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
         <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2"><Label>心情</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder="如：开心、平静" /></div>
-          <div className="space-y-2"><Label>天气</Label><Input value={form.weather || ""} onChange={(e) => setField("weather", e.target.value)} placeholder="如：晴、雨" /></div>
-          <div className="space-y-2"><Label>诗句</Label><Input value={form.poem || ""} onChange={(e) => setField("poem", e.target.value)} placeholder="可选" /></div>
+          <div className="space-y-2"><Label>{t("diary.mood")}</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder={t("diary.moodPlaceholder")} /></div>
+          <div className="space-y-2"><Label>{t("diary.weather")}</Label><Input value={form.weather || ""} onChange={(e) => setField("weather", e.target.value)} placeholder={t("diary.weatherPlaceholder")} /></div>
+          <div className="space-y-2"><Label>{t("diary.poem")}</Label><Input value={form.poem || ""} onChange={(e) => setField("poem", e.target.value)} placeholder={t("diary.poemPlaceholder")} /></div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
