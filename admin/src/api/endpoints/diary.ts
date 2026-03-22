@@ -1,10 +1,13 @@
 import client from "../client";
-import type { ContentItem, ContentCreate, ContentUpdate, PaginatedResponse } from "@/types/models";
+import type { ContentItem, ContentCreate, ContentUpdate, PaginatedResponse, BulkActionResponse } from "@/types/models";
 
 export interface ListParams {
   page?: number;
   page_size?: number;
   status?: string;
+  search?: string;
+  sort_by?: string;
+  sort_order?: string;
 }
 
 export async function listDiary(params?: ListParams): Promise<PaginatedResponse<ContentItem>> {
@@ -29,4 +32,14 @@ export async function updateDiary(id: string, data: ContentUpdate): Promise<Cont
 
 export async function deleteDiary(id: string): Promise<void> {
   await client.delete(`/diary/${id}`);
+}
+
+export async function bulkDeleteDiary(ids: string[]): Promise<BulkActionResponse> {
+  const res = await client.post("/diary/bulk-delete", { ids });
+  return res.data;
+}
+
+export async function bulkStatusDiary(ids: string[], status: string): Promise<BulkActionResponse> {
+  const res = await client.post("/diary/bulk-status", { ids, status });
+  return res.data;
 }

@@ -29,6 +29,8 @@ export interface ContentItem {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  is_pinned?: boolean;
+  pin_order?: number;
 }
 
 export interface ContentCreate {
@@ -47,6 +49,8 @@ export interface ContentCreate {
   poem?: string | null;
   author_name?: string | null;
   source?: string | null;
+  is_pinned?: boolean;
+  pin_order?: number;
 }
 
 export interface ContentUpdate {
@@ -65,6 +69,8 @@ export interface ContentUpdate {
   poem?: string | null;
   author_name?: string | null;
   source?: string | null;
+  is_pinned?: boolean;
+  pin_order?: number;
 }
 
 // ---- Site Profile ----
@@ -529,6 +535,33 @@ export interface DashboardStats {
   assets: number;
   reactions: number;
   sync_runs: number;
+}
+
+export interface MonthlyCount {
+  month: string;
+  posts: number;
+  diary: number;
+  thoughts: number;
+  excerpts: number;
+}
+
+export interface RecentContentItem {
+  id: string;
+  title: string;
+  content_type: string;
+  status: string;
+  updated_at: string;
+}
+
+export interface EnhancedDashboardStats extends DashboardStats {
+  posts_by_status: Record<string, number>;
+  content_by_month: MonthlyCount[];
+  recent_content: RecentContentItem[];
+}
+
+// ---- Bulk Operations ----
+export interface BulkActionResponse {
+  affected: number;
 }
 
 // ---- Paginated ----

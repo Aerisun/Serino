@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "@/components/ui/Toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { LanguageProvider } from "@/i18n";
@@ -22,6 +23,8 @@ import AssetsPage from "@/pages/assets/AssetsPage";
 import ApiKeysPage from "@/pages/system/ApiKeysPage";
 import AuditLogPage from "@/pages/system/AuditLogPage";
 import BackupsPage from "@/pages/system/BackupsPage";
+import SystemInfoPage from "@/pages/system/SystemInfoPage";
+import SettingsPage from "@/pages/settings/SettingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +63,8 @@ function ProtectedRoutes() {
         <Route path="system/api-keys" element={<ApiKeysPage />} />
         <Route path="system/audit-log" element={<AuditLogPage />} />
         <Route path="system/backups" element={<BackupsPage />} />
+        <Route path="system/info" element={<SystemInfoPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
@@ -71,6 +76,7 @@ export default function App() {
       <LanguageProvider>
         <AuthProvider>
           <BrowserRouter>
+            <Toaster richColors position="top-right" />
             <Routes>
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/*" element={<ProtectedRoutes />} />

@@ -4,6 +4,7 @@ import { listAuditLogs } from "@/api/endpoints/system";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { AuditLog } from "@/types/models";
@@ -11,15 +12,73 @@ import type { AuditLog } from "@/types/models";
 export default function AuditLogPage() {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
+  const [actionFilter, setActionFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["audit-logs", page],
-    queryFn: () => listAuditLogs({ page }),
+    queryKey: ["audit-logs", page, actionFilter, dateFrom, dateTo],
+    queryFn: () =>
+      listAuditLogs({
+        page,
+        action: actionFilter || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+      }),
   });
+
+  const handleFilter = () => {
+    setPage(1);
+  };
+
+  const handleClear = () => {
+    setActionFilter("");
+    setDateFrom("");
+    setDateTo("");
+    setPage(1);
+  };
 
   return (
     <div>
       <PageHeader title={t("system.auditLog")} description={t("system.auditLogDescription")} />
+
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-muted-foreground">{t("auditLog.filterByAction")}</label>
+          <input
+            type="text"
+            value={actionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
+            placeholder={t("auditLog.filterByAction")}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-muted-foreground">{t("auditLog.dateFrom")}</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-muted-foreground">{t("auditLog.dateTo")}</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
+        <Button size="sm" onClick={handleFilter}>
+          {t("auditLog.filter")}
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleClear}>
+          {t("auditLog.clearFilter")}
+        </Button>
+      </div>
+
       <div className="border rounded-lg">
         <DataTable<AuditLog>
           columns={[
