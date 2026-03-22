@@ -21,8 +21,32 @@ async def lifespan(app: FastAPI):
     if settings.seed_reference_data:
         seed_reference_data()
     task = asyncio.create_task(cleanup_expired_sessions())
+
+    # Start feed crawler scheduler
+    scheduler = None
+    if settings.feed_crawl_enabled:
+        from apscheduler.schedulers.background import BackgroundScheduler
+
+        from aerisun.domain.social.crawler import crawl_all_feeds
+
+        scheduler = BackgroundScheduler(daemon=True)
+        scheduler.add_job(
+            crawl_all_feeds,
+            trigger="interval",
+            hours=settings.feed_crawl_interval_hours,
+            id="feed_crawler",
+            name="Friend feed crawler",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        scheduler.start()
+
     yield
+
     task.cancel()
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
 
 
 app = FastAPI(
