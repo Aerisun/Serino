@@ -7,8 +7,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy import inspect
 
-revision = "0005_add_community_config_comment_settings"
-down_revision = "0004_add_nav_and_content_metadata"
+revision = "0006_add_community_config_comment_settings"
+down_revision = "0005_add_feed_crawl_columns"
 branch_labels = None
 depends_on = None
 
