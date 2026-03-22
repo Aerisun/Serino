@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
+import ShareButtons from "@/components/ShareButtons";
 import PageMeta from "@/components/PageMeta";
 import { ApiError, fetchPublicContentEntry, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
@@ -238,6 +239,8 @@ const DiaryDetail = () => {
             <div className="mt-10 text-center">
               <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">— 今日份记录 —</p>
             </div>
+
+            <ShareButtons title={entry.title} />
 
             <CommentSection
               contentType="diary"
