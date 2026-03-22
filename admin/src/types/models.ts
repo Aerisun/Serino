@@ -228,6 +228,13 @@ export interface CommunitySurfaceConfig {
   enabled: boolean;
 }
 
+export interface CommunityAvatarPreset {
+  key: string;
+  label: string;
+  avatar_url: string;
+  note?: string | null;
+}
+
 export interface CommunityConfig {
   id: string;
   provider: string;
@@ -243,6 +250,14 @@ export interface CommunityConfig {
   oauth_url: string | null;
   avatar_strategy: string;
   avatar_helper_copy: string | null;
+  oauth_providers?: string[] | null;
+  anonymous_enabled?: boolean | null;
+  moderation_mode?: string | null;
+  default_sorting?: string | null;
+  page_size?: number | null;
+  avatar_presets?: CommunityAvatarPreset[] | null;
+  guest_avatar_mode?: string | null;
+  draft_enabled?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -281,6 +296,14 @@ export interface CommunityConfigUpdate {
   oauth_url?: string | null;
   avatar_strategy?: string;
   avatar_helper_copy?: string | null;
+  oauth_providers?: string[] | null;
+  anonymous_enabled?: boolean | null;
+  moderation_mode?: string | null;
+  default_sorting?: string | null;
+  page_size?: number | null;
+  avatar_presets?: CommunityAvatarPreset[] | null;
+  guest_avatar_mode?: string | null;
+  draft_enabled?: boolean | null;
 }
 
 // ---- Resume ----

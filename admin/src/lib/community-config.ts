@@ -1,4 +1,9 @@
-import type { CommunityConfig, CommunityConfigUpdate, CommunitySurfaceConfig } from "@/types/models";
+import type {
+  CommunityAvatarPreset,
+  CommunityConfig,
+  CommunityConfigUpdate,
+  CommunitySurfaceConfig,
+} from "@/types/models";
 
 export interface CommunityConfigFormState {
   provider: string;
@@ -14,6 +19,14 @@ export interface CommunityConfigFormState {
   oauth_url: string;
   avatar_strategy: string;
   helper_copy: string;
+  oauth_providers: string;
+  anonymous_enabled: boolean;
+  moderation_mode: string;
+  default_sorting: string;
+  page_size: string;
+  avatar_presets: string;
+  guest_avatar_mode: string;
+  draft_enabled: boolean;
 }
 
 export const COMMUNITY_CONFIG_ENDPOINTS = ["/site-config/community", "/site-config/community-config"] as const;
@@ -27,6 +40,27 @@ export const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceConfig[] = [
 const DEFAULT_META = ["nick", "mail"];
 const DEFAULT_REQUIRED_META = ["nick"];
 const DEFAULT_EMOJI_PRESETS = ["apple", "weibo", "qq", "bilibili", "twemoji", "github"];
+const DEFAULT_OAUTH_PROVIDERS = ["github", "google"];
+const DEFAULT_AVATAR_PRESETS: CommunityAvatarPreset[] = [
+  {
+    key: "shiro",
+    label: "Shiro",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro",
+  },
+  {
+    key: "glass",
+    label: "Glass",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Glass",
+  },
+  {
+    key: "aurora",
+    label: "Aurora",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora",
+  },
+];
+const DEFAULT_MODERATION_MODE = "all_pending";
+const DEFAULT_DEFAULT_SORTING = "latest";
+const DEFAULT_GUEST_AVATAR_MODE = "preset";
 
 const splitList = (value: string) =>
   value
@@ -34,8 +68,7 @@ const splitList = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const joinList = (value: string[] | undefined) => (value?.length ? value.join(", ") : "");
-
+const joinList = (value: string[] | undefined | null) => (value?.length ? value.join(", ") : "");
 const toPrettyJson = (value: unknown) => JSON.stringify(value ?? [], null, 2);
 
 const parseSurfaceList = (value: string): CommunitySurfaceConfig[] => {
@@ -64,6 +97,39 @@ const parseSurfaceList = (value: string): CommunitySurfaceConfig[] => {
   });
 };
 
+const parseAvatarPresets = (value: string): CommunityAvatarPreset[] => {
+  const raw = value.trim();
+  if (!raw) {
+    return DEFAULT_AVATAR_PRESETS;
+  }
+
+  const parsed = JSON.parse(raw) as unknown;
+  if (!Array.isArray(parsed)) {
+    throw new Error("Avatar presets must be a JSON array");
+  }
+
+  return parsed.map((item, index) => {
+    if (!item || typeof item !== "object") {
+      throw new Error(`Avatar preset #${index + 1} is invalid`);
+    }
+
+    const record = item as Record<string, unknown>;
+    const key = String(record.key ?? record.id ?? "").trim();
+    const label = String(record.label ?? record.name ?? "").trim();
+    const avatarUrl = String(record.avatar_url ?? record.src ?? "").trim();
+    if (!key || !label || !avatarUrl) {
+      throw new Error(`Avatar preset #${index + 1} must include key, label and avatar_url`);
+    }
+
+    return {
+      key,
+      label,
+      avatar_url: avatarUrl,
+      note: typeof record.note === "string" ? record.note : null,
+    };
+  });
+};
+
 export const createCommunityForm = (config?: CommunityConfig | null): CommunityConfigFormState => ({
   provider: config?.provider ?? "waline",
   server_url: config?.server_url ?? "",
@@ -78,6 +144,14 @@ export const createCommunityForm = (config?: CommunityConfig | null): CommunityC
   oauth_url: config?.oauth_url ?? "",
   avatar_strategy: config?.avatar_strategy ?? "identicon",
   helper_copy: config?.avatar_helper_copy ?? "",
+  oauth_providers: joinList(config?.oauth_providers ?? DEFAULT_OAUTH_PROVIDERS),
+  anonymous_enabled: config?.anonymous_enabled ?? true,
+  moderation_mode: config?.moderation_mode ?? DEFAULT_MODERATION_MODE,
+  default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
+  page_size: String(config?.page_size ?? 20),
+  avatar_presets: toPrettyJson(config?.avatar_presets ?? DEFAULT_AVATAR_PRESETS),
+  guest_avatar_mode: config?.guest_avatar_mode ?? DEFAULT_GUEST_AVATAR_MODE,
+  draft_enabled: config?.draft_enabled ?? true,
 });
 
 export const communityFormToUpdate = (form: CommunityConfigFormState): CommunityConfigUpdate => ({
@@ -92,8 +166,22 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   image_uploader: form.image_uploader,
   login_mode: form.login_mode.trim() || "disable",
   oauth_url: form.oauth_url.trim() || null,
+  oauth_providers: splitList(form.oauth_providers),
+  anonymous_enabled: form.anonymous_enabled,
+  moderation_mode: form.moderation_mode.trim() || DEFAULT_MODERATION_MODE,
+  default_sorting: form.default_sorting.trim() || DEFAULT_DEFAULT_SORTING,
+  page_size: Math.max(1, Number.parseInt(form.page_size, 10) || 20),
+  avatar_presets: parseAvatarPresets(form.avatar_presets),
+  guest_avatar_mode: form.guest_avatar_mode.trim() || DEFAULT_GUEST_AVATAR_MODE,
+  draft_enabled: form.draft_enabled,
   avatar_strategy: form.avatar_strategy.trim() || "identicon",
   avatar_helper_copy: form.helper_copy.trim() || null,
 });
 
 export const formatCommunitySurfaces = (value: CommunitySurfaceConfig[]) => toPrettyJson(value);
+
+export const parseCommunityList = (value: string) =>
+  value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
