@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/Toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/i18n";
 import { useAuth } from "@/auth/useAuth";
 import AdminLayout from "@/layouts/AdminLayout";
@@ -73,17 +74,19 @@ function ProtectedRoutes() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <Toaster richColors position="top-right" />
-            <Routes>
-              <Route path="/login" element={<LoginRoute />} />
-              <Route path="/*" element={<ProtectedRoutes />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Toaster richColors position="top-right" />
+              <Routes>
+                <Route path="/login" element={<LoginRoute />} />
+                <Route path="/*" element={<ProtectedRoutes />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
