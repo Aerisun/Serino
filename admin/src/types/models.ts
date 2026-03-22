@@ -82,6 +82,7 @@ export interface SiteProfile {
   role: string;
   footer_text: string;
   hero_video_url: string | null;
+  feature_flags?: Record<string, boolean>;
   created_at: string;
   updated_at: string;
 }
@@ -93,6 +94,7 @@ export interface SiteProfileUpdate {
   role?: string;
   footer_text?: string;
   hero_video_url?: string | null;
+  feature_flags?: Record<string, boolean>;
 }
 
 // ---- Social Link ----
