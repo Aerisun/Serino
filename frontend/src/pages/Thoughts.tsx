@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
@@ -44,6 +44,10 @@ const Thoughts = () => {
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 30;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -53,13 +57,14 @@ const Thoughts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("thoughts", 30, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("thoughts", PAGE_SIZE, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
         const nextItems = payload.items.map(mapRemoteThought);
         setItems(nextItems);
+        setHasMore(payload.has_more ?? false);
         setStatus(nextItems.length > 0 ? "ready" : "empty");
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -76,6 +81,32 @@ const Thoughts = () => {
       controller.abort();
     };
   }, [reloadKey]);
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const payload = await fetchPublicContentCollection("thoughts", PAGE_SIZE, items.length);
+      const moreItems = payload.items.map(mapRemoteThought);
+      setItems(prev => [...prev, ...moreItems]);
+      setHasMore(payload.has_more ?? false);
+    } catch {
+      // silently fail on load more
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || status !== "ready") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, status, items.length]);
 
   return (
     <PageShell
@@ -174,6 +205,12 @@ const Thoughts = () => {
             </motion.div>
           ))}
       </div>
+
+      {status === "ready" && hasMore && (
+        <div ref={sentinelRef} className="py-8 text-center">
+          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+        </div>
+      )}
     </PageShell>
   );
 };

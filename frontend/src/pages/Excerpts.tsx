@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
@@ -40,6 +40,10 @@ const Excerpts = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 40;
 
   const selected = useMemo(
     () => items.find((excerpt) => excerpt.id === selectedId) ?? null,
@@ -55,13 +59,14 @@ const Excerpts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("excerpts", 40, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("excerpts", PAGE_SIZE, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
         const nextItems = payload.items.map(mapRemoteExcerpt);
         setItems(nextItems);
+        setHasMore(payload.has_more ?? false);
         setStatus(nextItems.length > 0 ? "ready" : "empty");
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -78,6 +83,32 @@ const Excerpts = () => {
       controller.abort();
     };
   }, [reloadKey]);
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const payload = await fetchPublicContentCollection("excerpts", PAGE_SIZE, items.length);
+      const moreItems = payload.items.map(mapRemoteExcerpt);
+      setItems(prev => [...prev, ...moreItems]);
+      setHasMore(payload.has_more ?? false);
+    } catch {
+      // silently fail on load more
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || status !== "ready") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, status, items.length]);
 
   return (
     <PageShell
@@ -186,6 +217,12 @@ const Excerpts = () => {
             </motion.button>
           ))}
       </div>
+
+      {status === "ready" && hasMore && (
+        <div ref={sentinelRef} className="py-8 text-center">
+          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+        </div>
+      )}
 
       <AnimatePresence>
         {selected && (

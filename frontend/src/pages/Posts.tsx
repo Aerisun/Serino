@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -46,7 +46,13 @@ const Posts = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
+  const [rawSearch, setRawSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 20;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,13 +63,14 @@ const Posts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("posts", 20, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("posts", PAGE_SIZE, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
         const nextItems = payload.items.map(mapRemotePost);
         setItems(nextItems);
+        setHasMore(payload.has_more ?? false);
         setStatus(nextItems.length > 0 ? "ready" : "empty");
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -80,6 +87,38 @@ const Posts = () => {
       controller.abort();
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const payload = await fetchPublicContentCollection("posts", PAGE_SIZE, items.length);
+      const moreItems = payload.items.map(mapRemotePost);
+      setItems(prev => [...prev, ...moreItems]);
+      setHasMore(payload.has_more ?? false);
+    } catch {
+      // silently fail on load more
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || status !== "ready") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, status, items.length]);
 
   const allCategories = [
     allCategoryLabel,
@@ -119,8 +158,15 @@ const Posts = () => {
           <input
             type="text"
             placeholder={config.searchPlaceholder}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            value={rawSearch}
+            onChange={(event) => {
+              const val = event.target.value;
+              setRawSearch(val);
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => setSearch(val), 300);
+            }}
+            maxLength={100}
+            aria-label="搜索文章"
             className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
           />
         </div>
@@ -220,6 +266,12 @@ const Posts = () => {
             </motion.article>
           ))}
       </div>
+
+      {status === "ready" && hasMore && (
+        <div ref={sentinelRef} className="py-8 text-center">
+          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+        </div>
+      )}
     </PageShell>
   );
 };
