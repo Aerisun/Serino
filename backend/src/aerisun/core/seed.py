@@ -22,7 +22,7 @@ from aerisun.domain.site_config.models import (
     SocialLink,
 )
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import GuestbookEntry, Reaction
+from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import connect_waline_db, make_waline_comment_row
 
@@ -107,6 +107,39 @@ DEFAULT_NAV_ITEMS = [
     {"label": "文摘", "href": "/excerpts", "page_key": "excerpts", "trigger": "none", "order_index": 2, "_parent_label": "更多"},
 ]
 
+DEFAULT_COMMENT_AVATAR_PRESETS = [
+    {
+        "key": "shiro",
+        "label": "Shiro",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro",
+    },
+    {
+        "key": "glass",
+        "label": "Glass",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Glass",
+    },
+    {
+        "key": "aurora",
+        "label": "Aurora",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora",
+    },
+    {
+        "key": "paper",
+        "label": "Paper",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Paper",
+    },
+    {
+        "key": "dawn",
+        "label": "Dawn",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn",
+    },
+    {
+        "key": "pebble",
+        "label": "Pebble",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble",
+    },
+]
+
 def build_default_community_config() -> dict[str, object]:
     settings = get_settings()
 
@@ -125,8 +158,16 @@ def build_default_community_config() -> dict[str, object]:
         "image_uploader": False,
         "login_mode": "disable",
         "oauth_url": None,
+        "oauth_providers": ["github", "google"],
+        "anonymous_enabled": True,
+        "moderation_mode": "all_pending",
+        "default_sorting": "latest",
+        "page_size": 20,
+        "avatar_presets": [preset.copy() for preset in DEFAULT_COMMENT_AVATAR_PRESETS],
+        "guest_avatar_mode": "preset",
+        "draft_enabled": True,
         "avatar_strategy": "identicon",
-        "avatar_helper_copy": "匿名评论默认使用 identicon 头像，邮箱可选。",
+        "avatar_helper_copy": "匿名评论可从头像库选择预设头像，邮箱可选。",
         "migration_state": "not_started",
     }
 
@@ -912,6 +953,72 @@ DEFAULT_WALINE_COMMENTS = [
     },
 ]
 
+DEFAULT_LEGACY_GUESTBOOK_ENTRIES = [
+    {
+        "name": "Elena Torres",
+        "email": "elena@example.com",
+        "website": "https://elena.example.com",
+        "body": "你的博客设计真的很稳，评论区换成现在这套以后，整体气质终于统一起来了。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=UTC),
+    },
+    {
+        "name": "新访客",
+        "email": None,
+        "website": None,
+        "body": "测试一条待审核留言，方便在后台里看见 pending 状态。",
+        "status": "pending",
+        "created_at": datetime(2026, 3, 21, 10, 30, tzinfo=UTC),
+    },
+]
+
+DEFAULT_LEGACY_COMMENTS = [
+    {
+        "key": "legacy-post-root",
+        "content_type": "posts",
+        "content_slug": "from-zero-design-system",
+        "author_name": "林小北",
+        "author_email": "linxiaobei@example.com",
+        "body": "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "legacy-post-reply",
+        "content_type": "posts",
+        "content_slug": "from-zero-design-system",
+        "author_name": "Felix",
+        "author_email": None,
+        "body": "谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
+        "parent_key": "legacy-post-root",
+    },
+    {
+        "key": "legacy-post-second",
+        "content_type": "posts",
+        "content_slug": "liquid-glass-css-notes",
+        "author_name": "Kai Nakamura",
+        "author_email": "kai@example.com",
+        "body": "这一篇的性能部分很有用。`backdrop-filter` 一旦铺太大，低端设备确实会立刻吃不消。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "legacy-diary-root",
+        "content_type": "diary",
+        "content_slug": "spring-equinox-and-warm-light",
+        "author_name": "纸鹤",
+        "author_email": None,
+        "body": "这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
+        "parent_key": None,
+    },
+]
+
 DEFAULT_REACTIONS = [
     {
         "content_type": "posts",
@@ -1091,6 +1198,37 @@ def _seed_engagement_data(session: Session) -> None:
         session.add_all([Reaction(**item) for item in missing_reactions])
 
 
+def _seed_legacy_guestbook_data(session: Session) -> None:
+    if not _is_empty(session, GuestbookEntry):
+        return
+
+    session.add_all([GuestbookEntry(**item) for item in DEFAULT_LEGACY_GUESTBOOK_ENTRIES])
+
+
+def _seed_legacy_comment_data(session: Session) -> None:
+    if not _is_empty(session, Comment):
+        return
+
+    inserted_ids: dict[str, str] = {}
+    for item in DEFAULT_LEGACY_COMMENTS:
+        parent_key = item.get("parent_key")
+        parent_id = inserted_ids.get(str(parent_key)) if parent_key else None
+        comment = Comment(
+            content_type=str(item["content_type"]),
+            content_slug=str(item["content_slug"]),
+            parent_id=parent_id,
+            author_name=str(item["author_name"]),
+            author_email=str(item["author_email"]) if item.get("author_email") is not None else None,
+            body=str(item["body"]),
+            status=str(item["status"]),
+            created_at=item["created_at"],  # type: ignore[arg-type]
+            updated_at=item["created_at"],  # type: ignore[arg-type]
+        )
+        session.add(comment)
+        session.flush()
+        inserted_ids[str(item["key"])] = comment.id
+
+
 def _insert_waline_seed_comment(connection, item: dict[str, object], inserted_ids: dict[str, int]) -> int:  # type: ignore[no-untyped-def]
     parent_key = item.get("parent_key")
     parent_id = inserted_ids.get(str(parent_key)) if parent_key else None
@@ -1214,6 +1352,8 @@ def seed_reference_data() -> None:
         _seed_content_entries(session, ExcerptEntry, DEFAULT_EXCERPTS)
         _seed_social_data(session)
         _seed_engagement_data(session)
+        _seed_legacy_guestbook_data(session)
+        _seed_legacy_comment_data(session)
         session.commit()
     finally:
         session.close()

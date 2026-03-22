@@ -6,7 +6,10 @@ def test_read_guestbook_returns_seeded_entries(client) -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["items"] == []
+    assert len(payload["items"]) == 1
+    assert payload["items"][0]["name"] == "Elena Torres"
+    assert payload["items"][0]["status"] == "approved"
+    assert payload["items"][0]["avatar"].startswith("https://api.dicebear.com/")
 
 
 def test_create_guestbook_accepts_pending_entry(client) -> None:
@@ -31,7 +34,12 @@ def test_read_comments_returns_nested_items(client) -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["items"] == []
+    assert len(payload["items"]) == 1
+    assert payload["items"][0]["author_name"] == "林小北"
+    assert payload["items"][0]["status"] == "approved"
+    assert len(payload["items"][0]["replies"]) == 1
+    assert payload["items"][0]["replies"][0]["author_name"] == "Felix"
+    assert payload["items"][0]["replies"][0]["parent_id"] == payload["items"][0]["id"]
 
 
 def test_create_comment_accepts_pending_item(client) -> None:

@@ -50,10 +50,26 @@ def list_comments(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     status_filter: str | None = Query(default=None, alias="status"),
+    path_filter: str | None = Query(default=None, alias="path"),
+    surface_filter: str | None = Query(default=None, alias="surface"),
+    keyword_filter: str | None = Query(default=None, alias="keyword"),
+    author_filter: str | None = Query(default=None, alias="author"),
+    email_filter: str | None = Query(default=None, alias="email"),
+    sort: str | None = Query(default=None),
     _admin: AdminUser = Depends(get_current_admin),
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    items, total = list_waline_records(page=page, page_size=page_size, status=status_filter)
+    items, total = list_waline_records(
+        page=page,
+        page_size=page_size,
+        status=status_filter,
+        path=path_filter,
+        surface=surface_filter,
+        keyword=keyword_filter,
+        author=author_filter,
+        email=email_filter,
+        sort=sort,
+    )
     return {
         "items": [_comment_admin_read_from_waline(item) for item in items],
         "total": total,
@@ -110,10 +126,24 @@ def list_guestbook(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     status_filter: str | None = Query(default=None, alias="status"),
+    path_filter: str | None = Query(default=None, alias="path"),
+    keyword_filter: str | None = Query(default=None, alias="keyword"),
+    author_filter: str | None = Query(default=None, alias="author"),
+    email_filter: str | None = Query(default=None, alias="email"),
+    sort: str | None = Query(default=None),
     _admin: AdminUser = Depends(get_current_admin),
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    items, total = list_guestbook_records(page=page, page_size=page_size, status=status_filter)
+    items, total = list_guestbook_records(
+        page=page,
+        page_size=page_size,
+        status=status_filter,
+        path=path_filter,
+        keyword=keyword_filter,
+        author=author_filter,
+        email=email_filter,
+        sort=sort,
+    )
     return {
         "items": [_guestbook_admin_read_from_waline(item) for item in items],
         "total": total,

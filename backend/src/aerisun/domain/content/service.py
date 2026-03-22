@@ -7,8 +7,9 @@ from sqlalchemy import Select, desc, func, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Comment, Reaction
 from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
+from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.waline.service import build_comment_path, count_records_by_urls
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 
@@ -64,16 +65,12 @@ def _comment_counts_by_slug(session: Session, content_type: str, slugs: list[str
     if not slugs:
         return {}
 
-    rows = session.execute(
-        select(Comment.content_slug, func.count(Comment.id))
-        .where(
-            Comment.content_type == content_type,
-            Comment.content_slug.in_(slugs),
-            Comment.status == "approved",
-        )
-        .group_by(Comment.content_slug)
-    ).all()
-    return {slug: count for slug, count in rows}
+    paths = [build_comment_path(content_type, slug) for slug in slugs]
+    counts_by_path = count_records_by_urls(urls=paths, status="approved")
+    return {
+        slug: counts_by_path.get(build_comment_path(content_type, slug), 0)
+        for slug in slugs
+    }
 
 
 def _like_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:

@@ -303,6 +303,14 @@ class CommunityConfigUpdate(BaseModel):
     image_uploader: bool | None = None
     login_mode: str | None = None
     oauth_url: str | None = None
+    oauth_providers: list[str] | None = None
+    anonymous_enabled: bool | None = None
+    moderation_mode: str | None = None
+    default_sorting: str | None = None
+    page_size: int | None = None
+    avatar_presets: list[dict[str, Any]] | None = None
+    guest_avatar_mode: str | None = None
+    draft_enabled: bool | None = None
     avatar_strategy: str | None = None
     avatar_helper_copy: str | None = None
     migration_state: str | None = None
@@ -320,6 +328,14 @@ class CommunityConfigAdminRead(ModelBase):
     image_uploader: bool
     login_mode: str
     oauth_url: str | None
+    oauth_providers: list[str]
+    anonymous_enabled: bool
+    moderation_mode: str
+    default_sorting: str
+    page_size: int
+    avatar_presets: list[dict[str, Any]]
+    guest_avatar_mode: str
+    draft_enabled: bool
     avatar_strategy: str
     avatar_helper_copy: str
     migration_state: str

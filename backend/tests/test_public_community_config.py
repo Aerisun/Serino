@@ -33,3 +33,11 @@ def test_seed_reference_data_backfills_blank_community_server_url(client) -> Non
     payload = response.json()
     assert payload["server_url"] == get_settings().waline_server_url
     assert payload["provider"] == "waline"
+    assert payload["oauth_providers"] == ["github", "google"]
+    assert payload["anonymous_enabled"] is True
+    assert payload["moderation_mode"] == "all_pending"
+    assert payload["default_sorting"] == "latest"
+    assert payload["page_size"] == 20
+    assert payload["guest_avatar_mode"] == "preset"
+    assert payload["draft_enabled"] is True
+    assert payload["avatar_presets"][0]["key"] == "shiro"
