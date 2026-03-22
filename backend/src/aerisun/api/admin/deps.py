@@ -51,11 +51,7 @@ def require_api_key_scopes(*required_scopes: str):
     ) -> ApiKey:
         token = credentials.credentials
         prefix = token[:8]
-        key = (
-            session.query(ApiKey)
-            .filter(ApiKey.key_prefix == prefix)
-            .first()
-        )
+        key = session.query(ApiKey).filter(ApiKey.key_prefix == prefix).first()
         if key is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -72,7 +68,7 @@ def require_api_key_scopes(*required_scopes: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Missing required scopes: {', '.join(missing)}",
             )
-        key.last_used_at = datetime.now(timezone.utc)
+        key.last_used_at = datetime.now(UTC)
         session.commit()
         return key
 
