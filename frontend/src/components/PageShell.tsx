@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
+import BackToTop from "@/components/BackToTop";
 import PageMeta from "@/components/PageMeta";
 import { pageEntrance } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
@@ -102,6 +103,7 @@ const PageShell = ({
           <div className={contentClassName}>{children}</div>
         </main>
 
+        <BackToTop />
         <Footer />
       </div>
     </>
