@@ -133,6 +133,15 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
     assert any(item["content_type"] == "posts" and item["parent_id"] is None for item in payload["items"])
     assert any(item["content_type"] == "posts" and item["parent_id"] == str(root_id) for item in payload["items"])
 
+    filtered = client.get(
+        "/api/v1/admin/moderation/comments?status=approved&author=Reader&email=reader@example.com&sort=created_asc",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert filtered.status_code == 200
+    filtered_payload = filtered.json()
+    assert filtered_payload["total"] == 1
+    assert filtered_payload["items"][0]["author_name"] == "Reader One"
+
     response = client.post(
         f"/api/v1/admin/moderation/comments/{reply_id}/moderate",
         headers={"Authorization": f"Bearer {token}"},

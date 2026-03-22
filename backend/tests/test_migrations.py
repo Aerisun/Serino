@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 
 from aerisun.core.db import run_database_migrations
@@ -11,6 +12,15 @@ def _get_columns(path: str, table: str) -> set[str]:
     try:
         rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
         return {str(row[1]) for row in rows}
+    finally:
+        connection.close()
+
+
+def _get_row(path: str, table: str) -> sqlite3.Row | None:
+    connection = sqlite3.connect(path)
+    connection.row_factory = sqlite3.Row
+    try:
+        return connection.execute(f"SELECT * FROM {table} LIMIT 1").fetchone()
     finally:
         connection.close()
 
@@ -127,6 +137,66 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE community_config (
+                id TEXT PRIMARY KEY,
+                provider TEXT NOT NULL DEFAULT 'waline',
+                server_url TEXT NOT NULL DEFAULT '',
+                surfaces JSON NOT NULL,
+                meta JSON NOT NULL,
+                required_meta JSON NOT NULL,
+                emoji_presets JSON NOT NULL,
+                enable_enjoy_search BOOLEAN NOT NULL DEFAULT 1,
+                image_uploader BOOLEAN NOT NULL DEFAULT 0,
+                login_mode TEXT NOT NULL DEFAULT 'disable',
+                oauth_url TEXT,
+                avatar_strategy TEXT NOT NULL DEFAULT 'identicon',
+                avatar_helper_copy TEXT NOT NULL DEFAULT '',
+                migration_state TEXT NOT NULL DEFAULT 'not_started',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO community_config (
+                id, provider, server_url, surfaces, meta, required_meta, emoji_presets,
+                enable_enjoy_search, image_uploader, login_mode, oauth_url, avatar_strategy,
+                avatar_helper_copy, migration_state, created_at, updated_at
+            ) VALUES (
+                'community-config',
+                'waline',
+                '',
+                ?,
+                ?,
+                ?,
+                ?,
+                1,
+                0,
+                'disable',
+                NULL,
+                'identicon',
+                '',
+                'not_started',
+                '2026-03-21 00:00:00',
+                '2026-03-21 00:00:00'
+            )
+            """,
+            (
+                json.dumps(
+                    [
+                        {"key": "posts", "label": "文章评论", "path": "/posts/{slug}", "enabled": True},
+                        {"key": "guestbook", "label": "留言板", "path": "/guestbook", "enabled": True},
+                    ],
+                    ensure_ascii=False,
+                ),
+                json.dumps(["nick", "mail"], ensure_ascii=False),
+                json.dumps(["nick"], ensure_ascii=False),
+                json.dumps(["twemoji", "qq", "bilibili"], ensure_ascii=False),
+            ),
+        )
         connection.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
         connection.execute("INSERT INTO alembic_version (version_num) VALUES ('0002_add_site_meta_fields')")
         connection.commit()
@@ -149,6 +219,7 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
     thoughts_columns = _get_columns(str(db_path), "thoughts")
     excerpts_columns = _get_columns(str(db_path), "excerpts")
     nav_item_columns = _get_columns(str(db_path), "nav_items")
+    community_config_columns = _get_columns(str(db_path), "community_config")
 
     assert "hero_video_url" in site_profile_columns
     assert {"category", "view_count"} <= posts_columns
@@ -156,3 +227,24 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
     assert {"mood", "view_count"} <= thoughts_columns
     assert {"author_name", "source", "view_count"} <= excerpts_columns
     assert {"label", "href", "trigger", "parent_id", "site_profile_id"} <= nav_item_columns
+    assert {
+        "oauth_providers",
+        "anonymous_enabled",
+        "moderation_mode",
+        "default_sorting",
+        "page_size",
+        "avatar_presets",
+        "guest_avatar_mode",
+        "draft_enabled",
+    } <= community_config_columns
+
+    row = _get_row(str(db_path), "community_config")
+    assert row is not None
+    assert json.loads(row["oauth_providers"]) == ["github", "google"]
+    assert row["anonymous_enabled"] in (1, True)
+    assert row["moderation_mode"] == "all_pending"
+    assert row["default_sorting"] == "latest"
+    assert row["page_size"] == 20
+    assert json.loads(row["avatar_presets"])[0]["key"] == "shiro"
+    assert row["guest_avatar_mode"] == "preset"
+    assert row["draft_enabled"] in (1, True)

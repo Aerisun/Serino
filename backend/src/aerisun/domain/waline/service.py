@@ -105,6 +105,17 @@ def _build_comment_path(content_type: str, content_slug: str) -> str:
     return f"/{content_type}/{content_slug}"
 
 
+def _build_list_order(sort: str | None) -> str:
+    normalized = (sort or "").strip().lower()
+    if normalized == "created_asc":
+        return "insertedAt ASC, id ASC"
+    if normalized == "status":
+        return "status ASC, insertedAt DESC, id DESC"
+    if normalized == "path":
+        return "url ASC, insertedAt DESC, id DESC"
+    return "insertedAt DESC, id DESC"
+
+
 @contextmanager
 def connect_waline_db(db_path: Path | None = None) -> Iterator[sqlite3.Connection]:
     path = db_path or get_waline_db_path()
@@ -245,6 +256,12 @@ def list_waline_records(
     page_size: int = 20,
     status: str | None = None,
     guestbook_only: bool = False,
+    keyword: str | None = None,
+    author: str | None = None,
+    email: str | None = None,
+    path: str | None = None,
+    surface: str | None = None,
+    sort: str | None = None,
 ) -> tuple[list[WalineCommentRecord], int]:
     offset = (page - 1) * page_size
     with connect_waline_db(db_path) as connection:
@@ -261,10 +278,32 @@ def list_waline_records(
             where.append("status = ?")
             params.append(_normalize_status(status))
 
+        if keyword:
+            where.append("comment LIKE ?")
+            params.append(f"%{keyword.strip()}%")
+
+        if author:
+            where.append("nick LIKE ?")
+            params.append(f"%{author.strip()}%")
+
+        if email:
+            where.append("mail LIKE ?")
+            params.append(f"%{email.strip()}%")
+
+        if path:
+            where.append("url LIKE ?")
+            params.append(f"%{path.strip()}%")
+
+        if surface and not guestbook_only:
+            normalized_surface = surface.strip().strip("/")
+            if normalized_surface:
+                where.append("url LIKE ?")
+                params.append(f"/{normalized_surface}/%")
+
         query = "SELECT * FROM wl_comment"
         if where:
             query += " WHERE " + " AND ".join(where)
-        query += " ORDER BY insertedAt DESC, id DESC LIMIT ? OFFSET ?"
+        query += f" ORDER BY {_build_list_order(sort)} LIMIT ? OFFSET ?"
 
         count_query = "SELECT COUNT(*) FROM wl_comment"
         if where:
@@ -283,6 +322,11 @@ def list_guestbook_records(
     page: int = 1,
     page_size: int = 20,
     status: str | None = None,
+    keyword: str | None = None,
+    author: str | None = None,
+    email: str | None = None,
+    path: str | None = None,
+    sort: str | None = None,
 ) -> tuple[list[WalineCommentRecord], int]:
     return list_waline_records(
         db_path=db_path,
@@ -290,7 +334,151 @@ def list_guestbook_records(
         page_size=page_size,
         status=status,
         guestbook_only=True,
+        keyword=keyword,
+        author=author,
+        email=email,
+        path=path,
+        sort=sort,
     )
+
+
+def list_records_for_url(
+    *,
+    url: str,
+    db_path: Path | None = None,
+    status: str | None = None,
+    order: str = "asc",
+) -> list[WalineCommentRecord]:
+    normalized_order = "ASC" if order.lower() == "asc" else "DESC"
+
+    with connect_waline_db(db_path) as connection:
+        where = ["url = ?"]
+        params: list[object] = [url]
+        if status:
+            where.append("status = ?")
+            params.append(_normalize_status(status))
+
+        query = "SELECT * FROM wl_comment WHERE " + " AND ".join(where)
+        query += f" ORDER BY insertedAt {normalized_order}, id {normalized_order}"
+        rows = connection.execute(query, params).fetchall()
+        return [_row_to_record(row) for row in rows]
+
+
+def list_all_waline_records(
+    *,
+    db_path: Path | None = None,
+    status: str | None = None,
+    guestbook_only: bool = False,
+) -> list[WalineCommentRecord]:
+    with connect_waline_db(db_path) as connection:
+        where: list[str] = []
+        params: list[object] = []
+        if guestbook_only:
+            where.append("url = ?")
+            params.append(WALINE_GUESTBOOK_PATH)
+        else:
+            where.append("url != ?")
+            params.append(WALINE_GUESTBOOK_PATH)
+
+        if status:
+            where.append("status = ?")
+            params.append(_normalize_status(status))
+
+        query = "SELECT * FROM wl_comment"
+        if where:
+            query += " WHERE " + " AND ".join(where)
+        query += " ORDER BY insertedAt DESC, id DESC"
+
+        rows = connection.execute(query, params).fetchall()
+        return [_row_to_record(row) for row in rows]
+
+
+def count_records_by_urls(
+    *,
+    urls: list[str],
+    db_path: Path | None = None,
+    status: str | None = None,
+) -> dict[str, int]:
+    if not urls:
+        return {}
+
+    with connect_waline_db(db_path) as connection:
+        placeholders = ",".join("?" for _ in urls)
+        params: list[object] = [*urls]
+        query = f"SELECT url, COUNT(*) AS total FROM wl_comment WHERE url IN ({placeholders})"
+        if status:
+            query += " AND status = ?"
+            params.append(_normalize_status(status))
+        query += " GROUP BY url"
+
+        rows = connection.execute(query, params).fetchall()
+        return {str(row["url"]): int(row["total"]) for row in rows}
+
+
+def get_waline_record_by_id(
+    *,
+    record_id: int,
+    db_path: Path | None = None,
+) -> WalineCommentRecord | None:
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        return _row_to_record(row) if row is not None else None
+
+
+def create_waline_record(
+    *,
+    comment: str,
+    nick: str,
+    mail: str | None,
+    link: str | None,
+    status: str,
+    url: str,
+    parent_id: int | None = None,
+    created_at: datetime | None = None,
+    updated_at: datetime | None = None,
+    inserted_at: datetime | None = None,
+    db_path: Path | None = None,
+) -> WalineCommentRecord:
+    with connect_waline_db(db_path) as connection:
+        root_id = parent_id
+        if parent_id is not None:
+            root_row = connection.execute("SELECT rid FROM wl_comment WHERE id = ?", (parent_id,)).fetchone()
+            root_id = int(root_row["rid"]) if root_row and root_row["rid"] is not None else parent_id
+
+        row = make_waline_comment_row(
+            comment=comment,
+            nick=nick,
+            mail=mail,
+            link=link,
+            status=status,
+            url=url,
+            parent_id=parent_id,
+            root_id=root_id,
+            created_at=created_at,
+            updated_at=updated_at,
+            inserted_at=inserted_at,
+        )
+        cursor = connection.execute(
+            """
+            INSERT INTO wl_comment (
+                user_id, comment, insertedAt, ip, link, mail, nick, pid, rid,
+                sticky, status, "like", ua, url, createdAt, updatedAt
+            ) VALUES (
+                :user_id, :comment, :insertedAt, :ip, :link, :mail, :nick, :pid, :rid,
+                :sticky, :status, :like, :ua, :url, :createdAt, :updatedAt
+            )
+            """,
+            row,
+        )
+        comment_id = int(cursor.lastrowid)
+        if parent_id is None:
+            connection.execute("UPDATE wl_comment SET rid = ? WHERE id = ?", (comment_id, comment_id))
+        connection.commit()
+
+        created = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (comment_id,)).fetchone()
+        if created is None:
+            raise RuntimeError("Failed to create Waline record")
+        return _row_to_record(created)
 
 
 def _collect_descendant_ids(connection: sqlite3.Connection, root_id: int) -> list[int]:

@@ -7,7 +7,6 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,
     ActivityHeatmapStatsRead,
@@ -17,6 +16,8 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
+from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
 
 
 CONTENT_MODELS = {
@@ -29,6 +30,10 @@ CONTENT_MODELS = {
 
 def _avatar_for_name(name: str) -> str:
     return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
+
+
+def _normalize_timestamp(value: datetime) -> datetime:
+    return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 def _trim_excerpt(value: str | None, limit: int = 72) -> str | None:
@@ -96,40 +101,31 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
 
-    comments = session.scalars(
-        select(Comment)
-        .where(Comment.status == "approved")
-        .order_by(desc(Comment.created_at))
-        .limit(limit)
-    ).all()
+    comments = list_all_waline_records(status="approved", guestbook_only=False)[:limit]
     for item in comments:
+        content_type, content_slug = parse_comment_path(item.url)
         items.append(
             RecentActivityItemRead(
-                kind="reply" if item.parent_id else "comment",
-                actor_name=item.author_name,
-                actor_avatar=_avatar_for_name(item.author_name),
-                target_title=_resolve_content_title(session, item.content_type, item.content_slug),
-                excerpt=_trim_excerpt(item.body),
-                created_at=item.created_at,
-                href=f"/{item.content_type}/{item.content_slug}",
+                kind="reply" if item.pid else "comment",
+                actor_name=item.nick or "访客",
+                actor_avatar=_avatar_for_name(item.nick or "访客"),
+                target_title=_resolve_content_title(session, content_type, content_slug),
+                excerpt=_trim_excerpt(item.comment),
+                created_at=_normalize_timestamp(item.created_at),
+                href=item.url,
             )
         )
 
-    guestbook = session.scalars(
-        select(GuestbookEntry)
-        .where(GuestbookEntry.status == "approved")
-        .order_by(desc(GuestbookEntry.created_at))
-        .limit(limit)
-    ).all()
+    guestbook = list_all_waline_records(status="approved", guestbook_only=True)[:limit]
     for item in guestbook:
         items.append(
             RecentActivityItemRead(
                 kind="guestbook",
-                actor_name=item.name,
-                actor_avatar=_avatar_for_name(item.name),
+                actor_name=item.nick or "访客",
+                actor_avatar=_avatar_for_name(item.nick or "访客"),
                 target_title="留言板",
-                excerpt=_trim_excerpt(item.body),
-                created_at=item.created_at,
+                excerpt=_trim_excerpt(item.comment),
+                created_at=_normalize_timestamp(item.created_at),
                 href="/guestbook",
             )
         )
@@ -148,7 +144,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 actor_avatar=_avatar_for_name(actor_name),
                 target_title=_resolve_content_title(session, item.content_type, item.content_slug),
                 excerpt="留下了一个赞" if item.reaction_type == "like" else item.reaction_type,
-                created_at=item.created_at,
+                created_at=_normalize_timestamp(item.created_at),
                 href=f"/{item.content_type}/{item.content_slug}",
             )
         )
@@ -166,17 +162,11 @@ def build_activity_heatmap(session: Session, weeks: int = 52) -> ActivityHeatmap
     for published_at, _, _, _, _ in _content_events(session):
         daily_counts[published_at.date()] += 1
 
-    comment_dates = session.scalars(
-        select(Comment.created_at).where(Comment.status == "approved")
-    ).all()
-    for created_at in comment_dates:
-        daily_counts[created_at.date()] += 1
+    for item in list_all_waline_records(status="approved", guestbook_only=False):
+        daily_counts[item.created_at.date()] += 1
 
-    guestbook_dates = session.scalars(
-        select(GuestbookEntry.created_at).where(GuestbookEntry.status == "approved")
-    ).all()
-    for created_at in guestbook_dates:
-        daily_counts[created_at.date()] += 1
+    for item in list_all_waline_records(status="approved", guestbook_only=True):
+        daily_counts[item.created_at.date()] += 1
 
     week_items: list[ActivityHeatmapWeekRead] = []
     totals: list[int] = []

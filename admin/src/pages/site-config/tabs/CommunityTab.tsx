@@ -11,6 +11,10 @@ import { createCommunityForm, communityFormToUpdate } from "@/lib/community-conf
 import { useI18n } from "@/i18n";
 import { LOGIN_MODE_OPTIONS, AVATAR_STRATEGY_OPTIONS, MIGRATION_STATE_OPTIONS } from "../constants";
 
+const MODERATION_MODE_OPTIONS = ["all_pending", "manual", "mixed"] as const;
+const DEFAULT_SORTING_OPTIONS = ["latest", "oldest", "hottest"] as const;
+const GUEST_AVATAR_MODE_OPTIONS = ["preset", "identicon", "gravatar"] as const;
+
 export function CommunityTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -57,6 +61,10 @@ export function CommunityTab() {
         <p className="text-sm text-muted-foreground">{t("siteConfig.communityDescription")}</p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-xs text-muted-foreground">
+          <p>{t("siteConfig.commentReservedHint")}</p>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1">
             <Label>{t("siteConfig.commentProvider")}</Label>
@@ -95,6 +103,92 @@ export function CommunityTab() {
             >
               {AVATAR_STRATEGY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
+          </div>
+        </div>
+
+        <div className="rounded-lg border p-4 space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold">{t("siteConfig.commentReservedTitle")}</h3>
+            <p className="text-xs text-muted-foreground">{t("siteConfig.commentReservedHint")}</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label>{t("siteConfig.commentOauthProviders")}</Label>
+              <Input
+                value={form.oauth_providers}
+                onChange={(e) => updateField("oauth_providers", e.target.value)}
+                placeholder="github, google"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>{t("siteConfig.commentDefaultSorting")}</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.default_sorting}
+                onChange={(e) => updateField("default_sorting", e.target.value)}
+              >
+                {DEFAULT_SORTING_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>{t("siteConfig.commentModerationMode")}</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.moderation_mode}
+                onChange={(e) => updateField("moderation_mode", e.target.value)}
+              >
+                {MODERATION_MODE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>{t("siteConfig.commentPageSize")}</Label>
+              <Input
+                type="number"
+                min={1}
+                value={form.page_size}
+                onChange={(e) => updateField("page_size", e.target.value)}
+                placeholder="20"
+              />
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <Label>{t("siteConfig.commentAvatarPresets")}</Label>
+              <Textarea
+                value={form.avatar_presets}
+                onChange={(e) => updateField("avatar_presets", e.target.value)}
+                rows={8}
+                placeholder='[{"key":"shiro","label":"Shiro","avatar_url":"https://..."}]'
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>{t("siteConfig.commentGuestAvatarMode")}</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={form.guest_avatar_mode}
+                onChange={(e) => updateField("guest_avatar_mode", e.target.value)}
+              >
+                {GUEST_AVATAR_MODE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.anonymous_enabled}
+                onChange={(e) => updateField("anonymous_enabled", e.target.checked)}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span>{t("siteConfig.commentAnonymousEnabled")}</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.draft_enabled}
+                onChange={(e) => updateField("draft_enabled", e.target.checked)}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span>{t("siteConfig.commentDraftEnabled")}</span>
+            </label>
           </div>
         </div>
 

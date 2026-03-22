@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -18,6 +19,13 @@ from aerisun.domain.engagement.schemas import (
     GuestbookEntryRead,
     ReactionCreate,
     ReactionRead,
+)
+from aerisun.domain.waline.service import (
+    build_comment_path,
+    create_waline_record,
+    get_waline_record_by_id,
+    list_guestbook_records,
+    list_records_for_url,
 )
 
 CONTENT_MODELS = {
@@ -54,23 +62,18 @@ def _content_exists(session: Session, content_type: str, content_slug: str) -> b
 
 
 def list_public_guestbook_entries(session: Session, limit: int = 50) -> GuestbookCollectionRead:
-    items = session.scalars(
-        select(GuestbookEntry)
-        .where(GuestbookEntry.status == "approved")
-        .order_by(GuestbookEntry.created_at.desc())
-        .limit(limit)
-    ).all()
+    items, _total = list_guestbook_records(page=1, page_size=limit, status="approved")
     return GuestbookCollectionRead(
         items=[
             GuestbookEntryRead(
-                id=item.id,
-                name=item.name,
-                website=item.website,
-                body=item.body,
+                id=str(item.id),
+                name=item.nick or "访客",
+                website=item.link,
+                body=item.comment,
                 status=item.status,
                 created_at=item.created_at,
-                avatar=_avatar_for_name(item.name),
-                avatar_url=_avatar_for_name(item.name),
+                avatar=_avatar_for_name(item.nick or "访客"),
+                avatar_url=_avatar_for_name(item.nick or "访客"),
             )
             for item in items
         ]
@@ -78,23 +81,21 @@ def list_public_guestbook_entries(session: Session, limit: int = 50) -> Guestboo
 
 
 def create_public_guestbook_entry(session: Session, payload: GuestbookCreate) -> GuestbookCreateResponse:
-    entry = GuestbookEntry(
-        name=payload.name.strip(),
-        email=payload.email.strip() if payload.email else None,
-        website=payload.website.strip() if payload.website else None,
-        body=payload.body.strip(),
+    entry = create_waline_record(
+        comment=payload.body.strip(),
+        nick=payload.name.strip(),
+        mail=payload.email.strip() if payload.email else None,
+        link=payload.website.strip() if payload.website else None,
         status="pending",
+        url=build_comment_path("guestbook", "guestbook"),
     )
-    session.add(entry)
-    session.commit()
-    session.refresh(entry)
-    avatar = _avatar_for_name(entry.name)
+    avatar = _avatar_for_name(entry.nick or "访客")
     return GuestbookCreateResponse(
         item=GuestbookEntryRead(
-            id=entry.id,
-            name=entry.name,
-            website=entry.website,
-            body=entry.body,
+            id=str(entry.id),
+            name=entry.nick or "访客",
+            website=entry.link,
+            body=entry.comment,
             status=entry.status,
             created_at=entry.created_at,
             avatar=avatar,
@@ -130,20 +131,43 @@ def _build_comment_tree(items: list[Comment]) -> list[CommentRead]:
     return [convert(root) for root in roots]
 
 
+def _build_waline_comment_tree(items) -> list[CommentRead]:
+    by_parent: dict[int | None, list] = defaultdict(list)
+    for item in items:
+        by_parent[item.pid].append(item)
+
+    def convert(node) -> CommentRead:
+        author_name = (node.nick or "访客").strip() or "访客"
+        avatar = _avatar_for_name(author_name)
+        return CommentRead(
+            id=str(node.id),
+            parent_id=str(node.pid) if node.pid is not None else None,
+            author_name=author_name,
+            body=node.comment,
+            status=node.status,
+            created_at=node.created_at,
+            avatar=avatar,
+            avatar_url=avatar,
+            like_count=node.like,
+            liked=False,
+            is_author=_is_author_name(author_name),
+            replies=[convert(child) for child in by_parent.get(node.id, [])],
+        )
+
+    roots = by_parent.get(None, [])
+    return [convert(root) for root in roots]
+
+
 def list_public_comments(session: Session, content_type: str, content_slug: str) -> CommentCollectionRead:
     if not _content_exists(session, content_type, content_slug):
         raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
 
-    items = session.scalars(
-        select(Comment)
-        .where(
-            Comment.content_type == content_type,
-            Comment.content_slug == content_slug,
-            Comment.status == "approved",
-        )
-        .order_by(Comment.created_at.asc())
-    ).all()
-    return CommentCollectionRead(items=_build_comment_tree(items))
+    items = list_records_for_url(
+        url=build_comment_path(content_type, content_slug),
+        status="approved",
+        order="asc",
+    )
+    return CommentCollectionRead(items=_build_waline_comment_tree(items))
 
 
 def create_public_comment(
@@ -155,45 +179,39 @@ def create_public_comment(
     if not _content_exists(session, content_type, content_slug):
         raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
 
+    parent_id: int | None = None
     if payload.parent_id:
-        parent_exists = (
-            session.scalar(
-                select(func.count(Comment.id)).where(
-                    Comment.id == payload.parent_id,
-                    Comment.content_type == content_type,
-                    Comment.content_slug == content_slug,
-                )
-            )
-            or 0
-        ) > 0
-        if not parent_exists:
+        try:
+            parent_id = int(payload.parent_id)
+        except ValueError as exc:
+            raise LookupError(f"comment parent '{payload.parent_id}' was not found") from exc
+
+        parent = get_waline_record_by_id(record_id=parent_id)
+        if parent is None or parent.url != build_comment_path(content_type, content_slug):
             raise LookupError(f"comment parent '{payload.parent_id}' was not found")
 
-    item = Comment(
-        content_type=content_type,
-        content_slug=content_slug,
-        parent_id=payload.parent_id,
-        author_name=payload.author_name.strip(),
-        author_email=payload.author_email.strip() if payload.author_email else None,
-        body=payload.body.strip(),
+    item = create_waline_record(
+        comment=payload.body.strip(),
+        nick=payload.author_name.strip(),
+        mail=payload.author_email.strip() if payload.author_email else None,
+        link=None,
         status="pending",
+        url=build_comment_path(content_type, content_slug),
+        parent_id=parent_id,
     )
-    session.add(item)
-    session.commit()
-    session.refresh(item)
     return CommentCreateResponse(
         item=CommentRead(
-            id=item.id,
-            parent_id=item.parent_id,
-            author_name=item.author_name,
-            body=item.body,
+            id=str(item.id),
+            parent_id=str(item.pid) if item.pid is not None else None,
+            author_name=item.nick or "访客",
+            body=item.comment,
             status=item.status,
             created_at=item.created_at,
-            avatar=_avatar_for_name(item.author_name),
-            avatar_url=_avatar_for_name(item.author_name),
-            like_count=0,
+            avatar=_avatar_for_name(item.nick or "访客"),
+            avatar_url=_avatar_for_name(item.nick or "访客"),
+            like_count=item.like,
             liked=False,
-            is_author=_is_author_name(item.author_name),
+            is_author=_is_author_name(item.nick or "访客"),
             replies=[],
         ),
         accepted=True,

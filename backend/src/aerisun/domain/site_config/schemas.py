@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import Field
 
 from aerisun.core.schemas import ModelBase
@@ -89,6 +91,14 @@ class CommunityConfigRead(ModelBase):
     image_uploader: bool
     login_mode: str
     oauth_url: str | None
+    oauth_providers: list[str]
+    anonymous_enabled: bool
+    moderation_mode: str
+    default_sorting: str
+    page_size: int
+    avatar_presets: list[dict[str, Any]]
+    guest_avatar_mode: str
+    draft_enabled: bool
     avatar_strategy: str
     avatar_helper_copy: str
     migration_state: str

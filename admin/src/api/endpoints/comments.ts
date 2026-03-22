@@ -7,6 +7,10 @@ export interface ModerationListParams {
   status?: string;
   path?: string;
   surface?: string;
+  keyword?: string;
+  author?: string;
+  email?: string;
+  sort?: string;
 }
 
 export async function listComments(params?: ModerationListParams): Promise<PaginatedResponse<Comment>> {
