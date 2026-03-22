@@ -31,6 +31,22 @@ class AdminUserRead(ModelBase):
     created_at: datetime
 
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class AdminProfileUpdate(BaseModel):
+    username: str | None = None
+
+
+class AdminSessionRead(ModelBase):
+    id: str
+    created_at: datetime
+    expires_at: datetime
+    is_current: bool = False
+
+
 # ---------------------------------------------------------------------------
 # Content (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 # ---------------------------------------------------------------------------
@@ -52,6 +68,8 @@ class ContentCreate(BaseModel):
     author_name: str | None = None
     source: str | None = None
     view_count: int = 0
+    is_pinned: bool = False
+    pin_order: int = 0
 
 
 class ContentUpdate(BaseModel):
@@ -70,6 +88,8 @@ class ContentUpdate(BaseModel):
     author_name: str | None = None
     source: str | None = None
     view_count: int | None = None
+    is_pinned: bool | None = None
+    pin_order: int | None = None
 
 
 class ContentAdminRead(ModelBase):
@@ -91,6 +111,8 @@ class ContentAdminRead(ModelBase):
     author_name: str | None = None
     source: str | None = None
     view_count: int = 0
+    is_pinned: bool = False
+    pin_order: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -611,6 +633,22 @@ class BackupSnapshotRead(ModelBase):
     updated_at: datetime
 
 
+class MonthlyCount(BaseModel):
+    month: str  # "2026-01"
+    posts: int = 0
+    diary: int = 0
+    thoughts: int = 0
+    excerpts: int = 0
+
+
+class RecentContentItem(BaseModel):
+    id: str
+    title: str
+    content_type: str  # "post", "diary", "thought", "excerpt"
+    status: str
+    updated_at: datetime
+
+
 class DashboardStats(ModelBase):
     posts: int
     diary_entries: int
@@ -620,6 +658,46 @@ class DashboardStats(ModelBase):
     guestbook_entries: int
     friends: int
     assets: int
+
+
+class EnhancedDashboardStats(ModelBase):
+    posts: int
+    diary_entries: int
+    thoughts: int
+    excerpts: int
+    comments: int
+    guestbook_entries: int
+    friends: int
+    assets: int
+    posts_by_status: dict[str, int] = {}
+    content_by_month: list[MonthlyCount] = []
+    recent_content: list[RecentContentItem] = []
+
+
+class SystemInfo(BaseModel):
+    version: str = "1.0.0"
+    python_version: str
+    db_size_bytes: int
+    media_dir_size_bytes: int
+    uptime_seconds: float
+    environment: str
+
+
+# ---------------------------------------------------------------------------
+# Bulk operations
+# ---------------------------------------------------------------------------
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[str]
+
+
+class BulkStatusRequest(BaseModel):
+    ids: list[str]
+    status: str
+
+
+class BulkActionResponse(BaseModel):
+    affected: int
 
 
 # ---------------------------------------------------------------------------

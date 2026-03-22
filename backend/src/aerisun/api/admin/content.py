@@ -4,13 +4,17 @@ from typing import Any, Type
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.models import AdminUser, Base
 
 from .deps import get_current_admin
+from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest
+
+# Columns that the list endpoint is allowed to sort by.
+_ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "title", "published_at", "status", "slug"}
 
 
 def build_crud_router(
@@ -32,17 +36,49 @@ def build_crud_router(
         page_size: int = Query(default=20, ge=1, le=100),
         status_filter: str | None = Query(default=None, alias="status"),
         tag: str | None = Query(default=None),
+        search: str | None = Query(default=None),
+        sort_by: str = Query(default="created_at"),
+        sort_order: str = Query(default="desc"),
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> dict[str, Any]:
         q = session.query(model)
+
+        # --- filters ---
         if status_filter and hasattr(model, "status"):
             q = q.filter(model.status == status_filter)  # type: ignore[arg-type]
         if tag and hasattr(model, "tags"):
-            # SQLite JSON: check if tags array contains the value
             q = q.filter(model.tags.contains(f'"{tag}"'))  # type: ignore[union-attr]
+        if search and hasattr(model, "title"):
+            pattern = f"%{search}%"
+            clauses = [model.title.ilike(pattern)]  # type: ignore[union-attr]
+            if hasattr(model, "body"):
+                clauses.append(model.body.ilike(pattern))  # type: ignore[union-attr]
+            if hasattr(model, "slug"):
+                clauses.append(model.slug.ilike(pattern))  # type: ignore[union-attr]
+            q = q.filter(or_(*clauses))
+
         total = q.count()
-        items = q.order_by(model.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()  # type: ignore[union-attr]
+
+        # --- sorting ---
+        col_name = sort_by if sort_by in _ALLOWED_SORT_COLUMNS else "created_at"
+        col = getattr(model, col_name, None) or model.created_at  # type: ignore[union-attr]
+        order_col = col.asc() if sort_order == "asc" else col.desc()
+
+        # Pinned items first when the model supports it
+        order_clauses = []
+        if hasattr(model, "is_pinned"):
+            order_clauses.append(model.is_pinned.desc())  # type: ignore[union-attr]
+            if hasattr(model, "pin_order"):
+                order_clauses.append(model.pin_order.asc())  # type: ignore[union-attr]
+        order_clauses.append(order_col)
+
+        items = (
+            q.order_by(*order_clauses)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
         return {
             "items": [read_schema.model_validate(i) for i in items],
             "total": total,
@@ -100,5 +136,37 @@ def build_crud_router(
             raise HTTPException(status_code=404, detail="Not found")
         session.delete(obj)
         session.commit()
+
+    # --- Bulk operations ---
+
+    @router.post("/bulk-delete", response_model=BulkActionResponse)
+    def bulk_delete(
+        payload: BulkDeleteRequest,
+        _admin: AdminUser = Depends(get_current_admin),
+        session: Session = Depends(get_session),
+    ) -> Any:
+        affected = (
+            session.query(model)
+            .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
+            .delete(synchronize_session="fetch")
+        )
+        session.commit()
+        return {"affected": affected}
+
+    @router.post("/bulk-status", response_model=BulkActionResponse)
+    def bulk_status(
+        payload: BulkStatusRequest,
+        _admin: AdminUser = Depends(get_current_admin),
+        session: Session = Depends(get_session),
+    ) -> Any:
+        if not hasattr(model, "status"):
+            raise HTTPException(status_code=400, detail="Model does not support status")
+        affected = (
+            session.query(model)
+            .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
+            .update({"status": payload.status}, synchronize_session="fetch")
+        )
+        session.commit()
+        return {"affected": affected}
 
     return router
