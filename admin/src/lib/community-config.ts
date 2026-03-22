@@ -29,7 +29,7 @@ export interface CommunityConfigFormState {
   draft_enabled: boolean;
 }
 
-export const COMMUNITY_CONFIG_ENDPOINTS = ["/site-config/community", "/site-config/community-config"] as const;
+export const COMMUNITY_CONFIG_ENDPOINTS = ["/site-config/community-config"] as const;
 
 export const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceConfig[] = [
   { key: "posts", label: "Posts", path: "/posts/{slug}", enabled: true },

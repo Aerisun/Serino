@@ -20,6 +20,5 @@ get_settings().ensure_directories()
 PY
 
 uv run alembic upgrade head
-uv run python -m aerisun.seed
 
 exec "${SCRIPT_DIR}/serve.sh"

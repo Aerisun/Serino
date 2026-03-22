@@ -4,9 +4,9 @@ The active runtime chain currently lives in:
 
 - `src/aerisun/main.py`
 - `src/aerisun/api/public.py`
-- `src/aerisun/db.py`
-- `src/aerisun/models.py`
-- `src/aerisun/seed.py`
+- `src/aerisun/core/db.py`
+- `src/aerisun/domain/*/models.py`
+- `src/aerisun/core/seed.py`
 
 The legacy `src/aerisun/api/v1`, `src/aerisun/infrastructure`, and parts of
 `src/aerisun/modules` are kept only as compatibility shims while the package is
