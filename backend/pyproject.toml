@@ -26,6 +26,7 @@ dependencies = [
 dev = [
   "httpx>=0.28",
   "pytest>=8.3",
+  "ruff>=0.11",
 ]
 
 [tool.setuptools]
@@ -41,3 +42,14 @@ where = ["src"]
 addopts = "-q"
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
