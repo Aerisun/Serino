@@ -33,6 +33,8 @@ class FriendFeedSource(Base, TimestampMixin):
     feed_url: Mapped[str] = mapped_column(String(500), nullable=False)
     last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    etag: Mapped[str | None] = mapped_column(String(500))
+    last_error: Mapped[str | None] = mapped_column(Text)
 
 
 class FriendFeedItem(Base, TimestampMixin):

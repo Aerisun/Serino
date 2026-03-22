@@ -458,6 +458,8 @@ class FriendFeedSourceAdminRead(ModelBase):
     feed_url: str
     last_fetched_at: datetime | None
     is_enabled: bool
+    etag: str | None = None
+    last_error: str | None = None
     created_at: datetime
     updated_at: datetime
 
