@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ from aerisun.api import api_router
 from aerisun.core.db import run_database_migrations
 from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import get_settings
+from aerisun.core.tasks import cleanup_expired_sessions
 
 
 @asynccontextmanager
@@ -18,7 +20,9 @@ async def lifespan(app: FastAPI):
     run_database_migrations()
     if settings.seed_reference_data:
         seed_reference_data()
+    task = asyncio.create_task(cleanup_expired_sessions())
     yield
+    task.cancel()
 
 
 app = FastAPI(
