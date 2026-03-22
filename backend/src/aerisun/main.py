@@ -112,3 +112,6 @@ app.add_middleware(AuditLogMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router)
+
+from aerisun.api.seo import router as seo_router
+app.include_router(seo_router)

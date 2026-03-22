@@ -36,6 +36,12 @@ export function usePageConfig() {
   return ctx.config.pages
 }
 
+export function useFeatureFlags() {
+  const ctx = useContext(RuntimeConfigContext)
+  if (!ctx) throw new Error("useFeatureFlags must be used within RuntimeConfigProvider")
+  return ctx.config.site.featureFlags
+}
+
 export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(null)
   const [error, setError] = useState<Error | null>(null)

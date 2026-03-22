@@ -31,6 +31,7 @@ type BackendSiteResponse = {
       href: string;
       icon_key: string;
     }>;
+    feature_flags?: Record<string, boolean>;
   };
   social_links: Array<{
     name: string;
@@ -135,6 +136,7 @@ export interface RuntimeConfigSnapshot {
     heroVideoUrl?: string;
     navigation: NavItem[];
     footer: { slogan: string; copyright: string };
+    featureFlags: Record<string, boolean>;
   };
   pages: Record<string, PageConfig>;
 }
@@ -247,6 +249,7 @@ const normalizeSiteConfig = (
       slogan: payload.site.footer_text ?? "",
       copyright: payload.site.copyright,
     },
+    featureFlags: payload.site.feature_flags ?? { toc: true, reading_progress: true, social_sharing: true },
   };
 };
 

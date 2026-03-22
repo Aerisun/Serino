@@ -23,6 +23,7 @@ class SiteProfile(Base, TimestampMixin):
     copyright: Mapped[str] = mapped_column(String(200), nullable=False, default="All rights reserved")
     hero_actions: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     hero_video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    feature_flags: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
 class NavItem(Base, TimestampMixin):

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X, Search } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { transition } from "@/config";
@@ -490,7 +490,15 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
           )}
         </div>
 
-        <div className="mr-1 md:mr-0">
+        <div className="flex items-center gap-2 mr-1 md:mr-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-search"))}
+            className="flex items-center justify-center h-8 w-8 rounded-full text-foreground/30 hover:text-foreground/60 transition-colors"
+            aria-label="搜索"
+          >
+            <Search className="h-4 w-4" />
+          </button>
           <ThemeToggle glassVariant={glassVariant} />
         </div>
       </div>

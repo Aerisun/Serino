@@ -466,6 +466,16 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // moderation extra
     "moderation.guest": "访客",
+
+    // feature flags
+    "siteConfig.featureFlags": "功能开关",
+    "siteConfig.featureFlagsDescription": "启用或关闭可选的前端功能",
+    "siteConfig.featureToc": "文章目录",
+    "siteConfig.featureTocDesc": "在文章详情页显示标题目录导航",
+    "siteConfig.featureReadingProgress": "阅读进度条",
+    "siteConfig.featureReadingProgressDesc": "在文章页面顶部显示阅读进度",
+    "siteConfig.featureSocialSharing": "社交分享",
+    "siteConfig.featureSocialSharingDesc": "在文章底部显示分享按钮",
   },
   en: {
     // common
@@ -932,5 +942,15 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // moderation extra
     "moderation.guest": "Visitor",
+
+    // feature flags
+    "siteConfig.featureFlags": "Feature Toggles",
+    "siteConfig.featureFlagsDescription": "Enable or disable optional frontend features",
+    "siteConfig.featureToc": "Table of Contents",
+    "siteConfig.featureTocDesc": "Show heading navigation on article pages",
+    "siteConfig.featureReadingProgress": "Reading Progress",
+    "siteConfig.featureReadingProgressDesc": "Show reading progress bar at the top of articles",
+    "siteConfig.featureSocialSharing": "Social Sharing",
+    "siteConfig.featureSocialSharingDesc": "Show share buttons at the bottom of articles",
   },
 };
