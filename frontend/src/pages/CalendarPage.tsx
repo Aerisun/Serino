@@ -109,7 +109,7 @@ const getMonthLabels = (value: unknown) => {
 };
 
 const CalendarPage = () => {
-  const config = usePageConfig().calendar as CalendarPageConfig;
+  const config = usePageConfig().calendar as unknown as CalendarPageConfig;
   const weekdayLabels = getWeekdayLabels(config.weekdayLabels);
   const monthLabels = getMonthLabels(config.monthLabels);
   const today = new Date();

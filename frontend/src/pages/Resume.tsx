@@ -14,7 +14,7 @@ interface ResumePageConfig extends BaseViewPageConfig {
 }
 
 const Resume = () => {
-  const config = usePageConfig().resume as ResumePageConfig;
+  const config = usePageConfig().resume as unknown as ResumePageConfig;
   const skills = config.skills ?? [];
   const experience = config.experience ?? [];
   const motionConfig: PageMotionConfig = config.motion;

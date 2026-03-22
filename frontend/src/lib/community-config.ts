@@ -296,8 +296,8 @@ const normalizeAvatarLibrary = (payload: unknown): CommentAvatarPreset[] => {
               : `${label}-${index + 1}`,
         label,
         src,
-        note: typeof record.note === "string" ? record.note : undefined,
-        accent: typeof record.accent === "string" ? record.accent : undefined,
+        ...(typeof record.note === "string" ? { note: record.note } : {}),
+        ...(typeof record.accent === "string" ? { accent: record.accent } : {}),
       } satisfies CommentAvatarPreset;
     })
     .filter((item): item is CommentAvatarPreset => item !== null);
@@ -404,8 +404,8 @@ export const normalizeWalineSearchResult = (payload: unknown): WalineSearchImage
         const preview = record.preview ?? record.thumbnail ?? record.thumb;
         return {
           src,
-          title: typeof title === "string" ? title : undefined,
-          preview: typeof preview === "string" ? preview : undefined,
+          ...(typeof title === "string" ? { title } : {}),
+          ...(typeof preview === "string" ? { preview } : {}),
         };
       })
       .filter((item): item is WalineSearchImage => item !== null);

@@ -73,7 +73,7 @@ const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEnt
 };
 
 const Diary = () => {
-  const config = usePageConfig().diary as DiaryPageConfig;
+  const config = usePageConfig().diary as unknown as DiaryPageConfig;
   const navigate = useNavigate();
   const [items, setItems] = useState<DiaryEntry[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");

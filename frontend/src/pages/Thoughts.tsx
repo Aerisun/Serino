@@ -39,7 +39,7 @@ const mapRemoteThought = (entry: PublicContentEntry): Thought => {
 };
 
 const Thoughts = () => {
-  const config = usePageConfig().thoughts as ThoughtsPageConfig;
+  const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
   const [items, setItems] = useState<Thought[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");

@@ -39,7 +39,7 @@ const mapRemotePost = (entry: PublicContentEntry): Post => ({
 });
 
 const Posts = () => {
-  const config = usePageConfig().posts as PostsPageConfig;
+  const config = usePageConfig().posts as unknown as PostsPageConfig;
   const allCategoryLabel = config.categories?.all ?? "全部";
   const [items, setItems] = useState<Post[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");

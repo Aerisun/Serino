@@ -34,7 +34,7 @@ const mapRemoteExcerpt = (entry: PublicContentEntry): Excerpt => {
 };
 
 const Excerpts = () => {
-  const config = usePageConfig().excerpts as ExcerptsPageConfig;
+  const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
   const [items, setItems] = useState<Excerpt[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
