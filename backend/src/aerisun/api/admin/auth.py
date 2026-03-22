@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.models import AdminSession, AdminUser
+from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.core.settings import get_settings
 
 from .deps import get_current_admin

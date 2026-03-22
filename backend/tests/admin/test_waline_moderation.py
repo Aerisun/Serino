@@ -6,7 +6,7 @@ import sqlite3
 import bcrypt
 
 from aerisun.core.db import get_session_factory
-from aerisun.models import AdminSession, AdminUser
+from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.core.settings import get_settings
 from aerisun.domain.waline.service import connect_waline_db
 

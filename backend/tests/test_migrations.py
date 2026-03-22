@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from aerisun.db import run_database_migrations
-from aerisun.settings import get_settings
+from aerisun.core.db import run_database_migrations
+from aerisun.core.settings import get_settings
 
 
 def _get_columns(path: str, table: str) -> set[str]:

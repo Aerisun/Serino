@@ -5,7 +5,7 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.models import (
+from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
     PageCopy,
@@ -17,7 +17,7 @@ from aerisun.models import (
     SiteProfile,
     SocialLink,
 )
-from aerisun.schemas import (
+from aerisun.domain.site_config.schemas import (
     CommunityConfigRead,
     NavChildRead,
     NavItemRead,

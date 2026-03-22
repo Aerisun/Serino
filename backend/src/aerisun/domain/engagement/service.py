@@ -5,8 +5,9 @@ from collections import defaultdict
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from aerisun.models import Comment, DiaryEntry, ExcerptEntry, GuestbookEntry, PostEntry, Reaction, ThoughtEntry
-from aerisun.schemas import (
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
+from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
     CommentCreateResponse,

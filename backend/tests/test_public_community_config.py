@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from aerisun.db import get_session_factory
-from aerisun.models import CommunityConfig
-from aerisun.seed import seed_reference_data
-from aerisun.settings import get_settings
+from aerisun.core.db import get_session_factory
+from aerisun.domain.site_config.models import CommunityConfig
+from aerisun.core.seed import seed_reference_data
+from aerisun.core.settings import get_settings
 
 
 def test_seed_reference_data_backfills_blank_community_server_url(client) -> None:

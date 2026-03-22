@@ -8,7 +8,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.models import AdminUser, Base
+from aerisun.domain.iam.models import AdminUser
+from aerisun.core.base import Base
 
 from .deps import get_current_admin
 

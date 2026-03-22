@@ -6,8 +6,9 @@ from typing import TypeVar
 from sqlalchemy import Select, desc, func, select
 from sqlalchemy.orm import Session
 
-from aerisun.models import Comment, DiaryEntry, ExcerptEntry, PostEntry, Reaction, ThoughtEntry
-from aerisun.schemas import ContentCollectionRead, ContentEntryRead
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.engagement.models import Comment, Reaction
+from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 

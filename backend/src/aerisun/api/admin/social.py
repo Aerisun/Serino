@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.models import AdminUser, Friend, FriendFeedSource
+from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.social.models import Friend, FriendFeedSource
 
 from .content import build_crud_router
 from .deps import get_current_admin

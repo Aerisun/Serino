@@ -10,18 +10,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.models import (
-    AdminUser,
-    ApiKey,
-    Asset,
-    AuditLog,
-    BackupSnapshot,
-    DiaryEntry,
-    ExcerptEntry,
-    Friend,
-    PostEntry,
-    ThoughtEntry,
-)
+from aerisun.domain.iam.models import AdminUser, ApiKey
+from aerisun.domain.media.models import Asset
+from aerisun.domain.ops.models import AuditLog, BackupSnapshot
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records
 
 from .deps import get_current_admin

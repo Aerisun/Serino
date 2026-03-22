@@ -14,7 +14,7 @@ if [[ -f "${BACKEND_DIR}/.env" ]]; then
 fi
 
 python - <<'PY'
-from aerisun.settings import get_settings
+from aerisun.core.settings import get_settings
 
 get_settings().ensure_directories()
 PY
