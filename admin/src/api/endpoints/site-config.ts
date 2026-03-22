@@ -14,6 +14,9 @@ import type {
   PageDisplayOption,
   PageDisplayOptionCreate,
   PageDisplayOptionUpdate,
+  NavItem,
+  NavItemCreate,
+  NavItemUpdate,
   PaginatedResponse,
 } from "@/types/models";
 
@@ -106,4 +109,28 @@ export async function updateDisplayOption(id: string, data: PageDisplayOptionUpd
 
 export async function deleteDisplayOption(id: string): Promise<void> {
   await client.delete(`/site-config/display-options/${id}`);
+}
+
+// --- Nav Items ---
+export async function listNavItems(params?: { page?: number }): Promise<PaginatedResponse<NavItem>> {
+  const res = await client.get("/site-config/nav-items/", { params });
+  return res.data;
+}
+
+export async function createNavItem(data: NavItemCreate): Promise<NavItem> {
+  const res = await client.post("/site-config/nav-items/", data);
+  return res.data;
+}
+
+export async function updateNavItem(id: string, data: NavItemUpdate): Promise<NavItem> {
+  const res = await client.put(`/site-config/nav-items/${id}`, data);
+  return res.data;
+}
+
+export async function deleteNavItem(id: string): Promise<void> {
+  await client.delete(`/site-config/nav-items/${id}`);
+}
+
+export async function reorderNavItems(items: { id: string; order_index: number }[]): Promise<void> {
+  await client.put("/site-config/nav-items/reorder", items);
 }

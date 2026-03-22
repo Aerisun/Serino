@@ -25,10 +25,11 @@ export default function ExcerptEditPage() {
 
   const [form, setForm] = useState<ContentCreate>({
     slug: "", title: "", summary: "", body: "", tags: [], status: "draft", visibility: "public", published_at: null,
+    author_name: "", source: "",
   });
 
   useEffect(() => {
-    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at });
+    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, author_name: (item as any).author_name || "", source: (item as any).source || "" });
   }, [item]);
 
   const save = useMutation({
@@ -63,6 +64,10 @@ export default function ExcerptEditPage() {
         <div className="space-y-2"><Label>{t("posts.summary")}</Label><Textarea value={form.summary || ""} onChange={(e) => setField("summary", e.target.value)} rows={2} /></div>
         <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={10} className="font-mono text-sm" required /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2"><Label>作者</Label><Input value={form.author_name || ""} onChange={(e) => setField("author_name", e.target.value)} placeholder="原文作者" /></div>
+          <div className="space-y-2"><Label>来源</Label><Input value={form.source || ""} onChange={(e) => setField("source", e.target.value)} placeholder="书名、文章等" /></div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>{t("posts.status")}</Label>
