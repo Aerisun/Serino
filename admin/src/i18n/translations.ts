@@ -37,6 +37,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.payload": "载荷",
     "common.prefix": "前缀",
     "common.uploading": "上传中...",
+    "common.selected": "已选择 {count} 项",
+    "common.clearSelection": "取消选择",
+    "common.bulkDelete": "批量删除",
+    "common.bulkPublish": "批量发布",
+    "common.bulkArchive": "批量归档",
+    "common.bulkDraft": "设为草稿",
+    "common.confirmBulkDelete": "确定要删除选中的 {count} 项吗？此操作不可撤销。",
+    "common.sortBy": "排序",
+    "common.sortNewest": "最新优先",
+    "common.sortOldest": "最早优先",
+    "common.sortTitle": "按标题排序",
+    "common.sortUpdated": "最近更新",
+    "common.searchPlaceholder": "搜索标题、内容...",
+    "common.operationSuccess": "操作成功",
+    "common.operationFailed": "操作失败",
+    "common.deleteConfirm": "确认删除",
+    "common.deleteConfirmDesc": "确定要删除这一项吗？此操作不可撤销。",
 
     // nav
     "nav.dashboard": "仪表盘",
@@ -58,7 +75,30 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.system": "系统",
     "nav.admin": "管理",
     "nav.adminPanel": "Aerisun 管理面板",
+    "nav.settings": "设置",
     "nav.logout": "退出登录",
+
+    // settings
+    "settings.title": "设置",
+    "settings.description": "管理账户设置",
+    "settings.profile": "个人资料",
+    "settings.password": "密码",
+    "settings.sessions": "活跃会话",
+    "settings.profileInfo": "个人信息",
+    "settings.username": "用户名",
+    "settings.changePassword": "修改密码",
+    "settings.currentPassword": "当前密码",
+    "settings.newPassword": "新密码",
+    "settings.confirmPassword": "确认密码",
+    "settings.passwordMismatch": "两次输入的密码不一致",
+    "settings.passwordTooShort": "密码不能少于6个字符",
+    "settings.passwordChangeFailed": "密码修改失败，请检查当前密码是否正确",
+    "settings.activeSessions": "活跃会话",
+    "settings.currentSession": "当前会话",
+    "settings.sessionCreated": "创建时间",
+    "settings.sessionExpires": "过期时间",
+    "settings.revokeSession": "注销会话",
+    "settings.revokeSessionDesc": "确定要注销此会话吗？",
 
     // dashboard
     "dashboard.title": "仪表盘",
@@ -357,6 +397,40 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     "dashboard.reactions": "互动",
     "dashboard.syncRuns": "同步记录",
+    "dashboard.postsByStatus": "文章状态分布",
+    "dashboard.monthlyTrend": "月度创作趋势",
+    "dashboard.recentContent": "最近更新",
+
+    // systemInfo
+    "nav.systemInfo": "系统信息",
+    "systemInfo.title": "系统信息",
+    "systemInfo.description": "查看服务器运行状态",
+    "systemInfo.version": "版本",
+    "systemInfo.python": "Python 版本",
+    "systemInfo.dbSize": "数据库大小",
+    "systemInfo.mediaSize": "媒体目录大小",
+    "systemInfo.uptime": "运行时间",
+    "systemInfo.environment": "运行环境",
+
+    // importExport
+    "importExport.title": "导入/导出",
+    "importExport.export": "导出",
+    "importExport.import": "导入",
+    "importExport.imported": "导入完成",
+    "importExport.created": "新建",
+    "importExport.updated": "更新",
+    "importExport.errors": "错误",
+
+    // editor
+    "editor.preview": "预览",
+    "editor.edit": "编辑",
+
+    // auditLog filters
+    "auditLog.filterByAction": "按操作筛选",
+    "auditLog.dateFrom": "开始日期",
+    "auditLog.dateTo": "结束日期",
+    "auditLog.filter": "筛选",
+    "auditLog.clearFilter": "清除",
   },
   en: {
     // common
@@ -394,6 +468,23 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.payload": "Payload",
     "common.prefix": "Prefix",
     "common.uploading": "Uploading...",
+    "common.selected": "Selected {count} items",
+    "common.clearSelection": "Clear selection",
+    "common.bulkDelete": "Bulk delete",
+    "common.bulkPublish": "Bulk publish",
+    "common.bulkArchive": "Bulk archive",
+    "common.bulkDraft": "Set as draft",
+    "common.confirmBulkDelete": "Are you sure you want to delete {count} selected items? This action cannot be undone.",
+    "common.sortBy": "Sort by",
+    "common.sortNewest": "Newest first",
+    "common.sortOldest": "Oldest first",
+    "common.sortTitle": "Sort by title",
+    "common.sortUpdated": "Recently updated",
+    "common.searchPlaceholder": "Search title, content...",
+    "common.operationSuccess": "Operation successful",
+    "common.operationFailed": "Operation failed",
+    "common.deleteConfirm": "Confirm delete",
+    "common.deleteConfirmDesc": "Are you sure you want to delete this item? This action cannot be undone.",
 
     // nav
     "nav.dashboard": "Dashboard",
@@ -415,7 +506,30 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.system": "System",
     "nav.admin": "Admin",
     "nav.adminPanel": "Aerisun Admin Panel",
+    "nav.settings": "Settings",
     "nav.logout": "Logout",
+
+    // settings
+    "settings.title": "Settings",
+    "settings.description": "Manage account settings",
+    "settings.profile": "Profile",
+    "settings.password": "Password",
+    "settings.sessions": "Sessions",
+    "settings.profileInfo": "Profile Information",
+    "settings.username": "Username",
+    "settings.changePassword": "Change Password",
+    "settings.currentPassword": "Current Password",
+    "settings.newPassword": "New Password",
+    "settings.confirmPassword": "Confirm Password",
+    "settings.passwordMismatch": "Passwords do not match",
+    "settings.passwordTooShort": "Password must be at least 6 characters",
+    "settings.passwordChangeFailed": "Password change failed. Please check your current password.",
+    "settings.activeSessions": "Active Sessions",
+    "settings.currentSession": "Current",
+    "settings.sessionCreated": "Created",
+    "settings.sessionExpires": "Expires",
+    "settings.revokeSession": "Revoke Session",
+    "settings.revokeSessionDesc": "Are you sure you want to revoke this session?",
 
     // dashboard
     "dashboard.title": "Dashboard",
@@ -714,5 +828,39 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     "dashboard.reactions": "Reactions",
     "dashboard.syncRuns": "Sync Runs",
+    "dashboard.postsByStatus": "Posts by Status",
+    "dashboard.monthlyTrend": "Monthly Trend",
+    "dashboard.recentContent": "Recent Content",
+
+    // systemInfo
+    "nav.systemInfo": "System Info",
+    "systemInfo.title": "System Information",
+    "systemInfo.description": "View server status",
+    "systemInfo.version": "Version",
+    "systemInfo.python": "Python Version",
+    "systemInfo.dbSize": "Database Size",
+    "systemInfo.mediaSize": "Media Directory Size",
+    "systemInfo.uptime": "Uptime",
+    "systemInfo.environment": "Environment",
+
+    // importExport
+    "importExport.title": "Import / Export",
+    "importExport.export": "Export",
+    "importExport.import": "Import",
+    "importExport.imported": "Import complete",
+    "importExport.created": "created",
+    "importExport.updated": "updated",
+    "importExport.errors": "errors",
+
+    // editor
+    "editor.preview": "Preview",
+    "editor.edit": "Edit",
+
+    // auditLog filters
+    "auditLog.filterByAction": "Filter by action",
+    "auditLog.dateFrom": "From date",
+    "auditLog.dateTo": "To date",
+    "auditLog.filter": "Filter",
+    "auditLog.clearFilter": "Clear",
   },
 };

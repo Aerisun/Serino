@@ -44,3 +44,5 @@ class ContentMixin:
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="public")
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_pinned: Mapped[bool] = mapped_column(default=False)
+    pin_order: Mapped[int] = mapped_column(default=0)

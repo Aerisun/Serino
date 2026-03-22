@@ -8,6 +8,8 @@ interface ResourceConfig<T, C, U> {
   createFn?: (data: C) => Promise<T>;
   updateFn?: (id: string, data: U) => Promise<T>;
   deleteFn?: (id: string) => Promise<void>;
+  bulkDeleteFn?: (ids: string[]) => Promise<{ affected: number }>;
+  bulkStatusFn?: (ids: string[], status: string) => Promise<{ affected: number }>;
 }
 
 export function useResourceList<T, C = any, U = any>(
@@ -36,6 +38,16 @@ export function useResourceList<T, C = any, U = any>(
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [config.queryKey] }),
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) => config.bulkDeleteFn!(ids),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [config.queryKey] }),
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: string }) => config.bulkStatusFn!(ids, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [config.queryKey] }),
+  });
+
   return {
     items: listQuery.data?.items ?? [],
     total: listQuery.data?.total ?? 0,
@@ -50,6 +62,10 @@ export function useResourceList<T, C = any, U = any>(
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    bulkDelete: bulkDeleteMutation.mutateAsync,
+    bulkStatus: (ids: string[], status: string) => bulkStatusMutation.mutateAsync({ ids, status }),
+    isBulkDeleting: bulkDeleteMutation.isPending,
+    isBulkUpdating: bulkStatusMutation.isPending,
   };
 }
 

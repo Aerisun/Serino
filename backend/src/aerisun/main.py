@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from aerisun.api import api_router
+from aerisun.api.admin.audit_middleware import AuditLogMiddleware
 from aerisun.core.db import run_database_migrations
 from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import get_settings
@@ -63,5 +64,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuditLogMiddleware)
 
 app.include_router(api_router)
