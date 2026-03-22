@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -238,3 +240,61 @@ def healthz() -> HealthRead:
         database_path=str(settings.db_path),
         timestamp=datetime.now(UTC),
     )
+
+
+@router.get("/sitemap.xml")
+def sitemap(session: Session = Depends(get_session)) -> Response:
+    from aerisun.domain.content.models import PostEntry, DiaryEntry
+
+    settings = _get_settings()
+    site_url = settings.site_url.rstrip("/")
+
+    ns = "http://www.sitemaps.org/schemas/sitemap/0.9"
+    urlset = ET.Element("urlset", xmlns=ns)
+
+    def add_url(loc: str, lastmod: datetime | None = None, priority: str = "0.5") -> None:
+        url_el = ET.SubElement(urlset, "url")
+        ET.SubElement(url_el, "loc").text = f"{site_url}{loc}"
+        if lastmod is not None:
+            ET.SubElement(url_el, "lastmod").text = lastmod.strftime("%Y-%m-%d")
+        ET.SubElement(url_el, "priority").text = priority
+
+    # Static pages
+    static_pages = [
+        ("/", "1.0"),
+        ("/posts", "0.7"),
+        ("/diary", "0.7"),
+        ("/thoughts", "0.7"),
+        ("/excerpts", "0.7"),
+        ("/friends", "0.4"),
+        ("/guestbook", "0.4"),
+        ("/resume", "0.4"),
+        ("/calendar", "0.4"),
+    ]
+    for path, priority in static_pages:
+        add_url(path, priority=priority)
+
+    # Dynamic pages – published & public posts
+    posts = (
+        session.query(PostEntry)
+        .filter(PostEntry.status == "published", PostEntry.visibility == "public")
+        .all()
+    )
+    for post in posts:
+        mod = post.updated_at or post.created_at
+        add_url(f"/posts/{post.slug}", lastmod=mod, priority="0.6")
+
+    # Dynamic pages – published & public diary entries
+    diary_entries = (
+        session.query(DiaryEntry)
+        .filter(DiaryEntry.status == "published", DiaryEntry.visibility == "public")
+        .all()
+    )
+    for entry in diary_entries:
+        mod = entry.updated_at or entry.created_at
+        add_url(f"/diary/{entry.slug}", lastmod=mod, priority="0.6")
+
+    xml_string = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
+        urlset, encoding="unicode"
+    )
+    return Response(content=xml_string, media_type="application/xml")

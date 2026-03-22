@@ -1,0 +1,23 @@
+{$AERISUN_DOMAIN:localhost} {
+    # API 后端
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    # Waline 评论服务
+    handle /waline/* {
+        uri strip_prefix /waline
+        reverse_proxy waline:8360
+    }
+
+    # Sitemap 重写
+    handle /sitemap.xml {
+        rewrite * /api/v1/public/sitemap.xml
+        reverse_proxy api:8000
+    }
+
+    # 前端 SPA
+    handle {
+        reverse_proxy {$AERISUN_FRONTEND_UPSTREAM:host.docker.internal:8080}
+    }
+}

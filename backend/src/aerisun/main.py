@@ -14,6 +14,7 @@ from aerisun.api import api_router
 from aerisun.api.admin.audit_middleware import AuditLogMiddleware
 from aerisun.core.csrf import OriginCheckMiddleware
 from aerisun.core.db import run_database_migrations
+from aerisun.core.logging import RequestIDMiddleware, setup_logging
 from aerisun.core.rate_limit import limiter
 from aerisun.core.security_headers import SecurityHeadersMiddleware
 from aerisun.core.seed import seed_reference_data
@@ -42,7 +43,18 @@ def _check_insecure_defaults(settings: Settings) -> None:
 async def lifespan(app: FastAPI):
     settings = get_settings()
     settings.ensure_directories()
+    setup_logging(settings)
     _check_insecure_defaults(settings)
+
+    if settings.sentry_dsn:
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.environment,
+            traces_sample_rate=settings.sentry_traces_sample_rate,
+            send_default_pii=False,
+        )
+
     run_database_migrations()
     if settings.seed_reference_data:
         seed_reference_data()
@@ -96,5 +108,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(AuditLogMiddleware)
+app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router)

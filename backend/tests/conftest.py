@@ -43,3 +43,49 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     get_session_factory.cache_clear()
     get_engine.cache_clear()
     get_settings.cache_clear()
+
+
+@pytest.fixture()
+def admin_headers(client) -> dict[str, str]:
+    """Create an admin user and session, return authentication headers."""
+    from datetime import datetime, timedelta, timezone
+
+    import bcrypt
+
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.iam.models import AdminSession, AdminUser
+
+    factory = get_session_factory()
+    token = "test-admin-session-token"
+    with factory() as session:
+        user = (
+            session.query(AdminUser)
+            .filter(AdminUser.username == "test-admin")
+            .first()
+        )
+        if user is None:
+            user = AdminUser(
+                username="test-admin",
+                password_hash=bcrypt.hashpw(
+                    b"test-password", bcrypt.gensalt()
+                ).decode(),
+            )
+            session.add(user)
+            session.flush()
+        existing = (
+            session.query(AdminSession)
+            .filter(AdminSession.session_token == token)
+            .first()
+        )
+        if existing is None:
+            session.add(
+                AdminSession(
+                    admin_user_id=user.id,
+                    session_token=token,
+                    expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+                )
+            )
+        else:
+            existing.expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        session.commit()
+    return {"Authorization": f"Bearer {token}"}

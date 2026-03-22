@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/Toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,25 +8,26 @@ import { LanguageProvider } from "@/i18n";
 import { useAuth } from "@/auth/useAuth";
 import AdminLayout from "@/layouts/AdminLayout";
 import LoginPage from "@/auth/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
-import PostListPage from "@/pages/posts/PostListPage";
-import PostEditPage from "@/pages/posts/PostEditPage";
-import DiaryListPage from "@/pages/diary/DiaryListPage";
-import DiaryEditPage from "@/pages/diary/DiaryEditPage";
-import ThoughtListPage from "@/pages/thoughts/ThoughtListPage";
-import ThoughtEditPage from "@/pages/thoughts/ThoughtEditPage";
-import ExcerptListPage from "@/pages/excerpts/ExcerptListPage";
-import ExcerptEditPage from "@/pages/excerpts/ExcerptEditPage";
-import SiteConfigPage from "@/pages/site-config/SiteConfigPage";
-import ResumePage from "@/pages/resume/ResumePage";
-import FriendsPage from "@/pages/friends/FriendsPage";
-import ModerationPage from "@/pages/moderation/ModerationPage";
-import AssetsPage from "@/pages/assets/AssetsPage";
-import ApiKeysPage from "@/pages/system/ApiKeysPage";
-import AuditLogPage from "@/pages/system/AuditLogPage";
-import BackupsPage from "@/pages/system/BackupsPage";
-import SystemInfoPage from "@/pages/system/SystemInfoPage";
-import SettingsPage from "@/pages/settings/SettingsPage";
+
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const PostListPage = lazy(() => import("@/pages/posts/PostListPage"));
+const PostEditPage = lazy(() => import("@/pages/posts/PostEditPage"));
+const DiaryListPage = lazy(() => import("@/pages/diary/DiaryListPage"));
+const DiaryEditPage = lazy(() => import("@/pages/diary/DiaryEditPage"));
+const ThoughtListPage = lazy(() => import("@/pages/thoughts/ThoughtListPage"));
+const ThoughtEditPage = lazy(() => import("@/pages/thoughts/ThoughtEditPage"));
+const ExcerptListPage = lazy(() => import("@/pages/excerpts/ExcerptListPage"));
+const ExcerptEditPage = lazy(() => import("@/pages/excerpts/ExcerptEditPage"));
+const SiteConfigPage = lazy(() => import("@/pages/site-config/SiteConfigPage"));
+const ResumePage = lazy(() => import("@/pages/resume/ResumePage"));
+const FriendsPage = lazy(() => import("@/pages/friends/FriendsPage"));
+const ModerationPage = lazy(() => import("@/pages/moderation/ModerationPage"));
+const AssetsPage = lazy(() => import("@/pages/assets/AssetsPage"));
+const ApiKeysPage = lazy(() => import("@/pages/system/ApiKeysPage"));
+const AuditLogPage = lazy(() => import("@/pages/system/AuditLogPage"));
+const BackupsPage = lazy(() => import("@/pages/system/BackupsPage"));
+const SystemInfoPage = lazy(() => import("@/pages/system/SystemInfoPage"));
+const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +47,7 @@ function ProtectedRoutes() {
   }
 
   return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-muted-foreground"><div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" /></div>}>
     <Routes>
       <Route element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />
@@ -68,6 +71,7 @@ function ProtectedRoutes() {
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
 
