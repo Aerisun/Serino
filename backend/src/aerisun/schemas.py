@@ -75,6 +75,29 @@ class PageCollectionRead(ModelBase):
     items: list[PageCopyRead]
 
 
+class CommunitySurfaceRead(ModelBase):
+    key: str
+    label: str
+    path: str
+    enabled: bool
+
+
+class CommunityConfigRead(ModelBase):
+    provider: str
+    server_url: str
+    surfaces: list[CommunitySurfaceRead]
+    meta: list[str]
+    required_meta: list[str]
+    emoji_presets: list[str]
+    enable_enjoy_search: bool
+    image_uploader: bool
+    login_mode: str
+    oauth_url: str | None
+    avatar_strategy: str
+    avatar_helper_copy: str
+    migration_state: str
+
+
 class ResumeSkillGroupRead(ModelBase):
     category: str
     items: list[str]

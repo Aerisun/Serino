@@ -5,8 +5,20 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.models import NavItem, PageCopy, PageDisplayOption, Poem, ResumeBasics, ResumeExperience, ResumeSkillGroup, SiteProfile, SocialLink
+from aerisun.models import (
+    CommunityConfig,
+    NavItem,
+    PageCopy,
+    PageDisplayOption,
+    Poem,
+    ResumeBasics,
+    ResumeExperience,
+    ResumeSkillGroup,
+    SiteProfile,
+    SocialLink,
+)
 from aerisun.schemas import (
+    CommunityConfigRead,
     NavChildRead,
     NavItemRead,
     PageCollectionRead,
@@ -108,6 +120,13 @@ def get_page_copy(session: Session) -> PageCollectionRead:
     return PageCollectionRead(items=items)
 
 
+def get_community_config(session: Session) -> CommunityConfigRead:
+    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+    if config is None:
+        raise LookupError("community config is missing")
+    return CommunityConfigRead.model_validate(config)
+
+
 def get_resume(session: Session) -> ResumeRead:
     basics = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
     if basics is None:
@@ -143,4 +162,5 @@ def get_resume(session: Session) -> ResumeRead:
 
 load_site_bundle = get_site_config
 load_pages_bundle = get_page_copy
+load_community_bundle = get_community_config
 load_resume_bundle = get_resume

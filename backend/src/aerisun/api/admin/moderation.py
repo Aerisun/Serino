@@ -6,12 +6,42 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.db import get_session
-from aerisun.models import AdminUser, Comment, GuestbookEntry, ModerationRecord
+from aerisun.models import AdminUser, ModerationRecord
+from aerisun.waline import list_guestbook_records, list_waline_records, moderate_waline_record, parse_comment_path
 
 from .deps import get_current_admin
 from .schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
 
 router = APIRouter(prefix="/moderation", tags=["admin-moderation"])
+
+
+def _comment_admin_read_from_waline(record) -> CommentAdminRead:
+    content_type, content_slug = parse_comment_path(record.url)
+    return CommentAdminRead(
+        id=str(record.id),
+        content_type=content_type,
+        content_slug=content_slug,
+        parent_id=str(record.pid) if record.pid is not None else None,
+        author_name=record.nick or "访客",
+        author_email=record.mail,
+        body=record.comment,
+        status=record.status,
+        created_at=record.inserted_at,
+        updated_at=record.updated_at,
+    )
+
+
+def _guestbook_admin_read_from_waline(record) -> GuestbookAdminRead:
+    return GuestbookAdminRead(
+        id=str(record.id),
+        name=record.nick or "访客",
+        email=record.mail,
+        website=record.link,
+        body=record.comment,
+        status=record.status,
+        created_at=record.inserted_at,
+        updated_at=record.updated_at,
+    )
 
 
 @router.get("/comments", response_model=dict)
@@ -20,20 +50,11 @@ def list_comments(
     page_size: int = Query(default=20, ge=1, le=100),
     status_filter: str | None = Query(default=None, alias="status"),
     _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
+    _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    q = session.query(Comment)
-    if status_filter:
-        q = q.filter(Comment.status == status_filter)
-    total = q.count()
-    items = (
-        q.order_by(Comment.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    items, total = list_waline_records(page=page, page_size=page_size, status=status_filter)
     return {
-        "items": [CommentAdminRead.model_validate(c) for c in items],
+        "items": [_comment_admin_read_from_waline(item) for item in items],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -44,14 +65,21 @@ def list_comments(
 def moderate_comment(
     comment_id: str,
     payload: ModerateAction,
-    admin: AdminUser = Depends(get_current_admin),
+    _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    comment = session.get(Comment, comment_id)
-    if comment is None:
-        raise HTTPException(status_code=404, detail="Comment not found")
+    try:
+        waline_id = int(comment_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Comment not found") from exc
 
+    if payload.action not in {"approve", "reject", "delete"}:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    result = moderate_waline_record(record_id=waline_id, action=payload.action)
     if payload.action == "delete":
+        if result is None:
+            raise HTTPException(status_code=404, detail="Comment not found")
         record = ModerationRecord(
             target_type="comment",
             target_id=comment_id,
@@ -59,24 +87,21 @@ def moderate_comment(
             reason=payload.reason,
         )
         session.add(record)
-        session.delete(comment)
         session.commit()
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
-    if payload.action in ("approve", "reject"):
-        comment.status = "approved" if payload.action == "approve" else "rejected"
-        record = ModerationRecord(
-            target_type="comment",
-            target_id=comment_id,
-            action=payload.action,
-            reason=payload.reason,
-        )
-        session.add(record)
-        session.commit()
-        session.refresh(comment)
-        return CommentAdminRead.model_validate(comment)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Comment not found")
 
-    raise HTTPException(status_code=400, detail="Invalid action")
+    record = ModerationRecord(
+        target_type="comment",
+        target_id=comment_id,
+        action=payload.action,
+        reason=payload.reason,
+    )
+    session.add(record)
+    session.commit()
+    return _comment_admin_read_from_waline(result)
 
 
 @router.get("/guestbook", response_model=dict)
@@ -85,20 +110,11 @@ def list_guestbook(
     page_size: int = Query(default=20, ge=1, le=100),
     status_filter: str | None = Query(default=None, alias="status"),
     _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
+    _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    q = session.query(GuestbookEntry)
-    if status_filter:
-        q = q.filter(GuestbookEntry.status == status_filter)
-    total = q.count()
-    items = (
-        q.order_by(GuestbookEntry.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    items, total = list_guestbook_records(page=page, page_size=page_size, status=status_filter)
     return {
-        "items": [GuestbookAdminRead.model_validate(g) for g in items],
+        "items": [_guestbook_admin_read_from_waline(item) for item in items],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -109,14 +125,21 @@ def list_guestbook(
 def moderate_guestbook(
     entry_id: str,
     payload: ModerateAction,
-    admin: AdminUser = Depends(get_current_admin),
+    _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    entry = session.get(GuestbookEntry, entry_id)
-    if entry is None:
-        raise HTTPException(status_code=404, detail="Guestbook entry not found")
+    try:
+        waline_id = int(entry_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Guestbook entry not found") from exc
 
+    if payload.action not in {"approve", "reject", "delete"}:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    result = moderate_waline_record(record_id=waline_id, action=payload.action)
     if payload.action == "delete":
+        if result is None:
+            raise HTTPException(status_code=404, detail="Guestbook entry not found")
         record = ModerationRecord(
             target_type="guestbook",
             target_id=entry_id,
@@ -124,21 +147,18 @@ def moderate_guestbook(
             reason=payload.reason,
         )
         session.add(record)
-        session.delete(entry)
         session.commit()
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
-    if payload.action in ("approve", "reject"):
-        entry.status = "approved" if payload.action == "approve" else "rejected"
-        record = ModerationRecord(
-            target_type="guestbook",
-            target_id=entry_id,
-            action=payload.action,
-            reason=payload.reason,
-        )
-        session.add(record)
-        session.commit()
-        session.refresh(entry)
-        return GuestbookAdminRead.model_validate(entry)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Guestbook entry not found")
 
-    raise HTTPException(status_code=400, detail="Invalid action")
+    record = ModerationRecord(
+        target_type="guestbook",
+        target_id=entry_id,
+        action=payload.action,
+        reason=payload.reason,
+    )
+    session.add(record)
+    session.commit()
+    return _guestbook_admin_read_from_waline(result)

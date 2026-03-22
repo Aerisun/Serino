@@ -1,7 +1,15 @@
 import client from "../client";
 import type { Comment, GuestbookEntry, ModerateAction, PaginatedResponse } from "@/types/models";
 
-export async function listComments(params?: { page?: number; page_size?: number; status?: string }): Promise<PaginatedResponse<Comment>> {
+export interface ModerationListParams {
+  page?: number;
+  page_size?: number;
+  status?: string;
+  path?: string;
+  surface?: string;
+}
+
+export async function listComments(params?: ModerationListParams): Promise<PaginatedResponse<Comment>> {
   const res = await client.get("/moderation/comments", { params });
   return res.data;
 }
@@ -11,7 +19,7 @@ export async function moderateComment(commentId: string, data: ModerateAction): 
   return res.data;
 }
 
-export async function listGuestbook(params?: { page?: number; page_size?: number; status?: string }): Promise<PaginatedResponse<GuestbookEntry>> {
+export async function listGuestbook(params?: ModerationListParams): Promise<PaginatedResponse<GuestbookEntry>> {
   const res = await client.get("/moderation/guestbook", { params });
   return res.data;
 }

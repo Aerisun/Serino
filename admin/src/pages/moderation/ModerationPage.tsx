@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listComments, moderateComment, listGuestbook, moderateGuestbook } from "@/api/endpoints/comments";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -14,11 +15,51 @@ import { Check, X, Trash2, History } from "lucide-react";
 import { useI18n } from "@/i18n";
 import type { Comment, GuestbookEntry } from "@/types/models";
 
+function getModerationAuthor(item: Comment | GuestbookEntry) {
+  if ("author_name" in item && item.author_name) return item.author_name;
+  if ("nickname" in item && item.nickname) return item.nickname;
+  if ("name" in item && item.name) return item.name;
+  return "访客";
+}
+
+function getModerationBody(item: Comment | GuestbookEntry) {
+  if ("body" in item && item.body) return item.body;
+  return "";
+}
+
+function getModerationSource(item: Comment | GuestbookEntry) {
+  if ("source" in item && item.source) return item.source;
+  if ("content_type" in item && item.content_type) return item.content_type;
+  if ("website" in item) return "guestbook";
+  return "-";
+}
+
+function getModerationPath(item: Comment | GuestbookEntry) {
+  if ("path" in item && item.path) return item.path;
+  if ("content_type" in item && item.content_type && item.content_slug) return `/${item.content_type}/${item.content_slug}`;
+  if ("website" in item) return "/guestbook";
+  return "-";
+}
+
+function normalizeModerationStatus(status: string) {
+  if (status === "waiting") return "pending";
+  if (status === "spam") return "rejected";
+  return status;
+}
+
 export default function ModerationPage() {
   const { t } = useI18n();
   return (
     <div>
       <PageHeader title={t("moderation.title")} description={t("moderation.description")} />
+      <Card className="mt-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">{t("siteConfig.community")}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {t("moderation.unifiedNote")}
+        </CardContent>
+      </Card>
       <Tabs defaultValue="comments">
         <TabsList>
           <TabsTrigger value="comments">{t("moderation.comments")}</TabsTrigger>
@@ -86,7 +127,10 @@ function ModerationHistory({ item }: { item: Comment | GuestbookEntry }) {
   const { t } = useI18n();
   return (
     <div className="text-xs text-muted-foreground space-y-1">
-      <div className="flex items-center gap-1"><History className="h-3 w-3" /> {t("moderation.currentStatus")} <StatusBadge status={item.status} /></div>
+      <div className="flex items-center gap-1"><History className="h-3 w-3" /> {t("moderation.currentStatus")} <StatusBadge status={normalizeModerationStatus(item.status)} /></div>
+      <div>{t("moderation.source")} {getModerationSource(item)}</div>
+      <div>{t("moderation.path")} {getModerationPath(item)}</div>
+      <div>{t("common.author")} {getModerationAuthor(item)}</div>
       <div>{t("moderation.created")} {formatDate(item.created_at)}</div>
       <div>{t("moderation.updated")} {formatDate(item.updated_at)}</div>
     </div>
@@ -125,10 +169,11 @@ function CommentsTab() {
       <div className="border rounded-lg">
         <DataTable<Comment>
           columns={[
-            { header: t("common.author"), accessor: "author_name" },
-            { header: t("common.body"), accessor: (row) => <span className="line-clamp-2 max-w-md">{row.body}</span> },
-            { header: t("common.type"), accessor: "content_type" },
-            { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
+            { header: t("common.author"), accessor: (row) => getModerationAuthor(row) },
+            { header: t("moderation.source"), accessor: (row) => getModerationSource(row) },
+            { header: t("moderation.path"), accessor: (row) => getModerationPath(row) },
+            { header: t("common.body"), accessor: (row) => <span className="line-clamp-2 max-w-md">{getModerationBody(row)}</span> },
+            { header: t("common.status"), accessor: (row) => <StatusBadge status={normalizeModerationStatus(row.status)} /> },
             { header: t("common.date"), accessor: (row) => formatDate(row.created_at) },
             {
               header: t("common.actions"),
@@ -194,10 +239,12 @@ function GuestbookTab() {
       <div className="border rounded-lg">
         <DataTable<GuestbookEntry>
           columns={[
-            { header: t("common.name"), accessor: "name" },
-            { header: t("common.body"), accessor: (row) => <span className="line-clamp-2 max-w-md">{row.body}</span> },
+            { header: t("common.name"), accessor: (row) => getModerationAuthor(row) },
+            { header: t("moderation.source"), accessor: (row) => getModerationSource(row) },
+            { header: t("moderation.path"), accessor: (row) => getModerationPath(row) },
+            { header: t("common.body"), accessor: (row) => <span className="line-clamp-2 max-w-md">{getModerationBody(row)}</span> },
             { header: t("common.website"), accessor: (row) => row.website || "-" },
-            { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
+            { header: t("common.status"), accessor: (row) => <StatusBadge status={normalizeModerationStatus(row.status)} /> },
             { header: t("common.date"), accessor: (row) => formatDate(row.created_at) },
             {
               header: t("common.actions"),

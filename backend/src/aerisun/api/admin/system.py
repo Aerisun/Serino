@@ -16,14 +16,13 @@ from aerisun.models import (
     Asset,
     AuditLog,
     BackupSnapshot,
-    Comment,
     DiaryEntry,
     ExcerptEntry,
     Friend,
-    GuestbookEntry,
     PostEntry,
     ThoughtEntry,
 )
+from aerisun.waline import count_waline_records
 
 from .deps import get_current_admin
 from .schemas import (
@@ -197,8 +196,8 @@ def dashboard_stats(
         diary_entries=session.query(func.count(DiaryEntry.id)).scalar() or 0,
         thoughts=session.query(func.count(ThoughtEntry.id)).scalar() or 0,
         excerpts=session.query(func.count(ExcerptEntry.id)).scalar() or 0,
-        comments=session.query(func.count(Comment.id)).scalar() or 0,
-        guestbook_entries=session.query(func.count(GuestbookEntry.id)).scalar() or 0,
+        comments=count_waline_records(),
+        guestbook_entries=count_waline_records(guestbook_only=True),
         friends=session.query(func.count(Friend.id)).scalar() or 0,
         assets=session.query(func.count(Asset.id)).scalar() or 0,
     )

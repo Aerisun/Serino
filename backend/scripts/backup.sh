@@ -29,9 +29,11 @@ if [[ -f ".env" ]]; then
 fi
 
 : "${AERISUN_DB_PATH:?AERISUN_DB_PATH is required}"
+: "${AERISUN_WALINE_DB_PATH:=${AERISUN_DATA_DIR:-/srv/aerisun/store}/waline.db}"
 : "${AERISUN_BACKUP_RSYNC_URI:?AERISUN_BACKUP_RSYNC_URI is required}"
 : "${AERISUN_BACKUP_SSH_PORT:=22}"
 : "${AERISUN_STORE_DIR:=/srv/aerisun/store}"
+: "${AERISUN_WALINE_LITESTREAM_REPLICA_URL:?AERISUN_WALINE_LITESTREAM_REPLICA_URL is required}"
 
 if [[ -z "${AERISUN_BACKUP_SSH_KEY:-}" ]]; then
   SSH_KEY_ARGS=()
@@ -47,12 +49,23 @@ MANIFEST_FILE="$(mktemp)"
 cat > "${MANIFEST_FILE}" <<EOF
 timestamp=${MANIFEST_TS}
 db_path=${AERISUN_DB_PATH}
+waline_db_path=${AERISUN_WALINE_DB_PATH}
 replica_url=${AERISUN_LITESTREAM_REPLICA_URL:-}
+waline_replica_url=${AERISUN_WALINE_LITESTREAM_REPLICA_URL:-}
 store_dir=${AERISUN_STORE_DIR}
 compose_project=${ROOT_DIR}
 EOF
 
-compose exec -T api sqlite3 "${AERISUN_DB_PATH}" "PRAGMA wal_checkpoint(FULL);"
+checkpoint_sqlite() {
+  local service="$1"
+  local db_path="$2"
+  compose exec -T "${service}" sh -lc \
+    "if command -v sqlite3 >/dev/null 2>&1 && [ -f '${db_path}' ]; then sqlite3 '${db_path}' 'PRAGMA wal_checkpoint(FULL);'; fi" \
+    || true
+}
+
+checkpoint_sqlite api "${AERISUN_DB_PATH}"
+checkpoint_sqlite waline "${AERISUN_WALINE_DB_PATH}"
 
 ssh -p "${AERISUN_BACKUP_SSH_PORT}" "${SSH_KEY_ARGS[@]}" "${REMOTE_HOST}" \
   "mkdir -p '${REMOTE_PATH}/store' '${REMOTE_PATH}/manifests'"

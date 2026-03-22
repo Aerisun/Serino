@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from aerisun.db import get_session
 from aerisun.models import (
     AdminUser,
+    CommunityConfig,
     NavItem,
     PageCopy,
     PageDisplayOption,
@@ -29,6 +30,8 @@ from .schemas import (
     PageDisplayOptionAdminRead,
     PageDisplayOptionCreate,
     PageDisplayOptionUpdate,
+    CommunityConfigAdminRead,
+    CommunityConfigUpdate,
     PoemAdminRead,
     PoemCreate,
     PoemUpdate,
@@ -69,6 +72,33 @@ def update_profile(
     session.commit()
     session.refresh(profile)
     return SiteProfileAdminRead.model_validate(profile)
+
+
+@router.get("/community-config", response_model=CommunityConfigAdminRead)
+def get_community_config(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    config = session.query(CommunityConfig).first()
+    if config is None:
+        raise HTTPException(status_code=404, detail="Community config not configured")
+    return CommunityConfigAdminRead.model_validate(config)
+
+
+@router.put("/community-config", response_model=CommunityConfigAdminRead)
+def update_community_config(
+    payload: CommunityConfigUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    config = session.query(CommunityConfig).first()
+    if config is None:
+        raise HTTPException(status_code=404, detail="Community config not configured")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(config, key, value)
+    session.commit()
+    session.refresh(config)
+    return CommunityConfigAdminRead.model_validate(config)
 
 
 # --- Sub-resources via CRUD factory ---

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from aerisun.db import get_session_factory, init_db
 from aerisun.settings import get_settings
 from aerisun.models import (
-    Comment,
+    CommunityConfig,
     DiaryEntry,
     ExcerptEntry,
     Friend,
@@ -30,6 +30,7 @@ from aerisun.models import (
     SocialLink,
     ThoughtEntry,
 )
+from aerisun.waline.service import connect_waline_db, make_waline_comment_row
 
 
 DEFAULT_SITE_PROFILE = {
@@ -111,6 +112,42 @@ DEFAULT_NAV_ITEMS = [
     {"label": "日记", "href": "/diary", "page_key": "diary", "trigger": "none", "order_index": 1, "_parent_label": "更多"},
     {"label": "文摘", "href": "/excerpts", "page_key": "excerpts", "trigger": "none", "order_index": 2, "_parent_label": "更多"},
 ]
+
+def build_default_community_config() -> dict[str, object]:
+    settings = get_settings()
+
+    return {
+        "provider": "waline",
+        "server_url": settings.waline_server_url.strip(),
+        "surfaces": [
+            {"key": "posts", "label": "文章评论", "path": "/posts/{slug}", "enabled": True},
+            {"key": "diary", "label": "日记评论", "path": "/diary/{slug}", "enabled": True},
+            {"key": "guestbook", "label": "留言板", "path": "/guestbook", "enabled": True},
+        ],
+        "meta": ["nick", "mail"],
+        "required_meta": ["nick"],
+        "emoji_presets": ["twemoji", "qq", "bilibili"],
+        "enable_enjoy_search": True,
+        "image_uploader": False,
+        "login_mode": "disable",
+        "oauth_url": None,
+        "avatar_strategy": "identicon",
+        "avatar_helper_copy": "匿名评论默认使用 identicon 头像，邮箱可选。",
+        "migration_state": "not_started",
+    }
+
+
+def _seed_community_config(session: Session) -> None:
+    default_config = build_default_community_config()
+    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+
+    if config is None:
+        session.add(CommunityConfig(**default_config))
+        return
+
+    default_server_url = str(default_config["server_url"]).strip()
+    if not (config.server_url or "").strip():
+        config.server_url = default_server_url
 
 DEFAULT_RESUME = {
     "title": "Felix",
@@ -812,59 +849,71 @@ DEFAULT_FRIEND_FEED_ITEMS = [
     },
 ]
 
-DEFAULT_GUESTBOOK_ENTRIES = [
+DEFAULT_WALINE_COMMENTS = [
     {
-        "name": "Elena Torres",
-        "email": "elena@example.com",
-        "website": "https://elena.example.com",
-        "body": "你的博客设计真的太好看了，液态玻璃的质感非常克制。",
+        "key": "waline-post-root",
+        "url": "/posts/from-zero-design-system",
+        "nick": "林小北",
+        "mail": "linxiaobei@example.com",
+        "link": None,
+        "comment": "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。",
         "status": "approved",
-    },
-    {
-        "name": "Kai Nakamura",
-        "email": "kai@example.com",
-        "website": None,
-        "body": "Your work on motion design is inspiring. The easing curves article changed how I think about animation.",
-        "status": "approved",
-    },
-    {
-        "name": "David Okoro",
-        "email": None,
-        "website": None,
-        "body": "偶然发现你的网站，被花瓣飘落的效果吸引了。整体氛围很棒。",
-        "status": "approved",
-    },
-]
-
-DEFAULT_COMMENTS = [
-    {
-        "content_type": "posts",
-        "content_slug": "from-zero-design-system",
-        "author_name": "林小北",
-        "author_email": None,
-        "body": "写得真好，尤其是关于节奏感的那段，让我重新思考了自己的排版方式。",
-        "status": "approved",
-        "key": "comment-1",
+        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
         "parent_key": None,
     },
     {
-        "content_type": "posts",
-        "content_slug": "from-zero-design-system",
-        "author_name": "博主",
-        "author_email": None,
-        "body": "谢谢，排版确实是一个容易被忽略但影响很大的部分。",
+        "key": "waline-post-reply",
+        "url": "/posts/from-zero-design-system",
+        "nick": "Felix",
+        "mail": None,
+        "link": None,
+        "comment": "谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。",
         "status": "approved",
-        "key": "comment-2",
-        "parent_key": "comment-1",
+        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
+        "parent_key": "waline-post-root",
     },
     {
-        "content_type": "diary",
-        "content_slug": "spring-equinox-and-warm-light",
-        "author_name": "设计小白",
-        "author_email": None,
-        "body": "春天真的来了，这段日记读起来很有画面感。",
+        "key": "waline-post-second",
+        "url": "/posts/liquid-glass-css-notes",
+        "nick": "Kai Nakamura",
+        "mail": "kai@example.com",
+        "link": "https://kai.example.com",
+        "comment": "这一篇的性能部分很有用。`backdrop-filter` 一旦铺太大，低端设备确实会立刻吃不消。",
         "status": "approved",
-        "key": "comment-3",
+        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-diary-root",
+        "url": "/diary/spring-equinox-and-warm-light",
+        "nick": "纸鹤",
+        "mail": None,
+        "link": None,
+        "comment": "这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-guestbook-root",
+        "url": "/guestbook",
+        "nick": "Elena Torres",
+        "mail": "elena@example.com",
+        "link": "https://elena.example.com",
+        "comment": "你的博客设计真的很稳，评论区换成现在这套以后，整体气质终于统一起来了。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-guestbook-pending",
+        "url": "/guestbook",
+        "nick": "新访客",
+        "mail": None,
+        "link": None,
+        "comment": "测试一条待审核留言，方便在后台里看见 pending 状态。",
+        "status": "waiting",
+        "created_at": datetime(2026, 3, 21, 10, 30, tzinfo=UTC),
         "parent_key": None,
     },
 ]
@@ -1034,42 +1083,6 @@ def _seed_social_data(session: Session) -> None:
 
 
 def _seed_engagement_data(session: Session) -> None:
-    existing_guestbook = {
-        (item.name, item.body): item
-        for item in session.scalars(select(GuestbookEntry)).all()
-    }
-    missing_guestbook = [
-        item for item in DEFAULT_GUESTBOOK_ENTRIES if (item["name"], item["body"]) not in existing_guestbook
-    ]
-    if missing_guestbook:
-        session.add_all([GuestbookEntry(**item) for item in missing_guestbook])
-
-    existing_comments = {
-        (item.content_type, item.content_slug, item.author_name, item.body): item
-        for item in session.scalars(select(Comment)).all()
-    }
-    created_comments: dict[str, Comment] = {}
-    for item in DEFAULT_COMMENTS:
-        key = (item["content_type"], item["content_slug"], item["author_name"], item["body"])
-        existing = existing_comments.get(key)
-        if existing is not None:
-            created_comments[item["key"]] = existing
-            continue
-
-        comment = Comment(
-            content_type=item["content_type"],
-            content_slug=item["content_slug"],
-            parent_id=created_comments[item["parent_key"]].id if item["parent_key"] else None,
-            author_name=item["author_name"],
-            author_email=item["author_email"],
-            body=item["body"],
-            status=item["status"],
-        )
-        session.add(comment)
-        session.flush()
-        created_comments[item["key"]] = comment
-        existing_comments[key] = comment
-
     existing_reactions = {
         (item.content_type, item.content_slug, item.reaction_type, item.client_token)
         for item in session.scalars(select(Reaction)).all()
@@ -1083,6 +1096,58 @@ def _seed_engagement_data(session: Session) -> None:
     if missing_reactions:
         session.add_all([Reaction(**item) for item in missing_reactions])
 
+
+def _insert_waline_seed_comment(connection, item: dict[str, object], inserted_ids: dict[str, int]) -> int:  # type: ignore[no-untyped-def]
+    parent_key = item.get("parent_key")
+    parent_id = inserted_ids.get(str(parent_key)) if parent_key else None
+    root_id = parent_id
+    if parent_id is not None:
+        root_row = connection.execute("SELECT rid FROM wl_comment WHERE id = ?", (parent_id,)).fetchone()
+        root_id = int(root_row["rid"]) if root_row and root_row["rid"] is not None else parent_id
+
+    row = make_waline_comment_row(
+        comment=str(item["comment"]),
+        nick=str(item["nick"]),
+        mail=str(item["mail"]) if item.get("mail") is not None else None,
+        link=str(item["link"]) if item.get("link") is not None else None,
+        status=str(item["status"]),
+        url=str(item["url"]),
+        parent_id=parent_id,
+        root_id=root_id,
+        created_at=item["created_at"],  # type: ignore[arg-type]
+        updated_at=item["created_at"],  # type: ignore[arg-type]
+        inserted_at=item["created_at"],  # type: ignore[arg-type]
+    )
+    cursor = connection.execute(
+        """
+        INSERT INTO wl_comment (
+            user_id, comment, insertedAt, ip, link, mail, nick, pid, rid,
+            sticky, status, "like", ua, url, createdAt, updatedAt
+        ) VALUES (
+            :user_id, :comment, :insertedAt, :ip, :link, :mail, :nick, :pid, :rid,
+            :sticky, :status, :like, :ua, :url, :createdAt, :updatedAt
+        )
+        """,
+        row,
+    )
+    comment_id = int(cursor.lastrowid)
+    if parent_id is None:
+        connection.execute("UPDATE wl_comment SET rid = ? WHERE id = ?", (comment_id, comment_id))
+    inserted_ids[str(item["key"])] = comment_id
+    return comment_id
+
+
+def _seed_waline_comment_data() -> None:
+    with connect_waline_db() as connection:
+        existing = connection.execute("SELECT COUNT(*) FROM wl_comment").fetchone()
+        if existing and int(existing[0]) > 0:
+            return
+
+        inserted_ids: dict[str, int] = {}
+        for item in DEFAULT_WALINE_COMMENTS:
+            _insert_waline_seed_comment(connection, item, inserted_ids)
+
+        connection.commit()
 
 def seed_reference_data() -> None:
     get_settings().ensure_directories()
@@ -1147,6 +1212,8 @@ def seed_reference_data() -> None:
                         )
                         session.add(nav)
 
+        _seed_community_config(session)
+
         _seed_content_entries(session, PostEntry, DEFAULT_POSTS)
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
         _seed_content_entries(session, ThoughtEntry, DEFAULT_THOUGHTS)
@@ -1156,6 +1223,8 @@ def seed_reference_data() -> None:
         session.commit()
     finally:
         session.close()
+
+    _seed_waline_comment_data()
 
 
 def main() -> None:

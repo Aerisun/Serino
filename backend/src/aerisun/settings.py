@@ -40,9 +40,15 @@ class Settings(BaseSettings):
     media_dir: Path = PROJECT_ROOT / ".store" / "media"
     secrets_dir: Path = PROJECT_ROOT / ".store" / "secrets"
     db_path: Path = PROJECT_ROOT / ".store" / "aerisun.db"
+    waline_db_path: Path = PROJECT_ROOT / ".store" / "waline.db"
+    site_url: str = "http://localhost:5173"
+    waline_server_url: str = "http://localhost:8360"
     litestream_config_path: Path = BACKEND_ROOT / "litestream.yml"
     litestream_replica_url: str = Field(
         default="sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db"
+    )
+    waline_litestream_replica_url: str = Field(
+        default="sftp://backup-user@backup-host:22/backup/aerisun/waline.db"
     )
     backup_rsync_uri: str = Field(
         default="backup-user@backup-host:/backup/aerisun"
@@ -63,6 +69,7 @@ class Settings(BaseSettings):
         self.media_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
+        self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
 
 
 @lru_cache(maxsize=1)
