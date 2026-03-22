@@ -34,6 +34,8 @@ export default function PostEditPage() {
     status: "draft",
     visibility: "public",
     published_at: null,
+    category: "",
+    view_count: 0,
   });
 
   useEffect(() => {
@@ -47,6 +49,8 @@ export default function PostEditPage() {
         status: post.status,
         visibility: post.visibility,
         published_at: post.published_at,
+        category: (post as any).category || "",
+        view_count: (post as any).view_count || 0,
       });
     }
   }, [post]);
@@ -126,6 +130,17 @@ export default function PostEditPage() {
             value={form.tags?.join(", ") || ""}
             onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))}
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>分类</Label>
+            <Input value={form.category || ""} onChange={(e) => setField("category", e.target.value)} placeholder="文章分类" />
+          </div>
+          <div className="space-y-2">
+            <Label>浏览量</Label>
+            <Input type="number" value={form.view_count || 0} onChange={(e) => setField("view_count", parseInt(e.target.value) || 0)} />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">

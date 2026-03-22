@@ -22,6 +22,30 @@ class SiteProfile(Base, TimestampMixin):
     meta_description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     copyright: Mapped[str] = mapped_column(String(200), nullable=False, default="All rights reserved")
     hero_actions: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    hero_video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
+class NavItem(Base, TimestampMixin):
+    __tablename__ = "nav_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    site_profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("site_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    parent_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("nav_items.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    href: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    icon_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    page_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    trigger: Mapped[str] = mapped_column(String(40), nullable=False, default="none")
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class SocialLink(Base, TimestampMixin):

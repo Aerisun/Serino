@@ -44,6 +44,14 @@ class ContentCreate(BaseModel):
     status: str = "draft"
     visibility: str = "public"
     published_at: datetime | None = None
+    # Content-type specific fields
+    category: str | None = None
+    mood: str | None = None
+    weather: str | None = None
+    poem: str | None = None
+    author_name: str | None = None
+    source: str | None = None
+    view_count: int = 0
 
 
 class ContentUpdate(BaseModel):
@@ -55,6 +63,13 @@ class ContentUpdate(BaseModel):
     status: str | None = None
     visibility: str | None = None
     published_at: datetime | None = None
+    category: str | None = None
+    mood: str | None = None
+    weather: str | None = None
+    poem: str | None = None
+    author_name: str | None = None
+    source: str | None = None
+    view_count: int | None = None
 
 
 class ContentAdminRead(ModelBase):
@@ -69,6 +84,13 @@ class ContentAdminRead(ModelBase):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    category: str | None = None
+    mood: str | None = None
+    weather: str | None = None
+    poem: str | None = None
+    author_name: str | None = None
+    source: str | None = None
+    view_count: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +108,7 @@ class SiteProfileCreate(BaseModel):
     meta_description: str = ""
     copyright: str = "All rights reserved"
     hero_actions: str = "[]"
+    hero_video_url: str | None = None
 
 
 class SiteProfileUpdate(BaseModel):
@@ -99,6 +122,7 @@ class SiteProfileUpdate(BaseModel):
     meta_description: str | None = None
     copyright: str | None = None
     hero_actions: str | None = None
+    hero_video_url: str | None = None
 
 
 class SiteProfileAdminRead(ModelBase):
@@ -113,6 +137,7 @@ class SiteProfileAdminRead(ModelBase):
     meta_description: str
     copyright: str
     hero_actions: str
+    hero_video_url: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -435,6 +460,54 @@ class FriendFeedSourceAdminRead(ModelBase):
     is_enabled: bool
     created_at: datetime
     updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# NavItem
+# ---------------------------------------------------------------------------
+
+class NavItemCreate(BaseModel):
+    site_profile_id: str
+    parent_id: str | None = None
+    label: str
+    href: str | None = None
+    icon_key: str | None = None
+    page_key: str | None = None
+    trigger: str = "none"
+    order_index: int = 0
+    is_enabled: bool = True
+
+
+class NavItemUpdate(BaseModel):
+    parent_id: str | None = None
+    label: str | None = None
+    href: str | None = None
+    icon_key: str | None = None
+    page_key: str | None = None
+    trigger: str | None = None
+    order_index: int | None = None
+    is_enabled: bool | None = None
+
+
+class NavItemAdminRead(ModelBase):
+    id: str
+    site_profile_id: str
+    parent_id: str | None
+    label: str
+    href: str | None
+    icon_key: str | None
+    page_key: str | None
+    trigger: str
+    order_index: int
+    is_enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class NavReorderItem(BaseModel):
+    id: str
+    parent_id: str | None = None
+    order_index: int
 
 
 # ---------------------------------------------------------------------------

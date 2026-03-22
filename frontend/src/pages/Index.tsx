@@ -5,12 +5,10 @@ import PageMeta from "@/components/PageMeta";
 import { useTheme } from "@/contexts/useTheme";
 import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 
-const VIDEO_URL =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4";
-
 const Index = () => {
   const { resolvedTheme } = useTheme();
   const site = useSiteConfig();
+  const videoUrl = site.heroVideoUrl;
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
   const heroOverlayClass = resolvedTheme === "dark" ? "bg-black/12" : "bg-black/18";
 
@@ -23,6 +21,7 @@ const Index = () => {
       <Navbar glassVariant="hero" />
       <div className="relative min-h-screen flex flex-col overflow-hidden">
         {/* Background Video */}
+        {videoUrl && (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
           autoPlay
@@ -32,8 +31,9 @@ const Index = () => {
           preload="auto"
           poster="/images/hero_bg.jpeg"
         >
-          <source src={VIDEO_URL} type="video/mp4" />
+          <source src={videoUrl} type="video/mp4" />
         </video>
+        )}
 
         {/* Overlay */}
         <div className={`absolute inset-0 z-0 ${heroOverlayClass}`} />

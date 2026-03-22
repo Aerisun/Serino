@@ -14,6 +14,7 @@ from aerisun.core.base import Base, ContentMixin, TimestampMixin, utcnow, uuid_s
 
 from aerisun.domain.site_config.models import (  # noqa: F401
     CommunityConfig,
+    NavItem,
     PageCopy,
     PageDisplayOption,
     Poem,

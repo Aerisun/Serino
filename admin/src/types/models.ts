@@ -40,6 +40,13 @@ export interface ContentCreate {
   status?: string;
   visibility?: string;
   published_at?: string | null;
+  category?: string | null;
+  view_count?: number | null;
+  mood?: string | null;
+  weather?: string | null;
+  poem?: string | null;
+  author_name?: string | null;
+  source?: string | null;
 }
 
 export interface ContentUpdate {
@@ -51,6 +58,13 @@ export interface ContentUpdate {
   status?: string;
   visibility?: string;
   published_at?: string | null;
+  category?: string | null;
+  view_count?: number | null;
+  mood?: string | null;
+  weather?: string | null;
+  poem?: string | null;
+  author_name?: string | null;
+  source?: string | null;
 }
 
 // ---- Site Profile ----
@@ -61,6 +75,7 @@ export interface SiteProfile {
   bio: string;
   role: string;
   footer_text: string;
+  hero_video_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +86,7 @@ export interface SiteProfileUpdate {
   bio?: string;
   role?: string;
   footer_text?: string;
+  hero_video_url?: string | null;
 }
 
 // ---- Social Link ----
@@ -190,6 +206,20 @@ export interface PageDisplayOptionUpdate {
   settings?: Record<string, any>;
 }
 
+// ---- NavItem ----
+export interface NavItem {
+  id: string;
+  label: string;
+  href: string;
+  trigger: string | null;
+  page_key: string | null;
+  parent_id: string | null;
+  order_index: number;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Community / Comments ----
 export interface CommunitySurfaceConfig {
   key: string;
@@ -215,6 +245,26 @@ export interface CommunityConfig {
   avatar_helper_copy: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface NavItemCreate {
+  label: string;
+  href: string;
+  trigger?: string | null;
+  page_key?: string | null;
+  parent_id?: string | null;
+  order_index?: number;
+  is_enabled?: boolean;
+}
+
+export interface NavItemUpdate {
+  label?: string;
+  href?: string;
+  trigger?: string | null;
+  page_key?: string | null;
+  parent_id?: string | null;
+  order_index?: number;
+  is_enabled?: boolean;
 }
 
 export interface CommunityConfigUpdate {

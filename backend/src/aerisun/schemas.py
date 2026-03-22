@@ -15,6 +15,8 @@ from aerisun.core.schemas import HealthRead, ModelBase  # noqa: F401
 from aerisun.domain.site_config.schemas import (  # noqa: F401
     CommunityConfigRead,
     CommunitySurfaceRead,
+    NavChildRead,
+    NavItemRead,
     PageCollectionRead,
     PageCopyRead,
     PoemRead,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pydantic import Field
+
 from aerisun.core.schemas import ModelBase
 
 
@@ -27,12 +29,26 @@ class SiteProfileRead(ModelBase):
     meta_description: str
     copyright: str
     hero_actions: list[dict[str, object]]
+    hero_video_url: str | None = None
+
+
+class NavChildRead(ModelBase):
+    label: str
+    href: str
+
+
+class NavItemRead(ModelBase):
+    label: str
+    trigger: str
+    href: str | None = None
+    children: list[NavChildRead] = Field(default_factory=list)
 
 
 class SiteConfigRead(ModelBase):
     site: SiteProfileRead
     social_links: list[SocialLinkRead]
     poems: list[PoemRead]
+    navigation: list[NavItemRead] = Field(default_factory=list)
 
 
 class PageCopyRead(ModelBase):
