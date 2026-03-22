@@ -5,8 +5,10 @@ import { ArrowLeft, Clock, Eye, MessageCircle, Tag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
+import BackToTop from "@/components/BackToTop";
 import CommentSection from "@/components/CommentSection";
 import PageMeta from "@/components/PageMeta";
+import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 import { ApiError, fetchPublicContentEntry, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
 
 interface PostData {
@@ -54,6 +56,7 @@ const buildRemotePost = (entry: PublicContentEntry): PostData => ({
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const site = useSiteConfig();
   const [post, setPost] = useState<PostData | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -103,6 +106,24 @@ const PostDetail = () => {
       controller.abort();
     };
   }, [id, reloadKey]);
+
+  useEffect(() => {
+    if (!post) return;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: post.title,
+      datePublished: post.date,
+      author: { "@type": "Person", name: site.author || site.name || "Aerisun" },
+      description: post.content[0]?.slice(0, 200) ?? "",
+      mainEntityOfPage: { "@type": "WebPage", "@id": window.location.href },
+    };
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(jsonLd);
+    document.head.appendChild(script);
+    return () => { document.head.removeChild(script); };
+  }, [post, site.author, site.name]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -268,6 +289,7 @@ const PostDetail = () => {
         )}
       </main>
 
+      <BackToTop />
       <Footer />
     </div>
   );
