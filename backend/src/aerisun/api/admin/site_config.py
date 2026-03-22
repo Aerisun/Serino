@@ -77,7 +77,11 @@ def update_profile(
     return SiteProfileAdminRead.model_validate(profile)
 
 
-@router.get("/community-config", response_model=CommunityConfigAdminRead, summary="获取社区评论配置")
+@router.get(
+    "/community-config",
+    response_model=CommunityConfigAdminRead,
+    summary="获取社区评论配置",
+)
 def get_community_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
@@ -89,7 +93,11 @@ def get_community_config(
     return CommunityConfigAdminRead.model_validate(config)
 
 
-@router.put("/community-config", response_model=CommunityConfigAdminRead, summary="更新社区评论配置")
+@router.put(
+    "/community-config",
+    response_model=CommunityConfigAdminRead,
+    summary="更新社区评论配置",
+)
 def update_community_config(
     payload: CommunityConfigUpdate,
     _admin: AdminUser = Depends(get_current_admin),
@@ -153,7 +161,11 @@ router.include_router(display_options_router)
 # --- NavItem reorder (must be registered before CRUD router) ---
 
 
-@router.put("/nav-items/reorder", response_model=list[NavItemAdminRead], summary="重排导航项顺序")
+@router.put(
+    "/nav-items/reorder",
+    response_model=list[NavItemAdminRead],
+    summary="重排导航项顺序",
+)
 def reorder_nav_items(
     items: list[NavReorderItem],
     _admin: AdminUser = Depends(get_current_admin),

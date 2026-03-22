@@ -41,7 +41,12 @@ def list_assets(
     }
 
 
-@router.post("/", response_model=AssetAdminRead, status_code=status.HTTP_201_CREATED, summary="上传资源")
+@router.post(
+    "/",
+    response_model=AssetAdminRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="上传资源",
+)
 def upload_asset(
     file: UploadFile,
     _admin: AdminUser = Depends(get_current_admin),
@@ -102,7 +107,9 @@ def get_asset(
     return AssetAdminRead.model_validate(obj)
 
 
-@router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除资源")
+@router.delete(
+    "/{asset_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除资源"
+)
 def delete_asset(
     asset_id: str,
     _admin: AdminUser = Depends(get_current_admin),

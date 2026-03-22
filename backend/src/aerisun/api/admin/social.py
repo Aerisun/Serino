@@ -73,7 +73,8 @@ def trigger_single_feed_crawl(
 
 
 @router.get(
-    "/friends/{friend_id}/feeds", response_model=list[FriendFeedSourceAdminRead],
+    "/friends/{friend_id}/feeds",
+    response_model=list[FriendFeedSourceAdminRead],
     summary="获取友链订阅源",
 )
 def list_friend_feeds(
@@ -118,7 +119,9 @@ def create_friend_feed(
     return FriendFeedSourceAdminRead.model_validate(obj)
 
 
-@router.put("/feeds/{feed_id}", response_model=FriendFeedSourceAdminRead, summary="更新订阅源")
+@router.put(
+    "/feeds/{feed_id}", response_model=FriendFeedSourceAdminRead, summary="更新订阅源"
+)
 def update_friend_feed(
     feed_id: str,
     payload: FriendFeedSourceUpdate,
@@ -136,7 +139,9 @@ def update_friend_feed(
     return FriendFeedSourceAdminRead.model_validate(obj)
 
 
-@router.delete("/feeds/{feed_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除订阅源")
+@router.delete(
+    "/feeds/{feed_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除订阅源"
+)
 def delete_friend_feed(
     feed_id: str,
     _admin: AdminUser = Depends(get_current_admin),

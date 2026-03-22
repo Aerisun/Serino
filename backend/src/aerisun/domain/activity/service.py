@@ -172,7 +172,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     # Batch resolve all titles in one pass
     titles = _batch_resolve_titles(session, title_pairs)
 
-    for item, (content_type, content_slug) in zip(comments, comment_pairs):
+    for item, (content_type, content_slug) in zip(comments, comment_pairs, strict=True):
         items.append(
             RecentActivityItemRead(
                 kind="reply" if item.pid else "comment",

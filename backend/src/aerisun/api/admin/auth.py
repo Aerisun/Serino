@@ -128,7 +128,9 @@ def update_profile(
     return AdminUserRead.model_validate(admin)
 
 
-@router.get("/sessions", response_model=list[AdminSessionRead], summary="获取活跃会话列表")
+@router.get(
+    "/sessions", response_model=list[AdminSessionRead], summary="获取活跃会话列表"
+)
 def list_sessions(
     request: Request,
     admin: AdminUser = Depends(get_current_admin),
@@ -154,7 +156,11 @@ def list_sessions(
     ]
 
 
-@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT, summary="撤销指定会话")
+@router.delete(
+    "/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="撤销指定会话",
+)
 def revoke_session(
     session_id: str,
     admin: AdminUser = Depends(get_current_admin),

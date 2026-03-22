@@ -51,7 +51,9 @@ _STARTUP_TIME = time.time()
 # ---------------------------------------------------------------------------
 
 
-@router.get("/api-keys", response_model=list[ApiKeyAdminRead], summary="获取 API 密钥列表")
+@router.get(
+    "/api-keys", response_model=list[ApiKeyAdminRead], summary="获取 API 密钥列表"
+)
 def list_api_keys(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
@@ -92,7 +94,9 @@ def create_api_key(
     )
 
 
-@router.put("/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥")
+@router.put(
+    "/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥"
+)
 def update_api_key(
     key_id: str,
     payload: ApiKeyUpdate,
@@ -110,7 +114,11 @@ def update_api_key(
     return ApiKeyAdminRead.model_validate(key)
 
 
-@router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除 API 密钥")
+@router.delete(
+    "/api-keys/{key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除 API 密钥",
+)
 def delete_api_key(
     key_id: str,
     _admin: AdminUser = Depends(get_current_admin),
@@ -183,7 +191,9 @@ def list_backups(
 
 
 @router.post(
-    "/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED,
+    "/backups",
+    response_model=BackupSnapshotRead,
+    status_code=status.HTTP_201_CREATED,
     summary="创建备份快照",
 )
 def trigger_backup(
@@ -206,7 +216,11 @@ def trigger_backup(
     return BackupSnapshotRead.model_validate(snapshot)
 
 
-@router.post("/backups/{snapshot_id}/restore", response_model=BackupSnapshotRead, summary="从备份恢复")
+@router.post(
+    "/backups/{snapshot_id}/restore",
+    response_model=BackupSnapshotRead,
+    summary="从备份恢复",
+)
 def restore_backup(
     snapshot_id: str,
     _admin: AdminUser = Depends(get_current_admin),
@@ -228,7 +242,9 @@ def restore_backup(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/dashboard/stats", response_model=EnhancedDashboardStats, summary="获取仪表盘统计")
+@router.get(
+    "/dashboard/stats", response_model=EnhancedDashboardStats, summary="获取仪表盘统计"
+)
 def dashboard_stats(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),

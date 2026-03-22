@@ -84,7 +84,11 @@ def list_comments(
     }
 
 
-@router.post("/comments/{comment_id}/moderate", response_model=CommentAdminRead, summary="审核评论")
+@router.post(
+    "/comments/{comment_id}/moderate",
+    response_model=CommentAdminRead,
+    summary="审核评论",
+)
 def moderate_comment(
     comment_id: str,
     payload: ModerateAction,
@@ -160,7 +164,11 @@ def list_guestbook(
     }
 
 
-@router.post("/guestbook/{entry_id}/moderate", response_model=GuestbookAdminRead, summary="审核留言")
+@router.post(
+    "/guestbook/{entry_id}/moderate",
+    response_model=GuestbookAdminRead,
+    summary="审核留言",
+)
 def moderate_guestbook(
     entry_id: str,
     payload: ModerateAction,

@@ -95,7 +95,12 @@ def build_crud_router(
             "page_size": page_size,
         }
 
-    @router.post("/", response_model=read_schema, status_code=status.HTTP_201_CREATED, summary=f"创建{tag}")
+    @router.post(
+        "/",
+        response_model=read_schema,
+        status_code=status.HTTP_201_CREATED,
+        summary=f"创建{tag}",
+    )
     def create_item(
         payload: create_schema,  # type: ignore[valid-type]
         _admin: AdminUser = Depends(get_current_admin),
@@ -137,7 +142,9 @@ def build_crud_router(
         session.refresh(obj)
         return read_schema.model_validate(obj)
 
-    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}")
+    @router.delete(
+        "/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}"
+    )
     def delete_item(
         item_id: str,
         _admin: AdminUser = Depends(get_current_admin),
@@ -152,7 +159,9 @@ def build_crud_router(
 
     # --- Bulk operations ---
 
-    @router.post("/bulk-delete", response_model=BulkActionResponse, summary=f"批量删除{tag}")
+    @router.post(
+        "/bulk-delete", response_model=BulkActionResponse, summary=f"批量删除{tag}"
+    )
     def bulk_delete(
         payload: BulkDeleteRequest,
         _admin: AdminUser = Depends(get_current_admin),
@@ -167,7 +176,9 @@ def build_crud_router(
         session.commit()
         return {"affected": affected}
 
-    @router.post("/bulk-status", response_model=BulkActionResponse, summary=f"批量更新{tag}状态")
+    @router.post(
+        "/bulk-status", response_model=BulkActionResponse, summary=f"批量更新{tag}状态"
+    )
     def bulk_status(
         payload: BulkStatusRequest,
         _admin: AdminUser = Depends(get_current_admin),

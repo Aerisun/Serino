@@ -75,7 +75,9 @@ def read_page_copy(session: Session = Depends(get_session)) -> PageCollectionRea
     return get_page_copy(session)
 
 
-@router.get("/community-config", response_model=CommunityConfigRead, summary="获取社区评论配置")
+@router.get(
+    "/community-config", response_model=CommunityConfigRead, summary="获取社区评论配置"
+)
 def read_community_config(
     session: Session = Depends(get_session),
 ) -> CommunityConfigRead:
@@ -89,7 +91,9 @@ def read_resume(session: Session = Depends(get_session)) -> ResumeRead:
     return get_resume(session)
 
 
-@router.get("/posts", response_model=ContentCollectionRead, summary="获取已发布文章列表")
+@router.get(
+    "/posts", response_model=ContentCollectionRead, summary="获取已发布文章列表"
+)
 def read_posts(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -158,7 +162,9 @@ def read_friends(
     return list_public_friends(session, limit=limit)
 
 
-@router.get("/friend-feed", response_model=FriendFeedCollectionRead, summary="获取友链动态")
+@router.get(
+    "/friend-feed", response_model=FriendFeedCollectionRead, summary="获取友链动态"
+)
 def read_friend_feed(
     limit: int = Query(default=20, ge=1, le=200),
     session: Session = Depends(get_session),
@@ -185,7 +191,11 @@ def create_guestbook(
     return create_public_guestbook_entry(session, payload)
 
 
-@router.get("/comments/{content_type}/{slug}", response_model=CommentCollectionRead, summary="获取内容评论")
+@router.get(
+    "/comments/{content_type}/{slug}",
+    response_model=CommentCollectionRead,
+    summary="获取内容评论",
+)
 def read_comments(
     content_type: str,
     slug: str,
@@ -198,7 +208,11 @@ def read_comments(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.post("/comments/{content_type}/{slug}", response_model=CommentCreateResponse, summary="发表评论")
+@router.post(
+    "/comments/{content_type}/{slug}",
+    response_model=CommentCreateResponse,
+    summary="发表评论",
+)
 def create_comment(
     content_type: str,
     slug: str,
@@ -225,7 +239,9 @@ def create_reaction(
 
 
 @router.get(
-    "/reactions/{content_type}/{slug}/{reaction_type}", response_model=ReactionRead, summary="查询反应计数"
+    "/reactions/{content_type}/{slug}/{reaction_type}",
+    response_model=ReactionRead,
+    summary="查询反应计数",
 )
 def read_reaction(
     content_type: str,
@@ -257,7 +273,9 @@ def read_calendar(
     return list_calendar_events(session, start, end)
 
 
-@router.get("/recent-activity", response_model=RecentActivityRead, summary="获取最近动态")
+@router.get(
+    "/recent-activity", response_model=RecentActivityRead, summary="获取最近动态"
+)
 def read_recent_activity(
     limit: int = Query(default=8, ge=1, le=30),
     session: Session = Depends(get_session),
@@ -266,7 +284,9 @@ def read_recent_activity(
     return list_recent_activity(session, limit=limit)
 
 
-@router.get("/activity-heatmap", response_model=ActivityHeatmapRead, summary="获取活动热力图")
+@router.get(
+    "/activity-heatmap", response_model=ActivityHeatmapRead, summary="获取活动热力图"
+)
 def read_activity_heatmap(
     weeks: int = Query(default=52, ge=1, le=104),
     session: Session = Depends(get_session),
