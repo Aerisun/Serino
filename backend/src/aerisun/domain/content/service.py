@@ -149,15 +149,20 @@ def _list_entries(
     model: type[ContentModel],
     content_type: str,
     limit: int,
+    offset: int = 0,
 ) -> ContentCollectionRead:
-    rows = session.scalars(_public_query(model).limit(limit)).all()
+    base_query = _public_query(model)
+    total = session.scalar(select(func.count()).select_from(base_query.subquery())) or 0
+    rows = session.scalars(base_query.offset(offset).limit(limit)).all()
     slugs = [row.slug for row in rows]
     comment_counts = _comment_counts_by_slug(session, content_type, slugs)
     like_counts = _like_counts_by_slug(session, content_type, slugs)
     return ContentCollectionRead(
         items=[
             _to_entry(row, content_type, comment_counts, like_counts) for row in rows
-        ]
+        ],
+        total=total,
+        has_more=offset + limit < total,
     )
 
 
@@ -174,8 +179,10 @@ def _get_by_slug(
     return _to_entry(item, content_type, comment_counts, like_counts)
 
 
-def list_public_posts(session: Session, limit: int = 20) -> ContentCollectionRead:
-    return _list_entries(session, PostEntry, "posts", limit)
+def list_public_posts(
+    session: Session, limit: int = 20, offset: int = 0
+) -> ContentCollectionRead:
+    return _list_entries(session, PostEntry, "posts", limit, offset)
 
 
 def get_public_post(session: Session, slug: str) -> ContentEntryRead:
@@ -183,18 +190,22 @@ def get_public_post(session: Session, slug: str) -> ContentEntryRead:
 
 
 def list_public_diary_entries(
-    session: Session, limit: int = 20
+    session: Session, limit: int = 20, offset: int = 0
 ) -> ContentCollectionRead:
-    return _list_entries(session, DiaryEntry, "diary", limit)
+    return _list_entries(session, DiaryEntry, "diary", limit, offset)
 
 
 def get_public_diary_entry(session: Session, slug: str) -> ContentEntryRead:
     return _get_by_slug(session, DiaryEntry, "diary", slug)
 
 
-def list_public_thoughts(session: Session, limit: int = 40) -> ContentCollectionRead:
-    return _list_entries(session, ThoughtEntry, "thoughts", limit)
+def list_public_thoughts(
+    session: Session, limit: int = 40, offset: int = 0
+) -> ContentCollectionRead:
+    return _list_entries(session, ThoughtEntry, "thoughts", limit, offset)
 
 
-def list_public_excerpts(session: Session, limit: int = 40) -> ContentCollectionRead:
-    return _list_entries(session, ExcerptEntry, "excerpts", limit)
+def list_public_excerpts(
+    session: Session, limit: int = 40, offset: int = 0
+) -> ContentCollectionRead:
+    return _list_entries(session, ExcerptEntry, "excerpts", limit, offset)
