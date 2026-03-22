@@ -23,6 +23,7 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
     monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
+    monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
 
     from aerisun.core.db import get_engine, get_session_factory
     from aerisun.core.rate_limit import limiter
@@ -80,3 +81,63 @@ def admin_headers(client) -> dict[str, str]:
             existing.expires_at = datetime.now(UTC) + timedelta(hours=24)
         session.commit()
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
+def seeded_session(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    store_dir = tmp_path / "store"
+    data_dir = store_dir
+    media_dir = store_dir / "media"
+    secrets_dir = store_dir / "secrets"
+    db_path = store_dir / "aerisun.db"
+    waline_db_path = store_dir / "waline.db"
+
+    monkeypatch.setenv("AERISUN_STORE_DIR", str(store_dir))
+    monkeypatch.setenv("AERISUN_DATA_DIR", str(data_dir))
+    monkeypatch.setenv("AERISUN_MEDIA_DIR", str(media_dir))
+    monkeypatch.setenv("AERISUN_SECRETS_DIR", str(secrets_dir))
+    monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
+    monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
+    monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
+    monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
+
+    from aerisun.core.db import get_engine, get_session_factory
+    from aerisun.core.rate_limit import limiter
+    from aerisun.core.seed import seed_reference_data
+    from aerisun.core.settings import get_settings
+
+    limiter.enabled = False
+
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+    get_session_factory.cache_clear()
+
+    seed_reference_data()
+
+    factory = get_session_factory()
+    with factory() as session:
+        yield session
+
+    engine = get_engine()
+    engine.dispose()
+    get_session_factory.cache_clear()
+    get_engine.cache_clear()
+    get_settings.cache_clear()
+
+
+@pytest.fixture()
+def admin_user(seeded_session):
+    import bcrypt
+
+    from aerisun.domain.iam.models import AdminUser
+
+    user = seeded_session.query(AdminUser).filter(AdminUser.username == "route-admin").first()
+    if user is None:
+        user = AdminUser(
+            username="route-admin",
+            password_hash=bcrypt.hashpw(b"route-password", bcrypt.gensalt()).decode(),
+        )
+        seeded_session.add(user)
+        seeded_session.commit()
+        seeded_session.refresh(user)
+    return user
