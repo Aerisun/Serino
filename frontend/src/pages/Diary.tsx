@@ -83,7 +83,7 @@ const Diary = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const PAGE_SIZE = 20;
+  const pageSize = config.pageSize ?? 20;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,7 +93,7 @@ const Diary = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("diary", PAGE_SIZE, undefined, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("diary", pageSize, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
@@ -116,13 +116,13 @@ const Diary = () => {
     return () => {
       controller.abort();
     };
-  }, [reloadKey]);
+  }, [pageSize, reloadKey]);
 
   const loadMore = async () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("diary", PAGE_SIZE, items.length);
+      const payload = await fetchPublicContentCollection("diary", pageSize, items.length);
       const moreItems = payload.items.map(mapRemoteDiaryEntry);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

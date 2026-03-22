@@ -52,7 +52,7 @@ const Thoughts = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const PAGE_SIZE = 30;
+  const pageSize = config.pageSize ?? 30;
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ const Thoughts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("thoughts", PAGE_SIZE, undefined, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("thoughts", pageSize, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
@@ -87,7 +87,7 @@ const Thoughts = () => {
     return () => {
       controller.abort();
     };
-  }, [reloadKey]);
+  }, [pageSize, reloadKey]);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -106,7 +106,7 @@ const Thoughts = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("thoughts", PAGE_SIZE, items.length);
+      const payload = await fetchPublicContentCollection("thoughts", pageSize, items.length);
       const moreItems = payload.items.map(mapRemoteThought);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

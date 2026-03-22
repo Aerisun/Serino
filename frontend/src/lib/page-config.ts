@@ -10,6 +10,7 @@ export interface BaseViewPageConfig {
   metaTitle?: string;
   width?: RuntimePageWidth;
   motion: PageMotionConfig;
+  pageSize?: number;
   emptyMessage?: string;
   loadingLabel?: string;
   retryLabel?: string;

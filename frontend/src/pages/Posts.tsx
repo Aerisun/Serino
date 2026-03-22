@@ -52,7 +52,7 @@ const Posts = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const PAGE_SIZE = 20;
+  const pageSize = config.pageSize ?? 20;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,7 +63,7 @@ const Posts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("posts", PAGE_SIZE, undefined, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("posts", pageSize, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
@@ -86,7 +86,7 @@ const Posts = () => {
     return () => {
       controller.abort();
     };
-  }, [reloadKey]);
+  }, [pageSize, reloadKey]);
 
   useEffect(() => {
     return () => {
@@ -98,7 +98,7 @@ const Posts = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("posts", PAGE_SIZE, items.length);
+      const payload = await fetchPublicContentCollection("posts", pageSize, items.length);
       const moreItems = payload.items.map(mapRemotePost);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

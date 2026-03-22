@@ -44,7 +44,7 @@ const Excerpts = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const PAGE_SIZE = 40;
+  const pageSize = config.pageSize ?? 40;
   const [showModalComments, setShowModalComments] = useState(false);
 
   const selected = useMemo(
@@ -65,7 +65,7 @@ const Excerpts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("excerpts", PAGE_SIZE, undefined, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("excerpts", pageSize, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
@@ -88,13 +88,13 @@ const Excerpts = () => {
     return () => {
       controller.abort();
     };
-  }, [reloadKey]);
+  }, [pageSize, reloadKey]);
 
   const loadMore = async () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("excerpts", PAGE_SIZE, items.length);
+      const payload = await fetchPublicContentCollection("excerpts", pageSize, items.length);
       const moreItems = payload.items.map(mapRemoteExcerpt);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);
