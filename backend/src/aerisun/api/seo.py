@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from fastapi import APIRouter, Depends, Response
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.content.models import DiaryEntry, PostEntry
 
 router = APIRouter(tags=["seo"])
 

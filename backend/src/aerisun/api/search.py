@@ -5,7 +5,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -36,7 +36,7 @@ def _make_snippet(text: str, query: str, radius: int = SNIPPET_RADIUS) -> str:
     lower_query = query.lower()
     pos = lower_text.find(lower_query)
     if pos == -1:
-        return text[:radius * 2] + ("..." if len(text) > radius * 2 else "")
+        return text[: radius * 2] + ("..." if len(text) > radius * 2 else "")
     start = max(0, pos - radius)
     end = min(len(text), pos + len(query) + radius)
     snippet = text[start:end]

@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 
 from aerisun.api import api_router
 from aerisun.api.admin.audit_middleware import AuditLogMiddleware
+from aerisun.api.seo import router as seo_router
 from aerisun.core.csrf import OriginCheckMiddleware
 from aerisun.core.db import run_database_migrations
 from aerisun.core.logging import RequestIDMiddleware, setup_logging
@@ -112,6 +113,4 @@ app.add_middleware(AuditLogMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router)
-
-from aerisun.api.seo import router as seo_router
 app.include_router(seo_router)

@@ -32,7 +32,7 @@ class SiteProfileRead(ModelBase):
     copyright: str
     hero_actions: list[dict[str, object]]
     hero_video_url: str | None = None
-    feature_flags: dict[str, object] = {}
+    feature_flags: dict[str, object] = Field(default_factory=dict)
 
 
 class NavChildRead(ModelBase):
