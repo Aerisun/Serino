@@ -3,46 +3,6 @@ import { apiClient } from "@/lib/api";
 export type CommunitySurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 export type CommunityCommentSort = "latest" | "oldest" | "hottest";
 
-export interface CommentAvatarPreset {
-  id: string;
-  label: string;
-  src: string;
-  note?: string;
-  accent?: string;
-}
-
-export interface CommentFeaturePill {
-  key: string;
-  label: string;
-  detail?: string;
-  tone?: "default" | "muted" | "accent" | "positive" | "warning";
-}
-
-export interface CommentSurfaceActivity {
-  type:
-    | "sort-change"
-    | "draft-restored"
-    | "draft-saved"
-    | "avatar-change"
-    | "submission-success"
-    | "submission-error"
-    | "status";
-  surface: CommunitySurface;
-  slug: string;
-  message: string;
-  sort?: CommunityCommentSort;
-  avatarId?: string | null;
-  avatarLabel?: string | null;
-  draftLength?: number;
-}
-
-export interface CommentDraftSnapshot {
-  body: string;
-  fields: Record<string, string>;
-  avatarId: string | null;
-  updatedAt: number;
-}
-
 export type WalineSearchImage = {
   src: string;
   title?: string;
@@ -80,10 +40,6 @@ export interface CommunityConfig {
   enjoySearchEndpoint?: string | null;
   enjoySearchDefaultWords?: string[];
   avatarStrategy?: string | null;
-  avatarLibraryEnabled: boolean;
-  avatarLibrary: CommentAvatarPreset[];
-  guestAvatarMode?: string | null;
-  draftEnabled?: boolean;
   helperCopy?: string | null;
   pageSize?: number | null;
   lang?: string | null;
@@ -117,15 +73,6 @@ export interface CommunityConfigResponse {
   enjoy_search_default_words?: string[];
   avatarStrategy?: string | null;
   avatar_strategy?: string | null;
-  avatarLibraryEnabled?: boolean;
-  avatar_library_enabled?: boolean;
-  avatarLibrary?: CommentAvatarPreset[];
-  avatar_library?: CommentAvatarPreset[];
-  anonymousAvatarLibrary?: CommentAvatarPreset[];
-  anonymous_avatar_library?: CommentAvatarPreset[];
-  avatar_presets?: CommentAvatarPreset[];
-  guest_avatar_mode?: string;
-  draft_enabled?: boolean;
   helperCopy?: string | null;
   helper_copy?: string | null;
   avatar_helper_copy?: string | null;
@@ -176,208 +123,14 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   enjoySearchEndpoint: (import.meta.env.VITE_WALINE_ENJOY_SEARCH_URL ?? "").trim() || null,
   enjoySearchDefaultWords: ["enjoy", "yoyo", "hehe"],
   avatarStrategy: null,
-  avatarLibraryEnabled: true,
-  avatarLibrary: [],
   helperCopy: null,
   pageSize: 10,
   lang: "zh-CN",
   darkSelector: "html.dark",
 };
 
-export const DEFAULT_COMMENT_AVATAR_LIBRARY: CommentAvatarPreset[] = [
-  {
-    id: "mist-blue",
-    label: "雾蓝",
-    note: "清冷、安静、适合匿名留言",
-    accent: "#5f8dd3",
-    src:
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none"><rect width="96" height="96" rx="28" fill="#0f172a"/><circle cx="48" cy="48" r="28" fill="#5f8dd3"/><circle cx="36" cy="40" r="6" fill="#eff6ff"/><circle cx="60" cy="40" r="6" fill="#eff6ff"/><path d="M34 58c4.8 5.4 10.3 8.1 14 8.1S57.2 63.4 62 58" stroke="#eff6ff" stroke-width="5" stroke-linecap="round"/></svg>`,
-      ),
-  },
-  {
-    id: "amber-glow",
-    label: "晨橘",
-    note: "更热烈一点的默认头像",
-    accent: "#f59e0b",
-    src:
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none"><rect width="96" height="96" rx="28" fill="#1f1305"/><circle cx="48" cy="48" r="28" fill="#f59e0b"/><path d="M29 62C34 48 39 42 48 42s14 6 19 20" stroke="#fff7ed" stroke-width="5" stroke-linecap="round"/><circle cx="38" cy="38" r="5" fill="#fff7ed"/><circle cx="58" cy="38" r="5" fill="#fff7ed"/></svg>`,
-      ),
-  },
-  {
-    id: "mint-line",
-    label: "薄荷",
-    note: "清爽、干净、偏极简",
-    accent: "#34d399",
-    src:
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none"><rect width="96" height="96" rx="28" fill="#04160f"/><circle cx="48" cy="48" r="28" fill="#34d399"/><path d="M34 56c6-14 8-22 14-22s8 8 14 22" stroke="#f0fdf4" stroke-width="5" stroke-linecap="round"/><circle cx="40" cy="38" r="4" fill="#f0fdf4"/><circle cx="56" cy="38" r="4" fill="#f0fdf4"/></svg>`,
-      ),
-  },
-  {
-    id: "graphite",
-    label: "石墨",
-    note: "更稳重的中性选择",
-    accent: "#64748b",
-    src:
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none"><rect width="96" height="96" rx="28" fill="#111827"/><circle cx="48" cy="48" r="28" fill="#64748b"/><path d="M31 59h34" stroke="#f8fafc" stroke-width="5" stroke-linecap="round"/><path d="M35 37h26" stroke="#f8fafc" stroke-width="5" stroke-linecap="round"/><path d="M38 45h20" stroke="#f8fafc" stroke-width="5" stroke-linecap="round"/></svg>`,
-      ),
-  },
-  {
-    id: "violet-spark",
-    label: "暮紫",
-    note: "更有一点情绪和温度",
-    accent: "#a855f7",
-    src:
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none"><rect width="96" height="96" rx="28" fill="#1e102b"/><circle cx="48" cy="48" r="28" fill="#a855f7"/><path d="M48 28l4 12h12l-10 7 4 12-10-7-10 7 4-12-10-7h12z" fill="#f5f3ff"/></svg>`,
-      ),
-  },
-  {
-    id: "sunset-rose",
-    label: "落霞",
-    note: "带一点柔和的记忆感",
-    accent: "#fb7185",
-    src:
-      "data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none"><rect width="96" height="96" rx="28" fill="#2b0f16"/><circle cx="48" cy="48" r="28" fill="#fb7185"/><circle cx="48" cy="45" r="14" fill="#fff1f2"/><path d="M35 63c5-5 9-7 13-7s8 2 13 7" stroke="#fff1f2" stroke-width="5" stroke-linecap="round"/></svg>`,
-      ),
-  },
-];
-
-DEFAULT_WALINE_COMMUNITY_CONFIG.avatarLibrary = DEFAULT_COMMENT_AVATAR_LIBRARY;
-
-const sortLabelMap: Record<CommunityCommentSort, string> = {
-  latest: "最新优先",
-  oldest: "最早优先",
-  hottest: "最热优先",
-};
-
-const normalizeAvatarLibrary = (payload: unknown): CommentAvatarPreset[] => {
-  if (!Array.isArray(payload)) {
-    return DEFAULT_COMMENT_AVATAR_LIBRARY;
-  }
-
-  const items = payload
-    .map((item, index) => {
-      if (!item || typeof item !== "object") {
-        return null;
-      }
-      const record = item as Record<string, unknown>;
-      const src =
-        typeof record.src === "string"
-          ? record.src.trim()
-          : typeof record.avatar_url === "string"
-            ? record.avatar_url.trim()
-            : "";
-      if (!src) {
-        return null;
-      }
-      const label =
-        typeof record.label === "string" && record.label.trim()
-          ? record.label.trim()
-          : typeof record.name === "string" && record.name.trim()
-            ? record.name.trim()
-            : `头像 ${index + 1}`;
-      return {
-        id:
-          typeof record.id === "string" && record.id.trim()
-            ? record.id.trim()
-            : typeof record.key === "string" && record.key.trim()
-              ? record.key.trim()
-              : `${label}-${index + 1}`,
-        label,
-        src,
-        ...(typeof record.note === "string" ? { note: record.note } : {}),
-        ...(typeof record.accent === "string" ? { accent: record.accent } : {}),
-      } satisfies CommentAvatarPreset;
-    })
-    .filter((item): item is CommentAvatarPreset => item !== null);
-
-  return items.length ? items : DEFAULT_COMMENT_AVATAR_LIBRARY;
-};
-
 const normalizeCommentSorting = (value: unknown): CommunityCommentSort => {
   return value === "oldest" || value === "hottest" ? value : "latest";
-};
-
-const normalizeScopeKey = (surface: CommunitySurface, slug?: string) => `${surface}:${(slug ?? "guestbook").trim() || "guestbook"}`;
-
-export const buildCommentSortLabel = (sort: CommunityCommentSort) => sortLabelMap[sort];
-
-export const buildCommentFeaturePills = (
-  config: CommunityConfig,
-  sort: CommunityCommentSort,
-  avatarLabel?: string | null,
-): CommentFeaturePill[] => {
-  const requiredMeta = config.requiredMeta.length ? config.requiredMeta.join(" / ") : "昵称";
-  const loginLabel =
-    config.loginMode === "force"
-      ? "登录必需"
-      : config.loginMode === "enable"
-        ? "匿名 / 登录"
-        : "匿名优先";
-
-  return [
-    {
-      key: "meta",
-      label: `${requiredMeta}必填`,
-      tone: "positive",
-    },
-    {
-      key: "login",
-      label: loginLabel,
-      tone: config.loginMode === "force" ? "warning" : "default",
-    },
-    {
-      key: "sort",
-      label: buildCommentSortLabel(sort),
-      tone: "accent",
-    },
-    {
-      key: "search",
-      label: config.enableEnjoySearch ? "Enjoy 搜索" : "无 Enjoy 搜索",
-      tone: config.enableEnjoySearch ? "positive" : "muted",
-    },
-    {
-      key: "upload",
-      label: config.imageUploader ? "图片上传" : "图片上传关闭",
-      tone: config.imageUploader ? "default" : "muted",
-    },
-    {
-      key: "avatar",
-      label: avatarLabel ? `匿名头像 · ${avatarLabel}` : config.avatarLibraryEnabled ? "匿名头像库" : "默认头像",
-      tone: avatarLabel ? "accent" : config.avatarLibraryEnabled ? "positive" : "muted",
-    },
-  ];
-};
-
-export const getCommentDraftStorageKey = (surface: CommunitySurface, slug?: string) =>
-  `aerisun:community:${normalizeScopeKey(surface, slug)}:draft`;
-
-export const getCommentSortStorageKey = (surface: CommunitySurface, slug?: string) =>
-  `aerisun:community:${normalizeScopeKey(surface, slug)}:sort`;
-
-export const getCommentAvatarStorageKey = (surface: CommunitySurface, slug?: string) =>
-  `aerisun:community:${normalizeScopeKey(surface, slug)}:avatar`;
-
-export const getCommentFeatureStorageKey = (surface: CommunitySurface, slug?: string) =>
-  `aerisun:community:${normalizeScopeKey(surface, slug)}:feature`;
-
-export const resolveCommentAvatarPreset = (
-  library: CommentAvatarPreset[] | null | undefined,
-  avatarId: string | null | undefined,
-) => {
-  const presets = library?.length ? library : DEFAULT_COMMENT_AVATAR_LIBRARY;
-  return presets.find((item) => item.id === avatarId) ?? presets[0] ?? null;
 };
 
 export const buildWalineSurfacePath = (surface: CommunitySurface, slug?: string) => {
@@ -485,19 +238,6 @@ export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     record.enjoySearchEndpoint ?? record.enjoy_search_endpoint ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enjoySearchEndpoint;
   const enjoySearchDefaultWords =
     record.enjoySearchDefaultWords ?? record.enjoy_search_default_words ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enjoySearchDefaultWords;
-  const guestAvatarMode = record.guest_avatar_mode ?? null;
-  const avatarLibraryEnabled =
-    record.avatarLibraryEnabled
-      ?? record.avatar_library_enabled
-      ?? (guestAvatarMode ? guestAvatarMode === "preset" : DEFAULT_WALINE_COMMUNITY_CONFIG.avatarLibraryEnabled);
-  const avatarLibrary = normalizeAvatarLibrary(
-    record.avatarLibrary
-      ?? record.avatar_library
-      ?? record.anonymousAvatarLibrary
-      ?? record.anonymous_avatar_library
-      ?? record.avatar_presets
-      ?? DEFAULT_WALINE_COMMUNITY_CONFIG.avatarLibrary,
-  );
 
   return {
     provider: "waline",
@@ -515,10 +255,6 @@ export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     enjoySearchEndpoint,
     enjoySearchDefaultWords,
     avatarStrategy: record.avatarStrategy ?? record.avatar_strategy ?? DEFAULT_WALINE_COMMUNITY_CONFIG.avatarStrategy,
-    avatarLibraryEnabled,
-    avatarLibrary,
-    guestAvatarMode,
-    draftEnabled: record.draft_enabled,
     helperCopy:
       record.helperCopy
       ?? record.helper_copy
