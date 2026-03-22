@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import time
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.activity.schemas import (
@@ -76,15 +77,53 @@ def _content_events(session: Session) -> list[tuple[datetime, str, str, str, str
     return items
 
 
-def _resolve_content_title(
-    session: Session, content_type: str, content_slug: str
-) -> str:
-    model = CONTENT_MODELS.get(content_type)
-    if model is None:
-        return content_slug
+def _batch_resolve_titles(
+    session: Session, pairs: list[tuple[str, str]]
+) -> dict[tuple[str, str], str]:
+    """Batch resolve content titles. Returns {(content_type, slug): title}."""
+    if not pairs:
+        return {}
 
-    title = session.scalar(select(model.title).where(model.slug == content_slug))
-    return title or content_slug
+    by_type: dict[str, list[str]] = defaultdict(list)
+    for ct, slug in pairs:
+        by_type[ct].append(slug)
+
+    result: dict[tuple[str, str], str] = {}
+    for ct, slugs in by_type.items():
+        model = CONTENT_MODELS.get(ct)
+        if model is None:
+            for slug in slugs:
+                result[(ct, slug)] = slug
+            continue
+        rows = session.execute(
+            select(model.slug, model.title).where(model.slug.in_(slugs))
+        ).all()
+        found = {slug: title for slug, title in rows}
+        for slug in slugs:
+            result[(ct, slug)] = found.get(slug, slug)
+    return result
+
+
+def _content_daily_counts(session: Session) -> dict[date, int]:
+    """Aggregate content publish counts by date using SQL GROUP BY."""
+    daily: dict[date, int] = defaultdict(int)
+    for model in [PostEntry, DiaryEntry, ExcerptEntry]:
+        rows = session.execute(
+            select(
+                func.date(model.published_at),
+                func.count(model.id),
+            )
+            .where(
+                model.status == "published",
+                model.visibility == "public",
+                model.published_at.is_not(None),
+            )
+            .group_by(func.date(model.published_at))
+        ).all()
+        for date_str, count in rows:
+            if date_str:
+                daily[date.fromisoformat(str(date_str))] += count
+    return daily
 
 
 def list_calendar_events(
@@ -114,17 +153,32 @@ def list_calendar_events(
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
 
+    # Collect all (content_type, slug) pairs for batch title resolution
+    title_pairs: list[tuple[str, str]] = []
+
     comments = list_all_waline_records(status="approved", guestbook_only=False)[:limit]
+    comment_pairs = []
     for item in comments:
-        content_type, content_slug = parse_comment_path(item.url)
+        pair = parse_comment_path(item.url)
+        comment_pairs.append(pair)
+        title_pairs.append(pair)
+
+    reactions = session.scalars(
+        select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)
+    ).all()
+    for item in reactions:
+        title_pairs.append((item.content_type, item.content_slug))
+
+    # Batch resolve all titles in one pass
+    titles = _batch_resolve_titles(session, title_pairs)
+
+    for item, (content_type, content_slug) in zip(comments, comment_pairs):
         items.append(
             RecentActivityItemRead(
                 kind="reply" if item.pid else "comment",
                 actor_name=item.nick or "访客",
                 actor_avatar=_avatar_for_name(item.nick or "访客"),
-                target_title=_resolve_content_title(
-                    session, content_type, content_slug
-                ),
+                target_title=titles.get((content_type, content_slug), content_slug),
                 excerpt=_trim_excerpt(item.comment),
                 created_at=_normalize_timestamp(item.created_at),
                 href=item.url,
@@ -145,9 +199,6 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
             )
         )
 
-    reactions = session.scalars(
-        select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)
-    ).all()
     for item in reactions:
         actor_name = item.client_token or "匿名访客"
         items.append(
@@ -155,8 +206,8 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 kind="like",
                 actor_name=actor_name,
                 actor_avatar=_avatar_for_name(actor_name),
-                target_title=_resolve_content_title(
-                    session, item.content_type, item.content_slug
+                target_title=titles.get(
+                    (item.content_type, item.content_slug), item.content_slug
                 ),
                 excerpt="留下了一个赞"
                 if item.reaction_type == "like"
@@ -170,15 +221,28 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     return RecentActivityRead(items=items[:limit])
 
 
+# Simple TTL cache for heatmap data
+_heatmap_cache: dict[str, tuple[float, ActivityHeatmapRead]] = {}
+_HEATMAP_TTL = 300  # 5 minutes
+
+
 def build_activity_heatmap(session: Session, weeks: int = 52) -> ActivityHeatmapRead:
     weeks = max(1, min(weeks, 104))
+
+    cache_key = f"heatmap_{weeks}"
+    now = time.monotonic()
+    if cache_key in _heatmap_cache:
+        cached_at, cached_result = _heatmap_cache[cache_key]
+        if now - cached_at < _HEATMAP_TTL:
+            return cached_result
+
     today = datetime.now(UTC).date()
     start = today - timedelta(days=today.weekday() + (weeks - 1) * 7)
 
-    daily_counts: dict[date, int] = defaultdict(int)
-    for published_at, _, _, _, _ in _content_events(session):
-        daily_counts[published_at.date()] += 1
+    # Use SQL GROUP BY instead of loading all rows
+    daily_counts = _content_daily_counts(session)
 
+    # Waline comments and guestbook (separate SQLite DB, can't use ORM aggregation)
     for item in list_all_waline_records(status="approved", guestbook_only=False):
         daily_counts[item.created_at.date()] += 1
 
@@ -207,7 +271,7 @@ def build_activity_heatmap(session: Session, weeks: int = 52) -> ActivityHeatmap
     total_contributions = sum(totals)
     peak_week = max(totals, default=0)
     average_per_week = round(total_contributions / weeks) if weeks else 0
-    return ActivityHeatmapRead(
+    result = ActivityHeatmapRead(
         stats=ActivityHeatmapStatsRead(
             total_contributions=total_contributions,
             peak_week=peak_week,
@@ -215,3 +279,6 @@ def build_activity_heatmap(session: Session, weeks: int = 52) -> ActivityHeatmap
         ),
         weeks=week_items,
     )
+
+    _heatmap_cache[cache_key] = (now, result)
+    return result
