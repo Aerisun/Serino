@@ -64,6 +64,14 @@ class Settings(BaseSettings):
         "Mozilla/5.0 (compatible; Aerisun/1.0; FriendCircle RSS Reader; +https://github.com/Aerisun)"
     )
 
+    # Logging
+    log_level: str = "INFO"
+    log_format: str = "auto"
+
+    # Sentry
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+
     @property
     def database_url(self) -> str:
         return f"sqlite+pysqlite:///{self.db_path.expanduser().resolve()}"
