@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Heart, MessageCircle, RefreshCcw, Clock3 } f
 import { useLocation, useParams } from "react-router-dom";
 import { transition } from "@/config";
 import { createPublicReaction } from "@/lib/api";
+import { getViewerToken, getContentReactionStorageKey } from "@/lib/engagement";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import WalineSurface from "@/components/WalineSurface";
 import type { CommentSurfaceActivity } from "@/lib/community-config";
@@ -24,29 +25,6 @@ interface CommentContext {
   slug: string;
   supportsReactions: boolean;
 }
-
-const VIEWER_TOKEN_STORAGE_KEY = "aerisun:engagement:viewer-token";
-
-const getContentReactionStorageKey = (contentType: string, slug: string) =>
-  `aerisun:engagement:reaction:${contentType}:${slug}:like`;
-
-const getViewerToken = () => {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-
-  const stored = window.localStorage.getItem(VIEWER_TOKEN_STORAGE_KEY);
-  if (stored) {
-    return stored;
-  }
-
-  const token =
-    typeof window.crypto?.randomUUID === "function"
-      ? window.crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  window.localStorage.setItem(VIEWER_TOKEN_STORAGE_KEY, token);
-  return token;
-};
 
 const resolveCommentContext = (
   contentType: CommentSurface | undefined,
