@@ -17,7 +17,13 @@ services:
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
     ports:
-      - "${AERISUN_PORT:-8000}:8000"
+      - "127.0.0.1:${AERISUN_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/public/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   waline:
@@ -37,7 +43,13 @@ services:
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
     ports:
-      - "${WALINE_PORT:-8360}:8360"
+      - "127.0.0.1:${WALINE_PORT:-8360}:8360"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8360"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   litestream:
@@ -53,9 +65,35 @@ services:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
       - ./backend/litestream.yml.template:/etc/litestream.yml:ro
     depends_on:
-      - waline
+      api:
+        condition: service_healthy
+      waline:
+        condition: service_healthy
     command:
       - replicate
       - -config
       - /etc/litestream.yml
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      AERISUN_DOMAIN: ${AERISUN_DOMAIN:-localhost}
+      AERISUN_FRONTEND_UPSTREAM: ${AERISUN_FRONTEND_UPSTREAM:-host.docker.internal:8080}
+    depends_on:
+      api:
+        condition: service_healthy
+      waline:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
