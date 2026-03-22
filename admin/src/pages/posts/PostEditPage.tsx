@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
@@ -121,7 +122,7 @@ export default function PostEditPage() {
 
         <div className="space-y-2">
           <Label>{t("posts.body")}</Label>
-          <Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={16} className="font-mono text-sm" required />
+          <MarkdownEditor value={form.body} onChange={(v) => setField("body", v)} minHeight="400px" />
         </div>
 
         <div className="space-y-2">

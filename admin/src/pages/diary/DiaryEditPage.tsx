@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
@@ -64,7 +65,7 @@ export default function DiaryEditPage() {
           <div className="space-y-2"><Label>{t("posts.slug")}</Label><Input value={form.slug} onChange={(e) => setField("slug", e.target.value)} required /></div>
         </div>
         <div className="space-y-2"><Label>{t("posts.summary")}</Label><Textarea value={form.summary || ""} onChange={(e) => setField("summary", e.target.value)} rows={2} /></div>
-        <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={12} className="font-mono text-sm" required /></div>
+        <div className="space-y-2"><Label>{t("posts.body")}</Label><MarkdownEditor value={form.body} onChange={(v) => setField("body", v)} minHeight="300px" /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2"><Label>心情</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder="如：开心、平静" /></div>

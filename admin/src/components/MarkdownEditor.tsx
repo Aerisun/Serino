@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { Bold, Italic, Heading1, Heading2, Link, Image, Code, List, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { useI18n } from "@/i18n";
 
 interface MarkdownEditorProps {
@@ -83,8 +85,11 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
         <div
           className="prose prose-sm dark:prose-invert max-w-none p-4 overflow-auto"
           style={{ minHeight }}
-          dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(value) }}
-        />
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+            {value}
+          </ReactMarkdown>
+        </div>
       ) : (
         <textarea
           ref={setTextareaRef}
@@ -97,34 +102,4 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
       )}
     </div>
   );
-}
-
-/** Minimal markdown-to-HTML for preview (no external dependency). */
-function simpleMarkdownToHtml(md: string): string {
-  let html = md
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  // Code blocks
-  html = html.replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>");
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
-  // Headers
-  html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
-  html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
-  html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
-  // Bold and italic
-  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-  // Images
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" />');
-  // List items
-  html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
-  // Line breaks
-  html = html.replace(/\n\n/g, "<br/><br/>");
-
-  return html;
 }
