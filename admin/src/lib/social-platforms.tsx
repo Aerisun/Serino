@@ -1,9 +1,40 @@
-import { CalendarDays, Globe, Link2, Mail, Phone } from "lucide-react";
+import { Globe, Link2, Mail, Phone } from "lucide-react";
 
-interface SocialIconProps {
+export interface SocialPlatformPreset {
+  key: string;
+  label: string;
   iconKey: string;
-  className?: string;
+  urlPlaceholder: string;
 }
+
+export const CUSTOM_SOCIAL_PLATFORM_KEY = "custom";
+
+export const SOCIAL_PLATFORM_PRESETS: SocialPlatformPreset[] = [
+  { key: "github", label: "GitHub", iconKey: "github", urlPlaceholder: "https://github.com/your-name" },
+  { key: "gitlab", label: "GitLab", iconKey: "gitlab", urlPlaceholder: "https://gitlab.com/your-name" },
+  { key: "gitee", label: "Gitee", iconKey: "gitee", urlPlaceholder: "https://gitee.com/your-name" },
+  { key: "wechat", label: "微信", iconKey: "wechat", urlPlaceholder: "https://u.wechat.com/your-share-link" },
+  { key: "qq", label: "QQ", iconKey: "qq", urlPlaceholder: "https://qm.qq.com/q/your-share-link" },
+  { key: "feishu", label: "飞书", iconKey: "feishu", urlPlaceholder: "https://www.feishu.cn/your-space" },
+  { key: "telegram", label: "Telegram", iconKey: "telegram", urlPlaceholder: "https://t.me/your-name" },
+  { key: "discord", label: "Discord", iconKey: "discord", urlPlaceholder: "https://discord.gg/your-invite" },
+  { key: "whatsapp", label: "WhatsApp", iconKey: "whatsapp", urlPlaceholder: "https://wa.me/8613800000000" },
+  { key: "line", label: "LINE", iconKey: "line", urlPlaceholder: "https://line.me/ti/p/your-id" },
+  { key: "facebook", label: "Facebook", iconKey: "facebook", urlPlaceholder: "https://facebook.com/your-name" },
+  { key: "instagram", label: "Instagram", iconKey: "instagram", urlPlaceholder: "https://instagram.com/your-name" },
+  { key: "linkedin", label: "LinkedIn", iconKey: "linkedin", urlPlaceholder: "https://linkedin.com/in/your-name" },
+  { key: "x", label: "X", iconKey: "x", urlPlaceholder: "https://x.com/your-name" },
+  { key: "youtube", label: "YouTube", iconKey: "youtube", urlPlaceholder: "https://youtube.com/@your-name" },
+  { key: "bilibili", label: "哔哩哔哩", iconKey: "bilibili", urlPlaceholder: "https://space.bilibili.com/your-id" },
+  { key: "zhihu", label: "知乎", iconKey: "zhihu", urlPlaceholder: "https://www.zhihu.com/people/your-name" },
+  { key: "juejin", label: "稀土掘金", iconKey: "juejin", urlPlaceholder: "https://juejin.cn/user/your-id" },
+  { key: "xiaohongshu", label: "小红书", iconKey: "xiaohongshu", urlPlaceholder: "https://www.xiaohongshu.com/user/profile/your-id" },
+  { key: "weibo", label: "微博", iconKey: "weibo", urlPlaceholder: "https://weibo.com/your-name" },
+  { key: "email", label: "邮箱", iconKey: "email", urlPlaceholder: "mailto:hello@example.com" },
+  { key: "phone", label: "电话", iconKey: "phone", urlPlaceholder: "tel:+8613800000000" },
+  { key: "website", label: "个人网站", iconKey: "website", urlPlaceholder: "https://your-site.com" },
+  { key: "music", label: "网易云音乐", iconKey: "music", urlPlaceholder: "https://music.163.com/#/user/home?id=your-id" },
+];
 
 const ICON_KEY_ALIASES: Record<string, string> = {
   netease: "music",
@@ -20,6 +51,9 @@ const ICON_KEY_ALIASES: Record<string, string> = {
 };
 
 const normalizeIconKey = (iconKey: string) => ICON_KEY_ALIASES[iconKey.toLowerCase()] ?? iconKey.toLowerCase();
+
+export const resolveSocialPlatform = (iconKey: string) =>
+  SOCIAL_PLATFORM_PRESETS.find((preset) => preset.iconKey === normalizeIconKey(iconKey));
 
 function MonogramIcon({
   label,
@@ -49,7 +83,7 @@ function MonogramIcon({
   );
 }
 
-export function SocialIcon({ iconKey, className = "h-4 w-4" }: SocialIconProps) {
+export function SocialPlatformIcon({ iconKey, className = "h-4 w-4" }: { iconKey: string; className?: string }) {
   switch (normalizeIconKey(iconKey)) {
     case "github":
       return (
@@ -64,7 +98,6 @@ export function SocialIcon({ iconKey, className = "h-4 w-4" }: SocialIconProps) 
         </svg>
       );
     case "x":
-    case "twitter":
       return (
         <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -169,20 +202,6 @@ export function SocialIcon({ iconKey, className = "h-4 w-4" }: SocialIconProps) 
       return <Phone className={className} strokeWidth={1.8} />;
     case "website":
       return <Globe className={className} strokeWidth={1.8} />;
-    case "resume":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className}>
-          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    case "guestbook":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className}>
-          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    case "calendar":
-      return <CalendarDays className={className} strokeWidth={1.7} />;
     default:
       return <Link2 className={className} strokeWidth={1.8} />;
   }

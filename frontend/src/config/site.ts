@@ -1,11 +1,5 @@
-export type SiteIconKey =
-  | "github"
-  | "telegram"
-  | "x"
-  | "music"
-  | "resume"
-  | "guestbook"
-  | "calendar";
+export type SiteIconKey = string;
+export type SiteSocialPlacement = "hero" | "footer" | "both";
 
 export interface SiteNavChild {
   label: string;
@@ -23,6 +17,7 @@ export interface SiteSocialLink {
   name: string;
   href: string;
   iconKey: SiteIconKey;
+  placement: SiteSocialPlacement;
 }
 
 export interface SiteActionLink {

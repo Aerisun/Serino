@@ -8,6 +8,7 @@ import { SocialIcon } from "@/components/icons/SocialIcon";
 const HeroContent = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const site = useSiteConfig();
+  const heroSocialLinks = site.socialLinks.filter((link) => link.placement === "hero" || link.placement === "both");
   const [poem, setPoem] = useState(() => site.poems[0]);
   const [flipped, setFlipped] = useState(false);
 
@@ -94,9 +95,9 @@ const HeroContent = () => {
             reducedMotion: prefersReducedMotion,
           })}
         >
-          {site.socialLinks.map((link) => (
+          {heroSocialLinks.map((link) => (
             <a
-              key={link.name}
+              key={`${link.name}-${link.href}`}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"

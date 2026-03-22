@@ -15,16 +15,42 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { DataTable } from "@/components/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Plus, Save, Trash2, Pencil, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { createCommunityForm, communityFormToUpdate } from "@/lib/community-config";
+import {
+  CUSTOM_SOCIAL_PLATFORM_KEY,
+  SOCIAL_PLATFORM_PRESETS,
+  SocialPlatformIcon,
+  resolveSocialPlatform,
+} from "@/lib/social-platforms";
 import { useI18n } from "@/i18n";
 import type { SiteProfile, SocialLink, Poem, PageCopy, PageDisplayOption, NavItem } from "@/types/models";
 
 const PAGE_KEYS = ["posts", "diary", "friends", "excerpts", "thoughts", "guestbook", "resume", "calendar"];
+const SOCIAL_PLACEMENTS = ["hero", "footer", "both"] as const;
+
+type SocialLinkFormState = {
+  platformKey: string;
+  name: string;
+  href: string;
+  icon_key: string;
+  placement: (typeof SOCIAL_PLACEMENTS)[number];
+  order_index: number;
+};
+
+const createSocialLinkForm = (): SocialLinkFormState => ({
+  platformKey: "",
+  name: "",
+  href: "",
+  icon_key: "",
+  placement: "hero",
+  order_index: 0,
+});
 
 export default function SiteConfigPage() {
   const { t } = useI18n();
@@ -105,17 +131,47 @@ function SocialLinksTab() {
   const { data } = useQuery({ queryKey: ["social-links"], queryFn: () => listSocialLinks() });
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
+  const [form, setForm] = useState<SocialLinkFormState>(createSocialLinkForm);
 
   const profileId = profile?.id ?? "";
+  const selectedPreset =
+    form.platformKey && form.platformKey !== CUSTOM_SOCIAL_PLATFORM_KEY
+      ? SOCIAL_PLATFORM_PRESETS.find((preset) => preset.key === form.platformKey)
+      : undefined;
+  const selectedPlatformLabel =
+    selectedPreset?.label ||
+    (form.platformKey === CUSTOM_SOCIAL_PLATFORM_KEY
+      ? t("siteConfig.customPlatform")
+      : t("siteConfig.platformPlaceholder"));
+  const placementLabels: Record<(typeof SOCIAL_PLACEMENTS)[number], string> = {
+    hero: t("siteConfig.heroPlacement"),
+    footer: t("siteConfig.footerPlacement"),
+    both: t("siteConfig.bothPlacement"),
+  };
+  const canSubmit = Boolean(profileId && form.name.trim() && form.href.trim() && form.icon_key.trim());
 
   const create = useMutation({
-    mutationFn: () => createSocialLink({ ...form, site_profile_id: profileId }),
+    mutationFn: () =>
+      createSocialLink({
+        name: form.name.trim(),
+        href: form.href.trim(),
+        icon_key: form.icon_key.trim(),
+        placement: form.placement,
+        order_index: form.order_index,
+        site_profile_id: profileId,
+      }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setOpen(false); resetForm(); },
   });
 
   const update = useMutation({
-    mutationFn: () => updateSocialLink(editingId!, form),
+    mutationFn: () =>
+      updateSocialLink(editingId!, {
+        name: form.name.trim(),
+        href: form.href.trim(),
+        icon_key: form.icon_key.trim(),
+        placement: form.placement,
+        order_index: form.order_index,
+      }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setEditingId(null); setOpen(false); resetForm(); },
   });
 
@@ -125,41 +181,144 @@ function SocialLinksTab() {
   });
 
   function resetForm() {
-    setForm({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
+    setForm(createSocialLinkForm());
+  }
+
+  function handlePlatformChange(platformKey: string) {
+    if (platformKey === CUSTOM_SOCIAL_PLATFORM_KEY) {
+      setForm((prev) => ({ ...prev, platformKey }));
+      return;
+    }
+
+    const preset = SOCIAL_PLATFORM_PRESETS.find((item) => item.key === platformKey);
+    if (!preset) return;
+
+    setForm((prev) => ({
+      ...prev,
+      platformKey,
+      name: preset.label,
+      icon_key: preset.iconKey,
+    }));
   }
 
   function startEdit(link: SocialLink) {
+    const preset = resolveSocialPlatform(link.icon_key);
     setEditingId(link.id);
-    setForm({ name: link.name, href: link.href, icon_key: link.icon_key, placement: link.placement, order_index: link.order_index });
+    setForm({
+      platformKey: preset?.key ?? CUSTOM_SOCIAL_PLATFORM_KEY,
+      name: link.name,
+      href: link.href,
+      icon_key: link.icon_key,
+      placement: (SOCIAL_PLACEMENTS.find((item) => item === link.placement) ?? "hero") as (typeof SOCIAL_PLACEMENTS)[number],
+      order_index: link.order_index,
+    });
     setOpen(true);
   }
-
-  const fieldLabels: Record<string, string> = {
-    name: t("siteConfig.name"),
-    href: t("siteConfig.href"),
-    icon_key: t("siteConfig.iconKey"),
-    placement: t("siteConfig.placement"),
-  };
 
   return (
     <div className="mt-4">
       <div className="flex justify-end mb-4">
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); resetForm(); } }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> {t("siteConfig.addLink")}</Button></DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-xl">
             <DialogHeader><DialogTitle>{editingId ? t("siteConfig.editSocialLink") : t("siteConfig.newSocialLink")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              {(["name", "href", "icon_key", "placement"] as const).map((k) => (
-                <div key={k} className="space-y-1">
-                  <Label>{fieldLabels[k]}</Label>
-                  <Input value={(form as any)[k]} onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))} />
+              <div className="space-y-1">
+                <Label>{t("siteConfig.platform")}</Label>
+                <Select value={form.platformKey || undefined} onValueChange={handlePlatformChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("siteConfig.platformPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOCIAL_PLATFORM_PRESETS.map((preset) => (
+                      <SelectItem key={preset.key} value={preset.key}>
+                        <div className="flex items-center gap-2">
+                          <SocialPlatformIcon iconKey={preset.iconKey} className="h-4 w-4 shrink-0" />
+                          <span>{preset.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM_SOCIAL_PLATFORM_KEY}>
+                      <div className="flex items-center gap-2">
+                        <SocialPlatformIcon iconKey="website" className="h-4 w-4 shrink-0" />
+                        <span>{t("siteConfig.customPlatform")}</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t("siteConfig.platformHint")}</p>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/20 px-3 py-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background text-foreground/80">
+                  <SocialPlatformIcon iconKey={form.icon_key || "website"} className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{selectedPlatformLabel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {form.icon_key ? `${t("siteConfig.iconKey")}：${form.icon_key}` : t("siteConfig.platformAutoIcon")}
+                  </p>
                 </div>
-              ))}
+              </div>
+
+              <div className="space-y-1">
+                <Label>{t("siteConfig.displayText")}</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder={selectedPreset?.label ?? t("siteConfig.displayText")}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label>{t("siteConfig.url")}</Label>
+                <Input
+                  value={form.href}
+                  onChange={(e) => setForm((prev) => ({ ...prev, href: e.target.value }))}
+                  placeholder={selectedPreset?.urlPlaceholder ?? "https://example.com/your-link"}
+                />
+              </div>
+
+              {form.platformKey === CUSTOM_SOCIAL_PLATFORM_KEY ? (
+                <div className="space-y-1">
+                  <Label>{t("siteConfig.iconKey")}</Label>
+                  <Input
+                    value={form.icon_key}
+                    onChange={(e) => setForm((prev) => ({ ...prev, icon_key: e.target.value }))}
+                    placeholder="wechat / qq / github"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Label>{t("siteConfig.iconKey")}</Label>
+                  <Input value={form.icon_key} readOnly className="bg-muted/20" />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <Label>{t("siteConfig.placement")}</Label>
+                <Select
+                  value={form.placement}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, placement: value as (typeof SOCIAL_PLACEMENTS)[number] }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOCIAL_PLACEMENTS.map((placement) => (
+                      <SelectItem key={placement} value={placement}>
+                        {placementLabels[placement]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-1">
                 <Label>{t("common.order")}</Label>
-                <Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} />
+                <Input type="number" value={form.order_index} onChange={(e) => setForm((prev) => ({ ...prev, order_index: parseInt(e.target.value) || 0 }))} />
               </div>
-              <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={create.isPending || update.isPending}>
+              <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={!canSubmit || create.isPending || update.isPending}>
                 {editingId ? t("common.save") : t("common.create")}
               </Button>
             </div>
@@ -169,10 +328,25 @@ function SocialLinksTab() {
       <div className="border rounded-lg">
         <DataTable<SocialLink>
           columns={[
-            { header: t("siteConfig.name"), accessor: "name" },
+            {
+              header: t("siteConfig.icon"),
+              accessor: (row) => (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background text-foreground/80">
+                    <SocialPlatformIcon iconKey={row.icon_key} className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs text-muted-foreground">{row.icon_key}</span>
+                </div>
+              ),
+            },
+            { header: t("siteConfig.platform"), accessor: (row) => resolveSocialPlatform(row.icon_key)?.label ?? t("siteConfig.customPlatform") },
+            { header: t("siteConfig.displayText"), accessor: "name" },
             { header: t("siteConfig.url"), accessor: "href" },
-            { header: t("siteConfig.icon"), accessor: "icon_key" },
-            { header: t("siteConfig.placement"), accessor: "placement" },
+            {
+              header: t("siteConfig.placement"),
+              accessor: (row) =>
+                placementLabels[(SOCIAL_PLACEMENTS.find((item) => item === row.placement) ?? "hero") as (typeof SOCIAL_PLACEMENTS)[number]],
+            },
             { header: t("common.order"), accessor: "order_index" as any },
             { header: "", accessor: (row) => (
               <div className="flex gap-1">

@@ -5,6 +5,7 @@ export type {
   SiteNavItem,
   SiteNavChild,
   SiteSocialLink,
+  SiteSocialPlacement,
   SiteActionLink,
   SiteIconKey,
 } from "./site";

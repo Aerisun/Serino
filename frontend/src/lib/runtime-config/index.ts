@@ -36,6 +36,7 @@ type BackendSiteResponse = {
     name: string;
     href: string;
     icon_key: string;
+    placement?: string | null;
   }>;
   poems: Array<{
     content: string;
@@ -128,7 +129,7 @@ export interface RuntimeConfigSnapshot {
     ogImage: string;
     metaDescription: string;
     copyright: string;
-    socialLinks: Array<{ name: string; href: string; iconKey: string }>;
+    socialLinks: Array<{ name: string; href: string; iconKey: string; placement: "hero" | "footer" | "both" }>;
     poems: string[];
     heroActions: Array<{ label: string; href: string; iconKey: string }>;
     heroVideoUrl?: string;
@@ -167,10 +168,34 @@ const PAGE_DEFAULTS: Record<string, { width?: PageWidth; pageSize?: number; moti
 // Icon key normalization
 // ---------------------------------------------------------------------------
 const normalizeIconKey = (iconKey: string): string => {
-  if (iconKey === "netease" || iconKey === "netease-music") {
-    return "music";
+  const aliases: Record<string, string> = {
+    netease: "music",
+    "netease-music": "music",
+    weixin: "wechat",
+    lark: "feishu",
+    fb: "facebook",
+    ig: "instagram",
+    mail: "email",
+    web: "website",
+    site: "website",
+    url: "website",
+    rednote: "xiaohongshu",
+  };
+  const normalized = iconKey.toLowerCase();
+  return aliases[normalized] ?? normalized;
+};
+
+const normalizeSocialPlacement = (placement?: string | null): "hero" | "footer" | "both" => {
+  switch ((placement ?? "").toLowerCase()) {
+    case "hero":
+      return "hero";
+    case "footer":
+      return "footer";
+    case "both":
+      return "both";
+    default:
+      return "both";
   }
-  return iconKey;
 };
 
 // ---------------------------------------------------------------------------
@@ -209,6 +234,7 @@ const normalizeSiteConfig = (
       name: link.name,
       href: link.href,
       iconKey: normalizeIconKey(link.icon_key),
+      placement: normalizeSocialPlacement(link.placement),
     })),
     heroActions: (payload.site.hero_actions ?? []).map((action) => ({
       label: action.label,
