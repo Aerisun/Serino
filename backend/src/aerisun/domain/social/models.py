@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, uuid_str
@@ -50,4 +50,6 @@ class FriendFeedItem(Base, TimestampMixin):
     url: Mapped[str] = mapped_column(String(500), nullable=False)
     summary: Mapped[str | None] = mapped_column(Text)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    raw_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    raw_payload: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )

@@ -7,8 +7,8 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session_factory, init_db
-from aerisun.domain.iam.models import AdminUser
 from aerisun.core.settings import get_settings
+from aerisun.domain.iam.models import AdminUser
 
 
 def create_admin() -> None:
@@ -37,7 +37,9 @@ def create_admin() -> None:
     session_factory = get_session_factory()
     session: Session = session_factory()
     try:
-        existing = session.query(AdminUser).filter(AdminUser.username == username).first()
+        existing = (
+            session.query(AdminUser).filter(AdminUser.username == username).first()
+        )
         if existing:
             print(f"User '{username}' already exists.", file=sys.stderr)
             sys.exit(1)

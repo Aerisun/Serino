@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -20,6 +20,8 @@ from aerisun.domain.site_config.models import (
 from .content import build_crud_router
 from .deps import get_current_admin
 from .schemas import (
+    CommunityConfigAdminRead,
+    CommunityConfigUpdate,
     NavItemAdminRead,
     NavItemCreate,
     NavItemUpdate,
@@ -30,8 +32,6 @@ from .schemas import (
     PageDisplayOptionAdminRead,
     PageDisplayOptionCreate,
     PageDisplayOptionUpdate,
-    CommunityConfigAdminRead,
-    CommunityConfigUpdate,
     PoemAdminRead,
     PoemCreate,
     PoemUpdate,
@@ -46,6 +46,7 @@ router = APIRouter(prefix="/site-config", tags=["admin-site-config"])
 
 
 # --- SiteProfile: single-row GET/PUT ---
+
 
 @router.get("/profile", response_model=SiteProfileAdminRead)
 def get_profile(
@@ -147,6 +148,7 @@ router.include_router(display_options_router)
 
 # --- NavItem reorder (must be registered before CRUD router) ---
 
+
 @router.put("/nav-items/reorder", response_model=list[NavItemAdminRead])
 def reorder_nav_items(
     items: list[NavReorderItem],
@@ -156,7 +158,9 @@ def reorder_nav_items(
     for reorder_item in items:
         nav_item = session.get(NavItem, reorder_item.id)
         if nav_item is None:
-            raise HTTPException(status_code=404, detail=f"NavItem {reorder_item.id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"NavItem {reorder_item.id} not found"
+            )
         nav_item.parent_id = reorder_item.parent_id
         nav_item.order_index = reorder_item.order_index
     session.commit()

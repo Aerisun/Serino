@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -18,17 +18,19 @@ def get_current_admin(
 ) -> AdminUser:
     token = credentials.credentials
     admin_session = (
-        session.query(AdminSession)
-        .filter(AdminSession.session_token == token)
-        .first()
+        session.query(AdminSession).filter(AdminSession.session_token == token).first()
     )
     if admin_session is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired session token",
         )
-    now_utc = datetime.now(timezone.utc)
-    now = now_utc.replace(tzinfo=None) if admin_session.expires_at.tzinfo is None else now_utc
+    now_utc = datetime.now(UTC)
+    now = (
+        now_utc.replace(tzinfo=None)
+        if admin_session.expires_at.tzinfo is None
+        else now_utc
+    )
     if admin_session.expires_at < now:
         session.delete(admin_session)
         session.commit()

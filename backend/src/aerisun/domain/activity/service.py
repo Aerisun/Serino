@@ -6,7 +6,6 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,
     ActivityHeatmapStatsRead,
@@ -16,9 +15,14 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
+from aerisun.domain.content.models import (
+    DiaryEntry,
+    ExcerptEntry,
+    PostEntry,
+    ThoughtEntry,
+)
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
-
 
 CONTENT_MODELS = {
     "posts": PostEntry,
@@ -58,7 +62,11 @@ def _content_events(session: Session) -> list[tuple[datetime, str, str, str, str
     for model, kind, href_template in mappings:
         rows = session.scalars(
             select(model)
-            .where(model.status == "published", model.visibility == "public", model.published_at.is_not(None))
+            .where(
+                model.status == "published",
+                model.visibility == "public",
+                model.published_at.is_not(None),
+            )
             .order_by(desc(model.published_at))
         ).all()
         for row in rows:
@@ -68,7 +76,9 @@ def _content_events(session: Session) -> list[tuple[datetime, str, str, str, str
     return items
 
 
-def _resolve_content_title(session: Session, content_type: str, content_slug: str) -> str:
+def _resolve_content_title(
+    session: Session, content_type: str, content_slug: str
+) -> str:
     model = CONTENT_MODELS.get(content_type)
     if model is None:
         return content_slug
@@ -77,7 +87,9 @@ def _resolve_content_title(session: Session, content_type: str, content_slug: st
     return title or content_slug
 
 
-def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
+def list_calendar_events(
+    session: Session, from_date: date, to_date: date
+) -> CalendarRead:
     events = []
     for published_at, kind, title, slug, href in _content_events(session):
         current = published_at.date()
@@ -98,6 +110,7 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
         events=events,
     )
 
+
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
 
@@ -109,7 +122,9 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 kind="reply" if item.pid else "comment",
                 actor_name=item.nick or "访客",
                 actor_avatar=_avatar_for_name(item.nick or "访客"),
-                target_title=_resolve_content_title(session, content_type, content_slug),
+                target_title=_resolve_content_title(
+                    session, content_type, content_slug
+                ),
                 excerpt=_trim_excerpt(item.comment),
                 created_at=_normalize_timestamp(item.created_at),
                 href=item.url,
@@ -131,9 +146,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
         )
 
     reactions = session.scalars(
-        select(Reaction)
-        .order_by(desc(Reaction.created_at))
-        .limit(limit)
+        select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)
     ).all()
     for item in reactions:
         actor_name = item.client_token or "匿名访客"
@@ -142,8 +155,12 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 kind="like",
                 actor_name=actor_name,
                 actor_avatar=_avatar_for_name(actor_name),
-                target_title=_resolve_content_title(session, item.content_type, item.content_slug),
-                excerpt="留下了一个赞" if item.reaction_type == "like" else item.reaction_type,
+                target_title=_resolve_content_title(
+                    session, item.content_type, item.content_slug
+                ),
+                excerpt="留下了一个赞"
+                if item.reaction_type == "like"
+                else item.reaction_type,
                 created_at=_normalize_timestamp(item.created_at),
                 href=f"/{item.content_type}/{item.content_slug}",
             )
@@ -172,7 +189,9 @@ def build_activity_heatmap(session: Session, weeks: int = 52) -> ActivityHeatmap
     totals: list[int] = []
     for index in range(weeks):
         week_start = start + timedelta(days=index * 7)
-        days = [daily_counts[week_start + timedelta(days=offset)] for offset in range(7)]
+        days = [
+            daily_counts[week_start + timedelta(days=offset)] for offset in range(7)
+        ]
         total = sum(days)
         totals.append(total)
         week_items.append(

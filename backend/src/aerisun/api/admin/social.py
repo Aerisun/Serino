@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -35,6 +35,7 @@ router.include_router(friends_router)
 
 
 # --- Feed crawl triggers ---
+
 
 @router.post("/feeds/crawl")
 def trigger_feed_crawl(
@@ -70,7 +71,10 @@ def trigger_single_feed_crawl(
 
 # --- FriendFeedSource as sub-resource of friends ---
 
-@router.get("/friends/{friend_id}/feeds", response_model=list[FriendFeedSourceAdminRead])
+
+@router.get(
+    "/friends/{friend_id}/feeds", response_model=list[FriendFeedSourceAdminRead]
+)
 def list_friend_feeds(
     friend_id: str,
     _admin: AdminUser = Depends(get_current_admin),

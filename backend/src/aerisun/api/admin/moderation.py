@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.models import ModerationRecord
-from aerisun.domain.waline.service import list_guestbook_records, list_waline_records, moderate_waline_record, parse_comment_path
+from aerisun.domain.waline.service import (
+    list_guestbook_records,
+    list_waline_records,
+    moderate_waline_record,
+    parse_comment_path,
+)
 
 from .deps import get_current_admin
 from .schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
@@ -162,7 +167,9 @@ def moderate_guestbook(
     try:
         waline_id = int(entry_id)
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail="Guestbook entry not found") from exc
+        raise HTTPException(
+            status_code=404, detail="Guestbook entry not found"
+        ) from exc
 
     if payload.action not in {"approve", "reject", "delete"}:
         raise HTTPException(status_code=400, detail="Invalid action")

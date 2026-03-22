@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
-import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 
 from aerisun.core.settings import get_settings
 
@@ -40,24 +40,28 @@ def get_waline_db_path() -> Path:
 
 def _to_sql_timestamp(value: datetime | str | None) -> str:
     if value is None:
-        return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ", timespec="seconds")
+        return (
+            datetime.now(UTC)
+            .replace(tzinfo=None)
+            .isoformat(sep=" ", timespec="seconds")
+        )
     if isinstance(value, str):
         return value
     if value.tzinfo is not None:
-        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+        value = value.astimezone(UTC).replace(tzinfo=None)
     return value.isoformat(sep=" ", timespec="seconds")
 
 
 def _parse_sql_timestamp(value: str | None) -> datetime:
     if not value:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError:
         parsed = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def _normalize_status(value: str | None) -> str:
@@ -421,7 +425,9 @@ def get_waline_record_by_id(
     db_path: Path | None = None,
 ) -> WalineCommentRecord | None:
     with connect_waline_db(db_path) as connection:
-        row = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        row = connection.execute(
+            "SELECT * FROM wl_comment WHERE id = ?", (record_id,)
+        ).fetchone()
         return _row_to_record(row) if row is not None else None
 
 
@@ -442,8 +448,14 @@ def create_waline_record(
     with connect_waline_db(db_path) as connection:
         root_id = parent_id
         if parent_id is not None:
-            root_row = connection.execute("SELECT rid FROM wl_comment WHERE id = ?", (parent_id,)).fetchone()
-            root_id = int(root_row["rid"]) if root_row and root_row["rid"] is not None else parent_id
+            root_row = connection.execute(
+                "SELECT rid FROM wl_comment WHERE id = ?", (parent_id,)
+            ).fetchone()
+            root_id = (
+                int(root_row["rid"])
+                if root_row and root_row["rid"] is not None
+                else parent_id
+            )
 
         row = make_waline_comment_row(
             comment=comment,
@@ -472,10 +484,14 @@ def create_waline_record(
         )
         comment_id = int(cursor.lastrowid)
         if parent_id is None:
-            connection.execute("UPDATE wl_comment SET rid = ? WHERE id = ?", (comment_id, comment_id))
+            connection.execute(
+                "UPDATE wl_comment SET rid = ? WHERE id = ?", (comment_id, comment_id)
+            )
         connection.commit()
 
-        created = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (comment_id,)).fetchone()
+        created = connection.execute(
+            "SELECT * FROM wl_comment WHERE id = ?", (comment_id,)
+        ).fetchone()
         if created is None:
             raise RuntimeError("Failed to create Waline record")
         return _row_to_record(created)
@@ -492,7 +508,9 @@ def _collect_descendant_ids(connection: sqlite3.Connection, root_id: int) -> lis
             continue
         seen.add(current)
         collected.append(current)
-        rows = connection.execute("SELECT id FROM wl_comment WHERE pid = ?", (current,)).fetchall()
+        rows = connection.execute(
+            "SELECT id FROM wl_comment WHERE pid = ?", (current,)
+        ).fetchall()
         pending.extend(int(row["id"]) for row in rows)
 
     return collected
@@ -505,7 +523,9 @@ def moderate_waline_record(
     db_path: Path | None = None,
 ) -> WalineCommentRecord | None:
     with connect_waline_db(db_path) as connection:
-        row = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        row = connection.execute(
+            "SELECT * FROM wl_comment WHERE id = ?", (record_id,)
+        ).fetchone()
         if row is None:
             return None
 
@@ -535,7 +555,9 @@ def moderate_waline_record(
             (normalized, record_id),
         )
         connection.commit()
-        updated = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        updated = connection.execute(
+            "SELECT * FROM wl_comment WHERE id = ?", (record_id,)
+        ).fetchone()
         return _row_to_record(updated) if updated else None
 
 

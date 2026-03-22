@@ -3,17 +3,20 @@ from __future__ import annotations
 import io
 import json
 import zipfile
-from datetime import datetime, timezone
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.domain.content.models import (
+    DiaryEntry,
+    ExcerptEntry,
+    PostEntry,
+    ThoughtEntry,
+)
 from aerisun.domain.iam.models import AdminUser
-from aerisun.domain.content.models import PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry
 
 from .deps import get_current_admin
 from .schemas import ContentAdminRead
@@ -43,7 +46,9 @@ def export_content(
 ) -> StreamingResponse:
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise HTTPException(status_code=400, detail=f"Invalid content_type: {content_type}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid content_type: {content_type}"
+        )
 
     items = session.query(model).order_by(model.created_at.desc()).all()
 
@@ -59,7 +64,9 @@ def export_content(
         return StreamingResponse(
             buf,
             media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename={content_type}-export.zip"},
+            headers={
+                "Content-Disposition": f"attachment; filename={content_type}-export.zip"
+            },
         )
 
     # JSON export
@@ -72,7 +79,9 @@ def export_content(
     return StreamingResponse(
         io.BytesIO(content_bytes),
         media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename={content_type}-export.json"},
+        headers={
+            "Content-Disposition": f"attachment; filename={content_type}-export.json"
+        },
     )
 
 
@@ -85,15 +94,17 @@ async def import_content(
 ) -> ImportResult:
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise HTTPException(status_code=400, detail=f"Invalid content_type: {content_type}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid content_type: {content_type}"
+        )
 
     result = ImportResult()
     raw = await file.read()
 
     try:
         items_data = json.loads(raw)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON") from exc
 
     if not isinstance(items_data, list):
         raise HTTPException(status_code=400, detail="Expected JSON array")
@@ -101,15 +112,33 @@ async def import_content(
     for entry in items_data:
         slug = entry.get("slug")
         if not slug:
-            result.errors.append(f"Missing slug in entry: {entry.get('title', 'unknown')}")
+            result.errors.append(
+                f"Missing slug in entry: {entry.get('title', 'unknown')}"
+            )
             continue
 
         existing = session.query(model).filter(model.slug == slug).first()
 
         # Only keep fields that are actual model columns
-        allowed = {"slug", "title", "summary", "body", "tags", "status", "visibility", "published_at",
-                    "category", "view_count", "mood", "weather", "poem", "author_name", "source",
-                    "is_pinned", "pin_order"}
+        allowed = {
+            "slug",
+            "title",
+            "summary",
+            "body",
+            "tags",
+            "status",
+            "visibility",
+            "published_at",
+            "category",
+            "view_count",
+            "mood",
+            "weather",
+            "poem",
+            "author_name",
+            "source",
+            "is_pinned",
+            "pin_order",
+        }
         filtered = {k: v for k, v in entry.items() if k in allowed}
 
         if existing:

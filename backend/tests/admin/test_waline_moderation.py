@@ -1,27 +1,29 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import sqlite3
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 
 from aerisun.core.db import get_session_factory
-from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.core.settings import get_settings
+from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.domain.waline.service import connect_waline_db
 
 
 def _create_admin_token(username: str = "waline-admin") -> str:
     session_factory = get_session_factory()
     token = "waline-admin-session-token"
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     with session_factory() as session:
         user = session.query(AdminUser).filter(AdminUser.username == username).first()
         if user is None:
             user = AdminUser(
                 username=username,
-                password_hash=bcrypt.hashpw(b"waline-password", bcrypt.gensalt()).decode(),
+                password_hash=bcrypt.hashpw(
+                    b"waline-password", bcrypt.gensalt()
+                ).decode(),
             )
             session.add(user)
             session.flush()
@@ -130,8 +132,14 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["total"] == 2
-    assert any(item["content_type"] == "posts" and item["parent_id"] is None for item in payload["items"])
-    assert any(item["content_type"] == "posts" and item["parent_id"] == str(root_id) for item in payload["items"])
+    assert any(
+        item["content_type"] == "posts" and item["parent_id"] is None
+        for item in payload["items"]
+    )
+    assert any(
+        item["content_type"] == "posts" and item["parent_id"] == str(root_id)
+        for item in payload["items"]
+    )
 
     filtered = client.get(
         "/api/v1/admin/moderation/comments?status=approved&author=Reader&email=reader@example.com&sort=created_asc",
@@ -151,7 +159,9 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
     assert response.json()["status"] == "rejected"
 
     with connect_waline_db(waline_db) as connection:
-        row = connection.execute("SELECT status FROM wl_comment WHERE id = ?", (reply_id,)).fetchone()
+        row = connection.execute(
+            "SELECT status FROM wl_comment WHERE id = ?", (reply_id,)
+        ).fetchone()
         assert row is not None
         assert row["status"] == "spam"
 

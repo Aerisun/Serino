@@ -7,12 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.core.settings import get_settings
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.models import Asset
-from aerisun.core.settings import get_settings
 
 from .deps import get_current_admin
-from .schemas import AssetAdminRead, BulkDeleteRequest, BulkActionResponse
+from .schemas import AssetAdminRead, BulkActionResponse, BulkDeleteRequest
 
 router = APIRouter(prefix="/assets", tags=["admin-assets"])
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -8,7 +8,17 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session
 from aerisun.core.schemas import HealthRead
 from aerisun.core.settings import get_settings as _get_settings
-from aerisun.domain.activity.service import build_activity_heatmap, list_calendar_events, list_recent_activity
+from aerisun.domain.activity.schemas import (
+    ActivityHeatmapRead,
+    CalendarRead,
+    RecentActivityRead,
+)
+from aerisun.domain.activity.service import (
+    build_activity_heatmap,
+    list_calendar_events,
+    list_recent_activity,
+)
+from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
 from aerisun.domain.content.service import (
     get_public_diary_entry,
     get_public_post,
@@ -17,18 +27,6 @@ from aerisun.domain.content.service import (
     list_public_posts,
     list_public_thoughts,
 )
-from aerisun.domain.engagement.service import (
-    create_public_comment,
-    create_public_guestbook_entry,
-    list_public_comments,
-    list_public_guestbook_entries,
-    read_public_reaction,
-    register_public_reaction,
-)
-from aerisun.domain.site_config.service import get_community_config, get_page_copy, get_resume, get_site_config
-from aerisun.domain.social.service import list_public_friend_feed, list_public_friends
-from aerisun.domain.activity.schemas import ActivityHeatmapRead, CalendarRead, RecentActivityRead
-from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -39,8 +37,28 @@ from aerisun.domain.engagement.schemas import (
     ReactionCreate,
     ReactionRead,
 )
-from aerisun.domain.site_config.schemas import CommunityConfigRead, PageCollectionRead, ResumeRead, SiteConfigRead
+from aerisun.domain.engagement.service import (
+    create_public_comment,
+    create_public_guestbook_entry,
+    list_public_comments,
+    list_public_guestbook_entries,
+    read_public_reaction,
+    register_public_reaction,
+)
+from aerisun.domain.site_config.schemas import (
+    CommunityConfigRead,
+    PageCollectionRead,
+    ResumeRead,
+    SiteConfigRead,
+)
+from aerisun.domain.site_config.service import (
+    get_community_config,
+    get_page_copy,
+    get_resume,
+    get_site_config,
+)
 from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead
+from aerisun.domain.social.service import list_public_friend_feed, list_public_friends
 
 router = APIRouter(prefix="/api/v1/public", tags=["public"])
 
@@ -56,7 +74,9 @@ def read_page_copy(session: Session = Depends(get_session)) -> PageCollectionRea
 
 
 @router.get("/community-config", response_model=CommunityConfigRead)
-def read_community_config(session: Session = Depends(get_session)) -> CommunityConfigRead:
+def read_community_config(
+    session: Session = Depends(get_session),
+) -> CommunityConfigRead:
     return get_community_config(session)
 
 
@@ -90,7 +110,9 @@ def read_diary(
 
 
 @router.get("/diary/{slug}", response_model=ContentEntryRead)
-def read_diary_entry(slug: str, session: Session = Depends(get_session)) -> ContentEntryRead:
+def read_diary_entry(
+    slug: str, session: Session = Depends(get_session)
+) -> ContentEntryRead:
     try:
         return get_public_diary_entry(session, slug)
     except LookupError as exc:
@@ -181,7 +203,9 @@ def create_reaction(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/reactions/{content_type}/{slug}/{reaction_type}", response_model=ReactionRead)
+@router.get(
+    "/reactions/{content_type}/{slug}/{reaction_type}", response_model=ReactionRead
+)
 def read_reaction(
     content_type: str,
     slug: str,
@@ -200,8 +224,12 @@ def read_calendar(
     to_date: str | None = Query(default=None, alias="to"),
     session: Session = Depends(get_session),
 ) -> CalendarRead:
-    today = datetime.now(timezone.utc).date()
-    start = datetime.fromisoformat(from_date).date() if from_date else today - timedelta(days=180)
+    today = datetime.now(UTC).date()
+    start = (
+        datetime.fromisoformat(from_date).date()
+        if from_date
+        else today - timedelta(days=180)
+    )
     end = datetime.fromisoformat(to_date).date() if to_date else today
     return list_calendar_events(session, start, end)
 
@@ -228,5 +256,5 @@ def healthz() -> HealthRead:
     return HealthRead(
         status="ok",
         database_path=str(settings.db_path),
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )

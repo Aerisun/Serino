@@ -6,12 +6,19 @@ from typing import TypeVar
 from sqlalchemy import Select, desc, func, select
 from sqlalchemy.orm import Session
 
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.content.models import (
+    DiaryEntry,
+    ExcerptEntry,
+    PostEntry,
+    ThoughtEntry,
+)
 from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls
 
-ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
+ContentModel = TypeVar(
+    "ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry
+)
 
 
 def _estimate_read_time(value: str) -> str:
@@ -61,7 +68,9 @@ def _public_query(model: type[ContentModel]) -> Select[tuple[ContentModel]]:
     )
 
 
-def _comment_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
+def _comment_counts_by_slug(
+    session: Session, content_type: str, slugs: list[str]
+) -> dict[str, int]:
     if not slugs:
         return {}
 
@@ -73,7 +82,9 @@ def _comment_counts_by_slug(session: Session, content_type: str, slugs: list[str
     }
 
 
-def _like_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
+def _like_counts_by_slug(
+    session: Session, content_type: str, slugs: list[str]
+) -> dict[str, int]:
     if not slugs:
         return {}
 
@@ -98,13 +109,13 @@ def _to_entry(
     published_reference = item.published_at or item.created_at
 
     # Read type-specific fields directly from the model
-    category = getattr(item, 'category', None)
-    mood = getattr(item, 'mood', None)
-    weather = getattr(item, 'weather', None)
-    poem = getattr(item, 'poem', None)
-    author_name = getattr(item, 'author_name', None)
-    source = getattr(item, 'source', None)
-    view_count = getattr(item, 'view_count', 0) or 0
+    category = getattr(item, "category", None)
+    mood = getattr(item, "mood", None)
+    weather = getattr(item, "weather", None)
+    poem = getattr(item, "poem", None)
+    author_name = getattr(item, "author_name", None)
+    source = getattr(item, "source", None)
+    view_count = getattr(item, "view_count", 0) or 0
 
     return ContentEntryRead(
         slug=item.slug,
@@ -144,11 +155,15 @@ def _list_entries(
     comment_counts = _comment_counts_by_slug(session, content_type, slugs)
     like_counts = _like_counts_by_slug(session, content_type, slugs)
     return ContentCollectionRead(
-        items=[_to_entry(row, content_type, comment_counts, like_counts) for row in rows]
+        items=[
+            _to_entry(row, content_type, comment_counts, like_counts) for row in rows
+        ]
     )
 
 
-def _get_by_slug(session: Session, model: type[ContentModel], content_type: str, slug: str) -> ContentEntryRead:
+def _get_by_slug(
+    session: Session, model: type[ContentModel], content_type: str, slug: str
+) -> ContentEntryRead:
     item = session.scalars(
         _public_query(model).where(model.slug == slug).limit(1)
     ).first()
@@ -167,7 +182,9 @@ def get_public_post(session: Session, slug: str) -> ContentEntryRead:
     return _get_by_slug(session, PostEntry, "posts", slug)
 
 
-def list_public_diary_entries(session: Session, limit: int = 20) -> ContentCollectionRead:
+def list_public_diary_entries(
+    session: Session, limit: int = 20
+) -> ContentCollectionRead:
     return _list_entries(session, DiaryEntry, "diary", limit)
 
 

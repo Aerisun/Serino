@@ -43,7 +43,9 @@ def test_public_content_includes_presentation_fields(client) -> None:
 
     assert posts_by_slug["from-zero-design-system"]["category"] == "设计"
     assert posts_by_slug["from-zero-design-system"]["read_time"] == "1 分钟"
-    assert posts_by_slug["from-zero-design-system"]["display_date"] == "2026 年 3 月 21 日"
+    assert (
+        posts_by_slug["from-zero-design-system"]["display_date"] == "2026 年 3 月 21 日"
+    )
     assert posts_by_slug["from-zero-design-system"]["relative_date"]
     assert posts_by_slug["from-zero-design-system"]["view_count"] == 1247
     assert posts_by_slug["from-zero-design-system"]["comment_count"] == 2
@@ -57,7 +59,9 @@ def test_public_content_includes_presentation_fields(client) -> None:
 
     assert thoughts_by_slug["spacing-rhythm-note"]["mood"] == "🎨"
     assert thoughts_by_slug["spacing-rhythm-note"]["repost_count"] == 0
-    assert thoughts_by_slug["spacing-rhythm-note"]["display_date"] == "2026 年 3 月 21 日"
+    assert (
+        thoughts_by_slug["spacing-rhythm-note"]["display_date"] == "2026 年 3 月 21 日"
+    )
 
     assert excerpts_by_slug["good-design-note"]["author"] == "Dieter Rams"
     assert excerpts_by_slug["good-design-note"]["source"] == "Less but Better"

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 
@@ -11,19 +11,25 @@ from aerisun.domain.iam.models import AdminSession, AdminUser
 def _create_admin_token(username: str = "community-config-admin") -> str:
     session_factory = get_session_factory()
     token = "community-config-session-token"
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     with session_factory() as session:
         user = session.query(AdminUser).filter(AdminUser.username == username).first()
         if user is None:
             user = AdminUser(
                 username=username,
-                password_hash=bcrypt.hashpw(b"community-config-password", bcrypt.gensalt()).decode(),
+                password_hash=bcrypt.hashpw(
+                    b"community-config-password", bcrypt.gensalt()
+                ).decode(),
             )
             session.add(user)
             session.flush()
 
-        existing = session.query(AdminSession).filter(AdminSession.session_token == token).first()
+        existing = (
+            session.query(AdminSession)
+            .filter(AdminSession.session_token == token)
+            .first()
+        )
         if existing is None:
             session.add(
                 AdminSession(
@@ -85,7 +91,9 @@ def test_admin_community_config_round_trip(client) -> None:
         "migration_state": "configured",
     }
 
-    response = client.put("/api/v1/admin/site-config/community-config", headers=headers, json=payload)
+    response = client.put(
+        "/api/v1/admin/site-config/community-config", headers=headers, json=payload
+    )
     assert response.status_code == 200
     updated = response.json()
     for key, value in payload.items():

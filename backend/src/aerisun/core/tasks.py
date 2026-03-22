@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import delete
 
@@ -21,7 +21,7 @@ async def cleanup_expired_sessions(interval_seconds: int = 3600) -> None:
             with session_factory() as session:
                 result = session.execute(
                     delete(AdminSession).where(
-                        AdminSession.expires_at < datetime.now(timezone.utc)
+                        AdminSession.expires_at < datetime.now(UTC)
                     )
                 )
                 session.commit()

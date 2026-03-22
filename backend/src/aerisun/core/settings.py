@@ -49,9 +49,7 @@ class Settings(BaseSettings):
     waline_litestream_replica_url: str = Field(
         default="sftp://backup-user@backup-host:22/backup/aerisun/waline.db"
     )
-    backup_rsync_uri: str = Field(
-        default="backup-user@backup-host:/backup/aerisun"
-    )
+    backup_rsync_uri: str = Field(default="backup-user@backup-host:/backup/aerisun")
     backup_ssh_port: int = 22
     backup_ssh_key: str | None = None
     sqlite_busy_timeout_ms: int = 5000
@@ -79,7 +77,9 @@ class Settings(BaseSettings):
         self.media_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
-        self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
+        self.waline_db_path.expanduser().resolve().parent.mkdir(
+            parents=True, exist_ok=True
+        )
 
 
 @lru_cache(maxsize=1)

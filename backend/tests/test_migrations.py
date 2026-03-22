@@ -187,8 +187,18 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
             (
                 json.dumps(
                     [
-                        {"key": "posts", "label": "文章评论", "path": "/posts/{slug}", "enabled": True},
-                        {"key": "guestbook", "label": "留言板", "path": "/guestbook", "enabled": True},
+                        {
+                            "key": "posts",
+                            "label": "文章评论",
+                            "path": "/posts/{slug}",
+                            "enabled": True,
+                        },
+                        {
+                            "key": "guestbook",
+                            "label": "留言板",
+                            "path": "/guestbook",
+                            "enabled": True,
+                        },
                     ],
                     ensure_ascii=False,
                 ),
@@ -197,8 +207,12 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
                 json.dumps(["twemoji", "qq", "bilibili"], ensure_ascii=False),
             ),
         )
-        connection.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
-        connection.execute("INSERT INTO alembic_version (version_num) VALUES ('0002_add_site_meta_fields')")
+        connection.execute(
+            "CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"
+        )
+        connection.execute(
+            "INSERT INTO alembic_version (version_num) VALUES ('0002_add_site_meta_fields')"
+        )
         connection.commit()
     finally:
         connection.close()
@@ -226,7 +240,13 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
     assert {"mood", "weather", "poem", "view_count"} <= diary_columns
     assert {"mood", "view_count"} <= thoughts_columns
     assert {"author_name", "source", "view_count"} <= excerpts_columns
-    assert {"label", "href", "trigger", "parent_id", "site_profile_id"} <= nav_item_columns
+    assert {
+        "label",
+        "href",
+        "trigger",
+        "parent_id",
+        "site_profile_id",
+    } <= nav_item_columns
     assert {
         "oauth_providers",
         "anonymous_enabled",

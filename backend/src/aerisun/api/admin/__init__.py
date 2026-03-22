@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.content.models import (
+    DiaryEntry,
+    ExcerptEntry,
+    PostEntry,
+    ThoughtEntry,
+)
 
 from .assets import router as assets_router
 from .auth import router as auth_router

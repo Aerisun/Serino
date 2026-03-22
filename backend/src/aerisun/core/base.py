@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def uuid_str() -> str:
@@ -42,7 +41,9 @@ class ContentMixin:
     body: Mapped[str] = mapped_column(Text, nullable=False)
     tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
-    visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="public")
+    visibility: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="public"
+    )
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_pinned: Mapped[bool] = mapped_column(default=False)
     pin_order: Mapped[int] = mapped_column(default=0)

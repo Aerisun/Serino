@@ -3,21 +3,26 @@ from __future__ import annotations
 import secrets
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, union_all, literal_column, literal
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
+from aerisun.domain.content.models import (
+    DiaryEntry,
+    ExcerptEntry,
+    PostEntry,
+    ThoughtEntry,
+)
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.models import AuditLog, BackupSnapshot
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records
 
@@ -29,7 +34,6 @@ from .schemas import (
     ApiKeyUpdate,
     AuditLogRead,
     BackupSnapshotRead,
-    DashboardStats,
     EnhancedDashboardStats,
     MonthlyCount,
     RecentContentItem,
@@ -46,6 +50,7 @@ _STARTUP_TIME = time.time()
 # API Keys
 # ---------------------------------------------------------------------------
 
+
 @router.get("/api-keys", response_model=list[ApiKeyAdminRead])
 def list_api_keys(
     _admin: AdminUser = Depends(get_current_admin),
@@ -55,7 +60,11 @@ def list_api_keys(
     return [ApiKeyAdminRead.model_validate(k) for k in keys]
 
 
-@router.post("/api-keys", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/api-keys",
+    response_model=ApiKeyCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_api_key(
     payload: ApiKeyCreate,
     _admin: AdminUser = Depends(get_current_admin),
@@ -114,6 +123,7 @@ def delete_api_key(
 # Audit Logs
 # ---------------------------------------------------------------------------
 
+
 @router.get("/audit-logs", response_model=dict)
 def list_audit_logs(
     page: int = Query(default=1, ge=1),
@@ -153,16 +163,21 @@ def list_audit_logs(
 # Backups
 # ---------------------------------------------------------------------------
 
+
 @router.get("/backups", response_model=list[BackupSnapshotRead])
 def list_backups(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    snapshots = session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
+    snapshots = (
+        session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
+    )
     return [BackupSnapshotRead.model_validate(s) for s in snapshots]
 
 
-@router.post("/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED
+)
 def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
@@ -202,6 +217,7 @@ def restore_backup(
 # Dashboard Stats
 # ---------------------------------------------------------------------------
 
+
 @router.get("/dashboard/stats", response_model=EnhancedDashboardStats)
 def dashboard_stats(
     _admin: AdminUser = Depends(get_current_admin),
@@ -224,7 +240,7 @@ def dashboard_stats(
     # Content by month (last 6 months)
     from datetime import timedelta
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     six_months_ago = now - timedelta(days=180)
 
     month_data: dict[str, dict[str, int]] = {}
@@ -246,7 +262,12 @@ def dashboard_stats(
         )
         for month_str, count in rows:
             if month_str not in month_data:
-                month_data[month_str] = {"posts": 0, "diary": 0, "thoughts": 0, "excerpts": 0}
+                month_data[month_str] = {
+                    "posts": 0,
+                    "diary": 0,
+                    "thoughts": 0,
+                    "excerpts": 0,
+                }
             month_data[month_str][type_key] = count
 
     content_by_month = sorted(
@@ -263,12 +284,7 @@ def dashboard_stats(
         (ExcerptEntry, "excerpt"),
     ]
     for model, type_key in recent_type_map:
-        rows = (
-            session.query(model)
-            .order_by(model.updated_at.desc())
-            .limit(5)
-            .all()
-        )
+        rows = session.query(model).order_by(model.updated_at.desc()).limit(5).all()
         for row in rows:
             recent_items.append(
                 RecentContentItem(
@@ -300,6 +316,7 @@ def dashboard_stats(
 # ---------------------------------------------------------------------------
 # System Info
 # ---------------------------------------------------------------------------
+
 
 @router.get("/info", response_model=SystemInfo)
 def system_info(

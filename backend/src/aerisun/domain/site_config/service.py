@@ -23,33 +23,39 @@ from aerisun.domain.site_config.schemas import (
     NavItemRead,
     PageCollectionRead,
     PageCopyRead,
+    PoemRead,
     ResumeExperienceRead,
     ResumeRead,
     ResumeSkillGroupRead,
     SiteConfigRead,
     SiteProfileRead,
-    PoemRead,
     SocialLinkRead,
 )
 
 
 def get_site_config(session: Session) -> SiteConfigRead:
-    site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    site = session.scalars(
+        select(SiteProfile).order_by(SiteProfile.created_at.asc())
+    ).first()
     if site is None:
         raise LookupError("site profile is missing")
 
     links = session.scalars(
-        select(SocialLink).where(SocialLink.site_profile_id == site.id).order_by(SocialLink.order_index.asc())
+        select(SocialLink)
+        .where(SocialLink.site_profile_id == site.id)
+        .order_by(SocialLink.order_index.asc())
     ).all()
     poems = session.scalars(
-        select(Poem).where(Poem.site_profile_id == site.id).order_by(Poem.order_index.asc())
+        select(Poem)
+        .where(Poem.site_profile_id == site.id)
+        .order_by(Poem.order_index.asc())
     ).all()
 
     hero_actions = json.loads(site.hero_actions) if site.hero_actions else []
 
     nav_items = session.scalars(
         select(NavItem)
-        .where(NavItem.site_profile_id == site.id, NavItem.is_enabled == True)
+        .where(NavItem.site_profile_id == site.id, NavItem.is_enabled.is_(True))
         .order_by(NavItem.order_index.asc())
     ).all()
 
@@ -94,7 +100,10 @@ def get_site_config(session: Session) -> SiteConfigRead:
 
 def get_page_copy(session: Session) -> PageCollectionRead:
     copies = session.scalars(select(PageCopy).order_by(PageCopy.page_key.asc())).all()
-    options = {option.page_key: option for option in session.scalars(select(PageDisplayOption)).all()}
+    options = {
+        option.page_key: option
+        for option in session.scalars(select(PageDisplayOption)).all()
+    }
 
     items = []
     for page in copies:
@@ -121,14 +130,18 @@ def get_page_copy(session: Session) -> PageCollectionRead:
 
 
 def get_community_config(session: Session) -> CommunityConfigRead:
-    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+    config = session.scalars(
+        select(CommunityConfig).order_by(CommunityConfig.created_at.asc())
+    ).first()
     if config is None:
         raise LookupError("community config is missing")
     return CommunityConfigRead.model_validate(config)
 
 
 def get_resume(session: Session) -> ResumeRead:
-    basics = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
+    basics = session.scalars(
+        select(ResumeBasics).order_by(ResumeBasics.created_at.asc())
+    ).first()
     if basics is None:
         raise LookupError("resume basics are missing")
 
