@@ -54,7 +54,7 @@ export default function AssetsPage() {
           columns={[
             { header: t("assets.fileName"), accessor: "file_name" },
             { header: t("assets.mimeType"), accessor: (row) => row.mime_type || "-" },
-            { header: t("assets.fileSize"), accessor: (row) => formatBytes(row.byte_size) },
+            { header: t("assets.fileSize"), accessor: (row) => formatBytes(row.byte_size ?? 0) },
             { header: t("assets.uploadedAt"), accessor: (row) => formatDate(row.created_at) },
             { header: "", accessor: (row) => (
               <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); if (confirm(t("assets.deleteConfirm"))) del.mutate(row.id); }}>

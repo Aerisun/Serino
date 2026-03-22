@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSystemInfo } from "@/api/endpoints/system";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Server, Database, HardDrive, Clock, Code } from "lucide-react";
 import { useI18n } from "@/i18n";
 

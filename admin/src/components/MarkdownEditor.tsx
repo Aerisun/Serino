@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import { Bold, Italic, Heading1, Heading2, Link, Image, Code, List, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/i18n";
 
 interface MarkdownEditorProps {

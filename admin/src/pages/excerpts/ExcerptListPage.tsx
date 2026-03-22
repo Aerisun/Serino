@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useResourceList } from "@/hooks/useResource";
@@ -36,11 +36,11 @@ export default function ExcerptListPage() {
 
   const [sort_by, sort_order] = sort.split(":");
 
-  const searchTimer = useState<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = (value: string) => {
     setSearch(value);
-    if (searchTimer[0]) clearTimeout(searchTimer[0]);
-    searchTimer[1] = setTimeout(() => { setSearchDebounced(value); setPage(1); }, 300);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => { setSearchDebounced(value); setPage(1); }, 300);
   };
 
   const { items, total, pageSize, isLoading, bulkDelete, bulkStatus, isBulkDeleting } = useResourceList(
