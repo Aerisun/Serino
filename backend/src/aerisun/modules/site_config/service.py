@@ -5,8 +5,10 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.models import PageCopy, PageDisplayOption, Poem, ResumeBasics, ResumeExperience, ResumeSkillGroup, SiteProfile, SocialLink
+from aerisun.models import NavItem, PageCopy, PageDisplayOption, Poem, ResumeBasics, ResumeExperience, ResumeSkillGroup, SiteProfile, SocialLink
 from aerisun.schemas import (
+    NavChildRead,
+    NavItemRead,
     PageCollectionRead,
     PageCopyRead,
     ResumeExperienceRead,
@@ -33,6 +35,31 @@ def get_site_config(session: Session) -> SiteConfigRead:
 
     hero_actions = json.loads(site.hero_actions) if site.hero_actions else []
 
+    nav_items = session.scalars(
+        select(NavItem)
+        .where(NavItem.site_profile_id == site.id, NavItem.is_enabled == True)
+        .order_by(NavItem.order_index.asc())
+    ).all()
+
+    children_map: dict[str, list] = {}
+    for item in nav_items:
+        if item.parent_id:
+            children_map.setdefault(item.parent_id, []).append(item)
+
+    navigation = []
+    for item in nav_items:
+        if item.parent_id is None:
+            nav_read = NavItemRead(
+                label=item.label,
+                trigger=item.trigger,
+                href=item.href,
+                children=[
+                    NavChildRead(label=child.label, href=child.href or "")
+                    for child in children_map.get(item.id, [])
+                ],
+            )
+            navigation.append(nav_read)
+
     return SiteConfigRead(
         site=SiteProfileRead(
             name=site.name,
@@ -45,9 +72,11 @@ def get_site_config(session: Session) -> SiteConfigRead:
             meta_description=site.meta_description,
             copyright=site.copyright,
             hero_actions=hero_actions,
+            hero_video_url=site.hero_video_url,
         ),
         social_links=[SocialLinkRead.model_validate(link) for link in links],
         poems=[PoemRead.model_validate(poem) for poem in poems],
+        navigation=navigation,
     )
 
 
