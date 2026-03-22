@@ -34,6 +34,7 @@ package-dir = {"" = "src"}
 
 [project.scripts]
 aerisun-create-admin = "aerisun.cli:create_admin"
+aerisun-reset-password = "aerisun.cli:reset_password"
 
 [tool.setuptools.packages.find]
 where = ["src"]
