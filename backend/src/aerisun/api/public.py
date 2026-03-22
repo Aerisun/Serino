@@ -217,9 +217,10 @@ def read_recent_activity(
 @router.get("/activity-heatmap", response_model=ActivityHeatmapRead)
 def read_activity_heatmap(
     weeks: int = Query(default=52, ge=1, le=104),
+    tz: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ) -> ActivityHeatmapRead:
-    return build_activity_heatmap(session, weeks=weeks)
+    return build_activity_heatmap(session, weeks=weeks, tz_name=tz)
 
 
 @router.get("/healthz", response_model=HealthRead)

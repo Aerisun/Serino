@@ -233,5 +233,9 @@ export async function fetchRecentActivity(limit?: number, init?: RequestInit) {
 export async function fetchActivityHeatmap(weeks?: number, init?: RequestInit) {
   const path = new URL("/api/v1/public/activity-heatmap", "http://localhost");
   if (weeks) path.searchParams.set("weeks", String(weeks));
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) path.searchParams.set("tz", tz);
+  } catch { /* ignore */ }
   return apiClient.get<PublicActivityHeatmapRead>(`${path.pathname}${path.search}`, init);
 }
