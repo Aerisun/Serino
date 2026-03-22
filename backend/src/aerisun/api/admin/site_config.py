@@ -48,23 +48,25 @@ router = APIRouter(prefix="/site-config", tags=["admin-site-config"])
 # --- SiteProfile: single-row GET/PUT ---
 
 
-@router.get("/profile", response_model=SiteProfileAdminRead)
+@router.get("/profile", response_model=SiteProfileAdminRead, summary="获取站点资料")
 def get_profile(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """返回站点基本资料配置。"""
     profile = session.query(SiteProfile).first()
     if profile is None:
         raise HTTPException(status_code=404, detail="Site profile not configured")
     return SiteProfileAdminRead.model_validate(profile)
 
 
-@router.put("/profile", response_model=SiteProfileAdminRead)
+@router.put("/profile", response_model=SiteProfileAdminRead, summary="更新站点资料")
 def update_profile(
     payload: SiteProfileUpdate,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """更新站点名称、描述、头像等基本资料。"""
     profile = session.query(SiteProfile).first()
     if profile is None:
         raise HTTPException(status_code=404, detail="Site profile not configured")
@@ -75,23 +77,25 @@ def update_profile(
     return SiteProfileAdminRead.model_validate(profile)
 
 
-@router.get("/community-config", response_model=CommunityConfigAdminRead)
+@router.get("/community-config", response_model=CommunityConfigAdminRead, summary="获取社区评论配置")
 def get_community_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """返回社区评论系统的当前配置。"""
     config = session.query(CommunityConfig).first()
     if config is None:
         raise HTTPException(status_code=404, detail="Community config not configured")
     return CommunityConfigAdminRead.model_validate(config)
 
 
-@router.put("/community-config", response_model=CommunityConfigAdminRead)
+@router.put("/community-config", response_model=CommunityConfigAdminRead, summary="更新社区评论配置")
 def update_community_config(
     payload: CommunityConfigUpdate,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """更新社区评论系统的配置项。"""
     config = session.query(CommunityConfig).first()
     if config is None:
         raise HTTPException(status_code=404, detail="Community config not configured")
@@ -149,12 +153,13 @@ router.include_router(display_options_router)
 # --- NavItem reorder (must be registered before CRUD router) ---
 
 
-@router.put("/nav-items/reorder", response_model=list[NavItemAdminRead])
+@router.put("/nav-items/reorder", response_model=list[NavItemAdminRead], summary="重排导航项顺序")
 def reorder_nav_items(
     items: list[NavReorderItem],
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """批量更新导航项的父级关系和排序索引。"""
     for reorder_item in items:
         nav_item = session.get(NavItem, reorder_item.id)
         if nav_item is None:

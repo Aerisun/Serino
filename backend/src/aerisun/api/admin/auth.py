@@ -33,10 +33,11 @@ def _extract_token(request: Request) -> str | None:
     return None
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse, summary="管理员登录")
 def login(
     payload: LoginRequest, session: Session = Depends(get_session)
 ) -> LoginResponse:
+    """验证用户名密码并创建会话令牌。"""
     user = (
         session.query(AdminUser).filter(AdminUser.username == payload.username).first()
     )
@@ -69,11 +70,12 @@ def login(
     return LoginResponse(token=token, expires_at=expires_at)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, summary="管理员登出")
 def logout(
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
+    """注销当前管理员的所有活跃会话。"""
     sessions = (
         session.query(AdminSession).filter(AdminSession.admin_user_id == admin.id).all()
     )
@@ -82,17 +84,19 @@ def logout(
     session.commit()
 
 
-@router.get("/me", response_model=AdminUserRead)
+@router.get("/me", response_model=AdminUserRead, summary="获取当前管理员信息")
 def me(admin: AdminUser = Depends(get_current_admin)) -> AdminUserRead:
+    """返回当前已认证管理员的用户信息。"""
     return AdminUserRead.model_validate(admin)
 
 
-@router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/password", status_code=status.HTTP_204_NO_CONTENT, summary="修改密码")
 def change_password(
     payload: PasswordChangeRequest,
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
+    """校验旧密码后更新为新密码。"""
     if not bcrypt.checkpw(
         payload.current_password.encode(), admin.password_hash.encode()
     ):
@@ -103,12 +107,13 @@ def change_password(
     session.commit()
 
 
-@router.put("/profile", response_model=AdminUserRead)
+@router.put("/profile", response_model=AdminUserRead, summary="更新个人资料")
 def update_profile(
     payload: AdminProfileUpdate,
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> AdminUserRead:
+    """更新当前管理员的个人资料（如用户名）。"""
     if payload.username is not None:
         existing = (
             session.query(AdminUser)
@@ -123,12 +128,13 @@ def update_profile(
     return AdminUserRead.model_validate(admin)
 
 
-@router.get("/sessions", response_model=list[AdminSessionRead])
+@router.get("/sessions", response_model=list[AdminSessionRead], summary="获取活跃会话列表")
 def list_sessions(
     request: Request,
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list:
+    """列出当前管理员的所有未过期会话。"""
     now = datetime.now(UTC)
     current_token = _extract_token(request)
     active = (
@@ -148,12 +154,13 @@ def list_sessions(
     ]
 
 
-@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT, summary="撤销指定会话")
 def revoke_session(
     session_id: str,
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
+    """根据会话 ID 撤销（删除）一个管理员会话。"""
     target = session.get(AdminSession, session_id)
     if target is None or target.admin_user_id != admin.id:
         raise HTTPException(status_code=404, detail="Session not found")

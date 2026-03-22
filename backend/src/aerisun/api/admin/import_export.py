@@ -37,13 +37,14 @@ class ImportResult(BaseModel):
     errors: list[str] = []
 
 
-@router.get("/export")
+@router.get("/export", summary="导出内容")
 def export_content(
     content_type: str = Query(..., description="posts, diary, thoughts, or excerpts"),
     format: str = Query(default="json", description="json or markdown_zip"),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> StreamingResponse:
+    """将指定类型的内容导出为 JSON 或 Markdown ZIP 文件。"""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
         raise HTTPException(
@@ -85,13 +86,14 @@ def export_content(
     )
 
 
-@router.post("/import", response_model=ImportResult)
+@router.post("/import", response_model=ImportResult, summary="导入内容")
 async def import_content(
     content_type: str = Query(...),
     file: UploadFile = File(...),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> ImportResult:
+    """从上传的 JSON 文件导入内容，支持新增和更新。"""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
         raise HTTPException(

@@ -17,13 +17,14 @@ from .schemas import AssetAdminRead, BulkActionResponse, BulkDeleteRequest
 router = APIRouter(prefix="/assets", tags=["admin-assets"])
 
 
-@router.get("/", response_model=dict)
+@router.get("/", response_model=dict, summary="获取资源列表")
 def list_assets(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    """分页查询已上传的媒体资源。"""
     q = session.query(Asset)
     total = q.count()
     items = (
@@ -40,12 +41,13 @@ def list_assets(
     }
 
 
-@router.post("/", response_model=AssetAdminRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=AssetAdminRead, status_code=status.HTTP_201_CREATED, summary="上传资源")
 def upload_asset(
     file: UploadFile,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """接收文件并保存到媒体目录，返回资源元信息。"""
     settings = get_settings()
     media_dir = settings.media_dir.expanduser().resolve()
     media_dir.mkdir(parents=True, exist_ok=True)
@@ -71,12 +73,13 @@ def upload_asset(
     return AssetAdminRead.model_validate(asset)
 
 
-@router.post("/bulk-delete", response_model=BulkActionResponse)
+@router.post("/bulk-delete", response_model=BulkActionResponse, summary="批量删除资源")
 def bulk_delete_assets(
     payload: BulkDeleteRequest,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """根据 ID 列表批量删除媒体资源。"""
     affected = (
         session.query(Asset)
         .filter(Asset.id.in_(payload.ids))
@@ -86,24 +89,26 @@ def bulk_delete_assets(
     return {"affected": affected}
 
 
-@router.get("/{asset_id}", response_model=AssetAdminRead)
+@router.get("/{asset_id}", response_model=AssetAdminRead, summary="获取单个资源")
 def get_asset(
     asset_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """根据 ID 获取单个媒体资源的详细信息。"""
     obj = session.get(Asset, asset_id)
     if obj is None:
         raise HTTPException(status_code=404, detail="Not found")
     return AssetAdminRead.model_validate(obj)
 
 
-@router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除资源")
 def delete_asset(
     asset_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
+    """删除指定资源并移除对应的磁盘文件。"""
     asset = session.get(Asset, asset_id)
     if asset is None:
         raise HTTPException(status_code=404, detail="Asset not found")

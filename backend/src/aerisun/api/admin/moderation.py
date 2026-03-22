@@ -50,7 +50,7 @@ def _guestbook_admin_read_from_waline(record) -> GuestbookAdminRead:
     )
 
 
-@router.get("/comments", response_model=dict)
+@router.get("/comments", response_model=dict, summary="获取评论审核列表")
 def list_comments(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -64,6 +64,7 @@ def list_comments(
     _admin: AdminUser = Depends(get_current_admin),
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    """分页查询待审核或全部评论，支持多维筛选。"""
     items, total = list_waline_records(
         page=page,
         page_size=page_size,
@@ -83,13 +84,14 @@ def list_comments(
     }
 
 
-@router.post("/comments/{comment_id}/moderate", response_model=CommentAdminRead)
+@router.post("/comments/{comment_id}/moderate", response_model=CommentAdminRead, summary="审核评论")
 def moderate_comment(
     comment_id: str,
     payload: ModerateAction,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """对指定评论执行通过、拒绝或删除操作。"""
     try:
         waline_id = int(comment_id)
     except ValueError as exc:
@@ -126,7 +128,7 @@ def moderate_comment(
     return _comment_admin_read_from_waline(result)
 
 
-@router.get("/guestbook", response_model=dict)
+@router.get("/guestbook", response_model=dict, summary="获取留言审核列表")
 def list_guestbook(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -139,6 +141,7 @@ def list_guestbook(
     _admin: AdminUser = Depends(get_current_admin),
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    """分页查询留言板条目，支持状态和关键词筛选。"""
     items, total = list_guestbook_records(
         page=page,
         page_size=page_size,
@@ -157,13 +160,14 @@ def list_guestbook(
     }
 
 
-@router.post("/guestbook/{entry_id}/moderate", response_model=GuestbookAdminRead)
+@router.post("/guestbook/{entry_id}/moderate", response_model=GuestbookAdminRead, summary="审核留言")
 def moderate_guestbook(
     entry_id: str,
     payload: ModerateAction,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """对指定留言执行通过、拒绝或删除操作。"""
     try:
         waline_id = int(entry_id)
     except ValueError as exc:
