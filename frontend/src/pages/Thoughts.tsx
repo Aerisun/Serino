@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
+import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import {
@@ -48,6 +49,7 @@ const Thoughts = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [likedSet, setLikedSet] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -64,6 +66,7 @@ const Thoughts = () => {
 
         const nextItems = payload.items.map(mapRemoteThought);
         setItems(nextItems);
+        setExpandedCommentId(null);
         setStatus(nextItems.length > 0 ? "ready" : "empty");
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -207,8 +210,12 @@ const Thoughts = () => {
                   <Heart className={`h-3.5 w-3.5 ${likedSet.has(thought.id) ? "fill-current" : ""}`} />
                   {likeCounts[thought.id] ?? thought.likes}
                 </button>
-                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
-                  <MessageCircle className="h-3.5 w-3.5" />
+                <button
+                  type="button"
+                  onClick={() => setExpandedCommentId(expandedCommentId === thought.id ? null : thought.id)}
+                  className={`flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95] ${expandedCommentId === thought.id ? "text-[rgb(var(--shiro-accent-rgb)/0.76)]" : ""}`}
+                >
+                  <MessageCircle className={`h-3.5 w-3.5 ${expandedCommentId === thought.id ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
                   {thought.comments}
                 </button>
                 <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
@@ -216,6 +223,25 @@ const Thoughts = () => {
                   {thought.reposts}
                 </button>
               </div>
+
+              <AnimatePresence>
+                {expandedCommentId === thought.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    className="mt-4 overflow-hidden"
+                  >
+                    <CommentSection
+                      contentType="thoughts"
+                      contentSlug={thought.id}
+                      commentCount={thought.comments}
+                      hideReactions
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           ))}
       </div>
