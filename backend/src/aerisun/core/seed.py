@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
@@ -9,6 +8,8 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.settings import get_settings
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -21,11 +22,8 @@ from aerisun.domain.site_config.models import (
     SiteProfile,
     SocialLink,
 )
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import connect_waline_db, make_waline_comment_row
-
 
 DEFAULT_SITE_PROFILE = {
     "name": "Felix",
@@ -51,7 +49,13 @@ DEFAULT_SOCIAL_LINKS = [
     {"name": "GitHub", "href": "https://github.com/", "icon_key": "github", "placement": "hero", "order_index": 0},
     {"name": "Telegram", "href": "https://t.me/", "icon_key": "telegram", "placement": "hero", "order_index": 1},
     {"name": "X", "href": "https://x.com/", "icon_key": "x", "placement": "hero", "order_index": 2},
-    {"name": "网易云", "href": "https://music.163.com/", "icon_key": "netease", "placement": "footer", "order_index": 3},
+    {
+        "name": "网易云",
+        "href": "https://music.163.com/",
+        "icon_key": "netease",
+        "placement": "footer",
+        "order_index": 3,
+    },
 ]
 
 DEFAULT_POEMS = [
@@ -70,16 +74,165 @@ DEFAULT_POEMS = [
 ]
 
 DEFAULT_PAGE_COPIES = [
-    {"page_key": "activity", "label": None, "nav_label": None, "title": "友邻与最近动态", "subtitle": "展示朋友动态、最近活动和贡献热力图。", "description": "首页活动区配置。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {"dashboardLabel": "Dashboard"}},
-    {"page_key": "notFound", "label": None, "nav_label": None, "title": "这个页面没有留下来", "subtitle": "似乎已经离开了当前的路径。", "description": "你访问的页面不存在，或者已经被移动。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {"metaTitle": "页面未找到", "metaDescription": "你访问的页面不存在，或者已经被移动。"}},
-    {"page_key": "posts", "label": "Blog", "nav_label": "帖子", "title": "Posts", "subtitle": "整理过的想法与实践记录。", "description": "文章列表与文章详情页文案。", "search_placeholder": "搜索文章...", "empty_message": "没有找到匹配的文章", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {"category_all_label": "全部"}},
-    {"page_key": "diary", "label": None, "nav_label": "日记", "title": "日记", "subtitle": "每天一点点，记录生活的温度。", "description": "日记页文案。", "search_placeholder": None, "empty_message": "今天还没有新的日记", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "friends", "label": None, "nav_label": "友链", "title": "朋友们", "subtitle": "海内存知己，天涯若比邻。", "description": "友链与 Friend Circle 页面文案。", "search_placeholder": None, "empty_message": "暂时没有友链内容", "max_width": "max-w-4xl", "page_size": 10, "download_label": None, "extras": {"circle_title": "Friend Circle", "statusLabel": "状态", "loadingLabel": "正在加载...", "loadMoreLabel": "加载更多", "retryLabel": "重试加载"}},
-    {"page_key": "excerpts", "label": None, "nav_label": "文摘", "title": "文摘", "subtitle": "摘录那些让我停下来想一想的文字。", "description": "文摘页文案。", "search_placeholder": None, "empty_message": "还没有整理好的文摘", "max_width": "max-w-3xl", "page_size": None, "download_label": None, "extras": {"modalCloseLabel": "关闭"}},
-    {"page_key": "thoughts", "label": None, "nav_label": "碎碎念", "title": "碎碎念", "subtitle": "一些不成文的想法，随手记下的片段。", "description": "碎碎念页文案。", "search_placeholder": None, "empty_message": "最近没有新的碎碎念", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {}},
-    {"page_key": "guestbook", "label": None, "nav_label": "留言板", "title": "留言板", "subtitle": "留下你的足迹，说点什么吧。", "description": "留言板页文案。", "search_placeholder": None, "empty_message": "还没有人留言", "max_width": "max-w-2xl", "page_size": None, "download_label": None, "extras": {"namePlaceholder": "你的名字", "contentPlaceholder": "想说的话", "submitLabel": "提交留言", "submittingLabel": "提交留言", "loadingLabel": "留言板正在更新", "retryLabel": "重试加载"}},
-    {"page_key": "resume", "label": None, "nav_label": "简历", "title": "Felix", "subtitle": "UI/UX Designer · Frontend Developer", "description": "简历页配置。", "search_placeholder": None, "empty_message": None, "max_width": "max-w-3xl", "page_size": None, "download_label": "下载 PDF", "extras": {}},
-    {"page_key": "calendar", "label": None, "nav_label": "日历", "title": "日历", "subtitle": "记录每一天的痕迹。", "description": "日历与活动投影页面文案。", "search_placeholder": None, "empty_message": "日历里还没有内容", "max_width": "max-w-4xl", "page_size": None, "download_label": None, "extras": {"weekdayLabels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"], "monthLabels": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"], "loadingLabel": "正在加载日历", "retryLabel": "重试加载", "todayLabel": "今日"}},
+    {
+        "page_key": "activity",
+        "label": None,
+        "nav_label": None,
+        "title": "友邻与最近动态",
+        "subtitle": "展示朋友动态、最近活动和贡献热力图。",
+        "description": "首页活动区配置。",
+        "search_placeholder": None,
+        "empty_message": None,
+        "max_width": "max-w-4xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {"dashboardLabel": "Dashboard"},
+    },
+    {
+        "page_key": "notFound",
+        "label": None,
+        "nav_label": None,
+        "title": "这个页面没有留下来",
+        "subtitle": "似乎已经离开了当前的路径。",
+        "description": "你访问的页面不存在，或者已经被移动。",
+        "search_placeholder": None,
+        "empty_message": None,
+        "max_width": "max-w-2xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {"metaTitle": "页面未找到", "metaDescription": "你访问的页面不存在，或者已经被移动。"},
+    },
+    {
+        "page_key": "posts",
+        "label": "Blog",
+        "nav_label": "帖子",
+        "title": "Posts",
+        "subtitle": "整理过的想法与实践记录。",
+        "description": "文章列表与文章详情页文案。",
+        "search_placeholder": "搜索文章...",
+        "empty_message": "没有找到匹配的文章",
+        "max_width": "max-w-3xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {"category_all_label": "全部"},
+    },
+    {
+        "page_key": "diary",
+        "label": None,
+        "nav_label": "日记",
+        "title": "日记",
+        "subtitle": "每天一点点，记录生活的温度。",
+        "description": "日记页文案。",
+        "search_placeholder": None,
+        "empty_message": "今天还没有新的日记",
+        "max_width": "max-w-2xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {},
+    },
+    {
+        "page_key": "friends",
+        "label": None,
+        "nav_label": "友链",
+        "title": "朋友们",
+        "subtitle": "海内存知己，天涯若比邻。",
+        "description": "友链与 Friend Circle 页面文案。",
+        "search_placeholder": None,
+        "empty_message": "暂时没有友链内容",
+        "max_width": "max-w-4xl",
+        "page_size": 10,
+        "download_label": None,
+        "extras": {
+            "circle_title": "Friend Circle",
+            "statusLabel": "状态",
+            "loadingLabel": "正在加载...",
+            "loadMoreLabel": "加载更多",
+            "retryLabel": "重试加载",
+        },
+    },
+    {
+        "page_key": "excerpts",
+        "label": None,
+        "nav_label": "文摘",
+        "title": "文摘",
+        "subtitle": "摘录那些让我停下来想一想的文字。",
+        "description": "文摘页文案。",
+        "search_placeholder": None,
+        "empty_message": "还没有整理好的文摘",
+        "max_width": "max-w-3xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {"modalCloseLabel": "关闭"},
+    },
+    {
+        "page_key": "thoughts",
+        "label": None,
+        "nav_label": "碎碎念",
+        "title": "碎碎念",
+        "subtitle": "一些不成文的想法，随手记下的片段。",
+        "description": "碎碎念页文案。",
+        "search_placeholder": None,
+        "empty_message": "最近没有新的碎碎念",
+        "max_width": "max-w-2xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {},
+    },
+    {
+        "page_key": "guestbook",
+        "label": None,
+        "nav_label": "留言板",
+        "title": "留言板",
+        "subtitle": "留下你的足迹，说点什么吧。",
+        "description": "留言板页文案。",
+        "search_placeholder": None,
+        "empty_message": "还没有人留言",
+        "max_width": "max-w-2xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {
+            "namePlaceholder": "你的名字",
+            "contentPlaceholder": "想说的话",
+            "submitLabel": "提交留言",
+            "submittingLabel": "提交留言",
+            "loadingLabel": "留言板正在更新",
+            "retryLabel": "重试加载",
+        },
+    },
+    {
+        "page_key": "resume",
+        "label": None,
+        "nav_label": "简历",
+        "title": "Felix",
+        "subtitle": "UI/UX Designer · Frontend Developer",
+        "description": "简历页配置。",
+        "search_placeholder": None,
+        "empty_message": None,
+        "max_width": "max-w-3xl",
+        "page_size": None,
+        "download_label": "下载 PDF",
+        "extras": {},
+    },
+    {
+        "page_key": "calendar",
+        "label": None,
+        "nav_label": "日历",
+        "title": "日历",
+        "subtitle": "记录每一天的痕迹。",
+        "description": "日历与活动投影页面文案。",
+        "search_placeholder": None,
+        "empty_message": "日历里还没有内容",
+        "max_width": "max-w-4xl",
+        "page_size": None,
+        "download_label": None,
+        "extras": {
+            "weekdayLabels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+            "monthLabels": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+            "loadingLabel": "正在加载日历",
+            "retryLabel": "重试加载",
+            "todayLabel": "今日",
+        },
+    },
 ]
 
 DEFAULT_PAGE_OPTIONS = [
@@ -96,15 +249,57 @@ DEFAULT_PAGE_OPTIONS = [
 
 DEFAULT_NAV_ITEMS = [
     {"label": "首页", "href": "/", "page_key": "home", "trigger": "arrow", "order_index": 0},
-    {"label": "简历", "href": "/resume", "page_key": "resume", "trigger": "none", "order_index": 0, "_parent_label": "首页"},
-    {"label": "留言板", "href": "/guestbook", "page_key": "guestbook", "trigger": "none", "order_index": 1, "_parent_label": "首页"},
-    {"label": "日历", "href": "/calendar", "page_key": "calendar", "trigger": "none", "order_index": 2, "_parent_label": "首页"},
+    {
+        "label": "简历",
+        "href": "/resume",
+        "page_key": "resume",
+        "trigger": "none",
+        "order_index": 0,
+        "_parent_label": "首页",
+    },
+    {
+        "label": "留言板",
+        "href": "/guestbook",
+        "page_key": "guestbook",
+        "trigger": "none",
+        "order_index": 1,
+        "_parent_label": "首页",
+    },
+    {
+        "label": "日历",
+        "href": "/calendar",
+        "page_key": "calendar",
+        "trigger": "none",
+        "order_index": 2,
+        "_parent_label": "首页",
+    },
     {"label": "帖子", "href": "/posts", "page_key": "posts", "trigger": "none", "order_index": 1},
     {"label": "友链", "href": "/friends", "page_key": "friends", "trigger": "none", "order_index": 2},
     {"label": "更多", "href": None, "page_key": "more", "trigger": "hover", "order_index": 3},
-    {"label": "碎碎念", "href": "/thoughts", "page_key": "thoughts", "trigger": "none", "order_index": 0, "_parent_label": "更多"},
-    {"label": "日记", "href": "/diary", "page_key": "diary", "trigger": "none", "order_index": 1, "_parent_label": "更多"},
-    {"label": "文摘", "href": "/excerpts", "page_key": "excerpts", "trigger": "none", "order_index": 2, "_parent_label": "更多"},
+    {
+        "label": "碎碎念",
+        "href": "/thoughts",
+        "page_key": "thoughts",
+        "trigger": "none",
+        "order_index": 0,
+        "_parent_label": "更多",
+    },
+    {
+        "label": "日记",
+        "href": "/diary",
+        "page_key": "diary",
+        "trigger": "none",
+        "order_index": 1,
+        "_parent_label": "更多",
+    },
+    {
+        "label": "文摘",
+        "href": "/excerpts",
+        "page_key": "excerpts",
+        "trigger": "none",
+        "order_index": 2,
+        "_parent_label": "更多",
+    },
 ]
 
 DEFAULT_COMMENT_AVATAR_PRESETS = [
@@ -139,6 +334,7 @@ DEFAULT_COMMENT_AVATAR_PRESETS = [
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble",
     },
 ]
+
 
 def build_default_community_config() -> dict[str, object]:
     settings = get_settings()
@@ -184,6 +380,7 @@ def _seed_community_config(session: Session) -> None:
     if not (config.server_url or "").strip():
         config.server_url = default_server_url
 
+
 DEFAULT_RESUME = {
     "title": "Felix",
     "subtitle": "UI/UX Designer · Frontend Developer",
@@ -193,7 +390,11 @@ DEFAULT_RESUME = {
 
 DEFAULT_SKILLS = [
     {"category": "Frontend", "items": ["React", "TypeScript", "Vite", "Tailwind CSS"], "order_index": 0},
-    {"category": "Design", "items": ["UI 系统", "Glassmorphism", "Motion Design", "Information Architecture"], "order_index": 1},
+    {
+        "category": "Design",
+        "items": ["UI 系统", "Glassmorphism", "Motion Design", "Information Architecture"],
+        "order_index": 1,
+    },
     {"category": "Backend", "items": ["FastAPI", "SQLAlchemy", "SQLite", "Docker"], "order_index": 2},
 ]
 
@@ -1080,10 +1281,15 @@ def _merge_page_copy(existing: PageCopy, default_item: dict) -> bool:
             existing_extras[key] = value
             changed = True
 
-    if (
-        existing.page_key == "calendar"
-        and existing_extras.get("weekdayLabels") == ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-    ):
+    if existing.page_key == "calendar" and existing_extras.get("weekdayLabels") == [
+        "周日",
+        "周一",
+        "周二",
+        "周三",
+        "周四",
+        "周五",
+        "周六",
+    ]:
         existing_extras["weekdayLabels"] = default_extras.get("weekdayLabels", existing_extras["weekdayLabels"])
         changed = True
 
@@ -1093,10 +1299,7 @@ def _merge_page_copy(existing: PageCopy, default_item: dict) -> bool:
 
 
 def _seed_missing_page_copies(session: Session) -> None:
-    existing_by_key = {
-        page_copy.page_key: page_copy
-        for page_copy in session.scalars(select(PageCopy)).all()
-    }
+    existing_by_key = {page_copy.page_key: page_copy for page_copy in session.scalars(select(PageCopy)).all()}
 
     for item in DEFAULT_PAGE_COPIES:
         page_copy = existing_by_key.get(item["page_key"])
@@ -1114,10 +1317,7 @@ def _seed_missing_page_options(session: Session) -> None:
 
 
 def _seed_social_data(session: Session) -> None:
-    friends_by_name = {
-        friend.name: friend
-        for friend in session.scalars(select(Friend)).all()
-    }
+    friends_by_name = {friend.name: friend for friend in session.scalars(select(Friend)).all()}
     for item in DEFAULT_FRIENDS:
         friend = friends_by_name.get(item["name"])
         if friend is None:
@@ -1164,9 +1364,7 @@ def _seed_social_data(session: Session) -> None:
             source.last_fetched_at = item["last_fetched_at"]
 
     existing_feed_urls = set(session.scalars(select(FriendFeedItem.url)).all())
-    missing_feed_items = [
-        item for item in DEFAULT_FRIEND_FEED_ITEMS if item["url"] not in existing_feed_urls
-    ]
+    missing_feed_items = [item for item in DEFAULT_FRIEND_FEED_ITEMS if item["url"] not in existing_feed_urls]
     if missing_feed_items:
         session.add_all(
             [
@@ -1281,6 +1479,7 @@ def _seed_waline_comment_data() -> None:
 
         connection.commit()
 
+
 def seed_reference_data() -> None:
     get_settings().ensure_directories()
     init_db()
@@ -1291,20 +1490,19 @@ def seed_reference_data() -> None:
             session.add(site)
             session.flush()
 
+            session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
             session.add_all(
-                [SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS]
-            )
-            session.add_all(
-                [Poem(site_profile_id=site.id, order_index=index, content=text) for index, text in enumerate(DEFAULT_POEMS)]
+                [
+                    Poem(site_profile_id=site.id, order_index=index, content=text)
+                    for index, text in enumerate(DEFAULT_POEMS)
+                ]
             )
             session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
             session.add_all([PageDisplayOption(**item) for item in DEFAULT_PAGE_OPTIONS])
             resume = ResumeBasics(**DEFAULT_RESUME)
             session.add(resume)
             session.flush()
-            session.add_all(
-                [ResumeSkillGroup(resume_basics_id=resume.id, **group) for group in DEFAULT_SKILLS]
-            )
+            session.add_all([ResumeSkillGroup(resume_basics_id=resume.id, **group) for group in DEFAULT_SKILLS])
             session.add_all(
                 [ResumeExperience(resume_basics_id=resume.id, **experience) for experience in DEFAULT_EXPERIENCES]
             )

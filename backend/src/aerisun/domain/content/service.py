@@ -67,10 +67,7 @@ def _comment_counts_by_slug(session: Session, content_type: str, slugs: list[str
 
     paths = [build_comment_path(content_type, slug) for slug in slugs]
     counts_by_path = count_records_by_urls(urls=paths, status="approved")
-    return {
-        slug: counts_by_path.get(build_comment_path(content_type, slug), 0)
-        for slug in slugs
-    }
+    return {slug: counts_by_path.get(build_comment_path(content_type, slug), 0) for slug in slugs}
 
 
 def _like_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
@@ -98,13 +95,13 @@ def _to_entry(
     published_reference = item.published_at or item.created_at
 
     # Read type-specific fields directly from the model
-    category = getattr(item, 'category', None)
-    mood = getattr(item, 'mood', None)
-    weather = getattr(item, 'weather', None)
-    poem = getattr(item, 'poem', None)
-    author_name = getattr(item, 'author_name', None)
-    source = getattr(item, 'source', None)
-    view_count = getattr(item, 'view_count', 0) or 0
+    category = getattr(item, "category", None)
+    mood = getattr(item, "mood", None)
+    weather = getattr(item, "weather", None)
+    poem = getattr(item, "poem", None)
+    author_name = getattr(item, "author_name", None)
+    source = getattr(item, "source", None)
+    view_count = getattr(item, "view_count", 0) or 0
 
     return ContentEntryRead(
         slug=item.slug,
@@ -143,15 +140,11 @@ def _list_entries(
     slugs = [row.slug for row in rows]
     comment_counts = _comment_counts_by_slug(session, content_type, slugs)
     like_counts = _like_counts_by_slug(session, content_type, slugs)
-    return ContentCollectionRead(
-        items=[_to_entry(row, content_type, comment_counts, like_counts) for row in rows]
-    )
+    return ContentCollectionRead(items=[_to_entry(row, content_type, comment_counts, like_counts) for row in rows])
 
 
 def _get_by_slug(session: Session, model: type[ContentModel], content_type: str, slug: str) -> ContentEntryRead:
-    item = session.scalars(
-        _public_query(model).where(model.slug == slug).limit(1)
-    ).first()
+    item = session.scalars(_public_query(model).where(model.slug == slug).limit(1)).first()
     if item is None:
         raise LookupError(f"{model.__name__} with slug '{slug}' was not found")
     comment_counts = _comment_counts_by_slug(session, content_type, [item.slug])

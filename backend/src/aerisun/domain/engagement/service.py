@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
+from aerisun.domain.engagement.models import Comment, Reaction
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -220,9 +219,7 @@ def create_public_comment(
 
 def register_public_reaction(session: Session, payload: ReactionCreate) -> ReactionRead:
     if not _content_exists(session, payload.content_type, payload.content_slug):
-        raise LookupError(
-            f"{payload.content_type} content with slug '{payload.content_slug}' was not found"
-        )
+        raise LookupError(f"{payload.content_type} content with slug '{payload.content_slug}' was not found")
 
     if payload.client_token:
         existing = session.scalars(
@@ -254,13 +251,16 @@ def register_public_reaction(session: Session, payload: ReactionCreate) -> React
         )
         session.commit()
 
-    total = session.scalar(
-        select(func.count(Reaction.id)).where(
-            Reaction.content_type == payload.content_type,
-            Reaction.content_slug == payload.content_slug,
-            Reaction.reaction_type == payload.reaction_type,
+    total = (
+        session.scalar(
+            select(func.count(Reaction.id)).where(
+                Reaction.content_type == payload.content_type,
+                Reaction.content_slug == payload.content_slug,
+                Reaction.reaction_type == payload.reaction_type,
+            )
         )
-    ) or 0
+        or 0
+    )
 
     return ReactionRead(
         content_type=payload.content_type,
@@ -279,13 +279,16 @@ def read_public_reaction(
     if not _content_exists(session, content_type, content_slug):
         raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
 
-    total = session.scalar(
-        select(func.count(Reaction.id)).where(
-            Reaction.content_type == content_type,
-            Reaction.content_slug == content_slug,
-            Reaction.reaction_type == reaction_type,
+    total = (
+        session.scalar(
+            select(func.count(Reaction.id)).where(
+                Reaction.content_type == content_type,
+                Reaction.content_slug == content_slug,
+                Reaction.reaction_type == reaction_type,
+            )
         )
-    ) or 0
+        or 0
+    )
 
     return ReactionRead(
         content_type=content_type,

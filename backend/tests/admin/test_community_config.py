@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 
@@ -11,7 +11,7 @@ from aerisun.domain.iam.models import AdminSession, AdminUser
 def _create_admin_token(username: str = "community-config-admin") -> str:
     session_factory = get_session_factory()
     token = "community-config-session-token"
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     with session_factory() as session:
         user = session.query(AdminUser).filter(AdminUser.username == username).first()

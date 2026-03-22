@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
-import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 
 from aerisun.core.settings import get_settings
 
@@ -40,24 +40,24 @@ def get_waline_db_path() -> Path:
 
 def _to_sql_timestamp(value: datetime | str | None) -> str:
     if value is None:
-        return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ", timespec="seconds")
+        return datetime.now(UTC).replace(tzinfo=None).isoformat(sep=" ", timespec="seconds")
     if isinstance(value, str):
         return value
     if value.tzinfo is not None:
-        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+        value = value.astimezone(UTC).replace(tzinfo=None)
     return value.isoformat(sep=" ", timespec="seconds")
 
 
 def _parse_sql_timestamp(value: str | None) -> datetime:
     if not value:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError:
         parsed = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def _normalize_status(value: str | None) -> str:

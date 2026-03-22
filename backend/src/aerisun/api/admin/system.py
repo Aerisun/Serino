@@ -3,21 +3,21 @@ from __future__ import annotations
 import secrets
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, union_all, literal_column, literal
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.models import AuditLog, BackupSnapshot
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records
 
@@ -29,7 +29,6 @@ from .schemas import (
     ApiKeyUpdate,
     AuditLogRead,
     BackupSnapshotRead,
-    DashboardStats,
     EnhancedDashboardStats,
     MonthlyCount,
     RecentContentItem,
@@ -45,6 +44,7 @@ _STARTUP_TIME = time.time()
 # ---------------------------------------------------------------------------
 # API Keys
 # ---------------------------------------------------------------------------
+
 
 @router.get("/api-keys", response_model=list[ApiKeyAdminRead])
 def list_api_keys(
@@ -114,6 +114,7 @@ def delete_api_key(
 # Audit Logs
 # ---------------------------------------------------------------------------
 
+
 @router.get("/audit-logs", response_model=dict)
 def list_audit_logs(
     page: int = Query(default=1, ge=1),
@@ -135,12 +136,7 @@ def list_audit_logs(
     if date_to:
         q = q.filter(AuditLog.created_at <= datetime.fromisoformat(date_to))
     total = q.count()
-    items = (
-        q.order_by(AuditLog.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    items = q.order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return {
         "items": [AuditLogRead.model_validate(a) for a in items],
         "total": total,
@@ -152,6 +148,7 @@ def list_audit_logs(
 # ---------------------------------------------------------------------------
 # Backups
 # ---------------------------------------------------------------------------
+
 
 @router.get("/backups", response_model=list[BackupSnapshotRead])
 def list_backups(
@@ -202,6 +199,7 @@ def restore_backup(
 # Dashboard Stats
 # ---------------------------------------------------------------------------
 
+
 @router.get("/dashboard/stats", response_model=EnhancedDashboardStats)
 def dashboard_stats(
     _admin: AdminUser = Depends(get_current_admin),
@@ -214,17 +212,13 @@ def dashboard_stats(
     excerpts_count = session.query(func.count(ExcerptEntry.id)).scalar() or 0
 
     # Posts by status
-    status_rows = (
-        session.query(PostEntry.status, func.count(PostEntry.id))
-        .group_by(PostEntry.status)
-        .all()
-    )
+    status_rows = session.query(PostEntry.status, func.count(PostEntry.id)).group_by(PostEntry.status).all()
     posts_by_status = {s: c for s, c in status_rows}
 
     # Content by month (last 6 months)
     from datetime import timedelta
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     six_months_ago = now - timedelta(days=180)
 
     month_data: dict[str, dict[str, int]] = {}
@@ -263,12 +257,7 @@ def dashboard_stats(
         (ExcerptEntry, "excerpt"),
     ]
     for model, type_key in recent_type_map:
-        rows = (
-            session.query(model)
-            .order_by(model.updated_at.desc())
-            .limit(5)
-            .all()
-        )
+        rows = session.query(model).order_by(model.updated_at.desc()).limit(5).all()
         for row in rows:
             recent_items.append(
                 RecentContentItem(
@@ -300,6 +289,7 @@ def dashboard_stats(
 # ---------------------------------------------------------------------------
 # System Info
 # ---------------------------------------------------------------------------
+
 
 @router.get("/info", response_model=SystemInfo)
 def system_info(

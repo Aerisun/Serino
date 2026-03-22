@@ -3,11 +3,11 @@ from __future__ import annotations
 from sqlalchemy import func, select
 
 from aerisun.core.db import get_session_factory
-from aerisun.domain.site_config.models import PageCopy
+from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import get_settings
 from aerisun.domain.engagement.models import Comment, GuestbookEntry
+from aerisun.domain.site_config.models import PageCopy
 from aerisun.domain.waline.service import connect_waline_db
-from aerisun.core.seed import seed_reference_data
 
 
 def test_seed_reference_data_backfills_missing_activity_page(client) -> None:
@@ -83,16 +83,24 @@ def test_seed_reference_data_provides_comment_samples_and_is_idempotent(client) 
     def snapshot() -> dict[str, object]:
         session = session_factory()
         try:
-            root_comment = session.query(Comment).filter(
-                Comment.content_type == "posts",
-                Comment.content_slug == "from-zero-design-system",
-                Comment.parent_id.is_(None),
-            ).one()
-            reply_comment = session.query(Comment).filter(
-                Comment.content_type == "posts",
-                Comment.content_slug == "from-zero-design-system",
-                Comment.parent_id == root_comment.id,
-            ).one()
+            root_comment = (
+                session.query(Comment)
+                .filter(
+                    Comment.content_type == "posts",
+                    Comment.content_slug == "from-zero-design-system",
+                    Comment.parent_id.is_(None),
+                )
+                .one()
+            )
+            reply_comment = (
+                session.query(Comment)
+                .filter(
+                    Comment.content_type == "posts",
+                    Comment.content_slug == "from-zero-design-system",
+                    Comment.parent_id == root_comment.id,
+                )
+                .one()
+            )
             return {
                 "legacy_comment_count": session.scalar(select(func.count(Comment.id))) or 0,
                 "legacy_guestbook_count": session.scalar(select(func.count(GuestbookEntry.id))) or 0,

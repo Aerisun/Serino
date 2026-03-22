@@ -6,7 +6,6 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,
     ActivityHeatmapStatsRead,
@@ -16,9 +15,9 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
-
 
 CONTENT_MODELS = {
     "posts": PostEntry,
@@ -98,6 +97,7 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
         events=events,
     )
 
+
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
 
@@ -130,11 +130,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
             )
         )
 
-    reactions = session.scalars(
-        select(Reaction)
-        .order_by(desc(Reaction.created_at))
-        .limit(limit)
-    ).all()
+    reactions = session.scalars(select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)).all()
     for item in reactions:
         actor_name = item.client_token or "匿名访客"
         items.append(

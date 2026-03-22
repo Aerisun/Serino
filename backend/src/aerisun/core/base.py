@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def uuid_str() -> str:

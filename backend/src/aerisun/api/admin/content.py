@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from aerisun.core.base import Base
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
-from aerisun.core.base import Base
 
 from .deps import get_current_admin
 from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest
@@ -19,11 +19,11 @@ _ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "title", "published_at", "s
 
 
 def build_crud_router(
-    model: Type[Base],
+    model: type[Base],
     *,
-    create_schema: Type[BaseModel],
-    update_schema: Type[BaseModel],
-    read_schema: Type[BaseModel],
+    create_schema: type[BaseModel],
+    update_schema: type[BaseModel],
+    read_schema: type[BaseModel],
     prefix: str,
     tag: str,
 ) -> APIRouter:
@@ -74,12 +74,7 @@ def build_crud_router(
                 order_clauses.append(model.pin_order.asc())  # type: ignore[union-attr]
         order_clauses.append(order_col)
 
-        items = (
-            q.order_by(*order_clauses)
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
+        items = q.order_by(*order_clauses).offset((page - 1) * page_size).limit(page_size).all()
         return {
             "items": [read_schema.model_validate(i) for i in items],
             "total": total,
