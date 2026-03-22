@@ -45,6 +45,7 @@ REMOTE_HOST="${AERISUN_BACKUP_RSYNC_URI%%:*}"
 REMOTE_PATH="${AERISUN_BACKUP_RSYNC_URI#*:}"
 MANIFEST_TS="$(date -u +%Y%m%dT%H%M%SZ)"
 MANIFEST_FILE="$(mktemp)"
+trap 'rm -f "${MANIFEST_FILE}"' EXIT
 
 cat > "${MANIFEST_FILE}" <<EOF
 timestamp=${MANIFEST_TS}
@@ -63,6 +64,12 @@ checkpoint_sqlite() {
     "if command -v sqlite3 >/dev/null 2>&1 && [ -f '${db_path}' ]; then sqlite3 '${db_path}' 'PRAGMA wal_checkpoint(FULL);'; fi" \
     || true
 }
+
+# Pre-flight connectivity check
+if ! ssh -p "${AERISUN_BACKUP_SSH_PORT}" "${SSH_KEY_ARGS[@]}" -o ConnectTimeout=10 "${REMOTE_HOST}" "echo ok" >/dev/null 2>&1; then
+  echo "ERROR: Cannot reach backup host ${REMOTE_HOST}" >&2
+  exit 1
+fi
 
 checkpoint_sqlite api "${AERISUN_DB_PATH}"
 checkpoint_sqlite waline "${AERISUN_WALINE_DB_PATH}"
@@ -88,6 +95,22 @@ rsync -a -e "${SSH_CMD_STR}" \
   docker-compose.yml .env.example README.md backend/Dockerfile backend/pyproject.toml backend/alembic.ini backend/README.md backend/.gitignore backend/litestream.yml.template backend/scripts/*.sh \
   "${REMOTE_HOST}:${REMOTE_PATH}/manifests/"
 
-rm -f "${MANIFEST_FILE}"
-
 echo "backup complete: ${MANIFEST_TS}"
+
+# ── Retention policy ──
+: "${AERISUN_BACKUP_RETAIN_DAYS:=30}"
+: "${AERISUN_BACKUP_RETAIN_COUNT:=0}"
+
+if [[ "${AERISUN_BACKUP_RETAIN_DAYS}" -gt 0 ]]; then
+  echo "Cleaning up backups older than ${AERISUN_BACKUP_RETAIN_DAYS} days..."
+  ssh -p "${AERISUN_BACKUP_SSH_PORT}" "${SSH_KEY_ARGS[@]}" "${REMOTE_HOST}" \
+    "find '${REMOTE_PATH}/manifests' -name 'backup-*.txt' -mtime +${AERISUN_BACKUP_RETAIN_DAYS} -delete" \
+    || echo "WARN: retention cleanup by days failed" >&2
+fi
+
+if [[ "${AERISUN_BACKUP_RETAIN_COUNT}" -gt 0 ]]; then
+  echo "Keeping last ${AERISUN_BACKUP_RETAIN_COUNT} backups..."
+  ssh -p "${AERISUN_BACKUP_SSH_PORT}" "${SSH_KEY_ARGS[@]}" "${REMOTE_HOST}" \
+    "ls -1t '${REMOTE_PATH}/manifests/backup-'*.txt 2>/dev/null | tail -n +\$((${AERISUN_BACKUP_RETAIN_COUNT} + 1)) | xargs -r rm -f" \
+    || echo "WARN: retention cleanup by count failed" >&2
+fi
