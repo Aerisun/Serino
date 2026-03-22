@@ -7,7 +7,8 @@ import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
 import PageMeta from "@/components/PageMeta";
-import { ApiError, fetchPublicContentEntry, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
+import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface PostData {
   slug: string;
@@ -19,7 +20,7 @@ interface PostData {
   views: number;
   comments: number;
   readTime: string;
-  content: string[];
+  content: string;
 }
 
 const categoryMap: Record<string, string> = {
@@ -45,10 +46,7 @@ const buildRemotePost = (entry: PublicContentEntry): PostData => ({
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,
   readTime: entry.read_time ?? estimateReadTime(entry.body),
-  content: (() => {
-    const paragraphs = splitContentParagraphs(entry.body);
-    return paragraphs.length > 0 ? paragraphs : [entry.summary?.trim() || entry.body];
-  })(),
+  content: entry.body,
 });
 
 const PostDetail = () => {
@@ -108,7 +106,7 @@ const PostDetail = () => {
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
         title={post?.title ?? (status === "error" ? "文章加载失败" : "文章不存在")}
-        description={post?.content[0] ?? (errorMessage || "你访问的文章暂时不存在。")}
+        description={post?.content.slice(0, 150) ?? (errorMessage || "你访问的文章暂时不存在。")}
       />
       <FallingPetals />
       <Navbar />
@@ -210,27 +208,7 @@ const PostDetail = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              {post.content.map((block, index) => {
-                if (block.startsWith("## ")) {
-                  return (
-                    <h2
-                      key={index}
-                      className="mb-4 mt-10 border-l-2 border-[rgb(var(--shiro-accent-rgb)/0.34)] pl-3 text-lg font-heading italic text-foreground/90"
-                    >
-                      {block.replace("## ", "")}
-                    </h2>
-                  );
-                }
-
-                return (
-                  <p
-                    key={index}
-                    className="mb-5 text-sm font-body leading-[1.85] text-foreground/50 first-letter:text-[rgb(var(--shiro-accent-rgb)/0.78)] first-letter:text-base"
-                  >
-                    {block}
-                  </p>
-                );
-              })}
+              <MarkdownRenderer content={post.content} />
             </motion.article>
 
             <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">

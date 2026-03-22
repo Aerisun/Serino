@@ -7,7 +7,8 @@ import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
 import PageMeta from "@/components/PageMeta";
-import { ApiError, fetchPublicContentEntry, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
+import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
 
@@ -36,7 +37,7 @@ interface DiaryData {
   weather?: Weather;
   mood?: string;
   title: string;
-  paragraphs: string[];
+  body: string;
   poem?: string;
   likes: number | null;
   comments: number | null;
@@ -56,10 +57,7 @@ const buildRemoteDiaryEntry = (entry: PublicContentEntry): DiaryData => ({
   weather: entry.weather as Weather | undefined,
   mood: entry.mood ?? undefined,
   title: entry.title,
-  paragraphs: (() => {
-    const paragraphs = splitContentParagraphs(entry.body);
-    return paragraphs.length > 0 ? paragraphs : [entry.summary?.trim() || entry.body];
-  })(),
+  body: entry.body,
   poem: entry.poem ?? undefined,
   likes: entry.like_count ?? null,
   comments: entry.comment_count ?? null,
@@ -125,7 +123,7 @@ const DiaryDetail = () => {
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
         title={entry?.title ?? (status === "error" ? "日记加载失败" : "日记不存在")}
-        description={entry?.paragraphs[0] ?? (errorMessage || "你访问的日记暂时不存在。")}
+        description={entry?.body.slice(0, 150) ?? (errorMessage || "你访问的日记暂时不存在。")}
       />
       <FallingPetals />
       <Navbar />
@@ -211,17 +209,7 @@ const DiaryDetail = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              {entry.paragraphs.map((paragraph, index) => (
-                <motion.p
-                  key={index}
-                  className="mb-6 text-sm font-body leading-[1.9] text-foreground/50 first-letter:text-[rgb(var(--shiro-accent-rgb)/0.78)] first-letter:text-base"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.15 + index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {paragraph}
-                </motion.p>
-              ))}
+              <MarkdownRenderer content={entry.body} />
             </motion.div>
 
             {entry.poem && (
