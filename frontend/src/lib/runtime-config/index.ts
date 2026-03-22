@@ -25,6 +25,7 @@ type BackendSiteResponse = {
     meta_description: string;
     copyright: string;
     footer_text?: string;
+    hero_video_url?: string | null;
     hero_actions?: Array<{
       label: string;
       href: string;
@@ -38,6 +39,15 @@ type BackendSiteResponse = {
   }>;
   poems: Array<{
     content: string;
+  }>;
+  navigation: Array<{
+    label: string;
+    trigger: string;
+    href?: string | null;
+    children: Array<{
+      label: string;
+      href: string;
+    }>;
   }>;
 };
 
@@ -121,6 +131,7 @@ export interface RuntimeConfigSnapshot {
     socialLinks: Array<{ name: string; href: string; iconKey: string }>;
     poems: string[];
     heroActions: Array<{ label: string; href: string; iconKey: string }>;
+    heroVideoUrl?: string;
     navigation: NavItem[];
     footer: { slogan: string; copyright: string };
   };
@@ -135,24 +146,6 @@ export const runtimeConfigPaths = {
   pages: "/api/v1/public/pages",
   resume: "/api/v1/public/resume",
 } as const;
-
-// ---------------------------------------------------------------------------
-// Navigation template (route paths are code constants)
-// ---------------------------------------------------------------------------
-const NAV_TEMPLATE = [
-  { pageKey: "home", defaultLabel: "首页", href: "/", trigger: "arrow" as const, children: [
-    { pageKey: "resume", href: "/resume" },
-    { pageKey: "guestbook", href: "/guestbook" },
-    { pageKey: "calendar", href: "/calendar" },
-  ]},
-  { pageKey: "posts", defaultLabel: "帖子", href: "/posts", trigger: "none" as const },
-  { pageKey: "friends", defaultLabel: "友链", href: "/friends", trigger: "none" as const },
-  { pageKey: "more", defaultLabel: "更多", trigger: "hover" as const, children: [
-    { pageKey: "thoughts", href: "/thoughts" },
-    { pageKey: "diary", href: "/diary" },
-    { pageKey: "excerpts", href: "/excerpts" },
-  ]},
-];
 
 // ---------------------------------------------------------------------------
 // Default motion configs (code constants — not personal data)
@@ -185,15 +178,17 @@ const normalizeIconKey = (iconKey: string): string => {
 // ---------------------------------------------------------------------------
 const normalizeSiteConfig = (
   payload: BackendSiteResponse,
-  navLabels: Map<string, string>,
 ): RuntimeConfigSnapshot["site"] => {
-  const navigation: NavItem[] = NAV_TEMPLATE.map((entry) => {
-    const label = navLabels.get(entry.pageKey) ?? entry.defaultLabel;
-    const item: NavItem = { label, trigger: entry.trigger };
-    if ("href" in entry) item.href = entry.href;
-    if ("children" in entry && entry.children) {
+  // Build navigation from backend data
+  const navigation: NavItem[] = (payload.navigation ?? []).map((entry) => {
+    const item: NavItem = {
+      label: entry.label,
+      trigger: (entry.trigger as "hover" | "arrow" | "none") || "none",
+    };
+    if (entry.href) item.href = entry.href;
+    if (entry.children && entry.children.length > 0) {
       item.children = entry.children.map((child) => ({
-        label: navLabels.get(child.pageKey) ?? child.pageKey,
+        label: child.label,
         href: child.href,
       }));
     }
@@ -220,6 +215,7 @@ const normalizeSiteConfig = (
       href: action.href,
       iconKey: normalizeIconKey(action.icon_key),
     })),
+    heroVideoUrl: payload.site.hero_video_url ?? undefined,
     navigation,
     footer: {
       slogan: payload.site.footer_text ?? "",
@@ -302,19 +298,6 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
 };
 
 // ---------------------------------------------------------------------------
-// Build nav_label lookup from page copy items
-// ---------------------------------------------------------------------------
-const buildNavLabels = (items: BackendPageCopyItem[]): Map<string, string> => {
-  const map = new Map<string, string>();
-  for (const item of items) {
-    if (item.nav_label) {
-      map.set(item.page_key, item.nav_label);
-    }
-  }
-  return map;
-};
-
-// ---------------------------------------------------------------------------
 // Main loader — errors propagate to caller
 // ---------------------------------------------------------------------------
 export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
@@ -324,13 +307,12 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
     apiClient.get<BackendResumeResponse>(runtimeConfigPaths.resume),
   ]);
 
-  const navLabels = buildNavLabels(pages.items);
   const normalizedPages = normalizePagesConfig(pages);
   normalizedPages.resume = normalizeResumeConfig(resume);
 
   return {
     source: "remote",
-    site: normalizeSiteConfig(site, navLabels),
+    site: normalizeSiteConfig(site),
     pages: normalizedPages,
   };
 }
