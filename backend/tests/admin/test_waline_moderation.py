@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import sqlite3
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 
 from aerisun.core.db import get_session_factory
-from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.core.settings import get_settings
+from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.domain.waline.service import connect_waline_db
 
 
 def _create_admin_token(username: str = "waline-admin") -> str:
     session_factory = get_session_factory()
     token = "waline-admin-session-token"
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     with session_factory() as session:
         user = session.query(AdminUser).filter(AdminUser.username == username).first()
@@ -26,11 +26,7 @@ def _create_admin_token(username: str = "waline-admin") -> str:
             session.add(user)
             session.flush()
 
-        existing = (
-            session.query(AdminSession)
-            .filter(AdminSession.session_token == token)
-            .first()
-        )
+        existing = session.query(AdminSession).filter(AdminSession.session_token == token).first()
         if existing is None:
             session.add(
                 AdminSession(
@@ -173,7 +169,5 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
     assert response.status_code == 204
 
     with connect_waline_db(waline_db) as connection:
-        rows = connection.execute(
-            "SELECT id FROM wl_comment WHERE url = '/guestbook'"
-        ).fetchall()
+        rows = connection.execute("SELECT id FROM wl_comment WHERE url = '/guestbook'").fetchall()
         assert rows == []

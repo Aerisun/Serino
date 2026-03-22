@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -9,11 +8,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.iam.models import AdminUser
-from aerisun.domain.content.models import PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry
 
 from .deps import get_current_admin
-
 
 router = APIRouter(prefix="/content", tags=["admin-content-meta"])
 

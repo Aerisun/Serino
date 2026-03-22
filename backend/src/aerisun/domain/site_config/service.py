@@ -23,12 +23,12 @@ from aerisun.domain.site_config.schemas import (
     NavItemRead,
     PageCollectionRead,
     PageCopyRead,
+    PoemRead,
     ResumeExperienceRead,
     ResumeRead,
     ResumeSkillGroupRead,
     SiteConfigRead,
     SiteProfileRead,
-    PoemRead,
     SocialLinkRead,
 )
 
@@ -41,15 +41,13 @@ def get_site_config(session: Session) -> SiteConfigRead:
     links = session.scalars(
         select(SocialLink).where(SocialLink.site_profile_id == site.id).order_by(SocialLink.order_index.asc())
     ).all()
-    poems = session.scalars(
-        select(Poem).where(Poem.site_profile_id == site.id).order_by(Poem.order_index.asc())
-    ).all()
+    poems = session.scalars(select(Poem).where(Poem.site_profile_id == site.id).order_by(Poem.order_index.asc())).all()
 
     hero_actions = json.loads(site.hero_actions) if site.hero_actions else []
 
     nav_items = session.scalars(
         select(NavItem)
-        .where(NavItem.site_profile_id == site.id, NavItem.is_enabled == True)
+        .where(NavItem.site_profile_id == site.id, NavItem.is_enabled.is_(True))
         .order_by(NavItem.order_index.asc())
     ).all()
 
@@ -66,8 +64,7 @@ def get_site_config(session: Session) -> SiteConfigRead:
                 trigger=item.trigger,
                 href=item.href,
                 children=[
-                    NavChildRead(label=child.label, href=child.href or "")
-                    for child in children_map.get(item.id, [])
+                    NavChildRead(label=child.label, href=child.href or "") for child in children_map.get(item.id, [])
                 ],
             )
             navigation.append(nav_read)

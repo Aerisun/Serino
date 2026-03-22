@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from fastapi import APIRouter
+
 from aerisun.domain.site_config.models import ResumeBasics, ResumeExperience, ResumeSkillGroup
 
 from .content import build_crud_router
@@ -14,8 +16,6 @@ from .schemas import (
     ResumeSkillGroupCreate,
     ResumeSkillGroupUpdate,
 )
-
-from fastapi import APIRouter
 
 router = APIRouter(prefix="/resume", tags=["admin-resume"])
 

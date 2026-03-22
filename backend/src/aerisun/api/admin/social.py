@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -35,6 +35,7 @@ router.include_router(friends_router)
 
 
 # --- Feed crawl triggers ---
+
 
 @router.post("/feeds/crawl")
 def trigger_feed_crawl(
@@ -70,6 +71,7 @@ def trigger_single_feed_crawl(
 
 # --- FriendFeedSource as sub-resource of friends ---
 
+
 @router.get("/friends/{friend_id}/feeds", response_model=list[FriendFeedSourceAdminRead])
 def list_friend_feeds(
     friend_id: str,
@@ -79,11 +81,7 @@ def list_friend_feeds(
     friend = session.get(Friend, friend_id)
     if friend is None:
         raise HTTPException(status_code=404, detail="Friend not found")
-    sources = (
-        session.query(FriendFeedSource)
-        .filter(FriendFeedSource.friend_id == friend_id)
-        .all()
-    )
+    sources = session.query(FriendFeedSource).filter(FriendFeedSource.friend_id == friend_id).all()
     return [FriendFeedSourceAdminRead.model_validate(s) for s in sources]
 
 

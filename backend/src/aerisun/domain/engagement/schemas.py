@@ -46,7 +46,7 @@ class CommentRead(ModelBase):
     like_count: int = 0
     liked: bool = False
     is_author: bool = False
-    replies: list["CommentRead"] = Field(default_factory=list)
+    replies: list[CommentRead] = Field(default_factory=list)
 
 
 class CommentCollectionRead(ModelBase):

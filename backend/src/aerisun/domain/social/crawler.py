@@ -4,12 +4,13 @@ Core crawling logic ported from Friend-Circle-Lite
 (https://github.com/willow-god/Friend-Circle-Lite).
 Adapted to work with Aerisun's SQLAlchemy models and httpx.
 """
+
 from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin, urlparse
 
 import feedparser
@@ -20,6 +21,9 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.base import utcnow
 from aerisun.core.settings import Settings
+
+if TYPE_CHECKING:
+    from aerisun.domain.social.models import Friend, FriendFeedSource
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +47,7 @@ POSSIBLE_FEEDS = [
 def _build_headers(settings: Settings) -> dict[str, str]:
     return {
         "User-Agent": settings.feed_crawl_user_agent,
-        "Accept": (
-            "application/atom+xml, application/rss+xml, "
-            "application/xml;q=0.9, */*;q=0.8"
-        ),
+        "Accept": ("application/atom+xml, application/rss+xml, application/xml;q=0.9, */*;q=0.8"),
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Accept-Encoding": "gzip, deflate",
         "Connection": "keep-alive",
@@ -92,10 +93,7 @@ def _parse_published_time(time_str: str) -> datetime | None:
         return None
 
     # Ensure timezone-aware, default to UTC
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    else:
-        parsed = parsed.astimezone(timezone.utc)
+    parsed = parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
 
     return parsed
 
@@ -104,13 +102,12 @@ def _parse_published_time(time_str: str) -> datetime | None:
 # URL fixing — ported from FCL/utils/url.py:replace_non_domain()
 # ---------------------------------------------------------------------------
 
+
 def _replace_non_domain(link: str, blog_url: str) -> str:
     """Replace localhost/IP addresses in article links with the blog URL."""
     try:
         parsed = urlparse(link)
-        if "localhost" in parsed.netloc or re.match(
-            r"^\d{1,3}(\.\d{1,3}){3}$", parsed.netloc
-        ):
+        if "localhost" in parsed.netloc or re.match(r"^\d{1,3}(\.\d{1,3}){3}$", parsed.netloc):
             path = parsed.path or "/"
             if parsed.query:
                 path += "?" + parsed.query
@@ -123,6 +120,7 @@ def _replace_non_domain(link: str, blog_url: str) -> str:
 # ---------------------------------------------------------------------------
 # Feed auto-discovery — ported from FCL/single_friend.py:check_feed()
 # ---------------------------------------------------------------------------
+
 
 def _check_feed(
     blog_url: str,
@@ -154,6 +152,7 @@ def _check_feed(
 # ---------------------------------------------------------------------------
 # Feed parsing — ported from FCL/single_friend.py:parse_feed()
 # ---------------------------------------------------------------------------
+
 
 def _parse_feed(
     url: str,
@@ -197,21 +196,23 @@ def _parse_feed(
             summary = entry.content[0].get("value", summary)
         summary = re.sub(r"<[^>]+>", "", summary)[:500]
 
-        entries.append({
-            "title": title,
-            "url": link,
-            "summary": summary or None,
-            "published_at": published_at,
-            "raw_payload": {
+        entries.append(
+            {
                 "title": title,
-                "link": link,
-                "published": str(published_at) if published_at else "",
-            },
-        })
+                "url": link,
+                "summary": summary or None,
+                "published_at": published_at,
+                "raw_payload": {
+                    "title": title,
+                    "link": link,
+                    "published": str(published_at) if published_at else "",
+                },
+            }
+        )
 
     # Sort by published time descending, then limit
     entries.sort(
-        key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=timezone.utc),
+        key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=UTC),
         reverse=True,
     )
     return entries[:max_items]
@@ -221,10 +222,11 @@ def _parse_feed(
 # Single-source crawl — adapted from FCL/single_friend.py:process_friend()
 # ---------------------------------------------------------------------------
 
+
 def crawl_single_source(
     session: Session,
-    source: "FriendFeedSource",
-    friend: "Friend",
+    source: FriendFeedSource,
+    friend: Friend,
     settings: Settings,
 ) -> dict[str, Any]:
     """Crawl one feed source. Returns a result summary dict."""
@@ -276,7 +278,9 @@ def crawl_single_source(
         if content is None and fetch_error:
             logger.info(
                 "Feed fetch failed for %s (%s), trying auto-discovery on %s",
-                friend.name, fetch_error, friend.url,
+                friend.name,
+                fetch_error,
+                friend.url,
             )
             feed_type, discovered_url = _check_feed(friend.url, client)
             if feed_type != "none" and discovered_url != feed_url:
@@ -291,7 +295,8 @@ def crawl_single_source(
                         fetch_error = None
                         logger.info(
                             "Auto-discovered feed for %s: %s",
-                            friend.name, discovered_url,
+                            friend.name,
+                            discovered_url,
                         )
                 except httpx.HTTPError as e:
                     fetch_error = f"Discovery also failed: {e}"
@@ -335,39 +340,34 @@ def crawl_single_source(
                 summary = entry.content[0].get("value", summary)
             summary = re.sub(r"<[^>]+>", "", summary)[:500]
 
-            entries.append({
-                "title": title,
-                "url": link,
-                "summary": summary or None,
-                "published_at": published_at,
-                "raw_payload": {
+            entries.append(
+                {
                     "title": title,
-                    "link": link,
-                    "published": str(published_at) if published_at else "",
-                },
-            })
+                    "url": link,
+                    "summary": summary or None,
+                    "published_at": published_at,
+                    "raw_payload": {
+                        "title": title,
+                        "link": link,
+                        "published": str(published_at) if published_at else "",
+                    },
+                }
+            )
 
         # Sort and limit
         entries.sort(
-            key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=timezone.utc),
+            key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=UTC),
             reverse=True,
         )
         entries = entries[: settings.feed_crawl_max_items_per_source]
 
         # Filter future articles (tolerance: 2 days)
         max_allowed = utcnow() + timedelta(days=2)
-        entries = [
-            e for e in entries
-            if e["published_at"] is None or e["published_at"] <= max_allowed
-        ]
+        entries = [e for e in entries if e["published_at"] is None or e["published_at"] <= max_allowed]
 
         # --- 5. Deduplicate and persist ---
         existing_urls: set[str] = set(
-            session.scalars(
-                select(FriendFeedItem.url).where(
-                    FriendFeedItem.source_id == source.id
-                )
-            ).all()
+            session.scalars(select(FriendFeedItem.url).where(FriendFeedItem.source_id == source.id)).all()
         )
 
         new_items = []
@@ -396,7 +396,9 @@ def crawl_single_source(
         result["inserted"] = len(new_items)
         logger.info(
             "Crawled %s: %d new items (of %d parsed)",
-            friend.name, len(new_items), len(entries),
+            friend.name,
+            len(new_items),
+            len(entries),
         )
 
     return result
@@ -405,6 +407,7 @@ def crawl_single_source(
 # ---------------------------------------------------------------------------
 # Full crawl — adapted from FCL/all_friends.py:fetch_and_process_data()
 # ---------------------------------------------------------------------------
+
 
 def crawl_all_feeds(settings: Settings | None = None) -> dict[str, Any]:
     """Crawl all enabled feed sources sequentially.
@@ -444,21 +447,23 @@ def crawl_all_feeds(settings: Settings | None = None) -> dict[str, Any]:
                 if result.get("status") == "error":
                     errors += 1
             except Exception:
-                logger.exception(
-                    "Error crawling source %s (%s)", source.id, source.feed_url
-                )
+                logger.exception("Error crawling source %s (%s)", source.id, source.feed_url)
                 session.rollback()
                 errors += 1
-                results.append({
-                    "source_id": source.id,
-                    "friend_name": friend.name,
-                    "status": "error",
-                    "error": "unexpected exception",
-                })
+                results.append(
+                    {
+                        "source_id": source.id,
+                        "friend_name": friend.name,
+                        "status": "error",
+                        "error": "unexpected exception",
+                    }
+                )
 
         logger.info(
             "Feed crawl complete: %d sources, %d items inserted, %d errors",
-            len(sources), total_inserted, errors,
+            len(sources),
+            total_inserted,
+            errors,
         )
     finally:
         session.close()

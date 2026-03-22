@@ -7,12 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.core.settings import get_settings
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.models import Asset
-from aerisun.core.settings import get_settings
 
 from .deps import get_current_admin
-from .schemas import AssetAdminRead, BulkDeleteRequest, BulkActionResponse
+from .schemas import AssetAdminRead, BulkActionResponse, BulkDeleteRequest
 
 router = APIRouter(prefix="/assets", tags=["admin-assets"])
 
@@ -26,12 +26,7 @@ def list_assets(
 ) -> dict[str, Any]:
     q = session.query(Asset)
     total = q.count()
-    items = (
-        q.order_by(Asset.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    items = q.order_by(Asset.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return {
         "items": [AssetAdminRead.model_validate(a) for a in items],
         "total": total,
@@ -77,11 +72,7 @@ def bulk_delete_assets(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    affected = (
-        session.query(Asset)
-        .filter(Asset.id.in_(payload.ids))
-        .delete(synchronize_session="fetch")
-    )
+    affected = session.query(Asset).filter(Asset.id.in_(payload.ids)).delete(synchronize_session="fetch")
     session.commit()
     return {"affected": affected}
 

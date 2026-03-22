@@ -11,9 +11,16 @@ def test_read_friends_returns_seeded_collection(client) -> None:
 
     names = [item["name"] for item in payload["items"]]
     assert names == [
-        "Miku's Blog", "AkaraChen", "夏目的博客", "保罗的小宇宙",
-        "猫羽のブログ", "Erhecy's Blog", "轻雅阁", "柏园猫のBlog",
-        "Lucifer's Blog", "Quiet Terminal",
+        "Miku's Blog",
+        "AkaraChen",
+        "夏目的博客",
+        "保罗的小宇宙",
+        "猫羽のブログ",
+        "Erhecy's Blog",
+        "轻雅阁",
+        "柏园猫のBlog",
+        "Lucifer's Blog",
+        "Quiet Terminal",
     ]
     assert "Sunset Archive" not in names
     assert all(item["status"] == "active" for item in payload["items"])

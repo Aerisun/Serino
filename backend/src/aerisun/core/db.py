@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterator
 
 from alembic import command
 from alembic.config import Config
@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from aerisun.core.base import Base
-from aerisun.core.settings import Settings, get_settings
+from aerisun.core.settings import get_settings
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 

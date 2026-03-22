@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import json
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
+from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from aerisun.core.db import get_engine
 from aerisun.domain.ops.models import AuditLog
-from sqlalchemy.orm import Session
 
 
 class AuditLogMiddleware(BaseHTTPMiddleware):
@@ -49,11 +48,10 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                 if auth.lower().startswith("bearer "):
                     token = auth[7:]
                     from aerisun.domain.iam.models import AdminSession
+
                     engine = get_engine()
                     with Session(engine) as db:
-                        admin_session = db.query(AdminSession).filter(
-                            AdminSession.session_token == token
-                        ).first()
+                        admin_session = db.query(AdminSession).filter(AdminSession.session_token == token).first()
                         if admin_session:
                             actor_id = admin_session.admin_user_id
 

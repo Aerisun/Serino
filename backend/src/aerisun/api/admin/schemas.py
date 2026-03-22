@@ -14,6 +14,7 @@ class ModelBase(BaseModel):
 # Auth
 # ---------------------------------------------------------------------------
 
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -50,6 +51,7 @@ class AdminSessionRead(ModelBase):
 # ---------------------------------------------------------------------------
 # Content (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 # ---------------------------------------------------------------------------
+
 
 class ContentCreate(BaseModel):
     slug: str
@@ -119,6 +121,7 @@ class ContentAdminRead(ModelBase):
 # SiteProfile
 # ---------------------------------------------------------------------------
 
+
 class SiteProfileCreate(BaseModel):
     name: str
     title: str
@@ -168,6 +171,7 @@ class SiteProfileAdminRead(ModelBase):
 # SocialLink
 # ---------------------------------------------------------------------------
 
+
 class SocialLinkCreate(BaseModel):
     site_profile_id: str
     name: str
@@ -201,6 +205,7 @@ class SocialLinkAdminRead(ModelBase):
 # Poem
 # ---------------------------------------------------------------------------
 
+
 class PoemCreate(BaseModel):
     site_profile_id: str
     order_index: int = 0
@@ -224,6 +229,7 @@ class PoemAdminRead(ModelBase):
 # ---------------------------------------------------------------------------
 # PageCopy
 # ---------------------------------------------------------------------------
+
 
 class PageCopyCreate(BaseModel):
     page_key: str
@@ -276,6 +282,7 @@ class PageCopyAdminRead(ModelBase):
 # PageDisplayOption
 # ---------------------------------------------------------------------------
 
+
 class PageDisplayOptionCreate(BaseModel):
     page_key: str
     is_enabled: bool = True
@@ -299,6 +306,7 @@ class PageDisplayOptionAdminRead(ModelBase):
 # ---------------------------------------------------------------------------
 # CommunityConfig
 # ---------------------------------------------------------------------------
+
 
 class CommunitySurfaceRead(BaseModel):
     key: str
@@ -368,6 +376,7 @@ class CommunityConfigAdminRead(ModelBase):
 # ---------------------------------------------------------------------------
 # Resume
 # ---------------------------------------------------------------------------
+
 
 class ResumeBasicsCreate(BaseModel):
     title: str
@@ -449,6 +458,7 @@ class ResumeExperienceAdminRead(ModelBase):
 # Friend
 # ---------------------------------------------------------------------------
 
+
 class FriendCreate(BaseModel):
     name: str
     url: str
@@ -506,6 +516,7 @@ class FriendFeedSourceAdminRead(ModelBase):
 # NavItem
 # ---------------------------------------------------------------------------
 
+
 class NavItemCreate(BaseModel):
     site_profile_id: str
     parent_id: str | None = None
@@ -554,6 +565,7 @@ class NavReorderItem(BaseModel):
 # Moderation
 # ---------------------------------------------------------------------------
 
+
 class CommentAdminRead(ModelBase):
     id: str
     content_type: str
@@ -587,6 +599,7 @@ class ModerateAction(BaseModel):
 # Assets
 # ---------------------------------------------------------------------------
 
+
 class AssetAdminRead(ModelBase):
     id: str
     file_name: str
@@ -601,6 +614,7 @@ class AssetAdminRead(ModelBase):
 # ---------------------------------------------------------------------------
 # System
 # ---------------------------------------------------------------------------
+
 
 class ApiKeyCreate(BaseModel):
     key_name: str
@@ -705,6 +719,7 @@ class SystemInfo(BaseModel):
 # Bulk operations
 # ---------------------------------------------------------------------------
 
+
 class BulkDeleteRequest(BaseModel):
     ids: list[str]
 
@@ -721,6 +736,7 @@ class BulkActionResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Generic paginated response
 # ---------------------------------------------------------------------------
+
 
 class PaginatedResponse(ModelBase):
     items: list[Any]
