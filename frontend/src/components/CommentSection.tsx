@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertCircle, CheckCircle2, Heart, MessageCircle, RefreshCcw, Clock3 } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import { transition } from "@/config";
 import { createPublicReaction } from "@/lib/api";
 import { getViewerToken, getContentReactionStorageKey } from "@/lib/engagement";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import WalineSurface from "@/components/WalineSurface";
-import type { CommentSurfaceActivity } from "@/lib/community-config";
 
 type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 
@@ -16,8 +15,6 @@ interface CommentSectionProps {
   likeCount?: number;
   contentType?: CommentSurface;
   contentSlug?: string;
-  commentDescription?: string;
-  commentTitle?: string;
   hideReactions?: boolean;
 }
 
@@ -34,72 +31,29 @@ const resolveCommentContext = (
   routeId: string | undefined,
 ): CommentContext | null => {
   if (contentType === "guestbook") {
-    return {
-      contentType: "guestbook",
-      slug: "guestbook",
-      supportsReactions: false,
-    };
+    return { contentType: "guestbook", slug: "guestbook", supportsReactions: false };
   }
 
-  if ((contentType === "posts" || contentType === "diary" || contentType === "thoughts" || contentType === "excerpts") && contentSlug) {
-    return {
-      contentType,
-      slug: contentSlug,
-      supportsReactions: true,
-    };
+  if (
+    (contentType === "posts" || contentType === "diary" || contentType === "thoughts" || contentType === "excerpts") &&
+    contentSlug
+  ) {
+    return { contentType, slug: contentSlug, supportsReactions: true };
   }
 
   if (pathname.startsWith("/guestbook")) {
-    return {
-      contentType: "guestbook",
-      slug: "guestbook",
-      supportsReactions: false,
-    };
+    return { contentType: "guestbook", slug: "guestbook", supportsReactions: false };
   }
 
   const fallbackSlug = routeId ? decodeURIComponent(routeId) : "";
   if (pathname.startsWith("/posts/") && fallbackSlug) {
-    return {
-      contentType: "posts",
-      slug: fallbackSlug,
-      supportsReactions: true,
-    };
+    return { contentType: "posts", slug: fallbackSlug, supportsReactions: true };
   }
-
   if (pathname.startsWith("/diary/") && fallbackSlug) {
-    return {
-      contentType: "diary",
-      slug: fallbackSlug,
-      supportsReactions: true,
-    };
+    return { contentType: "diary", slug: fallbackSlug, supportsReactions: true };
   }
 
   return null;
-};
-
-const buildCommentActivityCopy = (activity: CommentSurfaceActivity | null) => {
-  if (!activity) {
-    return "";
-  }
-
-  switch (activity.type) {
-    case "draft-restored":
-      return activity.message;
-    case "sort-change":
-      return activity.message;
-    case "avatar-change":
-      return activity.message;
-    case "submission-success":
-      return activity.message;
-    case "submission-error":
-      return activity.message;
-    case "status":
-      return activity.message;
-    case "draft-saved":
-      return activity.message;
-    default:
-      return activity.message;
-  }
 };
 
 const CommentSection = ({
@@ -107,8 +61,6 @@ const CommentSection = ({
   likeCount,
   contentType,
   contentSlug,
-  commentDescription,
-  commentTitle,
   hideReactions,
 }: CommentSectionProps) => {
   const [showComments, setShowComments] = useState(false);
@@ -116,8 +68,6 @@ const CommentSection = ({
   const [likeTotal, setLikeTotal] = useState<number | null>(typeof likeCount === "number" ? likeCount : null);
   const [isReacting, setIsReacting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [commentActivity, setCommentActivity] = useState<CommentSurfaceActivity | null>(null);
-  const [commentDelta, setCommentDelta] = useState(0);
   const prefersReducedMotion = useReducedMotionPreference();
   const location = useLocation();
   const { id } = useParams();
@@ -130,8 +80,6 @@ const CommentSection = ({
   useEffect(() => {
     setErrorMessage("");
     setLikeTotal(typeof likeCount === "number" ? likeCount : null);
-    setCommentActivity(null);
-    setCommentDelta(0);
   }, [commentCount, contentContext?.contentType, contentContext?.slug, likeCount]);
 
   useEffect(() => {
@@ -139,25 +87,10 @@ const CommentSection = ({
   }, [contentContext?.contentType, contentContext?.slug]);
 
   useEffect(() => {
-    if (!commentActivity) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setCommentActivity(null);
-    }, 5200);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [commentActivity]);
-
-  useEffect(() => {
     if (!contentContext?.supportsReactions || typeof window === "undefined") {
       setLiked(false);
       return;
     }
-
     const storageKey = getContentReactionStorageKey(contentContext.contentType, contentContext.slug);
     setLiked(window.localStorage.getItem(storageKey) === "true");
   }, [contentContext?.contentType, contentContext?.slug, contentContext?.supportsReactions]);
@@ -199,27 +132,10 @@ const CommentSection = ({
   const isGuestbook = contentContext?.contentType === "guestbook";
   const commentBadge =
     typeof commentCount === "number"
-      ? String(Math.max(commentCount + commentDelta, 0))
+      ? String(commentCount)
       : isGuestbook
-        ? commentDelta > 0
-          ? `留言 +${commentDelta}`
-          : "留言"
-        : commentDelta > 0
-          ? String(commentDelta)
-          : "0";
-  const commentTitleCopy = commentTitle ?? (isGuestbook ? "留言板" : "评论区");
-  const commentDescriptionCopy =
-    commentDescription ?? "昵称必填，邮箱可选，支持 Markdown / GFM、Enjoy 表情搜索和更好看的默认头像。";
-
-  const handleCommentActivity = (activity: CommentSurfaceActivity) => {
-    setCommentActivity(activity);
-
-    if (activity.type === "submission-success") {
-      setCommentDelta((current) => current + 1);
-    }
-  };
-
-  const activityCopy = buildCommentActivityCopy(commentActivity);
+        ? "留言"
+        : "0";
 
   return (
     <motion.div
@@ -260,28 +176,6 @@ const CommentSection = ({
           <MessageCircle className={`h-4 w-4 ${showComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
           <span className="text-sm font-body font-medium tabular-nums">{commentBadge}</span>
         </button>
-
-        <div className="liquid-glass flex min-h-[2.7rem] min-w-0 flex-1 items-center gap-2 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.14)] px-4 py-2.5 text-[0.72rem] font-body text-foreground/50">
-          {commentActivity ? (
-            <>
-              {commentActivity.type === "submission-success" ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              ) : commentActivity.type === "submission-error" ? (
-                <AlertCircle className="h-4 w-4 text-rose-500" />
-              ) : commentActivity.type === "sort-change" ? (
-                <RefreshCcw className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.78)]" />
-              ) : (
-                <Clock3 className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.62)]" />
-              )}
-              <span className="truncate">{activityCopy}</span>
-            </>
-          ) : (
-            <>
-              <RefreshCcw className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.62)]" />
-              <span className="truncate">这里会回显草稿恢复、排序切换和评论提交状态。</span>
-            </>
-          )}
-        </div>
       </div>
 
       {errorMessage ? (
@@ -301,11 +195,6 @@ const CommentSection = ({
               <WalineSurface
                 surface={contentContext.contentType}
                 slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
-                title={commentTitleCopy}
-                description={commentDescriptionCopy}
-                onActivity={(activity) => {
-                  handleCommentActivity(activity);
-                }}
               />
             ) : (
               <div className="liquid-glass rounded-2xl p-6 text-sm font-body text-foreground/45">
