@@ -1,20 +1,22 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
-import Index from "./pages/Index.tsx";
-import Posts from "./pages/Posts.tsx";
-import Friends from "./pages/Friends.tsx";
-import Thoughts from "./pages/Thoughts.tsx";
-import Diary from "./pages/Diary.tsx";
-import Excerpts from "./pages/Excerpts.tsx";
-import Resume from "./pages/Resume.tsx";
-import Guestbook from "./pages/Guestbook.tsx";
-import CalendarPage from "./pages/CalendarPage.tsx";
-import PostDetail from "./pages/PostDetail.tsx";
-import DiaryDetail from "./pages/DiaryDetail.tsx";
-import NotFound from "./pages/NotFound.tsx";
+
+const Index = lazy(() => import("./pages/Index"));
+const Posts = lazy(() => import("./pages/Posts"));
+const PostDetail = lazy(() => import("./pages/PostDetail"));
+const Friends = lazy(() => import("./pages/Friends"));
+const Thoughts = lazy(() => import("./pages/Thoughts"));
+const Diary = lazy(() => import("./pages/Diary"));
+const DiaryDetail = lazy(() => import("./pages/DiaryDetail"));
+const Excerpts = lazy(() => import("./pages/Excerpts"));
+const Resume = lazy(() => import("./pages/Resume"));
+const Guestbook = lazy(() => import("./pages/Guestbook"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const App = () => (
   <ThemeProvider>
@@ -22,6 +24,7 @@ const App = () => (
       <BrowserRouter>
         <ShiroAccentController />
         <ErrorBoundary>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" /></div>}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Posts />} />
@@ -36,6 +39,7 @@ const App = () => (
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
         </ErrorBoundary>
       </BrowserRouter>
     </RuntimeConfigProvider>
