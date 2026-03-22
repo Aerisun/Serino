@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from aerisun.api import api_router
-from aerisun.core.db import init_db
+from aerisun.core.db import run_database_migrations
 from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import get_settings
 
@@ -15,7 +15,7 @@ from aerisun.core.settings import get_settings
 async def lifespan(app: FastAPI):
     settings = get_settings()
     settings.ensure_directories()
-    init_db()
+    run_database_migrations()
     if settings.seed_reference_data:
         seed_reference_data()
     yield
