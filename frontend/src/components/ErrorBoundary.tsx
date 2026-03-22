@@ -27,15 +27,15 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h1 className="mb-4 text-2xl font-bold">Something went wrong</h1>
+            <h1 className="mb-4 text-2xl font-bold">出了点问题</h1>
             <p className="mb-6 text-gray-600 dark:text-gray-400">
-              An unexpected error occurred.
+              发生了一个意外错误。
             </p>
             <button
               className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
               onClick={() => window.location.reload()}
             >
-              Reload page
+              重新加载页面
             </button>
           </div>
         </div>
