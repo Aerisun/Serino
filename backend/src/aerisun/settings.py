@@ -6,7 +6,9 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BACKEND_ROOT = Path(__file__).resolve().parents[2]
+# Use absolute path WITHOUT resolving symlinks so each git worktree
+# gets its own .store/ directory instead of sharing the main branch's.
+BACKEND_ROOT = Path(__file__).absolute().parents[2]
 PROJECT_ROOT = BACKEND_ROOT.parent
 
 DEFAULT_CORS_ORIGINS = [

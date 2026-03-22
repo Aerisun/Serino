@@ -27,10 +27,11 @@ export default function DiaryEditPage() {
 
   const [form, setForm] = useState<ContentCreate>({
     slug: "", title: "", summary: "", body: "", tags: [], status: "draft", visibility: "public", published_at: null,
+    mood: "", weather: "", poem: "",
   });
 
   useEffect(() => {
-    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at });
+    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, mood: (item as any).mood || "", weather: (item as any).weather || "", poem: (item as any).poem || "" });
   }, [item]);
 
   const save = useMutation({
@@ -65,6 +66,11 @@ export default function DiaryEditPage() {
         <div className="space-y-2"><Label>{t("posts.summary")}</Label><Textarea value={form.summary || ""} onChange={(e) => setField("summary", e.target.value)} rows={2} /></div>
         <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={12} className="font-mono text-sm" required /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2"><Label>心情</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder="如：开心、平静" /></div>
+          <div className="space-y-2"><Label>天气</Label><Input value={form.weather || ""} onChange={(e) => setField("weather", e.target.value)} placeholder="如：晴、雨" /></div>
+          <div className="space-y-2"><Label>诗句</Label><Input value={form.poem || ""} onChange={(e) => setField("poem", e.target.value)} placeholder="可选" /></div>
+        </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>{t("posts.status")}</Label>

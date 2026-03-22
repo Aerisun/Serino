@@ -6,6 +6,7 @@ import {
   listPoems, createPoem, updatePoem, deletePoem,
   listPageCopy, createPageCopy, updatePageCopy, deletePageCopy,
   listDisplayOptions, createDisplayOption, updateDisplayOption, deleteDisplayOption,
+  listNavItems, createNavItem, updateNavItem, deleteNavItem,
   getCommunityConfig, updateCommunityConfig,
 } from "@/api/endpoints/site-config";
 import { PageHeader } from "@/components/PageHeader";
@@ -21,7 +22,7 @@ import { Plus, Save, Trash2, Pencil, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { createCommunityForm, communityFormToUpdate } from "@/lib/community-config";
 import { useI18n } from "@/i18n";
-import type { SiteProfile, SocialLink, Poem, PageCopy, PageDisplayOption } from "@/types/models";
+import type { SiteProfile, SocialLink, Poem, PageCopy, PageDisplayOption, NavItem } from "@/types/models";
 
 const PAGE_KEYS = ["posts", "diary", "friends", "excerpts", "thoughts", "guestbook", "resume", "calendar"];
 
@@ -36,6 +37,7 @@ export default function SiteConfigPage() {
           <TabsTrigger value="social">{t("siteConfig.socialLinks")}</TabsTrigger>
           <TabsTrigger value="poems">{t("siteConfig.poems")}</TabsTrigger>
           <TabsTrigger value="pages">{t("siteConfig.pages")}</TabsTrigger>
+          <TabsTrigger value="nav">导航菜单</TabsTrigger>
           <TabsTrigger value="community">{t("siteConfig.community")}</TabsTrigger>
         </TabsList>
 
@@ -43,6 +45,7 @@ export default function SiteConfigPage() {
         <TabsContent value="social"><SocialLinksTab /></TabsContent>
         <TabsContent value="poems"><PoemsTab /></TabsContent>
         <TabsContent value="pages"><PagesTab /></TabsContent>
+        <TabsContent value="nav"><NavItemsTab /></TabsContent>
         <TabsContent value="community"><CommunityTab /></TabsContent>
       </Tabs>
     </div>
@@ -53,10 +56,10 @@ function ProfileTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data: profile, isLoading } = useQuery({ queryKey: ["site-profile"], queryFn: getProfile });
-  const [form, setForm] = useState({ name: "", title: "", bio: "", role: "", footer_text: "" });
+  const [form, setForm] = useState({ name: "", title: "", bio: "", role: "", footer_text: "", hero_video_url: "" });
 
   useEffect(() => {
-    if (profile) setForm({ name: profile.name, title: profile.title, bio: profile.bio, role: profile.role, footer_text: profile.footer_text });
+    if (profile) setForm({ name: profile.name, title: profile.title, bio: profile.bio, role: profile.role, footer_text: profile.footer_text, hero_video_url: profile.hero_video_url || "" });
   }, [profile]);
 
   const save = useMutation({
@@ -71,12 +74,13 @@ function ProfileTab() {
     title: t("siteConfig.siteTitle"),
     role: t("siteConfig.role"),
     footer_text: t("siteConfig.footerText"),
+    hero_video_url: "首页视频 URL",
   };
 
   return (
     <Card className="mt-4 max-w-2xl">
       <CardContent className="pt-6 space-y-4">
-        {(["name", "title", "role", "footer_text"] as const).map((key) => (
+        {(["name", "title", "role", "footer_text", "hero_video_url"] as const).map((key) => (
           <div key={key} className="space-y-2">
             <Label>{fieldLabels[key]}</Label>
             <Input value={form[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} />
@@ -635,5 +639,117 @@ function PageRow({ copy, display }: { copy: PageCopy; display?: PageDisplayOptio
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function NavItemsTab() {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({ queryKey: ["nav-items"], queryFn: () => listNavItems() });
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ label: "", href: "", trigger: "", page_key: "", parent_id: "", order_index: 0, is_enabled: true });
+
+  const items = data?.items ?? [];
+  const topLevel = items.filter((i) => !i.parent_id).sort((a, b) => a.order_index - b.order_index);
+  const childrenOf = (pid: string) => items.filter((i) => i.parent_id === pid).sort((a, b) => a.order_index - b.order_index);
+
+  const create = useMutation({
+    mutationFn: () => createNavItem({
+      ...form,
+      trigger: form.trigger || null,
+      page_key: form.page_key || null,
+      parent_id: form.parent_id || null,
+    }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); setOpen(false); resetForm(); },
+  });
+
+  const update = useMutation({
+    mutationFn: () => updateNavItem(editingId!, {
+      ...form,
+      trigger: form.trigger || null,
+      page_key: form.page_key || null,
+      parent_id: form.parent_id || null,
+    }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["nav-items"] }); setEditingId(null); setOpen(false); resetForm(); },
+  });
+
+  const del = useMutation({
+    mutationFn: (id: string) => deleteNavItem(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["nav-items"] }),
+  });
+
+  function resetForm() {
+    setForm({ label: "", href: "", trigger: "", page_key: "", parent_id: "", order_index: 0, is_enabled: true });
+  }
+
+  function startEdit(item: NavItem) {
+    setEditingId(item.id);
+    setForm({
+      label: item.label, href: item.href, trigger: item.trigger || "", page_key: item.page_key || "",
+      parent_id: item.parent_id || "", order_index: item.order_index, is_enabled: item.is_enabled,
+    });
+    setOpen(true);
+  }
+
+  function renderItem(item: NavItem, depth: number = 0) {
+    const children = childrenOf(item.id);
+    return (
+      <div key={item.id}>
+        <div className={`flex items-center gap-2 py-2 px-3 border-b hover:bg-muted/50 ${depth > 0 ? "pl-8" : ""}`}>
+          <span className={`text-sm font-medium ${!item.is_enabled ? "text-muted-foreground line-through" : ""}`}>{item.label}</span>
+          <span className="text-xs text-muted-foreground">{item.href}</span>
+          {item.trigger && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 rounded">{item.trigger}</span>}
+          {item.page_key && <span className="text-xs bg-green-100 text-green-700 px-1.5 rounded">{item.page_key}</span>}
+          <span className="text-xs text-muted-foreground ml-auto">#{item.order_index}</span>
+          <Button variant="ghost" size="icon" onClick={() => startEdit(item)}><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => del.mutate(item.id)}><Trash2 className="h-4 w-4" /></Button>
+        </div>
+        {children.map((c) => renderItem(c, depth + 1))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex justify-end mb-4">
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); resetForm(); } }}>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> 添加导航项</Button></DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{editingId ? "编辑导航项" : "新建导航项"}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1"><Label>标签</Label><Input value={form.label} onChange={(e) => setForm((p) => ({ ...p, label: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>链接 (href)</Label><Input value={form.href} onChange={(e) => setForm((p) => ({ ...p, href: e.target.value }))} /></div>
+              <div className="space-y-1"><Label>触发器 (trigger)</Label><Input value={form.trigger} onChange={(e) => setForm((p) => ({ ...p, trigger: e.target.value }))} placeholder="可选，如 dropdown" /></div>
+              <div className="space-y-1"><Label>页面键 (page_key)</Label><Input value={form.page_key} onChange={(e) => setForm((p) => ({ ...p, page_key: e.target.value }))} placeholder="可选" /></div>
+              <div className="space-y-1">
+                <Label>父级菜单</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.parent_id}
+                  onChange={(e) => setForm((p) => ({ ...p, parent_id: e.target.value }))}
+                >
+                  <option value="">无 (顶级)</option>
+                  {items.filter((i) => !i.parent_id && i.id !== editingId).map((i) => (
+                    <option key={i.id} value={i.id}>{i.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1"><Label>排序</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={form.is_enabled} onChange={(e) => setForm((p) => ({ ...p, is_enabled: e.target.checked }))} />
+                <Label>启用</Label>
+              </div>
+              <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={create.isPending || update.isPending}>
+                {editingId ? "保存" : "创建"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <div className="border rounded-lg">
+        {topLevel.length === 0 && <p className="p-4 text-muted-foreground text-sm">暂无导航项</p>}
+        {topLevel.map((item) => renderItem(item))}
+      </div>
+    </div>
   );
 }

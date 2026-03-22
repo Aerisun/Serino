@@ -27,26 +27,12 @@ interface PostsPageConfig extends BaseViewPageConfig {
   };
 }
 
-const categoryMap: Record<string, string> = {
-  "design-system": "设计",
-  frontend: "设计",
-  css: "技术",
-  performance: "技术",
-  react: "技术",
-  animation: "技术",
-  essay: "随想",
-  career: "随想",
-};
-
-const getCategory = (entry: PublicContentEntry) =>
-  categoryMap[entry.tags[0] ?? ""] ?? entry.tags[0] ?? "内容";
-
 const mapRemotePost = (entry: PublicContentEntry): Post => ({
   slug: entry.slug,
   title: entry.title,
   excerpt: entry.summary ?? entry.body,
   date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
-  category: entry.category || getCategory(entry),
+  category: entry.category || entry.tags[0] || "内容",
   tags: entry.tags,
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,

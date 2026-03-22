@@ -9,6 +9,7 @@ from aerisun.db import get_session
 from aerisun.models import (
     AdminUser,
     CommunityConfig,
+    NavItem,
     PageCopy,
     PageDisplayOption,
     Poem,
@@ -19,6 +20,10 @@ from aerisun.models import (
 from .content import build_crud_router
 from .deps import get_current_admin
 from .schemas import (
+    NavItemAdminRead,
+    NavItemCreate,
+    NavItemUpdate,
+    NavReorderItem,
     PageCopyAdminRead,
     PageCopyCreate,
     PageCopyUpdate,
@@ -138,3 +143,34 @@ router.include_router(social_links_router)
 router.include_router(poems_router)
 router.include_router(page_copy_router)
 router.include_router(display_options_router)
+
+
+# --- NavItem reorder (must be registered before CRUD router) ---
+
+@router.put("/nav-items/reorder", response_model=list[NavItemAdminRead])
+def reorder_nav_items(
+    items: list[NavReorderItem],
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    for reorder_item in items:
+        nav_item = session.get(NavItem, reorder_item.id)
+        if nav_item is None:
+            raise HTTPException(status_code=404, detail=f"NavItem {reorder_item.id} not found")
+        nav_item.parent_id = reorder_item.parent_id
+        nav_item.order_index = reorder_item.order_index
+    session.commit()
+    all_items = session.query(NavItem).order_by(NavItem.order_index.asc()).all()
+    return [NavItemAdminRead.model_validate(item) for item in all_items]
+
+
+nav_items_router = build_crud_router(
+    NavItem,
+    create_schema=NavItemCreate,
+    update_schema=NavItemUpdate,
+    read_schema=NavItemAdminRead,
+    prefix="/nav-items",
+    tag="admin-site-config",
+)
+
+router.include_router(nav_items_router)
