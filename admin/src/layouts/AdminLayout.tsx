@@ -24,9 +24,12 @@ import {
   Menu,
   X,
   Globe,
+  Moon,
+  Sun,
   UserCog,
   Info,
 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 
 const navGroups = [
@@ -73,6 +76,7 @@ const navGroups = [
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const { theme, setTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -200,10 +204,20 @@ export default function AdminLayout() {
             </Button>
             <span className="text-sm text-muted-foreground">{t("nav.adminPanel")}</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5">
-            <Globe className="h-4 w-4" />
-            {lang === "zh" ? "EN" : "中文"}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="gap-1.5"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5">
+              <Globe className="h-4 w-4" />
+              {lang === "zh" ? "EN" : "中文"}
+            </Button>
+          </div>
         </div>
         <div className="p-6 overflow-x-auto">
           <Outlet />

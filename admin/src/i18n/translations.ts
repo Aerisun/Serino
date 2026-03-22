@@ -431,6 +431,40 @@ export const translations: Record<Lang, Record<string, string>> = {
     "auditLog.dateTo": "结束日期",
     "auditLog.filter": "筛选",
     "auditLog.clearFilter": "清除",
+
+    // edit page fields
+    "diary.mood": "心情",
+    "diary.moodPlaceholder": "如：开心、平静",
+    "diary.weather": "天气",
+    "diary.weatherPlaceholder": "如：晴、雨",
+    "diary.poem": "诗句",
+    "diary.poemPlaceholder": "可选",
+    "thoughts.mood": "心情",
+    "thoughts.moodPlaceholder": "如：开心、平静、思考",
+    "excerpts.authorName": "作者",
+    "excerpts.authorPlaceholder": "原文作者",
+    "excerpts.source": "来源",
+    "excerpts.sourcePlaceholder": "书名、文章等",
+
+    // nav items
+    "navItems.add": "添加导航项",
+    "navItems.edit": "编辑导航项",
+    "navItems.create": "新建导航项",
+    "navItems.label": "标签",
+    "navItems.href": "链接 (href)",
+    "navItems.trigger": "触发器 (trigger)",
+    "navItems.triggerPlaceholder": "可选，如 dropdown",
+    "navItems.pageKey": "页面键 (page_key)",
+    "navItems.pageKeyPlaceholder": "可选",
+    "navItems.parent": "父级菜单",
+    "navItems.parentNone": "无 (顶级)",
+    "navItems.order": "排序",
+    "navItems.enabled": "启用",
+    "navItems.save": "保存",
+    "navItems.empty": "暂无导航项",
+
+    // moderation extra
+    "moderation.guest": "访客",
   },
   en: {
     // common
@@ -862,5 +896,39 @@ export const translations: Record<Lang, Record<string, string>> = {
     "auditLog.dateTo": "To date",
     "auditLog.filter": "Filter",
     "auditLog.clearFilter": "Clear",
+
+    // edit page fields
+    "diary.mood": "Mood",
+    "diary.moodPlaceholder": "e.g. Happy, Calm",
+    "diary.weather": "Weather",
+    "diary.weatherPlaceholder": "e.g. Sunny, Rainy",
+    "diary.poem": "Poem",
+    "diary.poemPlaceholder": "Optional",
+    "thoughts.mood": "Mood",
+    "thoughts.moodPlaceholder": "e.g. Happy, Calm, Reflective",
+    "excerpts.authorName": "Author",
+    "excerpts.authorPlaceholder": "Original author",
+    "excerpts.source": "Source",
+    "excerpts.sourcePlaceholder": "Book, article, etc.",
+
+    // nav items
+    "navItems.add": "Add Nav Item",
+    "navItems.edit": "Edit Nav Item",
+    "navItems.create": "New Nav Item",
+    "navItems.label": "Label",
+    "navItems.href": "Link (href)",
+    "navItems.trigger": "Trigger",
+    "navItems.triggerPlaceholder": "Optional, e.g. dropdown",
+    "navItems.pageKey": "Page Key",
+    "navItems.pageKeyPlaceholder": "Optional",
+    "navItems.parent": "Parent Menu",
+    "navItems.parentNone": "None (top level)",
+    "navItems.order": "Order",
+    "navItems.enabled": "Enabled",
+    "navItems.save": "Save",
+    "navItems.empty": "No nav items yet",
+
+    // moderation extra
+    "moderation.guest": "Visitor",
   },
 };

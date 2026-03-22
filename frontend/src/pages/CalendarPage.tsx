@@ -123,6 +123,11 @@ const CalendarPage = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
+  const MIN_YEAR = 2024;
+  const MIN_MONTH = 0;
+  const isAtMinMonth = year === MIN_YEAR && month <= MIN_MONTH;
+  const isAtMaxMonth = year === today.getFullYear() && month >= today.getMonth();
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const rangeStart = formatDateKey(new Date(year, month, 1));
@@ -211,16 +216,17 @@ const CalendarPage = () => {
           <div className="mb-6 flex items-center justify-between">
             <button
               type="button"
+              disabled={isAtMinMonth}
               onClick={() => {
+                if (isAtMinMonth) return;
                 if (month === 0) {
                   setMonth(11);
                   setYear((value) => value - 1);
                   return;
                 }
-
                 setMonth((value) => value - 1);
               }}
-              className="rounded-xl p-2 text-foreground/40 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] active:scale-95"
+              className={`rounded-xl p-2 text-foreground/40 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] active:scale-95 ${isAtMinMonth ? "opacity-30 cursor-not-allowed" : ""}`}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -229,16 +235,17 @@ const CalendarPage = () => {
             </h2>
             <button
               type="button"
+              disabled={isAtMaxMonth}
               onClick={() => {
+                if (isAtMaxMonth) return;
                 if (month === 11) {
                   setMonth(0);
                   setYear((value) => value + 1);
                   return;
                 }
-
                 setMonth((value) => value + 1);
               }}
-              className="rounded-xl p-2 text-foreground/40 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] active:scale-95"
+              className={`rounded-xl p-2 text-foreground/40 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] active:scale-95 ${isAtMaxMonth ? "opacity-30 cursor-not-allowed" : ""}`}
             >
               <ChevronRight className="h-5 w-5" />
             </button>

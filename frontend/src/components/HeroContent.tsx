@@ -65,7 +65,10 @@ const HeroContent = () => {
 
             <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
               <div className="h-full w-full rounded-full overflow-hidden liquid-glass-coin-hero">
-                <img src="/images/avatar.png" alt={site.name} className="h-full w-full object-cover" />
+                <picture>
+                  <source srcSet="/images/avatar.webp" type="image/webp" />
+                  <img src="/images/avatar.png" alt={site.name} className="h-full w-full object-cover" loading="lazy" />
+                </picture>
               </div>
             </div>
           </motion.div>

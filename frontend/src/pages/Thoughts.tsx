@@ -8,8 +8,10 @@ import {
   fetchPublicContentCollection,
   formatPublishedDate,
   splitContentParagraphs,
+  createPublicReaction,
   type PublicContentEntry,
 } from "@/lib/api";
+import { getViewerToken, getContentReactionStorageKey } from "@/lib/engagement";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Thought {
@@ -44,6 +46,8 @@ const Thoughts = () => {
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [likedSet, setLikedSet] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,6 +80,19 @@ const Thoughts = () => {
       controller.abort();
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    const liked = new Set<string>();
+    const counts: Record<string, number> = {};
+    for (const item of items) {
+      const key = getContentReactionStorageKey("thoughts", item.id);
+      if (window.localStorage.getItem(key) === "true") liked.add(item.id);
+      counts[item.id] = item.likes;
+    }
+    setLikedSet(liked);
+    setLikeCounts(counts);
+  }, [items]);
 
   return (
     <PageShell
@@ -158,9 +175,37 @@ const Thoughts = () => {
               </p>
 
               <div className="mt-3 flex items-center gap-5 text-xs text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.42)]">
-                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
-                  <Heart className="h-3.5 w-3.5" />
-                  {thought.likes}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (likedSet.has(thought.id)) return;
+                    const prevCount = likeCounts[thought.id] ?? thought.likes;
+                    setLikedSet((prev) => new Set(prev).add(thought.id));
+                    setLikeCounts((prev) => ({ ...prev, [thought.id]: prevCount + 1 }));
+                    try {
+                      await createPublicReaction({
+                        content_type: "thoughts",
+                        content_slug: thought.id,
+                        reaction_type: "like",
+                        client_token: getViewerToken(),
+                      });
+                      window.localStorage.setItem(
+                        getContentReactionStorageKey("thoughts", thought.id),
+                        "true",
+                      );
+                    } catch {
+                      setLikedSet((prev) => {
+                        const next = new Set(prev);
+                        next.delete(thought.id);
+                        return next;
+                      });
+                      setLikeCounts((prev) => ({ ...prev, [thought.id]: prevCount }));
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95] ${likedSet.has(thought.id) ? "text-[rgb(var(--shiro-accent-rgb)/0.76)]" : ""}`}
+                >
+                  <Heart className={`h-3.5 w-3.5 ${likedSet.has(thought.id) ? "fill-current" : ""}`} />
+                  {likeCounts[thought.id] ?? thought.likes}
                 </button>
                 <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
                   <MessageCircle className="h-3.5 w-3.5" />

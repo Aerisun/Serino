@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
@@ -153,20 +154,27 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     return RecentActivityRead(items=items[:limit])
 
 
-def build_activity_heatmap(session: Session, weeks: int = 52) -> ActivityHeatmapRead:
+def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | None = None) -> ActivityHeatmapRead:
     weeks = max(1, min(weeks, 104))
-    today = datetime.now(UTC).date()
+    try:
+        tz = ZoneInfo(tz_name) if tz_name else UTC
+    except (KeyError, ValueError):
+        tz = UTC
+    today = datetime.now(tz).date()
     start = today - timedelta(days=today.weekday() + (weeks - 1) * 7)
 
     daily_counts: dict[date, int] = defaultdict(int)
     for published_at, _, _, _, _ in _content_events(session):
-        daily_counts[published_at.date()] += 1
+        dt = _normalize_timestamp(published_at).astimezone(tz)
+        daily_counts[dt.date()] += 1
 
     for item in list_all_waline_records(status="approved", guestbook_only=False):
-        daily_counts[item.created_at.date()] += 1
+        dt = _normalize_timestamp(item.created_at).astimezone(tz)
+        daily_counts[dt.date()] += 1
 
     for item in list_all_waline_records(status="approved", guestbook_only=True):
-        daily_counts[item.created_at.date()] += 1
+        dt = _normalize_timestamp(item.created_at).astimezone(tz)
+        daily_counts[dt.date()] += 1
 
     week_items: list[ActivityHeatmapWeekRead] = []
     totals: list[int] = []
