@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from aerisun.db import get_session
+from aerisun.core.db import get_session
 from aerisun.models import (
     AdminUser,
     ApiKey,
@@ -22,7 +22,7 @@ from aerisun.models import (
     PostEntry,
     ThoughtEntry,
 )
-from aerisun.waline import count_waline_records
+from aerisun.domain.waline.service import count_waline_records
 
 from .deps import get_current_admin
 from .schemas import (
@@ -151,7 +151,7 @@ def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    from aerisun.settings import get_settings
+    from aerisun.core.settings import get_settings
 
     settings = get_settings()
     snapshot = BackupSnapshot(

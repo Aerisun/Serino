@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from aerisun.db import get_session
+from aerisun.core.db import get_session
 from aerisun.models import AdminUser, Base
 
 from .deps import get_current_admin

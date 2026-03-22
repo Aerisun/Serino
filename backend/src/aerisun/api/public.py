@@ -5,8 +5,11 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from aerisun.activity import build_activity_heatmap, list_calendar_events, list_recent_activity
-from aerisun.content import (
+from aerisun.core.db import get_session
+from aerisun.core.schemas import HealthRead
+from aerisun.core.settings import get_settings as _get_settings
+from aerisun.domain.activity.service import build_activity_heatmap, list_calendar_events, list_recent_activity
+from aerisun.domain.content.service import (
     get_public_diary_entry,
     get_public_post,
     list_public_diary_entries,
@@ -14,8 +17,7 @@ from aerisun.content import (
     list_public_posts,
     list_public_thoughts,
 )
-from aerisun.db import get_session
-from aerisun.engagement.service import (
+from aerisun.domain.engagement.service import (
     create_public_comment,
     create_public_guestbook_entry,
     list_public_comments,
@@ -23,30 +25,22 @@ from aerisun.engagement.service import (
     read_public_reaction,
     register_public_reaction,
 )
-from aerisun.modules.site_config import get_community_config, get_page_copy, get_resume, get_site_config
-from aerisun.schemas import (
-    ActivityHeatmapRead,
-    CalendarRead,
-    CommunityConfigRead,
+from aerisun.domain.site_config.service import get_community_config, get_page_copy, get_resume, get_site_config
+from aerisun.domain.social.service import list_public_friend_feed, list_public_friends
+from aerisun.domain.activity.schemas import ActivityHeatmapRead, CalendarRead, RecentActivityRead
+from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
+from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
     CommentCreateResponse,
-    ContentCollectionRead,
-    ContentEntryRead,
-    FriendCollectionRead,
-    FriendFeedCollectionRead,
     GuestbookCollectionRead,
     GuestbookCreate,
     GuestbookCreateResponse,
-    HealthRead,
-    PageCollectionRead,
     ReactionCreate,
     ReactionRead,
-    RecentActivityRead,
-    ResumeRead,
-    SiteConfigRead,
 )
-from aerisun.social import list_public_friend_feed, list_public_friends
+from aerisun.domain.site_config.schemas import CommunityConfigRead, PageCollectionRead, ResumeRead, SiteConfigRead
+from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead
 
 router = APIRouter(prefix="/api/v1/public", tags=["public"])
 
@@ -230,9 +224,7 @@ def read_activity_heatmap(
 
 @router.get("/healthz", response_model=HealthRead)
 def healthz() -> HealthRead:
-    from aerisun.settings import get_settings
-
-    settings = get_settings()
+    settings = _get_settings()
     return HealthRead(
         status="ok",
         database_path=str(settings.db_path),

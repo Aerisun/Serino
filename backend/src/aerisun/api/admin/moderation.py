@@ -5,9 +5,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from aerisun.db import get_session
+from aerisun.core.db import get_session
 from aerisun.models import AdminUser, ModerationRecord
-from aerisun.waline import list_guestbook_records, list_waline_records, moderate_waline_record, parse_comment_path
+from aerisun.domain.waline.service import list_guestbook_records, list_waline_records, moderate_waline_record, parse_comment_path
 
 from .deps import get_current_admin
 from .schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction

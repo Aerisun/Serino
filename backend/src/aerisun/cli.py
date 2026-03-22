@@ -6,9 +6,9 @@ import sys
 import bcrypt
 from sqlalchemy.orm import Session
 
-from aerisun.db import get_session_factory, init_db
+from aerisun.core.db import get_session_factory, init_db
 from aerisun.models import AdminUser
-from aerisun.settings import get_settings
+from aerisun.core.settings import get_settings
 
 
 def create_admin() -> None:
