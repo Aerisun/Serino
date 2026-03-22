@@ -175,7 +175,7 @@ class SiteProfileAdminRead(ModelBase):
 
 
 class SocialLinkCreate(BaseModel):
-    site_profile_id: str
+    site_profile_id: str | None = None
     name: str
     href: str
     icon_key: str
@@ -209,7 +209,7 @@ class SocialLinkAdminRead(ModelBase):
 
 
 class PoemCreate(BaseModel):
-    site_profile_id: str
+    site_profile_id: str | None = None
     order_index: int = 0
     content: str
 
@@ -405,7 +405,7 @@ class ResumeBasicsAdminRead(ModelBase):
 
 
 class ResumeSkillGroupCreate(BaseModel):
-    resume_basics_id: str
+    resume_basics_id: str | None = None
     category: str
     items: list[str] = Field(default_factory=list)
     order_index: int = 0
@@ -428,7 +428,7 @@ class ResumeSkillGroupAdminRead(ModelBase):
 
 
 class ResumeExperienceCreate(BaseModel):
-    resume_basics_id: str
+    resume_basics_id: str | None = None
     title: str
     company: str
     period: str
@@ -520,7 +520,7 @@ class FriendFeedSourceAdminRead(ModelBase):
 
 
 class NavItemCreate(BaseModel):
-    site_profile_id: str
+    site_profile_id: str | None = None
     parent_id: str | None = None
     label: str
     href: str | None = None

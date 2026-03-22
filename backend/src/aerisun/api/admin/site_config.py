@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Query as SAQuery
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -45,6 +46,25 @@ from .schemas import (
 router = APIRouter(prefix="/site-config", tags=["admin-site-config"])
 
 
+def _get_primary_site_profile(session: Session) -> SiteProfile:
+    profile = session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Site profile not configured")
+    return profile
+
+
+def _site_profile_scoped_query(session: Session, model: type[SocialLink | Poem | NavItem]) -> SAQuery[Any]:
+    profile = _get_primary_site_profile(session)
+    return session.query(model).filter(model.site_profile_id == profile.id)
+
+
+def _attach_site_profile_id(session: Session, data: dict[str, Any]) -> dict[str, Any]:
+    profile = _get_primary_site_profile(session)
+    if not data.get("site_profile_id"):
+        data["site_profile_id"] = profile.id
+    return data
+
+
 # --- SiteProfile: single-row GET/PUT ---
 
 
@@ -54,9 +74,7 @@ def get_profile(
     session: Session = Depends(get_session),
 ) -> Any:
     """返回站点基本资料配置。"""
-    profile = session.query(SiteProfile).first()
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Site profile not configured")
+    profile = _get_primary_site_profile(session)
     return SiteProfileAdminRead.model_validate(profile)
 
 
@@ -67,9 +85,7 @@ def update_profile(
     session: Session = Depends(get_session),
 ) -> Any:
     """更新站点名称、描述、头像等基本资料。"""
-    profile = session.query(SiteProfile).first()
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Site profile not configured")
+    profile = _get_primary_site_profile(session)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(profile, key, value)
     session.commit()
@@ -123,6 +139,8 @@ social_links_router = build_crud_router(
     read_schema=SocialLinkAdminRead,
     prefix="/social-links",
     tag="admin-site-config",
+    base_query_factory=lambda session: _site_profile_scoped_query(session, SocialLink),
+    prepare_create_data=_attach_site_profile_id,
 )
 
 poems_router = build_crud_router(
@@ -132,6 +150,8 @@ poems_router = build_crud_router(
     read_schema=PoemAdminRead,
     prefix="/poems",
     tag="admin-site-config",
+    base_query_factory=lambda session: _site_profile_scoped_query(session, Poem),
+    prepare_create_data=_attach_site_profile_id,
 )
 
 page_copy_router = build_crud_router(
@@ -168,14 +188,17 @@ def reorder_nav_items(
     session: Session = Depends(get_session),
 ) -> Any:
     """批量更新导航项的父级关系和排序索引。"""
+    scoped_items = {
+        item.id: item for item in _site_profile_scoped_query(session, NavItem).order_by(NavItem.order_index.asc()).all()
+    }
     for reorder_item in items:
-        nav_item = session.get(NavItem, reorder_item.id)
+        nav_item = scoped_items.get(reorder_item.id)
         if nav_item is None:
             raise HTTPException(status_code=404, detail=f"NavItem {reorder_item.id} not found")
         nav_item.parent_id = reorder_item.parent_id
         nav_item.order_index = reorder_item.order_index
     session.commit()
-    all_items = session.query(NavItem).order_by(NavItem.order_index.asc()).all()
+    all_items = _site_profile_scoped_query(session, NavItem).order_by(NavItem.order_index.asc()).all()
     return [NavItemAdminRead.model_validate(item) for item in all_items]
 
 
@@ -186,6 +209,8 @@ nav_items_router = build_crud_router(
     read_schema=NavItemAdminRead,
     prefix="/nav-items",
     tag="admin-site-config",
+    base_query_factory=lambda session: _site_profile_scoped_query(session, NavItem),
+    prepare_create_data=_attach_site_profile_id,
 )
 
 router.include_router(nav_items_router)

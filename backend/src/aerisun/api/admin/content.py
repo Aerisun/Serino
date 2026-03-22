@@ -1,8 +1,10 @@
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import or_
+from sqlalchemy.orm import Query as SAQuery
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
@@ -31,10 +33,17 @@ def build_crud_router(
     read_schema: type[BaseModel],
     prefix: str,
     tag: str,
+    base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
+    prepare_create_data: Callable[[Session, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> APIRouter:
     """Factory that returns a full CRUD router for a given SQLAlchemy model."""
 
     router = APIRouter(prefix=prefix, tags=[tag])
+
+    def scoped_query(session: Session) -> SAQuery[Any]:
+        if base_query_factory is None:
+            return session.query(model)
+        return base_query_factory(session)
 
     @router.get("/", response_model=dict, summary=f"获取{tag}列表")
     def list_items(
@@ -49,7 +58,7 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> dict[str, Any]:
         """分页查询并返回列表数据。"""
-        q = session.query(model)
+        q = scoped_query(session)
 
         # --- filters ---
         if status_filter and hasattr(model, "status"):
@@ -101,6 +110,8 @@ def build_crud_router(
     ) -> Any:
         """接收数据并创建一条新记录。"""
         data = {k: v for k, v in payload.model_dump().items() if hasattr(model, k)}
+        if prepare_create_data is not None:
+            data = prepare_create_data(session, data)
         obj = model(**data)
         session.add(obj)
         session.commit()
@@ -114,7 +125,7 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         """根据 ID 获取单条记录详情。"""
-        obj = session.get(model, item_id)
+        obj = scoped_query(session).filter(model.id == item_id).first()  # type: ignore[union-attr]
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
         return read_schema.model_validate(obj)
@@ -127,7 +138,7 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         """根据 ID 更新一条记录的字段。"""
-        obj = session.get(model, item_id)
+        obj = scoped_query(session).filter(model.id == item_id).first()  # type: ignore[union-attr]
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
         for key, value in payload.model_dump(exclude_unset=True).items():
@@ -144,7 +155,7 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> None:
         """根据 ID 删除一条记录。"""
-        obj = session.get(model, item_id)
+        obj = scoped_query(session).filter(model.id == item_id).first()  # type: ignore[union-attr]
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
         session.delete(obj)
@@ -160,7 +171,7 @@ def build_crud_router(
     ) -> Any:
         """根据 ID 列表批量删除记录。"""
         affected = (
-            session.query(model)
+            scoped_query(session)
             .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
             .delete(synchronize_session="fetch")
         )
@@ -177,7 +188,7 @@ def build_crud_router(
         if not hasattr(model, "status"):
             raise HTTPException(status_code=400, detail="Model does not support status")
         affected = (
-            session.query(model)
+            scoped_query(session)
             .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
             .update({"status": payload.status}, synchronize_session="fetch")
         )
