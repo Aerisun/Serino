@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aerisun.db import get_session_factory, init_db
+from aerisun.settings import get_settings
 from aerisun.models import (
     Comment,
     DiaryEntry,
@@ -16,6 +17,7 @@ from aerisun.models import (
     FriendFeedItem,
     FriendFeedSource,
     GuestbookEntry,
+    NavItem,
     PageCopy,
     PageDisplayOption,
     Poem,
@@ -40,6 +42,7 @@ DEFAULT_SITE_PROFILE = {
     "og_image": "/images/hero_bg.jpeg",
     "meta_description": "Felix 的个人网站 - UI/UX 设计师与前端开发者",
     "copyright": "All rights reserved",
+    "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
     "hero_actions": json.dumps(
         [
             {"label": "简历", "href": "/resume", "icon_key": "resume"},
@@ -96,6 +99,19 @@ DEFAULT_PAGE_OPTIONS = [
     {"page_key": "calendar", "is_enabled": True, "settings": {}},
 ]
 
+DEFAULT_NAV_ITEMS = [
+    {"label": "首页", "href": "/", "page_key": "home", "trigger": "arrow", "order_index": 0},
+    {"label": "简历", "href": "/resume", "page_key": "resume", "trigger": "none", "order_index": 0, "_parent_label": "首页"},
+    {"label": "留言板", "href": "/guestbook", "page_key": "guestbook", "trigger": "none", "order_index": 1, "_parent_label": "首页"},
+    {"label": "日历", "href": "/calendar", "page_key": "calendar", "trigger": "none", "order_index": 2, "_parent_label": "首页"},
+    {"label": "帖子", "href": "/posts", "page_key": "posts", "trigger": "none", "order_index": 1},
+    {"label": "友链", "href": "/friends", "page_key": "friends", "trigger": "none", "order_index": 2},
+    {"label": "更多", "href": None, "page_key": "more", "trigger": "hover", "order_index": 3},
+    {"label": "碎碎念", "href": "/thoughts", "page_key": "thoughts", "trigger": "none", "order_index": 0, "_parent_label": "更多"},
+    {"label": "日记", "href": "/diary", "page_key": "diary", "trigger": "none", "order_index": 1, "_parent_label": "更多"},
+    {"label": "文摘", "href": "/excerpts", "page_key": "excerpts", "trigger": "none", "order_index": 2, "_parent_label": "更多"},
+]
+
 DEFAULT_RESUME = {
     "title": "Felix",
     "subtitle": "UI/UX Designer · Frontend Developer",
@@ -136,6 +152,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 21, 9, 0, tzinfo=UTC),
+        "category": "设计",
+        "view_count": 1247,
     },
     {
         "slug": "liquid-glass-css-notes",
@@ -146,6 +164,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 18, 20, 30, tzinfo=UTC),
+        "category": "技术",
+        "view_count": 3082,
     },
     {
         "slug": "why-i-choose-indie-design",
@@ -156,6 +176,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 14, 8, 15, tzinfo=UTC),
+        "category": "随想",
+        "view_count": 892,
     },
     {
         "slug": "react-19-design-pattern-shifts",
@@ -166,6 +188,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 16, 0, tzinfo=UTC),
+        "category": "技术",
+        "view_count": 2156,
     },
     {
         "slug": "typographic-rhythm-and-spacing",
@@ -176,6 +200,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 9, 10, 45, tzinfo=UTC),
+        "category": "设计",
+        "view_count": 1873,
     },
     {
         "slug": "framer-motion-page-transitions",
@@ -186,6 +212,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 6, 19, 20, tzinfo=UTC),
+        "category": "技术",
+        "view_count": 4210,
     },
     {
         "slug": "solo-workflow-tools-and-rhythm",
@@ -196,6 +224,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 3, 9, 50, tzinfo=UTC),
+        "category": "随想",
+        "view_count": 625,
     },
     {
         "slug": "dark-mode-design-details",
@@ -206,6 +236,8 @@ DEFAULT_POSTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 2, 28, 21, 5, tzinfo=UTC),
+        "category": "设计",
+        "view_count": 3140,
     },
 ]
 
@@ -219,6 +251,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        "weather": "sunny",
+        "mood": "☀️",
+        "poem": "春风如贵客，一到便繁华。——袁枚",
     },
     {
         "slug": "rain-day-and-lofi",
@@ -229,6 +264,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 19, 14, 45, tzinfo=UTC),
+        "weather": "rainy",
+        "mood": "🌧️",
+        "poem": "小楼一夜听春雨，深巷明朝卖杏花。——陆游",
     },
     {
         "slug": "windy-library-day",
@@ -239,6 +277,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 17, 18, 10, tzinfo=UTC),
+        "weather": "windy",
+        "mood": "🍃",
+        "poem": "解落三秋叶，能开二月花。——李峤",
     },
     {
         "slug": "evening-tram-and-orange-sky",
@@ -249,6 +290,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 15, 18, 40, tzinfo=UTC),
+        "weather": "cloudy",
+        "mood": "🌇",
+        "poem": "落霞与孤鹜齐飞，秋水共长天一色。——王勃",
     },
     {
         "slug": "quiet-sunday-cleanup",
@@ -259,6 +303,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 13, 11, 20, tzinfo=UTC),
+        "weather": "sunny",
+        "mood": "🧺",
+        "poem": "偷得浮生半日闲。——李涉",
     },
     {
         "slug": "midnight-css-and-tea",
@@ -269,6 +316,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 11, 0, 35, tzinfo=UTC),
+        "weather": "rainy",
+        "mood": "🍵",
+        "poem": "何当共剪西窗烛，却话巴山夜雨时。——李商隐",
     },
     {
         "slug": "bookstore-after-rain",
@@ -279,6 +329,9 @@ DEFAULT_DIARY_ENTRIES = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 9, 16, 5, tzinfo=UTC),
+        "weather": "cloudy",
+        "mood": "📚",
+        "poem": "纸上得来终觉浅，绝知此事要躬行。——陆游",
     },
 ]
 
@@ -292,6 +345,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 21, 15, 5, tzinfo=UTC),
+        "mood": "🎨",
     },
     {
         "slug": "less-but-better-note",
@@ -302,6 +356,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 20, 10, 20, tzinfo=UTC),
+        "mood": "💭",
     },
     {
         "slug": "frontend-as-craft",
@@ -312,6 +367,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 16, 9, 35, tzinfo=UTC),
+        "mood": "☕",
     },
     {
         "slug": "ui-is-editing",
@@ -322,6 +378,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 15, 9, 10, tzinfo=UTC),
+        "mood": "✂️",
     },
     {
         "slug": "soft-motion-note",
@@ -332,6 +389,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 13, 22, 40, tzinfo=UTC),
+        "mood": "🌫️",
     },
     {
         "slug": "tiny-delight-matters",
@@ -342,6 +400,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 20, 15, tzinfo=UTC),
+        "mood": "✨",
     },
     {
         "slug": "interface-is-tone",
@@ -352,6 +411,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 10, 8, 25, tzinfo=UTC),
+        "mood": "🫧",
     },
     {
         "slug": "shipping-beats-polish",
@@ -362,6 +422,7 @@ DEFAULT_THOUGHTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 8, 17, 50, tzinfo=UTC),
+        "mood": "🛠️",
     },
 ]
 
@@ -375,6 +436,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 17, 8, 0, tzinfo=UTC),
+        "author_name": "李欧梵",
+        "source": "《中国现代文学与现代性十讲》",
     },
     {
         "slug": "good-design-note",
@@ -385,6 +448,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 15, 11, 30, tzinfo=UTC),
+        "author_name": "Dieter Rams",
+        "source": "Less but Better",
     },
     {
         "slug": "repeat-has-power",
@@ -395,6 +460,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 19, 45, tzinfo=UTC),
+        "author_name": "村上春树",
+        "source": "《我的职业是小说家》",
     },
     {
         "slug": "slow-work-note",
@@ -405,6 +472,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 10, 14, 10, tzinfo=UTC),
+        "author_name": "约翰·伯格",
+        "source": "《观看之道》",
     },
     {
         "slug": "poetry-and-interface",
@@ -415,6 +484,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 8, 11, 5, tzinfo=UTC),
+        "author_name": "原研哉",
+        "source": "《设计中的设计》",
     },
     {
         "slug": "honest-materials",
@@ -425,6 +496,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 6, 10, 0, tzinfo=UTC),
+        "author_name": "彼得·卒姆托",
+        "source": "《思考建筑》",
     },
     {
         "slug": "quiet-systems",
@@ -435,6 +508,8 @@ DEFAULT_EXCERPTS = [
         "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 4, 9, 25, tzinfo=UTC),
+        "author_name": "唐纳德·诺曼",
+        "source": "《设计心理学》",
     },
 ]
 
@@ -1010,6 +1085,7 @@ def _seed_engagement_data(session: Session) -> None:
 
 
 def seed_reference_data() -> None:
+    get_settings().ensure_directories()
     init_db()
     session = get_session_factory()()
     try:
@@ -1038,6 +1114,38 @@ def seed_reference_data() -> None:
 
         _seed_missing_page_copies(session)
         _seed_missing_page_options(session)
+
+        if _is_empty(session, NavItem):
+            site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+            if site is not None:
+                label_to_id: dict[str, str] = {}
+                # First pass: top-level items
+                for item_data in DEFAULT_NAV_ITEMS:
+                    if "_parent_label" not in item_data:
+                        nav = NavItem(
+                            site_profile_id=site.id,
+                            label=item_data["label"],
+                            href=item_data["href"],
+                            page_key=item_data.get("page_key"),
+                            trigger=item_data.get("trigger", "none"),
+                            order_index=item_data["order_index"],
+                        )
+                        session.add(nav)
+                        session.flush()
+                        label_to_id[nav.label] = nav.id
+                # Second pass: children
+                for item_data in DEFAULT_NAV_ITEMS:
+                    if "_parent_label" in item_data:
+                        nav = NavItem(
+                            site_profile_id=site.id,
+                            parent_id=label_to_id[item_data["_parent_label"]],
+                            label=item_data["label"],
+                            href=item_data["href"],
+                            page_key=item_data.get("page_key"),
+                            trigger=item_data.get("trigger", "none"),
+                            order_index=item_data["order_index"],
+                        )
+                        session.add(nav)
 
         _seed_content_entries(session, PostEntry, DEFAULT_POSTS)
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
