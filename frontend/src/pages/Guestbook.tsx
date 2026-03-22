@@ -18,8 +18,6 @@ const Guestbook = () => {
     submit: config.submitLabel ?? "发表留言",
   };
 
-  const commentDescription = `昵称提示：${guestbookPromptCopy.name}。内容提示：${guestbookPromptCopy.content}。按钮文案：${guestbookPromptCopy.submit}。`;
-
   return (
     <PageShell
       eyebrow={config.eyebrow}
@@ -53,7 +51,7 @@ const Guestbook = () => {
           </div>
         </div>
 
-        <CommentSection contentType="guestbook" commentDescription={commentDescription} commentTitle="留言板" />
+        <CommentSection contentType="guestbook" />
       </motion.div>
     </PageShell>
   );
