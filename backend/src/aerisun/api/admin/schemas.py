@@ -148,6 +148,7 @@ class SiteProfileUpdate(BaseModel):
     copyright: str | None = None
     hero_actions: str | None = None
     hero_video_url: str | None = None
+    feature_flags: dict[str, object] | None = None
 
 
 class SiteProfileAdminRead(ModelBase):
@@ -163,6 +164,7 @@ class SiteProfileAdminRead(ModelBase):
     copyright: str
     hero_actions: str
     hero_video_url: str | None
+    feature_flags: dict[str, object]
     created_at: datetime
     updated_at: datetime
 

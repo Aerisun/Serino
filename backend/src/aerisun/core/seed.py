@@ -44,6 +44,7 @@ DEFAULT_SITE_PROFILE = {
         ],
         ensure_ascii=False,
     ),
+    "feature_flags": {"toc": True, "reading_progress": True, "social_sharing": True},
 }
 
 DEFAULT_SOCIAL_LINKS = [

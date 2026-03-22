@@ -86,6 +86,7 @@ def get_site_config(session: Session) -> SiteConfigRead:
             copyright=site.copyright,
             hero_actions=hero_actions,
             hero_video_url=site.hero_video_url,
+            feature_flags=site.feature_flags if site.feature_flags else {},
         ),
         social_links=[SocialLinkRead.model_validate(link) for link in links],
         poems=[PoemRead.model_validate(poem) for poem in poems],
