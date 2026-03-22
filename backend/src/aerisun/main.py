@@ -6,9 +6,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from aerisun.api import api_router
-from aerisun.db import init_db
-from aerisun.seed import seed_reference_data
-from aerisun.settings import get_settings
+from aerisun.core.db import init_db
+from aerisun.core.seed import seed_reference_data
+from aerisun.core.settings import get_settings
 
 
 @asynccontextmanager
@@ -37,4 +37,3 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
-

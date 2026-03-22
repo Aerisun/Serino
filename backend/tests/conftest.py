@@ -23,8 +23,8 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
     monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
 
-    from aerisun.db import get_engine, get_session_factory
-    from aerisun.settings import get_settings
+    from aerisun.core.db import get_engine, get_session_factory
+    from aerisun.core.settings import get_settings
 
     get_settings.cache_clear()
     get_engine.cache_clear()

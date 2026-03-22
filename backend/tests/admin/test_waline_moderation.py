@@ -5,10 +5,10 @@ import sqlite3
 
 import bcrypt
 
-from aerisun.db import get_session_factory
+from aerisun.core.db import get_session_factory
 from aerisun.models import AdminSession, AdminUser
-from aerisun.settings import get_settings
-from aerisun.waline import connect_waline_db
+from aerisun.core.settings import get_settings
+from aerisun.domain.waline.service import connect_waline_db
 
 
 def _create_admin_token(username: str = "waline-admin") -> str:

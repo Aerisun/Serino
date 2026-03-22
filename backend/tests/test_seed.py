@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aerisun.db import get_session_factory
+from aerisun.core.db import get_session_factory
 from aerisun.models import PageCopy
-from aerisun.seed import seed_reference_data
+from aerisun.core.seed import seed_reference_data
 
 
 def test_seed_reference_data_backfills_missing_activity_page(client) -> None:

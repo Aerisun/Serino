@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from aerisun.db import get_session
+from aerisun.core.db import get_session
 from aerisun.models import AdminUser, Friend, FriendFeedSource
 
 from .content import build_crud_router

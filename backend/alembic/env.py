@@ -12,8 +12,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from aerisun.models import Base  # noqa: E402
-from aerisun.settings import get_settings  # noqa: E402
+from aerisun.models import Base  # noqa: E402  — barrel triggers all domain model registration
+from aerisun.core.settings import get_settings  # noqa: E402
 
 config = context.config
 if config.config_file_name is not None:
