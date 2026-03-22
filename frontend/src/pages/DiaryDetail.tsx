@@ -6,12 +6,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
-import ShareButtons from "@/components/ShareButtons";
+
 import PageMeta from "@/components/PageMeta";
 import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
-import ShareBar from "@/components/ShareBar";
 import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
 import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -246,9 +245,6 @@ const DiaryDetail = () => {
             <div className="mt-10 text-center">
               <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">— 今日份记录 —</p>
             </div>
-
-            <ShareButtons title={entry.title} />
-            {featureFlags.social_sharing && <ShareBar title={entry.title} />}
 
             <CommentSection
               contentType="diary"
