@@ -117,12 +117,14 @@ function simpleMarkdownToHtml(md: string): string {
   // Bold and italic
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  // Images (before links so ![alt](url) isn't matched as a link)
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" />');
   // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-  // Images
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" />');
   // List items
   html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+  // Blockquotes
+  html = html.replace(/^&gt; (.+)$/gm, "<blockquote>$1</blockquote>");
   // Line breaks
   html = html.replace(/\n\n/g, "<br/><br/>");
 

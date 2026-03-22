@@ -6,11 +6,12 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
 import type { ContentCreate, ContentUpdate } from "@/types/models";
-import { Trash2, Save } from "lucide-react";
+import { Trash2, Save, ExternalLink } from "lucide-react";
 
 export default function DiaryEditPage() {
   const { id } = useParams();
@@ -53,6 +54,11 @@ export default function DiaryEditPage() {
         title={isNew ? t("diary.newEntry") : t("diary.editEntry")}
         actions={
           <div className="flex gap-2">
+            {!isNew && form.slug && form.status === "published" && (
+              <Button variant="outline" onClick={() => window.open(`${import.meta.env.VITE_FRONTEND_URL || 'http://localhost:8080'}/diary/${form.slug}`, '_blank')}>
+                <ExternalLink className="h-4 w-4 mr-2" /> {t("common.preview")}
+              </Button>
+            )}
             {!isNew && <Button variant="destructive" onClick={() => { if (confirm(t("diary.deleteConfirm"))) del.mutate(); }}><Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}</Button>}
             <Button onClick={handleSubmit} disabled={save.isPending}><Save className="h-4 w-4 mr-2" /> {save.isPending ? t("common.saving") : t("common.save")}</Button>
           </div>
@@ -64,7 +70,7 @@ export default function DiaryEditPage() {
           <div className="space-y-2"><Label>{t("posts.slug")}</Label><Input value={form.slug} onChange={(e) => setField("slug", e.target.value)} required /></div>
         </div>
         <div className="space-y-2"><Label>{t("posts.summary")}</Label><Textarea value={form.summary || ""} onChange={(e) => setField("summary", e.target.value)} rows={2} /></div>
-        <div className="space-y-2"><Label>{t("posts.body")}</Label><Textarea value={form.body} onChange={(e) => setField("body", e.target.value)} rows={12} className="font-mono text-sm" required /></div>
+        <div className="space-y-2"><Label>{t("posts.body")}</Label><MarkdownEditor value={form.body} onChange={(v) => setField("body", v)} minHeight="350px" /></div>
         <div className="space-y-2"><Label>{t("posts.tags")}</Label><Input value={form.tags?.join(", ") || ""} onChange={(e) => setField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))} /></div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2"><Label>心情</Label><Input value={form.mood || ""} onChange={(e) => setField("mood", e.target.value)} placeholder="如：开心、平静" /></div>
