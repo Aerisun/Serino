@@ -3,8 +3,10 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 export default defineConfig({
+  base: "/admin/",
   server: {
     port: 3001,
+    open: "/admin/",
     proxy: {
       "/api": {
         target: "http://localhost:8000",

@@ -35,6 +35,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const routerBasename = import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "");
+
 function ProtectedRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -80,8 +82,8 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LanguageProvider>
-          <AuthProvider>
-            <BrowserRouter>
+            <AuthProvider>
+            <BrowserRouter basename={routerBasename}>
               <Toaster richColors position="top-right" />
               <Routes>
                 <Route path="/login" element={<LoginRoute />} />

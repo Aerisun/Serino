@@ -1,5 +1,7 @@
 import axios from "axios";
 
+const loginPath = new URL("login", window.location.origin + import.meta.env.BASE_URL).pathname;
+
 const client = axios.create({
   baseURL: "/api/v1/admin",
 });
@@ -17,7 +19,7 @@ client.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("admin_token");
-      window.location.href = "/login";
+      window.location.assign(loginPath);
     }
     return Promise.reject(error);
   }

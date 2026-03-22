@@ -87,6 +87,7 @@ services:
     environment:
       AERISUN_DOMAIN: ${AERISUN_DOMAIN:-localhost}
       AERISUN_FRONTEND_UPSTREAM: ${AERISUN_FRONTEND_UPSTREAM:-host.docker.internal:8080}
+      AERISUN_ADMIN_UPSTREAM: ${AERISUN_ADMIN_UPSTREAM:-host.docker.internal:3001}
     depends_on:
       api:
         condition: service_healthy

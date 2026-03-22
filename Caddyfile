@@ -4,6 +4,11 @@
         reverse_proxy api:8000
     }
 
+    # 管理端 SPA
+    handle_path /admin* {
+        reverse_proxy {$AERISUN_ADMIN_UPSTREAM:host.docker.internal:3001}
+    }
+
     # Waline 评论服务
     handle /waline/* {
         uri strip_prefix /waline

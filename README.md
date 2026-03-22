@@ -15,8 +15,22 @@ The API container runs `backend/scripts/bootstrap.sh`, which:
 
 1. Ensures the data/media/secrets directories exist.
 2. Runs `alembic upgrade head`.
-3. Seeds the default site config, pages, and resume data.
-4. Starts FastAPI with Uvicorn.
+3. Starts FastAPI with Uvicorn.
+
+At app startup, the FastAPI lifespan hook runs the reference-data seeding step so
+the default site config, pages, and resume data are only filled through the
+active runtime chain.
+
+The two frontend apps remain host-side Vite apps in this setup:
+
+- Main site: `frontend` on `http://localhost:8080`
+- Admin: `admin` on `http://localhost:3001/admin/`
+
+`Caddy` now proxies:
+
+- `/` to `${AERISUN_FRONTEND_UPSTREAM}`
+- `/admin/*` to `${AERISUN_ADMIN_UPSTREAM}`
+- `/api/*` to the FastAPI backend
 
 ## Backup
 
