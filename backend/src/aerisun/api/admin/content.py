@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any
+from typing import Any, Type
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -88,7 +86,8 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        obj = model(**payload.model_dump())
+        data = {k: v for k, v in payload.model_dump().items() if hasattr(model, k)}
+        obj = model(**data)
         session.add(obj)
         session.commit()
         session.refresh(obj)
@@ -116,7 +115,8 @@ def build_crud_router(
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
         for key, value in payload.model_dump(exclude_unset=True).items():
-            setattr(obj, key, value)
+            if hasattr(model, key):
+                setattr(obj, key, value)
         session.commit()
         session.refresh(obj)
         return read_schema.model_validate(obj)
