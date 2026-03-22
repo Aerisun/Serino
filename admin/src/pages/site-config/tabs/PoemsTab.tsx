@@ -1,0 +1,88 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getProfile,
+  listPoems, createPoem, updatePoem, deletePoem,
+} from "@/api/endpoints/site-config";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { Label } from "@/components/ui/Label";
+import { DataTable } from "@/components/DataTable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
+import { Plus, Trash2, Pencil } from "lucide-react";
+import { useI18n } from "@/i18n";
+import type { Poem } from "@/types/models";
+
+export function PoemsTab() {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const { data: profile } = useQuery({ queryKey: ["site-profile"], queryFn: getProfile });
+  const { data } = useQuery({ queryKey: ["poems"], queryFn: () => listPoems() });
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ content: "", order_index: 0 });
+
+  const profileId = profile?.id ?? "";
+
+  const create = useMutation({
+    mutationFn: () => createPoem({ ...form, site_profile_id: profileId }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["poems"] }); setOpen(false); resetForm(); },
+  });
+
+  const update = useMutation({
+    mutationFn: () => updatePoem(editingId!, form),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["poems"] }); setEditingId(null); setOpen(false); resetForm(); },
+  });
+
+  const del = useMutation({
+    mutationFn: (id: string) => deletePoem(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["poems"] }),
+  });
+
+  function resetForm() {
+    setForm({ content: "", order_index: 0 });
+  }
+
+  function startEdit(poem: Poem) {
+    setEditingId(poem.id);
+    setForm({ content: poem.content, order_index: poem.order_index });
+    setOpen(true);
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex justify-end mb-4">
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); resetForm(); } }}>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> {t("siteConfig.addPoem")}</Button></DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{editingId ? t("siteConfig.editPoem") : t("siteConfig.newPoem")}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1"><Label>{t("siteConfig.content")}</Label><Textarea value={form.content} onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))} rows={4} /></div>
+              <div className="space-y-1"><Label>{t("common.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
+              <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={create.isPending || update.isPending}>
+                {editingId ? t("common.save") : t("common.create")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <div className="border rounded-lg">
+        <DataTable<Poem>
+          columns={[
+            { header: t("siteConfig.content"), accessor: (row) => <span className="line-clamp-2">{row.content}</span> },
+            { header: t("common.order"), accessor: "order_index" as any },
+            { header: "", accessor: (row) => (
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); startEdit(row); }}><Pencil className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); del.mutate(row.id); }}><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            )},
+          ]}
+          data={data?.items ?? []}
+          total={data?.total ?? 0}
+        />
+      </div>
+    </div>
+  );
+}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  listResumeBasics, createResumeBasics, updateResumeBasics, deleteResumeBasics,
-  listResumeSkills, createResumeSkill, updateResumeSkill, deleteResumeSkill,
-  listResumeExperiences, createResumeExperience, updateResumeExperience, deleteResumeExperience,
+  listResumeBasics, createResumeBasics, updateResumeBasics,
+  listResumeSkills, createResumeSkill, deleteResumeSkill,
+  listResumeExperiences, createResumeExperience, deleteResumeExperience,
 } from "@/api/endpoints/resume";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
-import type { ResumeBasics, ResumeSkillGroup, ResumeExperience } from "@/types/models";
+import type { ResumeSkillGroup, ResumeExperience } from "@/types/models";
 
 export default function ResumePage() {
   const { t } = useI18n();

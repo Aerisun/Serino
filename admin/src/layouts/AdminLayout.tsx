@@ -3,7 +3,6 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import { useI18n } from "@/i18n";
-import { getDashboardStats } from "@/api/endpoints/system";
 import { listComments } from "@/api/endpoints/comments";
 import { listGuestbook } from "@/api/endpoints/comments";
 import { Button } from "@/components/ui/Button";
