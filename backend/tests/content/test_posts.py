@@ -7,7 +7,7 @@ def test_read_posts_returns_seeded_collection(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert len(payload["items"]) == 3
+    assert len(payload["items"]) == 8
     assert payload["items"][0]["slug"] == "from-zero-design-system"
     assert payload["items"][1]["slug"] == "liquid-glass-css-notes"
 

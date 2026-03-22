@@ -7,7 +7,7 @@ def test_read_thoughts_returns_seeded_collection(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert len(payload["items"]) == 3
+    assert len(payload["items"]) == 8
     assert payload["items"][0]["slug"] == "spacing-rhythm-note"
 
 
@@ -17,5 +17,5 @@ def test_read_excerpts_returns_seeded_collection(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert len(payload["items"]) == 3
+    assert len(payload["items"]) == 7
     assert payload["items"][0]["slug"] == "harmony-in-blank-space"

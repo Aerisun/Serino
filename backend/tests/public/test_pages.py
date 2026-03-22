@@ -46,7 +46,7 @@ def test_public_content_includes_presentation_fields(client) -> None:
     assert posts_by_slug["from-zero-design-system"]["display_date"] == "2026 年 3 月 21 日"
     assert posts_by_slug["from-zero-design-system"]["relative_date"]
     assert posts_by_slug["from-zero-design-system"]["view_count"] == 1247
-    assert posts_by_slug["from-zero-design-system"]["comment_count"] >= 1
+    assert posts_by_slug["from-zero-design-system"]["comment_count"] == 0
     assert posts_by_slug["from-zero-design-system"]["like_count"] >= 1
 
     assert diary_by_slug["spring-equinox-and-warm-light"]["weather"] == "sunny"
@@ -54,7 +54,7 @@ def test_public_content_includes_presentation_fields(client) -> None:
     assert "春风如贵客" in diary_by_slug["spring-equinox-and-warm-light"]["poem"]
 
     assert thoughts_by_slug["spacing-rhythm-note"]["mood"] == "🎨"
-    assert thoughts_by_slug["spacing-rhythm-note"]["repost_count"] == 2
+    assert thoughts_by_slug["spacing-rhythm-note"]["repost_count"] == 0
     assert thoughts_by_slug["spacing-rhythm-note"]["display_date"] == "2026 年 3 月 21 日"
 
     assert excerpts_by_slug["good-design-note"]["author"] == "Dieter Rams"

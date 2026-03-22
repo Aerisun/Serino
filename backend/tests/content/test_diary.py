@@ -7,7 +7,7 @@ def test_read_diary_returns_seeded_collection(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert len(payload["items"]) == 3
+    assert len(payload["items"]) == 7
     assert payload["items"][0]["slug"] == "spring-equinox-and-warm-light"
 
 

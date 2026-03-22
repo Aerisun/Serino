@@ -27,7 +27,8 @@ def get_current_admin(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired session token",
         )
-    now = datetime.utcnow() if admin_session.expires_at.tzinfo is None else datetime.now(timezone.utc)
+    now_utc = datetime.now(timezone.utc)
+    now = now_utc.replace(tzinfo=None) if admin_session.expires_at.tzinfo is None else now_utc
     if admin_session.expires_at < now:
         session.delete(admin_session)
         session.commit()
