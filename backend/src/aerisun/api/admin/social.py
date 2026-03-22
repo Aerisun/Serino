@@ -34,6 +34,40 @@ friends_router = build_crud_router(
 router.include_router(friends_router)
 
 
+# --- Feed crawl triggers ---
+
+@router.post("/feeds/crawl")
+def trigger_feed_crawl(
+    _admin: AdminUser = Depends(get_current_admin),
+) -> Any:
+    """Manually trigger a crawl of all enabled feed sources."""
+    from aerisun.domain.social.crawler import crawl_all_feeds
+
+    return crawl_all_feeds()
+
+
+@router.post("/feeds/{feed_id}/crawl")
+def trigger_single_feed_crawl(
+    feed_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    """Manually trigger a crawl of a single feed source."""
+    from aerisun.core.settings import get_settings
+    from aerisun.domain.social.crawler import crawl_single_source
+
+    source = session.get(FriendFeedSource, feed_id)
+    if source is None:
+        raise HTTPException(status_code=404, detail="Feed source not found")
+    friend = session.get(Friend, source.friend_id)
+    if friend is None:
+        raise HTTPException(status_code=404, detail="Friend not found")
+
+    result = crawl_single_source(session, source, friend, get_settings())
+    session.commit()
+    return result
+
+
 # --- FriendFeedSource as sub-resource of friends ---
 
 @router.get("/friends/{friend_id}/feeds", response_model=list[FriendFeedSourceAdminRead])
