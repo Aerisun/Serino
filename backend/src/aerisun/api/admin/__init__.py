@@ -7,6 +7,8 @@ from aerisun.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from .assets import router as assets_router
 from .auth import router as auth_router
 from .content import build_crud_router
+from .content_meta import router as content_meta_router
+from .import_export import router as import_export_router
 from .moderation import router as moderation_router
 from .resume import router as resume_router
 from .schemas import ContentAdminRead, ContentCreate, ContentUpdate
@@ -44,5 +46,7 @@ admin_router.include_router(social_router)
 admin_router.include_router(moderation_router)
 admin_router.include_router(assets_router)
 admin_router.include_router(system_router)
+admin_router.include_router(content_meta_router)
+admin_router.include_router(import_export_router)
 
 __all__ = ["admin_router"]

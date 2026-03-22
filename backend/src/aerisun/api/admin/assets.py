@@ -11,7 +11,7 @@ from aerisun.models import AdminUser, Asset
 from aerisun.core.settings import get_settings
 
 from .deps import get_current_admin
-from .schemas import AssetAdminRead
+from .schemas import AssetAdminRead, BulkDeleteRequest, BulkActionResponse
 
 router = APIRouter(prefix="/assets", tags=["admin-assets"])
 
@@ -68,6 +68,33 @@ def upload_asset(
     session.commit()
     session.refresh(asset)
     return AssetAdminRead.model_validate(asset)
+
+
+@router.post("/bulk-delete", response_model=BulkActionResponse)
+def bulk_delete_assets(
+    payload: BulkDeleteRequest,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    affected = (
+        session.query(Asset)
+        .filter(Asset.id.in_(payload.ids))
+        .delete(synchronize_session="fetch")
+    )
+    session.commit()
+    return {"affected": affected}
+
+
+@router.get("/{asset_id}", response_model=AssetAdminRead)
+def get_asset(
+    asset_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    obj = session.get(Asset, asset_id)
+    if obj is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    return AssetAdminRead.model_validate(obj)
 
 
 @router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT)
