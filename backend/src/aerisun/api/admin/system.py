@@ -87,9 +87,7 @@ def create_api_key(
     )
 
 
-@router.put(
-    "/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥"
-)
+@router.put("/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥")
 def update_api_key(
     key_id: str,
     payload: ApiKeyUpdate,
@@ -172,9 +170,7 @@ def list_backups(
     session: Session = Depends(get_session),
 ) -> Any:
     """列出所有备份快照记录。"""
-    snapshots = (
-        session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
-    )
+    snapshots = session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
     return [BackupSnapshotRead.model_validate(s) for s in snapshots]
 
 

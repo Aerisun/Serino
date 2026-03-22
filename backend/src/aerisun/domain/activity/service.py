@@ -73,9 +73,7 @@ def _content_events(session: Session) -> list[tuple[datetime, str, str, str, str
     return items
 
 
-def _batch_resolve_titles(
-    session: Session, pairs: list[tuple[str, str]]
-) -> dict[tuple[str, str], str]:
+def _batch_resolve_titles(session: Session, pairs: list[tuple[str, str]]) -> dict[tuple[str, str], str]:
     """Batch resolve content titles. Returns {(content_type, slug): title}."""
     if not pairs:
         return {}
@@ -91,9 +89,7 @@ def _batch_resolve_titles(
             for slug in slugs:
                 result[(ct, slug)] = slug
             continue
-        rows = session.execute(
-            select(model.slug, model.title).where(model.slug.in_(slugs))
-        ).all()
+        rows = session.execute(select(model.slug, model.title).where(model.slug.in_(slugs))).all()
         found = {slug: title for slug, title in rows}
         for slug in slugs:
             result[(ct, slug)] = found.get(slug, slug)
@@ -122,9 +118,7 @@ def _content_daily_counts(session: Session) -> dict[date, int]:
     return daily
 
 
-def list_calendar_events(
-    session: Session, from_date: date, to_date: date
-) -> CalendarRead:
+def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
     events = []
     for published_at, kind, title, slug, href in _content_events(session):
         current = published_at.date()
@@ -159,9 +153,7 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
         comment_pairs.append(pair)
         title_pairs.append(pair)
 
-    reactions = session.scalars(
-        select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)
-    ).all()
+    reactions = session.scalars(select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)).all()
     for item in reactions:
         title_pairs.append((item.content_type, item.content_slug))
 
@@ -195,7 +187,6 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
             )
         )
 
-
     for item in reactions:
         actor_name = item.client_token or "匿名访客"
         items.append(
@@ -203,12 +194,8 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 kind="like",
                 actor_name=actor_name,
                 actor_avatar=_avatar_for_name(actor_name),
-                target_title=titles.get(
-                    (item.content_type, item.content_slug), item.content_slug
-                ),
-                excerpt="留下了一个赞"
-                if item.reaction_type == "like"
-                else item.reaction_type,
+                target_title=titles.get((item.content_type, item.content_slug), item.content_slug),
+                excerpt="留下了一个赞" if item.reaction_type == "like" else item.reaction_type,
                 created_at=_normalize_timestamp(item.created_at),
                 href=f"/{item.content_type}/{item.content_slug}",
             )
@@ -256,9 +243,7 @@ def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | Non
     totals: list[int] = []
     for index in range(weeks):
         week_start = start + timedelta(days=index * 7)
-        days = [
-            daily_counts[week_start + timedelta(days=offset)] for offset in range(7)
-        ]
+        days = [daily_counts[week_start + timedelta(days=offset)] for offset in range(7)]
         total = sum(days)
         totals.append(total)
         week_items.append(

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 
 class OriginCheckMiddleware(BaseHTTPMiddleware):
-    UNSAFE_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
+    UNSAFE_METHODS: ClassVar[set[str]] = {"POST", "PUT", "DELETE", "PATCH"}
 
     def __init__(self, app, allowed_origins: list[str]) -> None:
         super().__init__(app)

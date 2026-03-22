@@ -207,12 +207,8 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
                 json.dumps(["twemoji", "qq", "bilibili"], ensure_ascii=False),
             ),
         )
-        connection.execute(
-            "CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"
-        )
-        connection.execute(
-            "INSERT INTO alembic_version (version_num) VALUES ('0002_add_site_meta_fields')"
-        )
+        connection.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
+        connection.execute("INSERT INTO alembic_version (version_num) VALUES ('0002_add_site_meta_fields')")
         connection.commit()
     finally:
         connection.close()

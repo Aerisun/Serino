@@ -13,7 +13,6 @@ BASE = "/api/v1/admin/system"
 
 
 class TestDashboardStats:
-
     def test_dashboard_stats_returns_counts(self, client, admin_headers):
         resp = client.get(f"{BASE}/dashboard/stats", headers=admin_headers)
         assert resp.status_code == 200
@@ -45,7 +44,6 @@ class TestDashboardStats:
 
 
 class TestSystemInfo:
-
     def test_system_info(self, client, admin_headers):
         resp = client.get(f"{BASE}/info", headers=admin_headers)
         assert resp.status_code == 200
@@ -67,7 +65,6 @@ class TestSystemInfo:
 
 
 class TestAuditLogs:
-
     def test_list_audit_logs(self, client, admin_headers):
         resp = client.get(f"{BASE}/audit-logs", headers=admin_headers)
         assert resp.status_code == 200
@@ -98,7 +95,6 @@ class TestAuditLogs:
 
 
 class TestApiKeys:
-
     def test_api_key_lifecycle(self, client, admin_headers):
         # CREATE
         resp = client.post(
@@ -129,9 +125,7 @@ class TestApiKeys:
         assert resp.json()["key_name"] == "renamed-key"
 
         # DELETE
-        resp = client.delete(
-            f"{BASE}/api-keys/{key_id}", headers=admin_headers
-        )
+        resp = client.delete(f"{BASE}/api-keys/{key_id}", headers=admin_headers)
         assert resp.status_code == 204
 
         # Verify gone
@@ -139,9 +133,7 @@ class TestApiKeys:
         assert not any(k["id"] == key_id for k in resp.json())
 
     def test_delete_nonexistent_api_key(self, client, admin_headers):
-        resp = client.delete(
-            f"{BASE}/api-keys/nonexistent-key-id", headers=admin_headers
-        )
+        resp = client.delete(f"{BASE}/api-keys/nonexistent-key-id", headers=admin_headers)
         assert resp.status_code == 404
 
     def test_api_keys_without_token(self, client):
@@ -153,7 +145,6 @@ class TestApiKeys:
 
 
 class TestBackups:
-
     def test_backup_lifecycle(self, client, admin_headers):
         # LIST (initially empty)
         resp = client.get(f"{BASE}/backups", headers=admin_headers)
@@ -173,16 +164,12 @@ class TestBackups:
         assert any(s["id"] == snapshot_id for s in resp.json())
 
         # RESTORE
-        resp = client.post(
-            f"{BASE}/backups/{snapshot_id}/restore", headers=admin_headers
-        )
+        resp = client.post(f"{BASE}/backups/{snapshot_id}/restore", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.json()["status"] == "restoring"
 
     def test_restore_nonexistent_backup(self, client, admin_headers):
-        resp = client.post(
-            f"{BASE}/backups/nonexistent-id/restore", headers=admin_headers
-        )
+        resp = client.post(f"{BASE}/backups/nonexistent-id/restore", headers=admin_headers)
         assert resp.status_code == 404
 
     def test_backups_without_token(self, client):

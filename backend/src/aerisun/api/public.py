@@ -60,9 +60,7 @@ def read_page_copy(session: Session = Depends(get_session)) -> PageCollectionRea
     return get_page_copy(session)
 
 
-@router.get(
-    "/community-config", response_model=CommunityConfigRead, summary="获取社区评论配置"
-)
+@router.get("/community-config", response_model=CommunityConfigRead, summary="获取社区评论配置")
 def read_community_config(
     session: Session = Depends(get_session),
 ) -> CommunityConfigRead:
@@ -76,9 +74,7 @@ def read_resume(session: Session = Depends(get_session)) -> ResumeRead:
     return get_resume(session)
 
 
-@router.get(
-    "/posts", response_model=ContentCollectionRead, summary="获取已发布文章列表"
-)
+@router.get("/posts", response_model=ContentCollectionRead, summary="获取已发布文章列表")
 def read_posts(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -108,9 +104,7 @@ def read_diary(
 
 
 @router.get("/diary/{slug}", response_model=ContentEntryRead, summary="获取单篇日记")
-def read_diary_entry(
-    slug: str, session: Session = Depends(get_session)
-) -> ContentEntryRead:
+def read_diary_entry(slug: str, session: Session = Depends(get_session)) -> ContentEntryRead:
     """根据 slug 返回单篇公开已发布日记的完整内容。"""
     try:
         return get_public_diary_entry(session, slug)
@@ -147,9 +141,7 @@ def read_friends(
     return list_public_friends(session, limit=limit)
 
 
-@router.get(
-    "/friend-feed", response_model=FriendFeedCollectionRead, summary="获取友链动态"
-)
+@router.get("/friend-feed", response_model=FriendFeedCollectionRead, summary="获取友链动态")
 def read_friend_feed(
     limit: int = Query(default=20, ge=1, le=200),
     session: Session = Depends(get_session),
@@ -256,9 +248,7 @@ def read_calendar(
     return list_calendar_events(session, start, end)
 
 
-@router.get(
-    "/recent-activity", response_model=RecentActivityRead, summary="获取最近动态"
-)
+@router.get("/recent-activity", response_model=RecentActivityRead, summary="获取最近动态")
 def read_recent_activity(
     limit: int = Query(default=8, ge=1, le=30),
     session: Session = Depends(get_session),
@@ -267,9 +257,7 @@ def read_recent_activity(
     return list_recent_activity(session, limit=limit)
 
 
-@router.get(
-    "/activity-heatmap", response_model=ActivityHeatmapRead, summary="获取活动热力图"
-)
+@router.get("/activity-heatmap", response_model=ActivityHeatmapRead, summary="获取活动热力图")
 def read_activity_heatmap(
     weeks: int = Query(default=52, ge=1, le=104),
     tz: str | None = Query(default=None),
@@ -292,7 +280,7 @@ def healthz() -> HealthRead:
 
 @router.get("/sitemap.xml")
 def sitemap(session: Session = Depends(get_session)) -> Response:
-    from aerisun.domain.content.models import PostEntry, DiaryEntry
+    from aerisun.domain.content.models import DiaryEntry, PostEntry
 
     settings = _get_settings()
     site_url = settings.site_url.rstrip("/")
@@ -323,26 +311,18 @@ def sitemap(session: Session = Depends(get_session)) -> Response:
         add_url(path, priority=priority)
 
     # Dynamic pages – published & public posts
-    posts = (
-        session.query(PostEntry)
-        .filter(PostEntry.status == "published", PostEntry.visibility == "public")
-        .all()
-    )
+    posts = session.query(PostEntry).filter(PostEntry.status == "published", PostEntry.visibility == "public").all()
     for post in posts:
         mod = post.updated_at or post.created_at
         add_url(f"/posts/{post.slug}", lastmod=mod, priority="0.6")
 
     # Dynamic pages – published & public diary entries
     diary_entries = (
-        session.query(DiaryEntry)
-        .filter(DiaryEntry.status == "published", DiaryEntry.visibility == "public")
-        .all()
+        session.query(DiaryEntry).filter(DiaryEntry.status == "published", DiaryEntry.visibility == "public").all()
     )
     for entry in diary_entries:
         mod = entry.updated_at or entry.created_at
         add_url(f"/diary/{entry.slug}", lastmod=mod, priority="0.6")
 
-    xml_string = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
-        urlset, encoding="unicode"
-    )
+    xml_string = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(urlset, encoding="unicode")
     return Response(content=xml_string, media_type="application/xml")

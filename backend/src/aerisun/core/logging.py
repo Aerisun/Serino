@@ -21,7 +21,8 @@ request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 # Logging bootstrap
 # ---------------------------------------------------------------------------
 
-def setup_logging(settings) -> None:  # noqa: ANN001 – avoids circular import
+
+def setup_logging(settings) -> None:
     """Configure *structlog* and bridge the stdlib :mod:`logging` into it.
 
     Parameters
@@ -31,9 +32,8 @@ def setup_logging(settings) -> None:  # noqa: ANN001 – avoids circular import
         ``log_level``, ``log_format`` and ``environment`` are read.
     """
 
-    is_dev = (
-        settings.log_format == "console"
-        or (settings.log_format == "auto" and settings.environment == "development")
+    is_dev = settings.log_format == "console" or (
+        settings.log_format == "auto" and settings.environment == "development"
     )
 
     shared_processors: list[structlog.types.Processor] = [
@@ -82,6 +82,7 @@ def setup_logging(settings) -> None:  # noqa: ANN001 – avoids circular import
 # Request-ID middleware
 # ---------------------------------------------------------------------------
 
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Assign a unique ID to every HTTP request.
 
@@ -91,9 +92,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     * Returns it as an ``X-Request-ID`` response header.
     """
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         rid = uuid.uuid4().hex
         request_id_var.set(rid)
         structlog.contextvars.bind_contextvars(request_id=rid)

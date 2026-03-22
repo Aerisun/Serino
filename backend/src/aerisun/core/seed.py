@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.site_config.models import (
     CommunityConfig,
@@ -50,7 +49,6 @@ DEFAULT_SOCIAL_LINKS = [
     {"name": "GitHub", "href": "https://github.com/", "icon_key": "github", "placement": "hero", "order_index": 0},
     {"name": "Telegram", "href": "https://t.me/", "icon_key": "telegram", "placement": "hero", "order_index": 1},
     {"name": "X", "href": "https://x.com/", "icon_key": "x", "placement": "hero", "order_index": 2},
-
     {
         "name": "网易云",
         "href": "https://music.163.com/",
@@ -103,7 +101,6 @@ DEFAULT_PAGE_COPIES = [
         "page_size": None,
         "download_label": None,
         "extras": {"metaTitle": "页面未找到", "metaDescription": "你访问的页面不存在，或者已经被移动。"},
-
     },
     {
         "page_key": "posts",
@@ -231,7 +228,6 @@ DEFAULT_PAGE_COPIES = [
         "extras": {
             "weekdayLabels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
             "monthLabels": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
-
             "loadingLabel": "正在加载日历",
             "retryLabel": "重试加载",
             "todayLabel": "今日",
@@ -253,7 +249,6 @@ DEFAULT_PAGE_OPTIONS = [
 
 DEFAULT_NAV_ITEMS = [
     {"label": "首页", "href": "/", "page_key": "home", "trigger": "arrow", "order_index": 0},
-
     {
         "label": "简历",
         "href": "/resume",
@@ -281,7 +276,6 @@ DEFAULT_NAV_ITEMS = [
     {"label": "帖子", "href": "/posts", "page_key": "posts", "trigger": "none", "order_index": 1},
     {"label": "友链", "href": "/friends", "page_key": "friends", "trigger": "none", "order_index": 2},
     {"label": "更多", "href": None, "page_key": "more", "trigger": "hover", "order_index": 3},
-
     {
         "label": "碎碎念",
         "href": "/thoughts",
@@ -391,9 +385,7 @@ def build_default_community_config() -> dict[str, object]:
 
 def _seed_community_config(session: Session) -> None:
     default_config = build_default_community_config()
-    config = session.scalars(
-        select(CommunityConfig).order_by(CommunityConfig.created_at.asc())
-    ).first()
+    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
 
     if config is None:
         session.add(CommunityConfig(**default_config))
@@ -419,7 +411,6 @@ DEFAULT_SKILLS = [
         "order_index": 1,
     },
     {"category": "Backend", "items": ["FastAPI", "SQLAlchemy", "SQLite", "Docker"], "order_index": 2},
-
 ]
 
 DEFAULT_EXPERIENCES = [
@@ -1272,9 +1263,7 @@ def _is_empty(session: Session, model) -> bool:  # type: ignore[no-untyped-def]
 
 def _seed_content_entries(session: Session, model, entries: list[dict]) -> None:  # type: ignore[no-untyped-def]
     existing_slugs = set(session.scalars(select(model.slug)).all())
-    missing_entries = [
-        entry for entry in entries if entry["slug"] not in existing_slugs
-    ]
+    missing_entries = [entry for entry in entries if entry["slug"] not in existing_slugs]
     if missing_entries:
         session.add_all([model(**entry) for entry in missing_entries])
 
@@ -1338,9 +1327,7 @@ def _seed_missing_page_copies(session: Session) -> None:
 
 def _seed_missing_page_options(session: Session) -> None:
     existing_keys = set(session.scalars(select(PageDisplayOption.page_key)).all())
-    missing_items = [
-        item for item in DEFAULT_PAGE_OPTIONS if item["page_key"] not in existing_keys
-    ]
+    missing_items = [item for item in DEFAULT_PAGE_OPTIONS if item["page_key"] not in existing_keys]
     if missing_items:
         session.add_all([PageDisplayOption(**item) for item in missing_items])
 
@@ -1371,9 +1358,7 @@ def _seed_social_data(session: Session) -> None:
     sources_by_name = {
         friend.name: source
         for source, friend in session.execute(
-            select(FriendFeedSource, Friend).join(
-                Friend, FriendFeedSource.friend_id == Friend.id
-            )
+            select(FriendFeedSource, Friend).join(Friend, FriendFeedSource.friend_id == Friend.id)
         ).all()
     }
     for item in DEFAULT_FRIEND_FEED_SOURCES:
@@ -1438,9 +1423,7 @@ def _seed_legacy_guestbook_data(session: Session) -> None:
     if not _is_empty(session, GuestbookEntry):
         return
 
-    session.add_all(
-        [GuestbookEntry(**item) for item in DEFAULT_LEGACY_GUESTBOOK_ENTRIES]
-    )
+    session.add_all([GuestbookEntry(**item) for item in DEFAULT_LEGACY_GUESTBOOK_ENTRIES])
 
 
 def _seed_legacy_comment_data(session: Session) -> None:
@@ -1456,9 +1439,7 @@ def _seed_legacy_comment_data(session: Session) -> None:
             content_slug=str(item["content_slug"]),
             parent_id=parent_id,
             author_name=str(item["author_name"]),
-            author_email=str(item["author_email"])
-            if item.get("author_email") is not None
-            else None,
+            author_email=str(item["author_email"]) if item.get("author_email") is not None else None,
             body=str(item["body"]),
             status=str(item["status"]),
             created_at=item["created_at"],  # type: ignore[arg-type]
@@ -1469,21 +1450,13 @@ def _seed_legacy_comment_data(session: Session) -> None:
         inserted_ids[str(item["key"])] = comment.id
 
 
-def _insert_waline_seed_comment(
-    connection, item: dict[str, object], inserted_ids: dict[str, int]
-) -> int:  # type: ignore[no-untyped-def]
+def _insert_waline_seed_comment(connection, item: dict[str, object], inserted_ids: dict[str, int]) -> int:  # type: ignore[no-untyped-def]
     parent_key = item.get("parent_key")
     parent_id = inserted_ids.get(str(parent_key)) if parent_key else None
     root_id = parent_id
     if parent_id is not None:
-        root_row = connection.execute(
-            "SELECT rid FROM wl_comment WHERE id = ?", (parent_id,)
-        ).fetchone()
-        root_id = (
-            int(root_row["rid"])
-            if root_row and root_row["rid"] is not None
-            else parent_id
-        )
+        root_row = connection.execute("SELECT rid FROM wl_comment WHERE id = ?", (parent_id,)).fetchone()
+        root_id = int(root_row["rid"]) if root_row and root_row["rid"] is not None else parent_id
 
     row = make_waline_comment_row(
         comment=str(item["comment"]),
@@ -1512,9 +1485,7 @@ def _insert_waline_seed_comment(
     )
     comment_id = int(cursor.lastrowid)
     if parent_id is None:
-        connection.execute(
-            "UPDATE wl_comment SET rid = ? WHERE id = ?", (comment_id, comment_id)
-        )
+        connection.execute("UPDATE wl_comment SET rid = ? WHERE id = ?", (comment_id, comment_id))
     inserted_ids[str(item["key"])] = comment_id
     return comment_id
 
@@ -1545,34 +1516,26 @@ def seed_reference_data() -> None:
             session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
             session.add_all(
                 [
-
                     Poem(site_profile_id=site.id, order_index=index, content=text)
                     for index, text in enumerate(DEFAULT_POEMS)
                 ]
             )
             session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
-            session.add_all(
-                [PageDisplayOption(**item) for item in DEFAULT_PAGE_OPTIONS]
-            )
+            session.add_all([PageDisplayOption(**item) for item in DEFAULT_PAGE_OPTIONS])
             resume = ResumeBasics(**DEFAULT_RESUME)
             session.add(resume)
             session.flush()
             session.add_all([ResumeSkillGroup(resume_basics_id=resume.id, **group) for group in DEFAULT_SKILLS])
 
             session.add_all(
-                [
-                    ResumeExperience(resume_basics_id=resume.id, **experience)
-                    for experience in DEFAULT_EXPERIENCES
-                ]
+                [ResumeExperience(resume_basics_id=resume.id, **experience) for experience in DEFAULT_EXPERIENCES]
             )
 
         _seed_missing_page_copies(session)
         _seed_missing_page_options(session)
 
         if _is_empty(session, NavItem):
-            site = session.scalars(
-                select(SiteProfile).order_by(SiteProfile.created_at.asc())
-            ).first()
+            site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
             if site is not None:
                 label_to_id: dict[str, str] = {}
                 # First pass: top-level items

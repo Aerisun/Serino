@@ -18,18 +18,12 @@ def _create_admin_token(username: str = "community-config-admin") -> str:
         if user is None:
             user = AdminUser(
                 username=username,
-                password_hash=bcrypt.hashpw(
-                    b"community-config-password", bcrypt.gensalt()
-                ).decode(),
+                password_hash=bcrypt.hashpw(b"community-config-password", bcrypt.gensalt()).decode(),
             )
             session.add(user)
             session.flush()
 
-        existing = (
-            session.query(AdminSession)
-            .filter(AdminSession.session_token == token)
-            .first()
-        )
+        existing = session.query(AdminSession).filter(AdminSession.session_token == token).first()
         if existing is None:
             session.add(
                 AdminSession(
@@ -91,9 +85,7 @@ def test_admin_community_config_round_trip(client) -> None:
         "migration_state": "configured",
     }
 
-    response = client.put(
-        "/api/v1/admin/site-config/community-config", headers=headers, json=payload
-    )
+    response = client.put("/api/v1/admin/site-config/community-config", headers=headers, json=payload)
     assert response.status_code == 200
     updated = response.json()
     for key, value in payload.items():

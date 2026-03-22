@@ -171,9 +171,7 @@ def reorder_nav_items(
     for reorder_item in items:
         nav_item = session.get(NavItem, reorder_item.id)
         if nav_item is None:
-            raise HTTPException(
-                status_code=404, detail=f"NavItem {reorder_item.id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"NavItem {reorder_item.id} not found")
         nav_item.parent_id = reorder_item.parent_id
         nav_item.order_index = reorder_item.order_index
     session.commit()

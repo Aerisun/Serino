@@ -42,9 +42,7 @@ def export_content(
     """将指定类型的内容导出为 JSON 或 Markdown ZIP 文件。"""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid content_type: {content_type}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid content_type: {content_type}")
 
     items = session.query(model).order_by(model.created_at.desc()).all()
 
@@ -60,9 +58,7 @@ def export_content(
         return StreamingResponse(
             buf,
             media_type="application/zip",
-            headers={
-                "Content-Disposition": f"attachment; filename={content_type}-export.zip"
-            },
+            headers={"Content-Disposition": f"attachment; filename={content_type}-export.zip"},
         )
 
     # JSON export
@@ -75,9 +71,7 @@ def export_content(
     return StreamingResponse(
         io.BytesIO(content_bytes),
         media_type="application/json",
-        headers={
-            "Content-Disposition": f"attachment; filename={content_type}-export.json"
-        },
+        headers={"Content-Disposition": f"attachment; filename={content_type}-export.json"},
     )
 
 
@@ -91,9 +85,7 @@ async def import_content(
     """从上传的 JSON 文件导入内容，支持新增和更新。"""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid content_type: {content_type}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid content_type: {content_type}")
 
     result = ImportResult()
     raw = await file.read()
@@ -109,9 +101,7 @@ async def import_content(
     for entry in items_data:
         slug = entry.get("slug")
         if not slug:
-            result.errors.append(
-                f"Missing slug in entry: {entry.get('title', 'unknown')}"
-            )
+            result.errors.append(f"Missing slug in entry: {entry.get('title', 'unknown')}")
             continue
 
         existing = session.query(model).filter(model.slug == slug).first()

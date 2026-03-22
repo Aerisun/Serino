@@ -1,20 +1,19 @@
 """Tests for the RSS feed crawler module."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
-import pytest
 import respx
 
 from aerisun.domain.social.crawler import (
     _check_feed,
     _parse_published_time,
     _replace_non_domain,
-    crawl_single_source,
     crawl_all_feeds,
+    crawl_single_source,
 )
-
 
 # ---------------------------------------------------------------------------
 # _parse_published_time — pure function tests
@@ -60,23 +59,17 @@ def test_parse_published_time_unparseable():
 
 
 def test_replace_non_domain_localhost():
-    result = _replace_non_domain(
-        "http://localhost:4000/posts/hello", "https://blog.example.com"
-    )
+    result = _replace_non_domain("http://localhost:4000/posts/hello", "https://blog.example.com")
     assert result == "https://blog.example.com/posts/hello"
 
 
 def test_replace_non_domain_ip():
-    result = _replace_non_domain(
-        "http://192.168.1.1/article/1", "https://blog.example.com"
-    )
+    result = _replace_non_domain("http://192.168.1.1/article/1", "https://blog.example.com")
     assert result == "https://blog.example.com/article/1"
 
 
 def test_replace_non_domain_normal():
-    result = _replace_non_domain(
-        "https://other.com/post/1", "https://blog.example.com"
-    )
+    result = _replace_non_domain("https://other.com/post/1", "https://blog.example.com")
     assert result == "https://other.com/post/1"
 
 
@@ -115,7 +108,7 @@ def test_check_feed_found_by_content():
         )
     )
     with httpx.Client() as client:
-        feed_type, feed_url = _check_feed(base, client)
+        feed_type, _feed_url = _check_feed(base, client)
     assert feed_type == "rss"
 
 
@@ -193,9 +186,7 @@ def test_crawl_single_source_success(client):
     with factory() as session:
         friend, source = _setup_friend_and_source(session)
 
-        respx.get("https://blog.example.com/rss.xml").mock(
-            return_value=httpx.Response(200, text=SAMPLE_RSS)
-        )
+        respx.get("https://blog.example.com/rss.xml").mock(return_value=httpx.Response(200, text=SAMPLE_RSS))
 
         result = crawl_single_source(session, source, friend, settings)
         session.commit()
@@ -203,11 +194,7 @@ def test_crawl_single_source_success(client):
         assert result["status"] == "ok"
         assert result["inserted"] == 2
 
-        items = (
-            session.query(FriendFeedItem)
-            .filter(FriendFeedItem.source_id == source.id)
-            .all()
-        )
+        items = session.query(FriendFeedItem).filter(FriendFeedItem.source_id == source.id).all()
         assert len(items) == 2
 
 
@@ -223,9 +210,7 @@ def test_crawl_single_source_304(client):
         source.etag = '"abc123"'
         session.flush()
 
-        respx.get("https://blog.example.com/rss.xml").mock(
-            return_value=httpx.Response(304)
-        )
+        respx.get("https://blog.example.com/rss.xml").mock(return_value=httpx.Response(304))
 
         result = crawl_single_source(session, source, friend, settings)
         assert result["status"] == "not_modified"
@@ -242,9 +227,7 @@ def test_crawl_single_source_auto_discovery(client):
         friend, source = _setup_friend_and_source(session)
 
         # Original feed URL fails
-        respx.get("https://blog.example.com/rss.xml").mock(
-            return_value=httpx.Response(500)
-        )
+        respx.get("https://blog.example.com/rss.xml").mock(return_value=httpx.Response(500))
         # Auto-discovery succeeds on atom.xml
         respx.get("https://blog.example.com/atom.xml").mock(
             return_value=httpx.Response(
@@ -270,7 +253,7 @@ def test_crawl_single_source_filters_future_articles(client):
     from aerisun.core.settings import get_settings
     from aerisun.domain.social.models import FriendFeedItem
 
-    future_date = datetime.now(timezone.utc) + timedelta(days=10)
+    future_date = datetime.now(UTC) + timedelta(days=10)
     future_str = future_date.strftime("%a, %d %b %Y %H:%M:%S +0000")
 
     rss_with_future = f"""\
@@ -298,9 +281,7 @@ def test_crawl_single_source_filters_future_articles(client):
     with factory() as session:
         friend, source = _setup_friend_and_source(session)
 
-        respx.get("https://blog.example.com/rss.xml").mock(
-            return_value=httpx.Response(200, text=rss_with_future)
-        )
+        respx.get("https://blog.example.com/rss.xml").mock(return_value=httpx.Response(200, text=rss_with_future))
 
         result = crawl_single_source(session, source, friend, settings)
         session.commit()
@@ -308,11 +289,7 @@ def test_crawl_single_source_filters_future_articles(client):
         # Only the past post should be inserted; future post filtered
         assert result["inserted"] == 1
 
-        items = (
-            session.query(FriendFeedItem)
-            .filter(FriendFeedItem.source_id == source.id)
-            .all()
-        )
+        items = session.query(FriendFeedItem).filter(FriendFeedItem.source_id == source.id).all()
         assert len(items) == 1
         assert items[0].title == "Past Post"
 
@@ -329,9 +306,7 @@ def test_crawl_single_source_deduplication(client):
     with factory() as session:
         friend, source = _setup_friend_and_source(session)
 
-        respx.get("https://blog.example.com/rss.xml").mock(
-            return_value=httpx.Response(200, text=SAMPLE_RSS)
-        )
+        respx.get("https://blog.example.com/rss.xml").mock(return_value=httpx.Response(200, text=SAMPLE_RSS))
 
         # First crawl
         result1 = crawl_single_source(session, source, friend, settings)
@@ -343,11 +318,7 @@ def test_crawl_single_source_deduplication(client):
         session.commit()
         assert result2["inserted"] == 0
 
-        items = (
-            session.query(FriendFeedItem)
-            .filter(FriendFeedItem.source_id == source.id)
-            .all()
-        )
+        items = session.query(FriendFeedItem).filter(FriendFeedItem.source_id == source.id).all()
         assert len(items) == 2
 
 
@@ -384,9 +355,7 @@ def test_crawl_all_feeds(client):
         session.commit()
 
     # Our specific feed returns valid RSS (register BEFORE the catch-all)
-    respx.get("https://all.example.com/rss.xml").mock(
-        return_value=httpx.Response(200, text=SAMPLE_RSS)
-    )
+    respx.get("https://all.example.com/rss.xml").mock(return_value=httpx.Response(200, text=SAMPLE_RSS))
     # Catch-all: return 404 for any seeded feeds we don't care about
     respx.route().mock(return_value=httpx.Response(404))
 
@@ -396,9 +365,7 @@ def test_crawl_all_feeds(client):
     assert summary["sources_crawled"] >= 1
     assert summary["items_inserted"] >= 2
     # Find our specific source in the details
-    our_detail = [
-        d for d in summary["details"] if d["friend_name"] == "All-Feeds Blog"
-    ]
+    our_detail = [d for d in summary["details"] if d["friend_name"] == "All-Feeds Blog"]
     assert len(our_detail) == 1
     assert our_detail[0]["status"] == "ok"
     assert our_detail[0]["inserted"] == 2

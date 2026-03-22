@@ -86,9 +86,7 @@ class Settings(BaseSettings):
         self.media_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
-        self.waline_db_path.expanduser().resolve().parent.mkdir(
-            parents=True, exist_ok=True
-        )
+        self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
 
 
 @lru_cache(maxsize=1)

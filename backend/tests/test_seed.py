@@ -23,9 +23,7 @@ def test_seed_reference_data_backfills_missing_activity_page(client) -> None:
 
     session = session_factory()
     try:
-        activity_page = (
-            session.query(PageCopy).filter(PageCopy.page_key == "activity").one()
-        )
+        activity_page = session.query(PageCopy).filter(PageCopy.page_key == "activity").one()
         assert activity_page.title == "友邻与最近动态"
         assert activity_page.extras["dashboardLabel"] == "Dashboard"
     finally:
@@ -36,9 +34,7 @@ def test_seed_reference_data_merges_missing_page_copy_extras(client) -> None:
     session_factory = get_session_factory()
     session = session_factory()
     try:
-        friends_page = (
-            session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
-        )
+        friends_page = session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
         friends_page.title = "Custom Friends"
         friends_page.extras = {"circle_title": "Custom Circle"}
         session.commit()
@@ -49,9 +45,7 @@ def test_seed_reference_data_merges_missing_page_copy_extras(client) -> None:
 
     session = session_factory()
     try:
-        friends_page = (
-            session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
-        )
+        friends_page = session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
         assert friends_page.title == "Custom Friends"
         assert friends_page.extras["circle_title"] == "Custom Circle"
         assert friends_page.extras["statusLabel"] == "状态"
@@ -63,9 +57,7 @@ def test_seed_reference_data_updates_legacy_calendar_weekday_order(client) -> No
     session_factory = get_session_factory()
     session = session_factory()
     try:
-        calendar_page = (
-            session.query(PageCopy).filter(PageCopy.page_key == "calendar").one()
-        )
+        calendar_page = session.query(PageCopy).filter(PageCopy.page_key == "calendar").one()
         calendar_page.extras = {
             **(calendar_page.extras or {}),
             "weekdayLabels": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
@@ -78,9 +70,7 @@ def test_seed_reference_data_updates_legacy_calendar_weekday_order(client) -> No
 
     session = session_factory()
     try:
-        calendar_page = (
-            session.query(PageCopy).filter(PageCopy.page_key == "calendar").one()
-        )
+        calendar_page = session.query(PageCopy).filter(PageCopy.page_key == "calendar").one()
         assert calendar_page.extras["weekdayLabels"] == [
             "周一",
             "周二",
@@ -120,12 +110,8 @@ def test_seed_reference_data_provides_comment_samples_and_is_idempotent(client) 
                 .one()
             )
             return {
-                "legacy_comment_count": session.scalar(select(func.count(Comment.id)))
-                or 0,
-                "legacy_guestbook_count": session.scalar(
-                    select(func.count(GuestbookEntry.id))
-                )
-                or 0,
+                "legacy_comment_count": session.scalar(select(func.count(Comment.id))) or 0,
+                "legacy_guestbook_count": session.scalar(select(func.count(GuestbookEntry.id))) or 0,
                 "legacy_root_id": root_comment.id,
                 "legacy_root_author": root_comment.author_name,
                 "legacy_reply_author": reply_comment.author_name,
@@ -142,9 +128,7 @@ def test_seed_reference_data_provides_comment_samples_and_is_idempotent(client) 
             ).fetchone()
             return {
                 "waline_comment_count": int(total[0]) if total else 0,
-                "waline_guestbook_approved_count": int(approved_guestbook[0])
-                if approved_guestbook
-                else 0,
+                "waline_guestbook_approved_count": int(approved_guestbook[0]) if approved_guestbook else 0,
             }
 
     before = {**snapshot(), **waline_snapshot()}

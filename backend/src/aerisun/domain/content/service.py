@@ -16,9 +16,7 @@ from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRe
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls
 
-ContentModel = TypeVar(
-    "ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry
-)
+ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 
 
 def _estimate_read_time(value: str) -> str:
@@ -68,9 +66,7 @@ def _public_query(model: type[ContentModel]) -> Select[tuple[ContentModel]]:
     )
 
 
-def _comment_counts_by_slug(
-    session: Session, content_type: str, slugs: list[str]
-) -> dict[str, int]:
+def _comment_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
     if not slugs:
         return {}
 
@@ -79,9 +75,7 @@ def _comment_counts_by_slug(
     return {slug: counts_by_path.get(build_comment_path(content_type, slug), 0) for slug in slugs}
 
 
-def _like_counts_by_slug(
-    session: Session, content_type: str, slugs: list[str]
-) -> dict[str, int]:
+def _like_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
     if not slugs:
         return {}
 
@@ -170,9 +164,7 @@ def _get_by_slug(session: Session, model: type[ContentModel], content_type: str,
     return _to_entry(item, content_type, comment_counts, like_counts)
 
 
-def list_public_posts(
-    session: Session, limit: int = 20, offset: int = 0
-) -> ContentCollectionRead:
+def list_public_posts(session: Session, limit: int = 20, offset: int = 0) -> ContentCollectionRead:
     return _list_entries(session, PostEntry, "posts", limit, offset)
 
 
@@ -180,9 +172,7 @@ def get_public_post(session: Session, slug: str) -> ContentEntryRead:
     return _get_by_slug(session, PostEntry, "posts", slug)
 
 
-def list_public_diary_entries(
-    session: Session, limit: int = 20, offset: int = 0
-) -> ContentCollectionRead:
+def list_public_diary_entries(session: Session, limit: int = 20, offset: int = 0) -> ContentCollectionRead:
     return _list_entries(session, DiaryEntry, "diary", limit, offset)
 
 
@@ -190,13 +180,9 @@ def get_public_diary_entry(session: Session, slug: str) -> ContentEntryRead:
     return _get_by_slug(session, DiaryEntry, "diary", slug)
 
 
-def list_public_thoughts(
-    session: Session, limit: int = 40, offset: int = 0
-) -> ContentCollectionRead:
+def list_public_thoughts(session: Session, limit: int = 40, offset: int = 0) -> ContentCollectionRead:
     return _list_entries(session, ThoughtEntry, "thoughts", limit, offset)
 
 
-def list_public_excerpts(
-    session: Session, limit: int = 40, offset: int = 0
-) -> ContentCollectionRead:
+def list_public_excerpts(session: Session, limit: int = 40, offset: int = 0) -> ContentCollectionRead:
     return _list_entries(session, ExcerptEntry, "excerpts", limit, offset)

@@ -179,9 +179,7 @@ def moderate_guestbook(
     try:
         waline_id = int(entry_id)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=404, detail="Guestbook entry not found"
-        ) from exc
+        raise HTTPException(status_code=404, detail="Guestbook entry not found") from exc
 
     if payload.action not in {"approve", "reject", "delete"}:
         raise HTTPException(status_code=400, detail="Invalid action")

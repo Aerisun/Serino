@@ -26,12 +26,9 @@ def _friend_payload(suffix: str = "") -> dict:
 
 
 class TestFriendCRUD:
-
     def test_create_friend(self, client, admin_headers):
         payload = _friend_payload()
-        resp = client.post(
-            f"{BASE}/friends/", json=payload, headers=admin_headers
-        )
+        resp = client.post(f"{BASE}/friends/", json=payload, headers=admin_headers)
         assert resp.status_code == 201
         data = resp.json()
         assert data["name"] == payload["name"]
@@ -43,23 +40,17 @@ class TestFriendCRUD:
 
     def test_read_friend(self, client, admin_headers):
         payload = _friend_payload("-read")
-        create_resp = client.post(
-            f"{BASE}/friends/", json=payload, headers=admin_headers
-        )
+        create_resp = client.post(f"{BASE}/friends/", json=payload, headers=admin_headers)
         friend_id = create_resp.json()["id"]
 
-        resp = client.get(
-            f"{BASE}/friends/{friend_id}", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/friends/{friend_id}", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.json()["id"] == friend_id
         assert resp.json()["name"] == payload["name"]
 
     def test_update_friend(self, client, admin_headers):
         payload = _friend_payload("-update")
-        create_resp = client.post(
-            f"{BASE}/friends/", json=payload, headers=admin_headers
-        )
+        create_resp = client.post(f"{BASE}/friends/", json=payload, headers=admin_headers)
         friend_id = create_resp.json()["id"]
 
         resp = client.put(
@@ -86,25 +77,17 @@ class TestFriendCRUD:
 
     def test_delete_friend(self, client, admin_headers):
         payload = _friend_payload("-delete")
-        create_resp = client.post(
-            f"{BASE}/friends/", json=payload, headers=admin_headers
-        )
+        create_resp = client.post(f"{BASE}/friends/", json=payload, headers=admin_headers)
         friend_id = create_resp.json()["id"]
 
-        resp = client.delete(
-            f"{BASE}/friends/{friend_id}", headers=admin_headers
-        )
+        resp = client.delete(f"{BASE}/friends/{friend_id}", headers=admin_headers)
         assert resp.status_code == 204
 
-        resp = client.get(
-            f"{BASE}/friends/{friend_id}", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/friends/{friend_id}", headers=admin_headers)
         assert resp.status_code == 404
 
     def test_get_nonexistent_friend_returns_404(self, client, admin_headers):
-        resp = client.get(
-            f"{BASE}/friends/nonexistent-id", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/friends/nonexistent-id", headers=admin_headers)
         assert resp.status_code == 404
 
 
@@ -112,7 +95,6 @@ class TestFriendCRUD:
 
 
 class TestFriendBulkOperations:
-
     def test_bulk_delete_friends(self, client, admin_headers):
         ids = []
         for i in range(2):
@@ -147,9 +129,7 @@ class TestFriendBulkOperations:
         assert resp.status_code == 200
         assert resp.json()["affected"] == 1
 
-        resp = client.get(
-            f"{BASE}/friends/{friend_id}", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/friends/{friend_id}", headers=admin_headers)
         assert resp.json()["status"] == "inactive"
 
 
@@ -157,14 +137,11 @@ class TestFriendBulkOperations:
 
 
 class TestFriendSearchAndPagination:
-
     def test_search_friends(self, client, admin_headers):
         keyword = "UniqueFriendName"
         payload = _friend_payload("-search")
         payload["name"] = f"Searchable {keyword} Friend"
-        client.post(
-            f"{BASE}/friends/", json=payload, headers=admin_headers
-        )
+        client.post(f"{BASE}/friends/", json=payload, headers=admin_headers)
 
         resp = client.get(
             f"{BASE}/friends/",
@@ -199,15 +176,12 @@ class TestFriendSearchAndPagination:
 
 
 class TestFriendAuth:
-
     def test_list_friends_without_token(self, client):
         resp = client.get(f"{BASE}/friends/")
         assert resp.status_code in (401, 403)
 
     def test_create_friend_without_token(self, client):
-        resp = client.post(
-            f"{BASE}/friends/", json=_friend_payload()
-        )
+        resp = client.post(f"{BASE}/friends/", json=_friend_payload())
         assert resp.status_code in (401, 403)
 
 
@@ -215,7 +189,6 @@ class TestFriendAuth:
 
 
 class TestFriendFeedSources:
-
     def _create_friend(self, client, admin_headers) -> str:
         resp = client.post(
             f"{BASE}/friends/",
@@ -244,9 +217,7 @@ class TestFriendFeedSources:
         feed_id = feed["id"]
 
         # LIST feeds for the friend
-        resp = client.get(
-            f"{BASE}/friends/{friend_id}/feeds", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/friends/{friend_id}/feeds", headers=admin_headers)
         assert resp.status_code == 200
         feeds = resp.json()
         assert any(f["id"] == feed_id for f in feeds)
@@ -261,9 +232,7 @@ class TestFriendFeedSources:
         assert resp.json()["feed_url"] == "https://example.com/rss.xml"
 
         # DELETE feed source
-        resp = client.delete(
-            f"{BASE}/feeds/{feed_id}", headers=admin_headers
-        )
+        resp = client.delete(f"{BASE}/feeds/{feed_id}", headers=admin_headers)
         assert resp.status_code == 204
 
     def test_create_feed_for_nonexistent_friend(self, client, admin_headers):
@@ -278,7 +247,5 @@ class TestFriendFeedSources:
         assert resp.status_code == 404
 
     def test_delete_nonexistent_feed(self, client, admin_headers):
-        resp = client.delete(
-            f"{BASE}/feeds/nonexistent-id", headers=admin_headers
-        )
+        resp = client.delete(f"{BASE}/feeds/nonexistent-id", headers=admin_headers)
         assert resp.status_code == 404

@@ -38,9 +38,7 @@ def list_public_friends(session: Session, limit: int = 100) -> FriendCollectionR
     )
 
 
-def list_public_friend_feed(
-    session: Session, limit: int = 20
-) -> FriendFeedCollectionRead:
+def list_public_friend_feed(session: Session, limit: int = 20) -> FriendFeedCollectionRead:
     rows = session.execute(
         select(FriendFeedItem, Friend)
         .join(FriendFeedSource, FriendFeedItem.source_id == FriendFeedSource.id)

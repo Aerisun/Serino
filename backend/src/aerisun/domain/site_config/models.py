@@ -18,13 +18,9 @@ class SiteProfile(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(String(160), nullable=False)
     footer_text: Mapped[str] = mapped_column(Text, nullable=False)
     author: Mapped[str] = mapped_column(String(120), nullable=False, default="")
-    og_image: Mapped[str] = mapped_column(
-        String(500), nullable=False, default="/images/hero_bg.jpeg"
-    )
+    og_image: Mapped[str] = mapped_column(String(500), nullable=False, default="/images/hero_bg.jpeg")
     meta_description: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    copyright: Mapped[str] = mapped_column(
-        String(200), nullable=False, default="All rights reserved"
-    )
+    copyright: Mapped[str] = mapped_column(String(200), nullable=False, default="All rights reserved")
     hero_actions: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     hero_video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
@@ -114,47 +110,25 @@ class CommunityConfig(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     provider: Mapped[str] = mapped_column(String(80), nullable=False, default="waline")
     server_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
-    surfaces: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSON, default=list, nullable=False
-    )
+    surfaces: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
     meta: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     required_meta: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     emoji_presets: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
-    enable_enjoy_search: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
+    enable_enjoy_search: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     image_uploader: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    login_mode: Mapped[str] = mapped_column(
-        String(40), nullable=False, default="disable"
-    )
+    login_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="disable")
     oauth_url: Mapped[str | None] = mapped_column(String(500))
-    oauth_providers: Mapped[list[str]] = mapped_column(
-        JSON, default=list, nullable=False
-    )
-    anonymous_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
-    moderation_mode: Mapped[str] = mapped_column(
-        String(40), nullable=False, default="all_pending"
-    )
-    default_sorting: Mapped[str] = mapped_column(
-        String(40), nullable=False, default="latest"
-    )
+    oauth_providers: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    anonymous_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    moderation_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="all_pending")
+    default_sorting: Mapped[str] = mapped_column(String(40), nullable=False, default="latest")
     page_size: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
-    avatar_presets: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSON, default=list, nullable=False
-    )
-    guest_avatar_mode: Mapped[str] = mapped_column(
-        String(40), nullable=False, default="preset"
-    )
+    avatar_presets: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    guest_avatar_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="preset")
     draft_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    avatar_strategy: Mapped[str] = mapped_column(
-        String(80), nullable=False, default="identicon"
-    )
+    avatar_strategy: Mapped[str] = mapped_column(String(80), nullable=False, default="identicon")
     avatar_helper_copy: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    migration_state: Mapped[str] = mapped_column(
-        String(40), nullable=False, default="not_started"
-    )
+    migration_state: Mapped[str] = mapped_column(String(40), nullable=False, default="not_started")
 
 
 class ResumeBasics(Base, TimestampMixin):

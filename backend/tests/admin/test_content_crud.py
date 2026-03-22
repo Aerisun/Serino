@@ -37,9 +37,7 @@ class TestContentCRUDLifecycle:
 
     def test_create(self, client, admin_headers, content_type):
         payload = _make_payload(content_type)
-        resp = client.post(
-            f"{BASE}/{content_type}/", json=payload, headers=admin_headers
-        )
+        resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         assert resp.status_code == 201
         data = resp.json()
         assert data["slug"] == payload["slug"]
@@ -53,23 +51,17 @@ class TestContentCRUDLifecycle:
     def test_read(self, client, admin_headers, content_type):
         # Create first
         payload = _make_payload(content_type, "-read")
-        create_resp = client.post(
-            f"{BASE}/{content_type}/", json=payload, headers=admin_headers
-        )
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         item_id = create_resp.json()["id"]
 
-        resp = client.get(
-            f"{BASE}/{content_type}/{item_id}", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.json()["id"] == item_id
         assert resp.json()["title"] == payload["title"]
 
     def test_update(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-update")
-        create_resp = client.post(
-            f"{BASE}/{content_type}/", json=payload, headers=admin_headers
-        )
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         item_id = create_resp.json()["id"]
 
         update_payload = {"title": "Updated Title"}
@@ -101,20 +93,14 @@ class TestContentCRUDLifecycle:
 
     def test_delete(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-delete")
-        create_resp = client.post(
-            f"{BASE}/{content_type}/", json=payload, headers=admin_headers
-        )
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         item_id = create_resp.json()["id"]
 
-        resp = client.delete(
-            f"{BASE}/{content_type}/{item_id}", headers=admin_headers
-        )
+        resp = client.delete(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.status_code == 204
 
         # Confirm gone
-        resp = client.get(
-            f"{BASE}/{content_type}/{item_id}", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.status_code == 404
 
     def test_get_nonexistent_returns_404(self, client, admin_headers, content_type):
@@ -137,9 +123,7 @@ class TestContentAuth:
         assert resp.status_code in (401, 403)
 
     def test_create_without_token_is_rejected(self, client, content_type):
-        resp = client.post(
-            f"{BASE}/{content_type}/", json=_make_payload(content_type)
-        )
+        resp = client.post(f"{BASE}/{content_type}/", json=_make_payload(content_type))
         assert resp.status_code in (401, 403)
 
 
@@ -148,7 +132,6 @@ class TestContentAuth:
 
 @pytest.mark.parametrize("content_type", CONTENT_TYPES)
 class TestContentBulkOperations:
-
     def test_bulk_delete(self, client, admin_headers, content_type):
         ids = []
         for i in range(2):
@@ -169,12 +152,7 @@ class TestContentBulkOperations:
 
         # Verify they are gone
         for item_id in ids:
-            assert (
-                client.get(
-                    f"{BASE}/{content_type}/{item_id}", headers=admin_headers
-                ).status_code
-                == 404
-            )
+            assert client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers).status_code == 404
 
     def test_bulk_status(self, client, admin_headers, content_type):
         resp = client.post(
@@ -193,9 +171,7 @@ class TestContentBulkOperations:
         assert resp.json()["affected"] == 1
 
         # Verify status changed
-        resp = client.get(
-            f"{BASE}/{content_type}/{item_id}", headers=admin_headers
-        )
+        resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.json()["status"] == "published"
 
 
@@ -204,15 +180,12 @@ class TestContentBulkOperations:
 
 @pytest.mark.parametrize("content_type", CONTENT_TYPES)
 class TestContentSearchAndPagination:
-
     def test_search(self, client, admin_headers, content_type):
         # Create an entry with a unique keyword in the title
         keyword = f"UniqueKeyword{content_type}"
         payload = _make_payload(content_type, "-search")
         payload["title"] = f"Searchable {keyword} Entry"
-        client.post(
-            f"{BASE}/{content_type}/", json=payload, headers=admin_headers
-        )
+        client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
 
         resp = client.get(
             f"{BASE}/{content_type}/",

@@ -91,9 +91,7 @@ def change_password(
     session: Session = Depends(get_session),
 ) -> None:
     """校验旧密码后更新为新密码。"""
-    if not bcrypt.checkpw(
-        payload.current_password.encode(), admin.password_hash.encode()
-    ):
+    if not bcrypt.checkpw(payload.current_password.encode(), admin.password_hash.encode()):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     admin.password_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
     session.commit()
@@ -118,9 +116,7 @@ def update_profile(
     return AdminUserRead.model_validate(admin)
 
 
-@router.get(
-    "/sessions", response_model=list[AdminSessionRead], summary="获取活跃会话列表"
-)
+@router.get("/sessions", response_model=list[AdminSessionRead], summary="获取活跃会话列表")
 def list_sessions(
     request: Request,
     admin: AdminUser = Depends(get_current_admin),
