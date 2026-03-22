@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.domain.iam.models import AdminSession, AdminUser
+from aerisun.core.rate_limit import RATE_AUTH_LOGIN, limiter
 from aerisun.core.settings import get_settings
+from aerisun.domain.iam.models import AdminSession, AdminUser
 
 from .deps import get_current_admin
 from .schemas import (
@@ -34,15 +35,10 @@ def _extract_token(request: Request) -> str | None:
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(payload: LoginRequest, session: Session = Depends(get_session)) -> LoginResponse:
-    user = (
-        session.query(AdminUser)
-        .filter(AdminUser.username == payload.username)
-        .first()
-    )
-    if user is None or not bcrypt.checkpw(
-        payload.password.encode(), user.password_hash.encode()
-    ):
+@limiter.limit(RATE_AUTH_LOGIN)
+def login(request: Request, payload: LoginRequest, session: Session = Depends(get_session)) -> LoginResponse:
+    user = session.query(AdminUser).filter(AdminUser.username == payload.username).first()
+    if user is None or not bcrypt.checkpw(payload.password.encode(), user.password_hash.encode()):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -56,7 +52,7 @@ def login(payload: LoginRequest, session: Session = Depends(get_session)) -> Log
     settings = get_settings()
     ttl = getattr(settings, "session_ttl_hours", SESSION_TTL_HOURS)
     token = secrets.token_urlsafe(64)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=ttl)
+    expires_at = datetime.now(UTC) + timedelta(hours=ttl)
 
     admin_session = AdminSession(
         admin_user_id=user.id,
@@ -74,11 +70,7 @@ def logout(
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
-    sessions = (
-        session.query(AdminSession)
-        .filter(AdminSession.admin_user_id == admin.id)
-        .all()
-    )
+    sessions = session.query(AdminSession).filter(AdminSession.admin_user_id == admin.id).all()
     for s in sessions:
         session.delete(s)
     session.commit()
@@ -97,9 +89,7 @@ def change_password(
 ) -> None:
     if not bcrypt.checkpw(payload.current_password.encode(), admin.password_hash.encode()):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
-    admin.password_hash = bcrypt.hashpw(
-        payload.new_password.encode(), bcrypt.gensalt()
-    ).decode()
+    admin.password_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
     session.commit()
 
 
@@ -111,9 +101,7 @@ def update_profile(
 ) -> AdminUserRead:
     if payload.username is not None:
         existing = (
-            session.query(AdminUser)
-            .filter(AdminUser.username == payload.username, AdminUser.id != admin.id)
-            .first()
+            session.query(AdminUser).filter(AdminUser.username == payload.username, AdminUser.id != admin.id).first()
         )
         if existing:
             raise HTTPException(status_code=409, detail="Username already taken")
@@ -129,7 +117,7 @@ def list_sessions(
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     current_token = _extract_token(request)
     active = (
         session.query(AdminSession)

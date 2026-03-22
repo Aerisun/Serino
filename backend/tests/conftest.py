@@ -24,7 +24,10 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
 
     from aerisun.core.db import get_engine, get_session_factory
+    from aerisun.core.rate_limit import limiter
     from aerisun.core.settings import get_settings
+
+    limiter.enabled = False
 
     get_settings.cache_clear()
     get_engine.cache_clear()
