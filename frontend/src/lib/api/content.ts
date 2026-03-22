@@ -29,6 +29,8 @@ export interface PublicContentEntry {
 
 export interface PublicContentCollection {
   items: PublicContentEntry[];
+  total?: number;
+  has_more?: boolean;
 }
 
 export const publicContentPaths: Record<PublicContentKind, string> = {
@@ -59,10 +61,13 @@ export const splitContentParagraphs = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-export async function fetchPublicContentCollection(kind: PublicContentKind, limit?: number, init?: RequestInit) {
+export async function fetchPublicContentCollection(kind: PublicContentKind, limit?: number, offset?: number, init?: RequestInit) {
   const path = new URL(publicContentPaths[kind], "http://localhost");
   if (limit) {
     path.searchParams.set("limit", String(limit));
+  }
+  if (offset) {
+    path.searchParams.set("offset", String(offset));
   }
 
   return apiClient.get<PublicContentCollection>(`${path.pathname}${path.search}`, init);

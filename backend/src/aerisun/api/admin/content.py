@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -13,7 +13,14 @@ from .deps import get_current_admin
 from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest
 
 # Columns that the list endpoint is allowed to sort by.
-_ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "title", "published_at", "status", "slug"}
+_ALLOWED_SORT_COLUMNS = {
+    "created_at",
+    "updated_at",
+    "title",
+    "published_at",
+    "status",
+    "slug",
+}
 
 
 def build_crud_router(
@@ -29,7 +36,7 @@ def build_crud_router(
 
     router = APIRouter(prefix=prefix, tags=[tag])
 
-    @router.get("/", response_model=dict)
+    @router.get("/", response_model=dict, summary=f"获取{tag}列表")
     def list_items(
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=20, ge=1, le=100),
@@ -41,6 +48,7 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> dict[str, Any]:
+        """分页查询并返回列表数据。"""
         q = session.query(model)
 
         # --- filters ---
@@ -80,12 +88,18 @@ def build_crud_router(
             "page_size": page_size,
         }
 
-    @router.post("/", response_model=read_schema, status_code=status.HTTP_201_CREATED)
+    @router.post(
+        "/",
+        response_model=read_schema,
+        status_code=status.HTTP_201_CREATED,
+        summary=f"创建{tag}",
+    )
     def create_item(
         payload: create_schema,  # type: ignore[valid-type]
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
+        """接收数据并创建一条新记录。"""
         data = {k: v for k, v in payload.model_dump().items() if hasattr(model, k)}
         obj = model(**data)
         session.add(obj)
@@ -93,24 +107,26 @@ def build_crud_router(
         session.refresh(obj)
         return read_schema.model_validate(obj)
 
-    @router.get("/{item_id}", response_model=read_schema)
+    @router.get("/{item_id}", response_model=read_schema, summary=f"获取单条{tag}")
     def get_item(
         item_id: str,
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
+        """根据 ID 获取单条记录详情。"""
         obj = session.get(model, item_id)
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
         return read_schema.model_validate(obj)
 
-    @router.put("/{item_id}", response_model=read_schema)
+    @router.put("/{item_id}", response_model=read_schema, summary=f"更新{tag}")
     def update_item(
         item_id: str,
         payload: update_schema,  # type: ignore[valid-type]
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
+        """根据 ID 更新一条记录的字段。"""
         obj = session.get(model, item_id)
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
@@ -121,12 +137,15 @@ def build_crud_router(
         session.refresh(obj)
         return read_schema.model_validate(obj)
 
-    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+    @router.delete(
+        "/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}"
+    )
     def delete_item(
         item_id: str,
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> None:
+        """根据 ID 删除一条记录。"""
         obj = session.get(model, item_id)
         if obj is None:
             raise HTTPException(status_code=404, detail="Not found")
@@ -135,12 +154,15 @@ def build_crud_router(
 
     # --- Bulk operations ---
 
-    @router.post("/bulk-delete", response_model=BulkActionResponse)
+    @router.post(
+        "/bulk-delete", response_model=BulkActionResponse, summary=f"批量删除{tag}"
+    )
     def bulk_delete(
         payload: BulkDeleteRequest,
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
+        """根据 ID 列表批量删除记录。"""
         affected = (
             session.query(model)
             .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
@@ -149,12 +171,15 @@ def build_crud_router(
         session.commit()
         return {"affected": affected}
 
-    @router.post("/bulk-status", response_model=BulkActionResponse)
+    @router.post(
+        "/bulk-status", response_model=BulkActionResponse, summary=f"批量更新{tag}状态"
+    )
     def bulk_status(
         payload: BulkStatusRequest,
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
+        """根据 ID 列表批量更新记录状态。"""
         if not hasattr(model, "status"):
             raise HTTPException(status_code=400, detail="Model does not support status")
         affected = (

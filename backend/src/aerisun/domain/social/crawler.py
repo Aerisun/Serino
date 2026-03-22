@@ -136,11 +136,19 @@ def _check_feed(
             response = client.get(feed_url)
             if response.status_code == 200:
                 content_type = response.headers.get("content-type", "").lower()
-                if "xml" in content_type or "rss" in content_type or "atom" in content_type:
+                if (
+                    "xml" in content_type
+                    or "rss" in content_type
+                    or "atom" in content_type
+                ):
                     return (feed_type, feed_url)
                 # Check content itself
                 text_head = response.text[:1000].lower()
-                if "<rss" in text_head or "<feed" in text_head or "<rdf:rdf" in text_head:
+                if (
+                    "<rss" in text_head
+                    or "<feed" in text_head
+                    or "<rdf:rdf" in text_head
+                ):
                     return (feed_type, feed_url)
         except httpx.HTTPError:
             continue
@@ -248,7 +256,9 @@ def crawl_single_source(
         "feed_url_updated": False,
     }
 
-    with httpx.Client(headers=headers, timeout=timeout, follow_redirects=True) as client:
+    with httpx.Client(
+        headers=headers, timeout=timeout, follow_redirects=True
+    ) as client:
         # --- 1. Try fetching with ETag ---
         extra_headers: dict[str, str] = {}
         if source.etag:

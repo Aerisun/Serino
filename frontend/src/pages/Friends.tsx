@@ -52,7 +52,7 @@ const toCirclePost = (value: PublicFriendFeedItem): CirclePost => ({
 });
 
 const Friends = () => {
-  const config = usePageConfig().friends as FriendsPageConfig;
+  const config = usePageConfig().friends as unknown as FriendsPageConfig;
   const pageSize = Number(config.pageSize ?? 10);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>([]);

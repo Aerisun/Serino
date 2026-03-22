@@ -11,7 +11,7 @@ interface GuestbookPageConfig extends BaseViewPageConfig {
 }
 
 const Guestbook = () => {
-  const config = usePageConfig().guestbook as GuestbookPageConfig;
+  const config = usePageConfig().guestbook as unknown as GuestbookPageConfig;
   const guestbookPromptCopy = {
     name: config.namePlaceholder ?? "输入你想留下的名字",
     content: config.contentPlaceholder ?? "写下想问候、讨论或分享的内容",

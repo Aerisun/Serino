@@ -46,21 +46,28 @@ _STARTUP_TIME = time.time()
 # ---------------------------------------------------------------------------
 
 
-@router.get("/api-keys", response_model=list[ApiKeyAdminRead])
+@router.get("/api-keys", response_model=list[ApiKeyAdminRead], summary="获取 API 密钥列表")
 def list_api_keys(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """查询所有已创建的 API 密钥。"""
     keys = session.query(ApiKey).order_by(ApiKey.created_at.desc()).all()
     return [ApiKeyAdminRead.model_validate(k) for k in keys]
 
 
-@router.post("/api-keys", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/api-keys",
+    response_model=ApiKeyCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建 API 密钥",
+)
 def create_api_key(
     payload: ApiKeyCreate,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """生成新的 API 密钥并返回明文密钥（仅此一次可见）。"""
     raw_secret = secrets.token_urlsafe(48)
     prefix = raw_secret[:8]
     hashed = bcrypt.hashpw(raw_secret.encode(), bcrypt.gensalt()).decode()
@@ -80,13 +87,16 @@ def create_api_key(
     )
 
 
-@router.put("/api-keys/{key_id}", response_model=ApiKeyAdminRead)
+@router.put(
+    "/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥"
+)
 def update_api_key(
     key_id: str,
     payload: ApiKeyUpdate,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """更新指定 API 密钥的名称或权限范围。"""
     key = session.get(ApiKey, key_id)
     if key is None:
         raise HTTPException(status_code=404, detail="API key not found")
@@ -97,12 +107,17 @@ def update_api_key(
     return ApiKeyAdminRead.model_validate(key)
 
 
-@router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/api-keys/{key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除 API 密钥",
+)
 def delete_api_key(
     key_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
+    """永久删除指定的 API 密钥。"""
     key = session.get(ApiKey, key_id)
     if key is None:
         raise HTTPException(status_code=404, detail="API key not found")
@@ -115,7 +130,7 @@ def delete_api_key(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/audit-logs", response_model=dict)
+@router.get("/audit-logs", response_model=dict, summary="获取审计日志")
 def list_audit_logs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -126,6 +141,7 @@ def list_audit_logs(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    """分页查询审计日志，支持按操作类型和时间范围筛选。"""
     q = session.query(AuditLog)
     if action:
         q = q.filter(AuditLog.action.contains(action))
@@ -150,20 +166,29 @@ def list_audit_logs(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/backups", response_model=list[BackupSnapshotRead])
+@router.get("/backups", response_model=list[BackupSnapshotRead], summary="获取备份列表")
 def list_backups(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    snapshots = session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
+    """列出所有备份快照记录。"""
+    snapshots = (
+        session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
+    )
     return [BackupSnapshotRead.model_validate(s) for s in snapshots]
 
 
-@router.post("/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/backups",
+    response_model=BackupSnapshotRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建备份快照",
+)
 def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """手动创建一个新的数据库备份快照。"""
     from aerisun.core.settings import get_settings
 
     settings = get_settings()
@@ -179,12 +204,17 @@ def trigger_backup(
     return BackupSnapshotRead.model_validate(snapshot)
 
 
-@router.post("/backups/{snapshot_id}/restore", response_model=BackupSnapshotRead)
+@router.post(
+    "/backups/{snapshot_id}/restore",
+    response_model=BackupSnapshotRead,
+    summary="从备份恢复",
+)
 def restore_backup(
     snapshot_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
+    """将指定备份快照标记为恢复中并触发恢复流程。"""
     snapshot = session.get(BackupSnapshot, snapshot_id)
     if snapshot is None:
         raise HTTPException(status_code=404, detail="Backup snapshot not found")
@@ -200,11 +230,12 @@ def restore_backup(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/dashboard/stats", response_model=EnhancedDashboardStats)
+@router.get("/dashboard/stats", response_model=EnhancedDashboardStats, summary="获取仪表盘统计")
 def dashboard_stats(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> EnhancedDashboardStats:
+    """汇总各类内容数量、月度趋势及最近更新，用于仪表盘展示。"""
     # Basic counts
     posts_count = session.query(func.count(PostEntry.id)).scalar() or 0
     diary_count = session.query(func.count(DiaryEntry.id)).scalar() or 0
@@ -240,7 +271,12 @@ def dashboard_stats(
         )
         for month_str, count in rows:
             if month_str not in month_data:
-                month_data[month_str] = {"posts": 0, "diary": 0, "thoughts": 0, "excerpts": 0}
+                month_data[month_str] = {
+                    "posts": 0,
+                    "diary": 0,
+                    "thoughts": 0,
+                    "excerpts": 0,
+                }
             month_data[month_str][type_key] = count
 
     content_by_month = sorted(
@@ -291,10 +327,11 @@ def dashboard_stats(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/info", response_model=SystemInfo)
+@router.get("/info", response_model=SystemInfo, summary="获取系统信息")
 def system_info(
     _admin: AdminUser = Depends(get_current_admin),
 ) -> SystemInfo:
+    """返回 Python 版本、数据库大小、媒体目录大小等系统运行信息。"""
     settings = get_settings()
 
     # DB size

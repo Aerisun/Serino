@@ -4,13 +4,13 @@ from collections.abc import Iterator
 from functools import lru_cache
 from pathlib import Path
 
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from aerisun.core.base import Base
 from aerisun.core.settings import get_settings
+from alembic import command
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 

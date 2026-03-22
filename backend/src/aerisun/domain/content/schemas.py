@@ -33,3 +33,5 @@ class ContentEntryRead(ModelBase):
 
 class ContentCollectionRead(ModelBase):
     items: list[ContentEntryRead]
+    total: int = 0
+    has_more: bool = False

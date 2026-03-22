@@ -26,12 +26,12 @@ class CategoryInfo(BaseModel):
     count: int
 
 
-@router.get("/tags", response_model=list[TagInfo])
+@router.get("/tags", response_model=list[TagInfo], summary="聚合所有内容标签")
 def list_tags(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list[TagInfo]:
-    """Aggregate tags across all 4 content tables with counts."""
+    """跨所有内容表聚合标签及其使用次数。"""
     tag_counts: dict[str, int] = {}
     for model in (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry):
         rows = session.query(model.tags).filter(model.tags.isnot(None)).all()
@@ -59,12 +59,12 @@ def list_tags(
     )
 
 
-@router.get("/categories", response_model=list[CategoryInfo])
+@router.get("/categories", response_model=list[CategoryInfo], summary="聚合文章分类")
 def list_categories(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list[CategoryInfo]:
-    """Aggregate categories from PostEntry."""
+    """聚合文章的分类及其数量。"""
     rows = (
         session.query(PostEntry.category, func.count(PostEntry.id))
         .filter(PostEntry.category.isnot(None), PostEntry.category != "")

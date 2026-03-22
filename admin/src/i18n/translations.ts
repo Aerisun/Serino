@@ -52,6 +52,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.searchPlaceholder": "搜索标题、内容...",
     "common.operationSuccess": "操作成功",
     "common.operationFailed": "操作失败",
+    "common.preview": "预览",
     "common.deleteConfirm": "确认删除",
     "common.deleteConfirmDesc": "确定要删除这一项吗？此操作不可撤销。",
 
@@ -517,6 +518,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.searchPlaceholder": "Search title, content...",
     "common.operationSuccess": "Operation successful",
     "common.operationFailed": "Operation failed",
+    "common.preview": "Preview",
     "common.deleteConfirm": "Confirm delete",
     "common.deleteConfirmDesc": "Are you sure you want to delete this item? This action cannot be undone.",
 

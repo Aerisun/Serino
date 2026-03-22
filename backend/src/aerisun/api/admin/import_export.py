@@ -32,16 +32,19 @@ class ImportResult(BaseModel):
     errors: list[str] = []
 
 
-@router.get("/export")
+@router.get("/export", summary="导出内容")
 def export_content(
     content_type: str = Query(..., description="posts, diary, thoughts, or excerpts"),
     format: str = Query(default="json", description="json or markdown_zip"),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> StreamingResponse:
+    """将指定类型的内容导出为 JSON 或 Markdown ZIP 文件。"""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise HTTPException(status_code=400, detail=f"Invalid content_type: {content_type}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid content_type: {content_type}"
+        )
 
     items = session.query(model).order_by(model.created_at.desc()).all()
 
@@ -57,7 +60,9 @@ def export_content(
         return StreamingResponse(
             buf,
             media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename={content_type}-export.zip"},
+            headers={
+                "Content-Disposition": f"attachment; filename={content_type}-export.zip"
+            },
         )
 
     # JSON export
@@ -70,20 +75,25 @@ def export_content(
     return StreamingResponse(
         io.BytesIO(content_bytes),
         media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename={content_type}-export.json"},
+        headers={
+            "Content-Disposition": f"attachment; filename={content_type}-export.json"
+        },
     )
 
 
-@router.post("/import", response_model=ImportResult)
+@router.post("/import", response_model=ImportResult, summary="导入内容")
 async def import_content(
     content_type: str = Query(...),
     file: UploadFile = File(...),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> ImportResult:
+    """从上传的 JSON 文件导入内容，支持新增和更新。"""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise HTTPException(status_code=400, detail=f"Invalid content_type: {content_type}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid content_type: {content_type}"
+        )
 
     result = ImportResult()
     raw = await file.read()
@@ -99,7 +109,9 @@ async def import_content(
     for entry in items_data:
         slug = entry.get("slug")
         if not slug:
-            result.errors.append(f"Missing slug in entry: {entry.get('title', 'unknown')}")
+            result.errors.append(
+                f"Missing slug in entry: {entry.get('title', 'unknown')}"
+            )
             continue
 
         existing = session.query(model).filter(model.slug == slug).first()

@@ -22,7 +22,11 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method
 
-        if not path.startswith("/api/v1/admin/") or method in ("GET", "OPTIONS", "HEAD"):
+        if not path.startswith("/api/v1/admin/") or method in (
+            "GET",
+            "OPTIONS",
+            "HEAD",
+        ):
             return await call_next(request)
 
         # Skip auth endpoints to avoid logging login/logout noise

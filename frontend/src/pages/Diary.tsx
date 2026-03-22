@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } from "lucide-react";
@@ -73,13 +73,17 @@ const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEnt
 };
 
 const Diary = () => {
-  const config = usePageConfig().diary as DiaryPageConfig;
+  const config = usePageConfig().diary as unknown as DiaryPageConfig;
   const navigate = useNavigate();
   const [items, setItems] = useState<DiaryEntry[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,13 +93,14 @@ const Diary = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("diary", 20, { signal: controller.signal });
+        const payload = await fetchPublicContentCollection("diary", PAGE_SIZE, undefined, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
         const nextItems = payload.items.map(mapRemoteDiaryEntry);
         setItems(nextItems);
+        setHasMore(payload.has_more ?? false);
         setStatus(nextItems.length > 0 ? "ready" : "empty");
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -112,6 +117,32 @@ const Diary = () => {
       controller.abort();
     };
   }, [reloadKey]);
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const payload = await fetchPublicContentCollection("diary", PAGE_SIZE, items.length);
+      const moreItems = payload.items.map(mapRemoteDiaryEntry);
+      setItems(prev => [...prev, ...moreItems]);
+      setHasMore(payload.has_more ?? false);
+    } catch {
+      // silently fail on load more
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || status !== "ready") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, status, items.length]);
 
   return (
     <PageShell
@@ -262,6 +293,12 @@ const Diary = () => {
             );
           })}
       </div>
+
+      {status === "ready" && hasMore && (
+        <div ref={sentinelRef} className="py-8 text-center">
+          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+        </div>
+      )}
     </PageShell>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useResourceList } from "@/hooks/useResource";
@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { Plus, ArrowUpDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { ContentItem } from "@/types/models";
@@ -37,17 +37,17 @@ export default function PostListPage() {
   const [sort_by, sort_order] = sort.split(":");
 
   // Debounce search
-  const searchTimer = useState<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = (value: string) => {
     setSearch(value);
-    if (searchTimer[0]) clearTimeout(searchTimer[0]);
-    searchTimer[1] = setTimeout(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
       setSearchDebounced(value);
       setPage(1);
     }, 300);
   };
 
-  const { items, total, pageSize, isLoading, bulkDelete, bulkStatus, isBulkDeleting, isBulkUpdating } = useResourceList(
+  const { items, total, pageSize, isLoading, bulkDelete, bulkStatus, isBulkDeleting } = useResourceList(
     {
       queryKey: "posts",
       listFn: listPosts,

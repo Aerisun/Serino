@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import BackToTop from "@/components/BackToTop";
 import CommentSection from "@/components/CommentSection";
+import ShareButtons from "@/components/ShareButtons";
 import PageMeta from "@/components/PageMeta";
 import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
@@ -235,6 +236,8 @@ const PostDetail = () => {
             <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
               <p className="text-center text-xs font-body text-foreground/20">— 完 —</p>
             </div>
+
+            <ShareButtons title={post.title} />
 
             <CommentSection
               contentType="posts"

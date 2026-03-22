@@ -27,7 +27,9 @@ class AdminSession(Base, TimestampMixin):
         nullable=False,
     )
     session_token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
 
 class ApiKey(Base, TimestampMixin):
