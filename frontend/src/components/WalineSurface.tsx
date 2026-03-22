@@ -318,6 +318,7 @@ const WalineSurface = ({
     instanceRef.current?.destroy();
     instanceRef.current = init({
       ...runtimeOptions,
+      emoji: runtimeOptions.emoji as never,
       el: hostRef.current,
     });
 
