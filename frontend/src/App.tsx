@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import Index from "./pages/Index.tsx";
 import Posts from "./pages/Posts.tsx";
@@ -20,6 +21,7 @@ const App = () => (
     <RuntimeConfigProvider>
       <BrowserRouter>
         <ShiroAccentController />
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/posts" element={<Posts />} />
@@ -34,6 +36,7 @@ const App = () => (
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </ErrorBoundary>
       </BrowserRouter>
     </RuntimeConfigProvider>
   </ThemeProvider>

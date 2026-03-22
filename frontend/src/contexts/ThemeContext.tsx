@@ -1,5 +1,35 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
-import { ThemeContext, type Theme } from "./theme-context";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
+// ── Types ────────────────────────────────────────────────────────────
+
+export type Theme = "light" | "dark" | "system";
+
+export interface ThemeContextType {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  resolvedTheme: "light" | "dark";
+}
+
+// ── Context ──────────────────────────────────────────────────────────
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+// ── Hook ─────────────────────────────────────────────────────────────
+
+export const useTheme = () => {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+  return ctx;
+};
+
+// ── Provider ─────────────────────────────────────────────────────────
 
 const THEME_QUERY = "(prefers-color-scheme: dark)";
 

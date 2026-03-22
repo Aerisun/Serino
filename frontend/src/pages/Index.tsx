@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import HeroContent from "@/components/HeroContent";
 import ActivitySection from "@/components/ActivitySection";
 import PageMeta from "@/components/PageMeta";
-import { useTheme } from "@/contexts/useTheme";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
 
 const Index = () => {

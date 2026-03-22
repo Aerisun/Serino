@@ -1,5 +1,5 @@
 import { Sun, Moon, Monitor } from "lucide-react";
-import { useTheme } from "@/contexts/useTheme";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const cycle = ["light", "dark", "system"] as const;
 const icons = { light: Sun, dark: Moon, system: Monitor };
