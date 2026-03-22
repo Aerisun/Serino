@@ -59,6 +59,17 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())
     session_ttl_hours: int = 24
 
+    # Feed crawling
+    feed_crawl_enabled: bool = True
+    feed_crawl_interval_hours: int = 6
+    feed_crawl_timeout_connect: int = 10
+    feed_crawl_timeout_read: int = 15
+    feed_crawl_max_items_per_source: int = 20
+    feed_crawl_user_agent: str = (
+        "Mozilla/5.0 (compatible; Aerisun/1.0; FriendCircle RSS Reader; "
+        "+https://github.com/Aerisun)"
+    )
+
     @property
     def database_url(self) -> str:
         return f"sqlite+pysqlite:///{self.db_path.expanduser().resolve()}"
