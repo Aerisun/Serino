@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } from "lucide-react";
@@ -8,6 +8,11 @@ import FallingPetals from "@/components/FallingPetals";
 import CommentSection from "@/components/CommentSection";
 import ShareButtons from "@/components/ShareButtons";
 import PageMeta from "@/components/PageMeta";
+import CodeHighlighter from "@/components/CodeHighlighter";
+import JsonLd from "@/components/JsonLd";
+import TableOfContents from "@/components/TableOfContents";
+import ShareBar from "@/components/ShareBar";
+import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
 import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
@@ -67,6 +72,8 @@ const buildRemoteDiaryEntry = (entry: PublicContentEntry): DiaryData => ({
 const DiaryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const featureFlags = useFeatureFlags();
+  const articleRef = useRef<HTMLDivElement>(null);
   const [entry, setEntry] = useState<DiaryData | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -126,6 +133,14 @@ const DiaryDetail = () => {
         title={entry?.title ?? (status === "error" ? "日记加载失败" : "日记不存在")}
         description={entry?.body.slice(0, 150) ?? (errorMessage || "你访问的日记暂时不存在。")}
       />
+      {entry && (
+        <JsonLd
+          title={entry.title}
+          description={entry.body.slice(0, 200) || ""}
+          slug={entry.slug}
+          type="diary"
+        />
+      )}
       <FallingPetals />
       <Navbar />
 
@@ -206,12 +221,16 @@ const DiaryDetail = () => {
             </motion.div>
 
             <motion.div
+              ref={articleRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
               <MarkdownRenderer content={entry.body} />
             </motion.div>
+
+            <CodeHighlighter containerRef={articleRef} content={[entry.body]} />
+            {featureFlags.toc && <TableOfContents containerRef={articleRef} content={[entry.body]} />}
 
             {entry.poem && (
               <motion.div
@@ -229,6 +248,7 @@ const DiaryDetail = () => {
             </div>
 
             <ShareButtons title={entry.title} />
+            {featureFlags.social_sharing && <ShareBar title={entry.title} />}
 
             <CommentSection
               contentType="diary"

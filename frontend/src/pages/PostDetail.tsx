@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Clock, Eye, MessageCircle, Tag } from "lucide-react";
@@ -9,7 +9,11 @@ import BackToTop from "@/components/BackToTop";
 import CommentSection from "@/components/CommentSection";
 import ShareButtons from "@/components/ShareButtons";
 import PageMeta from "@/components/PageMeta";
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import CodeHighlighter from "@/components/CodeHighlighter";
+import JsonLd from "@/components/JsonLd";
+import TableOfContents from "@/components/TableOfContents";
+import ShareBar from "@/components/ShareBar";
+import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
 import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
@@ -55,7 +59,8 @@ const buildRemotePost = (entry: PublicContentEntry): PostData => ({
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const site = useSiteConfig();
+  const featureFlags = useFeatureFlags();
+  const articleRef = useRef<HTMLElement>(null);
   const [post, setPost] = useState<PostData | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -106,30 +111,22 @@ const PostDetail = () => {
     };
   }, [id, reloadKey]);
 
-  useEffect(() => {
-    if (!post) return;
-    const jsonLd = {
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: post.title,
-      datePublished: post.date,
-      author: { "@type": "Person", name: site.author || site.name || "Aerisun" },
-      description: post.content.slice(0, 200),
-      mainEntityOfPage: { "@type": "WebPage", "@id": window.location.href },
-    };
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.textContent = JSON.stringify(jsonLd);
-    document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
-  }, [post, site.author, site.name]);
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
         title={post?.title ?? (status === "error" ? "文章加载失败" : "文章不存在")}
         description={post?.content.slice(0, 150) ?? (errorMessage || "你访问的文章暂时不存在。")}
       />
+      {post && (
+        <JsonLd
+          title={post.title}
+          description={post.content.slice(0, 200) || ""}
+          slug={post.slug}
+          type="posts"
+          publishedAt={post.date}
+          tags={post.tags}
+        />
+      )}
       <FallingPetals />
       <Navbar />
 
@@ -225,6 +222,7 @@ const PostDetail = () => {
             </motion.div>
 
             <motion.article
+              ref={articleRef}
               className="mt-10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -233,11 +231,15 @@ const PostDetail = () => {
               <MarkdownRenderer content={post.content} />
             </motion.article>
 
+            <CodeHighlighter containerRef={articleRef} content={[post.content]} />
+            {featureFlags.toc && <TableOfContents containerRef={articleRef} content={[post.content]} />}
+
             <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
               <p className="text-center text-xs font-body text-foreground/20">— 完 —</p>
             </div>
 
             <ShareButtons title={post.title} />
+            {featureFlags.social_sharing && <ShareBar title={post.title} />}
 
             <CommentSection
               contentType="posts"
