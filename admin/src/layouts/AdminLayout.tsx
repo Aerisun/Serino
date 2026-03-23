@@ -65,7 +65,11 @@ const navGroups = [
     labelKey: "nav.system",
     items: [
       { to: "/system/api-keys", icon: Key, labelKey: "nav.apiKeys" },
-      { to: "/system/audit-log", icon: ClipboardList, labelKey: "nav.auditLog" },
+      {
+        to: "/system/audit-log",
+        icon: ClipboardList,
+        labelKey: "nav.auditLog",
+      },
       { to: "/system/backups", icon: Database, labelKey: "nav.backups" },
       { to: "/system/info", icon: Info, labelKey: "nav.systemInfo" },
       { to: "/settings", icon: UserCog, labelKey: "nav.settings" },
@@ -90,7 +94,8 @@ export default function AdminLayout() {
     queryFn: () => listGuestbook({ page: 1, page_size: 1, status: "pending" }),
     refetchInterval: 30000,
   });
-  const pendingCount = (pendingComments?.total ?? 0) + (pendingGuestbook?.total ?? 0);
+  const pendingCount =
+    (pendingComments?.total ?? 0) + (pendingGuestbook?.total ?? 0);
 
   const toggleLang = () => setLang(lang === "zh" ? "en" : "zh");
 
@@ -114,7 +119,7 @@ export default function AdminLayout() {
                   cn(
                     "flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-accent",
                     isActive && "bg-accent text-accent-foreground font-medium",
-                    collapsed && "justify-center px-2"
+                    collapsed && "justify-center px-2",
                   )
                 }
               >
@@ -136,11 +141,21 @@ export default function AdminLayout() {
       </nav>
 
       <div className="border-t p-3">
-        <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
+        <div
+          className={cn(
+            "flex items-center gap-2",
+            collapsed && "justify-center",
+          )}
+        >
           {!collapsed && (
             <span className="text-sm truncate flex-1">{user?.username}</span>
           )}
-          <Button variant="ghost" size="icon" onClick={logout} title={t("nav.logout")}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={logout}
+            title={t("nav.logout")}
+          >
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
@@ -162,12 +177,16 @@ export default function AdminLayout() {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-card transition-transform duration-200 md:hidden",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-14 items-center justify-between border-b px-4">
           <span className="font-semibold text-lg">{t("nav.admin")}</span>
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(false)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -178,13 +197,23 @@ export default function AdminLayout() {
       <aside
         className={cn(
           "hidden md:flex md:flex-col border-r bg-card transition-all duration-200",
-          collapsed ? "md:w-16" : "md:w-60"
+          collapsed ? "md:w-16" : "md:w-60",
         )}
       >
         <div className="flex h-14 items-center justify-between border-b px-4">
-          {!collapsed && <span className="font-semibold text-lg">{t("nav.admin")}</span>}
-          <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)}>
-            {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+          {!collapsed && (
+            <span className="font-semibold text-lg">{t("nav.admin")}</span>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? (
+              <Menu className="h-4 w-4" />
+            ) : (
+              <X className="h-4 w-4" />
+            )}
           </Button>
         </div>
         {sidebarContent}
@@ -202,7 +231,9 @@ export default function AdminLayout() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="text-sm text-muted-foreground">{t("nav.adminPanel")}</span>
+            <span className="text-sm text-muted-foreground">
+              {t("nav.adminPanel")}
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -211,15 +242,24 @@ export default function AdminLayout() {
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="gap-1.5"
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggleLang} className="gap-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleLang}
+              className="gap-1.5"
+            >
               <Globe className="h-4 w-4" />
               {lang === "zh" ? "EN" : "中文"}
             </Button>
           </div>
         </div>
-        <div className="p-6 overflow-x-auto">
+        <div className="p-4 md:p-6 overflow-x-auto">
           <Outlet />
         </div>
       </main>
