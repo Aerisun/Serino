@@ -1,4 +1,11 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/i18n";
@@ -39,7 +46,8 @@ export function DataTable<T extends { id: string }>({
   const { t } = useI18n();
   const totalPages = Math.ceil(total / pageSize);
 
-  const allPageSelected = data.length > 0 && data.every((row) => selectedIds?.has(row.id));
+  const allPageSelected =
+    data.length > 0 && data.every((row) => selectedIds?.has(row.id));
   const somePageSelected = data.some((row) => selectedIds?.has(row.id));
 
   const toggleAll = () => {
@@ -67,7 +75,7 @@ export function DataTable<T extends { id: string }>({
   const colSpan = columns.length + (selectable ? 1 : 0);
 
   return (
-    <div>
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -78,27 +86,36 @@ export function DataTable<T extends { id: string }>({
                   className="h-4 w-4 rounded border-gray-300"
                   checked={allPageSelected}
                   ref={(el) => {
-                    if (el) el.indeterminate = somePageSelected && !allPageSelected;
+                    if (el)
+                      el.indeterminate = somePageSelected && !allPageSelected;
                   }}
                   onChange={toggleAll}
                 />
               </TableHead>
             )}
             {columns.map((col, i) => (
-              <TableHead key={i} className={col.className}>{col.header}</TableHead>
+              <TableHead key={i} className={col.className}>
+                {col.header}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={colSpan} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={colSpan}
+                className="text-center py-8 text-muted-foreground"
+              >
                 {t("common.loading")}
               </TableCell>
             </TableRow>
           ) : data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={colSpan} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={colSpan}
+                className="text-center py-8 text-muted-foreground"
+              >
                 {t("common.noData")}
               </TableCell>
             </TableRow>
@@ -110,7 +127,10 @@ export function DataTable<T extends { id: string }>({
                 onClick={() => onRowClick?.(row)}
               >
                 {selectable && (
-                  <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="w-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-gray-300"

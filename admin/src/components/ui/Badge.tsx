@@ -6,21 +6,27 @@ const badgeVariants: Record<string, string> = {
   secondary: "bg-secondary text-secondary-foreground",
   destructive: "bg-destructive text-destructive-foreground",
   outline: "border text-foreground",
-  success: "bg-green-100 text-green-800",
-  warning: "bg-yellow-100 text-yellow-800",
+  success:
+    "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
+  warning:
+    "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
 };
 
 interface BadgeProps extends HTMLAttributes<HTMLDivElement> {
   variant?: keyof typeof badgeVariants;
 }
 
-export function Badge({ className, variant = "default", ...props }: BadgeProps) {
+export function Badge({
+  className,
+  variant = "default",
+  ...props
+}: BadgeProps) {
   return (
     <div
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors",
         badgeVariants[variant] || badgeVariants.default,
-        className
+        className,
       )}
       {...props}
     />

@@ -1,14 +1,29 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useResourceList } from "@/hooks/useResource";
-import { listFriends, createFriend, updateFriend, deleteFriend, listFriendFeeds, createFriendFeed, updateFriendFeed, deleteFriendFeed } from "@/api/endpoints/friends";
+import {
+  listFriends,
+  createFriend,
+  updateFriend,
+  deleteFriend,
+  listFriendFeeds,
+  createFriendFeed,
+  updateFriendFeed,
+  deleteFriendFeed,
+} from "@/api/endpoints/friends";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/Dialog";
 import { Plus, Trash2, Pencil, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -22,35 +37,83 @@ export default function FriendsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editingFriend, setEditingFriend] = useState<Friend | null>(null);
   const queryClient = useQueryClient();
-  const emptyForm = { name: "", url: "", avatar_url: "", description: "", status: "active", order_index: 0 };
+  const emptyForm = {
+    name: "",
+    url: "",
+    avatar_url: "",
+    description: "",
+    status: "active",
+    order_index: 0,
+  };
   const [form, setForm] = useState(emptyForm);
 
   const { items, total, pageSize, isLoading } = useResourceList(
-    { queryKey: "friends", listFn: listFriends, createFn: createFriend, updateFn: updateFriend, deleteFn: deleteFriend },
-    { page }
+    {
+      queryKey: "friends",
+      listFn: listFriends,
+      createFn: createFriend,
+      updateFn: updateFriend,
+      deleteFn: deleteFriend,
+    },
+    { page },
+  );
+
+  // Shuffle on every render / page change
+  const shuffledItems = useMemo(
+    () => [...items].sort(() => Math.random() - 0.5),
+    [items],
   );
 
   const create = useMutation({
     mutationFn: () => createFriend(form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); setCreateOpen(false); setForm(emptyForm); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+      setCreateOpen(false);
+      setForm(emptyForm);
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
+    },
   });
 
   const update = useMutation({
     mutationFn: () => updateFriend(editingFriend!.id, form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); setEditOpen(false); setEditingFriend(null); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+      setEditOpen(false);
+      setEditingFriend(null);
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
+    },
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteFriend(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friends"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
+    },
   });
 
   function startEdit(friend: Friend) {
     setEditingFriend(friend);
-    setForm({ name: friend.name, url: friend.url, avatar_url: friend.avatar_url ?? "", description: friend.description ?? "", status: friend.status, order_index: friend.order_index });
+    setForm({
+      name: friend.name,
+      url: friend.url,
+      avatar_url: friend.avatar_url ?? "",
+      description: friend.description ?? "",
+      status: friend.status,
+      order_index: friend.order_index,
+    });
     setEditOpen(true);
   }
 
@@ -67,7 +130,10 @@ export default function FriendsPage() {
         {(["name", "url", "avatar_url", "description"] as const).map((k) => (
           <div key={k} className="space-y-1">
             <Label>{fieldLabels[k]}</Label>
-            <Input value={(form as any)[k]} onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))} />
+            <Input
+              value={(form as any)[k]}
+              onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))}
+            />
           </div>
         ))}
         <div className="space-y-1">
@@ -83,7 +149,16 @@ export default function FriendsPage() {
         </div>
         <div className="space-y-1">
           <Label>{t("common.order")}</Label>
-          <Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} />
+          <Input
+            type="number"
+            value={form.order_index}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                order_index: parseInt(e.target.value) || 0,
+              }))
+            }
+          />
         </div>
       </div>
     );
@@ -95,23 +170,50 @@ export default function FriendsPage() {
         title={t("friends.title")}
         description={t("friends.description")}
         actions={
-          <Dialog open={createOpen} onOpenChange={(v) => { setCreateOpen(v); if (!v) setForm(emptyForm); }}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" /> {t("friends.addFriend")}</Button></DialogTrigger>
+          <Dialog
+            open={createOpen}
+            onOpenChange={(v) => {
+              setCreateOpen(v);
+              if (!v) setForm(emptyForm);
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" /> {t("friends.addFriend")}
+              </Button>
+            </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>{t("friends.newFriend")}</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>{t("friends.newFriend")}</DialogTitle>
+              </DialogHeader>
               <FriendFormFields />
-              <Button onClick={() => create.mutate()} disabled={create.isPending}>{t("common.create")}</Button>
+              <Button
+                onClick={() => create.mutate()}
+                disabled={create.isPending}
+              >
+                {t("common.create")}
+              </Button>
             </DialogContent>
           </Dialog>
         }
       />
 
       {/* Edit dialog */}
-      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditingFriend(null); }}>
+      <Dialog
+        open={editOpen}
+        onOpenChange={(v) => {
+          setEditOpen(v);
+          if (!v) setEditingFriend(null);
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{t("friends.editFriend")}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{t("friends.editFriend")}</DialogTitle>
+          </DialogHeader>
           <FriendFormFields />
-          <Button onClick={() => update.mutate()} disabled={update.isPending}>{t("common.save")}</Button>
+          <Button onClick={() => update.mutate()} disabled={update.isPending}>
+            {t("common.save")}
+          </Button>
 
           {editingFriend && <FeedSourcesSection friendId={editingFriend.id} />}
         </DialogContent>
@@ -121,18 +223,43 @@ export default function FriendsPage() {
         <DataTable<Friend>
           columns={[
             { header: t("friends.name"), accessor: "name" },
-            { header: t("friends.url"), accessor: "url" },
-            { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
-            { header: t("common.order"), accessor: "order_index" as any },
-            { header: t("siteConfig.updated"), accessor: (row) => formatDate(row.updated_at) },
-            { header: "", accessor: (row) => (
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); startEdit(row); }}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); del.mutate(row.id); }}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-            )},
+            {
+              header: t("common.status"),
+              accessor: (row) => <StatusBadge status={row.status} />,
+            },
+            {
+              header: t("siteConfig.updated"),
+              accessor: (row) => formatDate(row.updated_at),
+            },
+            {
+              header: "",
+              accessor: (row) => (
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEdit(row);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      del.mutate(row.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ),
+            },
           ]}
-          data={items}
+          data={shuffledItems}
           total={total}
           page={page}
           pageSize={pageSize}
@@ -147,27 +274,60 @@ export default function FriendsPage() {
 function FeedSourcesSection({ friendId }: { friendId: string }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: feeds, isLoading } = useQuery({ queryKey: ["friend-feeds", friendId], queryFn: () => listFriendFeeds(friendId) });
+  const { data: feeds, isLoading } = useQuery({
+    queryKey: ["friend-feeds", friendId],
+    queryFn: () => listFriendFeeds(friendId),
+  });
   const [addOpen, setAddOpen] = useState(false);
   const [feedForm, setFeedForm] = useState({ feed_url: "", is_enabled: true });
   const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
 
   const createFeed = useMutation({
-    mutationFn: () => createFriendFeed(friendId, { friend_id: friendId, feed_url: feedForm.feed_url, is_enabled: feedForm.is_enabled }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); setAddOpen(false); setFeedForm({ feed_url: "", is_enabled: true }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    mutationFn: () =>
+      createFriendFeed(friendId, {
+        friend_id: friendId,
+        feed_url: feedForm.feed_url,
+        is_enabled: feedForm.is_enabled,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] });
+      setAddOpen(false);
+      setFeedForm({ feed_url: "", is_enabled: true });
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
+    },
   });
 
   const updateFeed = useMutation({
-    mutationFn: () => updateFriendFeed(editingFeedId!, { feed_url: feedForm.feed_url, is_enabled: feedForm.is_enabled }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); setEditingFeedId(null); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    mutationFn: () =>
+      updateFriendFeed(editingFeedId!, {
+        feed_url: feedForm.feed_url,
+        is_enabled: feedForm.is_enabled,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] });
+      setEditingFeedId(null);
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
+    },
   });
 
   const delFeed = useMutation({
     mutationFn: (id: string) => deleteFriendFeed(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] });
+      toast.success(t("common.operationSuccess"));
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.detail || t("common.operationFailed");
+      toast.error(msg);
+    },
   });
 
   function startEditFeed(feed: FriendFeedSource) {
@@ -178,44 +338,115 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
   return (
     <div className="border-t pt-4 mt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><Rss className="h-4 w-4" /> {t("friends.feedSources")}</h3>
-        <Button size="sm" variant="outline" onClick={() => setAddOpen(!addOpen)}><Plus className="h-3 w-3 mr-1" /> {t("friends.addFeed")}</Button>
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Rss className="h-4 w-4" /> {t("friends.feedSources")}
+        </h3>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setAddOpen(!addOpen)}
+        >
+          <Plus className="h-3 w-3 mr-1" /> {t("friends.addFeed")}
+        </Button>
       </div>
 
       {addOpen && (
         <div className="flex gap-2 mb-3 items-end">
           <div className="flex-1 space-y-1">
             <Label className="text-xs">{t("friends.feedUrl")}</Label>
-            <Input value={feedForm.feed_url} onChange={(e) => setFeedForm((p) => ({ ...p, feed_url: e.target.value }))} placeholder="https://example.com/feed.xml" />
+            <Input
+              value={feedForm.feed_url}
+              onChange={(e) =>
+                setFeedForm((p) => ({ ...p, feed_url: e.target.value }))
+              }
+              placeholder="https://example.com/feed.xml"
+            />
           </div>
           <label className="flex items-center gap-1 text-sm pb-2">
-            <input type="checkbox" checked={feedForm.is_enabled} onChange={(e) => setFeedForm((p) => ({ ...p, is_enabled: e.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={feedForm.is_enabled}
+              onChange={(e) =>
+                setFeedForm((p) => ({ ...p, is_enabled: e.target.checked }))
+              }
+            />
             {t("siteConfig.enabled")}
           </label>
-          <Button size="sm" onClick={() => createFeed.mutate()} disabled={createFeed.isPending}>{t("common.add")}</Button>
+          <Button
+            size="sm"
+            onClick={() => createFeed.mutate()}
+            disabled={createFeed.isPending}
+          >
+            {t("common.add")}
+          </Button>
         </div>
       )}
 
-      {isLoading && <p className="text-sm text-muted-foreground">{t("friends.loadingFeeds")}</p>}
-      {feeds && feeds.length === 0 && <p className="text-sm text-muted-foreground">{t("friends.noFeeds")}</p>}
+      {isLoading && (
+        <p className="text-sm text-muted-foreground">
+          {t("friends.loadingFeeds")}
+        </p>
+      )}
+      {feeds && feeds.length === 0 && (
+        <p className="text-sm text-muted-foreground">{t("friends.noFeeds")}</p>
+      )}
       {feeds?.map((feed) => (
-        <div key={feed.id} className="flex items-center gap-2 py-2 border-b last:border-0">
+        <div
+          key={feed.id}
+          className="flex items-center gap-2 py-2 border-b last:border-0"
+        >
           {editingFeedId === feed.id ? (
             <>
-              <Input className="flex-1" value={feedForm.feed_url} onChange={(e) => setFeedForm((p) => ({ ...p, feed_url: e.target.value }))} />
+              <Input
+                className="flex-1"
+                value={feedForm.feed_url}
+                onChange={(e) =>
+                  setFeedForm((p) => ({ ...p, feed_url: e.target.value }))
+                }
+              />
               <label className="flex items-center gap-1 text-sm">
-                <input type="checkbox" checked={feedForm.is_enabled} onChange={(e) => setFeedForm((p) => ({ ...p, is_enabled: e.target.checked }))} />
+                <input
+                  type="checkbox"
+                  checked={feedForm.is_enabled}
+                  onChange={(e) =>
+                    setFeedForm((p) => ({ ...p, is_enabled: e.target.checked }))
+                  }
+                />
                 {t("siteConfig.enabled")}
               </label>
-              <Button size="sm" onClick={() => updateFeed.mutate()} disabled={updateFeed.isPending}>{t("common.save")}</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditingFeedId(null)}>{t("common.cancel")}</Button>
+              <Button
+                size="sm"
+                onClick={() => updateFeed.mutate()}
+                disabled={updateFeed.isPending}
+              >
+                {t("common.save")}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditingFeedId(null)}
+              >
+                {t("common.cancel")}
+              </Button>
             </>
           ) : (
             <>
               <span className="flex-1 text-sm truncate">{feed.feed_url}</span>
               <StatusBadge status={feed.is_enabled ? "active" : "inactive"} />
-              <Button variant="ghost" size="icon" onClick={() => startEditFeed(feed)}><Pencil className="h-3 w-3" /></Button>
-              <Button variant="ghost" size="icon" onClick={() => delFeed.mutate(feed.id)}><Trash2 className="h-3 w-3" /></Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => startEditFeed(feed)}
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => delFeed.mutate(feed.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
             </>
           )}
         </div>

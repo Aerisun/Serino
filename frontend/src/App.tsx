@@ -1,7 +1,10 @@
 import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { RuntimeConfigProvider, useFeatureFlags } from "@/contexts/RuntimeConfigContext";
+import {
+  RuntimeConfigProvider,
+  useFeatureFlags,
+} from "@/contexts/RuntimeConfigContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
@@ -18,6 +21,7 @@ const Excerpts = lazy(() => import("./pages/Excerpts"));
 const Resume = lazy(() => import("./pages/Resume"));
 const Guestbook = lazy(() => import("./pages/Guestbook"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const Preview = lazy(() => import("./pages/Preview"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function AppContent() {
@@ -47,7 +51,13 @@ function AppContent() {
       <ShiroAccentController />
       {featureFlags.reading_progress && <ReadingProgress />}
       <ErrorBoundary>
-        <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" /></div>}>
+        <Suspense
+          fallback={
+            <div className="flex h-screen items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" />
+            </div>
+          }
+        >
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/posts" element={<Posts />} />
@@ -60,6 +70,7 @@ function AppContent() {
             <Route path="/resume" element={<Resume />} />
             <Route path="/guestbook" element={<Guestbook />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/preview" element={<Preview />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

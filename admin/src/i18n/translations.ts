@@ -43,7 +43,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.bulkPublish": "批量发布",
     "common.bulkArchive": "批量归档",
     "common.bulkDraft": "设为草稿",
-    "common.confirmBulkDelete": "确定要删除选中的 {count} 项吗？此操作不可撤销。",
+    "common.confirmBulkDelete":
+      "确定要删除选中的 {count} 项吗？此操作不可撤销。",
     "common.sortBy": "排序",
     "common.sortNewest": "最新优先",
     "common.sortOldest": "最早优先",
@@ -55,6 +56,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.preview": "预览",
     "common.deleteConfirm": "确认删除",
     "common.deleteConfirmDesc": "确定要删除这一项吗？此操作不可撤销。",
+    "common.optional": "可选",
 
     // nav
     "nav.dashboard": "仪表盘",
@@ -168,7 +170,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.pageCopy": "页面文案",
     "siteConfig.pageDisplay": "页面展示",
     "siteConfig.community": "评论系统",
-    "siteConfig.communityDescription": "管理 Waline 评论配置和表情/登录等开关",
+    "siteConfig.communityDescription":
+      "管理评论系统的配置、表情包、登录和审核设置",
     "siteConfig.siteName": "站点名称",
     "siteConfig.siteTitle": "站点标题",
     "siteConfig.bio": "简介",
@@ -176,7 +179,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.footerText": "页脚文字",
     "siteConfig.platform": "平台",
     "siteConfig.platformPlaceholder": "选择一个平台",
-    "siteConfig.platformHint": "选择平台后会自动匹配图标和默认显示名称，你只需要填写自己的链接。",
+    "siteConfig.platformHint":
+      "选择平台后会自动匹配图标和默认显示名称，你只需要填写自己的链接。",
     "siteConfig.platformAutoIcon": "选择平台后会自动显示对应图标",
     "siteConfig.customPlatform": "自定义",
     "siteConfig.url": "URL",
@@ -206,30 +210,33 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.commentProvider": "提供方",
     "siteConfig.commentServerUrl": "服务地址",
     "siteConfig.commentWalineAdminUrl": "Waline 后台地址",
-    "siteConfig.commentMigrationState": "迁移状态",
+    "siteConfig.commentMigrationState": "数据迁移进度",
     "siteConfig.commentMeta": "收集字段",
     "siteConfig.commentRequiredMeta": "必填字段",
     "siteConfig.commentEmojiPresets": "表情包预设",
-    "siteConfig.commentSurfaces": "评论面配置",
+    "siteConfig.commentSurfaces": "评论区配置",
     "siteConfig.commentHelperCopy": "辅助文案",
     "siteConfig.commentLoginMode": "登录模式",
-    "siteConfig.commentAvatarStrategy": "头像策略",
-    "siteConfig.commentEnableEnjoySearch": "启用 enjoy 搜索",
+    "siteConfig.commentAvatarStrategy": "默认头像样式",
+    "siteConfig.commentEnableEnjoySearch": "启用表情搜索",
     "siteConfig.commentImageUploader": "允许图片上传",
-    "siteConfig.commentOauthUrl": "OAuth 地址",
+    "siteConfig.commentOauthUrl": "第三方登录地址",
     "siteConfig.commentReadOnly": "只读",
-    "siteConfig.commentSurfacesHint": "使用 JSON 数组编辑每个评论面的 page_key、label、path 和 enabled。",
-    "siteConfig.commentHelperHint": "这段文案会在评论区中向用户展示，比如邮箱可选、头像说明、登录提示等。",
+    "siteConfig.commentSurfacesHint":
+      "编辑每个评论区的页面标识、名称、路径和启用状态。",
+    "siteConfig.commentHelperHint":
+      "这段文案会在评论区中向用户展示，比如邮箱可选、头像说明、登录提示等。",
     "siteConfig.commentSaveError": "评论系统配置保存失败，请检查表单内容。",
     "siteConfig.commentReservedTitle": "评论高级配置",
-    "siteConfig.commentReservedHint": "这些字段已经接入后端社区配置，会直接影响评论排序、审核和匿名头像库行为。",
-    "siteConfig.commentOauthProviders": "OAuth 提供方",
+    "siteConfig.commentReservedHint":
+      "这些字段已经接入后端社区配置，会直接影响评论排序、审核和匿名头像库行为。",
+    "siteConfig.commentOauthProviders": "第三方登录方式",
     "siteConfig.commentAnonymousEnabled": "允许匿名评论",
-    "siteConfig.commentModerationMode": "审核模式",
+    "siteConfig.commentModerationMode": "评论审核方式",
     "siteConfig.commentDefaultSorting": "默认排序",
-    "siteConfig.commentPageSize": "默认分页大小",
-    "siteConfig.commentAvatarPresets": "头像库预设",
-    "siteConfig.commentGuestAvatarMode": "访客头像模式",
+    "siteConfig.commentPageSize": "每页评论数",
+    "siteConfig.commentAvatarPresets": "预设头像列表",
+    "siteConfig.commentGuestAvatarMode": "访客头像来源",
     "siteConfig.commentDraftEnabled": "允许草稿",
 
     // resume
@@ -271,7 +278,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.guestbook": "留言簿",
     "moderation.source": "来源",
     "moderation.path": "路径",
-    "moderation.unifiedNote": "评论和留言簿已接入统一评论系统，审核仍在当前面板完成。",
+    "moderation.unifiedNote":
+      "评论和留言簿已接入统一评论系统，审核仍在当前面板完成。",
     "moderation.searchTitle": "搜索与筛选",
     "moderation.searchKeyword": "关键词",
     "moderation.searchAuthor": "作者",
@@ -292,7 +300,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.bulkApprove": "批量通过",
     "moderation.bulkReject": "批量拒绝",
     "moderation.bulkDelete": "批量删除",
-    "moderation.bulkNote": "当前批量操作先沿用现有单条接口逐条执行，后续可替换为后端批量接口。",
+    "moderation.bulkNote":
+      "当前批量操作先沿用现有单条接口逐条执行，后续可替换为后端批量接口。",
     "moderation.details": "详情",
     "moderation.thread": "线程",
     "moderation.detail": "详情面板",
@@ -370,7 +379,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.searchPlaceholder": "搜索占位符",
     "siteConfig.emptyMessage": "空消息",
     "siteConfig.pageSize": "每页数量",
-    "siteConfig.settingsJson": "设置 JSON",
+    "siteConfig.settingsJson": "页面高级设置",
     "siteConfig.saveCopy": "保存文案",
     "siteConfig.saveSettings": "保存设置",
     "siteConfig.noPages": "暂无页面配置。",
@@ -390,8 +399,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.confirmAction": "确认操作",
     "moderation.history": "历史",
     "moderation.currentStatus": "当前状态：",
-    "moderation.created": "创建时间：",
-    "moderation.updated": "更新时间：",
+    "moderation.updated": "最后修改",
+    "moderation.time": "时间",
 
     "resume.saveBasicsFirst": "请先保存简历基本信息，再添加技能分组。",
     "resume.saveBasicsFirstExp": "请先保存简历基本信息，再添加经历。",
@@ -452,10 +461,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "navItems.edit": "编辑导航项",
     "navItems.create": "新建导航项",
     "navItems.label": "标签",
-    "navItems.href": "链接 (href)",
-    "navItems.trigger": "触发器 (trigger)",
-    "navItems.triggerPlaceholder": "可选，如 dropdown",
-    "navItems.pageKey": "页面键 (page_key)",
+    "navItems.href": "链接地址",
+    "navItems.trigger": "触发方式",
+    "navItems.triggerPlaceholder": "可选，如：下拉菜单",
+    "navItems.pageKey": "关联页面",
     "navItems.pageKeyPlaceholder": "可选",
     "navItems.parent": "父级菜单",
     "navItems.parentNone": "无 (顶级)",
@@ -476,6 +485,26 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.featureReadingProgressDesc": "在文章页面顶部显示阅读进度",
     "siteConfig.featureSocialSharing": "社交分享",
     "siteConfig.featureSocialSharingDesc": "在文章底部显示分享按钮",
+
+    // siteConfig tabs
+    "siteConfig.tabs.profile": "个人资料",
+    "siteConfig.tabs.social": "社交链接",
+    "siteConfig.tabs.poems": "诗句",
+    "siteConfig.tabs.pages": "页面配置",
+    "siteConfig.tabs.nav": "导航菜单",
+    "siteConfig.tabs.community": "评论系统",
+
+    // siteConfig sections
+    "siteConfig.heroVideoUrl": "首页视频链接",
+    "siteConfig.basicSettings": "基本设置",
+    "siteConfig.displaySettings": "显示设置",
+    "siteConfig.advancedSettings": "高级设置",
+    "siteConfig.advancedSettingsHint":
+      "这些选项一般不需要修改，仅在有特殊需要时调整。",
+    "siteConfig.communityBasicHint":
+      "设置评论系统的基本信息，包括服务地址和登录方式。",
+    "siteConfig.communityDisplayHint":
+      "控制评论区的外观，如排序方式、每页数量和表情包。",
   },
   en: {
     // common
@@ -519,7 +548,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.bulkPublish": "Bulk publish",
     "common.bulkArchive": "Bulk archive",
     "common.bulkDraft": "Set as draft",
-    "common.confirmBulkDelete": "Are you sure you want to delete {count} selected items? This action cannot be undone.",
+    "common.confirmBulkDelete":
+      "Are you sure you want to delete {count} selected items? This action cannot be undone.",
     "common.sortBy": "Sort by",
     "common.sortNewest": "Newest first",
     "common.sortOldest": "Oldest first",
@@ -530,7 +560,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.operationFailed": "Operation failed",
     "common.preview": "Preview",
     "common.deleteConfirm": "Confirm delete",
-    "common.deleteConfirmDesc": "Are you sure you want to delete this item? This action cannot be undone.",
+    "common.deleteConfirmDesc":
+      "Are you sure you want to delete this item? This action cannot be undone.",
+    "common.optional": "optional",
 
     // nav
     "nav.dashboard": "Dashboard",
@@ -569,13 +601,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "settings.confirmPassword": "Confirm Password",
     "settings.passwordMismatch": "Passwords do not match",
     "settings.passwordTooShort": "Password must be at least 6 characters",
-    "settings.passwordChangeFailed": "Password change failed. Please check your current password.",
+    "settings.passwordChangeFailed":
+      "Password change failed. Please check your current password.",
     "settings.activeSessions": "Active Sessions",
     "settings.currentSession": "Current",
     "settings.sessionCreated": "Created",
     "settings.sessionExpires": "Expires",
     "settings.revokeSession": "Revoke Session",
-    "settings.revokeSessionDesc": "Are you sure you want to revoke this session?",
+    "settings.revokeSessionDesc":
+      "Are you sure you want to revoke this session?",
 
     // dashboard
     "dashboard.title": "Dashboard",
@@ -644,7 +678,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.pageCopy": "Page Copy",
     "siteConfig.pageDisplay": "Page Display",
     "siteConfig.community": "Comment System",
-    "siteConfig.communityDescription": "Manage Waline comment settings and toggles",
+    "siteConfig.communityDescription":
+      "Manage Waline comment settings and toggles",
     "siteConfig.siteName": "Site Name",
     "siteConfig.siteTitle": "Site Title",
     "siteConfig.bio": "Bio",
@@ -652,8 +687,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.footerText": "Footer Text",
     "siteConfig.platform": "Platform",
     "siteConfig.platformPlaceholder": "Choose a platform",
-    "siteConfig.platformHint": "Selecting a platform will auto-fill the icon and default label. You only need to provide the link.",
-    "siteConfig.platformAutoIcon": "The matching icon will appear after a platform is selected",
+    "siteConfig.platformHint":
+      "Selecting a platform will auto-fill the icon and default label. You only need to provide the link.",
+    "siteConfig.platformAutoIcon":
+      "The matching icon will appear after a platform is selected",
     "siteConfig.customPlatform": "Custom",
     "siteConfig.url": "URL",
     "siteConfig.displayText": "Display Text",
@@ -694,11 +731,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.commentImageUploader": "Allow Image Upload",
     "siteConfig.commentOauthUrl": "OAuth URL",
     "siteConfig.commentReadOnly": "Read only",
-    "siteConfig.commentSurfacesHint": "Edit each surface's page_key, label, path and enabled flag as JSON.",
-    "siteConfig.commentHelperHint": "This copy is shown in the comment area, for example email optional, avatar hint, login hint.",
-    "siteConfig.commentSaveError": "Failed to save comment system settings. Check the form content.",
+    "siteConfig.commentSurfacesHint":
+      "Edit each surface's page_key, label, path and enabled flag as JSON.",
+    "siteConfig.commentHelperHint":
+      "This copy is shown in the comment area, for example email optional, avatar hint, login hint.",
+    "siteConfig.commentSaveError":
+      "Failed to save comment system settings. Check the form content.",
     "siteConfig.commentReservedTitle": "Advanced Comment Settings",
-    "siteConfig.commentReservedHint": "These fields are now persisted to the backend community config and directly affect sorting, moderation, and anonymous avatar behavior.",
+    "siteConfig.commentReservedHint":
+      "These fields are now persisted to the backend community config and directly affect sorting, moderation, and anonymous avatar behavior.",
     "siteConfig.commentOauthProviders": "OAuth Providers",
     "siteConfig.commentAnonymousEnabled": "Allow Anonymous Comments",
     "siteConfig.commentModerationMode": "Moderation Mode",
@@ -747,7 +788,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.guestbook": "Guestbook",
     "moderation.source": "Source",
     "moderation.path": "Path",
-    "moderation.unifiedNote": "Comments and guestbook entries are handled by the unified comment system and reviewed here.",
+    "moderation.unifiedNote":
+      "Comments and guestbook entries are handled by the unified comment system and reviewed here.",
     "moderation.searchTitle": "Search & Filters",
     "moderation.searchKeyword": "Keyword",
     "moderation.searchAuthor": "Author",
@@ -768,11 +810,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.bulkApprove": "Bulk Approve",
     "moderation.bulkReject": "Bulk Reject",
     "moderation.bulkDelete": "Bulk Delete",
-    "moderation.bulkNote": "Bulk actions currently reuse the single-item APIs one by one and can later be swapped for backend batch endpoints.",
+    "moderation.bulkNote":
+      "Bulk actions currently reuse the single-item APIs one by one and can later be swapped for backend batch endpoints.",
     "moderation.details": "Details",
     "moderation.thread": "Thread",
     "moderation.detail": "Detail Panel",
-    "moderation.noSelection": "Select a comment to show its thread and detail view here.",
+    "moderation.noSelection":
+      "Select a comment to show its thread and detail view here.",
     "moderation.currentPage": "Current Page",
     "moderation.approve": "Approve",
     "moderation.reject": "Reject",
@@ -866,8 +910,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.confirmAction": "Confirm",
     "moderation.history": "History",
     "moderation.currentStatus": "Current status:",
-    "moderation.created": "Created:",
-    "moderation.updated": "Updated:",
+    "moderation.updated": "Last modified:",
+    "moderation.time": "Time",
 
     "resume.saveBasicsFirst": "Save resume basics first to add skill groups.",
     "resume.saveBasicsFirstExp": "Save resume basics first to add experiences.",
@@ -945,12 +989,35 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // feature flags
     "siteConfig.featureFlags": "Feature Toggles",
-    "siteConfig.featureFlagsDescription": "Enable or disable optional frontend features",
+    "siteConfig.featureFlagsDescription":
+      "Enable or disable optional frontend features",
     "siteConfig.featureToc": "Table of Contents",
     "siteConfig.featureTocDesc": "Show heading navigation on article pages",
     "siteConfig.featureReadingProgress": "Reading Progress",
-    "siteConfig.featureReadingProgressDesc": "Show reading progress bar at the top of articles",
+    "siteConfig.featureReadingProgressDesc":
+      "Show reading progress bar at the top of articles",
     "siteConfig.featureSocialSharing": "Social Sharing",
-    "siteConfig.featureSocialSharingDesc": "Show share buttons at the bottom of articles",
+    "siteConfig.featureSocialSharingDesc":
+      "Show share buttons at the bottom of articles",
+
+    // siteConfig tabs
+    "siteConfig.tabs.profile": "Profile",
+    "siteConfig.tabs.social": "Social Links",
+    "siteConfig.tabs.poems": "Poems",
+    "siteConfig.tabs.pages": "Pages",
+    "siteConfig.tabs.nav": "Navigation",
+    "siteConfig.tabs.community": "Comments",
+
+    // siteConfig sections
+    "siteConfig.heroVideoUrl": "Hero Video URL",
+    "siteConfig.basicSettings": "Basic Settings",
+    "siteConfig.displaySettings": "Display Settings",
+    "siteConfig.advancedSettings": "Advanced Settings",
+    "siteConfig.advancedSettingsHint":
+      "These settings rarely need changes and should only be modified when necessary.",
+    "siteConfig.communityBasicHint":
+      "Basic comment system settings including server address and login mode.",
+    "siteConfig.communityDisplayHint":
+      "Control comment display preferences like sorting, page size, and emoji.",
   },
 };
