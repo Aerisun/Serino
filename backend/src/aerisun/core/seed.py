@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 
 import bcrypt
@@ -1264,6 +1265,39 @@ def _is_empty(session: Session, model) -> bool:  # type: ignore[no-untyped-def]
     return session.scalar(select(func.count(model.id))) == 0
 
 
+def _clear_seed_data(session: Session) -> None:
+    """Delete all seed data to allow a clean reseed. Development only."""
+    _logger = logging.getLogger("aerisun.seed")
+    _logger.info("Force reseed: clearing existing seed data...")
+    for model in [
+        Comment,
+        GuestbookEntry,
+        Reaction,
+        FriendFeedItem,
+        FriendFeedSource,
+        Friend,
+        ResumeExperience,
+        ResumeSkillGroup,
+        ResumeBasics,
+        NavItem,
+        PageDisplayOption,
+        PageCopy,
+        Poem,
+        SocialLink,
+        CommunityConfig,
+        SiteProfile,
+        PostEntry,
+        DiaryEntry,
+        ThoughtEntry,
+        ExcerptEntry,
+        AdminUser,
+    ]:
+        count = session.query(model).delete()
+        if count:
+            _logger.info("  Cleared %d rows from %s", count, model.__tablename__)
+    session.flush()
+
+
 def _seed_content_entries(session: Session, model, entries: list[dict]) -> None:  # type: ignore[no-untyped-def]
     existing_slugs = set(session.scalars(select(model.slug)).all())
     missing_entries = [entry for entry in entries if entry["slug"] not in existing_slugs]
@@ -1517,11 +1551,13 @@ def _seed_dev_admin(session: Session) -> None:
     session.add(AdminUser(username="admin", password_hash=password_hash))
 
 
-def seed_reference_data() -> None:
+def seed_reference_data(*, force: bool = False) -> None:
     get_settings().ensure_directories()
     init_db()
     session = get_session_factory()()
     try:
+        if force:
+            _clear_seed_data(session)
         if _is_empty(session, SiteProfile):
             site = SiteProfile(**DEFAULT_SITE_PROFILE)
             session.add(site)

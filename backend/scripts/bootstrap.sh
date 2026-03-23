@@ -19,12 +19,39 @@ _source_if_exists "${PROJECT_DIR}/.env.${_env}"
 _source_if_exists "${PROJECT_DIR}/.env.local"
 _source_if_exists "${PROJECT_DIR}/.env.${_env}.local"
 
-python - <<'PY'
+if [[ "$_env" == "development" ]]; then
+  # Database preflight: detect schema drift and seed changes
+  PREFLIGHT_JSON=$(python - <<'PY'
+import json, os
+from pathlib import Path
 from aerisun.core.settings import get_settings
+from aerisun.core.db_preflight import run_preflight
 
+settings = get_settings()
+settings.ensure_directories()
+
+backend_dir = Path(os.environ["BACKEND_DIR"])
+result = run_preflight(
+    db_path=settings.db_path,
+    alembic_dir=backend_dir / "alembic",
+    seed_path=backend_dir / "src" / "aerisun" / "core" / "seed.py",
+)
+print(json.dumps(result))
+PY
+  )
+  echo "DB preflight: ${PREFLIGHT_JSON}"
+
+  if echo "$PREFLIGHT_JSON" | python -c "import sys,json; sys.exit(0 if json.load(sys.stdin).get('reseed') else 1)"; then
+    export AERISUN_FORCE_RESEED=true
+  fi
+else
+  python - <<'PY'
+from aerisun.core.settings import get_settings
 get_settings().ensure_directories()
 PY
+fi
 
+export BACKEND_DIR="${BACKEND_DIR}"
 uv run alembic upgrade head
 
 exec "${SCRIPT_DIR}/serve.sh"
