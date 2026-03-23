@@ -1,34 +1,55 @@
+/* ── Waline host theme overrides ── */
 .aerisun-waline-host {
+  --waline-font-size: 0.95rem;
   --waline-theme-color: hsl(var(--foreground));
   --waline-active-color: hsl(var(--foreground));
   --waline-color: hsl(var(--foreground));
   --waline-info-color: hsl(var(--foreground) / 0.56);
   --waline-bgcolor: hsl(var(--card) / 0.92);
   --waline-bgcolor-light: hsl(var(--background) / 0.82);
+  --waline-bg-color: hsl(var(--card) / 0.92);
+  --waline-bg-color-light: hsl(var(--background) / 0.82);
+  --waline-bg-color-hover: hsl(var(--foreground) / 0.06);
   --waline-border-color: hsl(var(--foreground) / 0.1);
+  --waline-disable-bg-color: hsl(var(--foreground) / 0.04);
+  --waline-disable-color: hsl(var(--foreground) / 0.3);
   --waline-code-bg-color: hsl(var(--foreground) / 0.06);
   --waline-box-shadow: 0 18px 54px hsl(var(--foreground) / 0.08);
   --waline-avatar-size: 3rem;
-  --waline-avatar-radius: 9999px;
-  --waline-font-size: 0.95rem;
+  --waline-m-avatar-size: calc(var(--waline-avatar-size) * 9 / 13);
+  --waline-avatar-radius: 50%;
+  --waline-badge-color: hsl(var(--foreground) / 0.1);
+  --waline-badge-font-size: 0.775em;
+  --waline-info-bg-color: var(--waline-bg-color-light);
+  --waline-info-font-size: 0.625em;
+  --waline-border: 1px solid var(--waline-border-color);
+  --waline-bq-color: hsl(var(--foreground) / 0.06);
   color: hsl(var(--foreground));
 }
 
+/* ── Avatar styling ── */
 .aerisun-waline-host :is(.wl-avatar, .wl-avatar img, .wl-avatar picture) {
-  border-radius: 9999px;
+  border-radius: 50%;
   box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12);
 }
 
+/* ── Glass effect on cards ── */
 .aerisun-waline-host :is(.wl-card, .wl-editor, .wl-content, .wl-panel, .wl-input-wrap, .wl-comment, .wl-item) {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
+/* ── Input / textarea fixes ── */
 .aerisun-waline-host :is(.wl-editor, .wl-input, .wl-textarea) {
-  border-radius: 1rem;
+  border-radius: 0.75rem;
 }
 
-.aerisun-waline-host :is(.wl-content, .wl-text, .wl-comment-text, .wl-item, .wl-card-item, a) {
+.aerisun-waline-host .wl-editor {
+  padding: 0.75rem 1rem;
+}
+
+/* ── Text overflow protection ── */
+.aerisun-waline-host :is(.wl-content, .wl-text, .wl-comment-text, .wl-item, .wl-card-item) {
   max-width: 100%;
 }
 
@@ -38,6 +59,86 @@
   overflow-wrap: anywhere;
 }
 
+/* ── Footer: subscription checkboxes inline ── */
+.aerisun-waline-host .wl-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aerisun-waline-host .wl-footer .wl-meta-head {
+  display: none;
+}
+
+/* ── Reaction buttons (like astro-theme-pure) ── */
+.aerisun-waline-host .wl-reaction-title,
+.aerisun-waline-host .wl-reaction-text {
+  display: none;
+}
+
+.aerisun-waline-host .wl-reaction {
+  overflow: visible;
+  margin-bottom: 0.5em;
+}
+
+.aerisun-waline-host .wl-reaction-img {
+  width: auto;
+  display: flex;
+  height: 35px;
+  align-items: center;
+  column-gap: 0.4rem;
+}
+
+.aerisun-waline-host .wl-reaction-votes {
+  position: inherit;
+  top: inherit;
+  min-width: inherit;
+  inset-inline-end: inherit;
+  display: flex;
+  font-weight: normal;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
+
+.aerisun-waline-host .wl-reaction-loading {
+  position: inherit;
+  top: inherit;
+  min-width: inherit;
+}
+
+.aerisun-waline-host .wl-reaction-item.active .wl-reaction-votes {
+  background: var(--waline-theme-color);
+  color: var(--waline-bg-color);
+}
+
+.aerisun-waline-host .wl-reaction-votes::after {
+  margin-left: 0.25em;
+  content: "Like(s)";
+  display: inline-block;
+}
+
+.aerisun-waline-host .wl-reaction img {
+  filter: invert(25%);
+}
+
+html.dark .aerisun-waline-host .wl-reaction img {
+  filter: invert(75%);
+}
+
+/* ── Per-comment action buttons (like / reply) spacing ── */
+.aerisun-waline-host .wl-comment-actions {
+  gap: 1rem;
+}
+
+.aerisun-waline-host .wl-comment-actions button {
+  margin-inline-end: 0.25rem;
+}
+
+/* ── Loading / empty states ── */
 .aerisun-waline-loading,
 .aerisun-waline-empty {
   display: grid;
@@ -50,4 +151,109 @@
   text-align: center;
   font-size: 0.9rem;
   color: hsl(var(--foreground) / 0.5);
+}
+
+/* ── Avatar trigger (clickable circle above editor) ── */
+.aerisun-avatar-trigger-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.aerisun-avatar-trigger {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 2px dashed hsl(var(--foreground) / 0.18);
+  background: hsl(var(--foreground) / 0.04);
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+
+.aerisun-avatar-trigger:hover {
+  border-color: hsl(var(--foreground) / 0.35);
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.1);
+}
+
+.aerisun-avatar-trigger img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.aerisun-avatar-trigger__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1rem;
+  color: hsl(var(--foreground) / 0.3);
+}
+
+.aerisun-avatar-trigger__hint {
+  font-size: 0.75rem;
+  color: hsl(var(--foreground) / 0.4);
+}
+
+/* ── Avatar picker popup ── */
+.aerisun-avatar-picker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  background: hsl(var(--card) / 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  box-shadow: 0 12px 40px hsl(var(--foreground) / 0.12);
+  min-width: 200px;
+  max-width: 280px;
+}
+
+.aerisun-avatar-picker__title {
+  font-size: 0.75rem;
+  color: hsl(var(--foreground) / 0.45);
+  margin-bottom: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.aerisun-avatar-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.aerisun-avatar-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: hsl(var(--foreground) / 0.04);
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  overflow: hidden;
+}
+
+.aerisun-avatar-picker__item:hover {
+  border-color: hsl(var(--foreground) / 0.25);
+  transform: scale(1.1);
+}
+
+.aerisun-avatar-picker__item img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }

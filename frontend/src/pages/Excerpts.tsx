@@ -16,6 +16,7 @@ interface Excerpt {
   content: string;
   tags: string[];
   date: string;
+  comments: number;
 }
 
 interface ExcerptsPageConfig extends BaseViewPageConfig {
@@ -31,6 +32,7 @@ const mapRemoteExcerpt = (entry: PublicContentEntry): Excerpt => {
     content: entry.body,
     tags: entry.tags,
     date: formatPublishedDate(entry.published_at) || "",
+    comments: entry.comment_count ?? 0,
   };
 };
 
@@ -303,7 +305,7 @@ const Excerpts = () => {
                   }`}
                 >
                   <MessageCircle className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
-                  {showModalComments ? "收起评论" : "查看评论"}
+                  {showModalComments ? "收起评论" : `查看评论 · ${selected.comments}`}
                 </button>
 
                 <AnimatePresence>
@@ -318,7 +320,7 @@ const Excerpts = () => {
                       <CommentSection
                         contentType="excerpts"
                         contentSlug={selected.id}
-                        hideReactions
+                        expandable={false}
                       />
                     </motion.div>
                   )}

@@ -56,4 +56,5 @@ export const apiClient = {
 };
 
 export * from "./content";
-export * from "./community";
+export * from "./activity";
+export * from "./social";

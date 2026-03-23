@@ -249,8 +249,6 @@ const DiaryDetail = () => {
             <CommentSection
               contentType="diary"
               contentSlug={entry.slug}
-              commentCount={entry.comments ?? undefined}
-              likeCount={entry.likes ?? undefined}
             />
           </>
         ) : (
