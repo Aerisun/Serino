@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from aerisun.core.db import get_session_factory
+from aerisun.domain.content.models import PostEntry
+from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.waline.service import connect_waline_db
+
 
 def test_read_pages_returns_seeded_page_copy(client) -> None:
     response = client.get("/api/v1/public/pages")
@@ -65,3 +70,38 @@ def test_public_content_includes_presentation_fields(client) -> None:
     assert len(diary) >= 7
     assert len(thoughts) >= 8
     assert len(excerpts) >= 7
+
+
+def test_public_content_stats_prefer_waline_counters(client) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        post = session.query(PostEntry).filter(PostEntry.slug == "from-zero-design-system").first()
+        assert post is not None
+        post.view_count = 1
+        session.query(Reaction).filter(
+            Reaction.content_type == "posts",
+            Reaction.content_slug == "from-zero-design-system",
+        ).delete(synchronize_session=False)
+        session.commit()
+
+    with connect_waline_db() as connection:
+        connection.execute(
+            """
+            UPDATE wl_counter
+            SET time = ?, reaction0 = ?, reaction1 = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE url = ?
+            """,
+            (4321, 7, 3, "/posts/from-zero-design-system"),
+        )
+        connection.commit()
+
+    collection = client.get("/api/v1/public/posts").json()["items"]
+    detail = client.get("/api/v1/public/posts/from-zero-design-system").json()
+    post = next(item for item in collection if item["slug"] == "from-zero-design-system")
+
+    assert post["view_count"] == 4321
+    assert post["like_count"] == 10
+    assert post["comment_count"] == 2
+    assert detail["view_count"] == 4321
+    assert detail["like_count"] == 10
+    assert detail["comment_count"] == 2

@@ -124,6 +124,7 @@ class CommunityConfig(Base, TimestampMixin):
     moderation_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="all_pending")
     default_sorting: Mapped[str] = mapped_column(String(40), nullable=False, default="latest")
     page_size: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
+    image_max_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True, default=524288)
     avatar_presets: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
     guest_avatar_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="preset")
     draft_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

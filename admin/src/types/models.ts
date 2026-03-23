@@ -263,6 +263,7 @@ export interface CommunityConfig {
   moderation_mode?: string | null;
   default_sorting?: string | null;
   page_size?: number | null;
+  image_max_bytes?: number | null;
   avatar_presets?: CommunityAvatarPreset[] | null;
   guest_avatar_mode?: string | null;
   draft_enabled?: boolean | null;
@@ -309,6 +310,7 @@ export interface CommunityConfigUpdate {
   moderation_mode?: string | null;
   default_sorting?: string | null;
   page_size?: number | null;
+  image_max_bytes?: number | null;
   avatar_presets?: CommunityAvatarPreset[] | null;
   guest_avatar_mode?: string | null;
   draft_enabled?: boolean | null;

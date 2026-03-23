@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -7,20 +9,29 @@ from starlette.responses import Response
 from aerisun.core.settings import Settings
 
 
+def _build_source_list(*sources: str) -> str:
+    return " ".join(source for source in dict.fromkeys(sources) if source)
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, settings: Settings) -> None:
         super().__init__(app)
-        waline_url = settings.waline_server_url
+        waline_url = settings.waline_server_url.strip()
+        parsed_waline_url = urlparse(waline_url)
+        waline_origin = waline_url if parsed_waline_url.scheme and parsed_waline_url.netloc else ""
+        script_sources = _build_source_list("'self'", "'unsafe-inline'", waline_origin)
+        connect_sources = _build_source_list("'self'", waline_origin)
+        frame_sources = _build_source_list("'self'", waline_origin)
         self.is_production = settings.environment == "production"
         self.csp = "; ".join(
             [
                 "default-src 'self'",
-                f"script-src 'self' 'unsafe-inline' {waline_url}",
+                f"script-src {script_sources}",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: https: blob:",
                 "font-src 'self' data:",
-                f"connect-src 'self' {waline_url}",
-                f"frame-src 'self' {waline_url}",
+                f"connect-src {connect_sources}",
+                f"frame-src {frame_sources}",
                 "object-src 'none'",
                 "base-uri 'self'",
                 "form-action 'self'",

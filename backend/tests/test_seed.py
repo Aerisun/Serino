@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
-
 from aerisun.core.db import get_session_factory
 from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import get_settings
-from aerisun.domain.engagement.models import Comment, GuestbookEntry
 from aerisun.domain.site_config.models import PageCopy
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -85,66 +82,52 @@ def test_seed_reference_data_updates_legacy_calendar_weekday_order(client) -> No
 
 
 def test_seed_reference_data_provides_comment_samples_and_is_idempotent(client) -> None:
-    session_factory = get_session_factory()
     settings = get_settings()
 
-    def snapshot() -> dict[str, object]:
-        session = session_factory()
-        try:
-            root_comment = (
-                session.query(Comment)
-                .filter(
-                    Comment.content_type == "posts",
-                    Comment.content_slug == "from-zero-design-system",
-                    Comment.parent_id.is_(None),
-                )
-                .one()
-            )
-            reply_comment = (
-                session.query(Comment)
-                .filter(
-                    Comment.content_type == "posts",
-                    Comment.content_slug == "from-zero-design-system",
-                    Comment.parent_id == root_comment.id,
-                )
-                .one()
-            )
-            return {
-                "legacy_comment_count": session.scalar(select(func.count(Comment.id))) or 0,
-                "legacy_guestbook_count": session.scalar(select(func.count(GuestbookEntry.id))) or 0,
-                "legacy_root_id": root_comment.id,
-                "legacy_root_author": root_comment.author_name,
-                "legacy_reply_author": reply_comment.author_name,
-                "legacy_reply_parent_id": reply_comment.parent_id,
-            }
-        finally:
-            session.close()
-
-    def waline_snapshot() -> dict[str, int]:
+    def waline_snapshot() -> dict[str, object]:
         with connect_waline_db(settings.waline_db_path) as connection:
             total = connection.execute("SELECT COUNT(*) FROM wl_comment").fetchone()
             approved_guestbook = connection.execute(
                 "SELECT COUNT(*) FROM wl_comment WHERE url = '/guestbook' AND status = 'approved'"
             ).fetchone()
+            root_comment = connection.execute(
+                """
+                SELECT nick, url
+                FROM wl_comment
+                WHERE url = '/posts/from-zero-design-system' AND pid IS NULL
+                ORDER BY id ASC
+                LIMIT 1
+                """
+            ).fetchone()
+            reply_comment = connection.execute(
+                """
+                SELECT nick, pid
+                FROM wl_comment
+                WHERE url = '/posts/from-zero-design-system' AND pid IS NOT NULL
+                ORDER BY id ASC
+                LIMIT 1
+                """
+            ).fetchone()
             return {
                 "waline_comment_count": int(total[0]) if total else 0,
                 "waline_guestbook_approved_count": int(approved_guestbook[0]) if approved_guestbook else 0,
+                "waline_root_author": str(root_comment["nick"]) if root_comment else "",
+                "waline_root_url": str(root_comment["url"]) if root_comment else "",
+                "waline_reply_author": str(reply_comment["nick"]) if reply_comment else "",
+                "waline_reply_has_parent": bool(reply_comment and reply_comment["pid"]),
             }
 
-    before = {**snapshot(), **waline_snapshot()}
-    root_id = before["legacy_root_id"]
+    before = waline_snapshot()
     assert before == {
-        "legacy_comment_count": 4,
-        "legacy_guestbook_count": 2,
-        "legacy_root_id": root_id,
-        "legacy_root_author": "林小北",
-        "legacy_reply_author": "Felix",
-        "legacy_reply_parent_id": root_id,
         "waline_comment_count": 6,
         "waline_guestbook_approved_count": 1,
+        "waline_root_author": "林小北",
+        "waline_root_url": "/posts/from-zero-design-system",
+        "waline_reply_author": "Felix",
+        "waline_reply_has_parent": True,
     }
 
     seed_reference_data()
 
-    after = {**snapshot(), **waline_snapshot()}
+    after = waline_snapshot()
     assert after == before

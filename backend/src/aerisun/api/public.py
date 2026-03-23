@@ -3,7 +3,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -233,6 +233,48 @@ def read_reaction(
         return read_public_reaction(session, content_type, slug, reaction_type)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+# ── Comment image upload ──────────────────────────────────────────────
+
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
+_MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB hard limit (client compresses before this)
+
+
+@router.post("/comment-image", summary="评论图片上传")
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def upload_comment_image(
+    request: Request,
+    file: UploadFile,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Accept a comment image, save to media dir, return its public URL."""
+    import hashlib
+    from pathlib import Path
+
+    if file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="不支持的图片格式")
+
+    content = file.file.read()
+    if len(content) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="图片过大，请压缩后重试")
+
+    settings = _get_settings()
+    media_dir = Path(settings.media_dir).expanduser().resolve() / "comment-images"
+    media_dir.mkdir(parents=True, exist_ok=True)
+
+    sha = hashlib.sha256(content).hexdigest()[:12]
+    ext = (file.filename or "img").rsplit(".", 1)[-1] if file.filename else "jpg"
+    filename = f"{sha}.{ext}"
+    dest = media_dir / filename
+
+    if not dest.exists():
+        with open(dest, "wb") as f:
+            f.write(content)
+
+    # Build public URL — served by Caddy / static file handler
+    url = f"/media/comment-images/{filename}"
+    return {"errno": 0, "data": {"url": url}}
 
 
 @router.get("/calendar", response_model=CalendarRead, summary="获取日历事件")

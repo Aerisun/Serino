@@ -54,4 +54,15 @@ fi
 export BACKEND_DIR="${BACKEND_DIR}"
 uv run alembic upgrade head
 
+# Ensure Waline SQLite tables exist (Waline may not auto-create them)
+uv run python - <<'PY'
+from aerisun.domain.waline.service import connect_waline_db, get_waline_db_path
+
+db_path = get_waline_db_path()
+with connect_waline_db(db_path):
+    pass
+
+print(f"Waline tables ensured in {db_path}")
+PY
+
 exec "${SCRIPT_DIR}/serve.sh"

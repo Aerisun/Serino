@@ -340,6 +340,7 @@ class CommunityConfigUpdate(BaseModel):
     moderation_mode: str | None = None
     default_sorting: str | None = None
     page_size: int | None = None
+    image_max_bytes: int | None = None
     avatar_presets: list[dict[str, Any]] | None = None
     guest_avatar_mode: str | None = None
     draft_enabled: bool | None = None
@@ -365,6 +366,7 @@ class CommunityConfigAdminRead(ModelBase):
     moderation_mode: str
     default_sorting: str
     page_size: int
+    image_max_bytes: int | None = 524288
     avatar_presets: list[dict[str, Any]]
     guest_avatar_mode: str
     draft_enabled: bool

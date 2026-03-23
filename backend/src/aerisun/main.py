@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.staticfiles import StaticFiles
 
 from aerisun.api import api_router
 from aerisun.api.admin.audit_middleware import AuditLogMiddleware
@@ -129,3 +130,8 @@ app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router)
 app.include_router(seo_router)
+
+# Serve uploaded media (comment images, etc.) as static files
+_media_dir = Path(_settings.media_dir).expanduser().resolve()
+_media_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")

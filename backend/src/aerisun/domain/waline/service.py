@@ -10,6 +10,7 @@ from pathlib import Path
 from aerisun.core.settings import get_settings
 
 WALINE_GUESTBOOK_PATH = "/guestbook"
+WALINE_REACTION_COLUMNS = tuple(f"reaction{index}" for index in range(9))
 
 
 @dataclass(slots=True)
@@ -31,6 +32,12 @@ class WalineCommentRecord:
     url: str
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass(slots=True)
+class WalineCounterStats:
+    pageview_count: int = 0
+    reaction_count: int = 0
 
 
 def get_waline_db_path() -> Path:
@@ -413,6 +420,39 @@ def count_records_by_urls(
 
         rows = connection.execute(query, params).fetchall()
         return {str(row["url"]): int(row["total"]) for row in rows}
+
+
+def get_counter_stats_by_urls(
+    *,
+    urls: list[str],
+    db_path: Path | None = None,
+) -> dict[str, WalineCounterStats]:
+    if not urls:
+        return {}
+
+    reaction_sum = " + ".join(f"COALESCE({column}, 0)" for column in WALINE_REACTION_COLUMNS)
+
+    with connect_waline_db(db_path) as connection:
+        placeholders = ",".join("?" for _ in urls)
+        rows = connection.execute(
+            f"""
+            SELECT
+                url,
+                SUM(COALESCE(time, 0)) AS pageview_count,
+                SUM({reaction_sum}) AS reaction_count
+            FROM wl_counter
+            WHERE url IN ({placeholders})
+            GROUP BY url
+            """,
+            urls,
+        ).fetchall()
+        return {
+            str(row["url"]): WalineCounterStats(
+                pageview_count=int(row["pageview_count"] or 0),
+                reaction_count=int(row["reaction_count"] or 0),
+            )
+            for row in rows
+        }
 
 
 def get_waline_record_by_id(
