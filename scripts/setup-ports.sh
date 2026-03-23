@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Find a free TCP port starting from the given number.
+# Find a free TCP port starting from the given number,
+# skipping any ports listed in the remaining arguments.
 find_free_port() {
   local port=${1:-8000}
-  while ss -tlnH "sport = :$port" | grep -q .; do
+  shift || true
+  local -A skip=()
+  for p in "$@"; do skip[$p]=1; done
+  while ss -tlnH "sport = :$port" | grep -q . || [[ -n "${skip[$port]:-}" ]]; do
     port=$((port + 1))
   done
   echo "$port"
 }
 
 BACKEND_PORT=$(find_free_port 8000)
-FRONTEND_PORT=$(find_free_port 8080)
-ADMIN_PORT=$(find_free_port 3001)
+FRONTEND_PORT=$(find_free_port 8080 "$BACKEND_PORT")
+ADMIN_PORT=$(find_free_port 3001 "$BACKEND_PORT" "$FRONTEND_PORT")
 
 ENV_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env.local"
 
@@ -21,6 +25,10 @@ cat > "$ENV_FILE" <<EOF
 AERISUN_PORT=$BACKEND_PORT
 AERISUN_FRONTEND_PORT=$FRONTEND_PORT
 AERISUN_ADMIN_PORT=$ADMIN_PORT
+AERISUN_SITE_URL=http://localhost:$FRONTEND_PORT
+VITE_FRONTEND_URL=http://localhost:$FRONTEND_PORT
+AERISUN_FRONTEND_UPSTREAM=host.docker.internal:$FRONTEND_PORT
+AERISUN_ADMIN_UPSTREAM=host.docker.internal:$ADMIN_PORT
 EOF
 
 echo "Ports → backend:$BACKEND_PORT  frontend:$FRONTEND_PORT  admin:$ADMIN_PORT"
