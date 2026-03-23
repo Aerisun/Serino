@@ -96,15 +96,17 @@ app = FastAPI(
 )
 
 _settings = get_settings()
+_dev_localhost = _settings.environment == "development" and _settings.has_only_localhost_origins()
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SecurityHeadersMiddleware, settings=_settings)
-app.add_middleware(OriginCheckMiddleware, allowed_origins=_settings.cors_origins)
+app.add_middleware(OriginCheckMiddleware, allowed_origins=_settings.cors_origins, allow_any_localhost=_dev_localhost)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_settings.cors_origins,
+    allow_origins=_settings.cors_origins if not _dev_localhost else [],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$" if _dev_localhost else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

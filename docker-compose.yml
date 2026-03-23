@@ -2,18 +2,25 @@ services:
   api:
     build:
       context: ./backend
-    env_file:
-      - .env
     environment:
-      AERISUN_HOST: ${AERISUN_HOST:-0.0.0.0}
-      AERISUN_PORT: ${AERISUN_PORT:-8000}
+      AERISUN_ENVIRONMENT: ${AERISUN_ENVIRONMENT}
+      AERISUN_HOST: ${AERISUN_HOST}
+      AERISUN_PORT: ${AERISUN_PORT}
+      AERISUN_STORE_DIR: ${AERISUN_STORE_DIR:-/srv/aerisun/store}
       AERISUN_DATA_DIR: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
       AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/store/aerisun.db}
       AERISUN_WALINE_DB_PATH: ${AERISUN_WALINE_DB_PATH:-/srv/aerisun/store/waline.db}
       AERISUN_MEDIA_DIR: ${AERISUN_MEDIA_DIR:-/srv/aerisun/store/media}
       AERISUN_SECRETS_DIR: ${AERISUN_SECRETS_DIR:-/srv/aerisun/store/secrets}
-      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL:-sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db}
-      AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL:-sftp://backup-user@backup-host:22/backup/aerisun/waline.db}
+      AERISUN_SITE_URL: ${AERISUN_SITE_URL}
+      AERISUN_WALINE_SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
+      AERISUN_CORS_ORIGINS: ${AERISUN_CORS_ORIGINS:-}
+      AERISUN_SENTRY_DSN: ${AERISUN_SENTRY_DSN:-}
+      AERISUN_SEED_REFERENCE_DATA: ${AERISUN_SEED_REFERENCE_DATA}
+      AERISUN_LOG_FORMAT: ${AERISUN_LOG_FORMAT:-auto}
+      AERISUN_LOG_LEVEL: ${AERISUN_LOG_LEVEL:-INFO}
+      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL}
+      AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
     ports:
@@ -28,18 +35,16 @@ services:
 
   waline:
     image: lizheming/waline:latest
-    env_file:
-      - .env
     environment:
-      SITE_NAME: ${AERISUN_APP_NAME:-Aerisun}
-      SITE_URL: ${AERISUN_SITE_URL:-http://localhost:5173}
-      SERVER_URL: ${AERISUN_WALINE_SERVER_URL:-http://localhost:8360}
+      SITE_NAME: ${AERISUN_APP_NAME}
+      SITE_URL: ${AERISUN_SITE_URL}
+      SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
       SQLITE_PATH: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
       SQLITE_DB: waline.db
-      JWT_TOKEN: ${WALINE_JWT_TOKEN:-change-me}
-      SECURE_DOMAINS: ${WALINE_SECURE_DOMAINS:-localhost,127.0.0.1}
-      AVATAR_PROXY: ${WALINE_AVATAR_PROXY:-https://avatar.75cdn.workers.dev}
-      GRAVATAR_STR: ${WALINE_GRAVATAR_STR:-https://seccdn.libravatar.org/avatar/{{mail|md5}}}
+      JWT_TOKEN: ${WALINE_JWT_TOKEN}
+      SECURE_DOMAINS: ${WALINE_SECURE_DOMAINS}
+      AVATAR_PROXY: ${WALINE_AVATAR_PROXY}
+      GRAVATAR_STR: ${WALINE_GRAVATAR_STR}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
     ports:
@@ -54,13 +59,11 @@ services:
 
   litestream:
     image: litestream/litestream:latest-scratch
-    env_file:
-      - .env
     environment:
       AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/store/aerisun.db}
-      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL:-sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db}
+      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL}
       AERISUN_WALINE_DB_PATH: ${AERISUN_WALINE_DB_PATH:-/srv/aerisun/store/waline.db}
-      AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL:-sftp://backup-user@backup-host:22/backup/aerisun/waline.db}
+      AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
       - ./backend/litestream.yml.template:/etc/litestream.yml:ro
@@ -85,7 +88,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      AERISUN_DOMAIN: ${AERISUN_DOMAIN:-localhost}
+      AERISUN_DOMAIN: ${AERISUN_DOMAIN}
       AERISUN_FRONTEND_UPSTREAM: ${AERISUN_FRONTEND_UPSTREAM:-host.docker.internal:8080}
       AERISUN_ADMIN_UPSTREAM: ${AERISUN_ADMIN_UPSTREAM:-host.docker.internal:3001}
     depends_on:

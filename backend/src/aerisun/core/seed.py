@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
+import bcrypt
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,7 @@ from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
+from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -1504,6 +1506,17 @@ def _seed_waline_comment_data() -> None:
         connection.commit()
 
 
+def _seed_dev_admin(session: Session) -> None:
+    """Create a default admin account in development mode (admin / admin123)."""
+    settings = get_settings()
+    if settings.environment != "development":
+        return
+    if not _is_empty(session, AdminUser):
+        return
+    password_hash = bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode()
+    session.add(AdminUser(username="admin", password_hash=password_hash))
+
+
 def seed_reference_data() -> None:
     get_settings().ensure_directories()
     init_db()
@@ -1577,6 +1590,7 @@ def seed_reference_data() -> None:
         _seed_engagement_data(session)
         _seed_legacy_guestbook_data(session)
         _seed_legacy_comment_data(session)
+        _seed_dev_admin(session)
         session.commit()
     finally:
         session.close()

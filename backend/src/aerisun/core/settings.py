@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -10,6 +11,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Use absolute path WITHOUT resolving symlinks so each git worktree gets its own .store/ directory instead of sharing the main branch's.
 BACKEND_ROOT = Path(__file__).absolute().parents[3]
 PROJECT_ROOT = BACKEND_ROOT.parent
+
+
+def _resolve_env_files() -> tuple[Path, ...]:
+    """Build the env-file loading chain (later overrides earlier).
+
+    Order: .env → .env.{env} → .env.local → .env.{env}.local
+    Mirrors Vite's native ``loadEnv`` resolution.
+    """
+    env = os.environ.get("AERISUN_ENVIRONMENT", "development")
+    files: list[Path] = [PROJECT_ROOT / ".env"]
+    for name in (f".env.{env}", ".env.local", f".env.{env}.local"):
+        p = PROJECT_ROOT / name
+        if p.exists():
+            files.append(p)
+    return tuple(files)
+
 
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -30,7 +47,7 @@ DEFAULT_CORS_ORIGINS = [
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="AERISUN_",
-        env_file=".env",
+        env_file=_resolve_env_files(),
         extra="ignore",
     )
 

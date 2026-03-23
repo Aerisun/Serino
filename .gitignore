@@ -33,3 +33,7 @@
 /.claude
 /.codex
 /.playwright-cli
+
+# Local env overrides (worktree-specific ports)
+.env.local
+.env.*.local
