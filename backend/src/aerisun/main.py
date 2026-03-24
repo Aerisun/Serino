@@ -62,6 +62,7 @@ async def lifespan(app: FastAPI):
         )
 
     run_database_migrations()
+
     if settings.seed_reference_data:
         force_reseed = os.environ.get("AERISUN_FORCE_RESEED", "").lower() in ("true", "1")
         seed_reference_data(force=force_reseed)
@@ -74,6 +75,7 @@ async def lifespan(app: FastAPI):
                 settings.db_path,
                 compute_seed_fingerprint(seed_path),
             )
+
     task = asyncio.create_task(cleanup_expired_sessions())
 
     # Start feed crawler scheduler
