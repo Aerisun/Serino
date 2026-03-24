@@ -1,6 +1,10 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useMemo, useRef, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  PREVIEW_DATA_MESSAGE,
+  isPreviewRequestMessage,
+} from "@serino/utils";
 import {
   useGetPosts,
   useCreatePosts,
@@ -135,19 +139,101 @@ export default function PostEditPage() {
   };
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const previewWindowRef = useRef<Window | null>(null);
 
   const frontendUrl =
     import.meta.env.VITE_FRONTEND_URL || "http://localhost:8080";
-  const openPreview = () => {
-    const storageKey = `aerisun-preview-${id ?? "new"}`;
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({ type: "posts", ...form }),
+  const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
+  const storageKey = `aerisun-preview-${id ?? "new"}`;
+  const previewPayload = useMemo(
+    () => ({ type: "posts" as const, ...form }),
+    [form],
+  );
+
+  useEffect(() => {
+    if (!previewOpen) return;
+
+    const previewWindow = previewWindowRef.current;
+    if (!previewWindow || previewWindow.closed) {
+      setPreviewOpen(false);
+      return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+    previewWindow.postMessage(
+      {
+        type: PREVIEW_DATA_MESSAGE,
+        storageKey,
+        payload: previewPayload,
+      },
+      frontendOrigin,
     );
-    window.open(
+  }, [form, frontendOrigin, previewOpen, previewPayload, storageKey]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== frontendOrigin) return;
+      if (!isPreviewRequestMessage(event.data)) return;
+      if (event.data.storageKey !== storageKey) return;
+      if (!event.source) return;
+
+      localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+      (event.source as WindowProxy).postMessage(
+        {
+          type: PREVIEW_DATA_MESSAGE,
+          storageKey,
+          payload: previewPayload,
+        },
+        event.origin,
+      );
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [frontendOrigin, previewPayload, storageKey]);
+
+  const openPreview = () => {
+    const existingWindow = previewWindowRef.current;
+    if (existingWindow && !existingWindow.closed) {
+      localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+      existingWindow.postMessage(
+        {
+          type: PREVIEW_DATA_MESSAGE,
+          storageKey,
+          payload: previewPayload,
+        },
+        frontendOrigin,
+      );
+      existingWindow.focus();
+      setPreviewOpen(true);
+      return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+    const previewWindow = window.open(
       `${frontendUrl}/preview?storageKey=${encodeURIComponent(storageKey)}`,
       "_blank",
     );
+    previewWindowRef.current = previewWindow;
+    setPreviewOpen(Boolean(previewWindow));
+
+    if (previewWindow) {
+      window.setTimeout(() => {
+        if (previewWindow.closed) {
+          setPreviewOpen(false);
+          return;
+        }
+
+        previewWindow.postMessage(
+          {
+            type: PREVIEW_DATA_MESSAGE,
+            storageKey,
+            payload: previewPayload,
+          },
+          frontendOrigin,
+        );
+      }, 250);
+    }
   };
 
   const setField = (key: string, value: any) =>
