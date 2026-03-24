@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@serino/theme";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
   SHIRO_ACCENT_PALETTES,

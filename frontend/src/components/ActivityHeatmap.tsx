@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from "react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@serino/theme";
 import {
   fetchActivityHeatmap,
   type PublicActivityHeatmapStats,

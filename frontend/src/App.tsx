@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@serino/theme";
 import {
   RuntimeConfigProvider,
   useFeatureFlags,
