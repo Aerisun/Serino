@@ -31,6 +31,7 @@ from .schemas import (
     BackupSnapshotRead,
     EnhancedDashboardStats,
     MonthlyCount,
+    PaginatedResponse,
     RecentContentItem,
     SystemInfo,
 )
@@ -128,7 +129,7 @@ def delete_api_key(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/audit-logs", response_model=dict, summary="获取审计日志")
+@router.get("/audit-logs", response_model=PaginatedResponse[AuditLogRead], summary="获取审计日志")
 def list_audit_logs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),

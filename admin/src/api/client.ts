@@ -3,7 +3,7 @@ import axios from "axios";
 const loginPath = new URL("login", window.location.origin + import.meta.env.BASE_URL).pathname;
 
 const client = axios.create({
-  baseURL: "/api/v1/admin",
+  baseURL: "",
 });
 
 client.interceptors.request.use((config) => {

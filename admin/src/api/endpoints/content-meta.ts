@@ -11,11 +11,11 @@ export interface CategoryInfo {
 }
 
 export async function listTags(): Promise<TagInfo[]> {
-  const res = await client.get<TagInfo[]>("/content/tags");
+  const res = await client.get<TagInfo[]>("/api/v1/admin/content/tags");
   return res.data;
 }
 
 export async function listCategories(): Promise<CategoryInfo[]> {
-  const res = await client.get<CategoryInfo[]>("/content/categories");
+  const res = await client.get<CategoryInfo[]>("/api/v1/admin/content/categories");
   return res.data;
 }

@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
 
 from .deps import get_current_admin
-from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest
+from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest, PaginatedResponse
 
 # Columns that the list endpoint is allowed to sort by.
 _ALLOWED_SORT_COLUMNS = {
@@ -39,13 +39,15 @@ def build_crud_router(
     """Factory that returns a full CRUD router for a given SQLAlchemy model."""
 
     router = APIRouter(prefix=prefix, tags=[tag])
+    # Derive a clean resource name for unique operation IDs (e.g. "/posts" -> "posts")
+    resource = prefix.strip("/").replace("/", "_")
 
     def scoped_query(session: Session) -> SAQuery[Any]:
         if base_query_factory is None:
             return session.query(model)
         return base_query_factory(session)
 
-    @router.get("/", response_model=dict, summary=f"获取{tag}列表")
+    @router.get("/", response_model=PaginatedResponse[read_schema], summary=f"获取{tag}列表", operation_id=f"list_{resource}")
     def list_items(
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=20, ge=1, le=100),
@@ -102,6 +104,7 @@ def build_crud_router(
         response_model=read_schema,
         status_code=status.HTTP_201_CREATED,
         summary=f"创建{tag}",
+        operation_id=f"create_{resource}",
     )
     def create_item(
         payload: create_schema,  # type: ignore[valid-type]
@@ -118,7 +121,7 @@ def build_crud_router(
         session.refresh(obj)
         return read_schema.model_validate(obj)
 
-    @router.get("/{item_id}", response_model=read_schema, summary=f"获取单条{tag}")
+    @router.get("/{item_id}", response_model=read_schema, summary=f"获取单条{tag}", operation_id=f"get_{resource}")
     def get_item(
         item_id: str,
         _admin: AdminUser = Depends(get_current_admin),
@@ -130,7 +133,7 @@ def build_crud_router(
             raise HTTPException(status_code=404, detail="Not found")
         return read_schema.model_validate(obj)
 
-    @router.put("/{item_id}", response_model=read_schema, summary=f"更新{tag}")
+    @router.put("/{item_id}", response_model=read_schema, summary=f"更新{tag}", operation_id=f"update_{resource}")
     def update_item(
         item_id: str,
         payload: update_schema,  # type: ignore[valid-type]
@@ -148,7 +151,7 @@ def build_crud_router(
         session.refresh(obj)
         return read_schema.model_validate(obj)
 
-    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}")
+    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}", operation_id=f"delete_{resource}")
     def delete_item(
         item_id: str,
         _admin: AdminUser = Depends(get_current_admin),
@@ -163,7 +166,7 @@ def build_crud_router(
 
     # --- Bulk operations ---
 
-    @router.post("/bulk-delete", response_model=BulkActionResponse, summary=f"批量删除{tag}")
+    @router.post("/bulk-delete", response_model=BulkActionResponse, summary=f"批量删除{tag}", operation_id=f"bulk_delete_{resource}")
     def bulk_delete(
         payload: BulkDeleteRequest,
         _admin: AdminUser = Depends(get_current_admin),
@@ -178,7 +181,7 @@ def build_crud_router(
         session.commit()
         return {"affected": affected}
 
-    @router.post("/bulk-status", response_model=BulkActionResponse, summary=f"批量更新{tag}状态")
+    @router.post("/bulk-status", response_model=BulkActionResponse, summary=f"批量更新{tag}状态", operation_id=f"bulk_status_{resource}")
     def bulk_status(
         payload: BulkStatusRequest,
         _admin: AdminUser = Depends(get_current_admin),

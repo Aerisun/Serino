@@ -12,12 +12,12 @@ from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.models import Asset
 
 from .deps import get_current_admin
-from .schemas import AssetAdminRead, BulkActionResponse, BulkDeleteRequest
+from .schemas import AssetAdminRead, BulkActionResponse, BulkDeleteRequest, PaginatedResponse
 
 router = APIRouter(prefix="/assets", tags=["admin-assets"])
 
 
-@router.get("/", response_model=dict, summary="获取资源列表")
+@router.get("/", response_model=PaginatedResponse[AssetAdminRead], summary="获取资源列表")
 def list_assets(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),

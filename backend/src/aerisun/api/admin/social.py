@@ -12,6 +12,8 @@ from aerisun.domain.social.models import Friend, FriendFeedSource
 from .content import build_crud_router
 from .deps import get_current_admin
 from .schemas import (
+    FeedCrawlAllResultRead,
+    FeedCrawlResultRead,
     FriendAdminRead,
     FriendCreate,
     FriendFeedSourceAdminRead,
@@ -37,7 +39,7 @@ router.include_router(friends_router)
 # --- Feed crawl triggers ---
 
 
-@router.post("/feeds/crawl", summary="手动触发全量抓取")
+@router.post("/feeds/crawl", response_model=FeedCrawlAllResultRead, summary="手动触发全量抓取")
 def trigger_feed_crawl(
     _admin: AdminUser = Depends(get_current_admin),
 ) -> Any:
@@ -47,7 +49,7 @@ def trigger_feed_crawl(
     return crawl_all_feeds()
 
 
-@router.post("/feeds/{feed_id}/crawl", summary="手动触发单源抓取")
+@router.post("/feeds/{feed_id}/crawl", response_model=FeedCrawlResultRead, summary="手动触发单源抓取")
 def trigger_single_feed_crawl(
     feed_id: str,
     _admin: AdminUser = Depends(get_current_admin),
