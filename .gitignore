@@ -1,7 +1,7 @@
-# Frontend dependencies and build output
-/frontend/node_modules/
-/frontend/dist/
-/frontend/.vite/
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
 
 # Local environment files
 /frontend/.env
@@ -38,3 +38,4 @@
 # Local env overrides (worktree-specific ports)
 .env.local
 .env.*.local
+
