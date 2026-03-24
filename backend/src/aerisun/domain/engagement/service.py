@@ -270,3 +270,160 @@ def read_public_reaction(
         reaction_type=reaction_type,
         total=total,
     )
+
+
+# ---------------------------------------------------------------------------
+# Admin moderation functions
+# ---------------------------------------------------------------------------
+
+
+def _comment_admin_read_from_waline(record):
+    """Map a Waline record to CommentAdminRead schema."""
+    from aerisun.domain.ops.schemas import CommentAdminRead
+    from aerisun.domain.waline.service import parse_comment_path
+
+    content_type, content_slug = parse_comment_path(record.url)
+    return CommentAdminRead(
+        id=str(record.id),
+        content_type=content_type,
+        content_slug=content_slug,
+        parent_id=str(record.pid) if record.pid is not None else None,
+        author_name=record.nick or "访客",
+        author_email=record.mail,
+        body=record.comment,
+        status=record.status,
+        created_at=record.inserted_at,
+        updated_at=record.updated_at,
+    )
+
+
+def _guestbook_admin_read_from_waline(record):
+    """Map a Waline record to GuestbookAdminRead schema."""
+    from aerisun.domain.ops.schemas import GuestbookAdminRead
+
+    return GuestbookAdminRead(
+        id=str(record.id),
+        name=record.nick or "访客",
+        email=record.mail,
+        website=record.link,
+        body=record.comment,
+        status=record.status,
+        created_at=record.inserted_at,
+        updated_at=record.updated_at,
+    )
+
+
+def list_admin_comments(
+    page: int = 1,
+    page_size: int = 20,
+    status: str | None = None,
+    path: str | None = None,
+    surface: str | None = None,
+    keyword: str | None = None,
+    author: str | None = None,
+    email: str | None = None,
+    sort: str | None = None,
+) -> dict:
+    from aerisun.domain.waline.service import list_waline_records
+
+    items, total = list_waline_records(
+        page=page,
+        page_size=page_size,
+        status=status,
+        path=path,
+        surface=surface,
+        keyword=keyword,
+        author=author,
+        email=email,
+        sort=sort,
+    )
+    return {
+        "items": [_comment_admin_read_from_waline(item) for item in items],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def list_admin_guestbook(
+    page: int = 1,
+    page_size: int = 20,
+    status: str | None = None,
+    path: str | None = None,
+    keyword: str | None = None,
+    author: str | None = None,
+    email: str | None = None,
+    sort: str | None = None,
+) -> dict:
+    from aerisun.domain.waline.service import list_guestbook_records as _list_gb
+
+    items, total = _list_gb(
+        page=page,
+        page_size=page_size,
+        status=status,
+        path=path,
+        keyword=keyword,
+        author=author,
+        email=email,
+        sort=sort,
+    )
+    return {
+        "items": [_guestbook_admin_read_from_waline(item) for item in items],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def moderate_comment(session: Session, comment_id: int, action: str, reason: str | None = None):
+    """Moderate a comment. Returns CommentAdminRead or None for delete. Raises LookupError/ValueError."""
+    from aerisun.domain.ops.models import ModerationRecord
+    from aerisun.domain.waline.service import moderate_waline_record
+
+    if action not in {"approve", "reject", "delete"}:
+        raise ValueError("Invalid action")
+
+    result = moderate_waline_record(record_id=comment_id, action=action)
+
+    if result is None:
+        raise LookupError("Comment not found")
+
+    record = ModerationRecord(
+        target_type="comment",
+        target_id=str(comment_id),
+        action=action,
+        reason=reason,
+    )
+    session.add(record)
+    session.commit()
+
+    if action == "delete":
+        return None
+    return _comment_admin_read_from_waline(result)
+
+
+def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reason: str | None = None):
+    """Moderate a guestbook entry. Returns GuestbookAdminRead or None for delete. Raises LookupError/ValueError."""
+    from aerisun.domain.ops.models import ModerationRecord
+    from aerisun.domain.waline.service import moderate_waline_record
+
+    if action not in {"approve", "reject", "delete"}:
+        raise ValueError("Invalid action")
+
+    result = moderate_waline_record(record_id=entry_id, action=action)
+
+    if result is None:
+        raise LookupError("Guestbook entry not found")
+
+    record = ModerationRecord(
+        target_type="guestbook",
+        target_id=str(entry_id),
+        action=action,
+        reason=reason,
+    )
+    session.add(record)
+    session.commit()
+
+    if action == "delete":
+        return None
+    return _guestbook_admin_read_from_waline(result)
