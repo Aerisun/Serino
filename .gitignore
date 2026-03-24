@@ -26,6 +26,7 @@
 
 # Unified data store
 /.store
+/.dev
 
 # vibe coding
 /temp

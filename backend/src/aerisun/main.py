@@ -16,17 +16,13 @@ from aerisun.api import api_router
 from aerisun.api.admin.audit_middleware import AuditLogMiddleware
 from aerisun.api.seo import router as seo_router
 from aerisun.core.csrf import OriginCheckMiddleware
-from aerisun.core.db import run_database_migrations
 from aerisun.core.logging import RequestIDMiddleware, setup_logging
 from aerisun.core.rate_limit import limiter
 from aerisun.core.security_headers import SecurityHeadersMiddleware
-from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import Settings, get_settings
 from aerisun.core.tasks import cleanup_expired_sessions
 
 logger = logging.getLogger("aerisun.startup")
-
-BACKEND_ROOT = Path(__file__).absolute().parents[2]
 
 
 def _check_insecure_defaults(settings: Settings) -> None:
@@ -38,6 +34,8 @@ def _check_insecure_defaults(settings: Settings) -> None:
     if not issues:
         return
     msg = f"SECURITY: insecure defaults detected: {', '.join(issues)}. Update them before deploying."
+    if settings.environment == "development":
+        return
     if settings.environment == "production":
         logger.critical(msg)
         raise SystemExit(msg)
@@ -60,21 +58,6 @@ async def lifespan(app: FastAPI):
             traces_sample_rate=settings.sentry_traces_sample_rate,
             send_default_pii=False,
         )
-
-    run_database_migrations()
-
-    if settings.seed_reference_data:
-        force_reseed = os.environ.get("AERISUN_FORCE_RESEED", "").lower() in ("true", "1")
-        seed_reference_data(force=force_reseed)
-    if settings.environment == "development":
-        from aerisun.core.db_preflight import compute_seed_fingerprint, store_seed_fingerprint
-
-        seed_path = BACKEND_ROOT / "src" / "aerisun" / "core" / "seed.py"
-        if seed_path.exists():
-            store_seed_fingerprint(
-                settings.db_path,
-                compute_seed_fingerprint(seed_path),
-            )
 
     task = asyncio.create_task(cleanup_expired_sessions())
 

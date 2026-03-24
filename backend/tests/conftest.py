@@ -22,7 +22,6 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("AERISUN_SECRETS_DIR", str(secrets_dir))
     monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
-    monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
     monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
 
     from aerisun.core.db import get_engine, get_session_factory
@@ -34,6 +33,10 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     get_settings.cache_clear()
     get_engine.cache_clear()
     get_session_factory.cache_clear()
+
+    from aerisun.core.seed import seed_reference_data
+
+    seed_reference_data()
 
     from aerisun.main import app
 
@@ -98,7 +101,6 @@ def seeded_session(tmp_path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AERISUN_SECRETS_DIR", str(secrets_dir))
     monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
-    monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
     monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
 
     from aerisun.core.db import get_engine, get_session_factory

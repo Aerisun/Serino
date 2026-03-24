@@ -1,12 +1,15 @@
-.PHONY: dev docker-dev docker-prod setup-ports
+.PHONY: dev dev-smoke dev-stop docker-dev docker-prod setup-ports
 
 # ── 本地开发（不走 Docker）──────────────────────────────
-dev: setup-ports
-	@echo "Starting backend + frontend + admin..."
-	AERISUN_ENVIRONMENT=development bash backend/scripts/bootstrap.sh &
-	cd frontend && npx vite --mode development &
-	cd admin && npx vite --mode development &
-	@wait
+dev: 
+	@bash ./scripts/setup-ports.sh
+	@bash ./scripts/dev-start.sh
+
+dev-smoke:
+	@bash ./scripts/dev-smoke.sh
+
+dev-stop:
+	@bash ./scripts/dev-stop.sh
 
 # ── Docker 开发 ─────────────────────────────────────────
 docker-dev:

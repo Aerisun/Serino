@@ -16,10 +16,10 @@ def rate_limited_client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[T
     monkeypatch.setenv("AERISUN_SECRETS_DIR", str(store_dir / "secrets"))
     monkeypatch.setenv("AERISUN_DB_PATH", str(store_dir / "aerisun.db"))
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(store_dir / "waline.db"))
-    monkeypatch.setenv("AERISUN_SEED_REFERENCE_DATA", "true")
 
     from aerisun.core.db import get_engine, get_session_factory
     from aerisun.core.rate_limit import limiter
+    from aerisun.core.seed import seed_reference_data
     from aerisun.core.settings import get_settings
 
     limiter.enabled = True
@@ -28,6 +28,8 @@ def rate_limited_client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[T
     get_settings.cache_clear()
     get_engine.cache_clear()
     get_session_factory.cache_clear()
+
+    seed_reference_data()
 
     from aerisun.main import app
 

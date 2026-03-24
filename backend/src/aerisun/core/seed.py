@@ -573,7 +573,7 @@ DEFAULT_POSTS = [
         "slug": "framer-motion-page-transitions",
         "title": "用 Framer Motion 做有质感的页面过渡",
         "summary": "动画不该是装饰，它是信息层级的一部分。分享几个常用过渡模式和背后的判断。",
-        "body": '页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，让视线知道自己正在从哪里离开、要往哪里抵达。',
+        "body": "页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，让视线知道自己正在从哪里离开、要往哪里抵达。",
         "tags": ["animation", "react"],
         "status": "published",
         "visibility": "public",
@@ -845,7 +845,7 @@ DEFAULT_EXCERPTS = [
         "slug": "poetry-and-interface",
         "title": "界面也需要一点诗意",
         "summary": "不是为了装饰，而是为了让理性之外还留一点呼吸。",
-        "body": '当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，它是让系统从“可用”转向“愿意停留”的那一层温度。',
+        "body": "当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，它是让系统从“可用”转向“愿意停留”的那一层温度。",
         "tags": ["reading", "interface"],
         "status": "published",
         "visibility": "public",
@@ -1042,7 +1042,7 @@ DEFAULT_FRIEND_FEED_SOURCES = [
 DEFAULT_FRIEND_FEED_ITEMS = [
     {
         "friend_name": "Miku's Blog",
-        "title": '“糖”',
+        "title": "“糖”",
         "url": "https://miku.example.com/posts/candy",
         "summary": "一篇关于日常感受的短文。",
         "published_at": datetime(2026, 3, 16, 8, 30, tzinfo=UTC),
@@ -1262,7 +1262,7 @@ DEFAULT_WALINE_COMMENTS = [
         "nick": "Felix",
         "mail": None,
         "link": None,
-        "comment": '谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。',
+        "comment": "谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。",
         "status": "approved",
         "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
         "parent_key": "waline-post-root",
@@ -1284,7 +1284,7 @@ DEFAULT_WALINE_COMMENTS = [
         "nick": "纸鹤",
         "mail": None,
         "link": None,
-        "comment": '这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。',
+        "comment": "这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。",
         "status": "approved",
         "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
         "parent_key": None,
@@ -1589,6 +1589,16 @@ def _seed_legacy_comment_data(session: Session) -> None:
         inserted_ids[str(item["key"])] = comment.id
 
 
+def _clear_waline_seed_data() -> None:
+    _logger = logging.getLogger("aerisun.seed")
+    _logger.info("Force reseed: clearing existing Waline seed data...")
+    with connect_waline_db() as connection:
+        connection.execute("DELETE FROM wl_comment")
+        connection.execute("DELETE FROM wl_counter")
+        connection.execute("DELETE FROM sqlite_sequence WHERE name IN ('wl_comment', 'wl_counter')")
+        connection.commit()
+
+
 def _insert_waline_seed_comment(connection, item: dict[str, object], inserted_ids: dict[str, int]) -> int:  # type: ignore[no-untyped-def]
     parent_key = item.get("parent_key")
     parent_id = inserted_ids.get(str(parent_key)) if parent_key else None
@@ -1680,6 +1690,7 @@ def seed_reference_data(*, force: bool = False) -> None:
     try:
         if force:
             _clear_seed_data(session)
+            _clear_waline_seed_data()
         if _is_empty(session, SiteProfile):
             site = SiteProfile(**DEFAULT_SITE_PROFILE)
             session.add(site)

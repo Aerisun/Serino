@@ -131,3 +131,25 @@ def test_seed_reference_data_provides_comment_samples_and_is_idempotent(client) 
 
     after = waline_snapshot()
     assert after == before
+
+
+def test_seed_reference_data_force_reseeds_waline_rows(client) -> None:
+    settings = get_settings()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        connection.execute("DELETE FROM wl_counter")
+        connection.execute(
+            "INSERT INTO wl_comment (comment, nick, status, url) VALUES (?, ?, ?, ?)",
+            ("temporary comment", "Temp", "approved", "/temporary"),
+        )
+        connection.commit()
+
+    seed_reference_data(force=True)
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        total = connection.execute("SELECT COUNT(*) FROM wl_comment").fetchone()
+        temp = connection.execute("SELECT COUNT(*) FROM wl_comment WHERE url = '/temporary'").fetchone()
+
+    assert int(total[0]) == 6
+    assert int(temp[0]) == 0

@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => {
     base: "/admin/",
     server: {
       port: adminPort,
-      open: "/admin/",
       proxy: {
         "/api": {
           target: `http://localhost:${backendPort}`,

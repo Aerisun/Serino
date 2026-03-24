@@ -1,8 +1,6 @@
-"""Database preflight check for development environments.
+"""开发环境数据库预检。
 
-Detects schema drift (DB version from another branch) and seed data
-changes, so ``bootstrap.sh`` can decide whether to recreate the
-database or force a reseed before starting the server.
+检测数据库版本漂移和种子数据变化，供 bootstrap.sh 判断是否重建数据库或重新灌种子。
 """
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ logger = logging.getLogger("aerisun.db_preflight")
 
 
 def get_known_revisions(alembic_versions_dir: Path) -> set[str]:
-    """Collect all Alembic revision IDs present in the current branch."""
+    """收集当前分支里的 Alembic 迁移版本。"""
     revisions: set[str] = set()
     for py_file in alembic_versions_dir.glob("*.py"):
         for line in py_file.read_text(encoding="utf-8").splitlines():
@@ -36,7 +34,7 @@ def get_known_revisions(alembic_versions_dir: Path) -> set[str]:
 
 
 def get_db_revision(db_path: Path) -> str | None:
-    """Read the current Alembic revision from an existing SQLite DB."""
+    """读取现有 SQLite 数据库的当前 Alembic 版本。"""
     if not db_path.exists():
         return None
     conn = sqlite3.connect(str(db_path))
@@ -51,13 +49,13 @@ def get_db_revision(db_path: Path) -> str | None:
 
 
 def compute_seed_fingerprint(seed_py_path: Path) -> str:
-    """SHA-256 hash (first 16 hex chars) of the seed module file."""
+    """计算 seed 文件的指纹，取 SHA-256 前 16 位。"""
     content = seed_py_path.read_bytes()
     return hashlib.sha256(content).hexdigest()[:16]
 
 
 def get_stored_seed_fingerprint(db_path: Path) -> str | None:
-    """Read the seed fingerprint from ``_aerisun_meta`` (if it exists)."""
+    """读取数据库里保存的种子指纹。"""
     if not db_path.exists():
         return None
     conn = sqlite3.connect(str(db_path))
@@ -72,7 +70,7 @@ def get_stored_seed_fingerprint(db_path: Path) -> str | None:
 
 
 def store_seed_fingerprint(db_path: Path, fingerprint: str) -> None:
-    """Persist the seed fingerprint into ``_aerisun_meta``."""
+    """把种子指纹写入 _aerisun_meta。"""
     conn = sqlite3.connect(str(db_path))
     try:
         conn.execute("CREATE TABLE IF NOT EXISTS _aerisun_meta (key TEXT PRIMARY KEY, value TEXT)")
@@ -95,39 +93,34 @@ def run_preflight(
     alembic_dir: Path,
     seed_path: Path,
 ) -> dict[str, object]:
-    """Check DB compatibility with the current branch.
+    """检查数据库是否和当前分支兼容。
 
-    Returns
-    -------
-    dict with keys:
-        action   – ``"ok"`` or ``"recreate"``
-        reseed   – ``True`` if seed data should be refreshed
-        reason   – human-readable explanation
+    返回值包含：
+        action："ok" 或 "recreate"
+        reseed：是否需要重新灌种子
+        reason：原因说明
     """
     known = get_known_revisions(alembic_dir / "versions")
     current_rev = get_db_revision(db_path)
     seed_fp = compute_seed_fingerprint(seed_path)
     stored_fp = get_stored_seed_fingerprint(db_path)
 
-    # Case 1: no database yet
+    # 情况 1：还没有数据库。
     if current_rev is None:
-        logger.info("No existing database; will create fresh.")
-        return {"action": "ok", "reseed": True, "reason": "fresh database"}
+        logger.info("当前没有数据库，将创建新库。")
+        return {"action": "ok", "reseed": True, "reason": "当前没有数据库"}
 
-    # Case 2: DB revision matches current branch
+    # 情况 2：数据库版本和当前分支兼容。
     if current_rev in known:
         reseed = stored_fp != seed_fp
         if reseed:
-            logger.info(
-                "Seed definition changed (%s → %s); will reseed.",
-                stored_fp,
-                seed_fp,
-            )
-        return {"action": "ok", "reseed": reseed, "reason": "revision compatible"}
+            logger.info("种子定义已变化：%s -> %s，将重新灌种子。", stored_fp, seed_fp)
+            return {"action": "ok", "reseed": True, "reason": "数据库版本兼容，但种子已变化"}
+        return {"action": "ok", "reseed": False, "reason": "数据库版本兼容，种子匹配"}
 
-    # Case 3: DB revision not in current branch – delete and recreate
+    # 情况 3：数据库来自别的分支，直接删库重建。
     logger.warning(
-        "DB at revision '%s' not found in current branch migrations %s. Deleting database to recreate.",
+        "数据库版本 %s 不在当前分支的迁移列表中：%s，准备删除并重建。",
         current_rev,
         sorted(known),
     )
@@ -137,4 +130,4 @@ def run_preflight(
         if wal.exists():
             wal.unlink()
 
-    return {"action": "recreate", "reseed": True, "reason": f"revision '{current_rev}' not in branch"}
+    return {"action": "recreate", "reseed": True, "reason": "数据库版本不兼容，已重建"}
