@@ -29,7 +29,7 @@ import {
   UserCog,
   Info,
 } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
 
 const navGroups = [

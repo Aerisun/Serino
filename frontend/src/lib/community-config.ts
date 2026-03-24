@@ -1,37 +1,17 @@
 import { apiClient } from "@/lib/api";
+import type {
+  CommunitySurface,
+  CommunityCommentSort,
+  WalineSearchImage,
+  WalineSearchOptions,
+  WalineEmojiPreset,
+  AvatarPreset,
+} from "@serino/types";
+
+export type { CommunitySurface, CommunityCommentSort, WalineSearchImage, WalineSearchOptions, WalineEmojiPreset, AvatarPreset };
 
 /** Default max image size in bytes before compression kicks in (512 KB) */
 const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;
-
-export type CommunitySurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
-export type CommunityCommentSort = "latest" | "oldest" | "hottest";
-
-export type WalineSearchImage = {
-  src: string;
-  title?: string;
-  preview?: string;
-};
-
-export interface WalineSearchOptions {
-  search: (word: string) => Promise<WalineSearchImage[]>;
-  default?: () => Promise<WalineSearchImage[]>;
-  more?: (word: string, currentCount: number) => Promise<WalineSearchImage[]>;
-}
-
-export interface WalineEmojiPreset {
-  name: string;
-  folder?: string;
-  icon?: string;
-  prefix?: string;
-  type?: string;
-  items: string[];
-}
-
-export interface AvatarPreset {
-  key: string;
-  label: string;
-  avatar_url: string;
-}
 
 export interface CommunityConfig {
   provider: "waline";

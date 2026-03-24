@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:admin": "pnpm --filter admin dev",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:admin": "pnpm --filter admin build"
+  }
+}

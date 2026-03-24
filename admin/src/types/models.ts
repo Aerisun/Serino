@@ -1,3 +1,5 @@
+import type { CommunitySurfaceConfig, AvatarPreset } from "@serino/types";
+
 // ---- Auth ----
 export interface LoginRequest {
   username: string;
@@ -229,17 +231,9 @@ export interface NavItem {
 }
 
 // ---- Community / Comments ----
-export interface CommunitySurfaceConfig {
-  key: string;
-  label: string;
-  path: string;
-  enabled: boolean;
-}
+export type { CommunitySurfaceConfig };
 
-export interface CommunityAvatarPreset {
-  key: string;
-  label: string;
-  avatar_url: string;
+export interface CommunityAvatarPreset extends AvatarPreset {
   note?: string | null;
 }
 

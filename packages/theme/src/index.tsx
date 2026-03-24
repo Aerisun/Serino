@@ -17,6 +17,12 @@ export interface ThemeContextType {
   resolvedTheme: "light" | "dark";
 }
 
+export interface ThemeProviderProps {
+  children: ReactNode;
+  storageKey?: string;
+  applyDataAttribute?: boolean;
+}
+
 // ── Context ──────────────────────────────────────────────────────────
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,17 +35,17 @@ export const useTheme = () => {
   return ctx;
 };
 
-// ── Provider ─────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────
 
 const THEME_QUERY = "(prefers-color-scheme: dark)";
 
 const getSystemTheme = (): "light" | "dark" =>
   window.matchMedia(THEME_QUERY).matches ? "dark" : "light";
 
-const getStoredTheme = (): Theme => {
+const getStoredTheme = (storageKey: string): Theme => {
   if (typeof window === "undefined") return "system";
 
-  const stored = window.localStorage.getItem("theme");
+  const stored = window.localStorage.getItem(storageKey);
   if (stored === "light" || stored === "dark" || stored === "system") {
     return stored;
   }
@@ -47,7 +53,7 @@ const getStoredTheme = (): Theme => {
   return "system";
 };
 
-const getDomResolvedTheme = (): "light" | "dark" | null => {
+export const getDomResolvedTheme = (): "light" | "dark" | null => {
   if (typeof document === "undefined") return null;
 
   const root = document.documentElement;
@@ -59,30 +65,46 @@ const getDomResolvedTheme = (): "light" | "dark" | null => {
 const resolveTheme = (theme: Theme): "light" | "dark" =>
   theme === "system" ? getSystemTheme() : theme;
 
-const applyResolvedTheme = (resolvedTheme: "light" | "dark") => {
+const applyResolvedTheme = (
+  resolvedTheme: "light" | "dark",
+  applyDataAttribute: boolean,
+) => {
   if (typeof document === "undefined") return;
 
   const root = document.documentElement;
   const oppositeTheme = resolvedTheme === "dark" ? "light" : "dark";
 
-  if (!root.classList.contains(resolvedTheme) || root.classList.contains(oppositeTheme)) {
+  if (
+    !root.classList.contains(resolvedTheme) ||
+    root.classList.contains(oppositeTheme)
+  ) {
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
   }
 
-  root.dataset.resolvedTheme = resolvedTheme;
+  if (applyDataAttribute) {
+    root.dataset.resolvedTheme = resolvedTheme;
+  }
 };
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
+// ── Provider ─────────────────────────────────────────────────────────
 
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
-    getDomResolvedTheme() ?? resolveTheme(getStoredTheme())
+export const ThemeProvider = ({
+  children,
+  storageKey = "theme",
+  applyDataAttribute = true,
+}: ThemeProviderProps) => {
+  const [theme, setThemeState] = useState<Theme>(() =>
+    getStoredTheme(storageKey),
+  );
+
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(
+    () => getDomResolvedTheme() ?? resolveTheme(getStoredTheme(storageKey)),
   );
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    window.localStorage.setItem("theme", t);
+    window.localStorage.setItem(storageKey, t);
   };
 
   useLayoutEffect(() => {
@@ -90,8 +112,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setResolvedTheme((currentTheme) =>
       currentTheme === nextResolvedTheme ? currentTheme : nextResolvedTheme,
     );
-    applyResolvedTheme(nextResolvedTheme);
-  }, [theme]);
+    applyResolvedTheme(nextResolvedTheme, applyDataAttribute);
+  }, [theme, applyDataAttribute]);
 
   useEffect(() => {
     if (theme !== "system") return;
@@ -100,9 +122,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const handler = (e: MediaQueryListEvent) => {
       const nextResolvedTheme = e.matches ? "dark" : "light";
       setResolvedTheme(nextResolvedTheme);
-      applyResolvedTheme(nextResolvedTheme);
+      applyResolvedTheme(nextResolvedTheme, applyDataAttribute);
     };
 
+    // Safari < 14 compat: addEventListener may not exist on MediaQueryList
     if (typeof mq.addEventListener === "function") {
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
@@ -110,7 +133,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
     mq.addListener(handler);
     return () => mq.removeListener(handler);
-  }, [theme]);
+  }, [theme, applyDataAttribute]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
