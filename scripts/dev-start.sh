@@ -70,6 +70,17 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
+
+if [[ ! -d "${PROJECT_DIR}/frontend/node_modules/@serino/theme" ]]; then
+  if command -v pnpm &>/dev/null; then
+    log "==> 检测到 workspace 包未链接，正在运行 pnpm install..."
+    ( cd "${PROJECT_DIR}" && pnpm install --frozen-lockfile 2>&1 | tail -1 )
+  else
+    echo "ERROR: pnpm 未安装，无法链接 @serino/* workspace 包。" >&2
+    exit 1
+  fi
+fi
+
 echo "==> 开发环境下：正在启动后端，并在就绪后并行启动前台和管理后台..."
 
 bash "${PROJECT_DIR}/backend/scripts/bootstrap.sh" &
