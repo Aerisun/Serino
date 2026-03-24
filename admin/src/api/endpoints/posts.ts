@@ -12,35 +12,35 @@ export interface ListParams {
 }
 
 export async function listPosts(params?: ListParams): Promise<PaginatedResponse<ContentItem>> {
-  const res = await client.get("/posts/", { params });
+  const res = await client.get("/api/v1/admin/posts/", { params });
   return res.data;
 }
 
 export async function getPost(id: string): Promise<ContentItem> {
-  const res = await client.get(`/posts/${id}`);
+  const res = await client.get(`/api/v1/admin/posts/${id}`);
   return res.data;
 }
 
 export async function createPost(data: ContentCreate): Promise<ContentItem> {
-  const res = await client.post("/posts/", data);
+  const res = await client.post("/api/v1/admin/posts/", data);
   return res.data;
 }
 
 export async function updatePost(id: string, data: ContentUpdate): Promise<ContentItem> {
-  const res = await client.put(`/posts/${id}`, data);
+  const res = await client.put(`/api/v1/admin/posts/${id}`, data);
   return res.data;
 }
 
 export async function deletePost(id: string): Promise<void> {
-  await client.delete(`/posts/${id}`);
+  await client.delete(`/api/v1/admin/posts/${id}`);
 }
 
 export async function bulkDeletePosts(ids: string[]): Promise<BulkActionResponse> {
-  const res = await client.post("/posts/bulk-delete", { ids });
+  const res = await client.post("/api/v1/admin/posts/bulk-delete", { ids });
   return res.data;
 }
 
 export async function bulkStatusPosts(ids: string[], status: string): Promise<BulkActionResponse> {
-  const res = await client.post("/posts/bulk-status", { ids, status });
+  const res = await client.post("/api/v1/admin/posts/bulk-status", { ids, status });
   return res.data;
 }

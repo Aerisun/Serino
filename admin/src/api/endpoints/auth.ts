@@ -1,26 +1,28 @@
 import client from "../client";
-import type { LoginRequest, LoginResponse, AdminUser } from "@/types/models";
+import type { LoginRequest, LoginResponse, AdminUserRead } from "@/api/generated/model";
+
+export type { AdminUserRead as AdminUser } from "@/api/generated/model";
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const res = await client.post<LoginResponse>("/auth/login", data);
+  const res = await client.post<LoginResponse>("/api/v1/admin/auth/login", data);
   return res.data;
 }
 
 export async function logout(): Promise<void> {
-  await client.post("/auth/logout");
+  await client.post("/api/v1/admin/auth/logout");
 }
 
-export async function getMe(): Promise<AdminUser> {
-  const res = await client.get<AdminUser>("/auth/me");
+export async function getMe(): Promise<AdminUserRead> {
+  const res = await client.get<AdminUserRead>("/api/v1/admin/auth/me");
   return res.data;
 }
 
 export async function changePassword(data: { current_password: string; new_password: string }): Promise<void> {
-  await client.put("/auth/password", data);
+  await client.put("/api/v1/admin/auth/password", data);
 }
 
-export async function updateProfile(data: { username?: string }): Promise<AdminUser> {
-  const res = await client.put<AdminUser>("/auth/profile", data);
+export async function updateProfile(data: { username?: string }): Promise<AdminUserRead> {
+  const res = await client.put<AdminUserRead>("/api/v1/admin/auth/profile", data);
   return res.data;
 }
 
@@ -32,10 +34,10 @@ export interface AdminSession {
 }
 
 export async function listSessions(): Promise<AdminSession[]> {
-  const res = await client.get<AdminSession[]>("/auth/sessions");
+  const res = await client.get<AdminSession[]>("/api/v1/admin/auth/sessions");
   return res.data;
 }
 
 export async function revokeSession(sessionId: string): Promise<void> {
-  await client.delete(`/auth/sessions/${sessionId}`);
+  await client.delete(`/api/v1/admin/auth/sessions/${sessionId}`);
 }
