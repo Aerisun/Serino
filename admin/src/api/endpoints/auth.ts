@@ -1,8 +1,6 @@
 import client from "../client";
 import type { LoginRequest, LoginResponse, AdminUserRead } from "@/api/generated/model";
 
-export type { AdminUserRead as AdminUser } from "@/api/generated/model";
-
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const res = await client.post<LoginResponse>("/api/v1/admin/auth/login", data);
   return res.data;

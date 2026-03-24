@@ -1,7 +1,15 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getExcerpt, createExcerpt, updateExcerpt, deleteExcerpt } from "@/api/endpoints/excerpts";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetExcerpts,
+  useCreateExcerpts,
+  useUpdateExcerpts,
+  useDeleteExcerpts,
+  getListExcerptsQueryKey,
+  getGetExcerptsQueryKey,
+} from "@/api/generated/admin/admin";
+import type { ContentCreate, ContentUpdate } from "@/api/generated/model";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -11,7 +19,6 @@ import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ContentCreate, ContentUpdate } from "@/types/models";
 import { Trash2, Save } from "lucide-react";
 
 export default function ExcerptEditPage() {
@@ -21,9 +28,10 @@ export default function ExcerptEditPage() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
 
-  const { data: item } = useQuery({
-    queryKey: ["excerpts", id], queryFn: () => getExcerpt(id!), enabled: !isNew && !!id,
+  const { data: itemData } = useGetExcerpts(id!, {
+    query: { enabled: !isNew && !!id },
   });
+  const item = itemData?.data;
 
   const [form, setForm] = useState<ContentCreate>({
     slug: "", title: "", summary: "", body: "", tags: [], status: "draft", visibility: "public", published_at: null,
@@ -31,23 +39,65 @@ export default function ExcerptEditPage() {
   });
 
   useEffect(() => {
-    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, author_name: (item as any).author_name || "", source: (item as any).source || "" });
+    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, author_name: item.author_name || "", source: item.source || "" });
   }, [item]);
 
-  const save = useMutation({
-    mutationFn: () => isNew ? createExcerpt(form) : updateExcerpt(id!, form as ContentUpdate),
-    onSuccess: (data) => { toast.success(t("common.operationSuccess")); queryClient.invalidateQueries({ queryKey: ["excerpts"] }); if (isNew) navigate(`/excerpts/${data.id}`, { replace: true }); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const invalidateQueries = () => {
+    queryClient.invalidateQueries({ queryKey: getListExcerptsQueryKey() });
+    if (id && !isNew) {
+      queryClient.invalidateQueries({ queryKey: getGetExcerptsQueryKey(id) });
+    }
+  };
+
+  const { mutateAsync: createExcerpt } = useCreateExcerpts({
+    mutation: {
+      onSuccess: (data) => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate(`/excerpts/${data.data.id}`, { replace: true });
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const del = useMutation({
-    mutationFn: () => deleteExcerpt(id!),
-    onSuccess: () => { toast.success(t("common.operationSuccess")); queryClient.invalidateQueries({ queryKey: ["excerpts"] }); navigate("/excerpts"); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const { mutateAsync: updateExcerpt } = useUpdateExcerpts({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
+
+  const { mutate: deleteExcerptMutate } = useDeleteExcerpts({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate("/excerpts");
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      if (isNew) {
+        await createExcerpt({ data: form });
+      } else {
+        await updateExcerpt({ itemId: id!, data: form as ContentUpdate });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
-  const handleSubmit = (e: FormEvent) => { e.preventDefault(); save.mutate(); };
 
   return (
     <div>
@@ -55,8 +105,8 @@ export default function ExcerptEditPage() {
         title={isNew ? t("excerpts.newExcerpt") : t("excerpts.editExcerpt")}
         actions={
           <div className="flex gap-2">
-            {!isNew && <Button variant="destructive" onClick={() => { if (confirm(t("excerpts.deleteConfirm"))) del.mutate(); }}><Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}</Button>}
-            <Button onClick={handleSubmit} disabled={save.isPending}><Save className="h-4 w-4 mr-2" /> {save.isPending ? t("common.saving") : t("common.save")}</Button>
+            {!isNew && <Button variant="destructive" onClick={() => { if (confirm(t("excerpts.deleteConfirm"))) deleteExcerptMutate({ itemId: id! }); }}><Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}</Button>}
+            <Button onClick={handleSubmit} disabled={isSaving}><Save className="h-4 w-4 mr-2" /> {isSaving ? t("common.saving") : t("common.save")}</Button>
           </div>
         }
       />

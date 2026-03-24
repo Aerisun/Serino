@@ -6,11 +6,11 @@ import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import {
-  fetchPublicContentCollection,
   formatPublishedDate,
   splitContentParagraphs,
-  type PublicContentEntry,
-} from "@/lib/api";
+} from "@/lib/api/utils";
+import { readThoughtsApiV1PublicThoughtsGet } from "@/lib/api/generated/public/public";
+import type { ContentEntryRead } from "@/lib/api/generated/model";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Thought {
@@ -25,7 +25,7 @@ interface Thought {
 
 type ThoughtsPageConfig = BaseViewPageConfig;
 
-const mapRemoteThought = (entry: PublicContentEntry): Thought => {
+const mapRemoteThought = (entry: ContentEntryRead): Thought => {
   const paragraphs = splitContentParagraphs(entry.body);
 
   return {
@@ -59,11 +59,12 @@ const Thoughts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("thoughts", pageSize, undefined, { signal: controller.signal });
+        const response = await readThoughtsApiV1PublicThoughtsGet({ limit: pageSize }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
+        const payload = response.data;
         const nextItems = payload.items.map(mapRemoteThought);
         setItems(nextItems);
         setHasMore(payload.has_more ?? false);
@@ -89,7 +90,8 @@ const Thoughts = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("thoughts", pageSize, items.length);
+      const response = await readThoughtsApiV1PublicThoughtsGet({ limit: pageSize, offset: items.length });
+      const payload = response.data;
       const moreItems = payload.items.map(mapRemoteThought);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

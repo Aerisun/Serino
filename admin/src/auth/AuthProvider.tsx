@@ -1,9 +1,9 @@
 import { createContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import type { AdminUser } from "@/types/models";
+import type { AdminUserRead } from "@/api/generated/model";
 import { getMe, login as apiLogin, logout as apiLogout } from "@/api/endpoints/auth";
 
 interface AuthState {
-  user: AdminUser | null;
+  user: AdminUserRead | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
@@ -13,7 +13,7 @@ interface AuthState {
 export const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const [user, setUser] = useState<AdminUserRead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

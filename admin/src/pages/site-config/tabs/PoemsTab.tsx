@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getProfile,
-  listPoems, createPoem, updatePoem, deletePoem,
-} from "@/api/endpoints/site-config";
+  useGetProfileApiV1AdminSiteConfigProfileGet,
+  useListPoems,
+  useCreatePoems,
+  useUpdatePoems,
+  useDeletePoems,
+  getListPoemsQueryKey,
+} from "@/api/generated/admin/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -13,42 +17,46 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { Poem } from "@/types/models";
+import type { PoemAdminRead } from "@/api/generated/model";
 
 export function PoemsTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: profile } = useQuery({ queryKey: ["site-profile"], queryFn: getProfile });
-  const { data } = useQuery({ queryKey: ["poems"], queryFn: () => listPoems() });
+  const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
+  const { data: raw } = useListPoems();
+  const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ content: "", order_index: 0 });
 
-  const profileId = profile?.id ?? "";
+  const profileId = profileRaw?.data?.id ?? "";
 
-  const create = useMutation({
-    mutationFn: () => createPoem({ ...form, site_profile_id: profileId }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["poems"] }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const create = useCreatePoems({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListPoemsQueryKey() }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const update = useMutation({
-    mutationFn: () => updatePoem(editingId!, form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["poems"] }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const update = useUpdatePoems({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListPoemsQueryKey() }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deletePoem(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["poems"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const del = useDeletePoems({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListPoemsQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
   function resetForm() {
     setForm({ content: "", order_index: 0 });
   }
 
-  function startEdit(poem: Poem) {
+  function startEdit(poem: PoemAdminRead) {
     setEditingId(poem.id);
     setForm({ content: poem.content, order_index: poem.order_index });
     setOpen(true);
@@ -64,7 +72,7 @@ export function PoemsTab() {
             <div className="space-y-3">
               <div className="space-y-1"><Label>{t("siteConfig.content")}</Label><Textarea value={form.content} onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))} rows={4} /></div>
               <div className="space-y-1"><Label>{t("common.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
-              <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={create.isPending || update.isPending}>
+              <Button onClick={() => editingId ? update.mutate({ itemId: editingId, data: form }) : create.mutate({ data: { ...form, site_profile_id: profileId } })} disabled={create.isPending || update.isPending}>
                 {editingId ? t("common.save") : t("common.create")}
               </Button>
             </div>
@@ -72,14 +80,14 @@ export function PoemsTab() {
         </Dialog>
       </div>
       <div className="border rounded-lg">
-        <DataTable<Poem>
+        <DataTable<PoemAdminRead>
           columns={[
             { header: t("siteConfig.content"), accessor: (row) => <span className="line-clamp-2">{row.content}</span> },
             { header: t("common.order"), accessor: "order_index" as any },
             { header: "", accessor: (row) => (
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); startEdit(row); }}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); del.mutate(row.id); }}><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); del.mutate({ itemId: row.id }); }}><Trash2 className="h-4 w-4" /></Button>
               </div>
             )},
           ]}

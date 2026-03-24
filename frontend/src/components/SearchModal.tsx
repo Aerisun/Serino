@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Search, X, FileText, BookOpen, MessageSquare, Quote } from "lucide-react"
-import { apiClient } from "@/lib/api"
+import { searchContentApiV1PublicSearchGet } from "@/lib/api/generated/search/search"
 
 interface SearchResult {
   type: string
@@ -10,11 +10,6 @@ interface SearchResult {
   title: string
   snippet: string
   published_at: string | null
-}
-
-interface SearchResponse {
-  items: SearchResult[]
-  total: number
 }
 
 const TYPE_CONFIG: Record<string, { label: string; icon: typeof FileText; color: string; prefix: string }> = {
@@ -55,8 +50,8 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
     }
     setLoading(true)
     try {
-      const data = await apiClient.get<SearchResponse>(`/api/v1/public/search?q=${encodeURIComponent(q.trim())}&limit=10`)
-      setResults(data.items)
+      const response = await searchContentApiV1PublicSearchGet({ q: q.trim(), limit: 10 })
+      setResults(response.data.items as unknown as SearchResult[])
       setSearched(true)
     } catch {
       setResults([])

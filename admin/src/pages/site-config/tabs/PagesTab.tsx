@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  listPageCopy,
-  createPageCopy,
-  updatePageCopy,
-  deletePageCopy,
-  listDisplayOptions,
-  createDisplayOption,
-  updateDisplayOption,
-} from "@/api/endpoints/site-config";
+  useListPageCopy,
+  useCreatePageCopy,
+  useUpdatePageCopy,
+  useDeletePageCopy,
+  useListDisplayOptions,
+  useCreateDisplayOptions,
+  useUpdateDisplayOptions,
+  getListPageCopyQueryKey,
+  getListDisplayOptionsQueryKey,
+} from "@/api/generated/admin/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -25,19 +27,15 @@ import { Plus, Save, Trash2, Pencil, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { PAGE_KEYS, PAGE_KEY_LABELS, optionLabel } from "../constants";
-import type { PageCopy, PageDisplayOption } from "@/types/models";
+import type { PageCopyAdminRead, PageDisplayOptionAdminRead } from "@/api/generated/model";
 
 export function PagesTab() {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
-  const { data: copyData } = useQuery({
-    queryKey: ["page-copy"],
-    queryFn: () => listPageCopy(),
-  });
-  const { data: displayData } = useQuery({
-    queryKey: ["display-options"],
-    queryFn: () => listDisplayOptions(),
-  });
+  const { data: copyRaw } = useListPageCopy();
+  const { data: displayRaw } = useListDisplayOptions();
+  const copyData = copyRaw?.data;
+  const displayData = displayRaw?.data;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -51,36 +49,27 @@ export function PagesTab() {
     page_size: "" as string,
   });
 
-  const createCopy = useMutation({
-    mutationFn: () =>
-      createPageCopy({
-        page_key: createForm.page_key,
-        title: createForm.title,
-        subtitle: createForm.subtitle,
-        label: createForm.label || null,
-        description: createForm.description || null,
-        search_placeholder: createForm.search_placeholder || null,
-        empty_message: createForm.empty_message || null,
-        page_size: createForm.page_size ? parseInt(createForm.page_size) : null,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["page-copy"] });
-      setCreateOpen(false);
-      setCreateForm({
-        page_key: "",
-        title: "",
-        subtitle: "",
-        label: "",
-        description: "",
-        search_placeholder: "",
-        empty_message: "",
-        page_size: "",
-      });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const createCopy = useCreatePageCopy({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPageCopyQueryKey() });
+        setCreateOpen(false);
+        setCreateForm({
+          page_key: "",
+          title: "",
+          subtitle: "",
+          label: "",
+          description: "",
+          search_placeholder: "",
+          empty_message: "",
+          page_size: "",
+        });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
@@ -160,7 +149,18 @@ export function PagesTab() {
                 />
               </div>
               <Button
-                onClick={() => createCopy.mutate()}
+                onClick={() => createCopy.mutate({
+                  data: {
+                    page_key: createForm.page_key,
+                    title: createForm.title,
+                    subtitle: createForm.subtitle,
+                    label: createForm.label || null,
+                    description: createForm.description || null,
+                    search_placeholder: createForm.search_placeholder || null,
+                    empty_message: createForm.empty_message || null,
+                    page_size: createForm.page_size ? parseInt(createForm.page_size) : null,
+                  },
+                })}
                 disabled={createCopy.isPending || !createForm.page_key}
               >
                 {t("common.create")}
@@ -189,8 +189,8 @@ function PageRow({
   copy,
   display,
 }: {
-  copy: PageCopy;
-  display?: PageDisplayOption;
+  copy: PageCopyAdminRead;
+  display?: PageDisplayOptionAdminRead;
 }) {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
@@ -208,71 +208,69 @@ function PageRow({
     display ? JSON.stringify(display.settings, null, 2) : "{}",
   );
 
-  const saveCopy = useMutation({
-    mutationFn: () =>
-      updatePageCopy(copy.id, {
-        title: form.title,
-        subtitle: form.subtitle,
-        label: form.label || null,
-        description: form.description || null,
-        search_placeholder: form.search_placeholder || null,
-        empty_message: form.empty_message || null,
-        page_size: form.page_size ? parseInt(form.page_size) : null,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["page-copy"] });
-      setEditing(false);
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const saveCopy = useUpdatePageCopy({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPageCopyQueryKey() });
+        setEditing(false);
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const toggleEnabled = useMutation({
-    mutationFn: () => {
-      if (display)
-        return updateDisplayOption(display.id, {
-          is_enabled: !display.is_enabled,
-        });
-      return createDisplayOption({ page_key: copy.page_key, is_enabled: true });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["display-options"] });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const toggleEnabled = useUpdateDisplayOptions({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDisplayOptionsQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const saveSettings = useMutation({
-    mutationFn: () => {
-      const parsed = JSON.parse(settingsJson);
-      if (display) return updateDisplayOption(display.id, { settings: parsed });
-      return createDisplayOption({ page_key: copy.page_key, settings: parsed });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["display-options"] });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const createDisplayOpt = useCreateDisplayOptions({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDisplayOptionsQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const delCopy = useMutation({
-    mutationFn: () => deletePageCopy(copy.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["page-copy"] });
-      toast.success(t("common.operationSuccess"));
+  const saveSettings = useUpdateDisplayOptions({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDisplayOptionsQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  });
+
+  const delCopy = useDeletePageCopy({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPageCopyQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
@@ -295,7 +293,13 @@ function PageRow({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toggleEnabled.mutate()}
+            onClick={() => {
+              if (display) {
+                toggleEnabled.mutate({ itemId: display.id, data: { is_enabled: !display.is_enabled } });
+              } else {
+                createDisplayOpt.mutate({ data: { page_key: copy.page_key, is_enabled: true } });
+              }
+            }}
           >
             {display?.is_enabled !== false
               ? t("siteConfig.enabled")
@@ -316,7 +320,7 @@ function PageRow({
             variant="ghost"
             size="icon"
             onClick={() => {
-              if (confirm(t("siteConfig.deletePageConfirm"))) delCopy.mutate();
+              if (confirm(t("siteConfig.deletePageConfirm"))) delCopy.mutate({ itemId: copy.id });
             }}
           >
             <Trash2 className="h-4 w-4" />
@@ -414,7 +418,18 @@ function PageRow({
               </div>
               <Button
                 size="sm"
-                onClick={() => saveCopy.mutate()}
+                onClick={() => saveCopy.mutate({
+                  itemId: copy.id,
+                  data: {
+                    title: form.title,
+                    subtitle: form.subtitle,
+                    label: form.label || null,
+                    description: form.description || null,
+                    search_placeholder: form.search_placeholder || null,
+                    empty_message: form.empty_message || null,
+                    page_size: form.page_size ? parseInt(form.page_size) : null,
+                  },
+                })}
                 disabled={saveCopy.isPending}
               >
                 <Save className="h-3 w-3 mr-1" /> {t("siteConfig.saveCopy")}
@@ -434,7 +449,14 @@ function PageRow({
               </div>
               <Button
                 size="sm"
-                onClick={() => saveSettings.mutate()}
+                onClick={() => {
+                  const parsed = JSON.parse(settingsJson);
+                  if (display) {
+                    saveSettings.mutate({ itemId: display.id, data: { settings: parsed } });
+                  } else {
+                    createDisplayOpt.mutate({ data: { page_key: copy.page_key, settings: parsed } });
+                  }
+                }}
                 disabled={saveSettings.isPending}
               >
                 <Save className="h-3 w-3 mr-1" /> {t("siteConfig.saveSettings")}

@@ -3,8 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import { useI18n } from "@/i18n";
-import { listComments } from "@/api/endpoints/comments";
-import { listGuestbook } from "@/api/endpoints/comments";
+import { listCommentsApiV1AdminModerationCommentsGet, listGuestbookApiV1AdminModerationGuestbookGet } from "@/api/generated/admin/admin";
 import { Button } from "@/components/ui/Button";
 import {
   LayoutDashboard,
@@ -86,12 +85,12 @@ export default function AdminLayout() {
 
   const { data: pendingComments } = useQuery({
     queryKey: ["comments", "pending-count"],
-    queryFn: () => listComments({ page: 1, page_size: 1, status: "pending" }),
+    queryFn: () => listCommentsApiV1AdminModerationCommentsGet({ page: 1, page_size: 1, status: "pending" }),
     refetchInterval: 30000,
   });
   const { data: pendingGuestbook } = useQuery({
     queryKey: ["guestbook", "pending-count"],
-    queryFn: () => listGuestbook({ page: 1, page_size: 1, status: "pending" }),
+    queryFn: () => listGuestbookApiV1AdminModerationGuestbookGet({ page: 1, page_size: 1, status: "pending" }),
     refetchInterval: 30000,
   });
   const pendingCount =

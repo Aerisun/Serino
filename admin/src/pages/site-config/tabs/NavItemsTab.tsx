@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  listNavItems,
-  createNavItem,
-  updateNavItem,
-  deleteNavItem,
-} from "@/api/endpoints/site-config";
+  useListNavItems,
+  useCreateNavItems,
+  useUpdateNavItems,
+  useDeleteNavItems,
+  getListNavItemsQueryKey,
+} from "@/api/generated/admin/admin";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -19,15 +20,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/Dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import type { NavItem } from "@/types/models";
+import type { NavItemAdminRead } from "@/api/generated/model";
 
 export function NavItemsTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data } = useQuery({
-    queryKey: ["nav-items"],
-    queryFn: () => listNavItems(),
-  });
+  const { data: raw } = useListNavItems();
+  const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -49,56 +48,47 @@ export function NavItemsTab() {
       .filter((i) => i.parent_id === pid)
       .sort((a, b) => a.order_index - b.order_index);
 
-  const create = useMutation({
-    mutationFn: () =>
-      createNavItem({
-        ...form,
-        trigger: form.trigger || null,
-        page_key: form.page_key || null,
-        parent_id: form.parent_id || null,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nav-items"] });
-      setOpen(false);
-      resetForm();
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const create = useCreateNavItems({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListNavItemsQueryKey() });
+        setOpen(false);
+        resetForm();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const update = useMutation({
-    mutationFn: () =>
-      updateNavItem(editingId!, {
-        ...form,
-        trigger: form.trigger || null,
-        page_key: form.page_key || null,
-        parent_id: form.parent_id || null,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nav-items"] });
-      setEditingId(null);
-      setOpen(false);
-      resetForm();
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const update = useUpdateNavItems({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListNavItemsQueryKey() });
+        setEditingId(null);
+        setOpen(false);
+        resetForm();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteNavItem(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nav-items"] });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const del = useDeleteNavItems({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListNavItemsQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
@@ -114,7 +104,7 @@ export function NavItemsTab() {
     });
   }
 
-  function startEdit(item: NavItem) {
+  function startEdit(item: NavItemAdminRead) {
     setEditingId(item.id);
     setForm({
       label: item.label,
@@ -128,7 +118,7 @@ export function NavItemsTab() {
     setOpen(true);
   }
 
-  function renderItem(item: NavItem, depth: number = 0) {
+  function renderItem(item: NavItemAdminRead, depth: number = 0) {
     const children = childrenOf(item.id);
     return (
       <div key={item.id}>
@@ -160,7 +150,7 @@ export function NavItemsTab() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => del.mutate(item.id)}
+            onClick={() => del.mutate({ itemId: item.id })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -282,7 +272,17 @@ export function NavItemsTab() {
                 <Label>{t("navItems.enabled")}</Label>
               </div>
               <Button
-                onClick={() => (editingId ? update.mutate() : create.mutate())}
+                onClick={() => {
+                  const payload = {
+                    ...form,
+                    trigger: form.trigger || null,
+                    page_key: form.page_key || null,
+                    parent_id: form.parent_id || null,
+                  };
+                  editingId
+                    ? update.mutate({ itemId: editingId, data: payload })
+                    : create.mutate({ data: payload });
+                }}
                 disabled={create.isPending || update.isPending}
               >
                 {editingId ? t("navItems.save") : t("common.create")}

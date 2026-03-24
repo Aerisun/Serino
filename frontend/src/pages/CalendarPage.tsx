@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
-import { fetchPublicCalendar, type PublicCalendarEvent } from "@/lib/api";
+import { readCalendarApiV1PublicCalendarGet } from "@/lib/api/generated/public/public";
+import type { CalendarEventRead } from "@/lib/api/generated/model";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
@@ -76,7 +77,7 @@ const normalizeType = (value: string): CalendarEvent["type"] | null => {
   return null;
 };
 
-const normalizeCalendarEvent = (item: PublicCalendarEvent): CalendarEvent | null => {
+const normalizeCalendarEvent = (item: CalendarEventRead): CalendarEvent | null => {
   const date = normalizeDateKey(item.date);
   const type = normalizeType(item.type);
 
@@ -142,12 +143,12 @@ const CalendarPage = () => {
       setCalendarEvents([]);
 
       try {
-        const payload = await fetchPublicCalendar(rangeStart, rangeEnd, { signal: controller.signal });
+        const response = await readCalendarApiV1PublicCalendarGet({ from: rangeStart, to: rangeEnd }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
-        const nextEvents = payload.events
+        const nextEvents = response.data.events
           .map((item) => normalizeCalendarEvent(item))
           .filter((item): item is CalendarEvent => item !== null);
 

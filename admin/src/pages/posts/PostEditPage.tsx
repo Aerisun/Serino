@@ -1,12 +1,15 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getPost,
-  createPost,
-  updatePost,
-  deletePost,
-} from "@/api/endpoints/posts";
+  useGetPosts,
+  useCreatePosts,
+  useUpdatePosts,
+  useDeletePosts,
+  getListPostsQueryKey,
+  getGetPostsQueryKey,
+} from "@/api/generated/admin/admin";
+import type { ContentCreate, ContentUpdate } from "@/api/generated/model";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -22,7 +25,6 @@ import {
 } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ContentCreate, ContentUpdate } from "@/types/models";
 import { Trash2, Save, ExternalLink, Eye } from "lucide-react";
 
 export default function PostEditPage() {
@@ -32,11 +34,10 @@ export default function PostEditPage() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
 
-  const { data: post } = useQuery({
-    queryKey: ["posts", id],
-    queryFn: () => getPost(id!),
-    enabled: !isNew && !!id,
+  const { data: postData } = useGetPosts(id!, {
+    query: { enabled: !isNew && !!id },
   });
+  const post = postData?.data;
 
   const [form, setForm] = useState<ContentCreate>({
     slug: "",
@@ -62,47 +63,75 @@ export default function PostEditPage() {
         status: post.status,
         visibility: post.visibility,
         published_at: post.published_at,
-        category: (post as any).category || "",
-        view_count: (post as any).view_count || 0,
+        category: post.category || "",
+        view_count: post.view_count || 0,
       });
     }
   }, [post]);
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (isNew) {
-        return createPost(form);
-      }
-      const update: ContentUpdate = { ...form };
-      return updatePost(id!, update);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      toast.success(t("common.operationSuccess"));
-      if (isNew) navigate(`/posts/${data.id}`, { replace: true });
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const invalidateQueries = () => {
+    queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+    if (id && !isNew) {
+      queryClient.invalidateQueries({ queryKey: getGetPostsQueryKey(id) });
+    }
+  };
+
+  const { mutateAsync: createPost } = useCreatePosts({
+    mutation: {
+      onSuccess: (data) => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate(`/posts/${data.data.id}`, { replace: true });
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: () => deletePost(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      toast.success(t("common.operationSuccess"));
-      navigate("/posts");
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const { mutateAsync: updatePost } = useUpdatePosts({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const { mutate: deletePostMutate } = useDeletePosts({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate("/posts");
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
+    },
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    saveMutation.mutate();
+    setIsSaving(true);
+    try {
+      if (isNew) {
+        await createPost({ data: form });
+      } else {
+        const update: ContentUpdate = { ...form };
+        await updatePost({ itemId: id!, data: update });
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -153,15 +182,15 @@ export default function PostEditPage() {
                 variant="destructive"
                 onClick={() => {
                   if (confirm(t("posts.deleteConfirm")))
-                    deleteMutation.mutate();
+                    deletePostMutate({ itemId: id! });
                 }}
               >
                 <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
               </Button>
             )}
-            <Button onClick={handleSubmit} disabled={saveMutation.isPending}>
+            <Button onClick={handleSubmit} disabled={isSaving}>
               <Save className="h-4 w-4 mr-2" />{" "}
-              {saveMutation.isPending ? t("common.saving") : t("common.save")}
+              {isSaving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
         }

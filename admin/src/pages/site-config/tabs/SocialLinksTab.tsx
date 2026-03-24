@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getProfile,
-  listSocialLinks, createSocialLink, updateSocialLink, deleteSocialLink,
-} from "@/api/endpoints/site-config";
+  useGetProfileApiV1AdminSiteConfigProfileGet,
+  useListSocialLinks,
+  useCreateSocialLinks,
+  useUpdateSocialLinks,
+  useDeleteSocialLinks,
+  getListSocialLinksQueryKey,
+} from "@/api/generated/admin/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -12,42 +16,46 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { SocialLink } from "@/types/models";
+import type { SocialLinkAdminRead } from "@/api/generated/model";
 
 export function SocialLinksTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: profile } = useQuery({ queryKey: ["site-profile"], queryFn: getProfile });
-  const { data } = useQuery({ queryKey: ["social-links"], queryFn: () => listSocialLinks() });
+  const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
+  const { data: raw } = useListSocialLinks();
+  const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
 
-  const profileId = profile?.id ?? "";
+  const profileId = profileRaw?.data?.id ?? "";
 
-  const create = useMutation({
-    mutationFn: () => createSocialLink({ ...form, site_profile_id: profileId }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const create = useCreateSocialLinks({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSocialLinksQueryKey() }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const update = useMutation({
-    mutationFn: () => updateSocialLink(editingId!, form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const update = useUpdateSocialLinks({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSocialLinksQueryKey() }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteSocialLink(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["social-links"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const del = useDeleteSocialLinks({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSocialLinksQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
   function resetForm() {
     setForm({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
   }
 
-  function startEdit(link: SocialLink) {
+  function startEdit(link: SocialLinkAdminRead) {
     setEditingId(link.id);
     setForm({ name: link.name, href: link.href, icon_key: link.icon_key, placement: link.placement, order_index: link.order_index });
     setOpen(true);
@@ -78,7 +86,7 @@ export function SocialLinksTab() {
                 <Label>{t("common.order")}</Label>
                 <Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} />
               </div>
-              <Button onClick={() => editingId ? update.mutate() : create.mutate()} disabled={create.isPending || update.isPending}>
+              <Button onClick={() => editingId ? update.mutate({ itemId: editingId, data: form }) : create.mutate({ data: { ...form, site_profile_id: profileId } })} disabled={create.isPending || update.isPending}>
                 {editingId ? t("common.save") : t("common.create")}
               </Button>
             </div>
@@ -86,7 +94,7 @@ export function SocialLinksTab() {
         </Dialog>
       </div>
       <div className="border rounded-lg">
-        <DataTable<SocialLink>
+        <DataTable<SocialLinkAdminRead>
           columns={[
             { header: t("siteConfig.name"), accessor: "name" },
             { header: t("siteConfig.url"), accessor: "href" },
@@ -96,7 +104,7 @@ export function SocialLinksTab() {
             { header: "", accessor: (row) => (
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); startEdit(row); }}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); del.mutate(row.id); }}><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); del.mutate({ itemId: row.id }); }}><Trash2 className="h-4 w-4" /></Button>
               </div>
             )},
           ]}

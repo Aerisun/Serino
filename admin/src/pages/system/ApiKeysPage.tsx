@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listApiKeys, createApiKey, deleteApiKey } from "@/api/endpoints/system";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListApiKeysApiV1AdminSystemApiKeysGet,
+  useCreateApiKeyApiV1AdminSystemApiKeysPost,
+  useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete,
+  getListApiKeysApiV1AdminSystemApiKeysGetQueryKey,
+} from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +16,7 @@ import { Plus, Trash2, Copy } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ApiKey } from "@/types/models";
+import type { ApiKeyAdminRead } from "@/api/generated/model";
 
 export default function ApiKeysPage() {
   const { t } = useI18n();
@@ -20,25 +25,25 @@ export default function ApiKeysPage() {
   const [rawKey, setRawKey] = useState<string | null>(null);
   const [form, setForm] = useState({ key_name: "", scopes: "" });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["api-keys"],
-    queryFn: listApiKeys,
-  });
+  const { data: raw, isLoading } = useListApiKeysApiV1AdminSystemApiKeysGet();
+  const data = raw?.data as ApiKeyAdminRead[] | undefined;
 
-  const create = useMutation({
-    mutationFn: () => createApiKey({ key_name: form.key_name, scopes: form.scopes ? form.scopes.split(",").map((s) => s.trim()) : [] }),
-    onSuccess: (res) => {
-      setRawKey(res.raw_key);
-      queryClient.invalidateQueries({ queryKey: ["api-keys"] });
-      toast.success(t("common.operationSuccess"));
+  const create = useCreateApiKeyApiV1AdminSystemApiKeysPost({
+    mutation: {
+      onSuccess: (res) => {
+        setRawKey(res.data.raw_key);
+        queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminSystemApiKeysGetQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
     },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteApiKey(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["api-keys"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const del = useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminSystemApiKeysGetQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
   return (
@@ -64,7 +69,7 @@ export default function ApiKeysPage() {
                 <div className="space-y-3">
                   <div className="space-y-1"><Label>{t("system.keyName")}</Label><Input value={form.key_name} onChange={(e) => setForm((p) => ({ ...p, key_name: e.target.value }))} /></div>
                   <div className="space-y-1"><Label>{t("system.scopesHint")}</Label><Input value={form.scopes} onChange={(e) => setForm((p) => ({ ...p, scopes: e.target.value }))} /></div>
-                  <Button onClick={() => create.mutate()} disabled={create.isPending}>{t("common.create")}</Button>
+                  <Button onClick={() => create.mutate({ data: { key_name: form.key_name, scopes: form.scopes ? form.scopes.split(",").map((s) => s.trim()) : [] } })} disabled={create.isPending}>{t("common.create")}</Button>
                 </div>
               )}
             </DialogContent>
@@ -72,14 +77,14 @@ export default function ApiKeysPage() {
         }
       />
       <div className="border rounded-lg">
-        <DataTable<ApiKey>
+        <DataTable<ApiKeyAdminRead>
           columns={[
             { header: t("common.name"), accessor: "key_name" },
             { header: t("common.prefix"), accessor: (row) => <code className="text-xs">{row.key_prefix}...</code> },
             { header: t("system.scopes"), accessor: (row) => row.scopes.join(", ") || "-" },
             { header: t("system.lastUsed"), accessor: (row) => formatDate(row.last_used_at) },
             { header: t("system.created"), accessor: (row) => formatDate(row.created_at) },
-            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => { if (confirm(t("system.deleteConfirm"))) del.mutate(row.id); }}><Trash2 className="h-4 w-4" /></Button> },
+            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => { if (confirm(t("system.deleteConfirm"))) del.mutate({ keyId: row.id }); }}><Trash2 className="h-4 w-4" /></Button> },
           ]}
           data={data ?? []}
           total={data?.length ?? 0}

@@ -1,4 +1,8 @@
-import { apiClient } from "@/lib/api";
+import {
+  readSiteConfigApiV1PublicSiteGet,
+  readPageCopyApiV1PublicPagesGet,
+  readResumeApiV1PublicResumeGet,
+} from "@/lib/api/generated/public/public";
 
 // ---------------------------------------------------------------------------
 // Width mapping (code constant — not personal data)
@@ -330,11 +334,15 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
 // Main loader — errors propagate to caller
 // ---------------------------------------------------------------------------
 export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
-  const [site, pages, resume] = await Promise.all([
-    apiClient.get<BackendSiteResponse>(runtimeConfigPaths.site),
-    apiClient.get<BackendPagesResponse>(runtimeConfigPaths.pages),
-    apiClient.get<BackendResumeResponse>(runtimeConfigPaths.resume),
+  const [siteResponse, pagesResponse, resumeResponse] = await Promise.all([
+    readSiteConfigApiV1PublicSiteGet(),
+    readPageCopyApiV1PublicPagesGet(),
+    readResumeApiV1PublicResumeGet(),
   ]);
+
+  const site = siteResponse.data as unknown as BackendSiteResponse;
+  const pages = pagesResponse.data as unknown as BackendPagesResponse;
+  const resume = resumeResponse.data as unknown as BackendResumeResponse;
 
   const normalizedPages = normalizePagesConfig(pages);
   normalizedPages.resume = normalizeResumeConfig(resume);

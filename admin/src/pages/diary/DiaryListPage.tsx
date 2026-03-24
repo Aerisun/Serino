@@ -1,8 +1,14 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useResourceList } from "@/hooks/useResource";
-import { listDiary, createDiary, updateDiary, deleteDiary, bulkDeleteDiary, bulkStatusDiary } from "@/api/endpoints/diary";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListDiary,
+  useBulkDeleteDiary,
+  useBulkStatusDiary,
+  getListDiaryQueryKey,
+} from "@/api/generated/admin/admin";
+import type { ContentAdminRead } from "@/api/generated/model";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -14,7 +20,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Plus } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
-import type { ContentItem } from "@/types/models";
 
 const SORT_OPTIONS = [
   { value: "created_at:desc", labelKey: "common.sortNewest" },
@@ -26,6 +31,7 @@ const SORT_OPTIONS = [
 export default function DiaryListPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -43,23 +49,32 @@ export default function DiaryListPage() {
     searchTimer.current = setTimeout(() => { setSearchDebounced(value); setPage(1); }, 300);
   };
 
-  const { items, total, pageSize, isLoading, bulkDelete, bulkStatus, isBulkDeleting } = useResourceList(
-    {
-      queryKey: "diary",
-      listFn: listDiary,
-      createFn: createDiary,
-      updateFn: updateDiary,
-      deleteFn: deleteDiary,
-      bulkDeleteFn: bulkDeleteDiary,
-      bulkStatusFn: bulkStatusDiary,
+  const params = { page, status: statusFilter || undefined, search: searchDebounced || undefined, sort_by, sort_order };
+  const { data: listData, isLoading } = useListDiary(params);
+  const items = (listData?.data?.items ?? []) as ContentAdminRead[];
+  const total = listData?.data?.total ?? 0;
+  const pageSize = listData?.data?.page_size ?? 20;
+
+  const { mutateAsync: bulkDelete, isPending: isBulkDeleting } = useBulkDeleteDiary({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDiaryQueryKey() });
+      },
     },
-    { page, status: statusFilter || undefined, search: searchDebounced || undefined, sort_by, sort_order }
-  );
+  });
+
+  const { mutateAsync: bulkStatus } = useBulkStatusDiary({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDiaryQueryKey() });
+      },
+    },
+  });
 
   const handleBulkDelete = async () => {
     try {
-      const res = await bulkDelete(Array.from(selectedIds));
-      toast.success(t("common.operationSuccess") + ` (${res.affected})`);
+      const res = await bulkDelete({ data: { ids: Array.from(selectedIds) } });
+      toast.success(t("common.operationSuccess") + ` (${res.data.affected})`);
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
     } catch { toast.error(t("common.operationFailed")); }
@@ -67,8 +82,8 @@ export default function DiaryListPage() {
 
   const handleBulkStatus = async (status: string) => {
     try {
-      const res = await bulkStatus(Array.from(selectedIds), status);
-      toast.success(t("common.operationSuccess") + ` (${res.affected})`);
+      const res = await bulkStatus({ data: { ids: Array.from(selectedIds), status } });
+      toast.success(t("common.operationSuccess") + ` (${res.data.affected})`);
       setSelectedIds(new Set());
     } catch { toast.error(t("common.operationFailed")); }
   };
@@ -108,7 +123,7 @@ export default function DiaryListPage() {
       />
 
       <div className="border rounded-lg">
-        <DataTable<ContentItem>
+        <DataTable<ContentAdminRead>
           columns={[
             { header: t("common.title"), accessor: "title" },
             { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },

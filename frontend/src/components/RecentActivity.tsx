@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Heart, MessageCircle, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchRecentActivity, type PublicRecentActivityItem } from "@/lib/api";
+import { readRecentActivityApiV1PublicRecentActivityGet } from "@/lib/api/generated/public/public";
+import type { RecentActivityItemRead } from "@/lib/api/generated/model";
 
 interface ActivityItem {
   type: "comment" | "like" | "reply" | "guestbook";
@@ -71,7 +72,7 @@ const normalizeType = (value: string): ActivityItem["type"] => {
   return "comment";
 };
 
-const normalizeActivity = (value: PublicRecentActivityItem): ActivityItem => ({
+const normalizeActivity = (value: RecentActivityItemRead): ActivityItem => ({
   type: normalizeType(value.kind),
   user: value.actor_name ?? "",
   avatar: value.actor_avatar ?? "",
@@ -96,12 +97,12 @@ const RecentActivity = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchRecentActivity(8, { signal: controller.signal });
+        const response = await readRecentActivityApiV1PublicRecentActivityGet({ limit: 8 }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
-        const nextItems = payload.items.map(normalizeActivity);
+        const nextItems = response.data.items.map(normalizeActivity);
         setActivities(nextItems);
         setStatus(nextItems.length > 0 ? "ready" : "empty");
       } catch (error) {

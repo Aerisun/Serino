@@ -1,12 +1,15 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDiary,
-  createDiary,
-  updateDiary,
-  deleteDiary,
-} from "@/api/endpoints/diary";
+  useGetDiary,
+  useCreateDiary,
+  useUpdateDiary,
+  useDeleteDiary,
+  getListDiaryQueryKey,
+  getGetDiaryQueryKey,
+} from "@/api/generated/admin/admin";
+import type { ContentCreate, ContentUpdate } from "@/api/generated/model";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -22,7 +25,6 @@ import {
 } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ContentCreate, ContentUpdate } from "@/types/models";
 import { Trash2, Save, ExternalLink, Eye } from "lucide-react";
 
 export default function DiaryEditPage() {
@@ -32,11 +34,10 @@ export default function DiaryEditPage() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
 
-  const { data: item } = useQuery({
-    queryKey: ["diary", id],
-    queryFn: () => getDiary(id!),
-    enabled: !isNew && !!id,
+  const { data: itemData } = useGetDiary(id!, {
+    query: { enabled: !isNew && !!id },
   });
+  const item = itemData?.data;
 
   const [form, setForm] = useState<ContentCreate>({
     slug: "",
@@ -63,38 +64,75 @@ export default function DiaryEditPage() {
         status: item.status,
         visibility: item.visibility,
         published_at: item.published_at,
-        mood: (item as any).mood || "",
-        weather: (item as any).weather || "",
-        poem: (item as any).poem || "",
+        mood: item.mood || "",
+        weather: item.weather || "",
+        poem: item.poem || "",
       });
   }, [item]);
 
-  const save = useMutation({
-    mutationFn: () =>
-      isNew ? createDiary(form) : updateDiary(id!, form as ContentUpdate),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["diary"] });
-      toast.success(t("common.operationSuccess"));
-      if (isNew) navigate(`/diary/${data.id}`, { replace: true });
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const invalidateQueries = () => {
+    queryClient.invalidateQueries({ queryKey: getListDiaryQueryKey() });
+    if (id && !isNew) {
+      queryClient.invalidateQueries({ queryKey: getGetDiaryQueryKey(id) });
+    }
+  };
+
+  const { mutateAsync: createDiary } = useCreateDiary({
+    mutation: {
+      onSuccess: (data) => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate(`/diary/${data.data.id}`, { replace: true });
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const del = useMutation({
-    mutationFn: () => deleteDiary(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diary"] });
-      toast.success(t("common.operationSuccess"));
-      navigate("/diary");
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const { mutateAsync: updateDiary } = useUpdateDiary({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
+
+  const { mutate: deleteDiaryMutate } = useDeleteDiary({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate("/diary");
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
+    },
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      if (isNew) {
+        await createDiary({ data: form });
+      } else {
+        await updateDiary({ itemId: id!, data: form as ContentUpdate });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const frontendUrl =
@@ -111,10 +149,6 @@ export default function DiaryEditPage() {
     );
   };
   const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    save.mutate();
-  };
 
   return (
     <div>
@@ -144,15 +178,15 @@ export default function DiaryEditPage() {
               <Button
                 variant="destructive"
                 onClick={() => {
-                  if (confirm(t("diary.deleteConfirm"))) del.mutate();
+                  if (confirm(t("diary.deleteConfirm"))) deleteDiaryMutate({ itemId: id! });
                 }}
               >
                 <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
               </Button>
             )}
-            <Button onClick={handleSubmit} disabled={save.isPending}>
+            <Button onClick={handleSubmit} disabled={isSaving}>
               <Save className="h-4 w-4 mr-2" />{" "}
-              {save.isPending ? t("common.saving") : t("common.save")}
+              {isSaving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
         }

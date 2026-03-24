@@ -55,9 +55,4 @@ export const apiClient = {
     }),
 };
 
-export * from "./content";
-export * from "./activity";
-export * from "./social";
-
-// Re-export Orval-generated types for gradual migration
-export type * from "./generated/model";
+export * from "./utils";

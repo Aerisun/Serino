@@ -13,7 +13,10 @@ import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
-import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import { ApiError } from "@/lib/api/mutator/custom-fetch";
+import { formatPublishedDate } from "@/lib/api/utils";
+import { readPostApiV1PublicPostsSlugGet } from "@/lib/api/generated/public/public";
+import type { ContentEntryRead } from "@/lib/api/generated/model";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface PostData {
@@ -42,7 +45,7 @@ const categoryMap: Record<string, string> = {
 
 const estimateReadTime = (value: string) => `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
 
-const buildRemotePost = (entry: PublicContentEntry): PostData => ({
+const buildRemotePost = (entry: ContentEntryRead): PostData => ({
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
@@ -80,12 +83,12 @@ const PostDetail = () => {
       setErrorMessage("");
 
       try {
-        const entry = await fetchPublicContentEntry("posts", decodeURIComponent(id), { signal: controller.signal });
+        const response = await readPostApiV1PublicPostsSlugGet(decodeURIComponent(id), { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
-        setPost(buildRemotePost(entry));
+        setPost(buildRemotePost(response.data));
         setStatus("ready");
       } catch (error) {
         if (controller.signal.aborted) {

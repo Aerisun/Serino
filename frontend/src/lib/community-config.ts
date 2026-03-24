@@ -1,4 +1,3 @@
-import { apiClient } from "@/lib/api";
 import type {
   CommunitySurface,
   CommunityCommentSort,
@@ -9,6 +8,7 @@ import type {
 } from "@serino/types";
 
 export type { CommunitySurface, CommunityCommentSort, WalineSearchImage, WalineSearchOptions, WalineEmojiPreset, AvatarPreset };
+import { readCommunityConfigApiV1PublicCommunityConfigGet } from "@/lib/api/generated/public/public";
 
 /** Default max image size in bytes before compression kicks in (512 KB) */
 const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;
@@ -320,8 +320,8 @@ export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
 
 export async function loadCommunityConfig(init?: RequestInit): Promise<CommunityConfig> {
   try {
-    const payload = await apiClient.get<unknown>(communityConfigPath, init);
-    return normalizeCommunityConfig(payload);
+    const response = await readCommunityConfigApiV1PublicCommunityConfigGet(init);
+    return normalizeCommunityConfig(response.data);
   } catch {
     return {
       ...DEFAULT_WALINE_COMMUNITY_CONFIG,

@@ -1,12 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { getDashboardStats } from "@/api/endpoints/system";
+import { useDashboardStatsApiV1AdminSystemDashboardStatsGet } from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FileText, BookOpen, Lightbulb, Quote, MessageSquare, Users, Image, Clock } from "lucide-react";
 import { useI18n } from "@/i18n";
-import type { EnhancedDashboardStats, RecentContentItem } from "@/types/models";
+import type { EnhancedDashboardStats, RecentContentItem } from "@/api/generated/model";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -19,10 +18,8 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
 
-  const { data: stats, isLoading } = useQuery<EnhancedDashboardStats>({
-    queryKey: ["dashboard-stats"],
-    queryFn: getDashboardStats,
-  });
+  const { data: raw, isLoading } = useDashboardStatsApiV1AdminSystemDashboardStatsGet();
+  const stats = raw?.data as EnhancedDashboardStats | undefined;
 
   if (isLoading || !stats) {
     return (

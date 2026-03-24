@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  listComments,
-  listGuestbook,
-  moderateComment,
-  moderateGuestbook,
-  type ModerationListParams,
-} from "@/api/endpoints/comments";
-import { listPosts } from "@/api/endpoints/posts";
-import { listDiary } from "@/api/endpoints/diary";
-import { listThoughts } from "@/api/endpoints/thoughts";
-import { listExcerpts } from "@/api/endpoints/excerpts";
+  listCommentsApiV1AdminModerationCommentsGet,
+  listGuestbookApiV1AdminModerationGuestbookGet,
+  moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost,
+  moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
+  getListCommentsApiV1AdminModerationCommentsGetQueryKey,
+  getListGuestbookApiV1AdminModerationGuestbookGetQueryKey,
+} from "@/api/generated/admin/admin";
+import type {
+  ListCommentsApiV1AdminModerationCommentsGetParams,
+  ListGuestbookApiV1AdminModerationGuestbookGetParams,
+  CommentAdminRead,
+  GuestbookAdminRead,
+  ModerateAction,
+} from "@/api/generated/model";
+import { listPosts, listDiary, listThoughts, listExcerpts } from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -39,17 +44,12 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type {
-  Comment,
-  GuestbookEntry,
-  ModerateAction,
-  PaginatedResponse,
-} from "@/types/models";
 
 import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 
-type ModerationRecord = Comment | GuestbookEntry;
+type ModerationRecord = CommentAdminRead | GuestbookAdminRead;
 type ModerationKind = "comments" | "guestbook";
+type ModerationListParams = ListCommentsApiV1AdminModerationCommentsGetParams & ListGuestbookApiV1AdminModerationGuestbookGetParams;
 
 /* slug → title cache, populated by useContentTitles */
 type TitleMap = Map<string, string>;
@@ -59,7 +59,7 @@ const contentListFns: Record<
   (p: {
     search: string;
     page_size: number;
-  }) => Promise<PaginatedResponse<{ slug: string; title: string }>>
+  }) => Promise<any>
 > = {
   posts: (p) => listPosts(p) as any,
   diary: (p) => listDiary(p) as any,
@@ -714,17 +714,19 @@ function ModerationQueue({
   description,
   loadItems,
   moderateItem,
+  queryKeyFn,
 }: {
   kind: ModerationKind;
   title: string;
   description: string;
   loadItems: (
     params: ModerationListParams,
-  ) => Promise<PaginatedResponse<ModerationRecord>>;
+  ) => Promise<any>;
   moderateItem: (
     id: string,
     payload: ModerateAction,
-  ) => Promise<ModerationRecord>;
+  ) => Promise<any>;
+  queryKeyFn: (params?: any) => readonly unknown[];
 }) {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
@@ -751,10 +753,11 @@ function ModerationQueue({
     [page, filters],
   );
 
-  const { data, isLoading } = useQuery({
-    queryKey: [kind, params],
+  const { data: raw, isLoading } = useQuery({
+    queryKey: queryKeyFn(params),
     queryFn: () => loadItems(params),
   });
+  const data = raw?.data;
 
   const moderate = useMutation({
     mutationFn: ({
@@ -767,7 +770,7 @@ function ModerationQueue({
       reason?: string;
     }) => moderateItem(id, { action, reason: reason || null }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [kind] });
+      queryClient.invalidateQueries({ queryKey: queryKeyFn() });
       dialog.close();
       toast.success(t("common.operationSuccess"));
     },
@@ -834,7 +837,7 @@ function ModerationQueue({
         // eslint-disable-next-line no-await-in-loop
         await moderateItem(id, { action, reason: null });
       }
-      await queryClient.invalidateQueries({ queryKey: [kind] });
+      await queryClient.invalidateQueries({ queryKey: queryKeyFn() });
       setSelectedIds([]);
     } finally {
       setBulkPending(false);
@@ -1143,13 +1146,12 @@ export default function ModerationPage() {
             title={t("moderation.comments")}
             description={t("moderation.unifiedNote")}
             loadItems={(params) =>
-              listComments(params) as Promise<
-                PaginatedResponse<ModerationRecord>
-              >
+              listCommentsApiV1AdminModerationCommentsGet(params) as Promise<any>
             }
             moderateItem={(id, payload) =>
-              moderateComment(id, payload) as Promise<ModerationRecord>
+              moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost(id, payload) as Promise<any>
             }
+            queryKeyFn={(params?) => getListCommentsApiV1AdminModerationCommentsGetQueryKey(params)}
           />
         </TabsContent>
         <TabsContent value="guestbook">
@@ -1158,13 +1160,12 @@ export default function ModerationPage() {
             title={t("moderation.guestbook")}
             description={t("moderation.unifiedNote")}
             loadItems={(params) =>
-              listGuestbook(params) as Promise<
-                PaginatedResponse<ModerationRecord>
-              >
+              listGuestbookApiV1AdminModerationGuestbookGet(params) as Promise<any>
             }
             moderateItem={(id, payload) =>
-              moderateGuestbook(id, payload) as Promise<ModerationRecord>
+              moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(id, payload) as Promise<any>
             }
+            queryKeyFn={(params?) => getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params)}
           />
         </TabsContent>
       </Tabs>

@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProfile, updateProfile } from "@/api/endpoints/site-config";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetProfileApiV1AdminSiteConfigProfileGet,
+  useUpdateProfileApiV1AdminSiteConfigProfilePut,
+  getGetProfileApiV1AdminSiteConfigProfileGetQueryKey,
+} from "@/api/generated/admin/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -10,14 +14,13 @@ import { Save } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import type { SiteProfileAdminRead } from "@/api/generated/model";
 
 export function ProfileTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["site-profile"],
-    queryFn: getProfile,
-  });
+  const { data: raw, isLoading } = useGetProfileApiV1AdminSiteConfigProfileGet();
+  const profile = raw?.data as SiteProfileAdminRead | undefined;
   const [form, setForm] = useState({
     name: "",
     title: "",
@@ -42,15 +45,16 @@ export function ProfileTab() {
     }
   }, [profile]);
 
-  const save = useMutation({
-    mutationFn: () => updateProfile({ ...form, feature_flags: featureFlags }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["site-profile"] });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const save = useUpdateProfileApiV1AdminSiteConfigProfilePut({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetProfileApiV1AdminSiteConfigProfileGetQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
@@ -90,7 +94,7 @@ export function ProfileTab() {
               rows={4}
             />
           </div>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+          <Button onClick={() => save.mutate({ data: { ...form, feature_flags: featureFlags } })} disabled={save.isPending}>
             <Save className="h-4 w-4 mr-2" />{" "}
             {save.isPending ? t("common.saving") : t("common.save")}
           </Button>

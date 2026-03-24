@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { getSystemInfo } from "@/api/endpoints/system";
+import { useSystemInfoApiV1AdminSystemInfoGet } from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Server, Database, HardDrive, Clock, Code } from "lucide-react";
 import { useI18n } from "@/i18n";
+import type { SystemInfo } from "@/api/generated/model";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -24,11 +24,10 @@ function formatUptime(seconds: number): string {
 
 export default function SystemInfoPage() {
   const { t } = useI18n();
-  const { data, isLoading } = useQuery({
-    queryKey: ["system-info"],
-    queryFn: getSystemInfo,
-    refetchInterval: 30000,
+  const { data: raw, isLoading } = useSystemInfoApiV1AdminSystemInfoGet({
+    query: { refetchInterval: 30000 },
   });
+  const data = raw?.data as SystemInfo | undefined;
 
   const items = data ? [
     { label: t("systemInfo.version"), value: data.version, icon: Code },

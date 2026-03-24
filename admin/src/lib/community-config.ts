@@ -1,9 +1,14 @@
-import type {
-  CommunityAvatarPreset,
-  CommunityConfig,
-  CommunityConfigUpdate,
-  CommunitySurfaceConfig,
-} from "@/types/models";
+import type { CommunityConfigAdminRead } from "@/api/generated/model/communityConfigAdminRead";
+import type { CommunityConfigUpdate } from "@/api/generated/model/communityConfigUpdate";
+import type { AerisunApiAdminSchemasCommunitySurfaceRead } from "@/api/generated/model/aerisunApiAdminSchemasCommunitySurfaceRead";
+import type { CommunitySurfaceUpdate } from "@/api/generated/model/communitySurfaceUpdate";
+
+interface CommunityAvatarPreset {
+  key: string;
+  label: string;
+  avatar_url: string;
+  note?: string | null;
+}
 
 export interface CommunityConfigFormState {
   provider: string;
@@ -32,7 +37,7 @@ export interface CommunityConfigFormState {
 
 export const COMMUNITY_CONFIG_ENDPOINTS = ["/api/v1/admin/site-config/community-config"] as const;
 
-export const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceConfig[] = [
+export const DEFAULT_COMMUNITY_SURFACES: AerisunApiAdminSchemasCommunitySurfaceRead[] = [
   { key: "posts", label: "Posts", path: "/posts/{slug}", enabled: true },
   { key: "diary", label: "Diary", path: "/diary/{slug}", enabled: true },
   { key: "guestbook", label: "Guestbook", path: "/guestbook", enabled: true },
@@ -74,7 +79,7 @@ const splitList = (value: string) =>
 const joinList = (value: string[] | undefined | null) => (value?.length ? value.join(", ") : "");
 const toPrettyJson = (value: unknown) => JSON.stringify(value ?? [], null, 2);
 
-const parseSurfaceList = (value: string): CommunitySurfaceConfig[] => {
+const parseSurfaceList = (value: string): CommunitySurfaceUpdate[] => {
   const raw = value.trim();
   if (!raw) {
     return DEFAULT_COMMUNITY_SURFACES;
@@ -133,7 +138,7 @@ const parseAvatarPresets = (value: string): CommunityAvatarPreset[] => {
   });
 };
 
-export const createCommunityForm = (config?: CommunityConfig | null): CommunityConfigFormState => ({
+export const createCommunityForm = (config?: CommunityConfigAdminRead | null): CommunityConfigFormState => ({
   provider: config?.provider ?? "waline",
   server_url: config?.server_url ?? "",
   migration_state: config?.migration_state ?? "draft",
@@ -183,7 +188,7 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   avatar_helper_copy: form.helper_copy.trim() || null,
 });
 
-export const formatCommunitySurfaces = (value: CommunitySurfaceConfig[]) => toPrettyJson(value);
+export const formatCommunitySurfaces = (value: AerisunApiAdminSchemasCommunitySurfaceRead[]) => toPrettyJson(value);
 
 export const parseCommunityList = (value: string) =>
   value

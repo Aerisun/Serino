@@ -1,7 +1,15 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getThought, createThought, updateThought, deleteThought } from "@/api/endpoints/thoughts";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetThoughts,
+  useCreateThoughts,
+  useUpdateThoughts,
+  useDeleteThoughts,
+  getListThoughtsQueryKey,
+  getGetThoughtsQueryKey,
+} from "@/api/generated/admin/admin";
+import type { ContentCreate, ContentUpdate } from "@/api/generated/model";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -10,7 +18,6 @@ import { Label } from "@/components/ui/Label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ContentCreate, ContentUpdate } from "@/types/models";
 import { Trash2, Save } from "lucide-react";
 
 export default function ThoughtEditPage() {
@@ -20,9 +27,10 @@ export default function ThoughtEditPage() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
 
-  const { data: item } = useQuery({
-    queryKey: ["thoughts", id], queryFn: () => getThought(id!), enabled: !isNew && !!id,
+  const { data: itemData } = useGetThoughts(id!, {
+    query: { enabled: !isNew && !!id },
   });
+  const item = itemData?.data;
 
   const [form, setForm] = useState<ContentCreate>({
     slug: "", title: "", summary: "", body: "", tags: [], status: "draft", visibility: "public", published_at: null,
@@ -30,23 +38,65 @@ export default function ThoughtEditPage() {
   });
 
   useEffect(() => {
-    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, mood: (item as any).mood || "" });
+    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, mood: item.mood || "" });
   }, [item]);
 
-  const save = useMutation({
-    mutationFn: () => isNew ? createThought(form) : updateThought(id!, form as ContentUpdate),
-    onSuccess: (data) => { toast.success(t("common.operationSuccess")); queryClient.invalidateQueries({ queryKey: ["thoughts"] }); if (isNew) navigate(`/thoughts/${data.id}`, { replace: true }); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const invalidateQueries = () => {
+    queryClient.invalidateQueries({ queryKey: getListThoughtsQueryKey() });
+    if (id && !isNew) {
+      queryClient.invalidateQueries({ queryKey: getGetThoughtsQueryKey(id) });
+    }
+  };
+
+  const { mutateAsync: createThought } = useCreateThoughts({
+    mutation: {
+      onSuccess: (data) => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate(`/thoughts/${data.data.id}`, { replace: true });
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const del = useMutation({
-    mutationFn: () => deleteThought(id!),
-    onSuccess: () => { toast.success(t("common.operationSuccess")); queryClient.invalidateQueries({ queryKey: ["thoughts"] }); navigate("/thoughts"); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const { mutateAsync: updateThought } = useUpdateThoughts({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
+
+  const { mutate: deleteThoughtMutate } = useDeleteThoughts({
+    mutation: {
+      onSuccess: () => {
+        invalidateQueries();
+        toast.success(t("common.operationSuccess"));
+        navigate("/thoughts");
+      },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      if (isNew) {
+        await createThought({ data: form });
+      } else {
+        await updateThought({ itemId: id!, data: form as ContentUpdate });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
-  const handleSubmit = (e: FormEvent) => { e.preventDefault(); save.mutate(); };
 
   return (
     <div>
@@ -54,8 +104,8 @@ export default function ThoughtEditPage() {
         title={isNew ? t("thoughts.newThought") : t("thoughts.editThought")}
         actions={
           <div className="flex gap-2">
-            {!isNew && <Button variant="destructive" onClick={() => { if (confirm(t("thoughts.deleteConfirm"))) del.mutate(); }}><Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}</Button>}
-            <Button onClick={handleSubmit} disabled={save.isPending}><Save className="h-4 w-4 mr-2" /> {save.isPending ? t("common.saving") : t("common.save")}</Button>
+            {!isNew && <Button variant="destructive" onClick={() => { if (confirm(t("thoughts.deleteConfirm"))) deleteThoughtMutate({ itemId: id! }); }}><Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}</Button>}
+            <Button onClick={handleSubmit} disabled={isSaving}><Save className="h-4 w-4 mr-2" /> {isSaving ? t("common.saving") : t("common.save")}</Button>
           </div>
         }
       />

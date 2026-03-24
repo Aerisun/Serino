@@ -12,7 +12,10 @@ import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
-import { ApiError, fetchPublicContentEntry, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import { ApiError } from "@/lib/api/mutator/custom-fetch";
+import { formatPublishedDate } from "@/lib/api/utils";
+import { readDiaryEntryApiV1PublicDiarySlugGet } from "@/lib/api/generated/public/public";
+import type { ContentEntryRead } from "@/lib/api/generated/model";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
@@ -55,7 +58,7 @@ const formatWeekday = (value: string | null) => {
   return new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(parsed);
 };
 
-const buildRemoteDiaryEntry = (entry: PublicContentEntry): DiaryData => ({
+const buildRemoteDiaryEntry = (entry: ContentEntryRead): DiaryData => ({
   slug: entry.slug,
   date: formatPublishedDate(entry.published_at) || "",
   weekday: formatWeekday(entry.published_at),
@@ -93,12 +96,12 @@ const DiaryDetail = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentEntry("diary", decodeURIComponent(id), { signal: controller.signal });
+        const response = await readDiaryEntryApiV1PublicDiarySlugGet(decodeURIComponent(id), { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
-        setEntry(buildRemoteDiaryEntry(payload));
+        setEntry(buildRemoteDiaryEntry(response.data));
         setStatus("ready");
       } catch (error) {
         if (controller.signal.aborted) {

@@ -1,10 +1,19 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  listResumeBasics, createResumeBasics, updateResumeBasics,
-  listResumeSkills, createResumeSkill, deleteResumeSkill,
-  listResumeExperiences, createResumeExperience, deleteResumeExperience,
-} from "@/api/endpoints/resume";
+  useListBasics,
+  useCreateBasics,
+  useUpdateBasics,
+  getListBasicsQueryKey,
+  useListSkills,
+  useCreateSkills,
+  useDeleteSkills,
+  getListSkillsQueryKey,
+  useListExperiences,
+  useCreateExperiences,
+  useDeleteExperiences,
+  getListExperiencesQueryKey,
+} from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { DataTable } from "@/components/DataTable";
@@ -17,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ResumeSkillGroup, ResumeExperience } from "@/types/models";
+import type { ResumeSkillGroupAdminRead, ResumeExperienceAdminRead } from "@/api/generated/model";
 
 export default function ResumePage() {
   const { t } = useI18n();
@@ -41,7 +50,8 @@ export default function ResumePage() {
 function BasicsTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["resume-basics"], queryFn: () => listResumeBasics() });
+  const { data: raw, isLoading } = useListBasics();
+  const data = raw?.data;
   const existing = data?.items?.[0];
   const [form, setForm] = useState({ title: "", subtitle: "", summary: "", download_label: "" });
 
@@ -49,13 +59,29 @@ function BasicsTab() {
     if (existing) setForm({ title: existing.title, subtitle: existing.subtitle, summary: existing.summary, download_label: existing.download_label });
   }, [existing]);
 
-  const save = useMutation({
-    mutationFn: () => existing
-      ? updateResumeBasics(existing.id, form)
-      : createResumeBasics(form),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-basics"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const createBasics = useCreateBasics({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
+
+  const updateBasics = useUpdateBasics({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
+  });
+
+  const savePending = createBasics.isPending || updateBasics.isPending;
+
+  function handleSave() {
+    if (existing) {
+      updateBasics.mutate({ itemId: existing.id, data: form });
+    } else {
+      createBasics.mutate({ data: form });
+    }
+  }
 
   if (isLoading) return <p className="py-4 text-muted-foreground">{t("common.loading")}</p>;
 
@@ -78,8 +104,8 @@ function BasicsTab() {
           <Label>{t("resume.summary")}</Label>
           <Textarea value={form.summary} onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))} rows={4} />
         </div>
-        <Button onClick={() => save.mutate()} disabled={save.isPending}>
-          <Save className="h-4 w-4 mr-2" /> {save.isPending ? t("common.saving") : t("common.save")}
+        <Button onClick={() => handleSave()} disabled={savePending}>
+          <Save className="h-4 w-4 mr-2" /> {savePending ? t("common.saving") : t("common.save")}
         </Button>
       </CardContent>
     </Card>
@@ -89,23 +115,26 @@ function BasicsTab() {
 function SkillsTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: basicsData } = useQuery({ queryKey: ["resume-basics"], queryFn: () => listResumeBasics() });
-  const { data } = useQuery({ queryKey: ["resume-skills"], queryFn: () => listResumeSkills() });
+  const { data: basicsRaw } = useListBasics();
+  const { data: raw } = useListSkills();
+  const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ category: "", items: "" as any, order_index: 0 });
 
-  const basicsId = basicsData?.items?.[0]?.id ?? "";
+  const basicsId = basicsRaw?.data?.items?.[0]?.id ?? "";
 
-  const create = useMutation({
-    mutationFn: () => createResumeSkill({ resume_basics_id: basicsId, category: form.category, items: form.items.split(",").map((s: string) => s.trim()).filter(Boolean), order_index: form.order_index }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-skills"] }); setOpen(false); setForm({ category: "", items: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const create = useCreateSkills({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSkillsQueryKey() }); setOpen(false); setForm({ category: "", items: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteResumeSkill(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-skills"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const del = useDeleteSkills({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSkillsQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
   return (
@@ -119,19 +148,19 @@ function SkillsTab() {
               <div className="space-y-1"><Label>{t("resume.category")}</Label><Input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} /></div>
               <div className="space-y-1"><Label>{t("resume.itemsCommaSeparated")}</Label><Input value={form.items} onChange={(e) => setForm((p) => ({ ...p, items: e.target.value }))} /></div>
               <div className="space-y-1"><Label>{t("common.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
-              <Button onClick={() => create.mutate()} disabled={create.isPending}>{t("common.create")}</Button>
+              <Button onClick={() => create.mutate({ data: { resume_basics_id: basicsId, category: form.category, items: form.items.split(",").map((s: string) => s.trim()).filter(Boolean), order_index: form.order_index } })} disabled={create.isPending}>{t("common.create")}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
       {!basicsId && <p className="text-sm text-muted-foreground mb-2">{t("resume.saveBasicsFirst")}</p>}
       <div className="border rounded-lg">
-        <DataTable<ResumeSkillGroup>
+        <DataTable<ResumeSkillGroupAdminRead>
           columns={[
             { header: t("resume.category"), accessor: "category" },
             { header: t("common.items"), accessor: (row) => row.items.join(", ") },
             { header: t("common.order"), accessor: "order_index" as any },
-            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => del.mutate(row.id)}><Trash2 className="h-4 w-4" /></Button> },
+            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => del.mutate({ itemId: row.id })}><Trash2 className="h-4 w-4" /></Button> },
           ]}
           data={data?.items ?? []}
           total={data?.total ?? 0}
@@ -144,23 +173,26 @@ function SkillsTab() {
 function ExperienceTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: basicsData } = useQuery({ queryKey: ["resume-basics"], queryFn: () => listResumeBasics() });
-  const { data } = useQuery({ queryKey: ["resume-experiences"], queryFn: () => listResumeExperiences() });
+  const { data: basicsRaw } = useListBasics();
+  const { data: raw } = useListExperiences();
+  const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", company: "", period: "", summary: "", order_index: 0 });
 
-  const basicsId = basicsData?.items?.[0]?.id ?? "";
+  const basicsId = basicsRaw?.data?.items?.[0]?.id ?? "";
 
-  const create = useMutation({
-    mutationFn: () => createResumeExperience({ resume_basics_id: basicsId, ...form }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-experiences"] }); setOpen(false); setForm({ title: "", company: "", period: "", summary: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const create = useCreateExperiences({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListExperiencesQueryKey() }); setOpen(false); setForm({ title: "", company: "", period: "", summary: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteResumeExperience(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["resume-experiences"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const del = useDeleteExperiences({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListExperiencesQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
   const fieldLabels: Record<string, string> = {
@@ -182,20 +214,20 @@ function ExperienceTab() {
               ))}
               <div className="space-y-1"><Label>{t("resume.summary")}</Label><Textarea value={form.summary} onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))} rows={3} /></div>
               <div className="space-y-1"><Label>{t("common.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
-              <Button onClick={() => create.mutate()} disabled={create.isPending}>{t("common.create")}</Button>
+              <Button onClick={() => create.mutate({ data: { resume_basics_id: basicsId, ...form } })} disabled={create.isPending}>{t("common.create")}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
       {!basicsId && <p className="text-sm text-muted-foreground mb-2">{t("resume.saveBasicsFirstExp")}</p>}
       <div className="border rounded-lg">
-        <DataTable<ResumeExperience>
+        <DataTable<ResumeExperienceAdminRead>
           columns={[
             { header: t("common.title"), accessor: "title" },
             { header: t("resume.company"), accessor: "company" },
             { header: t("resume.period"), accessor: "period" },
             { header: t("common.order"), accessor: "order_index" as any },
-            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => del.mutate(row.id)}><Trash2 className="h-4 w-4" /></Button> },
+            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => del.mutate({ itemId: row.id })}><Trash2 className="h-4 w-4" /></Button> },
           ]}
           data={data?.items ?? []}
           total={data?.total ?? 0}

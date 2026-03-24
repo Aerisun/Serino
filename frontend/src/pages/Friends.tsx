@@ -7,12 +7,11 @@ import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import {
-  fetchPublicFriendFeed,
-  fetchPublicFriends,
-  formatFriendFeedDate,
-  type PublicFriend,
-  type PublicFriendFeedItem,
-} from "@/lib/api";
+  readFriendFeedApiV1PublicFriendFeedGet,
+  readFriendsApiV1PublicFriendsGet,
+} from "@/lib/api/generated/public/public";
+import { formatFriendFeedDate } from "@/lib/api/utils";
+import type { FriendRead, FriendFeedItemRead } from "@/lib/api/generated/model";
 
 interface Friend {
   name: string;
@@ -36,14 +35,14 @@ interface FriendsPageConfig extends BaseViewPageConfig {
   loadMoreLabel?: string;
 }
 
-const toFriend = (value: PublicFriend): Friend => ({
+const toFriend = (value: FriendRead): Friend => ({
   name: value.name,
   desc: value.description?.trim() ?? "",
   avatar: value.avatar?.trim() ?? "",
   url: value.url,
 });
 
-const toCirclePost = (value: PublicFriendFeedItem): CirclePost => ({
+const toCirclePost = (value: FriendFeedItemRead): CirclePost => ({
   blogName: value.blogName,
   title: value.title,
   date: formatFriendFeedDate(value.publishedAt),
@@ -79,17 +78,17 @@ const Friends = () => {
       setErrorMessage("");
 
       try {
-        const [friendsPayload, feedPayload] = await Promise.all([
-          fetchPublicFriends(undefined, { signal: controller.signal }),
-          fetchPublicFriendFeed(undefined, { signal: controller.signal }),
+        const [friendsResponse, feedResponse] = await Promise.all([
+          readFriendsApiV1PublicFriendsGet(undefined, { signal: controller.signal }),
+          readFriendFeedApiV1PublicFriendFeedGet(undefined, { signal: controller.signal }),
         ]);
 
         if (controller.signal.aborted) {
           return;
         }
 
-        const nextFriends = friendsPayload.items.map(toFriend).filter((item) => Boolean(item.name));
-        const nextCirclePosts = feedPayload.items
+        const nextFriends = friendsResponse.data.items.map(toFriend).filter((item) => Boolean(item.name));
+        const nextCirclePosts = feedResponse.data.items
           .map(toCirclePost)
           .filter((item) => Boolean(item.blogName && item.title && item.url));
 

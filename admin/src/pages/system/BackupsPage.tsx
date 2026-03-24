@@ -1,5 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listBackups, triggerBackup, restoreBackup } from "@/api/endpoints/system";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListBackupsApiV1AdminSystemBackupsGet,
+  useTriggerBackupApiV1AdminSystemBackupsPost,
+  useRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost,
+  getListBackupsApiV1AdminSystemBackupsGetQueryKey,
+} from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -8,27 +13,27 @@ import { Database, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { BackupSnapshot } from "@/types/models";
+import type { BackupSnapshotRead } from "@/api/generated/model";
 
 export default function BackupsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["backups"],
-    queryFn: listBackups,
+  const { data: raw, isLoading } = useListBackupsApiV1AdminSystemBackupsGet();
+  const data = raw?.data as BackupSnapshotRead[] | undefined;
+
+  const create = useTriggerBackupApiV1AdminSystemBackupsPost({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBackupsApiV1AdminSystemBackupsGetQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
-  const create = useMutation({
-    mutationFn: triggerBackup,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["backups"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
-  });
-
-  const restore = useMutation({
-    mutationFn: (id: string) => restoreBackup(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["backups"] }); toast.success(t("common.operationSuccess")); },
-    onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+  const restore = useRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBackupsApiV1AdminSystemBackupsGetQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+    },
   });
 
   return (
@@ -43,7 +48,7 @@ export default function BackupsPage() {
         }
       />
       <div className="border rounded-lg">
-        <DataTable<BackupSnapshot>
+        <DataTable<BackupSnapshotRead>
           columns={[
             { header: t("system.snapshotType"), accessor: "snapshot_type" },
             { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
@@ -56,7 +61,7 @@ export default function BackupsPage() {
                   variant="outline"
                   size="sm"
                   disabled={row.status !== "completed"}
-                  onClick={(e) => { e.stopPropagation(); if (confirm(t("system.restoreConfirm"))) restore.mutate(row.id); }}
+                  onClick={(e) => { e.stopPropagation(); if (confirm(t("system.restoreConfirm"))) restore.mutate({ snapshotId: row.id }); }}
                 >
                   <RotateCcw className="h-4 w-4 mr-1" /> {t("system.restore")}
                 </Button>

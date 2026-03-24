@@ -5,7 +5,9 @@ import PageShell from "@/components/PageShell";
 import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
-import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import { formatPublishedDate } from "@/lib/api/utils";
+import { readExcerptsApiV1PublicExcerptsGet } from "@/lib/api/generated/public/public";
+import type { ContentEntryRead } from "@/lib/api/generated/model";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Excerpt {
@@ -23,7 +25,7 @@ interface ExcerptsPageConfig extends BaseViewPageConfig {
   modalCloseLabel?: string;
 }
 
-const mapRemoteExcerpt = (entry: PublicContentEntry): Excerpt => {
+const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
   return {
     id: entry.slug,
     title: entry.title,
@@ -67,11 +69,12 @@ const Excerpts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("excerpts", pageSize, undefined, { signal: controller.signal });
+        const response = await readExcerptsApiV1PublicExcerptsGet({ limit: pageSize }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
+        const payload = response.data;
         const nextItems = payload.items.map(mapRemoteExcerpt);
         setItems(nextItems);
         setHasMore(payload.has_more ?? false);
@@ -96,7 +99,8 @@ const Excerpts = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("excerpts", pageSize, items.length);
+      const response = await readExcerptsApiV1PublicExcerptsGet({ limit: pageSize, offset: items.length });
+      const payload = response.data;
       const moreItems = payload.items.map(mapRemoteExcerpt);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

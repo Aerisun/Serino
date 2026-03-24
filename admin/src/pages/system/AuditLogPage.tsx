@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { listAuditLogs } from "@/api/endpoints/system";
+import {
+  useListAuditLogsApiV1AdminSystemAuditLogsGet,
+} from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
-import type { AuditLog } from "@/types/models";
+import type { AuditLogRead } from "@/api/generated/model";
 
 export default function AuditLogPage() {
   const { t } = useI18n();
@@ -16,16 +17,13 @@ export default function AuditLogPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["audit-logs", page, actionFilter, dateFrom, dateTo],
-    queryFn: () =>
-      listAuditLogs({
-        page,
-        action: actionFilter || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-      }),
+  const { data: raw, isLoading } = useListAuditLogsApiV1AdminSystemAuditLogsGet({
+    page,
+    action: actionFilter || undefined,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
   });
+  const data = raw?.data;
 
   const handleFilter = () => {
     setPage(1);
@@ -80,7 +78,7 @@ export default function AuditLogPage() {
       </div>
 
       <div className="border rounded-lg">
-        <DataTable<AuditLog>
+        <DataTable<AuditLogRead>
           columns={[
             { header: t("system.action"), accessor: (row) => <Badge variant="outline">{row.action}</Badge> },
             { header: t("system.actor"), accessor: (row) => `${row.actor_type}${row.actor_id ? `:${row.actor_id}` : ""}` },

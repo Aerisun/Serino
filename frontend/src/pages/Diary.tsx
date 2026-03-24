@@ -5,7 +5,9 @@ import { ChevronDown, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } f
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
-import { fetchPublicContentCollection, formatPublishedDate, splitContentParagraphs, type PublicContentEntry } from "@/lib/api";
+import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
+import { readDiaryApiV1PublicDiaryGet } from "@/lib/api/generated/public/public";
+import type { ContentEntryRead } from "@/lib/api/generated/model";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface DiaryEntry {
@@ -56,7 +58,7 @@ const formatWeekday = (value: string | null) => {
   return new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(parsed);
 };
 
-const mapRemoteDiaryEntry = (entry: PublicContentEntry, index: number): DiaryEntry => {
+const mapRemoteDiaryEntry = (entry: ContentEntryRead, index: number): DiaryEntry => {
   const paragraphs = splitContentParagraphs(entry.body);
 
   return {
@@ -93,11 +95,12 @@ const Diary = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("diary", pageSize, undefined, { signal: controller.signal });
+        const response = await readDiaryApiV1PublicDiaryGet({ limit: pageSize }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
+        const payload = response.data;
         const nextItems = payload.items.map(mapRemoteDiaryEntry);
         setItems(nextItems);
         setHasMore(payload.has_more ?? false);
@@ -122,7 +125,8 @@ const Diary = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("diary", pageSize, items.length);
+      const response = await readDiaryApiV1PublicDiaryGet({ limit: pageSize, offset: items.length });
+      const payload = response.data;
       const moreItems = payload.items.map(mapRemoteDiaryEntry);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

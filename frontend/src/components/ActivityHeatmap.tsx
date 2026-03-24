@@ -1,10 +1,12 @@
 import { useMemo, useRef, useEffect, useState } from "react";
 import { useTheme } from "@serino/theme";
 import {
-  fetchActivityHeatmap,
-  type PublicActivityHeatmapStats,
-  type PublicActivityHeatmapWeek,
-} from "@/lib/api";
+  readActivityHeatmapApiV1PublicActivityHeatmapGet,
+} from "@/lib/api/generated/public/public";
+import type {
+  ActivityHeatmapStatsRead,
+  ActivityHeatmapWeekRead,
+} from "@/lib/api/generated/model";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface WeeklyData {
@@ -15,7 +17,7 @@ interface WeeklyData {
   label: string;
 }
 
-const normalizeHeatmapWeeks = (weeks: PublicActivityHeatmapWeek[]): WeeklyData[] =>
+const normalizeHeatmapWeeks = (weeks: ActivityHeatmapWeekRead[]): WeeklyData[] =>
   weeks.map((week, index) => ({
     week: index,
     total: week.total,
@@ -72,7 +74,7 @@ const buildMonthMarkers = (weeks: WeeklyData[]) => {
 const ActivityHeatmap = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<WeeklyData[]>([]);
-  const [remoteStats, setRemoteStats] = useState<PublicActivityHeatmapStats | null>(null);
+  const [remoteStats, setRemoteStats] = useState<ActivityHeatmapStatsRead | null>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
@@ -102,14 +104,14 @@ const ActivityHeatmap = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchActivityHeatmap(52, { signal: controller.signal });
+        const response = await readActivityHeatmapApiV1PublicActivityHeatmapGet({ weeks: 52 }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
-        const remoteWeeks = normalizeHeatmapWeeks(payload.weeks);
+        const remoteWeeks = normalizeHeatmapWeeks(response.data.weeks);
         setData(remoteWeeks);
-        setRemoteStats(payload.stats);
+        setRemoteStats(response.data.stats);
         setStatus(remoteWeeks.length > 0 ? "ready" : "empty");
       } catch (error) {
         if (!controller.signal.aborted) {

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchPublicFriendFeed, formatFriendFeedDate, type PublicFriendFeedItem } from "@/lib/api";
+import { readFriendFeedApiV1PublicFriendFeedGet } from "@/lib/api/generated/public/public";
+import { formatFriendFeedDate } from "@/lib/api/utils";
+import type { FriendFeedItemRead } from "@/lib/api/generated/model";
 
 interface FriendPost {
   avatar: string;
@@ -11,7 +13,7 @@ interface FriendPost {
   url?: string;
 }
 
-const normalizeFriendPost = (value: PublicFriendFeedItem): FriendPost => ({
+const normalizeFriendPost = (value: FriendFeedItemRead): FriendPost => ({
   avatar: value.avatar?.trim() ?? "",
   blogName: value.blogName,
   title: value.title,
@@ -34,12 +36,12 @@ const FriendCircle = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicFriendFeed(12, { signal: controller.signal });
+        const response = await readFriendFeedApiV1PublicFriendFeedGet({ limit: 12 }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
-        const nextPosts = payload.items.map(normalizeFriendPost);
+        const nextPosts = response.data.items.map(normalizeFriendPost);
         setFriendPosts(nextPosts);
         setStatus(nextPosts.length > 0 ? "ready" : "empty");
       } catch (error) {

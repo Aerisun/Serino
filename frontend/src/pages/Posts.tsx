@@ -6,7 +6,9 @@ import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { formatPostCount } from "@/lib/format";
-import { fetchPublicContentCollection, formatPublishedDate, type PublicContentEntry } from "@/lib/api";
+import { formatPublishedDate } from "@/lib/api/utils";
+import { readPostsApiV1PublicPostsGet } from "@/lib/api/generated/public/public";
+import type { ContentEntryRead } from "@/lib/api/generated/model";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Post {
@@ -27,7 +29,7 @@ interface PostsPageConfig extends BaseViewPageConfig {
   };
 }
 
-const mapRemotePost = (entry: PublicContentEntry): Post => ({
+const mapRemotePost = (entry: ContentEntryRead): Post => ({
   slug: entry.slug,
   title: entry.title,
   excerpt: entry.summary ?? entry.body,
@@ -63,11 +65,12 @@ const Posts = () => {
       setErrorMessage("");
 
       try {
-        const payload = await fetchPublicContentCollection("posts", pageSize, undefined, { signal: controller.signal });
+        const response = await readPostsApiV1PublicPostsGet({ limit: pageSize }, { signal: controller.signal });
         if (controller.signal.aborted) {
           return;
         }
 
+        const payload = response.data;
         const nextItems = payload.items.map(mapRemotePost);
         setItems(nextItems);
         setHasMore(payload.has_more ?? false);
@@ -98,7 +101,8 @@ const Posts = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const payload = await fetchPublicContentCollection("posts", pageSize, items.length);
+      const response = await readPostsApiV1PublicPostsGet({ limit: pageSize, offset: items.length });
+      const payload = response.data;
       const moreItems = payload.items.map(mapRemotePost);
       setItems(prev => [...prev, ...moreItems]);
       setHasMore(payload.has_more ?? false);

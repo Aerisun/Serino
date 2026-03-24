@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getCommunityConfig,
-  updateCommunityConfig,
-} from "@/api/endpoints/site-config";
+  useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet,
+  useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut,
+  getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey,
+} from "@/api/generated/admin/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -37,10 +38,8 @@ const GUEST_AVATAR_MODE_OPTIONS = ["preset", "identicon", "gravatar"] as const;
 export function CommunityTab() {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
-  const { data: config, isLoading } = useQuery({
-    queryKey: ["community-config"],
-    queryFn: getCommunityConfig,
-  });
+  const { data: resp, isLoading } = useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet();
+  const config = resp?.data;
   const [form, setForm] = useState(() => createCommunityForm());
   const [formError, setFormError] = useState("");
 
@@ -51,21 +50,22 @@ export function CommunityTab() {
     }
   }, [config]);
 
-  const save = useMutation({
-    mutationFn: () => {
-      setFormError("");
-      return updateCommunityConfig(communityFormToUpdate(form));
-    },
-    onSuccess: (saved) => {
-      queryClient.invalidateQueries({ queryKey: ["community-config"] });
-      setForm(createCommunityForm(saved));
-    },
-    onError: (error) => {
-      setFormError(
-        error instanceof Error
-          ? error.message
-          : t("siteConfig.commentSaveError"),
-      );
+  const save = useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut({
+    mutation: {
+      onMutate: () => {
+        setFormError("");
+      },
+      onSuccess: (saved) => {
+        queryClient.invalidateQueries({ queryKey: getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey() });
+        setForm(createCommunityForm(saved.data));
+      },
+      onError: (error) => {
+        setFormError(
+          error instanceof Error
+            ? error.message
+            : t("siteConfig.commentSaveError"),
+        );
+      },
     },
   });
 
@@ -368,7 +368,7 @@ export function CommunityTab() {
 
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 
-        <Button onClick={() => save.mutate()} disabled={save.isPending}>
+        <Button onClick={() => save.mutate({ data: communityFormToUpdate(form) })} disabled={save.isPending}>
           <Save className="h-4 w-4 mr-2" />
           {save.isPending ? t("common.saving") : t("common.save")}
         </Button>

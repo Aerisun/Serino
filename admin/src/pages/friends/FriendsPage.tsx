@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useResourceList } from "@/hooks/useResource";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  listFriends,
-  createFriend,
-  updateFriend,
-  deleteFriend,
-  listFriendFeeds,
-  createFriendFeed,
-  updateFriendFeed,
-  deleteFriendFeed,
-} from "@/api/endpoints/friends";
+  useListFriends,
+  useCreateFriends,
+  useUpdateFriends,
+  useDeleteFriends,
+  getListFriendsQueryKey,
+  useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet,
+  useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost,
+  useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut,
+  useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete,
+  getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey,
+} from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -28,14 +29,14 @@ import { Plus, Trash2, Pencil, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { Friend, FriendFeedSource } from "@/types/models";
+import type { FriendAdminRead, FriendFeedSourceAdminRead } from "@/api/generated/model";
 
 export default function FriendsPage() {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editingFriend, setEditingFriend] = useState<Friend | null>(null);
+  const [editingFriend, setEditingFriend] = useState<FriendAdminRead | null>(null);
   const queryClient = useQueryClient();
   const emptyForm = {
     name: "",
@@ -47,16 +48,11 @@ export default function FriendsPage() {
   };
   const [form, setForm] = useState(emptyForm);
 
-  const { items, total, pageSize, isLoading } = useResourceList(
-    {
-      queryKey: "friends",
-      listFn: listFriends,
-      createFn: createFriend,
-      updateFn: updateFriend,
-      deleteFn: deleteFriend,
-    },
-    { page },
-  );
+  const { data: raw, isLoading } = useListFriends({ page });
+  const data = raw?.data;
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const pageSize = data?.page_size ?? 20;
 
   // Shuffle on every render / page change
   const shuffledItems = useMemo(
@@ -64,47 +60,50 @@ export default function FriendsPage() {
     [items],
   );
 
-  const create = useMutation({
-    mutationFn: () => createFriend(form),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-      setCreateOpen(false);
-      setForm(emptyForm);
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
-    },
-  });
-
-  const update = useMutation({
-    mutationFn: () => updateFriend(editingFriend!.id, form),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-      setEditOpen(false);
-      setEditingFriend(null);
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const create = useCreateFriends({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFriendsQueryKey() });
+        setCreateOpen(false);
+        setForm(emptyForm);
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteFriend(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const update = useUpdateFriends({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFriendsQueryKey() });
+        setEditOpen(false);
+        setEditingFriend(null);
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  function startEdit(friend: Friend) {
+  const del = useDeleteFriends({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFriendsQueryKey() });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
+    },
+  });
+
+  function startEdit(friend: FriendAdminRead) {
     setEditingFriend(friend);
     setForm({
       name: friend.name,
@@ -188,7 +187,7 @@ export default function FriendsPage() {
               </DialogHeader>
               <FriendFormFields />
               <Button
-                onClick={() => create.mutate()}
+                onClick={() => create.mutate({ data: form })}
                 disabled={create.isPending}
               >
                 {t("common.create")}
@@ -211,7 +210,7 @@ export default function FriendsPage() {
             <DialogTitle>{t("friends.editFriend")}</DialogTitle>
           </DialogHeader>
           <FriendFormFields />
-          <Button onClick={() => update.mutate()} disabled={update.isPending}>
+          <Button onClick={() => update.mutate({ itemId: editingFriend!.id, data: form })} disabled={update.isPending}>
             {t("common.save")}
           </Button>
 
@@ -220,7 +219,7 @@ export default function FriendsPage() {
       </Dialog>
 
       <div className="border rounded-lg">
-        <DataTable<Friend>
+        <DataTable<FriendAdminRead>
           columns={[
             { header: t("friends.name"), accessor: "name" },
             {
@@ -250,7 +249,7 @@ export default function FriendsPage() {
                     size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
-                      del.mutate(row.id);
+                      del.mutate({ itemId: row.id });
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -274,63 +273,55 @@ export default function FriendsPage() {
 function FeedSourcesSection({ friendId }: { friendId: string }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: feeds, isLoading } = useQuery({
-    queryKey: ["friend-feeds", friendId],
-    queryFn: () => listFriendFeeds(friendId),
-  });
+  const { data: feedsRaw, isLoading } = useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet(friendId);
+  const feeds = feedsRaw?.data;
   const [addOpen, setAddOpen] = useState(false);
   const [feedForm, setFeedForm] = useState({ feed_url: "", is_enabled: true });
   const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
 
-  const createFeed = useMutation({
-    mutationFn: () =>
-      createFriendFeed(friendId, {
-        friend_id: friendId,
-        feed_url: feedForm.feed_url,
-        is_enabled: feedForm.is_enabled,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] });
-      setAddOpen(false);
-      setFeedForm({ feed_url: "", is_enabled: true });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const createFeed = useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId) });
+        setAddOpen(false);
+        setFeedForm({ feed_url: "", is_enabled: true });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const updateFeed = useMutation({
-    mutationFn: () =>
-      updateFriendFeed(editingFeedId!, {
-        feed_url: feedForm.feed_url,
-        is_enabled: feedForm.is_enabled,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] });
-      setEditingFeedId(null);
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const updateFeed = useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId) });
+        setEditingFeedId(null);
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  const delFeed = useMutation({
-    mutationFn: (id: string) => deleteFriendFeed(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friend-feeds", friendId] });
-      toast.success(t("common.operationSuccess"));
-    },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+  const delFeed = useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId) });
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
     },
   });
 
-  function startEditFeed(feed: FriendFeedSource) {
+  function startEditFeed(feed: FriendFeedSourceAdminRead) {
     setEditingFeedId(feed.id);
     setFeedForm({ feed_url: feed.feed_url, is_enabled: feed.is_enabled });
   }
@@ -374,7 +365,14 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
           </label>
           <Button
             size="sm"
-            onClick={() => createFeed.mutate()}
+            onClick={() => createFeed.mutate({
+              friendId,
+              data: {
+                friend_id: friendId,
+                feed_url: feedForm.feed_url,
+                is_enabled: feedForm.is_enabled,
+              },
+            })}
             disabled={createFeed.isPending}
           >
             {t("common.add")}
@@ -416,7 +414,13 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
               </label>
               <Button
                 size="sm"
-                onClick={() => updateFeed.mutate()}
+                onClick={() => updateFeed.mutate({
+                  feedId: editingFeedId!,
+                  data: {
+                    feed_url: feedForm.feed_url,
+                    is_enabled: feedForm.is_enabled,
+                  },
+                })}
                 disabled={updateFeed.isPending}
               >
                 {t("common.save")}
@@ -443,7 +447,7 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => delFeed.mutate(feed.id)}
+                onClick={() => delFeed.mutate({ feedId: feed.id })}
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
