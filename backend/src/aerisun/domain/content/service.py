@@ -179,3 +179,49 @@ def list_public_thoughts(session: Session, limit: int = 40, offset: int = 0) -> 
 
 def list_public_excerpts(session: Session, limit: int = 40, offset: int = 0) -> ContentCollectionRead:
     return _list_entries(session, ExcerptEntry, "excerpts", limit, offset)
+
+
+def aggregate_tags(session: Session) -> list:
+    """Cross-model tag aggregation with counts."""
+    import json as _json
+
+    from aerisun.domain.content.schemas import TagInfo
+
+    tag_counts: dict[str, int] = {}
+    for model in (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry):
+        rows = session.query(model.tags).filter(model.tags.isnot(None)).all()
+        for (tags_json,) in rows:
+            if not tags_json:
+                continue
+            if isinstance(tags_json, str):
+                try:
+                    tags_list = _json.loads(tags_json)
+                except (ValueError, TypeError):
+                    continue
+            elif isinstance(tags_json, list):
+                tags_list = tags_json
+            else:
+                continue
+            for tag in tags_list:
+                tag = str(tag).strip()
+                if tag:
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    return sorted(
+        [TagInfo(name=name, count=count) for name, count in tag_counts.items()],
+        key=lambda t: t.count,
+        reverse=True,
+    )
+
+
+def aggregate_categories(session: Session) -> list:
+    """Aggregate post categories with counts."""
+    from aerisun.domain.content.schemas import CategoryInfo
+
+    rows = (
+        session.query(PostEntry.category, func.count(PostEntry.id))
+        .filter(PostEntry.category.isnot(None), PostEntry.category != "")
+        .group_by(PostEntry.category)
+        .order_by(func.count(PostEntry.id).desc())
+        .all()
+    )
+    return [CategoryInfo(name=name, count=count) for name, count in rows]
