@@ -16,7 +16,7 @@ from aerisun.domain.waline.service import (
 )
 
 from .deps import get_current_admin
-from .schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
+from .schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction, PaginatedResponse
 
 router = APIRouter(prefix="/moderation", tags=["admin-moderation"])
 
@@ -50,7 +50,7 @@ def _guestbook_admin_read_from_waline(record) -> GuestbookAdminRead:
     )
 
 
-@router.get("/comments", response_model=dict, summary="获取评论审核列表")
+@router.get("/comments", response_model=PaginatedResponse[CommentAdminRead], summary="获取评论审核列表")
 def list_comments(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -132,7 +132,7 @@ def moderate_comment(
     return _comment_admin_read_from_waline(result)
 
 
-@router.get("/guestbook", response_model=dict, summary="获取留言审核列表")
+@router.get("/guestbook", response_model=PaginatedResponse[GuestbookAdminRead], summary="获取留言审核列表")
 def list_guestbook(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),

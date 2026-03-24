@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from aerisun.api.admin.schemas import CommentImageUploadResponse
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, limiter
 from aerisun.core.schemas import HealthRead
@@ -241,7 +242,7 @@ _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "i
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB hard limit (client compresses before this)
 
 
-@router.post("/comment-image", summary="评论图片上传")
+@router.post("/comment-image", response_model=CommentImageUploadResponse, summary="评论图片上传")
 @limiter.limit(RATE_WRITE_ENGAGEMENT)
 def upload_comment_image(
     request: Request,

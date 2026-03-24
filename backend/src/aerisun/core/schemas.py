@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ModelBase(BaseModel):
@@ -10,6 +10,6 @@ class ModelBase(BaseModel):
 
 
 class HealthRead(ModelBase):
-    status: str
-    database_path: str
-    timestamp: datetime
+    status: str = Field(description="Service health status")
+    database_path: str = Field(description="SQLite database file path")
+    timestamp: datetime = Field(description="Current server timestamp")

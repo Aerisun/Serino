@@ -8,75 +8,75 @@ from aerisun.core.schemas import ModelBase
 
 
 class GuestbookEntryRead(ModelBase):
-    id: str
-    name: str
-    website: str | None
-    body: str
-    status: str
-    created_at: datetime
-    avatar: str | None = None
-    avatar_url: str | None = None
+    id: str = Field(description="Unique guestbook entry identifier")
+    name: str = Field(description="Guest display name")
+    website: str | None = Field(description="Guest personal website URL")
+    body: str = Field(description="Guestbook message body")
+    status: str = Field(description="Moderation status")
+    created_at: datetime = Field(description="Entry creation timestamp")
+    avatar: str | None = Field(default=None, description="Avatar identifier or key")
+    avatar_url: str | None = Field(default=None, description="Full avatar image URL")
 
 
 class GuestbookCreate(ModelBase):
-    name: str
-    email: str | None = None
-    website: str | None = None
-    body: str
+    name: str = Field(description="Guest display name")
+    email: str | None = Field(default=None, description="Guest email address")
+    website: str | None = Field(default=None, description="Guest personal website URL")
+    body: str = Field(description="Guestbook message body")
 
 
 class GuestbookCollectionRead(ModelBase):
-    items: list[GuestbookEntryRead]
+    items: list[GuestbookEntryRead] = Field(description="List of guestbook entries")
 
 
 class GuestbookCreateResponse(ModelBase):
-    item: GuestbookEntryRead
-    accepted: bool
+    item: GuestbookEntryRead = Field(description="Created guestbook entry")
+    accepted: bool = Field(description="Whether the entry was auto-approved")
 
 
 class CommentRead(ModelBase):
-    id: str
-    parent_id: str | None
-    author_name: str
-    body: str
-    status: str
-    created_at: datetime
-    avatar: str | None = None
-    avatar_url: str | None = None
-    like_count: int = 0
-    liked: bool = False
-    is_author: bool = False
-    replies: list[CommentRead] = Field(default_factory=list)
+    id: str = Field(description="Unique comment identifier")
+    parent_id: str | None = Field(description="Parent comment ID for threaded replies")
+    author_name: str = Field(description="Comment author display name")
+    body: str = Field(description="Comment body text")
+    status: str = Field(description="Moderation status")
+    created_at: datetime = Field(description="Comment creation timestamp")
+    avatar: str | None = Field(default=None, description="Avatar identifier or key")
+    avatar_url: str | None = Field(default=None, description="Full avatar image URL")
+    like_count: int = Field(default=0, description="Number of likes on this comment")
+    liked: bool = Field(default=False, description="Whether the current user liked this comment")
+    is_author: bool = Field(default=False, description="Whether the commenter is the content author")
+    replies: list[CommentRead] = Field(default_factory=list, description="Nested reply comments")
 
 
 class CommentCollectionRead(ModelBase):
-    items: list[CommentRead]
+    items: list[CommentRead] = Field(description="List of comments")
 
 
 class CommentCreate(ModelBase):
-    author_name: str
-    author_email: str | None = None
-    body: str
-    parent_id: str | None = None
+    author_name: str = Field(description="Comment author display name")
+    author_email: str | None = Field(default=None, description="Comment author email address")
+    body: str = Field(description="Comment body text")
+    parent_id: str | None = Field(default=None, description="Parent comment ID for replies")
 
 
 class CommentCreateResponse(ModelBase):
-    item: CommentRead
-    accepted: bool
+    item: CommentRead = Field(description="Created comment")
+    accepted: bool = Field(description="Whether the comment was auto-approved")
 
 
 class ReactionCreate(ModelBase):
-    content_type: str
-    content_slug: str
-    reaction_type: str
-    client_token: str | None = None
+    content_type: str = Field(description="Content type: posts, diary, thoughts, or excerpts")
+    content_slug: str = Field(description="Slug of the content to react to")
+    reaction_type: str = Field(description="Reaction type identifier (e.g. like)")
+    client_token: str | None = Field(default=None, description="Client-side deduplication token")
 
 
 class ReactionRead(ModelBase):
-    content_type: str
-    content_slug: str
-    reaction_type: str
-    total: int
+    content_type: str = Field(description="Content type")
+    content_slug: str = Field(description="Content slug")
+    reaction_type: str = Field(description="Reaction type identifier")
+    total: int = Field(description="Total reaction count")
 
 
 CommentRead.model_rebuild()
