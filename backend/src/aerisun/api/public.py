@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
@@ -238,9 +237,6 @@ def read_reaction(
 
 # ── Comment image upload ──────────────────────────────────────────────
 
-_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
-_MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB hard limit (client compresses before this)
-
 
 @router.post("/comment-image", response_model=CommentImageUploadResponse, summary="评论图片上传")
 @limiter.limit(RATE_WRITE_ENGAGEMENT)
@@ -250,31 +246,14 @@ def upload_comment_image(
     session: Session = Depends(get_session),
 ) -> dict:
     """Accept a comment image, save to media dir, return its public URL."""
-    import hashlib
-    from pathlib import Path
-
-    if file.content_type not in _ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail="不支持的图片格式")
+    from aerisun.domain.media.service import save_comment_image
 
     content = file.file.read()
-    if len(content) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="图片过大，请压缩后重试")
-
-    settings = _get_settings()
-    media_dir = Path(settings.media_dir).expanduser().resolve() / "comment-images"
-    media_dir.mkdir(parents=True, exist_ok=True)
-
-    sha = hashlib.sha256(content).hexdigest()[:12]
-    ext = (file.filename or "img").rsplit(".", 1)[-1] if file.filename else "jpg"
-    filename = f"{sha}.{ext}"
-    dest = media_dir / filename
-
-    if not dest.exists():
-        with open(dest, "wb") as f:
-            f.write(content)
-
-    # Build public URL — served by Caddy / static file handler
-    url = f"/media/comment-images/{filename}"
+    try:
+        url = save_comment_image(content, file.filename or "img", file.content_type)
+    except ValueError as exc:
+        status_code = 413 if "过大" in str(exc) else 400
+        raise HTTPException(status_code=status_code, detail=str(exc))
     return {"errno": 0, "data": {"url": url}}
 
 
@@ -323,49 +302,10 @@ def healthz() -> HealthRead:
 
 @router.get("/sitemap.xml")
 def sitemap(session: Session = Depends(get_session)) -> Response:
-    from aerisun.domain.content.models import DiaryEntry, PostEntry
+    from aerisun.core.settings import get_settings as _gs
+    from aerisun.domain.content.seo_service import build_sitemap_xml
 
-    settings = _get_settings()
-    site_url = settings.site_url.rstrip("/")
-
-    ns = "http://www.sitemaps.org/schemas/sitemap/0.9"
-    urlset = ET.Element("urlset", xmlns=ns)
-
-    def add_url(loc: str, lastmod: datetime | None = None, priority: str = "0.5") -> None:
-        url_el = ET.SubElement(urlset, "url")
-        ET.SubElement(url_el, "loc").text = f"{site_url}{loc}"
-        if lastmod is not None:
-            ET.SubElement(url_el, "lastmod").text = lastmod.strftime("%Y-%m-%d")
-        ET.SubElement(url_el, "priority").text = priority
-
-    # Static pages
-    static_pages = [
-        ("/", "1.0"),
-        ("/posts", "0.7"),
-        ("/diary", "0.7"),
-        ("/thoughts", "0.7"),
-        ("/excerpts", "0.7"),
-        ("/friends", "0.4"),
-        ("/guestbook", "0.4"),
-        ("/resume", "0.4"),
-        ("/calendar", "0.4"),
-    ]
-    for path, priority in static_pages:
-        add_url(path, priority=priority)
-
-    # Dynamic pages – published & public posts
-    posts = session.query(PostEntry).filter(PostEntry.status == "published", PostEntry.visibility == "public").all()
-    for post in posts:
-        mod = post.updated_at or post.created_at
-        add_url(f"/posts/{post.slug}", lastmod=mod, priority="0.6")
-
-    # Dynamic pages – published & public diary entries
-    diary_entries = (
-        session.query(DiaryEntry).filter(DiaryEntry.status == "published", DiaryEntry.visibility == "public").all()
-    )
-    for entry in diary_entries:
-        mod = entry.updated_at or entry.created_at
-        add_url(f"/diary/{entry.slug}", lastmod=mod, priority="0.6")
-
-    xml_string = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(urlset, encoding="unicode")
-    return Response(content=xml_string, media_type="application/xml")
+    settings = _gs()
+    site_url = settings.site_url or "https://example.com"
+    xml = build_sitemap_xml(session, site_url)
+    return Response(content=xml, media_type="application/xml")

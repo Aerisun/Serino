@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import secrets
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -15,30 +13,38 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.iam.models import AdminUser, ApiKey
+from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
+from aerisun.domain.iam.service import (
+    create_api_key as _create_api_key,
+)
+from aerisun.domain.iam.service import (
+    delete_api_key as _delete_api_key,
+)
+from aerisun.domain.iam.service import (
+    list_api_keys as _list_api_keys,
+)
+from aerisun.domain.iam.service import (
+    update_api_key as _update_api_key,
+)
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.models import AuditLog, BackupSnapshot
-from aerisun.domain.social.models import Friend
-from aerisun.domain.waline.service import count_waline_records
-
-from .deps import get_current_admin
-from .schemas import (
-    ApiKeyAdminRead,
-    ApiKeyCreate,
-    ApiKeyCreateResponse,
-    ApiKeyUpdate,
+from aerisun.domain.ops.schemas import (
     AuditLogRead,
     BackupSnapshotRead,
     EnhancedDashboardStats,
     MonthlyCount,
-    PaginatedResponse,
     RecentContentItem,
     SystemInfo,
 )
+from aerisun.domain.social.models import Friend
+from aerisun.domain.waline.service import count_waline_records
+
+from .deps import get_current_admin
+from .schemas import PaginatedResponse
 
 router = APIRouter(prefix="/system", tags=["admin-system"])
 
-# Module-level startup time
 _STARTUP_TIME = time.time()
 
 
@@ -52,40 +58,18 @@ def list_api_keys(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """查询所有已创建的 API 密钥。"""
-    keys = session.query(ApiKey).order_by(ApiKey.created_at.desc()).all()
-    return [ApiKeyAdminRead.model_validate(k) for k in keys]
+    return _list_api_keys(session)
 
 
 @router.post(
-    "/api-keys",
-    response_model=ApiKeyCreateResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="创建 API 密钥",
+    "/api-keys", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED, summary="创建 API 密钥"
 )
 def create_api_key(
     payload: ApiKeyCreate,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """生成新的 API 密钥并返回明文密钥（仅此一次可见）。"""
-    raw_secret = secrets.token_urlsafe(48)
-    prefix = raw_secret[:8]
-    hashed = bcrypt.hashpw(raw_secret.encode(), bcrypt.gensalt()).decode()
-
-    key = ApiKey(
-        key_name=payload.key_name,
-        key_prefix=prefix,
-        hashed_secret=hashed,
-        scopes=payload.scopes,
-    )
-    session.add(key)
-    session.commit()
-    session.refresh(key)
-    return ApiKeyCreateResponse(
-        item=ApiKeyAdminRead.model_validate(key),
-        raw_key=raw_secret,
-    )
+    return _create_api_key(session, payload.key_name, payload.scopes)
 
 
 @router.put("/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥")
@@ -95,33 +79,22 @@ def update_api_key(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """更新指定 API 密钥的名称或权限范围。"""
-    key = session.get(ApiKey, key_id)
-    if key is None:
+    try:
+        return _update_api_key(session, key_id, payload)
+    except LookupError:
         raise HTTPException(status_code=404, detail="API key not found")
-    for k, v in payload.model_dump(exclude_unset=True).items():
-        setattr(key, k, v)
-    session.commit()
-    session.refresh(key)
-    return ApiKeyAdminRead.model_validate(key)
 
 
-@router.delete(
-    "/api-keys/{key_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除 API 密钥",
-)
+@router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除 API 密钥")
 def delete_api_key(
     key_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
-    """永久删除指定的 API 密钥。"""
-    key = session.get(ApiKey, key_id)
-    if key is None:
+    try:
+        _delete_api_key(session, key_id)
+    except LookupError:
         raise HTTPException(status_code=404, detail="API key not found")
-    session.delete(key)
-    session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +113,6 @@ def list_audit_logs(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    """分页查询审计日志，支持按操作类型和时间范围筛选。"""
     q = session.query(AuditLog)
     if action:
         q = q.filter(AuditLog.action.contains(action))
@@ -170,24 +142,15 @@ def list_backups(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """列出所有备份快照记录。"""
     snapshots = session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all()
     return [BackupSnapshotRead.model_validate(s) for s in snapshots]
 
 
-@router.post(
-    "/backups",
-    response_model=BackupSnapshotRead,
-    status_code=status.HTTP_201_CREATED,
-    summary="创建备份快照",
-)
+@router.post("/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED, summary="创建备份快照")
 def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """手动创建一个新的数据库备份快照。"""
-    from aerisun.core.settings import get_settings
-
     settings = get_settings()
     snapshot = BackupSnapshot(
         snapshot_type="manual",
@@ -201,21 +164,15 @@ def trigger_backup(
     return BackupSnapshotRead.model_validate(snapshot)
 
 
-@router.post(
-    "/backups/{snapshot_id}/restore",
-    response_model=BackupSnapshotRead,
-    summary="从备份恢复",
-)
+@router.post("/backups/{snapshot_id}/restore", response_model=BackupSnapshotRead, summary="从备份恢复")
 def restore_backup(
     snapshot_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """将指定备份快照标记为恢复中并触发恢复流程。"""
     snapshot = session.get(BackupSnapshot, snapshot_id)
     if snapshot is None:
         raise HTTPException(status_code=404, detail="Backup snapshot not found")
-    # Mark as restoring (actual restore would be handled by a background job)
     snapshot.status = "restoring"
     session.commit()
     session.refresh(snapshot)
@@ -232,19 +189,13 @@ def dashboard_stats(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> EnhancedDashboardStats:
-    """汇总各类内容数量、月度趋势及最近更新，用于仪表盘展示。"""
-    # Basic counts
     posts_count = session.query(func.count(PostEntry.id)).scalar() or 0
     diary_count = session.query(func.count(DiaryEntry.id)).scalar() or 0
     thoughts_count = session.query(func.count(ThoughtEntry.id)).scalar() or 0
     excerpts_count = session.query(func.count(ExcerptEntry.id)).scalar() or 0
 
-    # Posts by status
     status_rows = session.query(PostEntry.status, func.count(PostEntry.id)).group_by(PostEntry.status).all()
     posts_by_status = {s: c for s, c in status_rows}
-
-    # Content by month (last 6 months)
-    from datetime import timedelta
 
     now = datetime.now(UTC)
     six_months_ago = now - timedelta(days=180)
@@ -258,22 +209,14 @@ def dashboard_stats(
     ]
     for model, type_key in content_type_map:
         rows = (
-            session.query(
-                func.strftime("%Y-%m", model.created_at),
-                func.count(model.id),
-            )
+            session.query(func.strftime("%Y-%m", model.created_at), func.count(model.id))
             .filter(model.created_at >= six_months_ago)
             .group_by(func.strftime("%Y-%m", model.created_at))
             .all()
         )
         for month_str, count in rows:
             if month_str not in month_data:
-                month_data[month_str] = {
-                    "posts": 0,
-                    "diary": 0,
-                    "thoughts": 0,
-                    "excerpts": 0,
-                }
+                month_data[month_str] = {"posts": 0, "diary": 0, "thoughts": 0, "excerpts": 0}
             month_data[month_str][type_key] = count
 
     content_by_month = sorted(
@@ -281,7 +224,6 @@ def dashboard_stats(
         key=lambda x: x.month,
     )
 
-    # Recent content (last 5 most recently updated across all types)
     recent_items: list[RecentContentItem] = []
     recent_type_map = [
         (PostEntry, "post"),
@@ -294,11 +236,7 @@ def dashboard_stats(
         for row in rows:
             recent_items.append(
                 RecentContentItem(
-                    id=row.id,
-                    title=row.title,
-                    content_type=type_key,
-                    status=row.status,
-                    updated_at=row.updated_at,
+                    id=row.id, title=row.title, content_type=type_key, status=row.status, updated_at=row.updated_at
                 )
             )
     recent_items.sort(key=lambda x: x.updated_at, reverse=True)
@@ -328,16 +266,12 @@ def dashboard_stats(
 def system_info(
     _admin: AdminUser = Depends(get_current_admin),
 ) -> SystemInfo:
-    """返回 Python 版本、数据库大小、媒体目录大小等系统运行信息。"""
     settings = get_settings()
-
-    # DB size
     db_size = 0
     db_path = Path(settings.db_path)
     if db_path.exists():
         db_size = db_path.stat().st_size
 
-    # Media dir size
     media_size = 0
     media_path = Path(settings.media_dir)
     if media_path.exists():
