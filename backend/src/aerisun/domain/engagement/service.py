@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.engagement import repository as repo
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -27,13 +25,6 @@ from aerisun.domain.waline.service import (
     list_records_for_url,
 )
 
-CONTENT_MODELS = {
-    "posts": PostEntry,
-    "diary": DiaryEntry,
-    "thoughts": ThoughtEntry,
-    "excerpts": ExcerptEntry,
-}
-
 
 def _avatar_for_name(name: str) -> str:
     return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
@@ -42,22 +33,6 @@ def _avatar_for_name(name: str) -> str:
 def _is_author_name(name: str) -> bool:
     normalized = name.strip().lower()
     return normalized in {"博主", "felix", "aerisun"}
-
-
-def _content_exists(session: Session, content_type: str, content_slug: str) -> bool:
-    model = CONTENT_MODELS.get(content_type)
-    if model is None:
-        return False
-    return (
-        session.scalar(
-            select(func.count(model.id)).where(
-                model.slug == content_slug,
-                model.status == "published",
-                model.visibility == "public",
-            )
-        )
-        or 0
-    ) > 0
 
 
 def list_public_guestbook_entries(session: Session, limit: int = 50) -> GuestbookCollectionRead:
@@ -132,7 +107,7 @@ def _build_waline_comment_tree(items) -> list[CommentRead]:
 
 
 def list_public_comments(session: Session, content_type: str, content_slug: str) -> CommentCollectionRead:
-    if not _content_exists(session, content_type, content_slug):
+    if not repo.content_exists(session, content_type, content_slug):
         raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
 
     items = list_records_for_url(
@@ -149,7 +124,7 @@ def create_public_comment(
     content_slug: str,
     payload: CommentCreate,
 ) -> CommentCreateResponse:
-    if not _content_exists(session, content_type, content_slug):
+    if not repo.content_exists(session, content_type, content_slug):
         raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
 
     parent_id: int | None = None
@@ -192,48 +167,41 @@ def create_public_comment(
 
 
 def register_public_reaction(session: Session, payload: ReactionCreate) -> ReactionRead:
-    if not _content_exists(session, payload.content_type, payload.content_slug):
+    if not repo.content_exists(session, payload.content_type, payload.content_slug):
         raise LookupError(f"{payload.content_type} content with slug '{payload.content_slug}' was not found")
 
     if payload.client_token:
-        existing = session.scalars(
-            select(Reaction).where(
-                Reaction.content_type == payload.content_type,
-                Reaction.content_slug == payload.content_slug,
-                Reaction.reaction_type == payload.reaction_type,
-                Reaction.client_token == payload.client_token,
-            )
-        ).first()
+        existing = repo.find_reaction(
+            session,
+            content_type=payload.content_type,
+            content_slug=payload.content_slug,
+            reaction_type=payload.reaction_type,
+            client_token=payload.client_token,
+        )
         if existing is None:
-            session.add(
-                Reaction(
-                    content_type=payload.content_type,
-                    content_slug=payload.content_slug,
-                    reaction_type=payload.reaction_type,
-                    client_token=payload.client_token,
-                )
-            )
-            session.commit()
-    else:
-        session.add(
-            Reaction(
+            repo.create_reaction(
+                session,
                 content_type=payload.content_type,
                 content_slug=payload.content_slug,
                 reaction_type=payload.reaction_type,
-                client_token=None,
+                client_token=payload.client_token,
             )
+            session.commit()
+    else:
+        repo.create_reaction(
+            session,
+            content_type=payload.content_type,
+            content_slug=payload.content_slug,
+            reaction_type=payload.reaction_type,
+            client_token=None,
         )
         session.commit()
 
-    total = (
-        session.scalar(
-            select(func.count(Reaction.id)).where(
-                Reaction.content_type == payload.content_type,
-                Reaction.content_slug == payload.content_slug,
-                Reaction.reaction_type == payload.reaction_type,
-            )
-        )
-        or 0
+    total = repo.count_reactions(
+        session,
+        content_type=payload.content_type,
+        content_slug=payload.content_slug,
+        reaction_type=payload.reaction_type,
     )
 
     return ReactionRead(
@@ -250,18 +218,14 @@ def read_public_reaction(
     content_slug: str,
     reaction_type: str,
 ) -> ReactionRead:
-    if not _content_exists(session, content_type, content_slug):
+    if not repo.content_exists(session, content_type, content_slug):
         raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
 
-    total = (
-        session.scalar(
-            select(func.count(Reaction.id)).where(
-                Reaction.content_type == content_type,
-                Reaction.content_slug == content_slug,
-                Reaction.reaction_type == reaction_type,
-            )
-        )
-        or 0
+    total = repo.count_reactions(
+        session,
+        content_type=content_type,
+        content_slug=content_slug,
+        reaction_type=reaction_type,
     )
 
     return ReactionRead(
