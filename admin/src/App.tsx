@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/Toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/AuthProvider";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@serino/theme";
 import { LanguageProvider } from "@/i18n";
 import { useAuth } from "@/auth/useAuth";
 import AdminLayout from "@/layouts/AdminLayout";
@@ -80,7 +80,7 @@ function ProtectedRoutes() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      <ThemeProvider storageKey="serino-admin-theme">
         <LanguageProvider>
             <AuthProvider>
             <BrowserRouter basename={routerBasename}>
