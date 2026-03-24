@@ -13,8 +13,7 @@ from aerisun.domain.content.models import (
     ThoughtEntry,
 )
 from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
-from aerisun.domain.engagement.models import Reaction
-from aerisun.domain.waline.service import build_comment_path, count_records_by_urls
+from aerisun.domain.waline.service import build_comment_path, count_records_by_urls, get_counter_stats_by_urls
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 
@@ -66,36 +65,29 @@ def _public_query(model: type[ContentModel]) -> Select[tuple[ContentModel]]:
     )
 
 
-def _comment_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
+def _engagement_stats_by_slug(content_type: str, slugs: list[str]) -> dict[str, dict[str, int | None]]:
     if not slugs:
         return {}
 
     paths = [build_comment_path(content_type, slug) for slug in slugs]
     counts_by_path = count_records_by_urls(urls=paths, status="approved")
-    return {slug: counts_by_path.get(build_comment_path(content_type, slug), 0) for slug in slugs}
-
-
-def _like_counts_by_slug(session: Session, content_type: str, slugs: list[str]) -> dict[str, int]:
-    if not slugs:
-        return {}
-
-    rows = session.execute(
-        select(Reaction.content_slug, func.count(Reaction.id))
-        .where(
-            Reaction.content_type == content_type,
-            Reaction.content_slug.in_(slugs),
-            Reaction.reaction_type == "like",
-        )
-        .group_by(Reaction.content_slug)
-    ).all()
-    return {slug: count for slug, count in rows}
+    counter_stats_by_path = get_counter_stats_by_urls(urls=paths)
+    stats_by_slug: dict[str, dict[str, int | None]] = {}
+    for slug in slugs:
+        path = build_comment_path(content_type, slug)
+        counter_stats = counter_stats_by_path.get(path)
+        stats_by_slug[slug] = {
+            "comment_count": counts_by_path.get(path, 0),
+            "view_count": counter_stats.pageview_count if counter_stats is not None else None,
+            "like_count": counter_stats.reaction_count if counter_stats is not None else 0,
+        }
+    return stats_by_slug
 
 
 def _to_entry(
     item: ContentModel,
     content_type: str,
-    comment_counts: dict[str, int],
-    like_counts: dict[str, int],
+    engagement_stats: dict[str, dict[str, int | None]],
 ) -> ContentEntryRead:
     published_reference = item.published_at or item.created_at
 
@@ -106,7 +98,10 @@ def _to_entry(
     poem = getattr(item, "poem", None)
     author_name = getattr(item, "author_name", None)
     source = getattr(item, "source", None)
-    view_count = getattr(item, "view_count", 0) or 0
+    fallback_view_count = getattr(item, "view_count", 0) or 0
+    stats = engagement_stats.get(item.slug, {})
+    waline_view_count = stats.get("view_count")
+    view_count = fallback_view_count if waline_view_count is None else waline_view_count
 
     return ContentEntryRead(
         slug=item.slug,
@@ -124,8 +119,8 @@ def _to_entry(
         display_date=_format_display_date(published_reference),
         relative_date=_format_relative_date(published_reference),
         view_count=view_count,
-        comment_count=comment_counts.get(item.slug, 0),
-        like_count=like_counts.get(item.slug, 0),
+        comment_count=stats.get("comment_count", 0),
+        like_count=stats.get("like_count", 0),
         repost_count=0,
         mood=mood,
         weather=weather,
@@ -146,10 +141,9 @@ def _list_entries(
     total = session.scalar(select(func.count()).select_from(base_query.subquery())) or 0
     rows = session.scalars(base_query.offset(offset).limit(limit)).all()
     slugs = [row.slug for row in rows]
-    comment_counts = _comment_counts_by_slug(session, content_type, slugs)
-    like_counts = _like_counts_by_slug(session, content_type, slugs)
+    engagement_stats = _engagement_stats_by_slug(content_type, slugs)
     return ContentCollectionRead(
-        items=[_to_entry(row, content_type, comment_counts, like_counts) for row in rows],
+        items=[_to_entry(row, content_type, engagement_stats) for row in rows],
         total=total,
         has_more=offset + limit < total,
     )
@@ -159,9 +153,8 @@ def _get_by_slug(session: Session, model: type[ContentModel], content_type: str,
     item = session.scalars(_public_query(model).where(model.slug == slug).limit(1)).first()
     if item is None:
         raise LookupError(f"{model.__name__} with slug '{slug}' was not found")
-    comment_counts = _comment_counts_by_slug(session, content_type, [item.slug])
-    like_counts = _like_counts_by_slug(session, content_type, [item.slug])
-    return _to_entry(item, content_type, comment_counts, like_counts)
+    engagement_stats = _engagement_stats_by_slug(content_type, [item.slug])
+    return _to_entry(item, content_type, engagement_stats)
 
 
 def list_public_posts(session: Session, limit: int = 20, offset: int = 0) -> ContentCollectionRead:

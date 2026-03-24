@@ -240,8 +240,6 @@ const PostDetail = () => {
             <CommentSection
               contentType="posts"
               contentSlug={post.slug}
-              commentCount={post.comments}
-              likeCount={post.likes}
             />
           </>
         ) : (

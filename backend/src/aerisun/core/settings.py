@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     db_path: Path = PROJECT_ROOT / ".store" / "aerisun.db"
     waline_db_path: Path = PROJECT_ROOT / ".store" / "waline.db"
     site_url: str = "http://localhost:5173"
-    waline_server_url: str = "http://localhost:8360"
+    waline_server_url: str = "/waline"
     litestream_config_path: Path = BACKEND_ROOT / "litestream.yml"
     litestream_replica_url: str = Field(default="sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db")
     waline_litestream_replica_url: str = Field(default="sftp://backup-user@backup-host:22/backup/aerisun/waline.db")

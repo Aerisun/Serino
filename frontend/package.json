@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:process": "VITE_API_PROXY_TARGET=http://127.0.0.1:8001 VITE_WALINE_PROXY_TARGET=http://127.0.0.1:8360 vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

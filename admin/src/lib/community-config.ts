@@ -24,6 +24,7 @@ export interface CommunityConfigFormState {
   moderation_mode: string;
   default_sorting: string;
   page_size: string;
+  image_max_bytes: string;
   avatar_presets: string;
   guest_avatar_mode: string;
   draft_enabled: boolean;
@@ -151,6 +152,7 @@ export const createCommunityForm = (config?: CommunityConfig | null): CommunityC
   moderation_mode: config?.moderation_mode ?? DEFAULT_MODERATION_MODE,
   default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
   page_size: String(config?.page_size ?? 20),
+  image_max_bytes: String(config?.image_max_bytes ?? 524288),
   avatar_presets: toPrettyJson(config?.avatar_presets ?? DEFAULT_AVATAR_PRESETS),
   guest_avatar_mode: config?.guest_avatar_mode ?? DEFAULT_GUEST_AVATAR_MODE,
   draft_enabled: config?.draft_enabled ?? true,
@@ -173,6 +175,7 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   moderation_mode: form.moderation_mode.trim() || DEFAULT_MODERATION_MODE,
   default_sorting: form.default_sorting.trim() || DEFAULT_DEFAULT_SORTING,
   page_size: Math.max(1, Number.parseInt(form.page_size, 10) || 20),
+  image_max_bytes: Math.max(0, Number.parseInt(form.image_max_bytes, 10) || 524288),
   avatar_presets: parseAvatarPresets(form.avatar_presets),
   guest_avatar_mode: form.guest_avatar_mode.trim() || DEFAULT_GUEST_AVATAR_MODE,
   draft_enabled: form.draft_enabled,

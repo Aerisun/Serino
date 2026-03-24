@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/api";
 
+/** Default max image size in bytes before compression kicks in (512 KB) */
+const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;
+
 export type CommunitySurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 export type CommunityCommentSort = "latest" | "oldest" | "hottest";
 
@@ -24,6 +27,12 @@ export interface WalineEmojiPreset {
   items: string[];
 }
 
+export interface AvatarPreset {
+  key: string;
+  label: string;
+  avatar_url: string;
+}
+
 export interface CommunityConfig {
   provider: "waline";
   serverURL: string;
@@ -40,8 +49,10 @@ export interface CommunityConfig {
   enjoySearchEndpoint?: string | null;
   enjoySearchDefaultWords?: string[];
   avatarStrategy?: string | null;
+  avatarPresets?: AvatarPreset[];
   helperCopy?: string | null;
   pageSize?: number | null;
+  imageMaxBytes?: number | null;
   lang?: string | null;
   darkSelector?: string | null;
 }
@@ -76,8 +87,11 @@ export interface CommunityConfigResponse {
   helperCopy?: string | null;
   helper_copy?: string | null;
   avatar_helper_copy?: string | null;
+  avatar_presets?: AvatarPreset[];
   pageSize?: number | null;
   page_size?: number | null;
+  imageMaxBytes?: number | null;
+  image_max_bytes?: number | null;
   lang?: string | null;
   darkSelector?: string | null;
   dark_selector?: string | null;
@@ -90,9 +104,13 @@ export type WalineRuntimeOptions = {
   meta: Array<"nick" | "mail" | "link">;
   requiredMeta: Array<"nick" | "mail">;
   login: "disable" | "enable" | "force";
-  imageUploader: boolean;
+  imageUploader: (image: File) => Promise<string>;
   emoji: Array<string | WalineEmojiPreset>;
-  search: WalineSearchOptions | false;
+  search: WalineSearchOptions | boolean;
+  reaction: string[] | boolean;
+  pageview: boolean;
+  comment: boolean;
+  locale?: Record<string, string>;
   lang?: string;
   pageSize?: number;
   commentSorting?: CommunityCommentSort;
@@ -112,10 +130,10 @@ export const DEFAULT_WALINE_EMOJI: Array<string> = [
 
 const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   provider: "waline",
-  serverURL: (import.meta.env.VITE_WALINE_SERVER_URL ?? "").trim(),
-  meta: ["nick", "mail"],
+  serverURL: "", // Will be resolved at runtime via normalizeServerURL
+  meta: ["nick", "mail", "link"],
   requiredMeta: ["nick"],
-  loginMode: "disable",
+  loginMode: "enable",
   commentSorting: "latest",
   enableEnjoySearch: true,
   imageUploader: false,
@@ -125,6 +143,7 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   avatarStrategy: null,
   helperCopy: null,
   pageSize: 10,
+  imageMaxBytes: DEFAULT_IMAGE_MAX_BYTES,
   lang: "zh-CN",
   darkSelector: "html.dark",
 };
@@ -217,23 +236,74 @@ const createSearchEndpoint = (endpoint: string, fallbackWords: string[]) => {
   } satisfies WalineSearchOptions;
 };
 
+const WALINE_EMOJI_CDN = "https://unpkg.com/@waline/emojis@1.1.0";
+
+/** Backend preset names that differ from CDN directory names */
+const EMOJI_PRESET_ALIAS: Record<string, string> = {
+  twemoji: "tw-emoji",
+};
+
+/**
+ * If the backend returns a bare preset name (e.g. "twemoji"), expand it to
+ * the full CDN URL that @waline/client expects.
+ */
+const normalizeEmojiPreset = (preset: string | WalineEmojiPreset): string | WalineEmojiPreset => {
+  if (typeof preset !== "string") return preset;
+  if (/^https?:\/\//.test(preset)) return preset;
+  const dir = EMOJI_PRESET_ALIAS[preset] ?? preset;
+  return `${WALINE_EMOJI_CDN}/${dir}`;
+};
+
+/**
+ * The backend stores the Waline origin (e.g. "http://localhost:8360") but
+ * the browser must use a same-origin path ("/waline") so the Vite dev proxy
+ * or Caddy reverse-proxy can forward requests without CORS issues.
+ *
+ * Waline client uses `new URL(path, serverURL)` internally, so the serverURL
+ * must be a full origin — we build it from the current page location.
+ */
+const normalizeServerURL = (raw: string): string => {
+  const trimmed = raw.trim();
+  if (!trimmed) return `${window.location.origin}/waline`;
+  // Already a relative path — prepend current origin
+  if (trimmed.startsWith("/")) return `${window.location.origin}${trimmed}`;
+  // Absolute URL pointing to a different port/host — use proxy path
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.origin !== window.location.origin) {
+      return `${window.location.origin}/waline`;
+    }
+    return trimmed;
+  } catch {
+    return `${window.location.origin}/waline`;
+  }
+};
+
 export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
   if (!payload || typeof payload !== "object") {
     return DEFAULT_WALINE_COMMUNITY_CONFIG;
   }
 
   const record = payload as CommunityConfigResponse;
-  const serverURL = String(record.serverURL ?? record.server_url ?? DEFAULT_WALINE_COMMUNITY_CONFIG.serverURL).trim();
-  const meta = record.meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.meta;
+  const serverURL = normalizeServerURL(
+    String(record.serverURL ?? record.server_url ?? ""),
+  );
+  const meta: Array<"nick" | "mail" | "link"> = record.meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.meta;
+  // Ensure "link" is always present so the Website field shows
+  if (!meta.includes("link")) meta.push("link");
   const requiredMeta = record.requiredMeta ?? record.required_meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.requiredMeta;
-  const loginMode = record.loginMode ?? record.login_mode ?? DEFAULT_WALINE_COMMUNITY_CONFIG.loginMode;
+  // "disable" hides the login button AND part of the meta input UI in Waline.
+  // We always want at least "enable" so guest nick/mail/link fields render.
+  const rawLogin = record.loginMode ?? record.login_mode ?? DEFAULT_WALINE_COMMUNITY_CONFIG.loginMode;
+  const loginMode = rawLogin === "disable" ? "enable" : rawLogin;
   const commentSorting = normalizeCommentSorting(
     record.commentSorting ?? record.comment_sorting ?? record.default_sorting,
   );
   const enableEnjoySearch =
     record.enableEnjoySearch ?? record.enable_enjoy_search ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enableEnjoySearch;
   const imageUploader = record.imageUploader ?? record.image_uploader ?? DEFAULT_WALINE_COMMUNITY_CONFIG.imageUploader;
-  const emojiPresets = record.emojiPresets ?? record.emoji_presets ?? DEFAULT_WALINE_COMMUNITY_CONFIG.emojiPresets;
+  const rawEmoji = record.emojiPresets ?? record.emoji_presets ?? DEFAULT_WALINE_COMMUNITY_CONFIG.emojiPresets;
+  const emojiPresets = rawEmoji.map(normalizeEmojiPreset);
   const enjoySearchEndpoint =
     record.enjoySearchEndpoint ?? record.enjoy_search_endpoint ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enjoySearchEndpoint;
   const enjoySearchDefaultWords =
@@ -255,12 +325,14 @@ export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     enjoySearchEndpoint,
     enjoySearchDefaultWords,
     avatarStrategy: record.avatarStrategy ?? record.avatar_strategy ?? DEFAULT_WALINE_COMMUNITY_CONFIG.avatarStrategy,
+    avatarPresets: record.avatar_presets ?? [],
     helperCopy:
       record.helperCopy
       ?? record.helper_copy
       ?? record.avatar_helper_copy
       ?? DEFAULT_WALINE_COMMUNITY_CONFIG.helperCopy,
     pageSize: record.pageSize ?? record.page_size ?? DEFAULT_WALINE_COMMUNITY_CONFIG.pageSize,
+    imageMaxBytes: record.imageMaxBytes ?? record.image_max_bytes ?? DEFAULT_WALINE_COMMUNITY_CONFIG.imageMaxBytes,
     lang: record.lang ?? DEFAULT_WALINE_COMMUNITY_CONFIG.lang,
     darkSelector: record.darkSelector ?? record.dark_selector ?? DEFAULT_WALINE_COMMUNITY_CONFIG.darkSelector,
   };
@@ -271,9 +343,100 @@ export async function loadCommunityConfig(init?: RequestInit): Promise<Community
     const payload = await apiClient.get<unknown>(communityConfigPath, init);
     return normalizeCommunityConfig(payload);
   } catch {
-    return DEFAULT_WALINE_COMMUNITY_CONFIG;
+    return {
+      ...DEFAULT_WALINE_COMMUNITY_CONFIG,
+      serverURL: normalizeServerURL(""),
+    };
   }
 }
+
+/** Max pixel dimension (width or height) */
+const IMAGE_MAX_DIM = 1920;
+
+/**
+ * Compress an image File via Canvas.  Returns the original if it's already
+ * small enough or if it's not a raster format (SVG, etc.).
+ */
+const compressImage = (file: File, maxBytes: number): Promise<File> => {
+  if (file.size <= maxBytes) return Promise.resolve(file);
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") return Promise.resolve(file);
+
+  const targetBytes = Math.floor(maxBytes * 0.94); // leave headroom
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      let { width, height } = img;
+
+      // Scale down if either dimension exceeds the cap
+      if (width > IMAGE_MAX_DIM || height > IMAGE_MAX_DIM) {
+        const ratio = Math.min(IMAGE_MAX_DIM / width, IMAGE_MAX_DIM / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Binary-search for a quality that stays under budget
+      let lo = 0.3;
+      let hi = 0.92;
+      const tryQuality = (q: number) =>
+        new Promise<Blob | null>((r) => canvas.toBlob((b) => r(b), "image/jpeg", q));
+
+      (async () => {
+        let best: Blob | null = null;
+        for (let i = 0; i < 5; i++) {
+          const mid = (lo + hi) / 2;
+          const blob = await tryQuality(mid);
+          if (!blob) break;
+          best = blob;
+          if (blob.size > targetBytes) {
+            hi = mid;
+          } else {
+            lo = mid;
+          }
+        }
+        if (!best) {
+          resolve(file);
+          return;
+        }
+        const name = file.name.replace(/\.[^.]+$/, ".jpg");
+        resolve(new File([best], name, { type: "image/jpeg" }));
+      })();
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+/**
+ * Build a Waline-compatible imageUploader that auto-compresses oversized
+ * images before uploading to our backend's comment-image endpoint.
+ */
+const createImageUploader = (_serverURL: string, maxBytes?: number | null) => {
+  const limit = maxBytes ?? DEFAULT_IMAGE_MAX_BYTES;
+  return async (image: File): Promise<string> => {
+    const compressed = await compressImage(image, limit);
+    const form = new FormData();
+    form.append("file", compressed);
+
+    const res = await fetch("/api/v1/public/comment-image", {
+      method: "POST",
+      body: form,
+    });
+
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    const data = await res.json();
+    // Waline returns { errno: 0, data: { url: "..." } } on success
+    if (data?.errno !== 0) throw new Error(data?.errmsg ?? "Upload error");
+    return data.data?.url ?? data.data;
+  };
+};
 
 export const buildWalineRuntimeOptions = (
   config: CommunityConfig,
@@ -284,7 +447,7 @@ export const buildWalineRuntimeOptions = (
   const path = buildWalineSurfacePath(surface, slug);
   const search = config.enableEnjoySearch && config.enjoySearchEndpoint
     ? createSearchEndpoint(config.enjoySearchEndpoint, config.enjoySearchDefaultWords ?? [])
-    : false;
+    : false; // No GIF search — only emoji presets
 
   return {
     serverURL: config.serverURL,
@@ -293,9 +456,16 @@ export const buildWalineRuntimeOptions = (
     meta: config.meta,
     requiredMeta: config.requiredMeta,
     login: config.loginMode,
-    imageUploader: config.imageUploader,
+    imageUploader: createImageUploader(config.serverURL, config.imageMaxBytes),
     emoji: config.emojiPresets,
     search,
+    reaction: false,
+    pageview: true,
+    comment: true,
+    locale: {
+      reaction0: "喜欢",
+      placeholder: "昵称必填，邮箱选填（填写可收到回复通知）。支持 Markdown 语法。",
+    },
     lang: config.lang ?? "zh-CN",
     pageSize: config.pageSize ?? 10,
     commentSorting,

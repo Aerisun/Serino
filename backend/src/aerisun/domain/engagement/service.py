@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Comment, Reaction
+from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -102,32 +102,6 @@ def create_public_guestbook_entry(session: Session, payload: GuestbookCreate) ->
         ),
         accepted=True,
     )
-
-
-def _build_comment_tree(items: list[Comment]) -> list[CommentRead]:
-    by_parent: dict[str | None, list[Comment]] = defaultdict(list)
-    for item in items:
-        by_parent[item.parent_id].append(item)
-
-    def convert(node: Comment) -> CommentRead:
-        avatar = _avatar_for_name(node.author_name)
-        return CommentRead(
-            id=node.id,
-            parent_id=node.parent_id,
-            author_name=node.author_name,
-            body=node.body,
-            status=node.status,
-            created_at=node.created_at,
-            avatar=avatar,
-            avatar_url=avatar,
-            like_count=0,
-            liked=False,
-            is_author=_is_author_name(node.author_name),
-            replies=[convert(child) for child in by_parent.get(node.id, [])],
-        )
-
-    roots = by_parent.get(None, [])
-    return [convert(root) for root in roots]
 
 
 def _build_waline_comment_tree(items) -> list[CommentRead]:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter
 from datetime import UTC, datetime
 
 import bcrypt
@@ -26,7 +27,7 @@ from aerisun.domain.site_config.models import (
     SocialLink,
 )
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
-from aerisun.domain.waline.service import connect_waline_db, make_waline_comment_row
+from aerisun.domain.waline.service import build_comment_path, connect_waline_db, make_waline_comment_row
 
 DEFAULT_SITE_PROFILE = {
     "name": "Felix",
@@ -365,6 +366,18 @@ def build_default_community_config() -> dict[str, object]:
                 "path": "/guestbook",
                 "enabled": True,
             },
+            {
+                "key": "thoughts",
+                "label": "碎碎念评论",
+                "path": "/thoughts/{slug}",
+                "enabled": True,
+            },
+            {
+                "key": "excerpts",
+                "label": "文摘评论",
+                "path": "/excerpts/{slug}",
+                "enabled": True,
+            },
         ],
         "meta": ["nick", "mail"],
         "required_meta": ["nick"],
@@ -378,6 +391,7 @@ def build_default_community_config() -> dict[str, object]:
         "moderation_mode": "all_pending",
         "default_sorting": "latest",
         "page_size": 20,
+        "image_max_bytes": 524288,
         "avatar_presets": [preset.copy() for preset in DEFAULT_COMMENT_AVATAR_PRESETS],
         "guest_avatar_mode": "preset",
         "draft_enabled": True,
@@ -385,6 +399,66 @@ def build_default_community_config() -> dict[str, object]:
         "avatar_helper_copy": "匿名评论可从头像库选择预设头像，邮箱可选。",
         "migration_state": "not_started",
     }
+
+
+def _coerce_community_surfaces(value: object) -> list[dict[str, object]]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _merge_community_surfaces(
+    current_surfaces: object,
+    default_surfaces: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    existing = _coerce_community_surfaces(current_surfaces)
+    existing_by_key = {
+        str(item.get("key") or "").strip(): item for item in existing if str(item.get("key") or "").strip()
+    }
+
+    merged: list[dict[str, object]] = []
+    seen_keys: set[str] = set()
+    for default_surface in default_surfaces:
+        key = str(default_surface.get("key") or "").strip()
+        current = existing_by_key.get(key, {})
+        merged.append(
+            {
+                **default_surface,
+                **{name: value for name, value in current.items() if name != "key"},
+                "key": key,
+            }
+        )
+        seen_keys.add(key)
+
+    for item in existing:
+        key = str(item.get("key") or "").strip()
+        if not key or key in seen_keys:
+            continue
+        merged.append(item)
+
+    return merged
+
+
+def _normalize_community_server_url(current_url: str | None, default_url: str) -> str:
+    normalized_default = default_url.strip() or "/waline"
+    normalized_current = (current_url or "").strip().rstrip("/")
+    if not normalized_current:
+        return normalized_default
+
+    if normalized_current in {
+        "http://localhost:8360",
+        "http://127.0.0.1:8360",
+        "https://localhost:8360",
+        "https://127.0.0.1:8360",
+    }:
+        return normalized_default
+
+    return normalized_current
 
 
 def _seed_community_config(session: Session) -> None:
@@ -396,8 +470,8 @@ def _seed_community_config(session: Session) -> None:
         return
 
     default_server_url = str(default_config["server_url"]).strip()
-    if not (config.server_url or "").strip():
-        config.server_url = default_server_url
+    config.server_url = _normalize_community_server_url(config.server_url, default_server_url)
+    config.surfaces = _merge_community_surfaces(config.surfaces, list(default_config["surfaces"]))
 
 
 DEFAULT_RESUME = {
@@ -499,7 +573,7 @@ DEFAULT_POSTS = [
         "slug": "framer-motion-page-transitions",
         "title": "用 Framer Motion 做有质感的页面过渡",
         "summary": "动画不该是装饰，它是信息层级的一部分。分享几个常用过渡模式和背后的判断。",
-        "body": "页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，让视线知道自己正在从哪里离开、要往哪里抵达。",
+        "body": '页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，让视线知道自己正在从哪里离开、要往哪里抵达。',
         "tags": ["animation", "react"],
         "status": "published",
         "visibility": "public",
@@ -771,7 +845,7 @@ DEFAULT_EXCERPTS = [
         "slug": "poetry-and-interface",
         "title": "界面也需要一点诗意",
         "summary": "不是为了装饰，而是为了让理性之外还留一点呼吸。",
-        "body": "当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，它是让系统从“可用”转向“愿意停留”的那一层温度。",
+        "body": '当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，它是让系统从“可用”转向“愿意停留”的那一层温度。',
         "tags": ["reading", "interface"],
         "status": "published",
         "visibility": "public",
@@ -968,7 +1042,7 @@ DEFAULT_FRIEND_FEED_SOURCES = [
 DEFAULT_FRIEND_FEED_ITEMS = [
     {
         "friend_name": "Miku's Blog",
-        "title": "“糖”",
+        "title": '“糖”',
         "url": "https://miku.example.com/posts/candy",
         "summary": "一篇关于日常感受的短文。",
         "published_at": datetime(2026, 3, 16, 8, 30, tzinfo=UTC),
@@ -1104,75 +1178,6 @@ DEFAULT_FRIEND_FEED_ITEMS = [
     },
 ]
 
-DEFAULT_WALINE_COMMENTS = [
-    {
-        "key": "waline-post-root",
-        "url": "/posts/from-zero-design-system",
-        "nick": "林小北",
-        "mail": "linxiaobei@example.com",
-        "link": None,
-        "comment": "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。",
-        "status": "approved",
-        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
-        "parent_key": None,
-    },
-    {
-        "key": "waline-post-reply",
-        "url": "/posts/from-zero-design-system",
-        "nick": "Felix",
-        "mail": None,
-        "link": None,
-        "comment": "谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。",
-        "status": "approved",
-        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
-        "parent_key": "waline-post-root",
-    },
-    {
-        "key": "waline-post-second",
-        "url": "/posts/liquid-glass-css-notes",
-        "nick": "Kai Nakamura",
-        "mail": "kai@example.com",
-        "link": "https://kai.example.com",
-        "comment": "这一篇的性能部分很有用。`backdrop-filter` 一旦铺太大，低端设备确实会立刻吃不消。",
-        "status": "approved",
-        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=UTC),
-        "parent_key": None,
-    },
-    {
-        "key": "waline-diary-root",
-        "url": "/diary/spring-equinox-and-warm-light",
-        "nick": "纸鹤",
-        "mail": None,
-        "link": None,
-        "comment": "这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。",
-        "status": "approved",
-        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
-        "parent_key": None,
-    },
-    {
-        "key": "waline-guestbook-root",
-        "url": "/guestbook",
-        "nick": "Elena Torres",
-        "mail": "elena@example.com",
-        "link": "https://elena.example.com",
-        "comment": "你的博客设计真的很稳，评论区换成现在这套以后，整体气质终于统一起来了。",
-        "status": "approved",
-        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=UTC),
-        "parent_key": None,
-    },
-    {
-        "key": "waline-guestbook-pending",
-        "url": "/guestbook",
-        "nick": "新访客",
-        "mail": None,
-        "link": None,
-        "comment": "测试一条待审核留言，方便在后台里看见 pending 状态。",
-        "status": "waiting",
-        "created_at": datetime(2026, 3, 21, 10, 30, tzinfo=UTC),
-        "parent_key": None,
-    },
-]
-
 DEFAULT_LEGACY_GUESTBOOK_ENTRIES = [
     {
         "name": "Elena Torres",
@@ -1239,6 +1244,75 @@ DEFAULT_LEGACY_COMMENTS = [
     },
 ]
 
+DEFAULT_WALINE_COMMENTS = [
+    {
+        "key": "waline-post-root",
+        "url": "/posts/from-zero-design-system",
+        "nick": "林小北",
+        "mail": "linxiaobei@example.com",
+        "link": None,
+        "comment": "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-post-reply",
+        "url": "/posts/from-zero-design-system",
+        "nick": "Felix",
+        "mail": None,
+        "link": None,
+        "comment": '谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。',
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
+        "parent_key": "waline-post-root",
+    },
+    {
+        "key": "waline-post-second",
+        "url": "/posts/liquid-glass-css-notes",
+        "nick": "Kai Nakamura",
+        "mail": "kai@example.com",
+        "link": "https://kai.example.com",
+        "comment": "这一篇的性能部分很有用。`backdrop-filter` 一旦铺太大，低端设备确实会立刻吃不消。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-diary-root",
+        "url": "/diary/spring-equinox-and-warm-light",
+        "nick": "纸鹤",
+        "mail": None,
+        "link": None,
+        "comment": '这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。',
+        "status": "approved",
+        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-guestbook-root",
+        "url": "/guestbook",
+        "nick": "Elena Torres",
+        "mail": "elena@example.com",
+        "link": "https://elena.example.com",
+        "comment": "你的博客设计真的很稳，评论区换成现在这套以后，整体气质终于统一起来了。",
+        "status": "approved",
+        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=UTC),
+        "parent_key": None,
+    },
+    {
+        "key": "waline-guestbook-pending",
+        "url": "/guestbook",
+        "nick": "新访客",
+        "mail": None,
+        "link": None,
+        "comment": "测试一条待审核留言，方便在后台里看见 pending 状态。",
+        "status": "waiting",
+        "created_at": datetime(2026, 3, 21, 10, 30, tzinfo=UTC),
+        "parent_key": None,
+    },
+]
+
 DEFAULT_REACTIONS = [
     {
         "content_type": "posts",
@@ -1259,6 +1333,34 @@ DEFAULT_REACTIONS = [
         "client_token": "David Okoro",
     },
 ]
+
+
+def _build_default_waline_counters() -> list[dict[str, object]]:
+    reaction_counts = Counter(
+        build_comment_path(str(item["content_type"]), str(item["content_slug"]))
+        for item in DEFAULT_REACTIONS
+        if str(item["reaction_type"]) == "like"
+    )
+    counters: list[dict[str, object]] = []
+    for content_type, entries in (
+        ("posts", DEFAULT_POSTS),
+        ("diary", DEFAULT_DIARY_ENTRIES),
+        ("thoughts", DEFAULT_THOUGHTS),
+        ("excerpts", DEFAULT_EXCERPTS),
+    ):
+        for entry in entries:
+            path = build_comment_path(content_type, str(entry["slug"]))
+            counters.append(
+                {
+                    "url": path,
+                    "time": int(entry.get("view_count", 0) or 0),
+                    "reaction0": reaction_counts.get(path, 0),
+                }
+            )
+    return counters
+
+
+DEFAULT_WALINE_COUNTERS = _build_default_waline_counters()
 
 
 def _is_empty(session: Session, model) -> bool:  # type: ignore[no-untyped-def]
@@ -1551,6 +1653,26 @@ def _seed_dev_admin(session: Session) -> None:
     session.add(AdminUser(username="admin", password_hash=password_hash))
 
 
+def _seed_waline_counter_data() -> None:
+    with connect_waline_db() as connection:
+        existing = connection.execute("SELECT COUNT(*) FROM wl_counter").fetchone()
+        if existing and int(existing[0]) > 0:
+            return
+
+        for item in DEFAULT_WALINE_COUNTERS:
+            connection.execute(
+                """
+                INSERT INTO wl_counter (
+                    time, reaction0, reaction1, reaction2, reaction3, reaction4,
+                    reaction5, reaction6, reaction7, reaction8, url
+                ) VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)
+                """,
+                (int(item["time"]), int(item["reaction0"]), str(item["url"])),
+            )
+
+        connection.commit()
+
+
 def seed_reference_data(*, force: bool = False) -> None:
     get_settings().ensure_directories()
     init_db()
@@ -1632,6 +1754,7 @@ def seed_reference_data(*, force: bool = False) -> None:
         session.close()
 
     _seed_waline_comment_data()
+    _seed_waline_counter_data()
 
 
 def main() -> None:

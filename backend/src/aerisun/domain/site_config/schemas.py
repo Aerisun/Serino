@@ -97,6 +97,7 @@ class CommunityConfigRead(ModelBase):
     moderation_mode: str
     default_sorting: str
     page_size: int
+    image_max_bytes: int | None = 524288
     avatar_presets: list[dict[str, Any]]
     guest_avatar_mode: str
     draft_enabled: bool
