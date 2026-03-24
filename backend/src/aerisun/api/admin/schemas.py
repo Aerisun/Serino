@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-from typing import Generic, TypeVar
-
 from pydantic import BaseModel, Field
 
 from aerisun.core.schemas import ModelBase
-
-T = TypeVar("T")
 
 # Re-export domain schemas for backward compatibility
 from aerisun.domain.content.schemas import (  # noqa: F401
@@ -109,8 +105,8 @@ class BulkActionResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class PaginatedResponse(ModelBase, Generic[T]):
-    items: list[T] = Field(description="Page of result items")
+class PaginatedResponse[ItemT](ModelBase):
+    items: list[ItemT] = Field(description="Page of result items")
     total: int = Field(description="Total number of items matching the query")
     page: int = Field(description="Current page number (1-based)")
     page_size: int = Field(description="Number of items per page")

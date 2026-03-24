@@ -6,12 +6,8 @@
  */
 
 export interface AdminSessionRead {
-  /** Session identifier */
   id: string;
-  /** Session creation timestamp */
   created_at: string;
-  /** Session expiration timestamp */
   expires_at: string;
-  /** Whether this is the current active session */
   is_current?: boolean;
 }

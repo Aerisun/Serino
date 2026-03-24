@@ -7,8 +7,6 @@
 import type { ApiKeyAdminRead } from './apiKeyAdminRead';
 
 export interface ApiKeyCreateResponse {
-  /** Created API key details */
   item: ApiKeyAdminRead;
-  /** Full API key value (shown only once) */
   raw_key: string;
 }

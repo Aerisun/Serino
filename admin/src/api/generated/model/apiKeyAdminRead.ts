@@ -6,18 +6,11 @@
  */
 
 export interface ApiKeyAdminRead {
-  /** Unique API key identifier */
   id: string;
-  /** Descriptive name */
   key_name: string;
-  /** First 8 characters for identification */
   key_prefix: string;
-  /** Permission scopes */
   scopes: string[];
-  /** Last API call timestamp */
   last_used_at: string | null;
-  /** Key creation timestamp */
   created_at: string;
-  /** Last update timestamp */
   updated_at: string;
 }

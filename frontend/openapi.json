@@ -1064,7 +1064,6 @@
           "admin-auth"
         ],
         "summary": "管理员登录",
-        "description": "验证用户名密码并创建会话令牌。",
         "operationId": "login_api_v1_admin_auth_login_post",
         "requestBody": {
           "content": {
@@ -1107,7 +1106,6 @@
           "admin-auth"
         ],
         "summary": "管理员登出",
-        "description": "注销当前管理员的所有活跃会话。",
         "operationId": "logout_api_v1_admin_auth_logout_post",
         "responses": {
           "204": {
@@ -1128,7 +1126,6 @@
           "admin-auth"
         ],
         "summary": "获取当前管理员信息",
-        "description": "返回当前已认证管理员的用户信息。",
         "operationId": "me_api_v1_admin_auth_me_get",
         "responses": {
           "200": {
@@ -1156,7 +1153,6 @@
           "admin-auth"
         ],
         "summary": "修改密码",
-        "description": "校验旧密码后更新为新密码。",
         "operationId": "change_password_api_v1_admin_auth_password_put",
         "requestBody": {
           "content": {
@@ -1197,8 +1193,7 @@
           "admin-auth"
         ],
         "summary": "更新个人资料",
-        "description": "更新当前管理员的个人资料（如用户名）。",
-        "operationId": "update_profile_api_v1_admin_auth_profile_put",
+        "operationId": "update_profile_endpoint_api_v1_admin_auth_profile_put",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1245,8 +1240,7 @@
           "admin-auth"
         ],
         "summary": "获取活跃会话列表",
-        "description": "列出当前管理员的所有未过期会话。",
-        "operationId": "list_sessions_api_v1_admin_auth_sessions_get",
+        "operationId": "list_sessions_endpoint_api_v1_admin_auth_sessions_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1257,7 +1251,7 @@
                     "$ref": "#/components/schemas/AdminSessionRead"
                   },
                   "type": "array",
-                  "title": "Response List Sessions Api V1 Admin Auth Sessions Get"
+                  "title": "Response List Sessions Endpoint Api V1 Admin Auth Sessions Get"
                 }
               }
             }
@@ -1277,7 +1271,6 @@
           "admin-auth"
         ],
         "summary": "撤销指定会话",
-        "description": "根据会话 ID 撤销（删除）一个管理员会话。",
         "operationId": "revoke_session_api_v1_admin_auth_sessions__session_id__delete",
         "security": [
           {
@@ -7319,7 +7312,6 @@
           "admin-moderation"
         ],
         "summary": "获取评论审核列表",
-        "description": "分页查询待审核或全部评论，支持多维筛选。",
         "operationId": "list_comments_api_v1_admin_moderation_comments_get",
         "security": [
           {
@@ -7494,8 +7486,7 @@
           "admin-moderation"
         ],
         "summary": "审核评论",
-        "description": "对指定评论执行通过、拒绝或删除操作。",
-        "operationId": "moderate_comment_api_v1_admin_moderation_comments__comment_id__moderate_post",
+        "operationId": "moderate_comment_endpoint_api_v1_admin_moderation_comments__comment_id__moderate_post",
         "security": [
           {
             "HTTPBearer": []
@@ -7553,7 +7544,6 @@
           "admin-moderation"
         ],
         "summary": "获取留言审核列表",
-        "description": "分页查询留言板条目，支持状态和关键词筛选。",
         "operationId": "list_guestbook_api_v1_admin_moderation_guestbook_get",
         "security": [
           {
@@ -7712,8 +7702,7 @@
           "admin-moderation"
         ],
         "summary": "审核留言",
-        "description": "对指定留言执行通过、拒绝或删除操作。",
-        "operationId": "moderate_guestbook_api_v1_admin_moderation_guestbook__entry_id__moderate_post",
+        "operationId": "moderate_guestbook_endpoint_api_v1_admin_moderation_guestbook__entry_id__moderate_post",
         "security": [
           {
             "HTTPBearer": []
@@ -7771,8 +7760,7 @@
           "admin-assets"
         ],
         "summary": "获取资源列表",
-        "description": "分页查询已上传的媒体资源。",
-        "operationId": "list_assets_api_v1_admin_assets__get",
+        "operationId": "list_assets_endpoint_api_v1_admin_assets__get",
         "security": [
           {
             "HTTPBearer": []
@@ -7832,8 +7820,7 @@
           "admin-assets"
         ],
         "summary": "上传资源",
-        "description": "接收文件并保存到媒体目录，返回资源元信息。",
-        "operationId": "upload_asset_api_v1_admin_assets__post",
+        "operationId": "upload_asset_endpoint_api_v1_admin_assets__post",
         "security": [
           {
             "HTTPBearer": []
@@ -7844,7 +7831,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_upload_asset_api_v1_admin_assets__post"
+                "$ref": "#/components/schemas/Body_upload_asset_endpoint_api_v1_admin_assets__post"
               }
             }
           }
@@ -7880,8 +7867,7 @@
           "admin-assets"
         ],
         "summary": "批量删除资源",
-        "description": "根据 ID 列表批量删除媒体资源。",
-        "operationId": "bulk_delete_assets_api_v1_admin_assets_bulk_delete_post",
+        "operationId": "bulk_delete_assets_endpoint_api_v1_admin_assets_bulk_delete_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7928,8 +7914,7 @@
           "admin-assets"
         ],
         "summary": "获取单个资源",
-        "description": "根据 ID 获取单个媒体资源的详细信息。",
-        "operationId": "get_asset_api_v1_admin_assets__asset_id__get",
+        "operationId": "get_asset_endpoint_api_v1_admin_assets__asset_id__get",
         "security": [
           {
             "HTTPBearer": []
@@ -7975,8 +7960,7 @@
           "admin-assets"
         ],
         "summary": "删除资源",
-        "description": "删除指定资源并移除对应的磁盘文件。",
-        "operationId": "delete_asset_api_v1_admin_assets__asset_id__delete",
+        "operationId": "delete_asset_endpoint_api_v1_admin_assets__asset_id__delete",
         "security": [
           {
             "HTTPBearer": []
@@ -8017,7 +8001,6 @@
           "admin-system"
         ],
         "summary": "获取 API 密钥列表",
-        "description": "查询所有已创建的 API 密钥。",
         "operationId": "list_api_keys_api_v1_admin_system_api_keys_get",
         "responses": {
           "200": {
@@ -8047,7 +8030,6 @@
           "admin-system"
         ],
         "summary": "创建 API 密钥",
-        "description": "生成新的 API 密钥并返回明文密钥（仅此一次可见）。",
         "operationId": "create_api_key_api_v1_admin_system_api_keys_post",
         "requestBody": {
           "content": {
@@ -8095,7 +8077,6 @@
           "admin-system"
         ],
         "summary": "更新 API 密钥",
-        "description": "更新指定 API 密钥的名称或权限范围。",
         "operationId": "update_api_key_api_v1_admin_system_api_keys__key_id__put",
         "security": [
           {
@@ -8152,7 +8133,6 @@
           "admin-system"
         ],
         "summary": "删除 API 密钥",
-        "description": "永久删除指定的 API 密钥。",
         "operationId": "delete_api_key_api_v1_admin_system_api_keys__key_id__delete",
         "security": [
           {
@@ -8194,7 +8174,6 @@
           "admin-system"
         ],
         "summary": "获取审计日志",
-        "description": "分页查询审计日志，支持按操作类型和时间范围筛选。",
         "operationId": "list_audit_logs_api_v1_admin_system_audit_logs_get",
         "security": [
           {
@@ -8321,7 +8300,6 @@
           "admin-system"
         ],
         "summary": "获取备份列表",
-        "description": "列出所有备份快照记录。",
         "operationId": "list_backups_api_v1_admin_system_backups_get",
         "responses": {
           "200": {
@@ -8351,7 +8329,6 @@
           "admin-system"
         ],
         "summary": "创建备份快照",
-        "description": "手动创建一个新的数据库备份快照。",
         "operationId": "trigger_backup_api_v1_admin_system_backups_post",
         "responses": {
           "201": {
@@ -8379,7 +8356,6 @@
           "admin-system"
         ],
         "summary": "从备份恢复",
-        "description": "将指定备份快照标记为恢复中并触发恢复流程。",
         "operationId": "restore_backup_api_v1_admin_system_backups__snapshot_id__restore_post",
         "security": [
           {
@@ -8428,7 +8404,6 @@
           "admin-system"
         ],
         "summary": "获取仪表盘统计",
-        "description": "汇总各类内容数量、月度趋势及最近更新，用于仪表盘展示。",
         "operationId": "dashboard_stats_api_v1_admin_system_dashboard_stats_get",
         "responses": {
           "200": {
@@ -8456,7 +8431,6 @@
           "admin-system"
         ],
         "summary": "获取系统信息",
-        "description": "返回 Python 版本、数据库大小、媒体目录大小等系统运行信息。",
         "operationId": "system_info_api_v1_admin_system_info_get",
         "responses": {
           "200": {
@@ -8484,7 +8458,6 @@
           "admin-content-meta"
         ],
         "summary": "聚合所有内容标签",
-        "description": "跨所有内容表聚合标签及其使用次数。",
         "operationId": "list_tags_api_v1_admin_content_tags_get",
         "responses": {
           "200": {
@@ -8516,7 +8489,6 @@
           "admin-content-meta"
         ],
         "summary": "聚合文章分类",
-        "description": "聚合文章的分类及其数量。",
         "operationId": "list_categories_api_v1_admin_content_categories_get",
         "responses": {
           "200": {
@@ -8548,7 +8520,6 @@
           "admin-import-export"
         ],
         "summary": "导出内容",
-        "description": "将指定类型的内容导出为 JSON 或 Markdown ZIP 文件。",
         "operationId": "export_content_api_v1_admin_content_export_get",
         "security": [
           {
@@ -8609,7 +8580,6 @@
           "admin-import-export"
         ],
         "summary": "导入内容",
-        "description": "从上传的 JSON 文件导入内容，支持新增和更新。",
         "operationId": "import_content_api_v1_admin_content_import_post",
         "security": [
           {
@@ -8858,8 +8828,7 @@
                 "type": "null"
               }
             ],
-            "title": "Username",
-            "description": "New username to set"
+            "title": "Username"
           }
         },
         "type": "object",
@@ -8869,25 +8838,21 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Session identifier"
+            "title": "Id"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Session creation timestamp"
+            "title": "Created At"
           },
           "expires_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Expires At",
-            "description": "Session expiration timestamp"
+            "title": "Expires At"
           },
           "is_current": {
             "type": "boolean",
             "title": "Is Current",
-            "description": "Whether this is the current active session",
             "default": false
           }
         },
@@ -8903,24 +8868,20 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique user identifier"
+            "title": "Id"
           },
           "username": {
             "type": "string",
-            "title": "Username",
-            "description": "Admin username"
+            "title": "Username"
           },
           "is_active": {
             "type": "boolean",
-            "title": "Is Active",
-            "description": "Whether the account is active"
+            "title": "Is Active"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Account creation timestamp"
+            "title": "Created At"
           }
         },
         "type": "object",
@@ -8936,26 +8897,22 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique API key identifier"
+            "title": "Id"
           },
           "key_name": {
             "type": "string",
-            "title": "Key Name",
-            "description": "Descriptive name"
+            "title": "Key Name"
           },
           "key_prefix": {
             "type": "string",
-            "title": "Key Prefix",
-            "description": "First 8 characters for identification"
+            "title": "Key Prefix"
           },
           "scopes": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Scopes",
-            "description": "Permission scopes"
+            "title": "Scopes"
           },
           "last_used_at": {
             "anyOf": [
@@ -8967,20 +8924,17 @@
                 "type": "null"
               }
             ],
-            "title": "Last Used At",
-            "description": "Last API call timestamp"
+            "title": "Last Used At"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Key creation timestamp"
+            "title": "Created At"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -8999,16 +8953,14 @@
         "properties": {
           "key_name": {
             "type": "string",
-            "title": "Key Name",
-            "description": "Descriptive name for the API key"
+            "title": "Key Name"
           },
           "scopes": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Scopes",
-            "description": "List of permission scopes"
+            "title": "Scopes"
           }
         },
         "type": "object",
@@ -9020,13 +8972,11 @@
       "ApiKeyCreateResponse": {
         "properties": {
           "item": {
-            "$ref": "#/components/schemas/ApiKeyAdminRead",
-            "description": "Created API key details"
+            "$ref": "#/components/schemas/ApiKeyAdminRead"
           },
           "raw_key": {
             "type": "string",
-            "title": "Raw Key",
-            "description": "Full API key value (shown only once)"
+            "title": "Raw Key"
           }
         },
         "type": "object",
@@ -9047,8 +8997,7 @@
                 "type": "null"
               }
             ],
-            "title": "Key Name",
-            "description": "Descriptive name for the API key"
+            "title": "Key Name"
           },
           "scopes": {
             "anyOf": [
@@ -9062,8 +9011,7 @@
                 "type": "null"
               }
             ],
-            "title": "Scopes",
-            "description": "List of permission scopes"
+            "title": "Scopes"
           }
         },
         "type": "object",
@@ -9073,18 +9021,15 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique asset identifier"
+            "title": "Id"
           },
           "file_name": {
             "type": "string",
-            "title": "File Name",
-            "description": "Original uploaded file name"
+            "title": "File Name"
           },
           "storage_path": {
             "type": "string",
-            "title": "Storage Path",
-            "description": "Server file system storage path"
+            "title": "Storage Path"
           },
           "mime_type": {
             "anyOf": [
@@ -9095,8 +9040,7 @@
                 "type": "null"
               }
             ],
-            "title": "Mime Type",
-            "description": "MIME type of the file"
+            "title": "Mime Type"
           },
           "byte_size": {
             "anyOf": [
@@ -9107,8 +9051,7 @@
                 "type": "null"
               }
             ],
-            "title": "Byte Size",
-            "description": "File size in bytes"
+            "title": "Byte Size"
           },
           "sha256": {
             "anyOf": [
@@ -9119,20 +9062,17 @@
                 "type": "null"
               }
             ],
-            "title": "Sha256",
-            "description": "SHA-256 hash of the file content"
+            "title": "Sha256"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Upload timestamp"
+            "title": "Created At"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -9152,13 +9092,11 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique audit log identifier"
+            "title": "Id"
           },
           "actor_type": {
             "type": "string",
-            "title": "Actor Type",
-            "description": "Type of actor: admin or api_key"
+            "title": "Actor Type"
           },
           "actor_id": {
             "anyOf": [
@@ -9169,13 +9107,11 @@
                 "type": "null"
               }
             ],
-            "title": "Actor Id",
-            "description": "Identifier of the actor"
+            "title": "Actor Id"
           },
           "action": {
             "type": "string",
-            "title": "Action",
-            "description": "Action performed"
+            "title": "Action"
           },
           "target_type": {
             "anyOf": [
@@ -9186,8 +9122,7 @@
                 "type": "null"
               }
             ],
-            "title": "Target Type",
-            "description": "Type of the affected resource"
+            "title": "Target Type"
           },
           "target_id": {
             "anyOf": [
@@ -9198,20 +9133,17 @@
                 "type": "null"
               }
             ],
-            "title": "Target Id",
-            "description": "Identifier of the affected resource"
+            "title": "Target Id"
           },
           "payload": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Payload",
-            "description": "Additional action details and metadata"
+            "title": "Payload"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Action timestamp"
+            "title": "Created At"
           }
         },
         "type": "object",
@@ -9231,23 +9163,19 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique backup identifier"
+            "title": "Id"
           },
           "snapshot_type": {
             "type": "string",
-            "title": "Snapshot Type",
-            "description": "Backup type: manual or scheduled"
+            "title": "Snapshot Type"
           },
           "status": {
             "type": "string",
-            "title": "Status",
-            "description": "Backup status: queued, completed, or failed"
+            "title": "Status"
           },
           "db_path": {
             "type": "string",
-            "title": "Db Path",
-            "description": "Database file path"
+            "title": "Db Path"
           },
           "replica_url": {
             "anyOf": [
@@ -9258,8 +9186,7 @@
                 "type": "null"
               }
             ],
-            "title": "Replica Url",
-            "description": "Litestream replica URL"
+            "title": "Replica Url"
           },
           "backup_path": {
             "anyOf": [
@@ -9270,8 +9197,7 @@
                 "type": "null"
               }
             ],
-            "title": "Backup Path",
-            "description": "Backup archive file path"
+            "title": "Backup Path"
           },
           "checksum": {
             "anyOf": [
@@ -9282,8 +9208,7 @@
                 "type": "null"
               }
             ],
-            "title": "Checksum",
-            "description": "Backup file checksum"
+            "title": "Checksum"
           },
           "completed_at": {
             "anyOf": [
@@ -9295,20 +9220,17 @@
                 "type": "null"
               }
             ],
-            "title": "Completed At",
-            "description": "Backup completion timestamp"
+            "title": "Completed At"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Backup creation timestamp"
+            "title": "Created At"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -9340,7 +9262,7 @@
         ],
         "title": "Body_import_content_api_v1_admin_content_import_post"
       },
-      "Body_upload_asset_api_v1_admin_assets__post": {
+      "Body_upload_asset_endpoint_api_v1_admin_assets__post": {
         "properties": {
           "file": {
             "type": "string",
@@ -9352,7 +9274,7 @@
         "required": [
           "file"
         ],
-        "title": "Body_upload_asset_api_v1_admin_assets__post"
+        "title": "Body_upload_asset_endpoint_api_v1_admin_assets__post"
       },
       "Body_upload_comment_image_api_v1_public_comment_image_post": {
         "properties": {
@@ -9493,11 +9415,13 @@
         "properties": {
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "Category name"
           },
           "count": {
             "type": "integer",
-            "title": "Count"
+            "title": "Count",
+            "description": "Number of entries in this category"
           }
         },
         "type": "object",
@@ -9511,18 +9435,15 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique comment identifier"
+            "title": "Id"
           },
           "content_type": {
             "type": "string",
-            "title": "Content Type",
-            "description": "Content type: posts, diary, thoughts, or excerpts"
+            "title": "Content Type"
           },
           "content_slug": {
             "type": "string",
-            "title": "Content Slug",
-            "description": "Slug of the commented content"
+            "title": "Content Slug"
           },
           "parent_id": {
             "anyOf": [
@@ -9533,13 +9454,11 @@
                 "type": "null"
               }
             ],
-            "title": "Parent Id",
-            "description": "Parent comment ID for replies"
+            "title": "Parent Id"
           },
           "author_name": {
             "type": "string",
-            "title": "Author Name",
-            "description": "Comment author display name"
+            "title": "Author Name"
           },
           "author_email": {
             "anyOf": [
@@ -9550,30 +9469,25 @@
                 "type": "null"
               }
             ],
-            "title": "Author Email",
-            "description": "Comment author email address"
+            "title": "Author Email"
           },
           "body": {
             "type": "string",
-            "title": "Body",
-            "description": "Comment body text"
+            "title": "Body"
           },
           "status": {
             "type": "string",
-            "title": "Status",
-            "description": "Moderation status: approved, waiting, or spam"
+            "title": "Status"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Comment creation timestamp"
+            "title": "Created At"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -9826,7 +9740,7 @@
           },
           "surfaces": {
             "items": {
-              "$ref": "#/components/schemas/aerisun__api__admin__schemas__CommunitySurfaceRead"
+              "$ref": "#/components/schemas/CommunitySurfaceRead"
             },
             "type": "array",
             "title": "Surfaces",
@@ -10014,7 +9928,7 @@
           },
           "surfaces": {
             "items": {
-              "$ref": "#/components/schemas/aerisun__domain__site_config__schemas__CommunitySurfaceRead"
+              "$ref": "#/components/schemas/CommunitySurfaceRead"
             },
             "type": "array",
             "title": "Surfaces",
@@ -10461,6 +10375,38 @@
         },
         "type": "object",
         "title": "CommunityConfigUpdate"
+      },
+      "CommunitySurfaceRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Surface identifier"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Display label"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "URL path pattern"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether comments are enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "path",
+          "enabled"
+        ],
+        "title": "CommunitySurfaceRead"
       },
       "CommunitySurfaceUpdate": {
         "properties": {
@@ -11352,43 +11298,35 @@
         "properties": {
           "posts": {
             "type": "integer",
-            "title": "Posts",
-            "description": "Total number of posts"
+            "title": "Posts"
           },
           "diary_entries": {
             "type": "integer",
-            "title": "Diary Entries",
-            "description": "Total number of diary entries"
+            "title": "Diary Entries"
           },
           "thoughts": {
             "type": "integer",
-            "title": "Thoughts",
-            "description": "Total number of thoughts"
+            "title": "Thoughts"
           },
           "excerpts": {
             "type": "integer",
-            "title": "Excerpts",
-            "description": "Total number of excerpts"
+            "title": "Excerpts"
           },
           "comments": {
             "type": "integer",
-            "title": "Comments",
-            "description": "Total number of comments"
+            "title": "Comments"
           },
           "guestbook_entries": {
             "type": "integer",
-            "title": "Guestbook Entries",
-            "description": "Total number of guestbook entries"
+            "title": "Guestbook Entries"
           },
           "friends": {
             "type": "integer",
-            "title": "Friends",
-            "description": "Total number of friend links"
+            "title": "Friends"
           },
           "assets": {
             "type": "integer",
-            "title": "Assets",
-            "description": "Total number of uploaded assets"
+            "title": "Assets"
           },
           "posts_by_status": {
             "additionalProperties": {
@@ -11396,7 +11334,7 @@
             },
             "type": "object",
             "title": "Posts By Status",
-            "description": "Post counts grouped by status"
+            "default": {}
           },
           "content_by_month": {
             "items": {
@@ -11404,7 +11342,7 @@
             },
             "type": "array",
             "title": "Content By Month",
-            "description": "Content creation counts per month"
+            "default": []
           },
           "recent_content": {
             "items": {
@@ -11412,7 +11350,7 @@
             },
             "type": "array",
             "title": "Recent Content",
-            "description": "Most recently updated content items"
+            "default": []
           }
         },
         "type": "object",
@@ -12030,13 +11968,11 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Unique guestbook entry identifier"
+            "title": "Id"
           },
           "name": {
             "type": "string",
-            "title": "Name",
-            "description": "Guest display name"
+            "title": "Name"
           },
           "email": {
             "anyOf": [
@@ -12047,8 +11983,7 @@
                 "type": "null"
               }
             ],
-            "title": "Email",
-            "description": "Guest email address"
+            "title": "Email"
           },
           "website": {
             "anyOf": [
@@ -12059,30 +11994,25 @@
                 "type": "null"
               }
             ],
-            "title": "Website",
-            "description": "Guest personal website URL"
+            "title": "Website"
           },
           "body": {
             "type": "string",
-            "title": "Body",
-            "description": "Guestbook message body"
+            "title": "Body"
           },
           "status": {
             "type": "string",
-            "title": "Status",
-            "description": "Moderation status"
+            "title": "Status"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At",
-            "description": "Entry creation timestamp"
+            "title": "Created At"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -12299,11 +12229,13 @@
           "created": {
             "type": "integer",
             "title": "Created",
+            "description": "Number of entries created",
             "default": 0
           },
           "updated": {
             "type": "integer",
             "title": "Updated",
+            "description": "Number of entries updated",
             "default": 0
           },
           "errors": {
@@ -12312,7 +12244,7 @@
             },
             "type": "array",
             "title": "Errors",
-            "default": []
+            "description": "Error messages"
           }
         },
         "type": "object",
@@ -12322,13 +12254,11 @@
         "properties": {
           "username": {
             "type": "string",
-            "title": "Username",
-            "description": "Admin username"
+            "title": "Username"
           },
           "password": {
             "type": "string",
-            "title": "Password",
-            "description": "Admin password"
+            "title": "Password"
           }
         },
         "type": "object",
@@ -12342,14 +12272,12 @@
         "properties": {
           "token": {
             "type": "string",
-            "title": "Token",
-            "description": "JWT authentication token"
+            "title": "Token"
           },
           "expires_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Expires At",
-            "description": "Token expiration timestamp"
+            "title": "Expires At"
           }
         },
         "type": "object",
@@ -12363,8 +12291,7 @@
         "properties": {
           "action": {
             "type": "string",
-            "title": "Action",
-            "description": "Moderation action: approve, reject, or delete"
+            "title": "Action"
           },
           "reason": {
             "anyOf": [
@@ -12375,8 +12302,7 @@
                 "type": "null"
               }
             ],
-            "title": "Reason",
-            "description": "Optional reason for the moderation action"
+            "title": "Reason"
           }
         },
         "type": "object",
@@ -12389,31 +12315,26 @@
         "properties": {
           "month": {
             "type": "string",
-            "title": "Month",
-            "description": "Month identifier in YYYY-MM format"
+            "title": "Month"
           },
           "posts": {
             "type": "integer",
             "title": "Posts",
-            "description": "Number of posts created",
             "default": 0
           },
           "diary": {
             "type": "integer",
             "title": "Diary",
-            "description": "Number of diary entries created",
             "default": 0
           },
           "thoughts": {
             "type": "integer",
             "title": "Thoughts",
-            "description": "Number of thoughts created",
             "default": 0
           },
           "excerpts": {
             "type": "integer",
             "title": "Excerpts",
-            "description": "Number of excerpts created",
             "default": 0
           }
         },
@@ -14001,13 +13922,11 @@
         "properties": {
           "current_password": {
             "type": "string",
-            "title": "Current Password",
-            "description": "Current password for verification"
+            "title": "Current Password"
           },
           "new_password": {
             "type": "string",
-            "title": "New Password",
-            "description": "New password to set"
+            "title": "New Password"
           }
         },
         "type": "object",
@@ -14294,29 +14213,24 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id",
-            "description": "Content item identifier"
+            "title": "Id"
           },
           "title": {
             "type": "string",
-            "title": "Title",
-            "description": "Content title"
+            "title": "Title"
           },
           "content_type": {
             "type": "string",
-            "title": "Content Type",
-            "description": "Type: post, diary, thought, or excerpt"
+            "title": "Content Type"
           },
           "status": {
             "type": "string",
-            "title": "Status",
-            "description": "Publication status"
+            "title": "Status"
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -14911,11 +14825,13 @@
               "$ref": "#/components/schemas/SearchResultItem"
             },
             "type": "array",
-            "title": "Items"
+            "title": "Items",
+            "description": "Search result items"
           },
           "total": {
             "type": "integer",
-            "title": "Total"
+            "title": "Total",
+            "description": "Total matching results"
           }
         },
         "type": "object",
@@ -14929,19 +14845,23 @@
         "properties": {
           "type": {
             "type": "string",
-            "title": "Type"
+            "title": "Type",
+            "description": "Content type"
           },
           "slug": {
             "type": "string",
-            "title": "Slug"
+            "title": "Slug",
+            "description": "URL-friendly identifier"
           },
           "title": {
             "type": "string",
-            "title": "Title"
+            "title": "Title",
+            "description": "Content title"
           },
           "snippet": {
             "type": "string",
-            "title": "Snippet"
+            "title": "Snippet",
+            "description": "Matched text snippet"
           },
           "published_at": {
             "anyOf": [
@@ -14953,7 +14873,8 @@
                 "type": "null"
               }
             ],
-            "title": "Published At"
+            "title": "Published At",
+            "description": "Publication timestamp"
           }
         },
         "type": "object",
@@ -15576,33 +15497,27 @@
           "version": {
             "type": "string",
             "title": "Version",
-            "description": "Application version",
             "default": "1.0.0"
           },
           "python_version": {
             "type": "string",
-            "title": "Python Version",
-            "description": "Python runtime version"
+            "title": "Python Version"
           },
           "db_size_bytes": {
             "type": "integer",
-            "title": "Db Size Bytes",
-            "description": "SQLite database file size in bytes"
+            "title": "Db Size Bytes"
           },
           "media_dir_size_bytes": {
             "type": "integer",
-            "title": "Media Dir Size Bytes",
-            "description": "Total media directory size in bytes"
+            "title": "Media Dir Size Bytes"
           },
           "uptime_seconds": {
             "type": "number",
-            "title": "Uptime Seconds",
-            "description": "Server uptime in seconds"
+            "title": "Uptime Seconds"
           },
           "environment": {
             "type": "string",
-            "title": "Environment",
-            "description": "Deployment environment name"
+            "title": "Environment"
           }
         },
         "type": "object",
@@ -15619,11 +15534,13 @@
         "properties": {
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "Tag name"
           },
           "count": {
             "type": "integer",
-            "title": "Count"
+            "title": "Count",
+            "description": "Number of entries with this tag"
           }
         },
         "type": "object",
@@ -15672,70 +15589,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "aerisun__api__admin__schemas__CommunitySurfaceRead": {
-        "properties": {
-          "key": {
-            "type": "string",
-            "title": "Key",
-            "description": "Surface identifier key"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "Display label"
-          },
-          "path": {
-            "type": "string",
-            "title": "Path",
-            "description": "URL path pattern"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "description": "Whether comments are enabled",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "key",
-          "label",
-          "path"
-        ],
-        "title": "CommunitySurfaceRead"
-      },
-      "aerisun__domain__site_config__schemas__CommunitySurfaceRead": {
-        "properties": {
-          "key": {
-            "type": "string",
-            "title": "Key",
-            "description": "Surface identifier"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "Display label"
-          },
-          "path": {
-            "type": "string",
-            "title": "Path",
-            "description": "URL path pattern"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "description": "Whether comments are enabled"
-          }
-        },
-        "type": "object",
-        "required": [
-          "key",
-          "label",
-          "path",
-          "enabled"
-        ],
-        "title": "CommunitySurfaceRead"
       }
     },
     "securitySchemes": {

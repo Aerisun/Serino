@@ -6,6 +6,8 @@
  */
 
 export interface TagInfo {
+  /** Tag name */
   name: string;
+  /** Number of entries with this tag */
   count: number;
 }

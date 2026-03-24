@@ -62,9 +62,9 @@ def moderate_comment_endpoint(
     try:
         result = moderate_comment(session, waline_id, payload.action, payload.reason)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Comment not found") from exc
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return result
@@ -109,9 +109,9 @@ def moderate_guestbook_endpoint(
     try:
         result = moderate_guestbook_entry(session, waline_id, payload.action, payload.reason)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Guestbook entry not found")
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Guestbook entry not found") from exc
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return result

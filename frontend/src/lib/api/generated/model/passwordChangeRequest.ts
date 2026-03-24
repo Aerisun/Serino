@@ -6,8 +6,6 @@
  */
 
 export interface PasswordChangeRequest {
-  /** Current password for verification */
   current_password: string;
-  /** New password to set */
   new_password: string;
 }

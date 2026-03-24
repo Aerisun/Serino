@@ -253,7 +253,7 @@ def upload_comment_image(
         url = save_comment_image(content, file.filename or "img", file.content_type)
     except ValueError as exc:
         status_code = 413 if "过大" in str(exc) else 400
-        raise HTTPException(status_code=status_code, detail=str(exc))
+        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
     return {"errno": 0, "data": {"url": url}}
 
 

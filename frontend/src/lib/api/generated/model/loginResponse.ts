@@ -6,8 +6,6 @@
  */
 
 export interface LoginResponse {
-  /** JWT authentication token */
   token: string;
-  /** Token expiration timestamp */
   expires_at: string;
 }

@@ -6,16 +6,10 @@
  */
 
 export interface SystemInfo {
-  /** Application version */
   version?: string;
-  /** Python runtime version */
   python_version: string;
-  /** SQLite database file size in bytes */
   db_size_bytes: number;
-  /** Total media directory size in bytes */
   media_dir_size_bytes: number;
-  /** Server uptime in seconds */
   uptime_seconds: number;
-  /** Deployment environment name */
   environment: string;
 }

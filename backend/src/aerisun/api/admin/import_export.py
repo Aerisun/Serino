@@ -44,7 +44,7 @@ def export_content(
             headers={"Content-Disposition": f"attachment; filename={content_type}-export.json"},
         )
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/import", response_model=ImportResult, summary="导入内容")
@@ -64,4 +64,4 @@ async def import_content(
     try:
         return import_content_json(session, content_type, items_data)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

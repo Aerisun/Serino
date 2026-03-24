@@ -4,8 +4,8 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AerisunDomainSiteConfigSchemasCommunitySurfaceRead } from './aerisunDomainSiteConfigSchemasCommunitySurfaceRead';
 import type { CommunityConfigReadAvatarPresetsItem } from './communityConfigReadAvatarPresetsItem';
+import type { CommunitySurfaceRead } from './communitySurfaceRead';
 
 export interface CommunityConfigRead {
   /** Comment provider name */
@@ -13,7 +13,7 @@ export interface CommunityConfigRead {
   /** Comment server URL */
   server_url: string;
   /** Comment-enabled surfaces */
-  surfaces: AerisunDomainSiteConfigSchemasCommunitySurfaceRead[];
+  surfaces: CommunitySurfaceRead[];
   /** Commenter metadata fields */
   meta: string[];
   /** Required metadata fields */

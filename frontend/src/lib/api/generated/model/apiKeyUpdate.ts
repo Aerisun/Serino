@@ -6,8 +6,6 @@
  */
 
 export interface ApiKeyUpdate {
-  /** Descriptive name for the API key */
   key_name?: string | null;
-  /** List of permission scopes */
   scopes?: string[] | null;
 }

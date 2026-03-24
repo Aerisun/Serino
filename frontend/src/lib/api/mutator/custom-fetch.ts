@@ -53,7 +53,13 @@ export const customFetch = async <T>(
     return undefined as T;
   }
 
-  return response.json();
+  const data = await response.json();
+
+  return {
+    data,
+    status: response.status,
+    headers: response.headers,
+  } as T;
 };
 
 export default customFetch;

@@ -81,8 +81,8 @@ def update_api_key(
 ) -> Any:
     try:
         return _update_api_key(session, key_id, payload)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="API key not found")
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="API key not found") from exc
 
 
 @router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除 API 密钥")
@@ -93,8 +93,8 @@ def delete_api_key(
 ) -> None:
     try:
         _delete_api_key(session, key_id)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="API key not found")
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="API key not found") from exc
 
 
 # ---------------------------------------------------------------------------

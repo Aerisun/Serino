@@ -5,7 +5,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Additional action details and metadata
- */
 export type AuditLogReadPayload = { [key: string]: unknown };

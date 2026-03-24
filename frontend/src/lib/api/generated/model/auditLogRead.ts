@@ -7,20 +7,12 @@
 import type { AuditLogReadPayload } from './auditLogReadPayload';
 
 export interface AuditLogRead {
-  /** Unique audit log identifier */
   id: string;
-  /** Type of actor: admin or api_key */
   actor_type: string;
-  /** Identifier of the actor */
   actor_id: string | null;
-  /** Action performed */
   action: string;
-  /** Type of the affected resource */
   target_type: string | null;
-  /** Identifier of the affected resource */
   target_id: string | null;
-  /** Additional action details and metadata */
   payload: AuditLogReadPayload;
-  /** Action timestamp */
   created_at: string;
 }

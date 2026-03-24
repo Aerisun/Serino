@@ -41,10 +41,13 @@ def _extract_token(request: Request) -> str | None:
 def login(request: Request, payload: LoginRequest, session: Session = Depends(get_session)) -> LoginResponse:
     try:
         user = authenticate_admin(session, payload.username, payload.password)
-    except LookupError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        ) from exc
     except PermissionError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     return create_admin_session(session, user.id)
 
 
@@ -70,7 +73,7 @@ def change_password(
     try:
         change_admin_password(session, admin, payload.current_password, payload.new_password)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.put("/profile", response_model=AdminUserRead, summary="更新个人资料")
@@ -82,7 +85,7 @@ def update_profile_endpoint(
     try:
         return update_admin_profile(session, admin, payload.username)
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/sessions", response_model=list[AdminSessionRead], summary="获取活跃会话列表")
@@ -102,5 +105,5 @@ def revoke_session(
 ) -> None:
     try:
         revoke_admin_session(session, admin.id, session_id)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Session not found")
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Session not found") from exc

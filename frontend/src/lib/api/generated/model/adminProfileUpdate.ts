@@ -6,6 +6,5 @@
  */
 
 export interface AdminProfileUpdate {
-  /** New username to set */
   username?: string | null;
 }

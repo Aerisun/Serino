@@ -6,8 +6,6 @@
  */
 
 export interface ApiKeyCreate {
-  /** Descriptive name for the API key */
   key_name: string;
-  /** List of permission scopes */
   scopes?: string[];
 }

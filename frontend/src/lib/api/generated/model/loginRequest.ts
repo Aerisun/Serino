@@ -6,8 +6,6 @@
  */
 
 export interface LoginRequest {
-  /** Admin username */
   username: string;
-  /** Admin password */
   password: string;
 }

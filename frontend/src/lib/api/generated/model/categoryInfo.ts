@@ -6,6 +6,8 @@
  */
 
 export interface CategoryInfo {
+  /** Category name */
   name: string;
+  /** Number of entries in this category */
   count: number;
 }

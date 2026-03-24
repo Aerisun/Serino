@@ -6,7 +6,10 @@
  */
 
 export interface ImportResult {
+  /** Number of entries created */
   created?: number;
+  /** Number of entries updated */
   updated?: number;
+  /** Error messages */
   errors?: string[];
 }

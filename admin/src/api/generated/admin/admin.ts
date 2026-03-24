@@ -34,7 +34,7 @@ import type {
   AssetAdminRead,
   BackupSnapshotRead,
   BodyImportContentApiV1AdminContentImportPost,
-  BodyUploadAssetApiV1AdminAssetsPost,
+  BodyUploadAssetEndpointApiV1AdminAssetsPost,
   BulkActionResponse,
   BulkDeleteRequest,
   BulkStatusRequest,
@@ -59,7 +59,7 @@ import type {
   HTTPValidationError,
   ImportContentApiV1AdminContentImportPostParams,
   ImportResult,
-  ListAssetsApiV1AdminAssetsGetParams,
+  ListAssetsEndpointApiV1AdminAssetsGetParams,
   ListAuditLogsApiV1AdminSystemAuditLogsGetParams,
   ListBasicsParams,
   ListCommentsApiV1AdminModerationCommentsGetParams,
@@ -129,10 +129,11 @@ import { customInstance } from '../../mutator/custom-instance';
 import type { ErrorType , BodyType } from '../../mutator/custom-instance';
 
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 /**
- * 验证用户名密码并创建会话令牌。
  * @summary 管理员登录
  */
 export type loginApiV1AdminAuthLoginPostResponse200 = {
@@ -178,15 +179,15 @@ export const loginApiV1AdminAuthLoginPost = async (loginRequest: LoginRequest, o
 
 
 export const getLoginApiV1AdminAuthLoginPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>, TError,{data: BodyType<LoginRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>, TError,{data: BodyType<LoginRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>, TError,{data: BodyType<LoginRequest>}, TContext> => {
 
 const mutationKey = ['loginApiV1AdminAuthLoginPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -194,7 +195,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>, {data: BodyType<LoginRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  loginApiV1AdminAuthLoginPost(data,)
+          return  loginApiV1AdminAuthLoginPost(data,requestOptions)
         }
 
 
@@ -212,7 +213,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 管理员登录
  */
 export const useLoginApiV1AdminAuthLoginPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>, TError,{data: BodyType<LoginRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>, TError,{data: BodyType<LoginRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof loginApiV1AdminAuthLoginPost>>,
         TError,
@@ -222,7 +223,6 @@ export const useLoginApiV1AdminAuthLoginPost = <TError = ErrorType<HTTPValidatio
       return useMutation(getLoginApiV1AdminAuthLoginPostMutationOptions(options), queryClient);
     }
     /**
- * 注销当前管理员的所有活跃会话。
  * @summary 管理员登出
  */
 export type logoutApiV1AdminAuthLogoutPostResponse204 = {
@@ -260,15 +260,15 @@ export const logoutApiV1AdminAuthLogoutPost = async ( options?: RequestInit): Pr
 
 
 export const getLogoutApiV1AdminAuthLogoutPostMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>, TError,void, TContext> => {
 
 const mutationKey = ['logoutApiV1AdminAuthLogoutPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -276,7 +276,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>, void> = () => {
 
 
-          return  logoutApiV1AdminAuthLogoutPost()
+          return  logoutApiV1AdminAuthLogoutPost(requestOptions)
         }
 
 
@@ -294,7 +294,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 管理员登出
  */
 export const useLogoutApiV1AdminAuthLogoutPost = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof logoutApiV1AdminAuthLogoutPost>>,
         TError,
@@ -304,7 +304,6 @@ export const useLogoutApiV1AdminAuthLogoutPost = <TError = ErrorType<unknown>,
       return useMutation(getLogoutApiV1AdminAuthLogoutPostMutationOptions(options), queryClient);
     }
     /**
- * 返回当前已认证管理员的用户信息。
  * @summary 获取当前管理员信息
  */
 export type meApiV1AdminAuthMeGetResponse200 = {
@@ -349,16 +348,16 @@ export const getMeApiV1AdminAuthMeGetQueryKey = () => {
     }
 
 
-export const getMeApiV1AdminAuthMeGetQueryOptions = <TData = Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError, TData>>, }
+export const getMeApiV1AdminAuthMeGetQueryOptions = <TData = Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getMeApiV1AdminAuthMeGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>> = ({ signal }) => meApiV1AdminAuthMeGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>> = ({ signal }) => meApiV1AdminAuthMeGet({ signal, ...requestOptions });
 
 
 
@@ -378,7 +377,7 @@ export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApi
           TError,
           Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError = ErrorType<unknown>>(
@@ -388,11 +387,11 @@ export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApi
           TError,
           Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -400,7 +399,7 @@ export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApi
  */
 
 export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof meApiV1AdminAuthMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -415,7 +414,6 @@ export function useMeApiV1AdminAuthMeGet<TData = Awaited<ReturnType<typeof meApi
 
 
 /**
- * 校验旧密码后更新为新密码。
  * @summary 修改密码
  */
 export type changePasswordApiV1AdminAuthPasswordPutResponse204 = {
@@ -461,15 +459,15 @@ export const changePasswordApiV1AdminAuthPasswordPut = async (passwordChangeRequ
 
 
 export const getChangePasswordApiV1AdminAuthPasswordPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext> => {
 
 const mutationKey = ['changePasswordApiV1AdminAuthPasswordPut'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -477,7 +475,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>, {data: BodyType<PasswordChangeRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  changePasswordApiV1AdminAuthPasswordPut(data,)
+          return  changePasswordApiV1AdminAuthPasswordPut(data,requestOptions)
         }
 
 
@@ -495,7 +493,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 修改密码
  */
 export const useChangePasswordApiV1AdminAuthPasswordPut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof changePasswordApiV1AdminAuthPasswordPut>>,
         TError,
@@ -505,29 +503,28 @@ export const useChangePasswordApiV1AdminAuthPasswordPut = <TError = ErrorType<HT
       return useMutation(getChangePasswordApiV1AdminAuthPasswordPutMutationOptions(options), queryClient);
     }
     /**
- * 更新当前管理员的个人资料（如用户名）。
  * @summary 更新个人资料
  */
-export type updateProfileApiV1AdminAuthProfilePutResponse200 = {
+export type updateProfileEndpointApiV1AdminAuthProfilePutResponse200 = {
   data: AdminUserRead
   status: 200
 }
 
-export type updateProfileApiV1AdminAuthProfilePutResponse422 = {
+export type updateProfileEndpointApiV1AdminAuthProfilePutResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type updateProfileApiV1AdminAuthProfilePutResponseSuccess = (updateProfileApiV1AdminAuthProfilePutResponse200) & {
+export type updateProfileEndpointApiV1AdminAuthProfilePutResponseSuccess = (updateProfileEndpointApiV1AdminAuthProfilePutResponse200) & {
   headers: Headers;
 };
-export type updateProfileApiV1AdminAuthProfilePutResponseError = (updateProfileApiV1AdminAuthProfilePutResponse422) & {
+export type updateProfileEndpointApiV1AdminAuthProfilePutResponseError = (updateProfileEndpointApiV1AdminAuthProfilePutResponse422) & {
   headers: Headers;
 };
 
-export type updateProfileApiV1AdminAuthProfilePutResponse = (updateProfileApiV1AdminAuthProfilePutResponseSuccess | updateProfileApiV1AdminAuthProfilePutResponseError)
+export type updateProfileEndpointApiV1AdminAuthProfilePutResponse = (updateProfileEndpointApiV1AdminAuthProfilePutResponseSuccess | updateProfileEndpointApiV1AdminAuthProfilePutResponseError)
 
-export const getUpdateProfileApiV1AdminAuthProfilePutUrl = () => {
+export const getUpdateProfileEndpointApiV1AdminAuthProfilePutUrl = () => {
 
 
 
@@ -535,9 +532,9 @@ export const getUpdateProfileApiV1AdminAuthProfilePutUrl = () => {
   return `/api/v1/admin/auth/profile`
 }
 
-export const updateProfileApiV1AdminAuthProfilePut = async (adminProfileUpdate: AdminProfileUpdate, options?: RequestInit): Promise<updateProfileApiV1AdminAuthProfilePutResponse> => {
+export const updateProfileEndpointApiV1AdminAuthProfilePut = async (adminProfileUpdate: AdminProfileUpdate, options?: RequestInit): Promise<updateProfileEndpointApiV1AdminAuthProfilePutResponse> => {
 
-  return customInstance<updateProfileApiV1AdminAuthProfilePutResponse>(getUpdateProfileApiV1AdminAuthProfilePutUrl(),
+  return customInstance<updateProfileEndpointApiV1AdminAuthProfilePutResponse>(getUpdateProfileEndpointApiV1AdminAuthProfilePutUrl(),
   {
     ...options,
     method: 'PUT',
@@ -550,24 +547,24 @@ export const updateProfileApiV1AdminAuthProfilePut = async (adminProfileUpdate: 
 
 
 
-export const getUpdateProfileApiV1AdminAuthProfilePutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminAuthProfilePut>>, TError,{data: BodyType<AdminProfileUpdate>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminAuthProfilePut>>, TError,{data: BodyType<AdminProfileUpdate>}, TContext> => {
+export const getUpdateProfileEndpointApiV1AdminAuthProfilePutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileEndpointApiV1AdminAuthProfilePut>>, TError,{data: BodyType<AdminProfileUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfileEndpointApiV1AdminAuthProfilePut>>, TError,{data: BodyType<AdminProfileUpdate>}, TContext> => {
 
-const mutationKey = ['updateProfileApiV1AdminAuthProfilePut'];
-const {mutation: mutationOptions} = options ?
+const mutationKey = ['updateProfileEndpointApiV1AdminAuthProfilePut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfileApiV1AdminAuthProfilePut>>, {data: BodyType<AdminProfileUpdate>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfileEndpointApiV1AdminAuthProfilePut>>, {data: BodyType<AdminProfileUpdate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  updateProfileApiV1AdminAuthProfilePut(data,)
+          return  updateProfileEndpointApiV1AdminAuthProfilePut(data,requestOptions)
         }
 
 
@@ -577,40 +574,39 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateProfileApiV1AdminAuthProfilePutMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfileApiV1AdminAuthProfilePut>>>
-    export type UpdateProfileApiV1AdminAuthProfilePutMutationBody = BodyType<AdminProfileUpdate>
-    export type UpdateProfileApiV1AdminAuthProfilePutMutationError = ErrorType<HTTPValidationError>
+    export type UpdateProfileEndpointApiV1AdminAuthProfilePutMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfileEndpointApiV1AdminAuthProfilePut>>>
+    export type UpdateProfileEndpointApiV1AdminAuthProfilePutMutationBody = BodyType<AdminProfileUpdate>
+    export type UpdateProfileEndpointApiV1AdminAuthProfilePutMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 更新个人资料
  */
-export const useUpdateProfileApiV1AdminAuthProfilePut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminAuthProfilePut>>, TError,{data: BodyType<AdminProfileUpdate>}, TContext>, }
+export const useUpdateProfileEndpointApiV1AdminAuthProfilePut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileEndpointApiV1AdminAuthProfilePut>>, TError,{data: BodyType<AdminProfileUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateProfileApiV1AdminAuthProfilePut>>,
+        Awaited<ReturnType<typeof updateProfileEndpointApiV1AdminAuthProfilePut>>,
         TError,
         {data: BodyType<AdminProfileUpdate>},
         TContext
       > => {
-      return useMutation(getUpdateProfileApiV1AdminAuthProfilePutMutationOptions(options), queryClient);
+      return useMutation(getUpdateProfileEndpointApiV1AdminAuthProfilePutMutationOptions(options), queryClient);
     }
     /**
- * 列出当前管理员的所有未过期会话。
  * @summary 获取活跃会话列表
  */
-export type listSessionsApiV1AdminAuthSessionsGetResponse200 = {
+export type listSessionsEndpointApiV1AdminAuthSessionsGetResponse200 = {
   data: AdminSessionRead[]
   status: 200
 }
 
-export type listSessionsApiV1AdminAuthSessionsGetResponseSuccess = (listSessionsApiV1AdminAuthSessionsGetResponse200) & {
+export type listSessionsEndpointApiV1AdminAuthSessionsGetResponseSuccess = (listSessionsEndpointApiV1AdminAuthSessionsGetResponse200) & {
   headers: Headers;
 };
 ;
 
-export type listSessionsApiV1AdminAuthSessionsGetResponse = (listSessionsApiV1AdminAuthSessionsGetResponseSuccess)
+export type listSessionsEndpointApiV1AdminAuthSessionsGetResponse = (listSessionsEndpointApiV1AdminAuthSessionsGetResponseSuccess)
 
-export const getListSessionsApiV1AdminAuthSessionsGetUrl = () => {
+export const getListSessionsEndpointApiV1AdminAuthSessionsGetUrl = () => {
 
 
 
@@ -618,9 +614,9 @@ export const getListSessionsApiV1AdminAuthSessionsGetUrl = () => {
   return `/api/v1/admin/auth/sessions`
 }
 
-export const listSessionsApiV1AdminAuthSessionsGet = async ( options?: RequestInit): Promise<listSessionsApiV1AdminAuthSessionsGetResponse> => {
+export const listSessionsEndpointApiV1AdminAuthSessionsGet = async ( options?: RequestInit): Promise<listSessionsEndpointApiV1AdminAuthSessionsGetResponse> => {
 
-  return customInstance<listSessionsApiV1AdminAuthSessionsGetResponse>(getListSessionsApiV1AdminAuthSessionsGetUrl(),
+  return customInstance<listSessionsEndpointApiV1AdminAuthSessionsGetResponse>(getListSessionsEndpointApiV1AdminAuthSessionsGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -633,69 +629,69 @@ export const listSessionsApiV1AdminAuthSessionsGet = async ( options?: RequestIn
 
 
 
-export const getListSessionsApiV1AdminAuthSessionsGetQueryKey = () => {
+export const getListSessionsEndpointApiV1AdminAuthSessionsGetQueryKey = () => {
     return [
     `/api/v1/admin/auth/sessions`
     ] as const;
     }
 
 
-export const getListSessionsApiV1AdminAuthSessionsGetQueryOptions = <TData = Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError, TData>>, }
+export const getListSessionsEndpointApiV1AdminAuthSessionsGetQueryOptions = <TData = Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListSessionsApiV1AdminAuthSessionsGetQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>> = ({ signal }) => listSessionsApiV1AdminAuthSessionsGet({ signal });
+  const queryKey =  queryOptions?.queryKey ?? getListSessionsEndpointApiV1AdminAuthSessionsGetQueryKey();
 
 
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>> = ({ signal }) => listSessionsEndpointApiV1AdminAuthSessionsGet({ signal, ...requestOptions });
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListSessionsApiV1AdminAuthSessionsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>>
-export type ListSessionsApiV1AdminAuthSessionsGetQueryError = ErrorType<unknown>
+export type ListSessionsEndpointApiV1AdminAuthSessionsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>>
+export type ListSessionsEndpointApiV1AdminAuthSessionsGetQueryError = ErrorType<unknown>
 
 
-export function useListSessionsApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError, TData>> & Pick<
+export function useListSessionsEndpointApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>,
+          Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>,
           TError,
-          Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>
+          Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListSessionsApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError, TData>> & Pick<
+export function useListSessionsEndpointApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>,
+          Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>,
           TError,
-          Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>
+          Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListSessionsApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError, TData>>, }
+export function useListSessionsEndpointApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 获取活跃会话列表
  */
 
-export function useListSessionsApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsApiV1AdminAuthSessionsGet>>, TError, TData>>, }
+export function useListSessionsEndpointApiV1AdminAuthSessionsGet<TData = Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSessionsEndpointApiV1AdminAuthSessionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListSessionsApiV1AdminAuthSessionsGetQueryOptions(options)
+  const queryOptions = getListSessionsEndpointApiV1AdminAuthSessionsGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -706,7 +702,6 @@ export function useListSessionsApiV1AdminAuthSessionsGet<TData = Awaited<ReturnT
 
 
 /**
- * 根据会话 ID 撤销（删除）一个管理员会话。
  * @summary 撤销指定会话
  */
 export type revokeSessionApiV1AdminAuthSessionsSessionIdDeleteResponse204 = {
@@ -751,15 +746,15 @@ export const revokeSessionApiV1AdminAuthSessionsSessionIdDelete = async (session
 
 
 export const getRevokeSessionApiV1AdminAuthSessionsSessionIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>, TError,{sessionId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>, TError,{sessionId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>, TError,{sessionId: string}, TContext> => {
 
 const mutationKey = ['revokeSessionApiV1AdminAuthSessionsSessionIdDelete'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -767,7 +762,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>, {sessionId: string}> = (props) => {
           const {sessionId} = props ?? {};
 
-          return  revokeSessionApiV1AdminAuthSessionsSessionIdDelete(sessionId,)
+          return  revokeSessionApiV1AdminAuthSessionsSessionIdDelete(sessionId,requestOptions)
         }
 
 
@@ -785,7 +780,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 撤销指定会话
  */
 export const useRevokeSessionApiV1AdminAuthSessionsSessionIdDelete = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>, TError,{sessionId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>, TError,{sessionId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof revokeSessionApiV1AdminAuthSessionsSessionIdDelete>>,
         TError,
@@ -854,16 +849,16 @@ export const getListPostsQueryKey = (params?: ListPostsParams,) => {
     }
 
 
-export const getListPostsQueryOptions = <TData = Awaited<ReturnType<typeof listPosts>>, TError = ErrorType<HTTPValidationError>>(params?: ListPostsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>>, }
+export const getListPostsQueryOptions = <TData = Awaited<ReturnType<typeof listPosts>>, TError = ErrorType<HTTPValidationError>>(params?: ListPostsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListPostsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPosts>>> = ({ signal }) => listPosts(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPosts>>> = ({ signal }) => listPosts(params, { signal, ...requestOptions });
 
 
 
@@ -883,7 +878,7 @@ export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TErr
           TError,
           Awaited<ReturnType<typeof listPosts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TError = ErrorType<HTTPValidationError>>(
@@ -893,11 +888,11 @@ export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TErr
           TError,
           Awaited<ReturnType<typeof listPosts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListPostsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>>, }
+ params?: ListPostsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -905,7 +900,7 @@ export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TErr
  */
 
 export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListPostsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>>, }
+ params?: ListPostsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -966,15 +961,15 @@ export const createPosts = async (contentCreate: ContentCreate, options?: Reques
 
 
 export const getCreatePostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext> => {
 
 const mutationKey = ['createPosts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -982,7 +977,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPosts>>, {data: BodyType<ContentCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPosts(data,)
+          return  createPosts(data,requestOptions)
         }
 
 
@@ -1000,7 +995,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-posts
  */
 export const useCreatePosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPosts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createPosts>>,
         TError,
@@ -1062,16 +1057,16 @@ export const getGetPostsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetPostsQueryOptions = <TData = Awaited<ReturnType<typeof getPosts>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPosts>>, TError, TData>>, }
+export const getGetPostsQueryOptions = <TData = Awaited<ReturnType<typeof getPosts>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPosts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetPostsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPosts>>> = ({ signal }) => getPosts(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPosts>>> = ({ signal }) => getPosts(itemId, { signal, ...requestOptions });
 
 
 
@@ -1091,7 +1086,7 @@ export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError
           TError,
           Awaited<ReturnType<typeof getPosts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError = ErrorType<HTTPValidationError>>(
@@ -1101,11 +1096,11 @@ export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError
           TError,
           Awaited<ReturnType<typeof getPosts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPosts>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPosts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -1113,7 +1108,7 @@ export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError
  */
 
 export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPosts>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPosts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -1175,15 +1170,15 @@ export const updatePosts = async (itemId: string,
 
 
 export const getUpdatePostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext> => {
 
 const mutationKey = ['updatePosts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1191,7 +1186,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePosts>>, {itemId: string;data: BodyType<ContentUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updatePosts(itemId,data,)
+          return  updatePosts(itemId,data,requestOptions)
         }
 
 
@@ -1209,7 +1204,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-posts
  */
 export const useUpdatePosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePosts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updatePosts>>,
         TError,
@@ -1264,15 +1259,15 @@ export const deletePosts = async (itemId: string, options?: RequestInit): Promis
 
 
 export const getDeletePostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePosts>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePosts>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deletePosts>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deletePosts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1280,7 +1275,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePosts>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deletePosts(itemId,)
+          return  deletePosts(itemId,requestOptions)
         }
 
 
@@ -1298,7 +1293,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-posts
  */
 export const useDeletePosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePosts>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePosts>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deletePosts>>,
         TError,
@@ -1354,15 +1349,15 @@ export const bulkDeletePosts = async (bulkDeleteRequest: BulkDeleteRequest, opti
 
 
 export const getBulkDeletePostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePosts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePosts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePosts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeletePosts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1370,7 +1365,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeletePosts>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeletePosts(data,)
+          return  bulkDeletePosts(data,requestOptions)
         }
 
 
@@ -1388,7 +1383,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-posts
  */
 export const useBulkDeletePosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePosts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePosts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeletePosts>>,
         TError,
@@ -1444,15 +1439,15 @@ export const bulkStatusPosts = async (bulkStatusRequest: BulkStatusRequest, opti
 
 
 export const getBulkStatusPostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusPosts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1460,7 +1455,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusPosts>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusPosts(data,)
+          return  bulkStatusPosts(data,requestOptions)
         }
 
 
@@ -1478,7 +1473,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-posts状态
  */
 export const useBulkStatusPosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusPosts>>,
         TError,
@@ -1547,16 +1542,16 @@ export const getListDiaryQueryKey = (params?: ListDiaryParams,) => {
     }
 
 
-export const getListDiaryQueryOptions = <TData = Awaited<ReturnType<typeof listDiary>>, TError = ErrorType<HTTPValidationError>>(params?: ListDiaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiary>>, TError, TData>>, }
+export const getListDiaryQueryOptions = <TData = Awaited<ReturnType<typeof listDiary>>, TError = ErrorType<HTTPValidationError>>(params?: ListDiaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListDiaryQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDiary>>> = ({ signal }) => listDiary(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDiary>>> = ({ signal }) => listDiary(params, { signal, ...requestOptions });
 
 
 
@@ -1576,7 +1571,7 @@ export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TErr
           TError,
           Awaited<ReturnType<typeof listDiary>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TError = ErrorType<HTTPValidationError>>(
@@ -1586,11 +1581,11 @@ export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TErr
           TError,
           Awaited<ReturnType<typeof listDiary>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListDiaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiary>>, TError, TData>>, }
+ params?: ListDiaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -1598,7 +1593,7 @@ export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TErr
  */
 
 export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListDiaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiary>>, TError, TData>>, }
+ params?: ListDiaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDiary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -1659,15 +1654,15 @@ export const createDiary = async (contentCreate: ContentCreate, options?: Reques
 
 
 export const getCreateDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDiary>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDiary>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createDiary>>, TError,{data: BodyType<ContentCreate>}, TContext> => {
 
 const mutationKey = ['createDiary'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1675,7 +1670,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDiary>>, {data: BodyType<ContentCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createDiary(data,)
+          return  createDiary(data,requestOptions)
         }
 
 
@@ -1693,7 +1688,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-diary
  */
 export const useCreateDiary = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDiary>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDiary>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createDiary>>,
         TError,
@@ -1755,16 +1750,16 @@ export const getGetDiaryQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetDiaryQueryOptions = <TData = Awaited<ReturnType<typeof getDiary>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiary>>, TError, TData>>, }
+export const getGetDiaryQueryOptions = <TData = Awaited<ReturnType<typeof getDiary>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetDiaryQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDiary>>> = ({ signal }) => getDiary(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDiary>>> = ({ signal }) => getDiary(itemId, { signal, ...requestOptions });
 
 
 
@@ -1784,7 +1779,7 @@ export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError
           TError,
           Awaited<ReturnType<typeof getDiary>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError = ErrorType<HTTPValidationError>>(
@@ -1794,11 +1789,11 @@ export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError
           TError,
           Awaited<ReturnType<typeof getDiary>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiary>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -1806,7 +1801,7 @@ export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError
  */
 
 export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiary>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDiary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -1868,15 +1863,15 @@ export const updateDiary = async (itemId: string,
 
 
 export const getUpdateDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDiary>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDiary>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateDiary>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext> => {
 
 const mutationKey = ['updateDiary'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1884,7 +1879,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDiary>>, {itemId: string;data: BodyType<ContentUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateDiary(itemId,data,)
+          return  updateDiary(itemId,data,requestOptions)
         }
 
 
@@ -1902,7 +1897,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-diary
  */
 export const useUpdateDiary = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDiary>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDiary>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateDiary>>,
         TError,
@@ -1957,15 +1952,15 @@ export const deleteDiary = async (itemId: string, options?: RequestInit): Promis
 
 
 export const getDeleteDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDiary>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDiary>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteDiary>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteDiary'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -1973,7 +1968,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDiary>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteDiary(itemId,)
+          return  deleteDiary(itemId,requestOptions)
         }
 
 
@@ -1991,7 +1986,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-diary
  */
 export const useDeleteDiary = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDiary>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDiary>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteDiary>>,
         TError,
@@ -2047,15 +2042,15 @@ export const bulkDeleteDiary = async (bulkDeleteRequest: BulkDeleteRequest, opti
 
 
 export const getBulkDeleteDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDiary>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDiary>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDiary>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteDiary'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2063,7 +2058,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteDiary>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteDiary(data,)
+          return  bulkDeleteDiary(data,requestOptions)
         }
 
 
@@ -2081,7 +2076,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-diary
  */
 export const useBulkDeleteDiary = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDiary>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDiary>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteDiary>>,
         TError,
@@ -2137,15 +2132,15 @@ export const bulkStatusDiary = async (bulkStatusRequest: BulkStatusRequest, opti
 
 
 export const getBulkStatusDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusDiary'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2153,7 +2148,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusDiary>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusDiary(data,)
+          return  bulkStatusDiary(data,requestOptions)
         }
 
 
@@ -2171,7 +2166,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-diary状态
  */
 export const useBulkStatusDiary = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusDiary>>,
         TError,
@@ -2240,16 +2235,16 @@ export const getListThoughtsQueryKey = (params?: ListThoughtsParams,) => {
     }
 
 
-export const getListThoughtsQueryOptions = <TData = Awaited<ReturnType<typeof listThoughts>>, TError = ErrorType<HTTPValidationError>>(params?: ListThoughtsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listThoughts>>, TError, TData>>, }
+export const getListThoughtsQueryOptions = <TData = Awaited<ReturnType<typeof listThoughts>>, TError = ErrorType<HTTPValidationError>>(params?: ListThoughtsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listThoughts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListThoughtsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listThoughts>>> = ({ signal }) => listThoughts(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listThoughts>>> = ({ signal }) => listThoughts(params, { signal, ...requestOptions });
 
 
 
@@ -2269,7 +2264,7 @@ export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>
           TError,
           Awaited<ReturnType<typeof listThoughts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>, TError = ErrorType<HTTPValidationError>>(
@@ -2279,11 +2274,11 @@ export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>
           TError,
           Awaited<ReturnType<typeof listThoughts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListThoughtsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listThoughts>>, TError, TData>>, }
+ params?: ListThoughtsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listThoughts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -2291,7 +2286,7 @@ export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>
  */
 
 export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListThoughtsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listThoughts>>, TError, TData>>, }
+ params?: ListThoughtsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listThoughts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -2352,15 +2347,15 @@ export const createThoughts = async (contentCreate: ContentCreate, options?: Req
 
 
 export const getCreateThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createThoughts>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createThoughts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createThoughts>>, TError,{data: BodyType<ContentCreate>}, TContext> => {
 
 const mutationKey = ['createThoughts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2368,7 +2363,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createThoughts>>, {data: BodyType<ContentCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createThoughts(data,)
+          return  createThoughts(data,requestOptions)
         }
 
 
@@ -2386,7 +2381,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-thoughts
  */
 export const useCreateThoughts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createThoughts>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createThoughts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createThoughts>>,
         TError,
@@ -2448,16 +2443,16 @@ export const getGetThoughtsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetThoughtsQueryOptions = <TData = Awaited<ReturnType<typeof getThoughts>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getThoughts>>, TError, TData>>, }
+export const getGetThoughtsQueryOptions = <TData = Awaited<ReturnType<typeof getThoughts>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getThoughts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetThoughtsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getThoughts>>> = ({ signal }) => getThoughts(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getThoughts>>> = ({ signal }) => getThoughts(itemId, { signal, ...requestOptions });
 
 
 
@@ -2477,7 +2472,7 @@ export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, 
           TError,
           Awaited<ReturnType<typeof getThoughts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, TError = ErrorType<HTTPValidationError>>(
@@ -2487,11 +2482,11 @@ export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, 
           TError,
           Awaited<ReturnType<typeof getThoughts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getThoughts>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getThoughts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -2499,7 +2494,7 @@ export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, 
  */
 
 export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getThoughts>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getThoughts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -2561,15 +2556,15 @@ export const updateThoughts = async (itemId: string,
 
 
 export const getUpdateThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateThoughts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateThoughts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateThoughts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext> => {
 
 const mutationKey = ['updateThoughts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2577,7 +2572,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateThoughts>>, {itemId: string;data: BodyType<ContentUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateThoughts(itemId,data,)
+          return  updateThoughts(itemId,data,requestOptions)
         }
 
 
@@ -2595,7 +2590,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-thoughts
  */
 export const useUpdateThoughts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateThoughts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateThoughts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateThoughts>>,
         TError,
@@ -2650,15 +2645,15 @@ export const deleteThoughts = async (itemId: string, options?: RequestInit): Pro
 
 
 export const getDeleteThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteThoughts>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteThoughts>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteThoughts>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteThoughts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2666,7 +2661,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteThoughts>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteThoughts(itemId,)
+          return  deleteThoughts(itemId,requestOptions)
         }
 
 
@@ -2684,7 +2679,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-thoughts
  */
 export const useDeleteThoughts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteThoughts>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteThoughts>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteThoughts>>,
         TError,
@@ -2740,15 +2735,15 @@ export const bulkDeleteThoughts = async (bulkDeleteRequest: BulkDeleteRequest, o
 
 
 export const getBulkDeleteThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteThoughts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteThoughts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteThoughts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteThoughts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2756,7 +2751,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteThoughts>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteThoughts(data,)
+          return  bulkDeleteThoughts(data,requestOptions)
         }
 
 
@@ -2774,7 +2769,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-thoughts
  */
 export const useBulkDeleteThoughts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteThoughts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteThoughts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteThoughts>>,
         TError,
@@ -2830,15 +2825,15 @@ export const bulkStatusThoughts = async (bulkStatusRequest: BulkStatusRequest, o
 
 
 export const getBulkStatusThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusThoughts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -2846,7 +2841,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusThoughts>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusThoughts(data,)
+          return  bulkStatusThoughts(data,requestOptions)
         }
 
 
@@ -2864,7 +2859,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-thoughts状态
  */
 export const useBulkStatusThoughts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusThoughts>>,
         TError,
@@ -2933,16 +2928,16 @@ export const getListExcerptsQueryKey = (params?: ListExcerptsParams,) => {
     }
 
 
-export const getListExcerptsQueryOptions = <TData = Awaited<ReturnType<typeof listExcerpts>>, TError = ErrorType<HTTPValidationError>>(params?: ListExcerptsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExcerpts>>, TError, TData>>, }
+export const getListExcerptsQueryOptions = <TData = Awaited<ReturnType<typeof listExcerpts>>, TError = ErrorType<HTTPValidationError>>(params?: ListExcerptsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExcerpts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListExcerptsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExcerpts>>> = ({ signal }) => listExcerpts(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExcerpts>>> = ({ signal }) => listExcerpts(params, { signal, ...requestOptions });
 
 
 
@@ -2962,7 +2957,7 @@ export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>
           TError,
           Awaited<ReturnType<typeof listExcerpts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>, TError = ErrorType<HTTPValidationError>>(
@@ -2972,11 +2967,11 @@ export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>
           TError,
           Awaited<ReturnType<typeof listExcerpts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListExcerptsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExcerpts>>, TError, TData>>, }
+ params?: ListExcerptsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExcerpts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -2984,7 +2979,7 @@ export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>
  */
 
 export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListExcerptsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExcerpts>>, TError, TData>>, }
+ params?: ListExcerptsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExcerpts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -3045,15 +3040,15 @@ export const createExcerpts = async (contentCreate: ContentCreate, options?: Req
 
 
 export const getCreateExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExcerpts>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExcerpts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createExcerpts>>, TError,{data: BodyType<ContentCreate>}, TContext> => {
 
 const mutationKey = ['createExcerpts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3061,7 +3056,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createExcerpts>>, {data: BodyType<ContentCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createExcerpts(data,)
+          return  createExcerpts(data,requestOptions)
         }
 
 
@@ -3079,7 +3074,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-excerpts
  */
 export const useCreateExcerpts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExcerpts>>, TError,{data: BodyType<ContentCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExcerpts>>, TError,{data: BodyType<ContentCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createExcerpts>>,
         TError,
@@ -3141,16 +3136,16 @@ export const getGetExcerptsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetExcerptsQueryOptions = <TData = Awaited<ReturnType<typeof getExcerpts>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExcerpts>>, TError, TData>>, }
+export const getGetExcerptsQueryOptions = <TData = Awaited<ReturnType<typeof getExcerpts>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExcerpts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetExcerptsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExcerpts>>> = ({ signal }) => getExcerpts(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExcerpts>>> = ({ signal }) => getExcerpts(itemId, { signal, ...requestOptions });
 
 
 
@@ -3170,7 +3165,7 @@ export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, 
           TError,
           Awaited<ReturnType<typeof getExcerpts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, TError = ErrorType<HTTPValidationError>>(
@@ -3180,11 +3175,11 @@ export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, 
           TError,
           Awaited<ReturnType<typeof getExcerpts>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExcerpts>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExcerpts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -3192,7 +3187,7 @@ export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, 
  */
 
 export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExcerpts>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExcerpts>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -3254,15 +3249,15 @@ export const updateExcerpts = async (itemId: string,
 
 
 export const getUpdateExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExcerpts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExcerpts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateExcerpts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext> => {
 
 const mutationKey = ['updateExcerpts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3270,7 +3265,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateExcerpts>>, {itemId: string;data: BodyType<ContentUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateExcerpts(itemId,data,)
+          return  updateExcerpts(itemId,data,requestOptions)
         }
 
 
@@ -3288,7 +3283,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-excerpts
  */
 export const useUpdateExcerpts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExcerpts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExcerpts>>, TError,{itemId: string;data: BodyType<ContentUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateExcerpts>>,
         TError,
@@ -3343,15 +3338,15 @@ export const deleteExcerpts = async (itemId: string, options?: RequestInit): Pro
 
 
 export const getDeleteExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExcerpts>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExcerpts>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteExcerpts>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteExcerpts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3359,7 +3354,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteExcerpts>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteExcerpts(itemId,)
+          return  deleteExcerpts(itemId,requestOptions)
         }
 
 
@@ -3377,7 +3372,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-excerpts
  */
 export const useDeleteExcerpts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExcerpts>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExcerpts>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteExcerpts>>,
         TError,
@@ -3433,15 +3428,15 @@ export const bulkDeleteExcerpts = async (bulkDeleteRequest: BulkDeleteRequest, o
 
 
 export const getBulkDeleteExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExcerpts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExcerpts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExcerpts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteExcerpts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3449,7 +3444,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteExcerpts>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteExcerpts(data,)
+          return  bulkDeleteExcerpts(data,requestOptions)
         }
 
 
@@ -3467,7 +3462,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-excerpts
  */
 export const useBulkDeleteExcerpts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExcerpts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExcerpts>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteExcerpts>>,
         TError,
@@ -3523,15 +3518,15 @@ export const bulkStatusExcerpts = async (bulkStatusRequest: BulkStatusRequest, o
 
 
 export const getBulkStatusExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusExcerpts'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3539,7 +3534,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusExcerpts>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusExcerpts(data,)
+          return  bulkStatusExcerpts(data,requestOptions)
         }
 
 
@@ -3557,7 +3552,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-excerpts状态
  */
 export const useBulkStatusExcerpts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusExcerpts>>,
         TError,
@@ -3612,16 +3607,16 @@ export const getGetProfileApiV1AdminSiteConfigProfileGetQueryKey = () => {
     }
 
 
-export const getGetProfileApiV1AdminSiteConfigProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError, TData>>, }
+export const getGetProfileApiV1AdminSiteConfigProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetProfileApiV1AdminSiteConfigProfileGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>> = ({ signal }) => getProfileApiV1AdminSiteConfigProfileGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>> = ({ signal }) => getProfileApiV1AdminSiteConfigProfileGet({ signal, ...requestOptions });
 
 
 
@@ -3641,7 +3636,7 @@ export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<Retu
           TError,
           Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError = ErrorType<unknown>>(
@@ -3651,11 +3646,11 @@ export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<Retu
           TError,
           Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -3663,7 +3658,7 @@ export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<Retu
  */
 
 export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileApiV1AdminSiteConfigProfileGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -3724,15 +3719,15 @@ export const updateProfileApiV1AdminSiteConfigProfilePut = async (siteProfileUpd
 
 
 export const getUpdateProfileApiV1AdminSiteConfigProfilePutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>, TError,{data: BodyType<SiteProfileUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>, TError,{data: BodyType<SiteProfileUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>, TError,{data: BodyType<SiteProfileUpdate>}, TContext> => {
 
 const mutationKey = ['updateProfileApiV1AdminSiteConfigProfilePut'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3740,7 +3735,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>, {data: BodyType<SiteProfileUpdate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  updateProfileApiV1AdminSiteConfigProfilePut(data,)
+          return  updateProfileApiV1AdminSiteConfigProfilePut(data,requestOptions)
         }
 
 
@@ -3758,7 +3753,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新站点资料
  */
 export const useUpdateProfileApiV1AdminSiteConfigProfilePut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>, TError,{data: BodyType<SiteProfileUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>, TError,{data: BodyType<SiteProfileUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateProfileApiV1AdminSiteConfigProfilePut>>,
         TError,
@@ -3813,16 +3808,16 @@ export const getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey
     }
 
 
-export const getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError, TData>>, }
+export const getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>> = ({ signal }) => getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>> = ({ signal }) => getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet({ signal, ...requestOptions });
 
 
 
@@ -3842,7 +3837,7 @@ export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TDat
           TError,
           Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TData = Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError = ErrorType<unknown>>(
@@ -3852,11 +3847,11 @@ export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TDat
           TError,
           Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TData = Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -3864,7 +3859,7 @@ export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TDat
  */
 
 export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TData = Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommunityConfigApiV1AdminSiteConfigCommunityConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -3925,15 +3920,15 @@ export const updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut = async
 
 
 export const getUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>, TError,{data: BodyType<CommunityConfigUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>, TError,{data: BodyType<CommunityConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>, TError,{data: BodyType<CommunityConfigUpdate>}, TContext> => {
 
 const mutationKey = ['updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -3941,7 +3936,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>, {data: BodyType<CommunityConfigUpdate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut(data,)
+          return  updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut(data,requestOptions)
         }
 
 
@@ -3959,7 +3954,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新社区评论配置
  */
 export const useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>, TError,{data: BodyType<CommunityConfigUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>, TError,{data: BodyType<CommunityConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut>>,
         TError,
@@ -4028,16 +4023,16 @@ export const getListSocialLinksQueryKey = (params?: ListSocialLinksParams,) => {
     }
 
 
-export const getListSocialLinksQueryOptions = <TData = Awaited<ReturnType<typeof listSocialLinks>>, TError = ErrorType<HTTPValidationError>>(params?: ListSocialLinksParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialLinks>>, TError, TData>>, }
+export const getListSocialLinksQueryOptions = <TData = Awaited<ReturnType<typeof listSocialLinks>>, TError = ErrorType<HTTPValidationError>>(params?: ListSocialLinksParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialLinks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListSocialLinksQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialLinks>>> = ({ signal }) => listSocialLinks(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialLinks>>> = ({ signal }) => listSocialLinks(params, { signal, ...requestOptions });
 
 
 
@@ -4057,7 +4052,7 @@ export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialL
           TError,
           Awaited<ReturnType<typeof listSocialLinks>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialLinks>>, TError = ErrorType<HTTPValidationError>>(
@@ -4067,11 +4062,11 @@ export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialL
           TError,
           Awaited<ReturnType<typeof listSocialLinks>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialLinks>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListSocialLinksParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialLinks>>, TError, TData>>, }
+ params?: ListSocialLinksParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialLinks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -4079,7 +4074,7 @@ export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialL
  */
 
 export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialLinks>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListSocialLinksParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialLinks>>, TError, TData>>, }
+ params?: ListSocialLinksParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialLinks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -4140,15 +4135,15 @@ export const createSocialLinks = async (socialLinkCreate: SocialLinkCreate, opti
 
 
 export const getCreateSocialLinksMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialLinks>>, TError,{data: BodyType<SocialLinkCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialLinks>>, TError,{data: BodyType<SocialLinkCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createSocialLinks>>, TError,{data: BodyType<SocialLinkCreate>}, TContext> => {
 
 const mutationKey = ['createSocialLinks'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -4156,7 +4151,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSocialLinks>>, {data: BodyType<SocialLinkCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createSocialLinks(data,)
+          return  createSocialLinks(data,requestOptions)
         }
 
 
@@ -4174,7 +4169,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-site-config
  */
 export const useCreateSocialLinks = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialLinks>>, TError,{data: BodyType<SocialLinkCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialLinks>>, TError,{data: BodyType<SocialLinkCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createSocialLinks>>,
         TError,
@@ -4236,16 +4231,16 @@ export const getGetSocialLinksQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetSocialLinksQueryOptions = <TData = Awaited<ReturnType<typeof getSocialLinks>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSocialLinks>>, TError, TData>>, }
+export const getGetSocialLinksQueryOptions = <TData = Awaited<ReturnType<typeof getSocialLinks>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSocialLinks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetSocialLinksQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialLinks>>> = ({ signal }) => getSocialLinks(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialLinks>>> = ({ signal }) => getSocialLinks(itemId, { signal, ...requestOptions });
 
 
 
@@ -4265,7 +4260,7 @@ export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLin
           TError,
           Awaited<ReturnType<typeof getSocialLinks>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLinks>>, TError = ErrorType<HTTPValidationError>>(
@@ -4275,11 +4270,11 @@ export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLin
           TError,
           Awaited<ReturnType<typeof getSocialLinks>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLinks>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSocialLinks>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSocialLinks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -4287,7 +4282,7 @@ export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLin
  */
 
 export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLinks>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSocialLinks>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSocialLinks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -4349,15 +4344,15 @@ export const updateSocialLinks = async (itemId: string,
 
 
 export const getUpdateSocialLinksMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialLinks>>, TError,{itemId: string;data: BodyType<SocialLinkUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialLinks>>, TError,{itemId: string;data: BodyType<SocialLinkUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateSocialLinks>>, TError,{itemId: string;data: BodyType<SocialLinkUpdate>}, TContext> => {
 
 const mutationKey = ['updateSocialLinks'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -4365,7 +4360,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSocialLinks>>, {itemId: string;data: BodyType<SocialLinkUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateSocialLinks(itemId,data,)
+          return  updateSocialLinks(itemId,data,requestOptions)
         }
 
 
@@ -4383,7 +4378,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-site-config
  */
 export const useUpdateSocialLinks = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialLinks>>, TError,{itemId: string;data: BodyType<SocialLinkUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialLinks>>, TError,{itemId: string;data: BodyType<SocialLinkUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateSocialLinks>>,
         TError,
@@ -4438,15 +4433,15 @@ export const deleteSocialLinks = async (itemId: string, options?: RequestInit): 
 
 
 export const getDeleteSocialLinksMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSocialLinks>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSocialLinks>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteSocialLinks>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteSocialLinks'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -4454,7 +4449,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSocialLinks>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteSocialLinks(itemId,)
+          return  deleteSocialLinks(itemId,requestOptions)
         }
 
 
@@ -4472,7 +4467,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-site-config
  */
 export const useDeleteSocialLinks = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSocialLinks>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSocialLinks>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteSocialLinks>>,
         TError,
@@ -4528,15 +4523,15 @@ export const bulkDeleteSocialLinks = async (bulkDeleteRequest: BulkDeleteRequest
 
 
 export const getBulkDeleteSocialLinksMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSocialLinks>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSocialLinks>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSocialLinks>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteSocialLinks'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -4544,7 +4539,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteSocialLinks>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteSocialLinks(data,)
+          return  bulkDeleteSocialLinks(data,requestOptions)
         }
 
 
@@ -4562,7 +4557,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-site-config
  */
 export const useBulkDeleteSocialLinks = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSocialLinks>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSocialLinks>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteSocialLinks>>,
         TError,
@@ -4618,15 +4613,15 @@ export const bulkStatusSocialLinks = async (bulkStatusRequest: BulkStatusRequest
 
 
 export const getBulkStatusSocialLinksMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSocialLinks>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSocialLinks>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSocialLinks>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusSocialLinks'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -4634,7 +4629,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusSocialLinks>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusSocialLinks(data,)
+          return  bulkStatusSocialLinks(data,requestOptions)
         }
 
 
@@ -4652,7 +4647,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-site-config状态
  */
 export const useBulkStatusSocialLinks = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSocialLinks>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSocialLinks>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusSocialLinks>>,
         TError,
@@ -4721,16 +4716,16 @@ export const getListPoemsQueryKey = (params?: ListPoemsParams,) => {
     }
 
 
-export const getListPoemsQueryOptions = <TData = Awaited<ReturnType<typeof listPoems>>, TError = ErrorType<HTTPValidationError>>(params?: ListPoemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPoems>>, TError, TData>>, }
+export const getListPoemsQueryOptions = <TData = Awaited<ReturnType<typeof listPoems>>, TError = ErrorType<HTTPValidationError>>(params?: ListPoemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPoems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListPoemsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPoems>>> = ({ signal }) => listPoems(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPoems>>> = ({ signal }) => listPoems(params, { signal, ...requestOptions });
 
 
 
@@ -4750,7 +4745,7 @@ export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TErr
           TError,
           Awaited<ReturnType<typeof listPoems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TError = ErrorType<HTTPValidationError>>(
@@ -4760,11 +4755,11 @@ export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TErr
           TError,
           Awaited<ReturnType<typeof listPoems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListPoemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPoems>>, TError, TData>>, }
+ params?: ListPoemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPoems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -4772,7 +4767,7 @@ export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TErr
  */
 
 export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListPoemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPoems>>, TError, TData>>, }
+ params?: ListPoemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPoems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -4833,15 +4828,15 @@ export const createPoems = async (poemCreate: PoemCreate, options?: RequestInit)
 
 
 export const getCreatePoemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPoems>>, TError,{data: BodyType<PoemCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPoems>>, TError,{data: BodyType<PoemCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPoems>>, TError,{data: BodyType<PoemCreate>}, TContext> => {
 
 const mutationKey = ['createPoems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -4849,7 +4844,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPoems>>, {data: BodyType<PoemCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPoems(data,)
+          return  createPoems(data,requestOptions)
         }
 
 
@@ -4867,7 +4862,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-site-config
  */
 export const useCreatePoems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPoems>>, TError,{data: BodyType<PoemCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPoems>>, TError,{data: BodyType<PoemCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createPoems>>,
         TError,
@@ -4929,16 +4924,16 @@ export const getGetPoemsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetPoemsQueryOptions = <TData = Awaited<ReturnType<typeof getPoems>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPoems>>, TError, TData>>, }
+export const getGetPoemsQueryOptions = <TData = Awaited<ReturnType<typeof getPoems>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPoems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetPoemsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPoems>>> = ({ signal }) => getPoems(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPoems>>> = ({ signal }) => getPoems(itemId, { signal, ...requestOptions });
 
 
 
@@ -4958,7 +4953,7 @@ export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError
           TError,
           Awaited<ReturnType<typeof getPoems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError = ErrorType<HTTPValidationError>>(
@@ -4968,11 +4963,11 @@ export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError
           TError,
           Awaited<ReturnType<typeof getPoems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPoems>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPoems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -4980,7 +4975,7 @@ export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError
  */
 
 export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPoems>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPoems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -5042,15 +5037,15 @@ export const updatePoems = async (itemId: string,
 
 
 export const getUpdatePoemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePoems>>, TError,{itemId: string;data: BodyType<PoemUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePoems>>, TError,{itemId: string;data: BodyType<PoemUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updatePoems>>, TError,{itemId: string;data: BodyType<PoemUpdate>}, TContext> => {
 
 const mutationKey = ['updatePoems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5058,7 +5053,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePoems>>, {itemId: string;data: BodyType<PoemUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updatePoems(itemId,data,)
+          return  updatePoems(itemId,data,requestOptions)
         }
 
 
@@ -5076,7 +5071,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-site-config
  */
 export const useUpdatePoems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePoems>>, TError,{itemId: string;data: BodyType<PoemUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePoems>>, TError,{itemId: string;data: BodyType<PoemUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updatePoems>>,
         TError,
@@ -5131,15 +5126,15 @@ export const deletePoems = async (itemId: string, options?: RequestInit): Promis
 
 
 export const getDeletePoemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePoems>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePoems>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deletePoems>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deletePoems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5147,7 +5142,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePoems>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deletePoems(itemId,)
+          return  deletePoems(itemId,requestOptions)
         }
 
 
@@ -5165,7 +5160,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-site-config
  */
 export const useDeletePoems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePoems>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePoems>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deletePoems>>,
         TError,
@@ -5221,15 +5216,15 @@ export const bulkDeletePoems = async (bulkDeleteRequest: BulkDeleteRequest, opti
 
 
 export const getBulkDeletePoemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePoems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePoems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePoems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeletePoems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5237,7 +5232,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeletePoems>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeletePoems(data,)
+          return  bulkDeletePoems(data,requestOptions)
         }
 
 
@@ -5255,7 +5250,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-site-config
  */
 export const useBulkDeletePoems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePoems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePoems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeletePoems>>,
         TError,
@@ -5311,15 +5306,15 @@ export const bulkStatusPoems = async (bulkStatusRequest: BulkStatusRequest, opti
 
 
 export const getBulkStatusPoemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPoems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPoems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPoems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusPoems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5327,7 +5322,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusPoems>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusPoems(data,)
+          return  bulkStatusPoems(data,requestOptions)
         }
 
 
@@ -5345,7 +5340,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-site-config状态
  */
 export const useBulkStatusPoems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPoems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPoems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusPoems>>,
         TError,
@@ -5414,16 +5409,16 @@ export const getListPageCopyQueryKey = (params?: ListPageCopyParams,) => {
     }
 
 
-export const getListPageCopyQueryOptions = <TData = Awaited<ReturnType<typeof listPageCopy>>, TError = ErrorType<HTTPValidationError>>(params?: ListPageCopyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPageCopy>>, TError, TData>>, }
+export const getListPageCopyQueryOptions = <TData = Awaited<ReturnType<typeof listPageCopy>>, TError = ErrorType<HTTPValidationError>>(params?: ListPageCopyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPageCopy>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListPageCopyQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPageCopy>>> = ({ signal }) => listPageCopy(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPageCopy>>> = ({ signal }) => listPageCopy(params, { signal, ...requestOptions });
 
 
 
@@ -5443,7 +5438,7 @@ export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>
           TError,
           Awaited<ReturnType<typeof listPageCopy>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>, TError = ErrorType<HTTPValidationError>>(
@@ -5453,11 +5448,11 @@ export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>
           TError,
           Awaited<ReturnType<typeof listPageCopy>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListPageCopyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPageCopy>>, TError, TData>>, }
+ params?: ListPageCopyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPageCopy>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -5465,7 +5460,7 @@ export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>
  */
 
 export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListPageCopyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPageCopy>>, TError, TData>>, }
+ params?: ListPageCopyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPageCopy>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -5526,15 +5521,15 @@ export const createPageCopy = async (pageCopyCreate: PageCopyCreate, options?: R
 
 
 export const getCreatePageCopyMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPageCopy>>, TError,{data: BodyType<PageCopyCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPageCopy>>, TError,{data: BodyType<PageCopyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPageCopy>>, TError,{data: BodyType<PageCopyCreate>}, TContext> => {
 
 const mutationKey = ['createPageCopy'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5542,7 +5537,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPageCopy>>, {data: BodyType<PageCopyCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPageCopy(data,)
+          return  createPageCopy(data,requestOptions)
         }
 
 
@@ -5560,7 +5555,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-site-config
  */
 export const useCreatePageCopy = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPageCopy>>, TError,{data: BodyType<PageCopyCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPageCopy>>, TError,{data: BodyType<PageCopyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createPageCopy>>,
         TError,
@@ -5622,16 +5617,16 @@ export const getGetPageCopyQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetPageCopyQueryOptions = <TData = Awaited<ReturnType<typeof getPageCopy>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPageCopy>>, TError, TData>>, }
+export const getGetPageCopyQueryOptions = <TData = Awaited<ReturnType<typeof getPageCopy>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPageCopy>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetPageCopyQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPageCopy>>> = ({ signal }) => getPageCopy(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPageCopy>>> = ({ signal }) => getPageCopy(itemId, { signal, ...requestOptions });
 
 
 
@@ -5651,7 +5646,7 @@ export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, 
           TError,
           Awaited<ReturnType<typeof getPageCopy>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, TError = ErrorType<HTTPValidationError>>(
@@ -5661,11 +5656,11 @@ export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, 
           TError,
           Awaited<ReturnType<typeof getPageCopy>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPageCopy>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPageCopy>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -5673,7 +5668,7 @@ export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, 
  */
 
 export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPageCopy>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPageCopy>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -5735,15 +5730,15 @@ export const updatePageCopy = async (itemId: string,
 
 
 export const getUpdatePageCopyMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePageCopy>>, TError,{itemId: string;data: BodyType<PageCopyUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePageCopy>>, TError,{itemId: string;data: BodyType<PageCopyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updatePageCopy>>, TError,{itemId: string;data: BodyType<PageCopyUpdate>}, TContext> => {
 
 const mutationKey = ['updatePageCopy'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5751,7 +5746,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePageCopy>>, {itemId: string;data: BodyType<PageCopyUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updatePageCopy(itemId,data,)
+          return  updatePageCopy(itemId,data,requestOptions)
         }
 
 
@@ -5769,7 +5764,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-site-config
  */
 export const useUpdatePageCopy = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePageCopy>>, TError,{itemId: string;data: BodyType<PageCopyUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePageCopy>>, TError,{itemId: string;data: BodyType<PageCopyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updatePageCopy>>,
         TError,
@@ -5824,15 +5819,15 @@ export const deletePageCopy = async (itemId: string, options?: RequestInit): Pro
 
 
 export const getDeletePageCopyMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePageCopy>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePageCopy>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deletePageCopy>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deletePageCopy'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5840,7 +5835,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePageCopy>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deletePageCopy(itemId,)
+          return  deletePageCopy(itemId,requestOptions)
         }
 
 
@@ -5858,7 +5853,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-site-config
  */
 export const useDeletePageCopy = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePageCopy>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePageCopy>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deletePageCopy>>,
         TError,
@@ -5914,15 +5909,15 @@ export const bulkDeletePageCopy = async (bulkDeleteRequest: BulkDeleteRequest, o
 
 
 export const getBulkDeletePageCopyMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePageCopy>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePageCopy>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePageCopy>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeletePageCopy'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -5930,7 +5925,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeletePageCopy>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeletePageCopy(data,)
+          return  bulkDeletePageCopy(data,requestOptions)
         }
 
 
@@ -5948,7 +5943,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-site-config
  */
 export const useBulkDeletePageCopy = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePageCopy>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeletePageCopy>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeletePageCopy>>,
         TError,
@@ -6004,15 +5999,15 @@ export const bulkStatusPageCopy = async (bulkStatusRequest: BulkStatusRequest, o
 
 
 export const getBulkStatusPageCopyMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPageCopy>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPageCopy>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPageCopy>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusPageCopy'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6020,7 +6015,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusPageCopy>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusPageCopy(data,)
+          return  bulkStatusPageCopy(data,requestOptions)
         }
 
 
@@ -6038,7 +6033,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-site-config状态
  */
 export const useBulkStatusPageCopy = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPageCopy>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPageCopy>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusPageCopy>>,
         TError,
@@ -6107,16 +6102,16 @@ export const getListDisplayOptionsQueryKey = (params?: ListDisplayOptionsParams,
     }
 
 
-export const getListDisplayOptionsQueryOptions = <TData = Awaited<ReturnType<typeof listDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(params?: ListDisplayOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDisplayOptions>>, TError, TData>>, }
+export const getListDisplayOptionsQueryOptions = <TData = Awaited<ReturnType<typeof listDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(params?: ListDisplayOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDisplayOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListDisplayOptionsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDisplayOptions>>> = ({ signal }) => listDisplayOptions(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDisplayOptions>>> = ({ signal }) => listDisplayOptions(params, { signal, ...requestOptions });
 
 
 
@@ -6136,7 +6131,7 @@ export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisp
           TError,
           Awaited<ReturnType<typeof listDisplayOptions>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(
@@ -6146,11 +6141,11 @@ export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisp
           TError,
           Awaited<ReturnType<typeof listDisplayOptions>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListDisplayOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDisplayOptions>>, TError, TData>>, }
+ params?: ListDisplayOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDisplayOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -6158,7 +6153,7 @@ export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisp
  */
 
 export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListDisplayOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDisplayOptions>>, TError, TData>>, }
+ params?: ListDisplayOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDisplayOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -6219,15 +6214,15 @@ export const createDisplayOptions = async (pageDisplayOptionCreate: PageDisplayO
 
 
 export const getCreateDisplayOptionsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDisplayOptions>>, TError,{data: BodyType<PageDisplayOptionCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDisplayOptions>>, TError,{data: BodyType<PageDisplayOptionCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createDisplayOptions>>, TError,{data: BodyType<PageDisplayOptionCreate>}, TContext> => {
 
 const mutationKey = ['createDisplayOptions'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6235,7 +6230,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDisplayOptions>>, {data: BodyType<PageDisplayOptionCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createDisplayOptions(data,)
+          return  createDisplayOptions(data,requestOptions)
         }
 
 
@@ -6253,7 +6248,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-site-config
  */
 export const useCreateDisplayOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDisplayOptions>>, TError,{data: BodyType<PageDisplayOptionCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDisplayOptions>>, TError,{data: BodyType<PageDisplayOptionCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createDisplayOptions>>,
         TError,
@@ -6315,16 +6310,16 @@ export const getGetDisplayOptionsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetDisplayOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDisplayOptions>>, TError, TData>>, }
+export const getGetDisplayOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDisplayOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetDisplayOptionsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDisplayOptions>>> = ({ signal }) => getDisplayOptions(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDisplayOptions>>> = ({ signal }) => getDisplayOptions(itemId, { signal, ...requestOptions });
 
 
 
@@ -6344,7 +6339,7 @@ export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDispla
           TError,
           Awaited<ReturnType<typeof getDisplayOptions>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(
@@ -6354,11 +6349,11 @@ export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDispla
           TError,
           Awaited<ReturnType<typeof getDisplayOptions>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDisplayOptions>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDisplayOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -6366,7 +6361,7 @@ export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDispla
  */
 
 export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDisplayOptions>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDisplayOptions>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDisplayOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -6428,15 +6423,15 @@ export const updateDisplayOptions = async (itemId: string,
 
 
 export const getUpdateDisplayOptionsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDisplayOptions>>, TError,{itemId: string;data: BodyType<PageDisplayOptionUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDisplayOptions>>, TError,{itemId: string;data: BodyType<PageDisplayOptionUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateDisplayOptions>>, TError,{itemId: string;data: BodyType<PageDisplayOptionUpdate>}, TContext> => {
 
 const mutationKey = ['updateDisplayOptions'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6444,7 +6439,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDisplayOptions>>, {itemId: string;data: BodyType<PageDisplayOptionUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateDisplayOptions(itemId,data,)
+          return  updateDisplayOptions(itemId,data,requestOptions)
         }
 
 
@@ -6462,7 +6457,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-site-config
  */
 export const useUpdateDisplayOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDisplayOptions>>, TError,{itemId: string;data: BodyType<PageDisplayOptionUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDisplayOptions>>, TError,{itemId: string;data: BodyType<PageDisplayOptionUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateDisplayOptions>>,
         TError,
@@ -6517,15 +6512,15 @@ export const deleteDisplayOptions = async (itemId: string, options?: RequestInit
 
 
 export const getDeleteDisplayOptionsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDisplayOptions>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDisplayOptions>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteDisplayOptions>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteDisplayOptions'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6533,7 +6528,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDisplayOptions>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteDisplayOptions(itemId,)
+          return  deleteDisplayOptions(itemId,requestOptions)
         }
 
 
@@ -6551,7 +6546,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-site-config
  */
 export const useDeleteDisplayOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDisplayOptions>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDisplayOptions>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteDisplayOptions>>,
         TError,
@@ -6607,15 +6602,15 @@ export const bulkDeleteDisplayOptions = async (bulkDeleteRequest: BulkDeleteRequ
 
 
 export const getBulkDeleteDisplayOptionsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteDisplayOptions'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6623,7 +6618,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteDisplayOptions(data,)
+          return  bulkDeleteDisplayOptions(data,requestOptions)
         }
 
 
@@ -6641,7 +6636,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-site-config
  */
 export const useBulkDeleteDisplayOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteDisplayOptions>>,
         TError,
@@ -6697,15 +6692,15 @@ export const bulkStatusDisplayOptions = async (bulkStatusRequest: BulkStatusRequ
 
 
 export const getBulkStatusDisplayOptionsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDisplayOptions>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDisplayOptions>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDisplayOptions>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusDisplayOptions'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6713,7 +6708,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusDisplayOptions>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusDisplayOptions(data,)
+          return  bulkStatusDisplayOptions(data,requestOptions)
         }
 
 
@@ -6731,7 +6726,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-site-config状态
  */
 export const useBulkStatusDisplayOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDisplayOptions>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDisplayOptions>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusDisplayOptions>>,
         TError,
@@ -6787,15 +6782,15 @@ export const reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut = async (navR
 
 
 export const getReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>, TError,{data: BodyType<NavReorderItem[]>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>, TError,{data: BodyType<NavReorderItem[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>, TError,{data: BodyType<NavReorderItem[]>}, TContext> => {
 
 const mutationKey = ['reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -6803,7 +6798,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>, {data: BodyType<NavReorderItem[]>}> = (props) => {
           const {data} = props ?? {};
 
-          return  reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut(data,)
+          return  reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut(data,requestOptions)
         }
 
 
@@ -6821,7 +6816,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 重排导航项顺序
  */
 export const useReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>, TError,{data: BodyType<NavReorderItem[]>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>, TError,{data: BodyType<NavReorderItem[]>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut>>,
         TError,
@@ -6890,16 +6885,16 @@ export const getListNavItemsQueryKey = (params?: ListNavItemsParams,) => {
     }
 
 
-export const getListNavItemsQueryOptions = <TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<HTTPValidationError>>(params?: ListNavItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>>, }
+export const getListNavItemsQueryOptions = <TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<HTTPValidationError>>(params?: ListNavItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListNavItemsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNavItems>>> = ({ signal }) => listNavItems(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNavItems>>> = ({ signal }) => listNavItems(params, { signal, ...requestOptions });
 
 
 
@@ -6919,7 +6914,7 @@ export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>
           TError,
           Awaited<ReturnType<typeof listNavItems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<HTTPValidationError>>(
@@ -6929,11 +6924,11 @@ export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>
           TError,
           Awaited<ReturnType<typeof listNavItems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListNavItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>>, }
+ params?: ListNavItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -6941,7 +6936,7 @@ export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>
  */
 
 export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListNavItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>>, }
+ params?: ListNavItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNavItems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -7002,15 +6997,15 @@ export const createNavItems = async (navItemCreate: NavItemCreate, options?: Req
 
 
 export const getCreateNavItemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNavItems>>, TError,{data: BodyType<NavItemCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNavItems>>, TError,{data: BodyType<NavItemCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createNavItems>>, TError,{data: BodyType<NavItemCreate>}, TContext> => {
 
 const mutationKey = ['createNavItems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7018,7 +7013,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createNavItems>>, {data: BodyType<NavItemCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createNavItems(data,)
+          return  createNavItems(data,requestOptions)
         }
 
 
@@ -7036,7 +7031,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-site-config
  */
 export const useCreateNavItems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNavItems>>, TError,{data: BodyType<NavItemCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNavItems>>, TError,{data: BodyType<NavItemCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createNavItems>>,
         TError,
@@ -7098,16 +7093,16 @@ export const getGetNavItemsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetNavItemsQueryOptions = <TData = Awaited<ReturnType<typeof getNavItems>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNavItems>>, TError, TData>>, }
+export const getGetNavItemsQueryOptions = <TData = Awaited<ReturnType<typeof getNavItems>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNavItems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetNavItemsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNavItems>>> = ({ signal }) => getNavItems(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNavItems>>> = ({ signal }) => getNavItems(itemId, { signal, ...requestOptions });
 
 
 
@@ -7127,7 +7122,7 @@ export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, 
           TError,
           Awaited<ReturnType<typeof getNavItems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, TError = ErrorType<HTTPValidationError>>(
@@ -7137,11 +7132,11 @@ export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, 
           TError,
           Awaited<ReturnType<typeof getNavItems>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNavItems>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNavItems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -7149,7 +7144,7 @@ export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, 
  */
 
 export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNavItems>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNavItems>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -7211,15 +7206,15 @@ export const updateNavItems = async (itemId: string,
 
 
 export const getUpdateNavItemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNavItems>>, TError,{itemId: string;data: BodyType<NavItemUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNavItems>>, TError,{itemId: string;data: BodyType<NavItemUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateNavItems>>, TError,{itemId: string;data: BodyType<NavItemUpdate>}, TContext> => {
 
 const mutationKey = ['updateNavItems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7227,7 +7222,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNavItems>>, {itemId: string;data: BodyType<NavItemUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateNavItems(itemId,data,)
+          return  updateNavItems(itemId,data,requestOptions)
         }
 
 
@@ -7245,7 +7240,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-site-config
  */
 export const useUpdateNavItems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNavItems>>, TError,{itemId: string;data: BodyType<NavItemUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNavItems>>, TError,{itemId: string;data: BodyType<NavItemUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateNavItems>>,
         TError,
@@ -7300,15 +7295,15 @@ export const deleteNavItems = async (itemId: string, options?: RequestInit): Pro
 
 
 export const getDeleteNavItemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNavItems>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNavItems>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteNavItems>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteNavItems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7316,7 +7311,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteNavItems>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteNavItems(itemId,)
+          return  deleteNavItems(itemId,requestOptions)
         }
 
 
@@ -7334,7 +7329,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-site-config
  */
 export const useDeleteNavItems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNavItems>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNavItems>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteNavItems>>,
         TError,
@@ -7390,15 +7385,15 @@ export const bulkDeleteNavItems = async (bulkDeleteRequest: BulkDeleteRequest, o
 
 
 export const getBulkDeleteNavItemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteNavItems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteNavItems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteNavItems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteNavItems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7406,7 +7401,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteNavItems>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteNavItems(data,)
+          return  bulkDeleteNavItems(data,requestOptions)
         }
 
 
@@ -7424,7 +7419,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-site-config
  */
 export const useBulkDeleteNavItems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteNavItems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteNavItems>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteNavItems>>,
         TError,
@@ -7480,15 +7475,15 @@ export const bulkStatusNavItems = async (bulkStatusRequest: BulkStatusRequest, o
 
 
 export const getBulkStatusNavItemsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusNavItems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusNavItems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusNavItems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusNavItems'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7496,7 +7491,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusNavItems>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusNavItems(data,)
+          return  bulkStatusNavItems(data,requestOptions)
         }
 
 
@@ -7514,7 +7509,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-site-config状态
  */
 export const useBulkStatusNavItems = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusNavItems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusNavItems>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusNavItems>>,
         TError,
@@ -7583,16 +7578,16 @@ export const getListBasicsQueryKey = (params?: ListBasicsParams,) => {
     }
 
 
-export const getListBasicsQueryOptions = <TData = Awaited<ReturnType<typeof listBasics>>, TError = ErrorType<HTTPValidationError>>(params?: ListBasicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBasics>>, TError, TData>>, }
+export const getListBasicsQueryOptions = <TData = Awaited<ReturnType<typeof listBasics>>, TError = ErrorType<HTTPValidationError>>(params?: ListBasicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBasics>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListBasicsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBasics>>> = ({ signal }) => listBasics(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBasics>>> = ({ signal }) => listBasics(params, { signal, ...requestOptions });
 
 
 
@@ -7612,7 +7607,7 @@ export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TE
           TError,
           Awaited<ReturnType<typeof listBasics>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TError = ErrorType<HTTPValidationError>>(
@@ -7622,11 +7617,11 @@ export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TE
           TError,
           Awaited<ReturnType<typeof listBasics>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListBasicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBasics>>, TError, TData>>, }
+ params?: ListBasicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBasics>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -7634,7 +7629,7 @@ export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TE
  */
 
 export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListBasicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBasics>>, TError, TData>>, }
+ params?: ListBasicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBasics>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -7695,15 +7690,15 @@ export const createBasics = async (resumeBasicsCreate: ResumeBasicsCreate, optio
 
 
 export const getCreateBasicsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBasics>>, TError,{data: BodyType<ResumeBasicsCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBasics>>, TError,{data: BodyType<ResumeBasicsCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createBasics>>, TError,{data: BodyType<ResumeBasicsCreate>}, TContext> => {
 
 const mutationKey = ['createBasics'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7711,7 +7706,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBasics>>, {data: BodyType<ResumeBasicsCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createBasics(data,)
+          return  createBasics(data,requestOptions)
         }
 
 
@@ -7729,7 +7724,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-resume
  */
 export const useCreateBasics = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBasics>>, TError,{data: BodyType<ResumeBasicsCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBasics>>, TError,{data: BodyType<ResumeBasicsCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createBasics>>,
         TError,
@@ -7791,16 +7786,16 @@ export const getGetBasicsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetBasicsQueryOptions = <TData = Awaited<ReturnType<typeof getBasics>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBasics>>, TError, TData>>, }
+export const getGetBasicsQueryOptions = <TData = Awaited<ReturnType<typeof getBasics>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBasics>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetBasicsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBasics>>> = ({ signal }) => getBasics(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBasics>>> = ({ signal }) => getBasics(itemId, { signal, ...requestOptions });
 
 
 
@@ -7820,7 +7815,7 @@ export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TErr
           TError,
           Awaited<ReturnType<typeof getBasics>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TError = ErrorType<HTTPValidationError>>(
@@ -7830,11 +7825,11 @@ export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TErr
           TError,
           Awaited<ReturnType<typeof getBasics>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBasics>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBasics>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -7842,7 +7837,7 @@ export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TErr
  */
 
 export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBasics>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBasics>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -7904,15 +7899,15 @@ export const updateBasics = async (itemId: string,
 
 
 export const getUpdateBasicsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBasics>>, TError,{itemId: string;data: BodyType<ResumeBasicsUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBasics>>, TError,{itemId: string;data: BodyType<ResumeBasicsUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateBasics>>, TError,{itemId: string;data: BodyType<ResumeBasicsUpdate>}, TContext> => {
 
 const mutationKey = ['updateBasics'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -7920,7 +7915,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBasics>>, {itemId: string;data: BodyType<ResumeBasicsUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateBasics(itemId,data,)
+          return  updateBasics(itemId,data,requestOptions)
         }
 
 
@@ -7938,7 +7933,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-resume
  */
 export const useUpdateBasics = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBasics>>, TError,{itemId: string;data: BodyType<ResumeBasicsUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBasics>>, TError,{itemId: string;data: BodyType<ResumeBasicsUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateBasics>>,
         TError,
@@ -7993,15 +7988,15 @@ export const deleteBasics = async (itemId: string, options?: RequestInit): Promi
 
 
 export const getDeleteBasicsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBasics>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBasics>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteBasics>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteBasics'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8009,7 +8004,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteBasics>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteBasics(itemId,)
+          return  deleteBasics(itemId,requestOptions)
         }
 
 
@@ -8027,7 +8022,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-resume
  */
 export const useDeleteBasics = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBasics>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBasics>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteBasics>>,
         TError,
@@ -8083,15 +8078,15 @@ export const bulkDeleteBasics = async (bulkDeleteRequest: BulkDeleteRequest, opt
 
 
 export const getBulkDeleteBasicsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteBasics>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteBasics>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteBasics>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteBasics'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8099,7 +8094,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteBasics>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteBasics(data,)
+          return  bulkDeleteBasics(data,requestOptions)
         }
 
 
@@ -8117,7 +8112,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-resume
  */
 export const useBulkDeleteBasics = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteBasics>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteBasics>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteBasics>>,
         TError,
@@ -8173,15 +8168,15 @@ export const bulkStatusBasics = async (bulkStatusRequest: BulkStatusRequest, opt
 
 
 export const getBulkStatusBasicsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusBasics>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusBasics>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusBasics>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusBasics'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8189,7 +8184,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusBasics>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusBasics(data,)
+          return  bulkStatusBasics(data,requestOptions)
         }
 
 
@@ -8207,7 +8202,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-resume状态
  */
 export const useBulkStatusBasics = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusBasics>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusBasics>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusBasics>>,
         TError,
@@ -8276,16 +8271,16 @@ export const getListSkillsQueryKey = (params?: ListSkillsParams,) => {
     }
 
 
-export const getListSkillsQueryOptions = <TData = Awaited<ReturnType<typeof listSkills>>, TError = ErrorType<HTTPValidationError>>(params?: ListSkillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSkills>>, TError, TData>>, }
+export const getListSkillsQueryOptions = <TData = Awaited<ReturnType<typeof listSkills>>, TError = ErrorType<HTTPValidationError>>(params?: ListSkillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSkills>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListSkillsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSkills>>> = ({ signal }) => listSkills(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSkills>>> = ({ signal }) => listSkills(params, { signal, ...requestOptions });
 
 
 
@@ -8305,7 +8300,7 @@ export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TE
           TError,
           Awaited<ReturnType<typeof listSkills>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TError = ErrorType<HTTPValidationError>>(
@@ -8315,11 +8310,11 @@ export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TE
           TError,
           Awaited<ReturnType<typeof listSkills>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListSkillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSkills>>, TError, TData>>, }
+ params?: ListSkillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSkills>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -8327,7 +8322,7 @@ export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TE
  */
 
 export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListSkillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSkills>>, TError, TData>>, }
+ params?: ListSkillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSkills>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -8388,15 +8383,15 @@ export const createSkills = async (resumeSkillGroupCreate: ResumeSkillGroupCreat
 
 
 export const getCreateSkillsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSkills>>, TError,{data: BodyType<ResumeSkillGroupCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSkills>>, TError,{data: BodyType<ResumeSkillGroupCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createSkills>>, TError,{data: BodyType<ResumeSkillGroupCreate>}, TContext> => {
 
 const mutationKey = ['createSkills'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8404,7 +8399,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSkills>>, {data: BodyType<ResumeSkillGroupCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createSkills(data,)
+          return  createSkills(data,requestOptions)
         }
 
 
@@ -8422,7 +8417,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-resume
  */
 export const useCreateSkills = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSkills>>, TError,{data: BodyType<ResumeSkillGroupCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSkills>>, TError,{data: BodyType<ResumeSkillGroupCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createSkills>>,
         TError,
@@ -8484,16 +8479,16 @@ export const getGetSkillsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetSkillsQueryOptions = <TData = Awaited<ReturnType<typeof getSkills>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkills>>, TError, TData>>, }
+export const getGetSkillsQueryOptions = <TData = Awaited<ReturnType<typeof getSkills>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkills>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetSkillsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSkills>>> = ({ signal }) => getSkills(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSkills>>> = ({ signal }) => getSkills(itemId, { signal, ...requestOptions });
 
 
 
@@ -8513,7 +8508,7 @@ export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TErr
           TError,
           Awaited<ReturnType<typeof getSkills>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TError = ErrorType<HTTPValidationError>>(
@@ -8523,11 +8518,11 @@ export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TErr
           TError,
           Awaited<ReturnType<typeof getSkills>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkills>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkills>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -8535,7 +8530,7 @@ export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TErr
  */
 
 export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkills>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkills>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -8597,15 +8592,15 @@ export const updateSkills = async (itemId: string,
 
 
 export const getUpdateSkillsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSkills>>, TError,{itemId: string;data: BodyType<ResumeSkillGroupUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSkills>>, TError,{itemId: string;data: BodyType<ResumeSkillGroupUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateSkills>>, TError,{itemId: string;data: BodyType<ResumeSkillGroupUpdate>}, TContext> => {
 
 const mutationKey = ['updateSkills'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8613,7 +8608,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSkills>>, {itemId: string;data: BodyType<ResumeSkillGroupUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateSkills(itemId,data,)
+          return  updateSkills(itemId,data,requestOptions)
         }
 
 
@@ -8631,7 +8626,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-resume
  */
 export const useUpdateSkills = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSkills>>, TError,{itemId: string;data: BodyType<ResumeSkillGroupUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSkills>>, TError,{itemId: string;data: BodyType<ResumeSkillGroupUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateSkills>>,
         TError,
@@ -8686,15 +8681,15 @@ export const deleteSkills = async (itemId: string, options?: RequestInit): Promi
 
 
 export const getDeleteSkillsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSkills>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSkills>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteSkills>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteSkills'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8702,7 +8697,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSkills>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteSkills(itemId,)
+          return  deleteSkills(itemId,requestOptions)
         }
 
 
@@ -8720,7 +8715,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-resume
  */
 export const useDeleteSkills = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSkills>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSkills>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteSkills>>,
         TError,
@@ -8776,15 +8771,15 @@ export const bulkDeleteSkills = async (bulkDeleteRequest: BulkDeleteRequest, opt
 
 
 export const getBulkDeleteSkillsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSkills>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSkills>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSkills>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteSkills'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8792,7 +8787,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteSkills>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteSkills(data,)
+          return  bulkDeleteSkills(data,requestOptions)
         }
 
 
@@ -8810,7 +8805,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-resume
  */
 export const useBulkDeleteSkills = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSkills>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteSkills>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteSkills>>,
         TError,
@@ -8866,15 +8861,15 @@ export const bulkStatusSkills = async (bulkStatusRequest: BulkStatusRequest, opt
 
 
 export const getBulkStatusSkillsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSkills>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSkills>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSkills>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusSkills'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -8882,7 +8877,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusSkills>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusSkills(data,)
+          return  bulkStatusSkills(data,requestOptions)
         }
 
 
@@ -8900,7 +8895,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-resume状态
  */
 export const useBulkStatusSkills = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSkills>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusSkills>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusSkills>>,
         TError,
@@ -8969,16 +8964,16 @@ export const getListExperiencesQueryKey = (params?: ListExperiencesParams,) => {
     }
 
 
-export const getListExperiencesQueryOptions = <TData = Awaited<ReturnType<typeof listExperiences>>, TError = ErrorType<HTTPValidationError>>(params?: ListExperiencesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExperiences>>, TError, TData>>, }
+export const getListExperiencesQueryOptions = <TData = Awaited<ReturnType<typeof listExperiences>>, TError = ErrorType<HTTPValidationError>>(params?: ListExperiencesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExperiences>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListExperiencesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExperiences>>> = ({ signal }) => listExperiences(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExperiences>>> = ({ signal }) => listExperiences(params, { signal, ...requestOptions });
 
 
 
@@ -8998,7 +8993,7 @@ export function useListExperiences<TData = Awaited<ReturnType<typeof listExperie
           TError,
           Awaited<ReturnType<typeof listExperiences>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListExperiences<TData = Awaited<ReturnType<typeof listExperiences>>, TError = ErrorType<HTTPValidationError>>(
@@ -9008,11 +9003,11 @@ export function useListExperiences<TData = Awaited<ReturnType<typeof listExperie
           TError,
           Awaited<ReturnType<typeof listExperiences>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListExperiences<TData = Awaited<ReturnType<typeof listExperiences>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListExperiencesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExperiences>>, TError, TData>>, }
+ params?: ListExperiencesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExperiences>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -9020,7 +9015,7 @@ export function useListExperiences<TData = Awaited<ReturnType<typeof listExperie
  */
 
 export function useListExperiences<TData = Awaited<ReturnType<typeof listExperiences>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListExperiencesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExperiences>>, TError, TData>>, }
+ params?: ListExperiencesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExperiences>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -9081,15 +9076,15 @@ export const createExperiences = async (resumeExperienceCreate: ResumeExperience
 
 
 export const getCreateExperiencesMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExperiences>>, TError,{data: BodyType<ResumeExperienceCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExperiences>>, TError,{data: BodyType<ResumeExperienceCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createExperiences>>, TError,{data: BodyType<ResumeExperienceCreate>}, TContext> => {
 
 const mutationKey = ['createExperiences'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9097,7 +9092,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createExperiences>>, {data: BodyType<ResumeExperienceCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createExperiences(data,)
+          return  createExperiences(data,requestOptions)
         }
 
 
@@ -9115,7 +9110,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-resume
  */
 export const useCreateExperiences = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExperiences>>, TError,{data: BodyType<ResumeExperienceCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createExperiences>>, TError,{data: BodyType<ResumeExperienceCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createExperiences>>,
         TError,
@@ -9177,16 +9172,16 @@ export const getGetExperiencesQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetExperiencesQueryOptions = <TData = Awaited<ReturnType<typeof getExperiences>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExperiences>>, TError, TData>>, }
+export const getGetExperiencesQueryOptions = <TData = Awaited<ReturnType<typeof getExperiences>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExperiences>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetExperiencesQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExperiences>>> = ({ signal }) => getExperiences(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExperiences>>> = ({ signal }) => getExperiences(itemId, { signal, ...requestOptions });
 
 
 
@@ -9206,7 +9201,7 @@ export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperienc
           TError,
           Awaited<ReturnType<typeof getExperiences>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperiences>>, TError = ErrorType<HTTPValidationError>>(
@@ -9216,11 +9211,11 @@ export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperienc
           TError,
           Awaited<ReturnType<typeof getExperiences>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperiences>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExperiences>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExperiences>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -9228,7 +9223,7 @@ export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperienc
  */
 
 export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperiences>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExperiences>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExperiences>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -9290,15 +9285,15 @@ export const updateExperiences = async (itemId: string,
 
 
 export const getUpdateExperiencesMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExperiences>>, TError,{itemId: string;data: BodyType<ResumeExperienceUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExperiences>>, TError,{itemId: string;data: BodyType<ResumeExperienceUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateExperiences>>, TError,{itemId: string;data: BodyType<ResumeExperienceUpdate>}, TContext> => {
 
 const mutationKey = ['updateExperiences'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9306,7 +9301,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateExperiences>>, {itemId: string;data: BodyType<ResumeExperienceUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateExperiences(itemId,data,)
+          return  updateExperiences(itemId,data,requestOptions)
         }
 
 
@@ -9324,7 +9319,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-resume
  */
 export const useUpdateExperiences = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExperiences>>, TError,{itemId: string;data: BodyType<ResumeExperienceUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateExperiences>>, TError,{itemId: string;data: BodyType<ResumeExperienceUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateExperiences>>,
         TError,
@@ -9379,15 +9374,15 @@ export const deleteExperiences = async (itemId: string, options?: RequestInit): 
 
 
 export const getDeleteExperiencesMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExperiences>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExperiences>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteExperiences>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteExperiences'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9395,7 +9390,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteExperiences>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteExperiences(itemId,)
+          return  deleteExperiences(itemId,requestOptions)
         }
 
 
@@ -9413,7 +9408,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-resume
  */
 export const useDeleteExperiences = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExperiences>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExperiences>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteExperiences>>,
         TError,
@@ -9469,15 +9464,15 @@ export const bulkDeleteExperiences = async (bulkDeleteRequest: BulkDeleteRequest
 
 
 export const getBulkDeleteExperiencesMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExperiences>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExperiences>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExperiences>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteExperiences'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9485,7 +9480,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteExperiences>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteExperiences(data,)
+          return  bulkDeleteExperiences(data,requestOptions)
         }
 
 
@@ -9503,7 +9498,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-resume
  */
 export const useBulkDeleteExperiences = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExperiences>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteExperiences>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteExperiences>>,
         TError,
@@ -9559,15 +9554,15 @@ export const bulkStatusExperiences = async (bulkStatusRequest: BulkStatusRequest
 
 
 export const getBulkStatusExperiencesMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExperiences>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExperiences>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExperiences>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusExperiences'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9575,7 +9570,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusExperiences>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusExperiences(data,)
+          return  bulkStatusExperiences(data,requestOptions)
         }
 
 
@@ -9593,7 +9588,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-resume状态
  */
 export const useBulkStatusExperiences = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExperiences>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExperiences>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusExperiences>>,
         TError,
@@ -9662,16 +9657,16 @@ export const getListFriendsQueryKey = (params?: ListFriendsParams,) => {
     }
 
 
-export const getListFriendsQueryOptions = <TData = Awaited<ReturnType<typeof listFriends>>, TError = ErrorType<HTTPValidationError>>(params?: ListFriendsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriends>>, TError, TData>>, }
+export const getListFriendsQueryOptions = <TData = Awaited<ReturnType<typeof listFriends>>, TError = ErrorType<HTTPValidationError>>(params?: ListFriendsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriends>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListFriendsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFriends>>> = ({ signal }) => listFriends(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFriends>>> = ({ signal }) => listFriends(params, { signal, ...requestOptions });
 
 
 
@@ -9691,7 +9686,7 @@ export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, 
           TError,
           Awaited<ReturnType<typeof listFriends>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, TError = ErrorType<HTTPValidationError>>(
@@ -9701,11 +9696,11 @@ export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, 
           TError,
           Awaited<ReturnType<typeof listFriends>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListFriendsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriends>>, TError, TData>>, }
+ params?: ListFriendsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriends>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -9713,7 +9708,7 @@ export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, 
  */
 
 export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListFriendsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriends>>, TError, TData>>, }
+ params?: ListFriendsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriends>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -9774,15 +9769,15 @@ export const createFriends = async (friendCreate: FriendCreate, options?: Reques
 
 
 export const getCreateFriendsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriends>>, TError,{data: BodyType<FriendCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriends>>, TError,{data: BodyType<FriendCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createFriends>>, TError,{data: BodyType<FriendCreate>}, TContext> => {
 
 const mutationKey = ['createFriends'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9790,7 +9785,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFriends>>, {data: BodyType<FriendCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createFriends(data,)
+          return  createFriends(data,requestOptions)
         }
 
 
@@ -9808,7 +9803,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建admin-social
  */
 export const useCreateFriends = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriends>>, TError,{data: BodyType<FriendCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriends>>, TError,{data: BodyType<FriendCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createFriends>>,
         TError,
@@ -9870,16 +9865,16 @@ export const getGetFriendsQueryKey = (itemId: string,) => {
     }
 
 
-export const getGetFriendsQueryOptions = <TData = Awaited<ReturnType<typeof getFriends>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFriends>>, TError, TData>>, }
+export const getGetFriendsQueryOptions = <TData = Awaited<ReturnType<typeof getFriends>>, TError = ErrorType<HTTPValidationError>>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFriends>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetFriendsQueryKey(itemId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFriends>>> = ({ signal }) => getFriends(itemId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFriends>>> = ({ signal }) => getFriends(itemId, { signal, ...requestOptions });
 
 
 
@@ -9899,7 +9894,7 @@ export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TE
           TError,
           Awaited<ReturnType<typeof getFriends>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TError = ErrorType<HTTPValidationError>>(
@@ -9909,11 +9904,11 @@ export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TE
           TError,
           Awaited<ReturnType<typeof getFriends>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFriends>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFriends>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -9921,7 +9916,7 @@ export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TE
  */
 
 export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TError = ErrorType<HTTPValidationError>>(
- itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFriends>>, TError, TData>>, }
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFriends>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -9983,15 +9978,15 @@ export const updateFriends = async (itemId: string,
 
 
 export const getUpdateFriendsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriends>>, TError,{itemId: string;data: BodyType<FriendUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriends>>, TError,{itemId: string;data: BodyType<FriendUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateFriends>>, TError,{itemId: string;data: BodyType<FriendUpdate>}, TContext> => {
 
 const mutationKey = ['updateFriends'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -9999,7 +9994,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFriends>>, {itemId: string;data: BodyType<FriendUpdate>}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  updateFriends(itemId,data,)
+          return  updateFriends(itemId,data,requestOptions)
         }
 
 
@@ -10017,7 +10012,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新admin-social
  */
 export const useUpdateFriends = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriends>>, TError,{itemId: string;data: BodyType<FriendUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriends>>, TError,{itemId: string;data: BodyType<FriendUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateFriends>>,
         TError,
@@ -10072,15 +10067,15 @@ export const deleteFriends = async (itemId: string, options?: RequestInit): Prom
 
 
 export const getDeleteFriendsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriends>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriends>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteFriends>>, TError,{itemId: string}, TContext> => {
 
 const mutationKey = ['deleteFriends'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10088,7 +10083,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFriends>>, {itemId: string}> = (props) => {
           const {itemId} = props ?? {};
 
-          return  deleteFriends(itemId,)
+          return  deleteFriends(itemId,requestOptions)
         }
 
 
@@ -10106,7 +10101,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除admin-social
  */
 export const useDeleteFriends = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriends>>, TError,{itemId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriends>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteFriends>>,
         TError,
@@ -10162,15 +10157,15 @@ export const bulkDeleteFriends = async (bulkDeleteRequest: BulkDeleteRequest, op
 
 
 export const getBulkDeleteFriendsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteFriends>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteFriends>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteFriends>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
 const mutationKey = ['bulkDeleteFriends'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10178,7 +10173,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteFriends>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteFriends(data,)
+          return  bulkDeleteFriends(data,requestOptions)
         }
 
 
@@ -10196,7 +10191,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量删除admin-social
  */
 export const useBulkDeleteFriends = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteFriends>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteFriends>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkDeleteFriends>>,
         TError,
@@ -10252,15 +10247,15 @@ export const bulkStatusFriends = async (bulkStatusRequest: BulkStatusRequest, op
 
 
 export const getBulkStatusFriendsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusFriends>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusFriends>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusFriends>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
 
 const mutationKey = ['bulkStatusFriends'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10268,7 +10263,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusFriends>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusFriends(data,)
+          return  bulkStatusFriends(data,requestOptions)
         }
 
 
@@ -10286,7 +10281,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 批量更新admin-social状态
  */
 export const useBulkStatusFriends = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusFriends>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusFriends>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof bulkStatusFriends>>,
         TError,
@@ -10334,15 +10329,15 @@ export const triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost = async ( options?: 
 
 
 export const getTriggerFeedCrawlApiV1AdminSocialFeedsCrawlPostMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>, TError,void, TContext> => {
 
 const mutationKey = ['triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10350,7 +10345,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>, void> = () => {
 
 
-          return  triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost()
+          return  triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost(requestOptions)
         }
 
 
@@ -10368,7 +10363,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 手动触发全量抓取
  */
 export const useTriggerFeedCrawlApiV1AdminSocialFeedsCrawlPost = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof triggerFeedCrawlApiV1AdminSocialFeedsCrawlPost>>,
         TError,
@@ -10423,15 +10418,15 @@ export const triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost = async 
 
 
 export const getTriggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>, TError,{feedId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>, TError,{feedId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>, TError,{feedId: string}, TContext> => {
 
 const mutationKey = ['triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10439,7 +10434,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>, {feedId: string}> = (props) => {
           const {feedId} = props ?? {};
 
-          return  triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost(feedId,)
+          return  triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost(feedId,requestOptions)
         }
 
 
@@ -10457,7 +10452,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 手动触发单源抓取
  */
 export const useTriggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>, TError,{feedId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>, TError,{feedId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost>>,
         TError,
@@ -10519,16 +10514,16 @@ export const getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey =
     }
 
 
-export const getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryOptions = <TData = Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError = ErrorType<HTTPValidationError>>(friendId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError, TData>>, }
+export const getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryOptions = <TData = Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError = ErrorType<HTTPValidationError>>(friendId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>> = ({ signal }) => listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet(friendId, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>> = ({ signal }) => listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet(friendId, { signal, ...requestOptions });
 
 
 
@@ -10548,7 +10543,7 @@ export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData 
           TError,
           Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData = Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError = ErrorType<HTTPValidationError>>(
@@ -10558,11 +10553,11 @@ export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData 
           TError,
           Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData = Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError = ErrorType<HTTPValidationError>>(
- friendId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError, TData>>, }
+ friendId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -10570,7 +10565,7 @@ export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData 
  */
 
 export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData = Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError = ErrorType<HTTPValidationError>>(
- friendId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError, TData>>, }
+ friendId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -10632,15 +10627,15 @@ export const createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost = async (f
 
 
 export const getCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>, TError,{friendId: string;data: BodyType<FriendFeedSourceCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>, TError,{friendId: string;data: BodyType<FriendFeedSourceCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>, TError,{friendId: string;data: BodyType<FriendFeedSourceCreate>}, TContext> => {
 
 const mutationKey = ['createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10648,7 +10643,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>, {friendId: string;data: BodyType<FriendFeedSourceCreate>}> = (props) => {
           const {friendId,data} = props ?? {};
 
-          return  createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost(friendId,data,)
+          return  createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost(friendId,data,requestOptions)
         }
 
 
@@ -10666,7 +10661,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建订阅源
  */
 export const useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>, TError,{friendId: string;data: BodyType<FriendFeedSourceCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>, TError,{friendId: string;data: BodyType<FriendFeedSourceCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost>>,
         TError,
@@ -10723,15 +10718,15 @@ export const updateFriendFeedApiV1AdminSocialFeedsFeedIdPut = async (feedId: str
 
 
 export const getUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>, TError,{feedId: string;data: BodyType<FriendFeedSourceUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>, TError,{feedId: string;data: BodyType<FriendFeedSourceUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>, TError,{feedId: string;data: BodyType<FriendFeedSourceUpdate>}, TContext> => {
 
 const mutationKey = ['updateFriendFeedApiV1AdminSocialFeedsFeedIdPut'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10739,7 +10734,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>, {feedId: string;data: BodyType<FriendFeedSourceUpdate>}> = (props) => {
           const {feedId,data} = props ?? {};
 
-          return  updateFriendFeedApiV1AdminSocialFeedsFeedIdPut(feedId,data,)
+          return  updateFriendFeedApiV1AdminSocialFeedsFeedIdPut(feedId,data,requestOptions)
         }
 
 
@@ -10757,7 +10752,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新订阅源
  */
 export const useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>, TError,{feedId: string;data: BodyType<FriendFeedSourceUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>, TError,{feedId: string;data: BodyType<FriendFeedSourceUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateFriendFeedApiV1AdminSocialFeedsFeedIdPut>>,
         TError,
@@ -10812,15 +10807,15 @@ export const deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete = async (feedId: 
 
 
 export const getDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>, TError,{feedId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>, TError,{feedId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>, TError,{feedId: string}, TContext> => {
 
 const mutationKey = ['deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -10828,7 +10823,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>, {feedId: string}> = (props) => {
           const {feedId} = props ?? {};
 
-          return  deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete(feedId,)
+          return  deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete(feedId,requestOptions)
         }
 
 
@@ -10846,7 +10841,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除订阅源
  */
 export const useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>, TError,{feedId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>, TError,{feedId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete>>,
         TError,
@@ -10856,7 +10851,6 @@ export const useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete = <TError = Er
       return useMutation(getDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteMutationOptions(options), queryClient);
     }
     /**
- * 分页查询待审核或全部评论，支持多维筛选。
  * @summary 获取评论审核列表
  */
 export type listCommentsApiV1AdminModerationCommentsGetResponse200 = {
@@ -10915,16 +10909,16 @@ export const getListCommentsApiV1AdminModerationCommentsGetQueryKey = (params?: 
     }
 
 
-export const getListCommentsApiV1AdminModerationCommentsGetQueryOptions = <TData = Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListCommentsApiV1AdminModerationCommentsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError, TData>>, }
+export const getListCommentsApiV1AdminModerationCommentsGetQueryOptions = <TData = Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListCommentsApiV1AdminModerationCommentsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListCommentsApiV1AdminModerationCommentsGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>> = ({ signal }) => listCommentsApiV1AdminModerationCommentsGet(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>> = ({ signal }) => listCommentsApiV1AdminModerationCommentsGet(params, { signal, ...requestOptions });
 
 
 
@@ -10944,7 +10938,7 @@ export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<R
           TError,
           Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError = ErrorType<HTTPValidationError>>(
@@ -10954,11 +10948,11 @@ export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<R
           TError,
           Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListCommentsApiV1AdminModerationCommentsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError, TData>>, }
+ params?: ListCommentsApiV1AdminModerationCommentsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -10966,7 +10960,7 @@ export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<R
  */
 
 export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListCommentsApiV1AdminModerationCommentsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError, TData>>, }
+ params?: ListCommentsApiV1AdminModerationCommentsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCommentsApiV1AdminModerationCommentsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -10981,29 +10975,28 @@ export function useListCommentsApiV1AdminModerationCommentsGet<TData = Awaited<R
 
 
 /**
- * 对指定评论执行通过、拒绝或删除操作。
  * @summary 审核评论
  */
-export type moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse200 = {
+export type moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse200 = {
   data: CommentAdminRead
   status: 200
 }
 
-export type moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse422 = {
+export type moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponseSuccess = (moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse200) & {
+export type moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponseSuccess = (moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse200) & {
   headers: Headers;
 };
-export type moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponseError = (moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse422) & {
+export type moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponseError = (moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse422) & {
   headers: Headers;
 };
 
-export type moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse = (moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponseSuccess | moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponseError)
+export type moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse = (moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponseSuccess | moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponseError)
 
-export const getModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostUrl = (commentId: string,) => {
+export const getModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostUrl = (commentId: string,) => {
 
 
 
@@ -11011,10 +11004,10 @@ export const getModerateCommentApiV1AdminModerationCommentsCommentIdModeratePost
   return `/api/v1/admin/moderation/comments/${commentId}/moderate`
 }
 
-export const moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost = async (commentId: string,
-    moderateAction: ModerateAction, options?: RequestInit): Promise<moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse> => {
+export const moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost = async (commentId: string,
+    moderateAction: ModerateAction, options?: RequestInit): Promise<moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse> => {
 
-  return customInstance<moderateCommentApiV1AdminModerationCommentsCommentIdModeratePostResponse>(getModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostUrl(commentId),
+  return customInstance<moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse>(getModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostUrl(commentId),
   {
     ...options,
     method: 'POST',
@@ -11027,24 +11020,24 @@ export const moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost = 
 
 
 
-export const getModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost>>, TError,{commentId: string;data: BodyType<ModerateAction>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost>>, TError,{commentId: string;data: BodyType<ModerateAction>}, TContext> => {
+export const getModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost>>, TError,{commentId: string;data: BodyType<ModerateAction>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost>>, TError,{commentId: string;data: BodyType<ModerateAction>}, TContext> => {
 
-const mutationKey = ['moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost'];
-const {mutation: mutationOptions} = options ?
+const mutationKey = ['moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost>>, {commentId: string;data: BodyType<ModerateAction>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost>>, {commentId: string;data: BodyType<ModerateAction>}> = (props) => {
           const {commentId,data} = props ?? {};
 
-          return  moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost(commentId,data,)
+          return  moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost(commentId,data,requestOptions)
         }
 
 
@@ -11054,25 +11047,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostMutationResult = NonNullable<Awaited<ReturnType<typeof moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost>>>
-    export type ModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostMutationBody = BodyType<ModerateAction>
-    export type ModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostMutationError = ErrorType<HTTPValidationError>
+    export type ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostMutationResult = NonNullable<Awaited<ReturnType<typeof moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost>>>
+    export type ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostMutationBody = BodyType<ModerateAction>
+    export type ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 审核评论
  */
-export const useModerateCommentApiV1AdminModerationCommentsCommentIdModeratePost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost>>, TError,{commentId: string;data: BodyType<ModerateAction>}, TContext>, }
+export const useModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost>>, TError,{commentId: string;data: BodyType<ModerateAction>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost>>,
+        Awaited<ReturnType<typeof moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost>>,
         TError,
         {commentId: string;data: BodyType<ModerateAction>},
         TContext
       > => {
-      return useMutation(getModerateCommentApiV1AdminModerationCommentsCommentIdModeratePostMutationOptions(options), queryClient);
+      return useMutation(getModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostMutationOptions(options), queryClient);
     }
     /**
- * 分页查询留言板条目，支持状态和关键词筛选。
  * @summary 获取留言审核列表
  */
 export type listGuestbookApiV1AdminModerationGuestbookGetResponse200 = {
@@ -11131,16 +11123,16 @@ export const getListGuestbookApiV1AdminModerationGuestbookGetQueryKey = (params?
     }
 
 
-export const getListGuestbookApiV1AdminModerationGuestbookGetQueryOptions = <TData = Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListGuestbookApiV1AdminModerationGuestbookGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError, TData>>, }
+export const getListGuestbookApiV1AdminModerationGuestbookGetQueryOptions = <TData = Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListGuestbookApiV1AdminModerationGuestbookGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>> = ({ signal }) => listGuestbookApiV1AdminModerationGuestbookGet(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>> = ({ signal }) => listGuestbookApiV1AdminModerationGuestbookGet(params, { signal, ...requestOptions });
 
 
 
@@ -11160,7 +11152,7 @@ export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited
           TError,
           Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError = ErrorType<HTTPValidationError>>(
@@ -11170,11 +11162,11 @@ export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited
           TError,
           Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListGuestbookApiV1AdminModerationGuestbookGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError, TData>>, }
+ params?: ListGuestbookApiV1AdminModerationGuestbookGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -11182,7 +11174,7 @@ export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited
  */
 
 export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListGuestbookApiV1AdminModerationGuestbookGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError, TData>>, }
+ params?: ListGuestbookApiV1AdminModerationGuestbookGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listGuestbookApiV1AdminModerationGuestbookGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -11197,29 +11189,28 @@ export function useListGuestbookApiV1AdminModerationGuestbookGet<TData = Awaited
 
 
 /**
- * 对指定留言执行通过、拒绝或删除操作。
  * @summary 审核留言
  */
-export type moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse200 = {
+export type moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse200 = {
   data: GuestbookAdminRead
   status: 200
 }
 
-export type moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse422 = {
+export type moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponseSuccess = (moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse200) & {
+export type moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponseSuccess = (moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse200) & {
   headers: Headers;
 };
-export type moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponseError = (moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse422) & {
+export type moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponseError = (moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse422) & {
   headers: Headers;
 };
 
-export type moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse = (moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponseSuccess | moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponseError)
+export type moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse = (moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponseSuccess | moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponseError)
 
-export const getModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostUrl = (entryId: string,) => {
+export const getModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostUrl = (entryId: string,) => {
 
 
 
@@ -11227,10 +11218,10 @@ export const getModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePos
   return `/api/v1/admin/moderation/guestbook/${entryId}/moderate`
 }
 
-export const moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost = async (entryId: string,
-    moderateAction: ModerateAction, options?: RequestInit): Promise<moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse> => {
+export const moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost = async (entryId: string,
+    moderateAction: ModerateAction, options?: RequestInit): Promise<moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse> => {
 
-  return customInstance<moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostResponse>(getModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostUrl(entryId),
+  return customInstance<moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse>(getModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostUrl(entryId),
   {
     ...options,
     method: 'POST',
@@ -11243,24 +11234,24 @@ export const moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost =
 
 
 
-export const getModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost>>, TError,{entryId: string;data: BodyType<ModerateAction>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost>>, TError,{entryId: string;data: BodyType<ModerateAction>}, TContext> => {
+export const getModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost>>, TError,{entryId: string;data: BodyType<ModerateAction>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost>>, TError,{entryId: string;data: BodyType<ModerateAction>}, TContext> => {
 
-const mutationKey = ['moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost'];
-const {mutation: mutationOptions} = options ?
+const mutationKey = ['moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost>>, {entryId: string;data: BodyType<ModerateAction>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost>>, {entryId: string;data: BodyType<ModerateAction>}> = (props) => {
           const {entryId,data} = props ?? {};
 
-          return  moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(entryId,data,)
+          return  moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost(entryId,data,requestOptions)
         }
 
 
@@ -11270,47 +11261,46 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostMutationResult = NonNullable<Awaited<ReturnType<typeof moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost>>>
-    export type ModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostMutationBody = BodyType<ModerateAction>
-    export type ModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostMutationError = ErrorType<HTTPValidationError>
+    export type ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostMutationResult = NonNullable<Awaited<ReturnType<typeof moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost>>>
+    export type ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostMutationBody = BodyType<ModerateAction>
+    export type ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 审核留言
  */
-export const useModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost>>, TError,{entryId: string;data: BodyType<ModerateAction>}, TContext>, }
+export const useModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost>>, TError,{entryId: string;data: BodyType<ModerateAction>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost>>,
+        Awaited<ReturnType<typeof moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost>>,
         TError,
         {entryId: string;data: BodyType<ModerateAction>},
         TContext
       > => {
-      return useMutation(getModerateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePostMutationOptions(options), queryClient);
+      return useMutation(getModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostMutationOptions(options), queryClient);
     }
     /**
- * 分页查询已上传的媒体资源。
  * @summary 获取资源列表
  */
-export type listAssetsApiV1AdminAssetsGetResponse200 = {
+export type listAssetsEndpointApiV1AdminAssetsGetResponse200 = {
   data: PaginatedResponseAssetAdminRead
   status: 200
 }
 
-export type listAssetsApiV1AdminAssetsGetResponse422 = {
+export type listAssetsEndpointApiV1AdminAssetsGetResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type listAssetsApiV1AdminAssetsGetResponseSuccess = (listAssetsApiV1AdminAssetsGetResponse200) & {
+export type listAssetsEndpointApiV1AdminAssetsGetResponseSuccess = (listAssetsEndpointApiV1AdminAssetsGetResponse200) & {
   headers: Headers;
 };
-export type listAssetsApiV1AdminAssetsGetResponseError = (listAssetsApiV1AdminAssetsGetResponse422) & {
+export type listAssetsEndpointApiV1AdminAssetsGetResponseError = (listAssetsEndpointApiV1AdminAssetsGetResponse422) & {
   headers: Headers;
 };
 
-export type listAssetsApiV1AdminAssetsGetResponse = (listAssetsApiV1AdminAssetsGetResponseSuccess | listAssetsApiV1AdminAssetsGetResponseError)
+export type listAssetsEndpointApiV1AdminAssetsGetResponse = (listAssetsEndpointApiV1AdminAssetsGetResponseSuccess | listAssetsEndpointApiV1AdminAssetsGetResponseError)
 
-export const getListAssetsApiV1AdminAssetsGetUrl = (params?: ListAssetsApiV1AdminAssetsGetParams,) => {
+export const getListAssetsEndpointApiV1AdminAssetsGetUrl = (params?: ListAssetsEndpointApiV1AdminAssetsGetParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -11325,9 +11315,9 @@ export const getListAssetsApiV1AdminAssetsGetUrl = (params?: ListAssetsApiV1Admi
   return stringifiedParams.length > 0 ? `/api/v1/admin/assets/?${stringifiedParams}` : `/api/v1/admin/assets/`
 }
 
-export const listAssetsApiV1AdminAssetsGet = async (params?: ListAssetsApiV1AdminAssetsGetParams, options?: RequestInit): Promise<listAssetsApiV1AdminAssetsGetResponse> => {
+export const listAssetsEndpointApiV1AdminAssetsGet = async (params?: ListAssetsEndpointApiV1AdminAssetsGetParams, options?: RequestInit): Promise<listAssetsEndpointApiV1AdminAssetsGetResponse> => {
 
-  return customInstance<listAssetsApiV1AdminAssetsGetResponse>(getListAssetsApiV1AdminAssetsGetUrl(params),
+  return customInstance<listAssetsEndpointApiV1AdminAssetsGetResponse>(getListAssetsEndpointApiV1AdminAssetsGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -11340,69 +11330,69 @@ export const listAssetsApiV1AdminAssetsGet = async (params?: ListAssetsApiV1Admi
 
 
 
-export const getListAssetsApiV1AdminAssetsGetQueryKey = (params?: ListAssetsApiV1AdminAssetsGetParams,) => {
+export const getListAssetsEndpointApiV1AdminAssetsGetQueryKey = (params?: ListAssetsEndpointApiV1AdminAssetsGetParams,) => {
     return [
     `/api/v1/admin/assets/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListAssetsApiV1AdminAssetsGetQueryOptions = <TData = Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListAssetsApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError, TData>>, }
+export const getListAssetsEndpointApiV1AdminAssetsGetQueryOptions = <TData = Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListAssetsEndpointApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAssetsApiV1AdminAssetsGetQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>> = ({ signal }) => listAssetsApiV1AdminAssetsGet(params, { signal });
+  const queryKey =  queryOptions?.queryKey ?? getListAssetsEndpointApiV1AdminAssetsGetQueryKey(params);
 
 
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>> = ({ signal }) => listAssetsEndpointApiV1AdminAssetsGet(params, { signal, ...requestOptions });
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListAssetsApiV1AdminAssetsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>>
-export type ListAssetsApiV1AdminAssetsGetQueryError = ErrorType<HTTPValidationError>
+export type ListAssetsEndpointApiV1AdminAssetsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>>
+export type ListAssetsEndpointApiV1AdminAssetsGetQueryError = ErrorType<HTTPValidationError>
 
 
-export function useListAssetsApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
- params: undefined |  ListAssetsApiV1AdminAssetsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError, TData>> & Pick<
+export function useListAssetsEndpointApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListAssetsEndpointApiV1AdminAssetsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>,
+          Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>,
           TError,
-          Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>
+          Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListAssetsApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListAssetsApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError, TData>> & Pick<
+export function useListAssetsEndpointApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListAssetsEndpointApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>,
+          Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>,
           TError,
-          Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>
+          Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListAssetsApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListAssetsApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError, TData>>, }
+export function useListAssetsEndpointApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListAssetsEndpointApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 获取资源列表
  */
 
-export function useListAssetsApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListAssetsApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsApiV1AdminAssetsGet>>, TError, TData>>, }
+export function useListAssetsEndpointApiV1AdminAssetsGet<TData = Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListAssetsEndpointApiV1AdminAssetsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAssetsEndpointApiV1AdminAssetsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListAssetsApiV1AdminAssetsGetQueryOptions(params,options)
+  const queryOptions = getListAssetsEndpointApiV1AdminAssetsGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -11413,29 +11403,28 @@ export function useListAssetsApiV1AdminAssetsGet<TData = Awaited<ReturnType<type
 
 
 /**
- * 接收文件并保存到媒体目录，返回资源元信息。
  * @summary 上传资源
  */
-export type uploadAssetApiV1AdminAssetsPostResponse201 = {
+export type uploadAssetEndpointApiV1AdminAssetsPostResponse201 = {
   data: AssetAdminRead
   status: 201
 }
 
-export type uploadAssetApiV1AdminAssetsPostResponse422 = {
+export type uploadAssetEndpointApiV1AdminAssetsPostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type uploadAssetApiV1AdminAssetsPostResponseSuccess = (uploadAssetApiV1AdminAssetsPostResponse201) & {
+export type uploadAssetEndpointApiV1AdminAssetsPostResponseSuccess = (uploadAssetEndpointApiV1AdminAssetsPostResponse201) & {
   headers: Headers;
 };
-export type uploadAssetApiV1AdminAssetsPostResponseError = (uploadAssetApiV1AdminAssetsPostResponse422) & {
+export type uploadAssetEndpointApiV1AdminAssetsPostResponseError = (uploadAssetEndpointApiV1AdminAssetsPostResponse422) & {
   headers: Headers;
 };
 
-export type uploadAssetApiV1AdminAssetsPostResponse = (uploadAssetApiV1AdminAssetsPostResponseSuccess | uploadAssetApiV1AdminAssetsPostResponseError)
+export type uploadAssetEndpointApiV1AdminAssetsPostResponse = (uploadAssetEndpointApiV1AdminAssetsPostResponseSuccess | uploadAssetEndpointApiV1AdminAssetsPostResponseError)
 
-export const getUploadAssetApiV1AdminAssetsPostUrl = () => {
+export const getUploadAssetEndpointApiV1AdminAssetsPostUrl = () => {
 
 
 
@@ -11443,11 +11432,11 @@ export const getUploadAssetApiV1AdminAssetsPostUrl = () => {
   return `/api/v1/admin/assets/`
 }
 
-export const uploadAssetApiV1AdminAssetsPost = async (bodyUploadAssetApiV1AdminAssetsPost: BodyUploadAssetApiV1AdminAssetsPost, options?: RequestInit): Promise<uploadAssetApiV1AdminAssetsPostResponse> => {
+export const uploadAssetEndpointApiV1AdminAssetsPost = async (bodyUploadAssetEndpointApiV1AdminAssetsPost: BodyUploadAssetEndpointApiV1AdminAssetsPost, options?: RequestInit): Promise<uploadAssetEndpointApiV1AdminAssetsPostResponse> => {
     const formData = new FormData();
-formData.append(`file`, bodyUploadAssetApiV1AdminAssetsPost.file);
+formData.append(`file`, bodyUploadAssetEndpointApiV1AdminAssetsPost.file);
 
-  return customInstance<uploadAssetApiV1AdminAssetsPostResponse>(getUploadAssetApiV1AdminAssetsPostUrl(),
+  return customInstance<uploadAssetEndpointApiV1AdminAssetsPostResponse>(getUploadAssetEndpointApiV1AdminAssetsPostUrl(),
   {
     ...options,
     method: 'POST'
@@ -11460,24 +11449,24 @@ formData.append(`file`, bodyUploadAssetApiV1AdminAssetsPost.file);
 
 
 
-export const getUploadAssetApiV1AdminAssetsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAssetApiV1AdminAssetsPost>>, TError,{data: BodyType<BodyUploadAssetApiV1AdminAssetsPost>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof uploadAssetApiV1AdminAssetsPost>>, TError,{data: BodyType<BodyUploadAssetApiV1AdminAssetsPost>}, TContext> => {
+export const getUploadAssetEndpointApiV1AdminAssetsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAssetEndpointApiV1AdminAssetsPost>>, TError,{data: BodyType<BodyUploadAssetEndpointApiV1AdminAssetsPost>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadAssetEndpointApiV1AdminAssetsPost>>, TError,{data: BodyType<BodyUploadAssetEndpointApiV1AdminAssetsPost>}, TContext> => {
 
-const mutationKey = ['uploadAssetApiV1AdminAssetsPost'];
-const {mutation: mutationOptions} = options ?
+const mutationKey = ['uploadAssetEndpointApiV1AdminAssetsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAssetApiV1AdminAssetsPost>>, {data: BodyType<BodyUploadAssetApiV1AdminAssetsPost>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAssetEndpointApiV1AdminAssetsPost>>, {data: BodyType<BodyUploadAssetEndpointApiV1AdminAssetsPost>}> = (props) => {
           const {data} = props ?? {};
 
-          return  uploadAssetApiV1AdminAssetsPost(data,)
+          return  uploadAssetEndpointApiV1AdminAssetsPost(data,requestOptions)
         }
 
 
@@ -11487,47 +11476,46 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UploadAssetApiV1AdminAssetsPostMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAssetApiV1AdminAssetsPost>>>
-    export type UploadAssetApiV1AdminAssetsPostMutationBody = BodyType<BodyUploadAssetApiV1AdminAssetsPost>
-    export type UploadAssetApiV1AdminAssetsPostMutationError = ErrorType<HTTPValidationError>
+    export type UploadAssetEndpointApiV1AdminAssetsPostMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAssetEndpointApiV1AdminAssetsPost>>>
+    export type UploadAssetEndpointApiV1AdminAssetsPostMutationBody = BodyType<BodyUploadAssetEndpointApiV1AdminAssetsPost>
+    export type UploadAssetEndpointApiV1AdminAssetsPostMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 上传资源
  */
-export const useUploadAssetApiV1AdminAssetsPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAssetApiV1AdminAssetsPost>>, TError,{data: BodyType<BodyUploadAssetApiV1AdminAssetsPost>}, TContext>, }
+export const useUploadAssetEndpointApiV1AdminAssetsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAssetEndpointApiV1AdminAssetsPost>>, TError,{data: BodyType<BodyUploadAssetEndpointApiV1AdminAssetsPost>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof uploadAssetApiV1AdminAssetsPost>>,
+        Awaited<ReturnType<typeof uploadAssetEndpointApiV1AdminAssetsPost>>,
         TError,
-        {data: BodyType<BodyUploadAssetApiV1AdminAssetsPost>},
+        {data: BodyType<BodyUploadAssetEndpointApiV1AdminAssetsPost>},
         TContext
       > => {
-      return useMutation(getUploadAssetApiV1AdminAssetsPostMutationOptions(options), queryClient);
+      return useMutation(getUploadAssetEndpointApiV1AdminAssetsPostMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除媒体资源。
  * @summary 批量删除资源
  */
-export type bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse200 = {
+export type bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse200 = {
   data: BulkActionResponse
   status: 200
 }
 
-export type bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse422 = {
+export type bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponseSuccess = (bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse200) & {
+export type bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponseSuccess = (bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse200) & {
   headers: Headers;
 };
-export type bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponseError = (bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse422) & {
+export type bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponseError = (bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse422) & {
   headers: Headers;
 };
 
-export type bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse = (bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponseSuccess | bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponseError)
+export type bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse = (bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponseSuccess | bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponseError)
 
-export const getBulkDeleteAssetsApiV1AdminAssetsBulkDeletePostUrl = () => {
+export const getBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostUrl = () => {
 
 
 
@@ -11535,9 +11523,9 @@ export const getBulkDeleteAssetsApiV1AdminAssetsBulkDeletePostUrl = () => {
   return `/api/v1/admin/assets/bulk-delete`
 }
 
-export const bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost = async (bulkDeleteRequest: BulkDeleteRequest, options?: RequestInit): Promise<bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse> => {
+export const bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost = async (bulkDeleteRequest: BulkDeleteRequest, options?: RequestInit): Promise<bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse> => {
 
-  return customInstance<bulkDeleteAssetsApiV1AdminAssetsBulkDeletePostResponse>(getBulkDeleteAssetsApiV1AdminAssetsBulkDeletePostUrl(),
+  return customInstance<bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostResponse>(getBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostUrl(),
   {
     ...options,
     method: 'POST',
@@ -11550,24 +11538,24 @@ export const bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost = async (bulkDeleteR
 
 
 
-export const getBulkDeleteAssetsApiV1AdminAssetsBulkDeletePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
+export const getBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext> => {
 
-const mutationKey = ['bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost'];
-const {mutation: mutationOptions} = options ?
+const mutationKey = ['bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost>>, {data: BodyType<BulkDeleteRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost(data,)
+          return  bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost(data,requestOptions)
         }
 
 
@@ -11577,47 +11565,46 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type BulkDeleteAssetsApiV1AdminAssetsBulkDeletePostMutationResult = NonNullable<Awaited<ReturnType<typeof bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost>>>
-    export type BulkDeleteAssetsApiV1AdminAssetsBulkDeletePostMutationBody = BodyType<BulkDeleteRequest>
-    export type BulkDeleteAssetsApiV1AdminAssetsBulkDeletePostMutationError = ErrorType<HTTPValidationError>
+    export type BulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostMutationResult = NonNullable<Awaited<ReturnType<typeof bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost>>>
+    export type BulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostMutationBody = BodyType<BulkDeleteRequest>
+    export type BulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 批量删除资源
  */
-export const useBulkDeleteAssetsApiV1AdminAssetsBulkDeletePost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, }
+export const useBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost>>, TError,{data: BodyType<BulkDeleteRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof bulkDeleteAssetsApiV1AdminAssetsBulkDeletePost>>,
+        Awaited<ReturnType<typeof bulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePost>>,
         TError,
         {data: BodyType<BulkDeleteRequest>},
         TContext
       > => {
-      return useMutation(getBulkDeleteAssetsApiV1AdminAssetsBulkDeletePostMutationOptions(options), queryClient);
+      return useMutation(getBulkDeleteAssetsEndpointApiV1AdminAssetsBulkDeletePostMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单个媒体资源的详细信息。
  * @summary 获取单个资源
  */
-export type getAssetApiV1AdminAssetsAssetIdGetResponse200 = {
+export type getAssetEndpointApiV1AdminAssetsAssetIdGetResponse200 = {
   data: AssetAdminRead
   status: 200
 }
 
-export type getAssetApiV1AdminAssetsAssetIdGetResponse422 = {
+export type getAssetEndpointApiV1AdminAssetsAssetIdGetResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type getAssetApiV1AdminAssetsAssetIdGetResponseSuccess = (getAssetApiV1AdminAssetsAssetIdGetResponse200) & {
+export type getAssetEndpointApiV1AdminAssetsAssetIdGetResponseSuccess = (getAssetEndpointApiV1AdminAssetsAssetIdGetResponse200) & {
   headers: Headers;
 };
-export type getAssetApiV1AdminAssetsAssetIdGetResponseError = (getAssetApiV1AdminAssetsAssetIdGetResponse422) & {
+export type getAssetEndpointApiV1AdminAssetsAssetIdGetResponseError = (getAssetEndpointApiV1AdminAssetsAssetIdGetResponse422) & {
   headers: Headers;
 };
 
-export type getAssetApiV1AdminAssetsAssetIdGetResponse = (getAssetApiV1AdminAssetsAssetIdGetResponseSuccess | getAssetApiV1AdminAssetsAssetIdGetResponseError)
+export type getAssetEndpointApiV1AdminAssetsAssetIdGetResponse = (getAssetEndpointApiV1AdminAssetsAssetIdGetResponseSuccess | getAssetEndpointApiV1AdminAssetsAssetIdGetResponseError)
 
-export const getGetAssetApiV1AdminAssetsAssetIdGetUrl = (assetId: string,) => {
+export const getGetAssetEndpointApiV1AdminAssetsAssetIdGetUrl = (assetId: string,) => {
 
 
 
@@ -11625,9 +11612,9 @@ export const getGetAssetApiV1AdminAssetsAssetIdGetUrl = (assetId: string,) => {
   return `/api/v1/admin/assets/${assetId}`
 }
 
-export const getAssetApiV1AdminAssetsAssetIdGet = async (assetId: string, options?: RequestInit): Promise<getAssetApiV1AdminAssetsAssetIdGetResponse> => {
+export const getAssetEndpointApiV1AdminAssetsAssetIdGet = async (assetId: string, options?: RequestInit): Promise<getAssetEndpointApiV1AdminAssetsAssetIdGetResponse> => {
 
-  return customInstance<getAssetApiV1AdminAssetsAssetIdGetResponse>(getGetAssetApiV1AdminAssetsAssetIdGetUrl(assetId),
+  return customInstance<getAssetEndpointApiV1AdminAssetsAssetIdGetResponse>(getGetAssetEndpointApiV1AdminAssetsAssetIdGetUrl(assetId),
   {
     ...options,
     method: 'GET'
@@ -11640,69 +11627,69 @@ export const getAssetApiV1AdminAssetsAssetIdGet = async (assetId: string, option
 
 
 
-export const getGetAssetApiV1AdminAssetsAssetIdGetQueryKey = (assetId: string,) => {
+export const getGetAssetEndpointApiV1AdminAssetsAssetIdGetQueryKey = (assetId: string,) => {
     return [
     `/api/v1/admin/assets/${assetId}`
     ] as const;
     }
 
 
-export const getGetAssetApiV1AdminAssetsAssetIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError, TData>>, }
+export const getGetAssetEndpointApiV1AdminAssetsAssetIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAssetApiV1AdminAssetsAssetIdGetQueryKey(assetId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>> = ({ signal }) => getAssetApiV1AdminAssetsAssetIdGet(assetId, { signal });
+  const queryKey =  queryOptions?.queryKey ?? getGetAssetEndpointApiV1AdminAssetsAssetIdGetQueryKey(assetId);
 
 
 
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>> = ({ signal }) => getAssetEndpointApiV1AdminAssetsAssetIdGet(assetId, { signal, ...requestOptions });
 
 
-   return  { queryKey, queryFn, enabled: !!(assetId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+
+
+   return  { queryKey, queryFn, enabled: !!(assetId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetAssetApiV1AdminAssetsAssetIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>>
-export type GetAssetApiV1AdminAssetsAssetIdGetQueryError = ErrorType<HTTPValidationError>
+export type GetAssetEndpointApiV1AdminAssetsAssetIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>>
+export type GetAssetEndpointApiV1AdminAssetsAssetIdGetQueryError = ErrorType<HTTPValidationError>
 
 
-export function useGetAssetApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
- assetId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError, TData>> & Pick<
+export function useGetAssetEndpointApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ assetId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>,
+          Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>,
           TError,
-          Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>
+          Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAssetApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
- assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError, TData>> & Pick<
+export function useGetAssetEndpointApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>,
+          Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>,
           TError,
-          Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>
+          Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAssetApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
- assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError, TData>>, }
+export function useGetAssetEndpointApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 获取单个资源
  */
 
-export function useGetAssetApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
- assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetApiV1AdminAssetsAssetIdGet>>, TError, TData>>, }
+export function useGetAssetEndpointApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ assetId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAssetEndpointApiV1AdminAssetsAssetIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetAssetApiV1AdminAssetsAssetIdGetQueryOptions(assetId,options)
+  const queryOptions = getGetAssetEndpointApiV1AdminAssetsAssetIdGetQueryOptions(assetId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -11713,29 +11700,28 @@ export function useGetAssetApiV1AdminAssetsAssetIdGet<TData = Awaited<ReturnType
 
 
 /**
- * 删除指定资源并移除对应的磁盘文件。
  * @summary 删除资源
  */
-export type deleteAssetApiV1AdminAssetsAssetIdDeleteResponse204 = {
+export type deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse204 = {
   data: void
   status: 204
 }
 
-export type deleteAssetApiV1AdminAssetsAssetIdDeleteResponse422 = {
+export type deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type deleteAssetApiV1AdminAssetsAssetIdDeleteResponseSuccess = (deleteAssetApiV1AdminAssetsAssetIdDeleteResponse204) & {
+export type deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponseSuccess = (deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse204) & {
   headers: Headers;
 };
-export type deleteAssetApiV1AdminAssetsAssetIdDeleteResponseError = (deleteAssetApiV1AdminAssetsAssetIdDeleteResponse422) & {
+export type deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponseError = (deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse422) & {
   headers: Headers;
 };
 
-export type deleteAssetApiV1AdminAssetsAssetIdDeleteResponse = (deleteAssetApiV1AdminAssetsAssetIdDeleteResponseSuccess | deleteAssetApiV1AdminAssetsAssetIdDeleteResponseError)
+export type deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse = (deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponseSuccess | deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponseError)
 
-export const getDeleteAssetApiV1AdminAssetsAssetIdDeleteUrl = (assetId: string,) => {
+export const getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteUrl = (assetId: string,) => {
 
 
 
@@ -11743,9 +11729,9 @@ export const getDeleteAssetApiV1AdminAssetsAssetIdDeleteUrl = (assetId: string,)
   return `/api/v1/admin/assets/${assetId}`
 }
 
-export const deleteAssetApiV1AdminAssetsAssetIdDelete = async (assetId: string, options?: RequestInit): Promise<deleteAssetApiV1AdminAssetsAssetIdDeleteResponse> => {
+export const deleteAssetEndpointApiV1AdminAssetsAssetIdDelete = async (assetId: string, options?: RequestInit): Promise<deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse> => {
 
-  return customInstance<deleteAssetApiV1AdminAssetsAssetIdDeleteResponse>(getDeleteAssetApiV1AdminAssetsAssetIdDeleteUrl(assetId),
+  return customInstance<deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse>(getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteUrl(assetId),
   {
     ...options,
     method: 'DELETE'
@@ -11757,24 +11743,24 @@ export const deleteAssetApiV1AdminAssetsAssetIdDelete = async (assetId: string, 
 
 
 
-export const getDeleteAssetApiV1AdminAssetsAssetIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssetApiV1AdminAssetsAssetIdDelete>>, TError,{assetId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteAssetApiV1AdminAssetsAssetIdDelete>>, TError,{assetId: string}, TContext> => {
+export const getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssetEndpointApiV1AdminAssetsAssetIdDelete>>, TError,{assetId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAssetEndpointApiV1AdminAssetsAssetIdDelete>>, TError,{assetId: string}, TContext> => {
 
-const mutationKey = ['deleteAssetApiV1AdminAssetsAssetIdDelete'];
-const {mutation: mutationOptions} = options ?
+const mutationKey = ['deleteAssetEndpointApiV1AdminAssetsAssetIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAssetApiV1AdminAssetsAssetIdDelete>>, {assetId: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAssetEndpointApiV1AdminAssetsAssetIdDelete>>, {assetId: string}> = (props) => {
           const {assetId} = props ?? {};
 
-          return  deleteAssetApiV1AdminAssetsAssetIdDelete(assetId,)
+          return  deleteAssetEndpointApiV1AdminAssetsAssetIdDelete(assetId,requestOptions)
         }
 
 
@@ -11784,25 +11770,24 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteAssetApiV1AdminAssetsAssetIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAssetApiV1AdminAssetsAssetIdDelete>>>
+    export type DeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAssetEndpointApiV1AdminAssetsAssetIdDelete>>>
 
-    export type DeleteAssetApiV1AdminAssetsAssetIdDeleteMutationError = ErrorType<HTTPValidationError>
+    export type DeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationError = ErrorType<HTTPValidationError>
 
     /**
  * @summary 删除资源
  */
-export const useDeleteAssetApiV1AdminAssetsAssetIdDelete = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssetApiV1AdminAssetsAssetIdDelete>>, TError,{assetId: string}, TContext>, }
+export const useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssetEndpointApiV1AdminAssetsAssetIdDelete>>, TError,{assetId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteAssetApiV1AdminAssetsAssetIdDelete>>,
+        Awaited<ReturnType<typeof deleteAssetEndpointApiV1AdminAssetsAssetIdDelete>>,
         TError,
         {assetId: string},
         TContext
       > => {
-      return useMutation(getDeleteAssetApiV1AdminAssetsAssetIdDeleteMutationOptions(options), queryClient);
+      return useMutation(getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationOptions(options), queryClient);
     }
     /**
- * 查询所有已创建的 API 密钥。
  * @summary 获取 API 密钥列表
  */
 export type listApiKeysApiV1AdminSystemApiKeysGetResponse200 = {
@@ -11847,16 +11832,16 @@ export const getListApiKeysApiV1AdminSystemApiKeysGetQueryKey = () => {
     }
 
 
-export const getListApiKeysApiV1AdminSystemApiKeysGetQueryOptions = <TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, }
+export const getListApiKeysApiV1AdminSystemApiKeysGetQueryOptions = <TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListApiKeysApiV1AdminSystemApiKeysGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>> = ({ signal }) => listApiKeysApiV1AdminSystemApiKeysGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>> = ({ signal }) => listApiKeysApiV1AdminSystemApiKeysGet({ signal, ...requestOptions });
 
 
 
@@ -11876,7 +11861,7 @@ export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
@@ -11886,11 +11871,11 @@ export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -11898,7 +11883,7 @@ export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnT
  */
 
 export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -11913,7 +11898,6 @@ export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnT
 
 
 /**
- * 生成新的 API 密钥并返回明文密钥（仅此一次可见）。
  * @summary 创建 API 密钥
  */
 export type createApiKeyApiV1AdminSystemApiKeysPostResponse201 = {
@@ -11959,15 +11943,15 @@ export const createApiKeyApiV1AdminSystemApiKeysPost = async (apiKeyCreate: ApiK
 
 
 export const getCreateApiKeyApiV1AdminSystemApiKeysPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext> => {
 
 const mutationKey = ['createApiKeyApiV1AdminSystemApiKeysPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -11975,7 +11959,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, {data: BodyType<ApiKeyCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  createApiKeyApiV1AdminSystemApiKeysPost(data,)
+          return  createApiKeyApiV1AdminSystemApiKeysPost(data,requestOptions)
         }
 
 
@@ -11993,7 +11977,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建 API 密钥
  */
 export const useCreateApiKeyApiV1AdminSystemApiKeysPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>,
         TError,
@@ -12003,7 +11987,6 @@ export const useCreateApiKeyApiV1AdminSystemApiKeysPost = <TError = ErrorType<HT
       return useMutation(getCreateApiKeyApiV1AdminSystemApiKeysPostMutationOptions(options), queryClient);
     }
     /**
- * 更新指定 API 密钥的名称或权限范围。
  * @summary 更新 API 密钥
  */
 export type updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse200 = {
@@ -12050,15 +12033,15 @@ export const updateApiKeyApiV1AdminSystemApiKeysKeyIdPut = async (keyId: string,
 
 
 export const getUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext> => {
 
 const mutationKey = ['updateApiKeyApiV1AdminSystemApiKeysKeyIdPut'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -12066,7 +12049,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, {keyId: string;data: BodyType<ApiKeyUpdate>}> = (props) => {
           const {keyId,data} = props ?? {};
 
-          return  updateApiKeyApiV1AdminSystemApiKeysKeyIdPut(keyId,data,)
+          return  updateApiKeyApiV1AdminSystemApiKeysKeyIdPut(keyId,data,requestOptions)
         }
 
 
@@ -12084,7 +12067,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 更新 API 密钥
  */
 export const useUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>,
         TError,
@@ -12094,7 +12077,6 @@ export const useUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPut = <TError = ErrorTyp
       return useMutation(getUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationOptions(options), queryClient);
     }
     /**
- * 永久删除指定的 API 密钥。
  * @summary 删除 API 密钥
  */
 export type deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse204 = {
@@ -12139,15 +12121,15 @@ export const deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete = async (keyId: stri
 
 
 export const getDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext> => {
 
 const mutationKey = ['deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -12155,7 +12137,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, {keyId: string}> = (props) => {
           const {keyId} = props ?? {};
 
-          return  deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete(keyId,)
+          return  deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete(keyId,requestOptions)
         }
 
 
@@ -12173,7 +12155,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 删除 API 密钥
  */
 export const useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>,
         TError,
@@ -12183,7 +12165,6 @@ export const useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete = <TError = Error
       return useMutation(getDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteMutationOptions(options), queryClient);
     }
     /**
- * 分页查询审计日志，支持按操作类型和时间范围筛选。
  * @summary 获取审计日志
  */
 export type listAuditLogsApiV1AdminSystemAuditLogsGetResponse200 = {
@@ -12242,16 +12223,16 @@ export const getListAuditLogsApiV1AdminSystemAuditLogsGetQueryKey = (params?: Li
     }
 
 
-export const getListAuditLogsApiV1AdminSystemAuditLogsGetQueryOptions = <TData = Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListAuditLogsApiV1AdminSystemAuditLogsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError, TData>>, }
+export const getListAuditLogsApiV1AdminSystemAuditLogsGetQueryOptions = <TData = Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListAuditLogsApiV1AdminSystemAuditLogsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListAuditLogsApiV1AdminSystemAuditLogsGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>> = ({ signal }) => listAuditLogsApiV1AdminSystemAuditLogsGet(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>> = ({ signal }) => listAuditLogsApiV1AdminSystemAuditLogsGet(params, { signal, ...requestOptions });
 
 
 
@@ -12271,7 +12252,7 @@ export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<Ret
           TError,
           Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError = ErrorType<HTTPValidationError>>(
@@ -12281,11 +12262,11 @@ export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<Ret
           TError,
           Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListAuditLogsApiV1AdminSystemAuditLogsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError, TData>>, }
+ params?: ListAuditLogsApiV1AdminSystemAuditLogsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -12293,7 +12274,7 @@ export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<Ret
  */
 
 export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError = ErrorType<HTTPValidationError>>(
- params?: ListAuditLogsApiV1AdminSystemAuditLogsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError, TData>>, }
+ params?: ListAuditLogsApiV1AdminSystemAuditLogsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLogsApiV1AdminSystemAuditLogsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -12308,7 +12289,6 @@ export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<Ret
 
 
 /**
- * 列出所有备份快照记录。
  * @summary 获取备份列表
  */
 export type listBackupsApiV1AdminSystemBackupsGetResponse200 = {
@@ -12353,16 +12333,16 @@ export const getListBackupsApiV1AdminSystemBackupsGetQueryKey = () => {
     }
 
 
-export const getListBackupsApiV1AdminSystemBackupsGetQueryOptions = <TData = Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError, TData>>, }
+export const getListBackupsApiV1AdminSystemBackupsGetQueryOptions = <TData = Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListBackupsApiV1AdminSystemBackupsGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>> = ({ signal }) => listBackupsApiV1AdminSystemBackupsGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>> = ({ signal }) => listBackupsApiV1AdminSystemBackupsGet({ signal, ...requestOptions });
 
 
 
@@ -12382,7 +12362,7 @@ export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError = ErrorType<unknown>>(
@@ -12392,11 +12372,11 @@ export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnT
           TError,
           Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -12404,7 +12384,7 @@ export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnT
  */
 
 export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupsApiV1AdminSystemBackupsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -12419,7 +12399,6 @@ export function useListBackupsApiV1AdminSystemBackupsGet<TData = Awaited<ReturnT
 
 
 /**
- * 手动创建一个新的数据库备份快照。
  * @summary 创建备份快照
  */
 export type triggerBackupApiV1AdminSystemBackupsPostResponse201 = {
@@ -12457,15 +12436,15 @@ export const triggerBackupApiV1AdminSystemBackupsPost = async ( options?: Reques
 
 
 export const getTriggerBackupApiV1AdminSystemBackupsPostMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>, TError,void, TContext> => {
 
 const mutationKey = ['triggerBackupApiV1AdminSystemBackupsPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -12473,7 +12452,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>, void> = () => {
 
 
-          return  triggerBackupApiV1AdminSystemBackupsPost()
+          return  triggerBackupApiV1AdminSystemBackupsPost(requestOptions)
         }
 
 
@@ -12491,7 +12470,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 创建备份快照
  */
 export const useTriggerBackupApiV1AdminSystemBackupsPost = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>, TError,void, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof triggerBackupApiV1AdminSystemBackupsPost>>,
         TError,
@@ -12501,7 +12480,6 @@ export const useTriggerBackupApiV1AdminSystemBackupsPost = <TError = ErrorType<u
       return useMutation(getTriggerBackupApiV1AdminSystemBackupsPostMutationOptions(options), queryClient);
     }
     /**
- * 将指定备份快照标记为恢复中并触发恢复流程。
  * @summary 从备份恢复
  */
 export type restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostResponse200 = {
@@ -12546,15 +12524,15 @@ export const restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost = async (
 
 
 export const getRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>, TError,{snapshotId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>, TError,{snapshotId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>, TError,{snapshotId: string}, TContext> => {
 
 const mutationKey = ['restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -12562,7 +12540,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>, {snapshotId: string}> = (props) => {
           const {snapshotId} = props ?? {};
 
-          return  restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost(snapshotId,)
+          return  restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost(snapshotId,requestOptions)
         }
 
 
@@ -12580,7 +12558,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 从备份恢复
  */
 export const useRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>, TError,{snapshotId: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>, TError,{snapshotId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof restoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost>>,
         TError,
@@ -12590,7 +12568,6 @@ export const useRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost = <TEr
       return useMutation(getRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostMutationOptions(options), queryClient);
     }
     /**
- * 汇总各类内容数量、月度趋势及最近更新，用于仪表盘展示。
  * @summary 获取仪表盘统计
  */
 export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponse200 = {
@@ -12635,16 +12612,16 @@ export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryKey = () => 
     }
 
 
-export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryOptions = <TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, }
+export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryOptions = <TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>> = ({ signal }) => dashboardStatsApiV1AdminSystemDashboardStatsGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>> = ({ signal }) => dashboardStatsApiV1AdminSystemDashboardStatsGet({ signal, ...requestOptions });
 
 
 
@@ -12664,7 +12641,7 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
           TError,
           Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
@@ -12674,11 +12651,11 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
           TError,
           Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -12686,7 +12663,7 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
  */
 
 export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -12701,7 +12678,6 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
 
 
 /**
- * 返回 Python 版本、数据库大小、媒体目录大小等系统运行信息。
  * @summary 获取系统信息
  */
 export type systemInfoApiV1AdminSystemInfoGetResponse200 = {
@@ -12746,16 +12722,16 @@ export const getSystemInfoApiV1AdminSystemInfoGetQueryKey = () => {
     }
 
 
-export const getSystemInfoApiV1AdminSystemInfoGetQueryOptions = <TData = Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError, TData>>, }
+export const getSystemInfoApiV1AdminSystemInfoGetQueryOptions = <TData = Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSystemInfoApiV1AdminSystemInfoGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>> = ({ signal }) => systemInfoApiV1AdminSystemInfoGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>> = ({ signal }) => systemInfoApiV1AdminSystemInfoGet({ signal, ...requestOptions });
 
 
 
@@ -12775,7 +12751,7 @@ export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<
           TError,
           Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError = ErrorType<unknown>>(
@@ -12785,11 +12761,11 @@ export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<
           TError,
           Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -12797,7 +12773,7 @@ export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<
  */
 
 export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof systemInfoApiV1AdminSystemInfoGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -12812,7 +12788,6 @@ export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<
 
 
 /**
- * 跨所有内容表聚合标签及其使用次数。
  * @summary 聚合所有内容标签
  */
 export type listTagsApiV1AdminContentTagsGetResponse200 = {
@@ -12857,16 +12832,16 @@ export const getListTagsApiV1AdminContentTagsGetQueryKey = () => {
     }
 
 
-export const getListTagsApiV1AdminContentTagsGetQueryOptions = <TData = Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError, TData>>, }
+export const getListTagsApiV1AdminContentTagsGetQueryOptions = <TData = Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListTagsApiV1AdminContentTagsGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>> = ({ signal }) => listTagsApiV1AdminContentTagsGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>> = ({ signal }) => listTagsApiV1AdminContentTagsGet({ signal, ...requestOptions });
 
 
 
@@ -12886,7 +12861,7 @@ export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<t
           TError,
           Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError = ErrorType<unknown>>(
@@ -12896,11 +12871,11 @@ export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<t
           TError,
           Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -12908,7 +12883,7 @@ export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<t
  */
 
 export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTagsApiV1AdminContentTagsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -12923,7 +12898,6 @@ export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<t
 
 
 /**
- * 聚合文章的分类及其数量。
  * @summary 聚合文章分类
  */
 export type listCategoriesApiV1AdminContentCategoriesGetResponse200 = {
@@ -12968,16 +12942,16 @@ export const getListCategoriesApiV1AdminContentCategoriesGetQueryKey = () => {
     }
 
 
-export const getListCategoriesApiV1AdminContentCategoriesGetQueryOptions = <TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, }
+export const getListCategoriesApiV1AdminContentCategoriesGetQueryOptions = <TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListCategoriesApiV1AdminContentCategoriesGetQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>> = ({ signal }) => listCategoriesApiV1AdminContentCategoriesGet({ signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>> = ({ signal }) => listCategoriesApiV1AdminContentCategoriesGet({ signal, ...requestOptions });
 
 
 
@@ -12997,7 +12971,7 @@ export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<
           TError,
           Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
@@ -13007,11 +12981,11 @@ export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<
           TError,
           Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -13019,7 +12993,7 @@ export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<
  */
 
 export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, }
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -13034,7 +13008,6 @@ export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<
 
 
 /**
- * 将指定类型的内容导出为 JSON 或 Markdown ZIP 文件。
  * @summary 导出内容
  */
 export type exportContentApiV1AdminContentExportGetResponse200 = {
@@ -13093,16 +13066,16 @@ export const getExportContentApiV1AdminContentExportGetQueryKey = (params?: Expo
     }
 
 
-export const getExportContentApiV1AdminContentExportGetQueryOptions = <TData = Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError = ErrorType<HTTPValidationError>>(params: ExportContentApiV1AdminContentExportGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError, TData>>, }
+export const getExportContentApiV1AdminContentExportGetQueryOptions = <TData = Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError = ErrorType<HTTPValidationError>>(params: ExportContentApiV1AdminContentExportGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
-const {query: queryOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getExportContentApiV1AdminContentExportGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>> = ({ signal }) => exportContentApiV1AdminContentExportGet(params, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>> = ({ signal }) => exportContentApiV1AdminContentExportGet(params, { signal, ...requestOptions });
 
 
 
@@ -13122,7 +13095,7 @@ export function useExportContentApiV1AdminContentExportGet<TData = Awaited<Retur
           TError,
           Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useExportContentApiV1AdminContentExportGet<TData = Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError = ErrorType<HTTPValidationError>>(
@@ -13132,11 +13105,11 @@ export function useExportContentApiV1AdminContentExportGet<TData = Awaited<Retur
           TError,
           Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>
         > , 'initialData'
-      >, }
+      >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useExportContentApiV1AdminContentExportGet<TData = Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError = ErrorType<HTTPValidationError>>(
- params: ExportContentApiV1AdminContentExportGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError, TData>>, }
+ params: ExportContentApiV1AdminContentExportGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -13144,7 +13117,7 @@ export function useExportContentApiV1AdminContentExportGet<TData = Awaited<Retur
  */
 
 export function useExportContentApiV1AdminContentExportGet<TData = Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError = ErrorType<HTTPValidationError>>(
- params: ExportContentApiV1AdminContentExportGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError, TData>>, }
+ params: ExportContentApiV1AdminContentExportGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportContentApiV1AdminContentExportGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -13159,7 +13132,6 @@ export function useExportContentApiV1AdminContentExportGet<TData = Awaited<Retur
 
 
 /**
- * 从上传的 JSON 文件导入内容，支持新增和更新。
  * @summary 导入内容
  */
 export type importContentApiV1AdminContentImportPostResponse200 = {
@@ -13215,15 +13187,15 @@ formData.append(`file`, bodyImportContentApiV1AdminContentImportPost.file);
 
 
 export const getImportContentApiV1AdminContentImportPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>, TError,{data: BodyType<BodyImportContentApiV1AdminContentImportPost>;params: ImportContentApiV1AdminContentImportPostParams}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>, TError,{data: BodyType<BodyImportContentApiV1AdminContentImportPost>;params: ImportContentApiV1AdminContentImportPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>, TError,{data: BodyType<BodyImportContentApiV1AdminContentImportPost>;params: ImportContentApiV1AdminContentImportPostParams}, TContext> => {
 
 const mutationKey = ['importContentApiV1AdminContentImportPost'];
-const {mutation: mutationOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -13231,7 +13203,7 @@ const {mutation: mutationOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>, {data: BodyType<BodyImportContentApiV1AdminContentImportPost>;params: ImportContentApiV1AdminContentImportPostParams}> = (props) => {
           const {data,params} = props ?? {};
 
-          return  importContentApiV1AdminContentImportPost(data,params,)
+          return  importContentApiV1AdminContentImportPost(data,params,requestOptions)
         }
 
 
@@ -13249,7 +13221,7 @@ const {mutation: mutationOptions} = options ?
  * @summary 导入内容
  */
 export const useImportContentApiV1AdminContentImportPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>, TError,{data: BodyType<BodyImportContentApiV1AdminContentImportPost>;params: ImportContentApiV1AdminContentImportPostParams}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>, TError,{data: BodyType<BodyImportContentApiV1AdminContentImportPost>;params: ImportContentApiV1AdminContentImportPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof importContentApiV1AdminContentImportPost>>,
         TError,

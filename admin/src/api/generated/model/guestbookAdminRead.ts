@@ -6,20 +6,12 @@
  */
 
 export interface GuestbookAdminRead {
-  /** Unique guestbook entry identifier */
   id: string;
-  /** Guest display name */
   name: string;
-  /** Guest email address */
   email: string | null;
-  /** Guest personal website URL */
   website: string | null;
-  /** Guestbook message body */
   body: string;
-  /** Moderation status */
   status: string;
-  /** Entry creation timestamp */
   created_at: string;
-  /** Last update timestamp */
   updated_at: string;
 }

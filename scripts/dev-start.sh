@@ -81,6 +81,10 @@ if [[ ! -d "${PROJECT_DIR}/frontend/node_modules/@serino/theme" ]]; then
   fi
 fi
 
+log "==> 正在同步 OpenAPI/Orval 生成产物..."
+# 同步 OpenAPI/Orval 生成产物
+bash "${SCRIPT_DIR}/sync-orval.sh"
+
 echo "==> 开发环境下：正在启动后端，并在就绪后并行启动前台和管理后台..."
 
 bash "${PROJECT_DIR}/backend/scripts/bootstrap.sh" &
@@ -99,10 +103,10 @@ backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}/api/v1/public/healthz
 # 后端检查到位后才启动前台和管理后台
 wait_for_backend_ready "${backend_health_url}" "${backend_pid}"
 
-( cd "${PROJECT_DIR}/frontend" && npx vite --mode development ) &
+( cd "${PROJECT_DIR}/frontend" && exec npx vite --mode development ) &
 frontend_pid=$!
 
-( cd "${PROJECT_DIR}/admin" && npx vite --mode development ) &
+( cd "${PROJECT_DIR}/admin" && exec npx vite --mode development ) &
 admin_pid=$!
 
 cat >"${PID_FILE}" <<EOF

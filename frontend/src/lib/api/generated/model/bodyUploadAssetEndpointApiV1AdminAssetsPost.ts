@@ -5,7 +5,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ApiKeyUpdate {
-  key_name?: string | null;
-  scopes?: string[] | null;
+export interface BodyUploadAssetEndpointApiV1AdminAssetsPost {
+  file: Blob;
 }

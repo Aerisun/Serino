@@ -6,12 +6,8 @@
  */
 
 export interface AdminUserRead {
-  /** Unique user identifier */
   id: string;
-  /** Admin username */
   username: string;
-  /** Whether the account is active */
   is_active: boolean;
-  /** Account creation timestamp */
   created_at: string;
 }

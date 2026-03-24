@@ -1,10 +1,10 @@
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useListAssetsApiV1AdminAssetsGet,
-  useUploadAssetApiV1AdminAssetsPost,
-  useDeleteAssetApiV1AdminAssetsAssetIdDelete,
-  getListAssetsApiV1AdminAssetsGetQueryKey,
+  useListAssetsEndpointApiV1AdminAssetsGet as useListAssetsApiV1AdminAssetsGet,
+  useUploadAssetEndpointApiV1AdminAssetsPost as useUploadAssetApiV1AdminAssetsPost,
+  useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete as useDeleteAssetApiV1AdminAssetsAssetIdDelete,
+  getListAssetsEndpointApiV1AdminAssetsGetQueryKey as getListAssetsApiV1AdminAssetsGetQueryKey,
 } from "@/api/generated/admin/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";

@@ -6,8 +6,6 @@
  */
 
 export interface ModerateAction {
-  /** Moderation action: approve, reject, or delete */
   action: string;
-  /** Optional reason for the moderation action */
   reason?: string | null;
 }

@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listCommentsApiV1AdminModerationCommentsGet,
   listGuestbookApiV1AdminModerationGuestbookGet,
-  moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost,
-  moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
+  moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost as moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost,
+  moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost as moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
   getListCommentsApiV1AdminModerationCommentsGetQueryKey,
   getListGuestbookApiV1AdminModerationGuestbookGetQueryKey,
 } from "@/api/generated/admin/admin";

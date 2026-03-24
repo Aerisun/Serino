@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from aerisun.core.schemas import ModelBase
 
@@ -111,9 +111,9 @@ class EnhancedDashboardStats(ModelBase):
     guestbook_entries: int
     friends: int
     assets: int
-    posts_by_status: dict[str, int] = {}
-    content_by_month: list[MonthlyCount] = []
-    recent_content: list[RecentContentItem] = []
+    posts_by_status: dict[str, int] = Field(default_factory=dict)
+    content_by_month: list[MonthlyCount] = Field(default_factory=list)
+    recent_content: list[RecentContentItem] = Field(default_factory=list)
 
 
 class SystemInfo(BaseModel):

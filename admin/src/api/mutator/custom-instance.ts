@@ -1,4 +1,4 @@
-import Axios, { type AxiosRequestConfig } from "axios";
+import Axios, { type AxiosRequestConfig, type Method } from "axios";
 
 const loginPath = new URL("login", window.location.origin + import.meta.env.BASE_URL).pathname;
 
@@ -25,12 +25,44 @@ AXIOS_INSTANCE.interceptors.response.use(
   },
 );
 
-export const customInstance = <T>(config: AxiosRequestConfig): Promise<T> => {
+type RequestOptions = Omit<RequestInit, "body" | "headers" | "method"> & {
+  body?: BodyType<unknown>;
+  headers?: HeadersInit;
+  method?: Method;
+};
+
+function normalizeHeaders(headers?: HeadersInit): Record<string, string> | undefined {
+  if (!headers) {
+    return undefined;
+  }
+
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+
+  return headers;
+}
+
+export const customInstance = <T>(url: string, options: RequestOptions = {}): Promise<T> => {
   const source = Axios.CancelToken.source();
+
+  const { body, headers, method, signal } = options;
   const promise = AXIOS_INSTANCE({
-    ...config,
+    url,
+    method,
+    headers: normalizeHeaders(headers),
+    data: body,
+    signal,
     cancelToken: source.token,
-  }).then(({ data }) => data);
+  }).then(({ data, status, headers }) => ({
+    data,
+    status,
+    headers,
+  } as T));
 
   // @ts-expect-error -- attach cancel for React Query
   promise.cancel = () => {

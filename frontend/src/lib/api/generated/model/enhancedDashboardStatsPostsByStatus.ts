@@ -5,7 +5,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Post counts grouped by status
- */
 export type EnhancedDashboardStatsPostsByStatus = {[key: string]: number};

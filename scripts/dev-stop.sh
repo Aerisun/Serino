@@ -13,6 +13,20 @@ terminate_pid() {
   fi
 }
 
+terminate_process_tree() {
+  local pid="$1"
+  [[ -n "${pid:-}" ]] || return 0
+  kill -0 "${pid}" >/dev/null 2>&1 || return 0
+
+  local child=""
+  while read -r child; do
+    [[ -n "${child}" ]] || continue
+    terminate_process_tree "${child}"
+  done < <(pgrep -P "${pid}" || true)
+
+  terminate_pid "${pid}"
+}
+
 main() {
   local launcher_pid=""
   local backend_pid=""
@@ -28,11 +42,11 @@ main() {
   # shellcheck disable=SC1090
   source "${PID_FILE}"
 
-  terminate_pid "${backend_pid:-}"
-  terminate_pid "${frontend_pid:-}"
-  terminate_pid "${admin_pid:-}"
+  terminate_process_tree "${backend_pid:-}"
+  terminate_process_tree "${frontend_pid:-}"
+  terminate_process_tree "${admin_pid:-}"
   if [[ "${skip_launcher}" != "1" ]]; then
-    terminate_pid "${launcher_pid:-}"
+    terminate_process_tree "${launcher_pid:-}"
   fi
 
   sleep 2

@@ -6,14 +6,9 @@
  */
 
 export interface MonthlyCount {
-  /** Month identifier in YYYY-MM format */
   month: string;
-  /** Number of posts created */
   posts?: number;
-  /** Number of diary entries created */
   diary?: number;
-  /** Number of thoughts created */
   thoughts?: number;
-  /** Number of excerpts created */
   excerpts?: number;
 }

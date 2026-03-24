@@ -6,14 +6,9 @@
  */
 
 export interface RecentContentItem {
-  /** Content item identifier */
   id: string;
-  /** Content title */
   title: string;
-  /** Type: post, diary, thought, or excerpt */
   content_type: string;
-  /** Publication status */
   status: string;
-  /** Last update timestamp */
   updated_at: string;
 }

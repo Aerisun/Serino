@@ -6,24 +6,14 @@
  */
 
 export interface CommentAdminRead {
-  /** Unique comment identifier */
   id: string;
-  /** Content type: posts, diary, thoughts, or excerpts */
   content_type: string;
-  /** Slug of the commented content */
   content_slug: string;
-  /** Parent comment ID for replies */
   parent_id: string | null;
-  /** Comment author display name */
   author_name: string;
-  /** Comment author email address */
   author_email: string | null;
-  /** Comment body text */
   body: string;
-  /** Moderation status: approved, waiting, or spam */
   status: string;
-  /** Comment creation timestamp */
   created_at: string;
-  /** Last update timestamp */
   updated_at: string;
 }

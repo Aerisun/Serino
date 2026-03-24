@@ -7,6 +7,8 @@
 import type { SearchResultItem } from './searchResultItem';
 
 export interface SearchResponse {
+  /** Search result items */
   items: SearchResultItem[];
+  /** Total matching results */
   total: number;
 }

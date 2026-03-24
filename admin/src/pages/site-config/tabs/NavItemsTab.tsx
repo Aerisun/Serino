@@ -279,9 +279,13 @@ export function NavItemsTab() {
                     page_key: form.page_key || null,
                     parent_id: form.parent_id || null,
                   };
-                  editingId
-                    ? update.mutate({ itemId: editingId, data: payload })
-                    : create.mutate({ data: payload });
+
+                  if (editingId) {
+                    update.mutate({ itemId: editingId, data: payload });
+                    return;
+                  }
+
+                  create.mutate({ data: payload });
                 }}
                 disabled={create.isPending || update.isPending}
               >

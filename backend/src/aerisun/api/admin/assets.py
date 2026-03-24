@@ -59,8 +59,8 @@ def get_asset_endpoint(
 ) -> Any:
     try:
         return get_asset(session, asset_id)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Not found")
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Not found") from exc
 
 
 @router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除资源")
@@ -71,5 +71,5 @@ def delete_asset_endpoint(
 ) -> None:
     try:
         delete_asset(session, asset_id)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Asset not found")
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Asset not found") from exc

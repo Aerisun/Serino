@@ -6,9 +6,14 @@
  */
 
 export interface SearchResultItem {
+  /** Content type */
   type: string;
+  /** URL-friendly identifier */
   slug: string;
+  /** Content title */
   title: string;
+  /** Matched text snippet */
   snippet: string;
+  /** Publication timestamp */
   published_at?: string | null;
 }

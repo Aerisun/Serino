@@ -6,20 +6,12 @@
  */
 
 export interface AssetAdminRead {
-  /** Unique asset identifier */
   id: string;
-  /** Original uploaded file name */
   file_name: string;
-  /** Server file system storage path */
   storage_path: string;
-  /** MIME type of the file */
   mime_type: string | null;
-  /** File size in bytes */
   byte_size: number | null;
-  /** SHA-256 hash of the file content */
   sha256: string | null;
-  /** Upload timestamp */
   created_at: string;
-  /** Last update timestamp */
   updated_at: string;
 }

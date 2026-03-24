@@ -18,7 +18,7 @@ def get_current_admin(
     try:
         return validate_session_token(session, credentials.credentials)
     except PermissionError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 def require_api_key_scopes(*required_scopes: str):
@@ -31,6 +31,6 @@ def require_api_key_scopes(*required_scopes: str):
         except PermissionError as exc:
             detail = str(exc)
             code = status.HTTP_403_FORBIDDEN if "scope" in detail.lower() else status.HTTP_401_UNAUTHORIZED
-            raise HTTPException(status_code=code, detail=detail)
+            raise HTTPException(status_code=code, detail=detail) from exc
 
     return dependency

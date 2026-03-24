@@ -2,9 +2,9 @@
   "private": true,
   "packageManager": "pnpm@10.31.0",
   "scripts": {
-    "dev:frontend": "pnpm --filter frontend dev",
-    "dev:admin": "pnpm --filter admin dev",
-    "build:frontend": "pnpm --filter frontend build",
-    "build:admin": "pnpm --filter admin build"
+    "dev:frontend": "pnpm -C frontend dev",
+    "dev:admin": "pnpm -C admin dev",
+    "build:frontend": "pnpm -C frontend build",
+    "build:admin": "pnpm -C admin build"
   }
 }
