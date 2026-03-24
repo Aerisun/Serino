@@ -108,6 +108,21 @@ export const DEFAULT_WALINE_EMOJI: Array<string> = [
   "https://unpkg.com/@waline/emojis@1.1.0/bmoji",
 ];
 
+export const DEFAULT_AVATAR_PRESETS: AvatarPreset[] = [
+  { key: "shiro", label: "Shiro", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro" },
+  { key: "glass", label: "Glass", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Glass" },
+  { key: "aurora", label: "Aurora", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora" },
+  { key: "paper", label: "Paper", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Paper" },
+  { key: "dawn", label: "Dawn", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn" },
+  { key: "pebble", label: "Pebble", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble" },
+  { key: "amber", label: "Amber", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Amber" },
+  { key: "mint", label: "Mint", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Mint" },
+  { key: "cinder", label: "Cinder", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder" },
+  { key: "tide", label: "Tide", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Tide" },
+  { key: "plum", label: "Plum", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Plum" },
+  { key: "linen", label: "Linen", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Linen" },
+];
+
 const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   provider: "waline",
   serverURL: "", // Will be resolved at runtime via normalizeServerURL
@@ -121,6 +136,7 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   enjoySearchEndpoint: (import.meta.env.VITE_WALINE_ENJOY_SEARCH_URL ?? "").trim() || null,
   enjoySearchDefaultWords: ["enjoy", "yoyo", "hehe"],
   avatarStrategy: null,
+  avatarPresets: DEFAULT_AVATAR_PRESETS,
   helperCopy: null,
   pageSize: 10,
   imageMaxBytes: DEFAULT_IMAGE_MAX_BYTES,
@@ -305,7 +321,7 @@ export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     enjoySearchEndpoint,
     enjoySearchDefaultWords,
     avatarStrategy: record.avatarStrategy ?? record.avatar_strategy ?? DEFAULT_WALINE_COMMUNITY_CONFIG.avatarStrategy,
-    avatarPresets: record.avatar_presets ?? [],
+    avatarPresets: record.avatar_presets ?? DEFAULT_AVATAR_PRESETS,
     helperCopy:
       record.helperCopy
       ?? record.helper_copy

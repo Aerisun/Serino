@@ -47,7 +47,7 @@ function AppContent() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ShiroAccentController />
       {featureFlags.reading_progress && <ReadingProgress />}
       <ErrorBoundary>

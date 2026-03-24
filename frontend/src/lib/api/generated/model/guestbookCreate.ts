@@ -14,4 +14,6 @@ export interface GuestbookCreate {
   website?: string | null;
   /** Guestbook message body */
   body: string;
+  /** Selected guest avatar preset key */
+  avatar_key?: string | null;
 }

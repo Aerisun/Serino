@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const loginPath = new URL("login", window.location.origin + import.meta.env.BASE_URL).pathname;
+const adminBasePath =
+  typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
+    ? __AERISUN_ADMIN_BASE_PATH__
+    : "/admin/";
+const loginPath = new URL("login", window.location.origin + adminBasePath).pathname;
 
 const client = axios.create({
   baseURL: "",

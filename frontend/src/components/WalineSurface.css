@@ -141,8 +141,11 @@ html.dark .aerisun-waline-host .wl-reaction img {
 /* ── Loading / empty states ── */
 .aerisun-waline-loading,
 .aerisun-waline-empty {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
   min-height: 12rem;
   border-radius: 1.4rem;
   border: 1px dashed hsl(var(--foreground) / 0.12);
@@ -151,6 +154,55 @@ html.dark .aerisun-waline-host .wl-reaction img {
   text-align: center;
   font-size: 0.9rem;
   color: hsl(var(--foreground) / 0.5);
+}
+
+.aerisun-community-surface {
+  color: hsl(var(--foreground));
+}
+
+.aerisun-community-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.aerisun-community-textarea {
+  resize: vertical;
+}
+
+.aerisun-comment-preview.prose {
+  max-width: none;
+  color: hsl(var(--foreground) / 0.78);
+}
+
+.aerisun-comment-body.prose {
+  max-width: none;
+  color: hsl(var(--foreground) / 0.76);
+  font-size: 0.95rem;
+  line-height: 1.9;
+}
+
+.aerisun-comment-body.prose :where(p, ul, ol, blockquote, pre):first-child {
+  margin-top: 0;
+}
+
+.aerisun-comment-body.prose :where(p, ul, ol, blockquote, pre):last-child {
+  margin-bottom: 0;
+}
+
+.aerisun-comment-body.prose img {
+  max-width: min(100%, 28rem);
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  box-shadow: 0 18px 40px hsl(var(--foreground) / 0.08);
+}
+
+.aerisun-comment-preview.prose :where(p, ul, ol, blockquote, pre):first-child {
+  margin-top: 0;
+}
+
+.aerisun-comment-preview.prose :where(p, ul, ol, blockquote, pre):last-child {
+  margin-bottom: 0;
 }
 
 /* ── Avatar trigger (clickable circle above editor) ── */

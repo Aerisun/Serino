@@ -6,9 +6,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, ".."), "");
   const backendPort = env.AERISUN_PORT || "8000";
   const adminPort = parseInt(env.AERISUN_ADMIN_PORT || "3001", 10);
+  const adminBasePath = "/admin/";
 
   return {
-    base: "/admin/",
+    base: adminBasePath,
+    define: {
+      __AERISUN_ADMIN_BASE_PATH__: JSON.stringify(adminBasePath),
+    },
     server: {
       port: adminPort,
       proxy: {

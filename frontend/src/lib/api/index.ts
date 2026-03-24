@@ -1,4 +1,8 @@
-const envApiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+const envApiBaseUrl =
+  (typeof __AERISUN_API_BASE_URL__ === "string" ? __AERISUN_API_BASE_URL__ : "").replace(
+    /\/+$/,
+    "",
+  );
 
 // Use same-origin API paths by default so the Vite dev proxy can forward
 // requests to the backend without tripping browser CORS enforcement.

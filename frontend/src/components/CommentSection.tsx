@@ -4,13 +4,15 @@ import { Heart, MessageCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import { transition } from "@/config";
 import {
-  buildWalineSurfacePath,
-  DEFAULT_COMMUNITY_CONFIG,
   loadCommunityConfig,
   type CommunityConfig,
 } from "@/lib/community-config";
 import WalineSurface from "@/components/WalineSurface";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import {
+  createReactionApiV1PublicReactionsPost,
+  readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGet,
+} from "@/lib/api/generated/public/public";
 
 type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 
@@ -26,6 +28,7 @@ interface CommentContext {
 }
 
 const LIKE_STORAGE_PREFIX = "aerisun:liked:";
+const LIKE_TOKEN_PREFIX = "aerisun:like-token:";
 
 const resolveCommentContext = (
   contentType: CommentSurface | undefined,
@@ -60,65 +63,56 @@ const resolveCommentContext = (
 };
 
 /**
- * Like via Waline's /api/article counter endpoint (reaction0 field).
- * This is the same mechanism Waline's built-in reaction feature uses.
+ * Like via the site's public reaction API.
+ * Reactions are append-only, so once liked on this device the button stays active.
  */
-const useLike = (ctx: CommentContext | null, config: CommunityConfig | null) => {
+const useLike = (ctx: CommentContext | null) => {
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
 
-  const serverURL = (config ?? DEFAULT_COMMUNITY_CONFIG).serverURL.replace(/\/+$/, "");
-  const walinePath = ctx && ctx.contentType !== "guestbook"
-    ? buildWalineSurfacePath(ctx.contentType, ctx.slug)
-    : null;
+  const reactionKey = ctx && ctx.contentType !== "guestbook" ? `${ctx.contentType}:${ctx.slug}` : null;
 
-  // Fetch current count
   useEffect(() => {
-    if (!walinePath || !serverURL) return;
-    const storageKey = `${LIKE_STORAGE_PREFIX}${walinePath}`;
+    if (!ctx || ctx.contentType === "guestbook" || !reactionKey) return;
+    const storageKey = `${LIKE_STORAGE_PREFIX}${reactionKey}`;
     setLiked(localStorage.getItem(storageKey) === "1");
 
-    fetch(`${serverURL}/api/article?path=${encodeURIComponent(walinePath)}&type=reaction0&lang=zh-CN`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data && Array.isArray(data.data) && data.data.length > 0) {
-          setCount(data.data[0].reaction0 ?? 0);
-        }
+    readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGet(ctx.contentType, ctx.slug, "like")
+      .then((response) => {
+        setCount(response.data.total ?? 0);
       })
       .catch(() => {});
-  }, [walinePath, serverURL]);
+  }, [ctx, reactionKey]);
 
   const toggle = useCallback(async () => {
-    if (!walinePath || !serverURL || busy) return;
+    if (!ctx || ctx.contentType === "guestbook" || !reactionKey || liked || busy) return;
     setBusy(true);
-    const action = liked ? "desc" : "inc";
     try {
-      const res = await fetch(`${serverURL}/api/article`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: walinePath, type: "reaction0", action }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const newCount = data.data?.[0]?.reaction0 ?? (liked ? Math.max(count - 1, 0) : count + 1);
-        setCount(newCount);
-        const newLiked = !liked;
-        setLiked(newLiked);
-        if (newLiked) {
-          localStorage.setItem(`${LIKE_STORAGE_PREFIX}${walinePath}`, "1");
-        } else {
-          localStorage.removeItem(`${LIKE_STORAGE_PREFIX}${walinePath}`);
-        }
+      const tokenStorageKey = `${LIKE_TOKEN_PREFIX}${reactionKey}`;
+      let clientToken = localStorage.getItem(tokenStorageKey);
+      if (!clientToken) {
+        clientToken = `${reactionKey}:${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem(tokenStorageKey, clientToken);
       }
+
+      const response = await createReactionApiV1PublicReactionsPost({
+        content_type: ctx.contentType,
+        content_slug: ctx.slug,
+        reaction_type: "like",
+        client_token: clientToken,
+      });
+      setCount(response.data.total ?? count + 1);
+      setLiked(true);
+      localStorage.setItem(`${LIKE_STORAGE_PREFIX}${reactionKey}`, "1");
     } catch {
       // silently fail
     } finally {
       setBusy(false);
     }
-  }, [walinePath, serverURL, liked, busy, count]);
+  }, [busy, count, ctx, liked, reactionKey]);
 
-  return { liked, count, busy, toggle, enabled: walinePath !== null };
+  return { liked, count, busy, toggle, enabled: ctx !== null && ctx.contentType !== "guestbook" };
 };
 
 const CommentSection = ({
@@ -138,7 +132,7 @@ const CommentSection = ({
   );
 
   const isCollapsible = expandable ?? (contentContext?.contentType !== "guestbook");
-  const like = useLike(contentContext, config);
+  const like = useLike(contentContext);
 
   useEffect(() => {
     loadCommunityConfig().then(setConfig).catch(() => {});
@@ -191,7 +185,7 @@ const CommentSection = ({
           <button
             type="button"
             onClick={like.toggle}
-            disabled={like.busy}
+            disabled={like.busy || like.liked}
             className={`${btnBase} disabled:cursor-default ${
               like.liked
                 ? "border-[rgb(var(--shiro-accent-rgb)/0.28)] text-[rgb(var(--shiro-accent-rgb)/0.85)]"

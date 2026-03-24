@@ -1,6 +1,10 @@
-import Axios, { type AxiosRequestConfig, type Method } from "axios";
+import Axios, { type Method } from "axios";
 
-const loginPath = new URL("login", window.location.origin + import.meta.env.BASE_URL).pathname;
+const adminBasePath =
+  typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
+    ? __AERISUN_ADMIN_BASE_PATH__
+    : "/admin/";
+const loginPath = new URL("login", window.location.origin + adminBasePath).pathname;
 
 const AXIOS_INSTANCE = Axios.create({
   baseURL: "",

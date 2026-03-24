@@ -65,6 +65,51 @@ const DEFAULT_AVATAR_PRESETS: CommunityAvatarPreset[] = [
     label: "Aurora",
     avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora",
   },
+  {
+    key: "paper",
+    label: "Paper",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Paper",
+  },
+  {
+    key: "dawn",
+    label: "Dawn",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn",
+  },
+  {
+    key: "pebble",
+    label: "Pebble",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble",
+  },
+  {
+    key: "amber",
+    label: "Amber",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Amber",
+  },
+  {
+    key: "mint",
+    label: "Mint",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Mint",
+  },
+  {
+    key: "cinder",
+    label: "Cinder",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder",
+  },
+  {
+    key: "tide",
+    label: "Tide",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Tide",
+  },
+  {
+    key: "plum",
+    label: "Plum",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Plum",
+  },
+  {
+    key: "linen",
+    label: "Linen",
+    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Linen",
+  },
 ];
 const DEFAULT_MODERATION_MODE = "all_pending";
 const DEFAULT_DEFAULT_SORTING = "latest";

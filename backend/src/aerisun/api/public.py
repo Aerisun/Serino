@@ -33,6 +33,7 @@ from aerisun.domain.engagement.schemas import (
     ReactionRead,
 )
 from aerisun.domain.engagement.service import (
+    CommentPolicyError,
     create_public_comment,
     create_public_guestbook_entry,
     list_public_comments,
@@ -167,7 +168,10 @@ def create_guestbook(
     session: Session = Depends(get_session),
 ) -> GuestbookCreateResponse:
     """创建一条新留言，需审核通过后公开显示。"""
-    return create_public_guestbook_entry(session, payload)
+    try:
+        return create_public_guestbook_entry(session, payload)
+    except CommentPolicyError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
 
 @router.get(
@@ -201,6 +205,8 @@ def create_comment(
         return create_public_comment(session, content_type, slug, payload)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except CommentPolicyError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
 
 @router.post("/reactions", response_model=ReactionRead, summary="提交互动反应")

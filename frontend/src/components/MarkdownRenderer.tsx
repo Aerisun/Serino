@@ -11,6 +11,27 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
+const envApiBaseUrl =
+  (typeof __AERISUN_API_BASE_URL__ === "string" ? __AERISUN_API_BASE_URL__ : "").replace(/\/+$/, "");
+
+const resolveMarkdownImageSrc = (src?: string) => {
+  if (!src) {
+    return src;
+  }
+  if (!src.startsWith("/")) {
+    return src;
+  }
+  if (!envApiBaseUrl) {
+    return src;
+  }
+
+  try {
+    return new URL(src, envApiBaseUrl).toString();
+  } catch {
+    return src;
+  }
+};
+
 const components: Components = {
   h2: ({ children, ...props }) => (
     <h2
@@ -33,9 +54,9 @@ const components: Components = {
   ),
   img: ({ src, alt, ...props }) => (
     <img
-      src={src}
+      src={resolveMarkdownImageSrc(src)}
       alt={alt}
-      className="rounded-lg"
+      className="rounded-lg max-w-full"
       loading="lazy"
       {...props}
     />

@@ -23,6 +23,7 @@ class GuestbookCreate(ModelBase):
     email: str | None = Field(default=None, description="Guest email address")
     website: str | None = Field(default=None, description="Guest personal website URL")
     body: str = Field(description="Guestbook message body")
+    avatar_key: str | None = Field(default=None, description="Selected guest avatar preset key")
 
 
 class GuestbookCollectionRead(ModelBase):
@@ -58,6 +59,7 @@ class CommentCreate(ModelBase):
     author_email: str | None = Field(default=None, description="Comment author email address")
     body: str = Field(description="Comment body text")
     parent_id: str | None = Field(default=None, description="Parent comment ID for replies")
+    avatar_key: str | None = Field(default=None, description="Selected comment avatar preset key")
 
 
 class CommentCreateResponse(ModelBase):

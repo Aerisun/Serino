@@ -5,8 +5,12 @@ import path from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, ".."), "");
+  const apiBaseUrl = (env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
   return {
+    define: {
+      __AERISUN_API_BASE_URL__: JSON.stringify(apiBaseUrl),
+    },
     server: {
       host: "::",
       port: parseInt(env.AERISUN_FRONTEND_PORT || "8080", 10),
@@ -15,6 +19,10 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         "/api": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
+        "/media": {
           target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
           changeOrigin: true,
         },

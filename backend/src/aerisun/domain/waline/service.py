@@ -30,6 +30,8 @@ class WalineCommentRecord:
     like: int
     ua: str | None
     url: str
+    avatar_key: str | None
+    avatar_url: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -38,6 +40,15 @@ class WalineCommentRecord:
 class WalineCounterStats:
     pageview_count: int = 0
     reaction_count: int = 0
+
+
+@dataclass(slots=True)
+class WalineNickIdentity:
+    nick_key: str
+    nick: str
+    mail: str
+    created_at: datetime
+    updated_at: datetime
 
 
 def get_waline_db_path() -> Path:
@@ -76,6 +87,14 @@ def _normalize_status(value: str | None) -> str:
     if normalized == "rejected":
         return "spam"
     return "waiting"
+
+
+def normalize_comment_nick(value: str | None) -> str:
+    return " ".join((value or "").strip().split()).casefold()
+
+
+def normalize_comment_mail(value: str | None) -> str:
+    return (value or "").strip().lower()
 
 
 def _normalize_ui_status(value: str | None) -> str:
@@ -121,6 +140,11 @@ def _build_list_order(sort: str | None) -> str:
     if normalized == "path":
         return "url ASC, insertedAt DESC, id DESC"
     return "insertedAt DESC, id DESC"
+
+
+def _sqlite_table_columns(connection: sqlite3.Connection, table_name: str) -> set[str]:
+    rows = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return {str(row["name"]) for row in rows}
 
 
 @contextmanager
@@ -203,11 +227,29 @@ def ensure_waline_schema(connection: sqlite3.Connection) -> None:
             ON wl_comment (url, status, insertedAt DESC);
         CREATE INDEX IF NOT EXISTS idx_wl_comment_pid
             ON wl_comment (pid);
+
+        CREATE TABLE IF NOT EXISTS wl_comment_identity (
+            nick_key TEXT PRIMARY KEY NOT NULL,
+            nick VARCHAR(255) NOT NULL DEFAULT '',
+            mail VARCHAR(255) NOT NULL DEFAULT '',
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_wl_comment_identity_mail
+            ON wl_comment_identity (mail);
         """
     )
 
+    comment_columns = _sqlite_table_columns(connection, "wl_comment")
+    if "avatar" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN avatar VARCHAR(255) DEFAULT NULL")
+    if "avatar_key" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN avatar_key VARCHAR(80) DEFAULT NULL")
+
 
 def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
+    columns = set(row.keys())
     return WalineCommentRecord(
         id=int(row["id"]),
         user_id=row["user_id"],
@@ -224,6 +266,18 @@ def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
         like=int(row["like"] or 0),
         ua=row["ua"],
         url=row["url"] or "",
+        avatar_key=str(row["avatar_key"]) if "avatar_key" in columns and row["avatar_key"] else None,
+        avatar_url=str(row["avatar"]) if "avatar" in columns and row["avatar"] else None,
+        created_at=_parse_sql_timestamp(row["createdAt"]),
+        updated_at=_parse_sql_timestamp(row["updatedAt"]),
+    )
+
+
+def _row_to_identity(row: sqlite3.Row) -> WalineNickIdentity:
+    return WalineNickIdentity(
+        nick_key=str(row["nick_key"]),
+        nick=str(row["nick"] or ""),
+        mail=str(row["mail"] or ""),
         created_at=_parse_sql_timestamp(row["createdAt"]),
         updated_at=_parse_sql_timestamp(row["updatedAt"]),
     )
@@ -465,6 +519,80 @@ def get_waline_record_by_id(
         return _row_to_record(row) if row is not None else None
 
 
+def get_waline_nick_identity(
+    *,
+    nick: str,
+    db_path: Path | None = None,
+) -> WalineNickIdentity | None:
+    nick_key = normalize_comment_nick(nick)
+    if not nick_key:
+        return None
+
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute(
+            "SELECT * FROM wl_comment_identity WHERE nick_key = ?",
+            (nick_key,),
+        ).fetchone()
+        return _row_to_identity(row) if row is not None else None
+
+
+def upsert_waline_nick_identity(
+    *,
+    nick: str,
+    mail: str,
+    db_path: Path | None = None,
+) -> WalineNickIdentity:
+    nick_key = normalize_comment_nick(nick)
+    normalized_mail = normalize_comment_mail(mail)
+    if not nick_key:
+        raise ValueError("Comment nickname cannot be empty")
+    if not normalized_mail:
+        raise ValueError("Comment email cannot be empty")
+
+    display_nick = " ".join(nick.strip().split())
+
+    with connect_waline_db(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO wl_comment_identity (nick_key, nick, mail, createdAt, updatedAt)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(nick_key) DO UPDATE SET
+                nick = excluded.nick,
+                mail = excluded.mail,
+                updatedAt = CURRENT_TIMESTAMP
+            """,
+            (nick_key, display_nick, normalized_mail),
+        )
+        connection.commit()
+        row = connection.execute(
+            "SELECT * FROM wl_comment_identity WHERE nick_key = ?",
+            (nick_key,),
+        ).fetchone()
+        if row is None:
+            raise RuntimeError("Failed to persist Waline nick identity")
+        return _row_to_identity(row)
+
+
+def update_waline_comment_avatars(
+    *,
+    assignments: dict[int, tuple[str, str]],
+    db_path: Path | None = None,
+) -> None:
+    if not assignments:
+        return
+
+    with connect_waline_db(db_path) as connection:
+        connection.executemany(
+            """
+            UPDATE wl_comment
+            SET avatar_key = ?, avatar = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            [(avatar_key, avatar_url, record_id) for record_id, (avatar_key, avatar_url) in assignments.items()],
+        )
+        connection.commit()
+
+
 def create_waline_record(
     *,
     comment: str,
@@ -474,6 +602,8 @@ def create_waline_record(
     status: str,
     url: str,
     parent_id: int | None = None,
+    avatar_key: str | None = None,
+    avatar_url: str | None = None,
     created_at: datetime | None = None,
     updated_at: datetime | None = None,
     inserted_at: datetime | None = None,
@@ -494,6 +624,8 @@ def create_waline_record(
             url=url,
             parent_id=parent_id,
             root_id=root_id,
+            avatar_key=avatar_key,
+            avatar_url=avatar_url,
             created_at=created_at,
             updated_at=updated_at,
             inserted_at=inserted_at,
@@ -502,10 +634,10 @@ def create_waline_record(
             """
             INSERT INTO wl_comment (
                 user_id, comment, insertedAt, ip, link, mail, nick, pid, rid,
-                sticky, status, "like", ua, url, createdAt, updatedAt
+                sticky, status, "like", ua, url, avatar, avatar_key, createdAt, updatedAt
             ) VALUES (
                 :user_id, :comment, :insertedAt, :ip, :link, :mail, :nick, :pid, :rid,
-                :sticky, :status, :like, :ua, :url, :createdAt, :updatedAt
+                :sticky, :status, :like, :ua, :url, :avatar, :avatar_key, :createdAt, :updatedAt
             )
             """,
             row,
@@ -589,6 +721,8 @@ def make_waline_comment_row(
     url: str,
     parent_id: int | None = None,
     root_id: int | None = None,
+    avatar_key: str | None = None,
+    avatar_url: str | None = None,
     created_at: datetime | None = None,
     updated_at: datetime | None = None,
     inserted_at: datetime | None = None,
@@ -610,6 +744,8 @@ def make_waline_comment_row(
         "like": 0,
         "ua": ua,
         "url": url,
+        "avatar": avatar_url,
+        "avatar_key": avatar_key,
         "createdAt": _to_sql_timestamp(created_at),
         "updatedAt": _to_sql_timestamp(updated_at),
     }

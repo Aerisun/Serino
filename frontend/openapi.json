@@ -9558,6 +9558,18 @@
             ],
             "title": "Parent Id",
             "description": "Parent comment ID for replies"
+          },
+          "avatar_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Key",
+            "description": "Selected comment avatar preset key"
           }
         },
         "type": "object",
@@ -11333,24 +11345,21 @@
               "type": "integer"
             },
             "type": "object",
-            "title": "Posts By Status",
-            "default": {}
+            "title": "Posts By Status"
           },
           "content_by_month": {
             "items": {
               "$ref": "#/components/schemas/MonthlyCount"
             },
             "type": "array",
-            "title": "Content By Month",
-            "default": []
+            "title": "Content By Month"
           },
           "recent_content": {
             "items": {
               "$ref": "#/components/schemas/RecentContentItem"
             },
             "type": "array",
-            "title": "Recent Content",
-            "default": []
+            "title": "Recent Content"
           }
         },
         "type": "object",
@@ -12080,6 +12089,18 @@
             "type": "string",
             "title": "Body",
             "description": "Guestbook message body"
+          },
+          "avatar_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Key",
+            "description": "Selected guest avatar preset key"
           }
         },
         "type": "object",

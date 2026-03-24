@@ -14,4 +14,6 @@ export interface CommentCreate {
   body: string;
   /** Parent comment ID for replies */
   parent_id?: string | null;
+  /** Selected comment avatar preset key */
+  avatar_key?: string | null;
 }

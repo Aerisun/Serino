@@ -338,6 +338,36 @@ DEFAULT_COMMENT_AVATAR_PRESETS = [
         "label": "Pebble",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble",
     },
+    {
+        "key": "amber",
+        "label": "Amber",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Amber",
+    },
+    {
+        "key": "mint",
+        "label": "Mint",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Mint",
+    },
+    {
+        "key": "cinder",
+        "label": "Cinder",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder",
+    },
+    {
+        "key": "tide",
+        "label": "Tide",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Tide",
+    },
+    {
+        "key": "plum",
+        "label": "Plum",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Plum",
+    },
+    {
+        "key": "linen",
+        "label": "Linen",
+        "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Linen",
+    },
 ]
 
 
