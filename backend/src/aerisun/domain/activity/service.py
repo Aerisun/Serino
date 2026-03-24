@@ -5,9 +5,9 @@ from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
+from aerisun.domain.activity import repository as repo
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,
     ActivityHeatmapStatsRead,
@@ -17,16 +17,7 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
-
-CONTENT_MODELS = {
-    "posts": PostEntry,
-    "diary": DiaryEntry,
-    "thoughts": ThoughtEntry,
-    "excerpts": ExcerptEntry,
-}
 
 
 def _avatar_for_name(name: str) -> str:
@@ -49,78 +40,9 @@ def _trim_excerpt(value: str | None, limit: int = 72) -> str | None:
     return f"{excerpt[: limit - 1]}…"
 
 
-def _content_events(session: Session) -> list[tuple[datetime, str, str, str, str]]:
-    items: list[tuple[datetime, str, str, str, str]] = []
-    mappings = [
-        (PostEntry, "post", "/posts/{slug}"),
-        (DiaryEntry, "diary", "/diary/{slug}"),
-        (ExcerptEntry, "excerpt", "/excerpts"),
-    ]
-    for model, kind, href_template in mappings:
-        rows = session.scalars(
-            select(model)
-            .where(
-                model.status == "published",
-                model.visibility == "public",
-                model.published_at.is_not(None),
-            )
-            .order_by(desc(model.published_at))
-        ).all()
-        for row in rows:
-            assert row.published_at is not None
-            href = href_template.format(slug=row.slug)
-            items.append((row.published_at, kind, row.title, row.slug, href))
-    return items
-
-
-def _batch_resolve_titles(session: Session, pairs: list[tuple[str, str]]) -> dict[tuple[str, str], str]:
-    """Batch resolve content titles. Returns {(content_type, slug): title}."""
-    if not pairs:
-        return {}
-
-    by_type: dict[str, list[str]] = defaultdict(list)
-    for ct, slug in pairs:
-        by_type[ct].append(slug)
-
-    result: dict[tuple[str, str], str] = {}
-    for ct, slugs in by_type.items():
-        model = CONTENT_MODELS.get(ct)
-        if model is None:
-            for slug in slugs:
-                result[(ct, slug)] = slug
-            continue
-        rows = session.execute(select(model.slug, model.title).where(model.slug.in_(slugs))).all()
-        found = {slug: title for slug, title in rows}
-        for slug in slugs:
-            result[(ct, slug)] = found.get(slug, slug)
-    return result
-
-
-def _content_daily_counts(session: Session) -> dict[date, int]:
-    """Aggregate content publish counts by date using SQL GROUP BY."""
-    daily: dict[date, int] = defaultdict(int)
-    for model in [PostEntry, DiaryEntry, ExcerptEntry]:
-        rows = session.execute(
-            select(
-                func.date(model.published_at),
-                func.count(model.id),
-            )
-            .where(
-                model.status == "published",
-                model.visibility == "public",
-                model.published_at.is_not(None),
-            )
-            .group_by(func.date(model.published_at))
-        ).all()
-        for date_str, count in rows:
-            if date_str:
-                daily[date.fromisoformat(str(date_str))] += count
-    return daily
-
-
 def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
     events = []
-    for published_at, kind, title, slug, href in _content_events(session):
+    for published_at, kind, title, slug, href in repo.find_content_events(session):
         current = published_at.date()
         if from_date <= current <= to_date:
             events.append(
@@ -153,12 +75,12 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
         comment_pairs.append(pair)
         title_pairs.append(pair)
 
-    reactions = session.scalars(select(Reaction).order_by(desc(Reaction.created_at)).limit(limit)).all()
+    reactions = repo.find_recent_reactions(session, limit=limit)
     for item in reactions:
         title_pairs.append((item.content_type, item.content_slug))
 
     # Batch resolve all titles in one pass
-    titles = _batch_resolve_titles(session, title_pairs)
+    titles = repo.batch_resolve_titles(session, title_pairs)
 
     for item, (content_type, content_slug) in zip(comments, comment_pairs, strict=True):
         items.append(
@@ -228,7 +150,8 @@ def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | Non
     start = today - timedelta(days=today.weekday() + (weeks - 1) * 7)
 
     # Use SQL GROUP BY for content counts
-    daily_counts = _content_daily_counts(session)
+    daily_counts: defaultdict[date, int] = defaultdict(int)
+    daily_counts.update(repo.count_daily_content(session))
 
     # Waline comments and guestbook (separate SQLite DB, can't use ORM aggregation)
     for item in list_all_waline_records(status="approved", guestbook_only=False):

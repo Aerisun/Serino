@@ -2,21 +2,9 @@ from __future__ import annotations
 
 import json
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.domain.site_config.models import (
-    CommunityConfig,
-    NavItem,
-    PageCopy,
-    PageDisplayOption,
-    Poem,
-    ResumeBasics,
-    ResumeExperience,
-    ResumeSkillGroup,
-    SiteProfile,
-    SocialLink,
-)
+from aerisun.domain.site_config import repository as repo
 from aerisun.domain.site_config.schemas import (
     CommunityConfigRead,
     NavChildRead,
@@ -34,22 +22,16 @@ from aerisun.domain.site_config.schemas import (
 
 
 def get_site_config(session: Session) -> SiteConfigRead:
-    site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    site = repo.find_site_profile(session)
     if site is None:
         raise LookupError("site profile is missing")
 
-    links = session.scalars(
-        select(SocialLink).where(SocialLink.site_profile_id == site.id).order_by(SocialLink.order_index.asc())
-    ).all()
-    poems = session.scalars(select(Poem).where(Poem.site_profile_id == site.id).order_by(Poem.order_index.asc())).all()
+    links = repo.find_social_links(session, site.id)
+    poems = repo.find_poems(session, site.id)
 
     hero_actions = json.loads(site.hero_actions) if site.hero_actions else []
 
-    nav_items = session.scalars(
-        select(NavItem)
-        .where(NavItem.site_profile_id == site.id, NavItem.is_enabled.is_(True))
-        .order_by(NavItem.order_index.asc())
-    ).all()
+    nav_items = repo.find_enabled_nav_items(session, site.id)
 
     children_map: dict[str, list] = {}
     for item in nav_items:
@@ -91,8 +73,8 @@ def get_site_config(session: Session) -> SiteConfigRead:
 
 
 def get_page_copy(session: Session) -> PageCollectionRead:
-    copies = session.scalars(select(PageCopy).order_by(PageCopy.page_key.asc())).all()
-    options = {option.page_key: option for option in session.scalars(select(PageDisplayOption)).all()}
+    copies = repo.find_all_page_copies(session)
+    options = repo.find_all_page_display_options(session)
 
     items = []
     for page in copies:
@@ -119,27 +101,19 @@ def get_page_copy(session: Session) -> PageCollectionRead:
 
 
 def get_community_config(session: Session) -> CommunityConfigRead:
-    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+    config = repo.find_community_config(session)
     if config is None:
         raise LookupError("community config is missing")
     return CommunityConfigRead.model_validate(config)
 
 
 def get_resume(session: Session) -> ResumeRead:
-    basics = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
+    basics = repo.find_resume_basics(session)
     if basics is None:
         raise LookupError("resume basics are missing")
 
-    skill_groups = session.scalars(
-        select(ResumeSkillGroup)
-        .where(ResumeSkillGroup.resume_basics_id == basics.id)
-        .order_by(ResumeSkillGroup.order_index.asc())
-    ).all()
-    experiences = session.scalars(
-        select(ResumeExperience)
-        .where(ResumeExperience.resume_basics_id == basics.id)
-        .order_by(ResumeExperience.order_index.asc())
-    ).all()
+    skill_groups = repo.find_resume_skill_groups(session, basics.id)
+    experiences = repo.find_resume_experiences(session, basics.id)
 
     return ResumeRead(
         title=basics.title,

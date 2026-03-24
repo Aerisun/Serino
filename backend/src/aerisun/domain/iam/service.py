@@ -7,7 +7,8 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
-from aerisun.domain.iam.models import AdminSession, AdminUser, ApiKey
+from aerisun.domain.iam import repository as repo
+from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.iam.schemas import (
     AdminSessionRead,
     AdminUserRead,
@@ -22,7 +23,7 @@ SESSION_TTL_HOURS = 24
 
 def authenticate_admin(session: Session, username: str, password: str) -> AdminUser:
     """Verify credentials and return the admin user. Raises LookupError or PermissionError."""
-    user = session.query(AdminUser).filter(AdminUser.username == username).first()
+    user = repo.find_admin_by_username(session, username)
     if user is None or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
         raise LookupError("Invalid username or password")
     if not user.is_active:
@@ -36,21 +37,14 @@ def create_admin_session(session: Session, admin_user_id: str, ttl_hours: int | 
     ttl = ttl_hours or getattr(settings, "session_ttl_hours", SESSION_TTL_HOURS)
     token = secrets.token_urlsafe(64)
     expires_at = datetime.now(UTC) + timedelta(hours=ttl)
-    admin_session = AdminSession(
-        admin_user_id=admin_user_id,
-        session_token=token,
-        expires_at=expires_at,
-    )
-    session.add(admin_session)
+    repo.create_session(session, admin_user_id=admin_user_id, token=token, expires_at=expires_at)
     session.commit()
     return LoginResponse(token=token, expires_at=expires_at)
 
 
 def destroy_admin_sessions(session: Session, admin_user_id: str) -> None:
     """Delete all sessions for the given admin user."""
-    sessions = session.query(AdminSession).filter(AdminSession.admin_user_id == admin_user_id).all()
-    for s in sessions:
-        session.delete(s)
+    repo.delete_sessions_for_user(session, admin_user_id)
     session.commit()
 
 
@@ -65,7 +59,7 @@ def change_admin_password(session: Session, admin: AdminUser, current_password: 
 def update_admin_profile(session: Session, admin: AdminUser, username: str | None = None) -> AdminUserRead:
     """Update admin profile. Raises ValueError on username conflict."""
     if username is not None:
-        existing = session.query(AdminUser).filter(AdminUser.username == username, AdminUser.id != admin.id).first()
+        existing = repo.find_admin_by_username_excluding(session, username, admin.id)
         if existing:
             raise ValueError("Username already taken")
         admin.username = username
@@ -79,12 +73,7 @@ def list_admin_sessions(
 ) -> list[AdminSessionRead]:
     """List active (not expired) sessions for the given admin user."""
     now = datetime.now(UTC)
-    active = (
-        session.query(AdminSession)
-        .filter(AdminSession.admin_user_id == admin_user_id, AdminSession.expires_at > now)
-        .order_by(AdminSession.created_at.desc())
-        .all()
-    )
+    active = repo.find_active_sessions(session, admin_user_id, now=now)
     return [
         AdminSessionRead(
             id=s.id,
@@ -98,7 +87,7 @@ def list_admin_sessions(
 
 def revoke_admin_session(session: Session, admin_user_id: str, session_id: str) -> None:
     """Revoke a specific session. Raises LookupError if not found or not owned."""
-    target = session.get(AdminSession, session_id)
+    target = repo.find_session_by_id(session, session_id)
     if target is None or target.admin_user_id != admin_user_id:
         raise LookupError("Session not found")
     session.delete(target)
@@ -107,7 +96,7 @@ def revoke_admin_session(session: Session, admin_user_id: str, session_id: str) 
 
 def validate_session_token(session: Session, token: str) -> AdminUser:
     """Validate a session token and return the admin user. Raises PermissionError."""
-    admin_session = session.query(AdminSession).filter(AdminSession.session_token == token).first()
+    admin_session = repo.find_session_by_token(session, token)
     if admin_session is None:
         raise PermissionError("Invalid or expired session token")
     now_utc = datetime.now(UTC)
@@ -125,7 +114,7 @@ def validate_session_token(session: Session, token: str) -> AdminUser:
 def validate_api_key(session: Session, token: str, required_scopes: tuple[str, ...]) -> ApiKey:
     """Validate an API key and check scopes. Raises PermissionError."""
     prefix = token[:8]
-    key = session.query(ApiKey).filter(ApiKey.key_prefix == prefix).first()
+    key = repo.find_api_key_by_prefix(session, prefix)
     if key is None:
         raise PermissionError("Invalid API key")
     if not bcrypt.checkpw(token.encode(), key.hashed_secret.encode()):
@@ -144,7 +133,7 @@ def validate_api_key(session: Session, token: str, required_scopes: tuple[str, .
 
 
 def list_api_keys(session: Session) -> list[ApiKeyAdminRead]:
-    keys = session.query(ApiKey).order_by(ApiKey.created_at.desc()).all()
+    keys = repo.find_all_api_keys(session)
     return [ApiKeyAdminRead.model_validate(k) for k in keys]
 
 
@@ -152,13 +141,13 @@ def create_api_key(session: Session, key_name: str, scopes: list[str]) -> ApiKey
     raw_secret = secrets.token_urlsafe(48)
     prefix = raw_secret[:8]
     hashed = bcrypt.hashpw(raw_secret.encode(), bcrypt.gensalt()).decode()
-    key = ApiKey(
+    key = repo.create_api_key(
+        session,
         key_name=key_name,
         key_prefix=prefix,
         hashed_secret=hashed,
         scopes=scopes,
     )
-    session.add(key)
     session.commit()
     session.refresh(key)
     return ApiKeyCreateResponse(
@@ -168,19 +157,18 @@ def create_api_key(session: Session, key_name: str, scopes: list[str]) -> ApiKey
 
 
 def update_api_key(session: Session, key_id: str, payload: ApiKeyUpdate) -> ApiKeyAdminRead:
-    key = session.get(ApiKey, key_id)
+    key = repo.find_api_key_by_id(session, key_id)
     if key is None:
         raise LookupError("API key not found")
-    for k, v in payload.model_dump(exclude_unset=True).items():
-        setattr(key, k, v)
+    repo.update_api_key(session, key, payload.model_dump(exclude_unset=True))
     session.commit()
     session.refresh(key)
     return ApiKeyAdminRead.model_validate(key)
 
 
 def delete_api_key(session: Session, key_id: str) -> None:
-    key = session.get(ApiKey, key_id)
+    key = repo.find_api_key_by_id(session, key_id)
     if key is None:
         raise LookupError("API key not found")
-    session.delete(key)
+    repo.delete_api_key(session, key)
     session.commit()

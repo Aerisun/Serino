@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TypeVar
 
-from sqlalchemy import Select, desc, func, select
 from sqlalchemy.orm import Session
 
+from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
     DiaryEntry,
     ExcerptEntry,
@@ -55,14 +55,6 @@ def _format_relative_date(value: datetime | None) -> str | None:
     if total_days < 365:
         return f"{max(1, total_days // 30)} 个月前"
     return f"{max(1, total_days // 365)} 年前"
-
-
-def _public_query(model: type[ContentModel]) -> Select[tuple[ContentModel]]:
-    return (
-        select(model)
-        .where(model.status == "published", model.visibility == "public")
-        .order_by(desc(model.published_at), desc(model.created_at))
-    )
 
 
 def _engagement_stats_by_slug(content_type: str, slugs: list[str]) -> dict[str, dict[str, int | None]]:
@@ -137,20 +129,18 @@ def _list_entries(
     limit: int,
     offset: int = 0,
 ) -> ContentCollectionRead:
-    base_query = _public_query(model)
-    total = session.scalar(select(func.count()).select_from(base_query.subquery())) or 0
-    rows = session.scalars(base_query.offset(offset).limit(limit)).all()
-    slugs = [row.slug for row in rows]
+    items, total = repo.find_published(session, model, limit=limit, offset=offset)
+    slugs = [item.slug for item in items]
     engagement_stats = _engagement_stats_by_slug(content_type, slugs)
     return ContentCollectionRead(
-        items=[_to_entry(row, content_type, engagement_stats) for row in rows],
+        items=[_to_entry(row, content_type, engagement_stats) for row in items],
         total=total,
         has_more=offset + limit < total,
     )
 
 
 def _get_by_slug(session: Session, model: type[ContentModel], content_type: str, slug: str) -> ContentEntryRead:
-    item = session.scalars(_public_query(model).where(model.slug == slug).limit(1)).first()
+    item = repo.find_by_slug(session, model, slug)
     if item is None:
         raise LookupError(f"{model.__name__} with slug '{slug}' was not found")
     engagement_stats = _engagement_stats_by_slug(content_type, [item.slug])
@@ -183,29 +173,9 @@ def list_public_excerpts(session: Session, limit: int = 40, offset: int = 0) -> 
 
 def aggregate_tags(session: Session) -> list:
     """Cross-model tag aggregation with counts."""
-    import json as _json
-
     from aerisun.domain.content.schemas import TagInfo
 
-    tag_counts: dict[str, int] = {}
-    for model in (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry):
-        rows = session.query(model.tags).filter(model.tags.isnot(None)).all()
-        for (tags_json,) in rows:
-            if not tags_json:
-                continue
-            if isinstance(tags_json, str):
-                try:
-                    tags_list = _json.loads(tags_json)
-                except (ValueError, TypeError):
-                    continue
-            elif isinstance(tags_json, list):
-                tags_list = tags_json
-            else:
-                continue
-            for tag in tags_list:
-                tag = str(tag).strip()
-                if tag:
-                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    tag_counts = repo.count_by_tags(session)
     return sorted(
         [TagInfo(name=name, count=count) for name, count in tag_counts.items()],
         key=lambda t: t.count,
@@ -217,11 +187,5 @@ def aggregate_categories(session: Session) -> list:
     """Aggregate post categories with counts."""
     from aerisun.domain.content.schemas import CategoryInfo
 
-    rows = (
-        session.query(PostEntry.category, func.count(PostEntry.id))
-        .filter(PostEntry.category.isnot(None), PostEntry.category != "")
-        .group_by(PostEntry.category)
-        .order_by(func.count(PostEntry.id).desc())
-        .all()
-    )
+    rows = repo.count_by_category(session)
     return [CategoryInfo(name=name, count=count) for name, count in rows]

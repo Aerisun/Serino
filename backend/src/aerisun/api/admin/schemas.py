@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
-from aerisun.core.schemas import ModelBase  # noqa: F401
+from aerisun.core.schemas import ModelBase
 
 T = TypeVar("T")
 
