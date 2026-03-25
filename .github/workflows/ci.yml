@@ -37,38 +37,87 @@ jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: uv sync --dev
+        working-directory: backend
+      - name: Export OpenAPI spec
+        run: uv run python scripts/export-openapi.py
+        working-directory: backend
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
+        working-directory: frontend
       - run: pnpm run build
+        working-directory: frontend
 
   admin:
     name: Admin
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: admin
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: admin/pnpm-lock.yaml
+      - run: uv sync --dev
+        working-directory: backend
+      - name: Export OpenAPI spec
+        run: uv run python scripts/export-openapi.py
+        working-directory: backend
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
+        working-directory: admin
       - run: pnpm run build
+        working-directory: admin
+
+  contract:
+    name: Contract Tests
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: uv sync --dev
+        working-directory: backend
+      - name: Export OpenAPI spec
+        run: uv run python scripts/export-openapi.py
+        working-directory: backend
+      - run: pnpm install --frozen-lockfile
+      - name: Generate contract schemas
+        run: pnpm --filter @serino/api-client run generate:api
+      - name: Export backend fixtures
+        run: uv run pytest tests/test_contract_fixtures.py -v
+        working-directory: backend
+      - name: Validate contracts
+        run: pnpm --filter @serino/api-client test
 
   docker:
     name: Docker Build

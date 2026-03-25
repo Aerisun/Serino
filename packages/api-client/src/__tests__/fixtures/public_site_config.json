@@ -1,0 +1,163 @@
+{
+  "site": {
+    "name": "Felix",
+    "title": "Aerisun",
+    "bio": "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。",
+    "role": "UI/UX Designer · Frontend Developer",
+    "footer_text": "Aerisun · Built with care and a small stack.",
+    "author": "Felix",
+    "og_image": "/images/hero_bg.jpeg",
+    "meta_description": "Felix 的个人网站 - UI/UX 设计师与前端开发者",
+    "copyright": "All rights reserved",
+    "hero_actions": [
+      {
+        "label": "简历",
+        "href": "/resume",
+        "icon_key": "resume"
+      },
+      {
+        "label": "留言板",
+        "href": "/guestbook",
+        "icon_key": "guestbook"
+      }
+    ],
+    "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
+    "feature_flags": {
+      "toc": true,
+      "reading_progress": true,
+      "social_sharing": true
+    }
+  },
+  "social_links": [
+    {
+      "name": "GitHub",
+      "href": "https://github.com/",
+      "icon_key": "github",
+      "placement": "hero",
+      "order_index": 0
+    },
+    {
+      "name": "Telegram",
+      "href": "https://t.me/",
+      "icon_key": "telegram",
+      "placement": "hero",
+      "order_index": 1
+    },
+    {
+      "name": "X",
+      "href": "https://x.com/",
+      "icon_key": "x",
+      "placement": "hero",
+      "order_index": 2
+    },
+    {
+      "name": "网易云",
+      "href": "https://music.163.com/",
+      "icon_key": "netease",
+      "placement": "footer",
+      "order_index": 3
+    }
+  ],
+  "poems": [
+    {
+      "content": "在清晨和夜色之间，留一点呼吸的缝隙。",
+      "order_index": 0
+    },
+    {
+      "content": "把结构放稳，故事就会慢慢长出来。",
+      "order_index": 1
+    },
+    {
+      "content": "玻璃不会说话，但会把光留给你。",
+      "order_index": 2
+    },
+    {
+      "content": "最小的系统，也可以有完整的节奏。",
+      "order_index": 3
+    },
+    {
+      "content": "慢一点，不代表退后。",
+      "order_index": 4
+    },
+    {
+      "content": "记录不是负担，而是回声。",
+      "order_index": 5
+    },
+    {
+      "content": "让页面像一条安静的河。",
+      "order_index": 6
+    },
+    {
+      "content": "让交互只做必要的那一下。",
+      "order_index": 7
+    },
+    {
+      "content": "把复杂藏进秩序里。",
+      "order_index": 8
+    },
+    {
+      "content": "把想法写下来，它才有形状。",
+      "order_index": 9
+    },
+    {
+      "content": "每次重建，都是一次确认。",
+      "order_index": 10
+    },
+    {
+      "content": "留白不是空，留白是方向。",
+      "order_index": 11
+    }
+  ],
+  "navigation": [
+    {
+      "label": "首页",
+      "trigger": "arrow",
+      "href": "/",
+      "children": [
+        {
+          "label": "简历",
+          "href": "/resume"
+        },
+        {
+          "label": "留言板",
+          "href": "/guestbook"
+        },
+        {
+          "label": "日历",
+          "href": "/calendar"
+        }
+      ]
+    },
+    {
+      "label": "帖子",
+      "trigger": "none",
+      "href": "/posts",
+      "children": []
+    },
+    {
+      "label": "友链",
+      "trigger": "none",
+      "href": "/friends",
+      "children": []
+    },
+    {
+      "label": "更多",
+      "trigger": "hover",
+      "href": null,
+      "children": [
+        {
+          "label": "碎碎念",
+          "href": "/thoughts"
+        },
+        {
+          "label": "日记",
+          "href": "/diary"
+        },
+        {
+          "label": "文摘",
+          "href": "/excerpts"
+        }
+      ]
+    }
+  ]
+}
