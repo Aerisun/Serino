@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from contextvars import ContextVar
 
@@ -90,15 +91,42 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     * Stores it in :data:`request_id_var` (a :class:`~contextvars.ContextVar`).
     * Binds it to *structlog*'s context so every log line includes ``request_id``.
     * Returns it as an ``X-Request-ID`` response header.
+    * Logs request completion with duration and flags slow requests (>500ms).
     """
+
+    SLOW_REQUEST_THRESHOLD_MS = 500
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         rid = uuid.uuid4().hex
         request_id_var.set(rid)
         structlog.contextvars.bind_contextvars(request_id=rid)
+        start = time.perf_counter()
         try:
             response = await call_next(request)
             response.headers["X-Request-ID"] = rid
+            duration_ms = round((time.perf_counter() - start) * 1000, 1)
+            log = structlog.get_logger("aerisun.http")
+            log.info(
+                "request_completed",
+                method=request.method,
+                path=request.url.path,
+                status=response.status_code,
+                duration_ms=duration_ms,
+            )
+            if duration_ms > self.SLOW_REQUEST_THRESHOLD_MS:
+                log.warning(
+                    "slow_request",
+                    method=request.method,
+                    path=request.url.path,
+                    status=response.status_code,
+                    duration_ms=duration_ms,
+                )
+            try:
+                import sentry_sdk
+
+                sentry_sdk.set_tag("request_id", rid)
+            except ImportError:
+                pass
             return response
         finally:
             structlog.contextvars.clear_contextvars()
