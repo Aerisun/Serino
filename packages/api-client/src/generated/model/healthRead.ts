@@ -8,8 +8,6 @@
 export interface HealthRead {
   /** Service health status */
   status: string;
-  /** SQLite database file path */
-  database_path: string;
   /** Current server timestamp */
   timestamp: string;
 }

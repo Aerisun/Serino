@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 from datetime import datetime
 
@@ -26,7 +27,7 @@ def _make_snippet(text: str, query: str, radius: int = SNIPPET_RADIUS) -> str:
     lower_query = query.lower()
     pos = lower_text.find(lower_query)
     if pos == -1:
-        return text[: radius * 2] + ("..." if len(text) > radius * 2 else "")
+        return html.escape(text[: radius * 2]) + ("..." if len(text) > radius * 2 else "")
     start = max(0, pos - radius)
     end = min(len(text), pos + len(query) + radius)
     snippet = text[start:end]
@@ -34,7 +35,8 @@ def _make_snippet(text: str, query: str, radius: int = SNIPPET_RADIUS) -> str:
         snippet = "..." + snippet
     if end < len(text):
         snippet = snippet + "..."
-    pattern = re.compile(re.escape(query), re.IGNORECASE)
+    snippet = html.escape(snippet)
+    pattern = re.compile(re.escape(html.escape(query)), re.IGNORECASE)
     snippet = pattern.sub(lambda m: f"<mark>{m.group()}</mark>", snippet)
     return snippet
 
