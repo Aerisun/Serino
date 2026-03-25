@@ -46,11 +46,14 @@ const ShiroAccentController = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const paletteIndexRef = useRef<number | null>(null);
   const pathRef = useRef<string | null>(null);
+  const resolvedThemeRef = useRef<"light" | "dark" | null>(null);
 
   useLayoutEffect(() => {
     const currentPath = location.pathname;
+    const previousTheme = resolvedThemeRef.current;
     const isFirstRender = paletteIndexRef.current === null;
     const didPathChange = pathRef.current !== null && pathRef.current !== currentPath;
+    const didThemeChange = previousTheme !== null && previousTheme !== resolvedTheme;
     const root = document.documentElement;
 
     if (isFirstRender) {
@@ -62,8 +65,9 @@ const ShiroAccentController = () => {
 
     const nextPaletteIndex = paletteIndexRef.current ?? 0;
     pathRef.current = currentPath;
+    resolvedThemeRef.current = resolvedTheme;
 
-    if (isFirstRender || prefersReducedMotion) {
+    if (isFirstRender || prefersReducedMotion || (didThemeChange && !didPathChange)) {
       applyPaletteTokens(nextPaletteIndex, resolvedTheme);
       return;
     }
