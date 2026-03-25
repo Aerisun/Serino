@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Export the FastAPI OpenAPI spec to JSON files for Orval codegen.
+"""Export the FastAPI OpenAPI spec to JSON for Orval codegen.
 
 Usage:
     python scripts/export-openapi.py
 
 Outputs:
-    admin/openapi.json
-    frontend/openapi.json
+    packages/api-client/openapi.json
 """
 
 from __future__ import annotations
@@ -24,8 +23,7 @@ from aerisun.main import app  # noqa: E402
 spec = app.openapi()
 
 root = Path(__file__).resolve().parent.parent
-
-for target in ("admin", "frontend"):
-    dest = root / target / "openapi.json"
-    dest.write_text(json.dumps(spec, indent=2, default=str, ensure_ascii=False) + "\n")
-    print(f"Wrote {dest}")
+dest = root / "packages" / "api-client" / "openapi.json"
+dest.parent.mkdir(parents=True, exist_ok=True)
+dest.write_text(json.dumps(spec, indent=2, default=str, ensure_ascii=False) + "\n")
+print(f"Wrote {dest}")

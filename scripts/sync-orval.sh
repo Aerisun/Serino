@@ -102,7 +102,7 @@ run_orval_if_needed \
   "admin" \
   "admin/src/api/generated/admin/admin.ts" \
   "admin_codegen_fingerprint" \
-  "${PROJECT_DIR}/admin/openapi.json" \
+  "${PROJECT_DIR}/packages/api-client/openapi.json" \
   "${PROJECT_DIR}/admin/orval.config.ts" \
   "${PROJECT_DIR}/admin/package.json" \
   "${PROJECT_DIR}/admin/src/api/mutator/custom-instance.ts"
@@ -112,12 +112,22 @@ run_orval_if_needed \
   "frontend" \
   "frontend/src/lib/api/generated/public/public.ts" \
   "frontend_codegen_fingerprint" \
-  "${PROJECT_DIR}/frontend/openapi.json" \
+  "${PROJECT_DIR}/packages/api-client/openapi.json" \
   "${PROJECT_DIR}/frontend/orval.config.ts" \
   "${PROJECT_DIR}/frontend/package.json" \
   "${PROJECT_DIR}/frontend/src/lib/api/mutator/custom-fetch.ts"
 
+run_orval_if_needed \
+  "contract-schemas" \
+  "packages/api-client" \
+  "packages/api-client/src/generated/schemas.zod.ts" \
+  "contract_codegen_fingerprint" \
+  "${PROJECT_DIR}/packages/api-client/openapi.json" \
+  "${PROJECT_DIR}/packages/api-client/orval.config.ts" \
+  "${PROJECT_DIR}/packages/api-client/package.json"
+
 cat >"${STATE_FILE}" <<EOF
 admin_codegen_fingerprint=${admin_codegen_fingerprint}
 frontend_codegen_fingerprint=${frontend_codegen_fingerprint}
+contract_codegen_fingerprint=${contract_codegen_fingerprint}
 EOF

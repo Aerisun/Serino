@@ -3,7 +3,7 @@ import { defineConfig } from "orval";
 export default defineConfig({
   admin: {
     input: {
-      target: "./openapi.json",
+      target: "../packages/api-client/openapi.json",
       filters: {
         tags: [
           "admin-auth",

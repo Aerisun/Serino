@@ -3,7 +3,7 @@ import { defineConfig } from "orval";
 export default defineConfig({
   publicApi: {
     input: {
-      target: "./openapi.json",
+      target: "../packages/api-client/openapi.json",
       filters: {
         tags: ["public", "search", "seo"],
       },
