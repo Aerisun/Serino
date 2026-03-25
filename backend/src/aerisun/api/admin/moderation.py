@@ -12,6 +12,7 @@ from aerisun.domain.engagement.service import (
     moderate_comment,
     moderate_guestbook_entry,
 )
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
 
@@ -36,15 +37,9 @@ def list_comments(
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return list_admin_comments(
-        page=page,
-        page_size=page_size,
-        status=status_filter,
-        path=path_filter,
-        surface=surface_filter,
-        keyword=keyword_filter,
-        author=author_filter,
-        email=email_filter,
-        sort=sort,
+        page=page, page_size=page_size, status=status_filter,
+        path=path_filter, surface=surface_filter, keyword=keyword_filter,
+        author=author_filter, email=email_filter, sort=sort,
     )
 
 
@@ -57,14 +52,9 @@ def moderate_comment_endpoint(
 ) -> Any:
     try:
         waline_id = int(comment_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail="Comment not found") from exc
-    try:
-        result = moderate_comment(session, waline_id, payload.action, payload.reason)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail="Comment not found") from exc
+    except ValueError:
+        raise ResourceNotFound("Comment not found")
+    result = moderate_comment(session, waline_id, payload.action, payload.reason)
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return result
@@ -84,14 +74,9 @@ def list_guestbook(
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return list_admin_guestbook(
-        page=page,
-        page_size=page_size,
-        status=status_filter,
-        path=path_filter,
-        keyword=keyword_filter,
-        author=author_filter,
-        email=email_filter,
-        sort=sort,
+        page=page, page_size=page_size, status=status_filter,
+        path=path_filter, keyword=keyword_filter,
+        author=author_filter, email=email_filter, sort=sort,
     )
 
 
@@ -104,14 +89,9 @@ def moderate_guestbook_endpoint(
 ) -> Any:
     try:
         waline_id = int(entry_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail="Guestbook entry not found") from exc
-    try:
-        result = moderate_guestbook_entry(session, waline_id, payload.action, payload.reason)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail="Guestbook entry not found") from exc
+    except ValueError:
+        raise ResourceNotFound("Guestbook entry not found")
+    result = moderate_guestbook_entry(session, waline_id, payload.action, payload.reason)
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return result

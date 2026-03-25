@@ -1,28 +1,17 @@
 from collections.abc import Callable
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
-from sqlalchemy import or_
-from sqlalchemy.orm import Query as SAQuery
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query as SAQuery, Session
 
 from aerisun.core.base import Base
 from aerisun.core.db import get_session
+from aerisun.domain.crud import service as crud_service
 from aerisun.domain.iam.models import AdminUser
 
 from .deps import get_current_admin
 from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest, PaginatedResponse
-
-# Columns that the list endpoint is allowed to sort by.
-_ALLOWED_SORT_COLUMNS = {
-    "created_at",
-    "updated_at",
-    "title",
-    "published_at",
-    "status",
-    "slug",
-}
 
 
 def build_crud_router(
@@ -39,13 +28,7 @@ def build_crud_router(
     """Factory that returns a full CRUD router for a given SQLAlchemy model."""
 
     router = APIRouter(prefix=prefix, tags=[tag])
-    # Derive a clean resource name for unique operation IDs (e.g. "/posts" -> "posts")
     resource = prefix.strip("/").replace("/", "_")
-
-    def scoped_query(session: Session) -> SAQuery[Any]:
-        if base_query_factory is None:
-            return session.query(model)
-        return base_query_factory(session)
 
     @router.get(
         "/", response_model=PaginatedResponse[read_schema], summary=f"获取{tag}列表", operation_id=f"list_{resource}"
@@ -61,45 +44,13 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> dict[str, Any]:
-        """分页查询并返回列表数据。"""
-        q = scoped_query(session)
-
-        # --- filters ---
-        if status_filter and hasattr(model, "status"):
-            q = q.filter(model.status == status_filter)  # type: ignore[arg-type]
-        if tag and hasattr(model, "tags"):
-            q = q.filter(model.tags.contains(f'"{tag}"'))  # type: ignore[union-attr]
-        if search and hasattr(model, "title"):
-            pattern = f"%{search}%"
-            clauses = [model.title.ilike(pattern)]  # type: ignore[union-attr]
-            if hasattr(model, "body"):
-                clauses.append(model.body.ilike(pattern))  # type: ignore[union-attr]
-            if hasattr(model, "slug"):
-                clauses.append(model.slug.ilike(pattern))  # type: ignore[union-attr]
-            q = q.filter(or_(*clauses))
-
-        total = q.count()
-
-        # --- sorting ---
-        col_name = sort_by if sort_by in _ALLOWED_SORT_COLUMNS else "created_at"
-        col = getattr(model, col_name, None) or model.created_at  # type: ignore[union-attr]
-        order_col = col.asc() if sort_order == "asc" else col.desc()
-
-        # Pinned items first when the model supports it
-        order_clauses = []
-        if hasattr(model, "is_pinned"):
-            order_clauses.append(model.is_pinned.desc())  # type: ignore[union-attr]
-            if hasattr(model, "pin_order"):
-                order_clauses.append(model.pin_order.asc())  # type: ignore[union-attr]
-        order_clauses.append(order_col)
-
-        items = q.order_by(*order_clauses).offset((page - 1) * page_size).limit(page_size).all()
-        return {
-            "items": [read_schema.model_validate(i) for i in items],
-            "total": total,
-            "page": page,
-            "page_size": page_size,
-        }
+        return crud_service.list_items(
+            session, model,
+            page=page, page_size=page_size, read_schema=read_schema,
+            status_filter=status_filter, tag_filter=tag, search=search,
+            sort_by=sort_by, sort_order=sort_order,
+            base_query_factory=base_query_factory,
+        )
 
     @router.post(
         "/",
@@ -113,15 +64,10 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        """接收数据并创建一条新记录。"""
-        data = {k: v for k, v in payload.model_dump().items() if hasattr(model, k)}
-        if prepare_create_data is not None:
-            data = prepare_create_data(session, data)
-        obj = model(**data)
-        session.add(obj)
-        session.commit()
-        session.refresh(obj)
-        return read_schema.model_validate(obj)
+        return crud_service.create_item(
+            session, model, payload.model_dump(),
+            read_schema=read_schema, prepare_data=prepare_create_data,
+        )
 
     @router.get("/{item_id}", response_model=read_schema, summary=f"获取单条{tag}", operation_id=f"get_{resource}")
     def get_item(
@@ -129,11 +75,10 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        """根据 ID 获取单条记录详情。"""
-        obj = scoped_query(session).filter(model.id == item_id).first()  # type: ignore[union-attr]
-        if obj is None:
-            raise HTTPException(status_code=404, detail="Not found")
-        return read_schema.model_validate(obj)
+        return crud_service.get_item(
+            session, model, item_id,
+            read_schema=read_schema, base_query_factory=base_query_factory,
+        )
 
     @router.put("/{item_id}", response_model=read_schema, summary=f"更新{tag}", operation_id=f"update_{resource}")
     def update_item(
@@ -142,16 +87,10 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        """根据 ID 更新一条记录的字段。"""
-        obj = scoped_query(session).filter(model.id == item_id).first()  # type: ignore[union-attr]
-        if obj is None:
-            raise HTTPException(status_code=404, detail="Not found")
-        for key, value in payload.model_dump(exclude_unset=True).items():
-            if hasattr(model, key):
-                setattr(obj, key, value)
-        session.commit()
-        session.refresh(obj)
-        return read_schema.model_validate(obj)
+        return crud_service.update_item(
+            session, model, item_id, payload.model_dump(exclude_unset=True),
+            read_schema=read_schema, base_query_factory=base_query_factory,
+        )
 
     @router.delete(
         "/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}", operation_id=f"delete_{resource}"
@@ -161,14 +100,7 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> None:
-        """根据 ID 删除一条记录。"""
-        obj = scoped_query(session).filter(model.id == item_id).first()  # type: ignore[union-attr]
-        if obj is None:
-            raise HTTPException(status_code=404, detail="Not found")
-        session.delete(obj)
-        session.commit()
-
-    # --- Bulk operations ---
+        crud_service.delete_item(session, model, item_id, base_query_factory=base_query_factory)
 
     @router.post(
         "/bulk-delete",
@@ -181,14 +113,7 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        """根据 ID 列表批量删除记录。"""
-        affected = (
-            scoped_query(session)
-            .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
-            .delete(synchronize_session="fetch")
-        )
-        session.commit()
-        return {"affected": affected}
+        return crud_service.bulk_delete_items(session, model, payload.ids, base_query_factory=base_query_factory)
 
     @router.post(
         "/bulk-status",
@@ -201,15 +126,8 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        """根据 ID 列表批量更新记录状态。"""
-        if not hasattr(model, "status"):
-            raise HTTPException(status_code=400, detail="Model does not support status")
-        affected = (
-            scoped_query(session)
-            .filter(model.id.in_(payload.ids))  # type: ignore[union-attr]
-            .update({"status": payload.status}, synchronize_session="fetch")
+        return crud_service.bulk_update_status_items(
+            session, model, payload.ids, payload.status, base_query_factory=base_query_factory,
         )
-        session.commit()
-        return {"affected": affected}
 
     return router

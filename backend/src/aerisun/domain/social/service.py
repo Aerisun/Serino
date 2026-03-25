@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from aerisun.domain.social import repository as repo
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.social.schemas import (
     FriendCollectionRead,
     FriendFeedCollectionRead,
@@ -47,3 +48,76 @@ def list_public_friend_feed(session: Session, limit: int = 20) -> FriendFeedColl
             for item, friend in rows
         ]
     )
+
+
+# ---------------------------------------------------------------------------
+# Admin helpers
+# ---------------------------------------------------------------------------
+
+
+def trigger_single_crawl(session: Session, feed_id: str):
+    """Trigger crawl for a single feed source. Raises ResourceNotFound."""
+    from aerisun.core.settings import get_settings
+    from aerisun.domain.social.crawler import crawl_single_source
+    from aerisun.domain.social.models import Friend, FriendFeedSource
+
+    source = session.get(FriendFeedSource, feed_id)
+    if source is None:
+        raise ResourceNotFound("Feed source not found")
+    friend = session.get(Friend, source.friend_id)
+    if friend is None:
+        raise ResourceNotFound("Friend not found")
+    result = crawl_single_source(session, source, friend, get_settings())
+    session.commit()
+    return result
+
+
+def list_friend_feeds_admin(session: Session, friend_id: str):
+    """List feed sources for a friend. Raises ResourceNotFound."""
+    from aerisun.domain.social.models import Friend, FriendFeedSource
+
+    friend = session.get(Friend, friend_id)
+    if friend is None:
+        raise ResourceNotFound("Friend not found")
+    sources = session.query(FriendFeedSource).filter(FriendFeedSource.friend_id == friend_id).all()
+    return sources
+
+
+def create_friend_feed_admin(session: Session, friend_id: str, data: dict):
+    """Create a feed source for a friend. Raises ResourceNotFound."""
+    from aerisun.domain.social.models import Friend, FriendFeedSource
+
+    friend = session.get(Friend, friend_id)
+    if friend is None:
+        raise ResourceNotFound("Friend not found")
+    data["friend_id"] = friend_id
+    obj = FriendFeedSource(**data)
+    session.add(obj)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
+
+def update_friend_feed_admin(session: Session, feed_id: str, data: dict):
+    """Update a feed source. Raises ResourceNotFound."""
+    from aerisun.domain.social.models import FriendFeedSource
+
+    obj = session.get(FriendFeedSource, feed_id)
+    if obj is None:
+        raise ResourceNotFound("Feed source not found")
+    for key, value in data.items():
+        setattr(obj, key, value)
+    session.commit()
+    session.refresh(obj)
+    return obj
+
+
+def delete_friend_feed_admin(session: Session, feed_id: str) -> None:
+    """Delete a feed source. Raises ResourceNotFound."""
+    from aerisun.domain.social.models import FriendFeedSource
+
+    obj = session.get(FriendFeedSource, feed_id)
+    if obj is None:
+        raise ResourceNotFound("Feed source not found")
+    session.delete(obj)
+    session.commit()

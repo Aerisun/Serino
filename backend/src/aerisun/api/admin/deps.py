@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -15,10 +15,7 @@ def get_current_admin(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
     session: Session = Depends(get_session),
 ) -> AdminUser:
-    try:
-        return validate_session_token(session, credentials.credentials)
-    except PermissionError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    return validate_session_token(session, credentials.credentials)
 
 
 def require_api_key_scopes(*required_scopes: str):
@@ -26,11 +23,6 @@ def require_api_key_scopes(*required_scopes: str):
         credentials: HTTPAuthorizationCredentials = Depends(_bearer),
         session: Session = Depends(get_session),
     ) -> ApiKey:
-        try:
-            return validate_api_key(session, credentials.credentials, required_scopes)
-        except PermissionError as exc:
-            detail = str(exc)
-            code = status.HTTP_403_FORBIDDEN if "scope" in detail.lower() else status.HTTP_401_UNAUTHORIZED
-            raise HTTPException(status_code=code, detail=detail) from exc
+        return validate_api_key(session, credentials.credentials, required_scopes)
 
     return dependency

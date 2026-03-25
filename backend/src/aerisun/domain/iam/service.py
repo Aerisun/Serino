@@ -7,6 +7,7 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.exceptions import AuthenticationFailed, PermissionDenied, ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.iam import repository as repo
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.iam.schemas import (
@@ -25,9 +26,9 @@ def authenticate_admin(session: Session, username: str, password: str) -> AdminU
     """Verify credentials and return the admin user. Raises LookupError or PermissionError."""
     user = repo.find_admin_by_username(session, username)
     if user is None or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
-        raise LookupError("Invalid username or password")
+        raise AuthenticationFailed("Invalid username or password")
     if not user.is_active:
-        raise PermissionError("Account is disabled")
+        raise PermissionDenied("Account is disabled")
     return user
 
 
@@ -51,7 +52,7 @@ def destroy_admin_sessions(session: Session, admin_user_id: str) -> None:
 def change_admin_password(session: Session, admin: AdminUser, current_password: str, new_password: str) -> None:
     """Verify old password and update to new. Raises ValueError on mismatch."""
     if not bcrypt.checkpw(current_password.encode(), admin.password_hash.encode()):
-        raise ValueError("Current password is incorrect")
+        raise ValidationError("Current password is incorrect")
     admin.password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
     session.commit()
 
@@ -61,7 +62,7 @@ def update_admin_profile(session: Session, admin: AdminUser, username: str | Non
     if username is not None:
         existing = repo.find_admin_by_username_excluding(session, username, admin.id)
         if existing:
-            raise ValueError("Username already taken")
+            raise StateConflict("Username already taken")
         admin.username = username
     session.commit()
     session.refresh(admin)
@@ -89,7 +90,7 @@ def revoke_admin_session(session: Session, admin_user_id: str, session_id: str) 
     """Revoke a specific session. Raises LookupError if not found or not owned."""
     target = repo.find_session_by_id(session, session_id)
     if target is None or target.admin_user_id != admin_user_id:
-        raise LookupError("Session not found")
+        raise ResourceNotFound("Session not found")
     session.delete(target)
     session.commit()
 
@@ -98,16 +99,16 @@ def validate_session_token(session: Session, token: str) -> AdminUser:
     """Validate a session token and return the admin user. Raises PermissionError."""
     admin_session = repo.find_session_by_token(session, token)
     if admin_session is None:
-        raise PermissionError("Invalid or expired session token")
+        raise AuthenticationFailed("Invalid or expired session token")
     now_utc = datetime.now(UTC)
     now = now_utc.replace(tzinfo=None) if admin_session.expires_at.tzinfo is None else now_utc
     if admin_session.expires_at < now:
         session.delete(admin_session)
         session.commit()
-        raise PermissionError("Session expired")
+        raise AuthenticationFailed("Session expired")
     user = session.get(AdminUser, admin_session.admin_user_id)
     if user is None or not user.is_active:
-        raise PermissionError("User not found or inactive")
+        raise PermissionDenied("User not found or inactive")
     return user
 
 
@@ -116,12 +117,12 @@ def validate_api_key(session: Session, token: str, required_scopes: tuple[str, .
     prefix = token[:8]
     key = repo.find_api_key_by_prefix(session, prefix)
     if key is None:
-        raise PermissionError("Invalid API key")
+        raise AuthenticationFailed("Invalid API key")
     if not bcrypt.checkpw(token.encode(), key.hashed_secret.encode()):
-        raise PermissionError("Invalid API key")
+        raise AuthenticationFailed("Invalid API key")
     missing = [s for s in required_scopes if s not in key.scopes]
     if missing:
-        raise PermissionError(f"Missing required scopes: {', '.join(missing)}")
+        raise PermissionDenied(f"Missing required scopes: {', '.join(missing)}")
     key.last_used_at = datetime.now(UTC)
     session.commit()
     return key
@@ -159,7 +160,7 @@ def create_api_key(session: Session, key_name: str, scopes: list[str]) -> ApiKey
 def update_api_key(session: Session, key_id: str, payload: ApiKeyUpdate) -> ApiKeyAdminRead:
     key = repo.find_api_key_by_id(session, key_id)
     if key is None:
-        raise LookupError("API key not found")
+        raise ResourceNotFound("API key not found")
     repo.update_api_key(session, key, payload.model_dump(exclude_unset=True))
     session.commit()
     session.refresh(key)
@@ -169,6 +170,6 @@ def update_api_key(session: Session, key_id: str, payload: ApiKeyUpdate) -> ApiK
 def delete_api_key(session: Session, key_id: str) -> None:
     key = repo.find_api_key_by_id(session, key_id)
     if key is None:
-        raise LookupError("API key not found")
+        raise ResourceNotFound("API key not found")
     repo.delete_api_key(session, key)
     session.commit()

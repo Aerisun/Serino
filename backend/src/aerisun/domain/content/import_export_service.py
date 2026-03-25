@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.content.schemas import ContentAdminRead, ImportResult
+from aerisun.domain.exceptions import ValidationError as DomainValidationError
 
 _CONTENT_MODELS = {
     "posts": PostEntry,
@@ -41,7 +42,7 @@ def export_content_json(session: Session, content_type: str) -> list[dict]:
     """Export content as list of dicts. Raises ValueError for invalid type."""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise ValueError(f"Invalid content_type: {content_type}")
+        raise DomainValidationError(f"Invalid content_type: {content_type}")
     items = session.query(model).order_by(model.created_at.desc()).all()
     return [ContentAdminRead.model_validate(item).model_dump(mode="json") for item in items]
 
@@ -50,7 +51,7 @@ def export_content_markdown_zip(session: Session, content_type: str) -> bytes:
     """Export content as Markdown ZIP bytes. Raises ValueError for invalid type."""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise ValueError(f"Invalid content_type: {content_type}")
+        raise DomainValidationError(f"Invalid content_type: {content_type}")
     items = session.query(model).order_by(model.created_at.desc()).all()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -70,7 +71,7 @@ def import_content_json(session: Session, content_type: str, data: list[dict]) -
     """Import content from JSON data. Raises ValueError for invalid type."""
     model = _CONTENT_MODELS.get(content_type)
     if not model:
-        raise ValueError(f"Invalid content_type: {content_type}")
+        raise DomainValidationError(f"Invalid content_type: {content_type}")
 
     result = ImportResult()
     for entry in data:

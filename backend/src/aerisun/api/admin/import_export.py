@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import json
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from aerisun.domain.content.import_export_service import (
     import_content_json,
 )
 from aerisun.domain.content.schemas import ImportResult
+from aerisun.domain.exceptions import ValidationError as DomainValidationError
 from aerisun.domain.iam.models import AdminUser
 
 from .deps import get_current_admin
@@ -28,23 +29,20 @@ def export_content(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> StreamingResponse:
-    try:
-        if format == "markdown_zip":
-            zip_bytes = export_content_markdown_zip(session, content_type)
-            return StreamingResponse(
-                io.BytesIO(zip_bytes),
-                media_type="application/zip",
-                headers={"Content-Disposition": f"attachment; filename={content_type}-export.zip"},
-            )
-        data = export_content_json(session, content_type)
-        content_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    if format == "markdown_zip":
+        zip_bytes = export_content_markdown_zip(session, content_type)
         return StreamingResponse(
-            io.BytesIO(content_bytes),
-            media_type="application/json",
-            headers={"Content-Disposition": f"attachment; filename={content_type}-export.json"},
+            io.BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={content_type}-export.zip"},
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    data = export_content_json(session, content_type)
+    content_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    return StreamingResponse(
+        io.BytesIO(content_bytes),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={content_type}-export.json"},
+    )
 
 
 @router.post("/import", response_model=ImportResult, summary="导入内容")
@@ -57,11 +55,8 @@ async def import_content(
     raw = await file.read()
     try:
         items_data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=400, detail="Invalid JSON") from exc
+    except json.JSONDecodeError:
+        raise DomainValidationError("Invalid JSON")
     if not isinstance(items_data, list):
-        raise HTTPException(status_code=400, detail="Expected JSON array")
-    try:
-        return import_content_json(session, content_type, items_data)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise DomainValidationError("Expected JSON array")
+    return import_content_json(session, content_type, items_data)

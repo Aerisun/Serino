@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
-from aerisun.domain.social.models import Friend, FriendFeedSource
+from aerisun.domain.social.models import Friend
+from aerisun.domain.social.service import (
+    create_friend_feed_admin,
+    delete_friend_feed_admin,
+    list_friend_feeds_admin,
+    trigger_single_crawl,
+    update_friend_feed_admin,
+)
 
 from .content import build_crud_router
 from .deps import get_current_admin
@@ -36,14 +43,10 @@ friends_router = build_crud_router(
 router.include_router(friends_router)
 
 
-# --- Feed crawl triggers ---
-
-
 @router.post("/feeds/crawl", response_model=FeedCrawlAllResultRead, summary="手动触发全量抓取")
 def trigger_feed_crawl(
     _admin: AdminUser = Depends(get_current_admin),
 ) -> Any:
-    """手动触发所有已启用订阅源的抓取任务。"""
     from aerisun.domain.social.crawler import crawl_all_feeds
 
     return crawl_all_feeds()
@@ -55,23 +58,7 @@ def trigger_single_feed_crawl(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """手动触发指定订阅源的抓取任务。"""
-    from aerisun.core.settings import get_settings
-    from aerisun.domain.social.crawler import crawl_single_source
-
-    source = session.get(FriendFeedSource, feed_id)
-    if source is None:
-        raise HTTPException(status_code=404, detail="Feed source not found")
-    friend = session.get(Friend, source.friend_id)
-    if friend is None:
-        raise HTTPException(status_code=404, detail="Friend not found")
-
-    result = crawl_single_source(session, source, friend, get_settings())
-    session.commit()
-    return result
-
-
-# --- FriendFeedSource as sub-resource of friends ---
+    return trigger_single_crawl(session, feed_id)
 
 
 @router.get("/friends/{friend_id}/feeds", response_model=list[FriendFeedSourceAdminRead], summary="获取友链订阅源")
@@ -80,11 +67,7 @@ def list_friend_feeds(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """列出指定友链关联的所有订阅源。"""
-    friend = session.get(Friend, friend_id)
-    if friend is None:
-        raise HTTPException(status_code=404, detail="Friend not found")
-    sources = session.query(FriendFeedSource).filter(FriendFeedSource.friend_id == friend_id).all()
+    sources = list_friend_feeds_admin(session, friend_id)
     return [FriendFeedSourceAdminRead.model_validate(s) for s in sources]
 
 
@@ -100,16 +83,7 @@ def create_friend_feed(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """为指定友链添加一个新的订阅源。"""
-    friend = session.get(Friend, friend_id)
-    if friend is None:
-        raise HTTPException(status_code=404, detail="Friend not found")
-    data = payload.model_dump()
-    data["friend_id"] = friend_id
-    obj = FriendFeedSource(**data)
-    session.add(obj)
-    session.commit()
-    session.refresh(obj)
+    obj = create_friend_feed_admin(session, friend_id, payload.model_dump())
     return FriendFeedSourceAdminRead.model_validate(obj)
 
 
@@ -120,14 +94,7 @@ def update_friend_feed(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    """更新指定订阅源的配置信息。"""
-    obj = session.get(FriendFeedSource, feed_id)
-    if obj is None:
-        raise HTTPException(status_code=404, detail="Feed source not found")
-    for key, value in payload.model_dump(exclude_unset=True).items():
-        setattr(obj, key, value)
-    session.commit()
-    session.refresh(obj)
+    obj = update_friend_feed_admin(session, feed_id, payload.model_dump(exclude_unset=True))
     return FriendFeedSourceAdminRead.model_validate(obj)
 
 
@@ -137,9 +104,4 @@ def delete_friend_feed(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
-    """删除指定的订阅源记录。"""
-    obj = session.get(FriendFeedSource, feed_id)
-    if obj is None:
-        raise HTTPException(status_code=404, detail="Feed source not found")
-    session.delete(obj)
-    session.commit()
+    delete_friend_feed_admin(session, feed_id)

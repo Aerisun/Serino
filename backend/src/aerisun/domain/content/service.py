@@ -5,6 +5,8 @@ from typing import TypeVar
 
 from sqlalchemy.orm import Session
 
+from aerisun.domain.exceptions import ResourceNotFound
+
 from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
     DiaryEntry,
@@ -142,7 +144,7 @@ def _list_entries(
 def _get_by_slug(session: Session, model: type[ContentModel], content_type: str, slug: str) -> ContentEntryRead:
     item = repo.find_by_slug(session, model, slug)
     if item is None:
-        raise LookupError(f"{model.__name__} with slug '{slug}' was not found")
+        raise ResourceNotFound(f"{model.__name__} with slug '{slug}' was not found")
     engagement_stats = _engagement_stats_by_slug(content_type, [item.slug])
     return _to_entry(item, content_type, engagement_stats)
 

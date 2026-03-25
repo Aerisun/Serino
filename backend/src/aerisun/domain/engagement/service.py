@@ -6,6 +6,7 @@ from hashlib import sha256
 from sqlalchemy.orm import Session
 
 from aerisun.domain.engagement import repository as repo
+from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError as DomainValidationError
 from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
@@ -47,12 +48,6 @@ DEFAULT_COMMENT_AVATAR_PRESETS = [
     {"key": "plum", "label": "Plum", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Plum"},
     {"key": "linen", "label": "Linen", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Linen"},
 ]
-
-
-class CommentPolicyError(ValueError):
-    def __init__(self, message: str, status_code: int = 400) -> None:
-        super().__init__(message)
-        self.status_code = status_code
 
 
 def _avatar_for_name(name: str) -> str:
@@ -186,11 +181,11 @@ def _validate_identity(name: str, email: str | None) -> tuple[str, str]:
     author_name = _clean_display_name(name)
     author_email = _email_key(email)
     if not author_email:
-        raise CommentPolicyError("请填写邮箱，昵称会和邮箱绑定。", status_code=422)
+        raise DomainValidationError("请填写邮箱，昵称会和邮箱绑定。")
 
     existing = get_waline_nick_identity(nick=author_name)
     if existing is not None and _email_key(existing.mail) != author_email:
-        raise CommentPolicyError("这个昵称已经绑定了其他邮箱，请换一个昵称或使用原邮箱。", status_code=409)
+        raise StateConflict("这个昵称已经绑定了其他邮箱，请换一个昵称或使用原邮箱。")
 
     upsert_waline_nick_identity(nick=author_name, mail=author_email)
     return author_name, author_email
@@ -222,9 +217,9 @@ def _resolve_avatar_selection(
     if requested_avatar_key:
         preset = preset_by_key.get(requested_avatar_key)
         if preset is None:
-            raise CommentPolicyError("所选头像不存在，请重新选择。", status_code=400)
+            raise DomainValidationError("所选头像不存在，请重新选择。")
         if requested_avatar_key in occupied_by_others:
-            raise CommentPolicyError("这个头像已经被当前页面里的其他昵称占用，请换一个。", status_code=409)
+            raise StateConflict("这个头像已经被当前页面里的其他昵称占用，请换一个。")
         return preset["key"], preset["avatar_url"]
 
     return _pick_available_avatar(
@@ -256,7 +251,7 @@ def list_public_guestbook_entries(session: Session, limit: int = 50) -> Guestboo
 
 def create_public_guestbook_entry(session: Session, payload: GuestbookCreate) -> GuestbookCreateResponse:
     if not payload.body.strip():
-        raise CommentPolicyError("留言内容不能为空。", status_code=422)
+        raise DomainValidationError("留言内容不能为空。")
     author_name, author_email = _validate_identity(payload.name, payload.email)
     avatar_key, avatar_url = _resolve_avatar_selection(
         session,
@@ -319,7 +314,7 @@ def _build_waline_comment_tree(items) -> list[CommentRead]:
 
 def list_public_comments(session: Session, content_type: str, content_slug: str) -> CommentCollectionRead:
     if not repo.content_exists(session, content_type, content_slug):
-        raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
+        raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
 
     url = build_comment_path(content_type, content_slug)
     _ensure_comment_avatar_assignments(session, url)
@@ -338,9 +333,9 @@ def create_public_comment(
     payload: CommentCreate,
 ) -> CommentCreateResponse:
     if not repo.content_exists(session, content_type, content_slug):
-        raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
+        raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
     if not payload.body.strip():
-        raise CommentPolicyError("评论内容不能为空。", status_code=422)
+        raise DomainValidationError("评论内容不能为空。")
 
     author_name, author_email = _validate_identity(payload.author_name, payload.author_email)
     url = build_comment_path(content_type, content_slug)
@@ -349,11 +344,11 @@ def create_public_comment(
         try:
             parent_id = int(payload.parent_id)
         except ValueError as exc:
-            raise LookupError(f"comment parent '{payload.parent_id}' was not found") from exc
+            raise ResourceNotFound(f"comment parent '{payload.parent_id}' was not found") from exc
 
         parent = get_waline_record_by_id(record_id=parent_id)
         if parent is None or parent.url != url:
-            raise LookupError(f"comment parent '{payload.parent_id}' was not found")
+            raise ResourceNotFound(f"comment parent '{payload.parent_id}' was not found")
 
     avatar_key, avatar_url = _resolve_avatar_selection(
         session,
@@ -394,7 +389,7 @@ def create_public_comment(
 
 def register_public_reaction(session: Session, payload: ReactionCreate) -> ReactionRead:
     if not repo.content_exists(session, payload.content_type, payload.content_slug):
-        raise LookupError(f"{payload.content_type} content with slug '{payload.content_slug}' was not found")
+        raise ResourceNotFound(f"{payload.content_type} content with slug '{payload.content_slug}' was not found")
 
     if payload.client_token:
         existing = repo.find_reaction(
@@ -445,7 +440,7 @@ def read_public_reaction(
     reaction_type: str,
 ) -> ReactionRead:
     if not repo.content_exists(session, content_type, content_slug):
-        raise LookupError(f"{content_type} content with slug '{content_slug}' was not found")
+        raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
 
     total = repo.count_reactions(
         session,
@@ -571,12 +566,12 @@ def moderate_comment(session: Session, comment_id: int, action: str, reason: str
     from aerisun.domain.waline.service import moderate_waline_record
 
     if action not in {"approve", "reject", "delete"}:
-        raise ValueError("Invalid action")
+        raise DomainValidationError("Invalid action")
 
     result = moderate_waline_record(record_id=comment_id, action=action)
 
     if result is None:
-        raise LookupError("Comment not found")
+        raise ResourceNotFound("Comment not found")
 
     record = ModerationRecord(
         target_type="comment",
@@ -598,12 +593,12 @@ def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reaso
     from aerisun.domain.waline.service import moderate_waline_record
 
     if action not in {"approve", "reject", "delete"}:
-        raise ValueError("Invalid action")
+        raise DomainValidationError("Invalid action")
 
     result = moderate_waline_record(record_id=entry_id, action=action)
 
     if result is None:
-        raise LookupError("Guestbook entry not found")
+        raise ResourceNotFound("Guestbook entry not found")
 
     record = ModerationRecord(
         target_type="guestbook",

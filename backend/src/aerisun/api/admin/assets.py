@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -57,10 +57,7 @@ def get_asset_endpoint(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    try:
-        return get_asset(session, asset_id)
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail="Not found") from exc
+    return get_asset(session, asset_id)
 
 
 @router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除资源")
@@ -69,7 +66,4 @@ def delete_asset_endpoint(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
-    try:
-        delete_asset(session, asset_id)
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail="Asset not found") from exc
+    delete_asset(session, asset_id)

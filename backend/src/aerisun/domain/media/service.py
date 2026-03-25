@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.exceptions import PayloadTooLarge, ResourceNotFound, ValidationError as DomainValidationError
 from aerisun.domain.media import repository as repo
 from aerisun.domain.media.schemas import AssetAdminRead
 
@@ -50,14 +51,14 @@ def upload_asset(session: Session, file_name: str, content: bytes, mime_type: st
 def get_asset(session: Session, asset_id: str) -> AssetAdminRead:
     obj = repo.find_asset_by_id(session, asset_id)
     if obj is None:
-        raise LookupError("Asset not found")
+        raise ResourceNotFound("Asset not found")
     return AssetAdminRead.model_validate(obj)
 
 
 def delete_asset(session: Session, asset_id: str) -> None:
     asset = repo.find_asset_by_id(session, asset_id)
     if asset is None:
-        raise LookupError("Asset not found")
+        raise ResourceNotFound("Asset not found")
     path = Path(asset.storage_path)
     if path.exists():
         path.unlink()
@@ -76,9 +77,9 @@ def save_comment_image(content: bytes, filename: str, mime_type: str | None) -> 
     Raises ValueError for unsupported type or oversized files.
     """
     if mime_type not in _ALLOWED_IMAGE_TYPES:
-        raise ValueError("不支持的图片格式")
+        raise DomainValidationError("不支持的图片格式")
     if len(content) > _MAX_UPLOAD_BYTES:
-        raise ValueError("图片过大，请压缩后重试")
+        raise PayloadTooLarge("图片过大，请压缩后重试")
 
     settings = get_settings()
     media_dir = Path(settings.media_dir).expanduser().resolve() / "comment-images"

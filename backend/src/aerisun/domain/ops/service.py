@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops import repository as repo
 from aerisun.domain.ops.models import BackupSnapshot
@@ -65,7 +66,7 @@ def restore_backup(session: Session, snapshot_id: str) -> BackupSnapshot:
     """Mark a backup as restoring. Raises LookupError if not found. Commits."""
     snapshot = repo.find_backup_by_id(session, snapshot_id)
     if snapshot is None:
-        raise LookupError("Backup snapshot not found")
+        raise ResourceNotFound("Backup snapshot not found")
     snapshot.status = "restoring"
     session.commit()
     session.refresh(snapshot)

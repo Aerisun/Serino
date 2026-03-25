@@ -5,6 +5,7 @@ import json
 from sqlalchemy.orm import Session
 
 from aerisun.domain.site_config import repository as repo
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.site_config.schemas import (
     CommunityConfigRead,
     NavChildRead,
@@ -24,7 +25,7 @@ from aerisun.domain.site_config.schemas import (
 def get_site_config(session: Session) -> SiteConfigRead:
     site = repo.find_site_profile(session)
     if site is None:
-        raise LookupError("site profile is missing")
+        raise ResourceNotFound("site profile is missing")
 
     links = repo.find_social_links(session, site.id)
     poems = repo.find_poems(session, site.id)
@@ -103,14 +104,14 @@ def get_page_copy(session: Session) -> PageCollectionRead:
 def get_community_config(session: Session) -> CommunityConfigRead:
     config = repo.find_community_config(session)
     if config is None:
-        raise LookupError("community config is missing")
+        raise ResourceNotFound("community config is missing")
     return CommunityConfigRead.model_validate(config)
 
 
 def get_resume(session: Session) -> ResumeRead:
     basics = repo.find_resume_basics(session)
     if basics is None:
-        raise LookupError("resume basics are missing")
+        raise ResourceNotFound("resume basics are missing")
 
     skill_groups = repo.find_resume_skill_groups(session, basics.id)
     experiences = repo.find_resume_experiences(session, basics.id)
@@ -136,3 +137,113 @@ load_site_bundle = get_site_config
 load_pages_bundle = get_page_copy
 load_community_bundle = get_community_config
 load_resume_bundle = get_resume
+
+
+# ---------------------------------------------------------------------------
+# Admin helpers
+# ---------------------------------------------------------------------------
+
+
+def get_site_profile_admin(session: Session):
+    """Return the primary SiteProfile, raising ResourceNotFound if missing."""
+    from aerisun.domain.site_config.models import SiteProfile
+
+    profile = session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
+    if profile is None:
+        raise ResourceNotFound("Site profile not configured")
+    return profile
+
+
+def update_site_profile_admin(session: Session, data: dict):
+    """Update the primary SiteProfile fields."""
+    profile = get_site_profile_admin(session)
+    for key, value in data.items():
+        setattr(profile, key, value)
+    session.commit()
+    session.refresh(profile)
+    return profile
+
+
+def get_community_config_admin(session: Session):
+    """Return CommunityConfig, raising ResourceNotFound if missing."""
+    from aerisun.domain.site_config.models import CommunityConfig
+
+    config = session.query(CommunityConfig).first()
+    if config is None:
+        raise ResourceNotFound("Community config not configured")
+    return config
+
+
+def update_community_config_admin(session: Session, data: dict):
+    """Update CommunityConfig fields."""
+    config = get_community_config_admin(session)
+    for key, value in data.items():
+        setattr(config, key, value)
+    session.commit()
+    session.refresh(config)
+    return config
+
+
+def reorder_nav_items_admin(session: Session, reorder_list: list) -> list:
+    """Reorder nav items by updating parent_id and order_index."""
+    from aerisun.domain.site_config.models import NavItem
+
+    profile = get_site_profile_admin(session)
+    scoped = {
+        item.id: item
+        for item in session.query(NavItem)
+        .filter(NavItem.site_profile_id == profile.id)
+        .order_by(NavItem.order_index.asc())
+        .all()
+    }
+    for reorder_item in reorder_list:
+        nav_item = scoped.get(reorder_item.id)
+        if nav_item is None:
+            raise ResourceNotFound(f"NavItem {reorder_item.id} not found")
+        nav_item.parent_id = reorder_item.parent_id
+        nav_item.order_index = reorder_item.order_index
+    session.commit()
+    return list(
+        session.query(NavItem)
+        .filter(NavItem.site_profile_id == profile.id)
+        .order_by(NavItem.order_index.asc())
+        .all()
+    )
+
+
+def site_profile_scoped_query(session: Session, model):
+    """Return a query scoped to the primary SiteProfile."""
+    profile = get_site_profile_admin(session)
+    return session.query(model).filter(model.site_profile_id == profile.id)
+
+
+def attach_site_profile_id(session: Session, data: dict) -> dict:
+    """Ensure data dict includes the primary site_profile_id."""
+    profile = get_site_profile_admin(session)
+    if not data.get("site_profile_id"):
+        data["site_profile_id"] = profile.id
+    return data
+
+
+def get_resume_basics_admin(session: Session):
+    """Return primary ResumeBasics, raising ResourceNotFound if missing."""
+    from aerisun.domain.site_config.models import ResumeBasics
+
+    basics = session.query(ResumeBasics).order_by(ResumeBasics.created_at.asc()).first()
+    if basics is None:
+        raise ResourceNotFound("Resume basics not configured")
+    return basics
+
+
+def resume_scoped_query(session: Session, model):
+    """Return a query scoped to the primary ResumeBasics."""
+    basics = get_resume_basics_admin(session)
+    return session.query(model).filter(model.resume_basics_id == basics.id)
+
+
+def attach_resume_basics_id(session: Session, data: dict) -> dict:
+    """Ensure data dict includes the primary resume_basics_id."""
+    basics = get_resume_basics_admin(session)
+    if not data.get("resume_basics_id"):
+        data["resume_basics_id"] = basics.id
+    return data
