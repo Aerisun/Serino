@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Clock, Eye, MessageCircle, Tag } from "lucide-react";
@@ -13,9 +13,8 @@ import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/runtime-config";
-import { ApiError } from "@serino/api-client";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { readPostApiV1PublicPostsSlugGet } from "@serino/api-client/public";
+import { useReadPostApiV1PublicPostsSlugGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
@@ -63,55 +62,22 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLElement>(null);
-  const [post, setPost] = useState<PostData | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const slug = id ? decodeURIComponent(id) : "";
+  const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1PublicPostsSlugGet(slug, { query: { enabled: !!id } });
 
-    const loadPost = async () => {
-      if (!id) {
-        setPost(null);
-        setStatus("empty");
-        setErrorMessage("缺少文章标识");
-        return;
-      }
-
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readPostApiV1PublicPostsSlugGet(decodeURIComponent(id), { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setPost(buildRemotePost(response.data));
-        setStatus("ready");
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setPost(null);
-        if (error instanceof ApiError && error.status === 404) {
-          setStatus("empty");
-          setErrorMessage("文章不存在或已被移除");
-        } else {
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "文章加载失败");
-        }
-      }
-    };
-
-    void loadPost();
-
-    return () => {
-      controller.abort();
-    };
-  }, [id, reloadKey]);
+  const post = response?.data ? buildRemotePost(response.data) : null;
+  const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? is404 ? "empty" : "error"
+      : post ? "ready" : "empty";
+  const errorMessage = isError
+    ? is404
+      ? "文章不存在或已被移除"
+      : error instanceof Error ? error.message : "文章加载失败"
+    : !id ? "缺少文章标识" : "";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -260,7 +226,7 @@ const PostDetail = () => {
             </p>
             <button
               type="button"
-              onClick={status === "error" ? () => setReloadKey((value) => value + 1) : () => navigate("/posts")}
+              onClick={status === "error" ? () => refetch() : () => navigate("/posts")}
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
               {status === "error" ? "重试" : "返回列表"}

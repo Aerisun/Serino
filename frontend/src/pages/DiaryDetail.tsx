@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } from "lucide-react";
@@ -12,9 +12,8 @@ import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/runtime-config";
-import { ApiError } from "@serino/api-client";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { readDiaryEntryApiV1PublicDiarySlugGet } from "@serino/api-client/public";
+import { useReadDiaryEntryApiV1PublicDiarySlugGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
@@ -76,55 +75,22 @@ const DiaryDetail = () => {
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLDivElement>(null);
-  const [entry, setEntry] = useState<DiaryData | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const slug = id ? decodeURIComponent(id) : "";
+  const { data: response, isLoading, isError, error, refetch } = useReadDiaryEntryApiV1PublicDiarySlugGet(slug, { query: { enabled: !!id } });
 
-    const loadEntry = async () => {
-      if (!id) {
-        setEntry(null);
-        setStatus("empty");
-        setErrorMessage("缺少日记标识");
-        return;
-      }
-
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readDiaryEntryApiV1PublicDiarySlugGet(decodeURIComponent(id), { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setEntry(buildRemoteDiaryEntry(response.data));
-        setStatus("ready");
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setEntry(null);
-        if (error instanceof ApiError && error.status === 404) {
-          setStatus("empty");
-          setErrorMessage("日记不存在或已被移除");
-        } else {
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "日记加载失败");
-        }
-      }
-    };
-
-    void loadEntry();
-
-    return () => {
-      controller.abort();
-    };
-  }, [id, reloadKey]);
+  const entry = response?.data ? buildRemoteDiaryEntry(response.data) : null;
+  const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? is404 ? "empty" : "error"
+      : entry ? "ready" : "empty";
+  const errorMessage = isError
+    ? is404
+      ? "日记不存在或已被移除"
+      : error instanceof Error ? error.message : "日记加载失败"
+    : !id ? "缺少日记标识" : "";
 
   const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
   const weatherLabel = entry?.weather ? weatherLabels[entry.weather] : "";
@@ -269,7 +235,7 @@ const DiaryDetail = () => {
             </p>
             <button
               type="button"
-              onClick={status === "error" ? () => setReloadKey((value) => value + 1) : () => navigate("/diary")}
+              onClick={status === "error" ? () => refetch() : () => navigate("/diary")}
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
               {status === "error" ? "重试" : "返回列表"}

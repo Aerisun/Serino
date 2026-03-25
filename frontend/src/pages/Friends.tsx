@@ -7,8 +7,8 @@ import { usePageConfig } from "@/contexts/runtime-config";
 import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import {
-  readFriendFeedApiV1PublicFriendFeedGet,
-  readFriendsApiV1PublicFriendsGet,
+  useReadFriendFeedApiV1PublicFriendFeedGet,
+  useReadFriendsApiV1PublicFriendsGet,
 } from "@serino/api-client/public";
 import { formatFriendFeedDate } from "@/lib/api/utils";
 import type { FriendRead, FriendFeedItemRead } from "@serino/api-client/models";
@@ -53,14 +53,54 @@ const toCirclePost = (value: FriendFeedItemRead): CirclePost => ({
 const Friends = () => {
   const config = usePageConfig().friends as unknown as FriendsPageConfig;
   const pageSize = Number(config.pageSize ?? 10);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [allCirclePosts, setAllCirclePosts] = useState<CirclePost[]>([]);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
   const loadMoreTimerRef = useRef<number | null>(null);
+
+  const {
+    data: friendsResponse,
+    isLoading: friendsLoading,
+    isError: friendsError,
+    error: friendsErr,
+    refetch: refetchFriends,
+  } = useReadFriendsApiV1PublicFriendsGet();
+  const {
+    data: feedResponse,
+    isLoading: feedLoading,
+    isError: feedError,
+    error: feedErr,
+    refetch: refetchFeed,
+  } = useReadFriendFeedApiV1PublicFriendFeedGet();
+
+  const friends = useMemo(
+    () => (friendsResponse?.data?.items ?? []).map(toFriend).filter((item) => Boolean(item.name)),
+    [friendsResponse],
+  );
+  const allCirclePosts = useMemo(
+    () =>
+      (feedResponse?.data?.items ?? [])
+        .map(toCirclePost)
+        .filter((item) => Boolean(item.blogName && item.title && item.url)),
+    [feedResponse],
+  );
+
+  const isLoading = friendsLoading || feedLoading;
+  const isError = friendsError || feedError;
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? "error"
+      : friends.length > 0 || allCirclePosts.length > 0
+        ? "ready"
+        : "empty";
+  const errorMessage = isError
+    ? ((friendsErr ?? feedErr) instanceof Error ? (friendsErr ?? feedErr)!.message : "友链页面加载失败")
+    : "";
+
+  const refetchAll = () => {
+    void refetchFriends();
+    void refetchFeed();
+  };
 
   useEffect(() => {
     return () => {
@@ -69,56 +109,6 @@ const Friends = () => {
       }
     };
   }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadRemoteData = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const [friendsResponse, feedResponse] = await Promise.all([
-          readFriendsApiV1PublicFriendsGet(undefined, { signal: controller.signal }),
-          readFriendFeedApiV1PublicFriendFeedGet(undefined, { signal: controller.signal }),
-        ]);
-
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const nextFriends = friendsResponse.data.items.map(toFriend).filter((item) => Boolean(item.name));
-        const nextCirclePosts = feedResponse.data.items
-          .map(toCirclePost)
-          .filter((item) => Boolean(item.blogName && item.title && item.url));
-
-        setFriends(nextFriends);
-        setAllCirclePosts(nextCirclePosts);
-        setVisibleCount(pageSize);
-        setStatus(nextFriends.length > 0 || nextCirclePosts.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setFriends([]);
-          setAllCirclePosts([]);
-          setVisibleCount(pageSize);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "友链页面加载失败");
-        }
-      }
-    };
-
-    void loadRemoteData();
-
-    return () => {
-      controller.abort();
-    };
-  }, [pageSize, reloadKey]);
-
-  useEffect(() => {
-    setVisibleCount((current) =>
-      Math.min(Math.max(current, pageSize), Math.max(allCirclePosts.length, pageSize)),
-    );
-  }, [allCirclePosts.length, pageSize]);
 
   const visiblePosts = useMemo(
     () => allCirclePosts.slice(0, visibleCount),
@@ -216,7 +206,7 @@ const Friends = () => {
                 {status === "error" && (
                   <button
                     type="button"
-                    onClick={() => setReloadKey((value) => value + 1)}
+                    onClick={() => refetchAll()}
                     className="mt-3 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
                   >
                     {String(config.retryLabel ?? "")}

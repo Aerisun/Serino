@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Heart, MessageCircle, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { readRecentActivityApiV1PublicRecentActivityGet } from "@serino/api-client/public";
+import { useReadRecentActivityApiV1PublicRecentActivityGet } from "@serino/api-client/public";
 import type { RecentActivityItemRead } from "@serino/api-client/models";
 
 interface ActivityItem {
@@ -84,42 +84,20 @@ const normalizeActivity = (value: RecentActivityItemRead): ActivityItem => ({
 
 const RecentActivity = () => {
   const navigate = useNavigate();
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadRecentActivity = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readRecentActivityApiV1PublicRecentActivityGet({ limit: 8 }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const nextItems = response.data.items.map(normalizeActivity);
-        setActivities(nextItems);
-        setStatus(nextItems.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setActivities([]);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "最近动态加载失败");
-        }
-      }
-    };
-
-    void loadRecentActivity();
-
-    return () => {
-      controller.abort();
-    };
-  }, [reloadKey]);
+  const { data: response, isLoading, isError, error, refetch } = useReadRecentActivityApiV1PublicRecentActivityGet({ limit: 8 });
+  const activities = useMemo(
+    () => response?.data?.items?.map(normalizeActivity) ?? [],
+    [response],
+  );
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? "error"
+      : activities.length > 0
+        ? "ready"
+        : "empty";
+  const errorMessage = isError ? (error instanceof Error ? error.message : "最近动态加载失败") : "";
 
   return (
     <div className="flex h-full flex-col">
@@ -171,7 +149,7 @@ const RecentActivity = () => {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setReloadKey((value) => value + 1)}
+                  onClick={() => void refetch()}
                   className="mt-1.5 pl-[18px] text-[10px] font-body text-foreground/25 transition-colors hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.62)]"
                 >
                   重试
