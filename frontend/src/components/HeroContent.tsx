@@ -57,7 +57,7 @@ const HeroContent = () => {
           >
             <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden" }}>
               <div className="h-full w-full rounded-full liquid-glass-coin-hero flex items-center justify-center">
-                <span className="select-none text-5xl text-white sm:text-6xl" style={{ fontFamily: "'Pinyon Script', cursive" }}>
+                <span className="select-none text-5xl text-foreground sm:text-6xl" style={{ fontFamily: "'Pinyon Script', cursive" }}>
                   {site.name}
                 </span>
               </div>
