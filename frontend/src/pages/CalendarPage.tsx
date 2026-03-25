@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
-import { readCalendarApiV1PublicCalendarGet } from "@serino/api-client/public";
+import { useReadCalendarApiV1PublicCalendarGet } from "@serino/api-client/public";
 import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
@@ -119,10 +119,6 @@ const CalendarPage = () => {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
   const MIN_YEAR = 2024;
   const MIN_MONTH = 0;
@@ -134,41 +130,22 @@ const CalendarPage = () => {
   const rangeStart = formatDateKey(new Date(year, month, 1));
   const rangeEnd = formatDateKey(new Date(year, month + 1, 0));
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadCalendarEvents = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-      setCalendarEvents([]);
-
-      try {
-        const response = await readCalendarApiV1PublicCalendarGet({ from: rangeStart, to: rangeEnd }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const nextEvents = response.data.events
-          .map((item) => normalizeCalendarEvent(item))
-          .filter((item): item is CalendarEvent => item !== null);
-
-        setCalendarEvents(nextEvents);
-        setStatus(nextEvents.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setCalendarEvents([]);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "日历加载失败");
-        }
-      }
-    };
-
-    void loadCalendarEvents();
-
-    return () => {
-      controller.abort();
-    };
-  }, [month, rangeEnd, rangeStart, reloadKey, year]);
+  const { data: response, isLoading, isError, error, refetch } = useReadCalendarApiV1PublicCalendarGet({ from: rangeStart, to: rangeEnd });
+  const calendarEvents = useMemo(
+    () =>
+      (response?.data?.events ?? [])
+        .map((item) => normalizeCalendarEvent(item))
+        .filter((item): item is CalendarEvent => item !== null),
+    [response],
+  );
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? "error"
+      : calendarEvents.length > 0
+        ? "ready"
+        : "empty";
+  const errorMessage = isError ? (error instanceof Error ? error.message : "日历加载失败") : "";
 
   const eventMap = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -356,7 +333,7 @@ const CalendarPage = () => {
               <p className="text-sm font-body text-foreground/20">{errorMessage || String(config.emptyMessage ?? "")}</p>
               <button
                 type="button"
-                onClick={() => setReloadKey((value) => value + 1)}
+                onClick={() => void refetch()}
                 className="mt-4 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70"
               >
                 {String(config.retryLabel ?? "")}

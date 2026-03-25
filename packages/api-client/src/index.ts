@@ -5,4 +5,5 @@ export { withZodSelect } from "./query-helpers";
 export { createCustomInstance, createAxiosInstance } from "./mutators/custom-instance";
 export { createCustomFetch } from "./mutators/custom-fetch";
 export { initAdminClient } from "./mutators/admin-instance";
-export { initPublicClient } from "./mutators/public-fetch";
+export { initPublicClient } from "./mutators/public-instance";
+export { queryKeys } from "./query-keys";

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useInfiniteList } from "@/hooks/use-infinite-list";
 import {
   formatPublishedDate,
   splitContentParagraphs,
@@ -41,77 +42,15 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
 
 const Thoughts = () => {
   const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
-  const [items, setItems] = useState<Thought[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const pageSize = config.pageSize ?? 30;
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadThoughts = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readThoughtsApiV1PublicThoughtsGet({ limit: pageSize }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const payload = response.data;
-        const nextItems = payload.items.map(mapRemoteThought);
-        setItems(nextItems);
-        setHasMore(payload.has_more ?? false);
-        setExpandedCommentId(null);
-        setStatus(nextItems.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setItems([]);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "碎碎念加载失败");
-        }
-      }
-    };
-
-    void loadThoughts();
-
-    return () => {
-      controller.abort();
-    };
-  }, [pageSize, reloadKey]);
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    try {
-      const response = await readThoughtsApiV1PublicThoughtsGet({ limit: pageSize, offset: items.length });
-      const payload = response.data;
-      const moreItems = payload.items.map(mapRemoteThought);
-      setItems(prev => [...prev, ...moreItems]);
-      setHasMore(payload.has_more ?? false);
-    } catch {
-      // silently fail on load more
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [hasMore, isLoadingMore, items.length, pageSize]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hasMore || status !== "ready") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loadMore, status]);
+  const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
+    queryKey: ["public", "thoughts"],
+    queryFn: (p) => readThoughtsApiV1PublicThoughtsGet(p).then(r => r.data),
+    pageSize,
+    mapItem: mapRemoteThought,
+  });
 
   return (
     <PageShell
@@ -150,7 +89,7 @@ const Thoughts = () => {
             <div className="mt-3">
               <button
                 type="button"
-                onClick={() => setReloadKey((value) => value + 1)}
+                onClick={() => reload()}
                 className="text-xs text-foreground/25 transition-colors hover:text-foreground/45"
               >
                 重试

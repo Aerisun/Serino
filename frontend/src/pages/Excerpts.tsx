@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
@@ -9,6 +9,7 @@ import { formatPublishedDate } from "@/lib/api/utils";
 import { readExcerptsApiV1PublicExcerptsGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+import { useInfiniteList } from "@/hooks/use-infinite-list";
 
 interface Excerpt {
   id: string;
@@ -40,16 +41,16 @@ const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
 
 const Excerpts = () => {
   const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
-  const [items, setItems] = useState<Excerpt[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const pageSize = config.pageSize ?? 40;
   const [showModalComments, setShowModalComments] = useState(false);
+
+  const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
+    queryKey: ["public", "excerpts"],
+    queryFn: (p) => readExcerptsApiV1PublicExcerptsGet(p).then(r => r.data),
+    pageSize,
+    mapItem: mapRemoteExcerpt,
+  });
 
   const selected = useMemo(
     () => items.find((excerpt) => excerpt.id === selectedId) ?? null,
@@ -60,67 +61,6 @@ const Excerpts = () => {
   useEffect(() => {
     setShowModalComments(false);
   }, [selectedId]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadExcerpts = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readExcerptsApiV1PublicExcerptsGet({ limit: pageSize }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const payload = response.data;
-        const nextItems = payload.items.map(mapRemoteExcerpt);
-        setItems(nextItems);
-        setHasMore(payload.has_more ?? false);
-        setStatus(nextItems.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setItems([]);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "文摘加载失败");
-        }
-      }
-    };
-
-    void loadExcerpts();
-
-    return () => {
-      controller.abort();
-    };
-  }, [pageSize, reloadKey]);
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    try {
-      const response = await readExcerptsApiV1PublicExcerptsGet({ limit: pageSize, offset: items.length });
-      const payload = response.data;
-      const moreItems = payload.items.map(mapRemoteExcerpt);
-      setItems(prev => [...prev, ...moreItems]);
-      setHasMore(payload.has_more ?? false);
-    } catch {
-      // silently fail on load more
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [hasMore, isLoadingMore, items.length, pageSize]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hasMore || status !== "ready") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loadMore, status]);
 
   return (
     <PageShell
@@ -165,7 +105,7 @@ const Excerpts = () => {
             <div className="mt-3 flex flex-wrap gap-1.5">
               <button
                 type="button"
-                onClick={() => setReloadKey((value) => value + 1)}
+                onClick={() => reload()}
                 className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] text-foreground/25 transition-colors hover:border-[rgb(var(--shiro-divider-rgb)/0.26)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
               >
                 重试

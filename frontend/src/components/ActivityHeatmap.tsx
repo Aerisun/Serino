@@ -1,10 +1,9 @@
 import { useMemo, useRef, useEffect, useState } from "react";
 import { useTheme } from "@serino/theme";
 import {
-  readActivityHeatmapApiV1PublicActivityHeatmapGet,
+  useReadActivityHeatmapApiV1PublicActivityHeatmapGet,
 } from "@serino/api-client/public";
 import type {
-  ActivityHeatmapStatsRead,
   ActivityHeatmapWeekRead,
 } from "@serino/api-client/models";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
@@ -73,16 +72,24 @@ const buildMonthMarkers = (weeks: WeeklyData[]) => {
 
 const ActivityHeatmap = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [data, setData] = useState<WeeklyData[]>([]);
-  const [remoteStats, setRemoteStats] = useState<ActivityHeatmapStatsRead | null>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [_errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
   const prefersReducedMotion = useReducedMotionPreference();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+
+  const { data: response, isLoading, isError, refetch } = useReadActivityHeatmapApiV1PublicActivityHeatmapGet({ weeks: 52 });
+  const remoteWeeks = response?.data?.weeks;
+  const data = useMemo(() => (remoteWeeks ? normalizeHeatmapWeeks(remoteWeeks) : []), [remoteWeeks]);
+  const remoteStats = response?.data?.stats ?? null;
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? "error"
+      : data.length > 0
+        ? "ready"
+        : "empty";
+
   const totalWidth = Math.max(data.length * (COL_W + COL_GAP) + 40, 160);
   const maxVal = Math.max(...data.map((d) => d.total), 1);
   const hasData = status === "ready" && data.length > 0;
@@ -95,40 +102,6 @@ const ActivityHeatmap = () => {
   const tooltipStroke = tokenRgb("--shiro-border-rgb", BORDER_FALLBACK, isDark ? 0.44 : 0.58);
   const statValueColor = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.86);
   const statLabelColor = tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.34);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadHeatmap = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readActivityHeatmapApiV1PublicActivityHeatmapGet({ weeks: 52 }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const remoteWeeks = normalizeHeatmapWeeks(response.data.weeks);
-        setData(remoteWeeks);
-        setRemoteStats(response.data.stats);
-        setStatus(remoteWeeks.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setData([]);
-          setRemoteStats(null);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "热力图加载失败");
-        }
-      }
-    };
-
-    void loadHeatmap();
-
-    return () => {
-      controller.abort();
-    };
-  }, [reloadKey]);
 
   useEffect(() => {
     if (!hasData) {
@@ -437,7 +410,7 @@ const ActivityHeatmap = () => {
           <div className="pointer-events-none absolute right-2 top-2">
             <button
               type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
+              onClick={() => void refetch()}
               className="pointer-events-auto rounded-full border px-3 py-1 text-[10px] transition-colors"
               style={{
                 borderColor: tokenRgb("--shiro-border-rgb", BORDER_FALLBACK, isDark ? 0.42 : 0.56),

@@ -50,11 +50,15 @@ export default defineConfig({
       mode: "tags-split",
       target: "src/generated",
       schemas: "src/generated/model",
-      client: "fetch",
+      client: "react-query",
       override: {
         mutator: {
-          path: "./src/mutators/public-fetch.ts",
-          name: "customFetch",
+          path: "./src/mutators/public-instance.ts",
+          name: "customInstance",
+        },
+        query: {
+          useQuery: true,
+          useMutation: true,
         },
       },
     },

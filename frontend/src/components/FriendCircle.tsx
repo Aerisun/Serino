@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { readFriendFeedApiV1PublicFriendFeedGet } from "@serino/api-client/public";
+import { useReadFriendFeedApiV1PublicFriendFeedGet } from "@serino/api-client/public";
 import { formatFriendFeedDate } from "@/lib/api/utils";
 import type { FriendFeedItemRead } from "@serino/api-client/models";
 
@@ -23,42 +23,20 @@ const normalizeFriendPost = (value: FriendFeedItemRead): FriendPost => ({
 
 const FriendCircle = () => {
   const navigate = useNavigate();
-  const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadFriendFeed = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readFriendFeedApiV1PublicFriendFeedGet({ limit: 12 }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const nextPosts = response.data.items.map(normalizeFriendPost);
-        setFriendPosts(nextPosts);
-        setStatus(nextPosts.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setFriendPosts([]);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "友邻动态加载失败");
-        }
-      }
-    };
-
-    void loadFriendFeed();
-
-    return () => {
-      controller.abort();
-    };
-  }, [reloadKey]);
+  const { data: response, isLoading, isError, error, refetch } = useReadFriendFeedApiV1PublicFriendFeedGet({ limit: 12 });
+  const friendPosts = useMemo(
+    () => response?.data?.items?.map(normalizeFriendPost) ?? [],
+    [response],
+  );
+  const status: "loading" | "ready" | "empty" | "error" = isLoading
+    ? "loading"
+    : isError
+      ? "error"
+      : friendPosts.length > 0
+        ? "ready"
+        : "empty";
+  const errorMessage = isError ? (error instanceof Error ? error.message : "友邻动态加载失败") : "";
 
   return (
     <div className="flex h-full flex-col">
@@ -104,7 +82,7 @@ const FriendCircle = () => {
               </p>
               <button
                 type="button"
-                onClick={() => setReloadKey((value) => value + 1)}
+                onClick={() => void refetch()}
                 className="mt-1.5 text-[10px] font-body text-foreground/28 transition-colors hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.7)]"
               >
                 重试
