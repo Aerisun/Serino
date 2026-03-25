@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import { formatPublishedDate } from "@/lib/api/utils";
 import { readPostsApiV1PublicPostsGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+import { useInfiniteList } from "@/hooks/use-infinite-list";
 
 interface Post {
   slug: string;
@@ -43,86 +44,25 @@ const mapRemotePost = (entry: ContentEntryRead): Post => ({
 const Posts = () => {
   const config = usePageConfig().posts as unknown as PostsPageConfig;
   const allCategoryLabel = config.categories?.all ?? "全部";
-  const [items, setItems] = useState<Post[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const pageSize = config.pageSize ?? 20;
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadPosts = async () => {
-      setStatus("loading");
-      setErrorMessage("");
-
-      try {
-        const response = await readPostsApiV1PublicPostsGet({ limit: pageSize }, { signal: controller.signal });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const payload = response.data;
-        const nextItems = payload.items.map(mapRemotePost);
-        setItems(nextItems);
-        setHasMore(payload.has_more ?? false);
-        setStatus(nextItems.length > 0 ? "ready" : "empty");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setItems([]);
-          setStatus("error");
-          setErrorMessage(error instanceof Error ? error.message : "文章加载失败");
-        }
-      }
-    };
-
-    void loadPosts();
-
-    return () => {
-      controller.abort();
-    };
-  }, [pageSize, reloadKey]);
+  const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
+    queryKey: ["public", "posts"],
+    queryFn: (p) => readPostsApiV1PublicPostsGet(p).then(r => r.data),
+    pageSize,
+    mapItem: mapRemotePost,
+  });
 
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    try {
-      const response = await readPostsApiV1PublicPostsGet({ limit: pageSize, offset: items.length });
-      const payload = response.data;
-      const moreItems = payload.items.map(mapRemotePost);
-      setItems(prev => [...prev, ...moreItems]);
-      setHasMore(payload.has_more ?? false);
-    } catch {
-      // silently fail on load more
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [hasMore, isLoadingMore, items.length, pageSize]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hasMore || status !== "ready") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loadMore, status]);
 
   const allCategories = [
     allCategoryLabel,
@@ -218,7 +158,7 @@ const Posts = () => {
             <p className="mt-2 text-xs text-foreground/25">{errorMessage}</p>
             <button
               type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
+              onClick={() => reload()}
               className="mt-4 text-xs text-foreground/30 transition-colors hover:text-foreground/55"
             >
               重试
