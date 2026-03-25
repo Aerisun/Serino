@@ -3,8 +3,10 @@ import App from "./App";
 import "./index.css";
 import { initSentry } from "@serino/utils";
 import { initAdminClient } from "@serino/api-client";
+import { clearAdminToken, getAdminToken, migrateAdminThemePreference } from "@/lib/storage";
 
 initSentry();
+migrateAdminThemePreference();
 
 const adminBasePath =
   typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
@@ -13,9 +15,9 @@ const adminBasePath =
 const loginPath = new URL("login", window.location.origin + adminBasePath).pathname;
 
 initAdminClient({
-  getAuthToken: () => localStorage.getItem("admin_token"),
+  getAuthToken: getAdminToken,
   onAuthError: () => {
-    localStorage.removeItem("admin_token");
+    clearAdminToken();
     window.location.assign(loginPath);
   },
 });

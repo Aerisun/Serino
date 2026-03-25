@@ -1,41 +1,51 @@
-import client from "../client";
-import type { LoginRequest, LoginResponse, AdminUserRead } from "@serino/api-client/models";
+import {
+  changePasswordApiV1AdminAuthPasswordPut,
+  listSessionsEndpointApiV1AdminAuthSessionsGet,
+  loginApiV1AdminAuthLoginPost,
+  logoutApiV1AdminAuthLogoutPost,
+  meApiV1AdminAuthMeGet,
+  revokeSessionApiV1AdminAuthSessionsSessionIdDelete,
+  updateProfileEndpointApiV1AdminAuthProfilePut,
+} from "@serino/api-client/admin";
+import type {
+  AdminProfileUpdate,
+  AdminSessionRead,
+  AdminUserRead,
+  LoginRequest,
+  LoginResponse,
+  PasswordChangeRequest,
+} from "@serino/api-client/models";
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const res = await client.post<LoginResponse>("/api/v1/admin/auth/login", data);
-  return res.data;
+  const response = await loginApiV1AdminAuthLoginPost(data);
+  return response.data as LoginResponse;
 }
 
 export async function logout(): Promise<void> {
-  await client.post("/api/v1/admin/auth/logout");
+  await logoutApiV1AdminAuthLogoutPost();
 }
 
 export async function getMe(): Promise<AdminUserRead> {
-  const res = await client.get<AdminUserRead>("/api/v1/admin/auth/me");
-  return res.data;
+  const response = await meApiV1AdminAuthMeGet();
+  return response.data as AdminUserRead;
 }
 
-export async function changePassword(data: { current_password: string; new_password: string }): Promise<void> {
-  await client.put("/api/v1/admin/auth/password", data);
+export async function changePassword(data: PasswordChangeRequest): Promise<void> {
+  await changePasswordApiV1AdminAuthPasswordPut(data);
 }
 
-export async function updateProfile(data: { username?: string }): Promise<AdminUserRead> {
-  const res = await client.put<AdminUserRead>("/api/v1/admin/auth/profile", data);
-  return res.data;
+export async function updateProfile(data: AdminProfileUpdate): Promise<AdminUserRead> {
+  const response = await updateProfileEndpointApiV1AdminAuthProfilePut(data);
+  return response.data as AdminUserRead;
 }
 
-export interface AdminSession {
-  id: string;
-  created_at: string;
-  expires_at: string;
-  is_current: boolean;
-}
+export type AdminSession = AdminSessionRead;
 
 export async function listSessions(): Promise<AdminSession[]> {
-  const res = await client.get<AdminSession[]>("/api/v1/admin/auth/sessions");
-  return res.data;
+  const response = await listSessionsEndpointApiV1AdminAuthSessionsGet();
+  return response.data as AdminSession[];
 }
 
 export async function revokeSession(sessionId: string): Promise<void> {
-  await client.delete(`/api/v1/admin/auth/sessions/${sessionId}`);
+  await revokeSessionApiV1AdminAuthSessionsSessionIdDelete(sessionId);
 }

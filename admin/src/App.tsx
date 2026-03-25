@@ -7,7 +7,14 @@ import { ThemeProvider } from "@serino/theme";
 import { LanguageProvider } from "@/i18n";
 import { useAuth } from "@/auth/useAuth";
 import AdminLayout from "@/layouts/AdminLayout";
+import { ADMIN_THEME_STORAGE_KEY } from "@/lib/storage";
 import LoginPage from "@/auth/LoginPage";
+
+const adminBasePath =
+  typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
+    ? __AERISUN_ADMIN_BASE_PATH__
+    : "/admin/";
+const routerBasename = adminBasePath === "/" ? undefined : adminBasePath.replace(/\/$/, "");
 
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const PostListPage = lazy(() => import("@/pages/posts/PostListPage"));
@@ -35,8 +42,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const routerBasename = import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "");
-
 function ProtectedRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -50,29 +55,29 @@ function ProtectedRoutes() {
 
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center text-muted-foreground"><div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" /></div>}>
-    <Routes>
-      <Route element={<AdminLayout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="posts" element={<PostListPage />} />
-        <Route path="posts/:id" element={<PostEditPage />} />
-        <Route path="diary" element={<DiaryListPage />} />
-        <Route path="diary/:id" element={<DiaryEditPage />} />
-        <Route path="thoughts" element={<ThoughtListPage />} />
-        <Route path="thoughts/:id" element={<ThoughtEditPage />} />
-        <Route path="excerpts" element={<ExcerptListPage />} />
-        <Route path="excerpts/:id" element={<ExcerptEditPage />} />
-        <Route path="site-config" element={<SiteConfigPage />} />
-        <Route path="resume" element={<ResumePage />} />
-        <Route path="friends" element={<FriendsPage />} />
-        <Route path="moderation" element={<ModerationPage />} />
-        <Route path="assets" element={<AssetsPage />} />
-        <Route path="system/api-keys" element={<ApiKeysPage />} />
-        <Route path="system/audit-log" element={<AuditLogPage />} />
-        <Route path="system/backups" element={<BackupsPage />} />
-        <Route path="system/info" element={<SystemInfoPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-    </Routes>
+      <Routes>
+        <Route element={<AdminLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="posts" element={<PostListPage />} />
+          <Route path="posts/:id" element={<PostEditPage />} />
+          <Route path="diary" element={<DiaryListPage />} />
+          <Route path="diary/:id" element={<DiaryEditPage />} />
+          <Route path="thoughts" element={<ThoughtListPage />} />
+          <Route path="thoughts/:id" element={<ThoughtEditPage />} />
+          <Route path="excerpts" element={<ExcerptListPage />} />
+          <Route path="excerpts/:id" element={<ExcerptEditPage />} />
+          <Route path="site-config" element={<SiteConfigPage />} />
+          <Route path="resume" element={<ResumePage />} />
+          <Route path="friends" element={<FriendsPage />} />
+          <Route path="moderation" element={<ModerationPage />} />
+          <Route path="assets" element={<AssetsPage />} />
+          <Route path="system/api-keys" element={<ApiKeysPage />} />
+          <Route path="system/audit-log" element={<AuditLogPage />} />
+          <Route path="system/backups" element={<BackupsPage />} />
+          <Route path="system/info" element={<SystemInfoPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
     </Suspense>
   );
 }
@@ -80,9 +85,9 @@ function ProtectedRoutes() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider storageKey="serino-admin-theme">
+      <ThemeProvider storageKey={ADMIN_THEME_STORAGE_KEY}>
         <LanguageProvider>
-            <AuthProvider>
+          <AuthProvider>
             <BrowserRouter basename={routerBasename}>
               <Toaster richColors position="top-right" />
               <Routes>

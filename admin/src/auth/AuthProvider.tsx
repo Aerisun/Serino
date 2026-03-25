@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { AdminUserRead } from "@serino/api-client/models";
 import { getMe, login as apiLogin, logout as apiLogout } from "@/api/endpoints/auth";
+import { clearAdminToken, getAdminToken, setAdminToken } from "@/lib/storage";
 
 interface AuthState {
   user: AdminUserRead | null;
@@ -17,20 +18,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
+    const token = getAdminToken();
     if (!token) {
       setIsLoading(false);
       return;
     }
     getMe()
       .then(setUser)
-      .catch(() => localStorage.removeItem("admin_token"))
+      .catch(clearAdminToken)
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
     const res = await apiLogin({ username, password });
-    localStorage.setItem("admin_token", res.token);
+    setAdminToken(res.token);
     const me = await getMe();
     setUser(me);
   }, []);
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiLogout();
     } finally {
-      localStorage.removeItem("admin_token");
+      clearAdminToken();
       setUser(null);
     }
   }, []);

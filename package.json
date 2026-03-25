@@ -2,9 +2,17 @@
   "private": true,
   "packageManager": "pnpm@10.31.0",
   "scripts": {
+    "generate:api": "pnpm --filter @serino/api-client run generate:api",
     "dev:frontend": "pnpm -C frontend dev",
     "dev:admin": "pnpm -C admin dev",
     "build:frontend": "pnpm -C frontend build",
-    "build:admin": "pnpm -C admin build"
+    "build:admin": "pnpm -C admin build",
+    "lint:workspace": "pnpm -r --if-present run lint",
+    "lint:backend": "uv run --directory backend ruff check src/ tests/ && uv run --directory backend ruff format --check src/ tests/",
+    "lint": "pnpm run lint:workspace && pnpm run lint:backend",
+    "test:workspace": "pnpm --filter @serino/api-client test",
+    "test:backend": "uv run --directory backend pytest",
+    "test": "pnpm run test:backend && pnpm run test:workspace",
+    "check": "pnpm run generate:api && pnpm run lint && pnpm run test && pnpm run build:frontend && pnpm run build:admin"
   }
 }

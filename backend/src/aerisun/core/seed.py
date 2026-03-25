@@ -543,7 +543,10 @@ DEFAULT_POSTS = [
         "slug": "from-zero-design-system",
         "title": "从零搭建个人设计系统的完整思路",
         "summary": "设计系统不只是组件库，它更像是一套把视觉秩序、协作方式与交付节奏串起来的语言。",
-        "body": "设计系统真正有价值的部分，不在于组件数量，而在于它有没有把视觉层级、状态表达和内容节奏说清楚。对个人站来说，它同样可以帮助我把页面气质、动效速度和排版密度保持在同一条线上。",
+        "body": (
+            "设计系统真正有价值的部分，不在于组件数量，而在于它有没有把视觉层级、状态表达和内容节奏说清楚。"
+            "对个人站来说，它同样可以帮助我把页面气质、动效速度和排版密度保持在同一条线上。"
+        ),
         "tags": ["design-system", "frontend"],
         "status": "published",
         "visibility": "public",
@@ -555,7 +558,10 @@ DEFAULT_POSTS = [
         "slug": "liquid-glass-css-notes",
         "title": "液态玻璃效果的 CSS 实现与优化",
         "summary": "从 blur、边框高光到暗色模式折射，这篇文章记录了 Liquid Glass 在 Web 上的取舍。",
-        "body": "我把 Liquid Glass 拆成了三层：基础材质、边缘高光和运动反馈。亮色模式更像磨砂玻璃，暗色模式则更依赖 blur 与边框亮度的平衡。真正的难点不是写出效果，而是让它在不同页面里保持克制。",
+        "body": (
+            "我把 Liquid Glass 拆成了三层：基础材质、边缘高光和运动反馈。亮色模式更像磨砂玻璃，"
+            "暗色模式则更依赖 blur 与边框亮度的平衡。真正的难点不是写出效果，而是让它在不同页面里保持克制。"
+        ),
         "tags": ["css", "glass", "performance"],
         "status": "published",
         "visibility": "public",
@@ -567,7 +573,10 @@ DEFAULT_POSTS = [
         "slug": "why-i-choose-indie-design",
         "title": "为什么我选择做独立设计师",
         "summary": "独立不只是工作方式变化，它会同时改变你看待时间、责任和表达的角度。",
-        "body": "离开团队之后，我最先感受到的不是自由，而是所有决定都必须由自己承担。也是在这个过程中，我开始更认真地处理个人表达、项目边界和长期维护成本。网站本身也是这个思路的一部分。",
+        "body": (
+            "离开团队之后，我最先感受到的不是自由，而是所有决定都必须由自己承担。也是在这个过程中，"
+            "我开始更认真地处理个人表达、项目边界和长期维护成本。网站本身也是这个思路的一部分。"
+        ),
         "tags": ["essay", "career"],
         "status": "published",
         "visibility": "public",
@@ -579,7 +588,10 @@ DEFAULT_POSTS = [
         "slug": "react-19-design-pattern-shifts",
         "title": "React 19 中值得关注的设计模式变化",
         "summary": "Server Components 和 Actions 正在重塑前端架构，这对设计师和前端开发者意味着什么。",
-        "body": "React 19 带来的变化，本质上是在重新分配界面、状态和数据之间的边界。对前端来说，这不是某个 API 的更新，而是对页面如何被拆分、何时响应、如何组织交互的一次整体提示。",
+        "body": (
+            "React 19 带来的变化，本质上是在重新分配界面、状态和数据之间的边界。对前端来说，"
+            "这不是某个 API 的更新，而是对页面如何被拆分、何时响应、如何组织交互的一次整体提示。"
+        ),
         "tags": ["react", "architecture"],
         "status": "published",
         "visibility": "public",
@@ -591,7 +603,10 @@ DEFAULT_POSTS = [
         "slug": "typographic-rhythm-and-spacing",
         "title": "网页排版中的节奏感：间距与留白",
         "summary": "好的排版不是对齐和居中，而是建立阅读节奏。从音乐的角度理解视觉设计中的韵律。",
-        "body": "排版真正决定气质的，不是单个字体本身，而是段落之间、标题上下、内容前后那一连串被安排好的停顿。留白不是空着，而是在替阅读建立呼吸的间隔。",
+        "body": (
+            "排版真正决定气质的，不是单个字体本身，而是段落之间、标题上下、内容前后那一连串被安排好的停顿。"
+            "留白不是空着，而是在替阅读建立呼吸的间隔。"
+        ),
         "tags": ["typography", "layout"],
         "status": "published",
         "visibility": "public",
@@ -603,7 +618,10 @@ DEFAULT_POSTS = [
         "slug": "framer-motion-page-transitions",
         "title": "用 Framer Motion 做有质感的页面过渡",
         "summary": "动画不该是装饰，它是信息层级的一部分。分享几个常用过渡模式和背后的判断。",
-        "body": "页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，让视线知道自己正在从哪里离开、要往哪里抵达。",
+        "body": (
+            "页面过渡如果只是为了“好看”，通常很快就会显得多余。真正耐看的动效是在切换时帮用户理解层级变化，"
+            "让视线知道自己正在从哪里离开、要往哪里抵达。"
+        ),
         "tags": ["animation", "react"],
         "status": "published",
         "visibility": "public",
@@ -615,7 +633,10 @@ DEFAULT_POSTS = [
         "slug": "solo-workflow-tools-and-rhythm",
         "title": "一个人的工作流：工具、习惯与心态",
         "summary": "作为独立设计师，我每天的工作流程是怎样的，用了哪些工具，踩过哪些坑。",
-        "body": "一个人的工作流最难的从来不是工具选择，而是如何给自己建立节奏。没有团队的默认结构之后，你需要自己决定什么时候深度创作，什么时候整理，什么时候停下来复盘。",
+        "body": (
+            "一个人的工作流最难的从来不是工具选择，而是如何给自己建立节奏。没有团队的默认结构之后，"
+            "你需要自己决定什么时候深度创作，什么时候整理，什么时候停下来复盘。"
+        ),
         "tags": ["workflow", "productivity"],
         "status": "published",
         "visibility": "public",
@@ -627,7 +648,10 @@ DEFAULT_POSTS = [
         "slug": "dark-mode-design-details",
         "title": "深色模式设计的七个容易忽略的细节",
         "summary": "深色模式不是简单地把白换成黑。阴影、对比度、饱和度都需要重新审视。",
-        "body": "深色模式最大的误区，是把亮色模式的关系原样压暗。真正要被重新设计的，是层级感、边缘感和焦点落点。只有这些关系成立了，深色界面才会显得稳定而不刺眼。",
+        "body": (
+            "深色模式最大的误区，是把亮色模式的关系原样压暗。真正要被重新设计的，是层级感、边缘感和焦点落点。"
+            "只有这些关系成立了，深色界面才会显得稳定而不刺眼。"
+        ),
         "tags": ["dark-mode", "ui"],
         "status": "published",
         "visibility": "public",
@@ -642,7 +666,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "spring-equinox-and-warm-light",
         "title": "春分，天气转暖",
         "summary": "阳光从窗帘缝隙里漏进来，整个房间都有一点松动感。",
-        "body": "今天把博客首页重新整理了一遍，花了一上午调 Hero 的呼吸感和玻璃层次。下午去咖啡店坐了两个小时，回来的路上看到树上的花苞终于鼓起来了，春天像是在慢慢试探地靠近。",
+        "body": (
+            "今天把博客首页重新整理了一遍，花了一上午调 Hero 的呼吸感和玻璃层次。下午去咖啡店坐了两个小时，"
+            "回来的路上看到树上的花苞终于鼓起来了，春天像是在慢慢试探地靠近。"
+        ),
         "tags": ["life", "spring"],
         "status": "published",
         "visibility": "public",
@@ -655,7 +682,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "rain-day-and-lofi",
         "title": "下雨的一天",
         "summary": "雨声和 lo-fi 混在一起的时候，写代码的节奏会变得很稳。",
-        "body": "今天没有出门，把友链页的假数据重新梳理了一次，也顺手重排了页面间距。中午只简单煮了碗面，下午继续修动效节奏。一个人在雨天里工作，意外地不觉得孤单。",
+        "body": (
+            "今天没有出门，把友链页的假数据重新梳理了一次，也顺手重排了页面间距。中午只简单煮了碗面，"
+            "下午继续修动效节奏。一个人在雨天里工作，意外地不觉得孤单。"
+        ),
         "tags": ["rain", "worklog"],
         "status": "published",
         "visibility": "public",
@@ -668,7 +698,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "windy-library-day",
         "title": "风大的图书馆日",
         "summary": "出门时几乎被风推着走，回来时手里多了两本书和一杯热可可。",
-        "body": "今天去图书馆归还了上周借的书，又带回两本关于字体与写作的作品。回来的路上一直在想，网站里的排版为什么总能透露出作者的节奏感。或许页面其实也是一种书写。",
+        "body": (
+            "今天去图书馆归还了上周借的书，又带回两本关于字体与写作的作品。回来的路上一直在想，"
+            "网站里的排版为什么总能透露出作者的节奏感。或许页面其实也是一种书写。"
+        ),
         "tags": ["library", "reading"],
         "status": "published",
         "visibility": "public",
@@ -681,7 +714,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "evening-tram-and-orange-sky",
         "title": "傍晚电车与橙色天光",
         "summary": "夕阳落得很慢，车窗把每个人都镀成了柔和的轮廓。",
-        "body": "傍晚坐电车回家的路上，看到天边从浅金一点点沉进橙色。那种颜色很难描述，像刚刚被烤热的玻璃。我忽然意识到，最近网站里很多暖色过渡，其实都来自这种傍晚记忆。",
+        "body": (
+            "傍晚坐电车回家的路上，看到天边从浅金一点点沉进橙色。那种颜色很难描述，像刚刚被烤热的玻璃。"
+            "我忽然意识到，最近网站里很多暖色过渡，其实都来自这种傍晚记忆。"
+        ),
         "tags": ["commute", "sunset"],
         "status": "published",
         "visibility": "public",
@@ -694,7 +730,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "quiet-sunday-cleanup",
         "title": "安静的周末整理",
         "summary": "清理桌面、归档文件、擦掉屏幕边角的灰，一切都慢下来一点。",
-        "body": "今天没有写太多代码，只是把零散的文件和灵感卡片重新归了类。整理这种事很奇怪，它不直接产出什么，却会让脑子重新变得清楚。晚上顺手把日历页的细节也对齐了一遍。",
+        "body": (
+            "今天没有写太多代码，只是把零散的文件和灵感卡片重新归了类。整理这种事很奇怪，它不直接产出什么，"
+            "却会让脑子重新变得清楚。晚上顺手把日历页的细节也对齐了一遍。"
+        ),
         "tags": ["weekend", "cleanup"],
         "status": "published",
         "visibility": "public",
@@ -707,7 +746,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "midnight-css-and-tea",
         "title": "深夜 CSS 和一杯热茶",
         "summary": "夜里安静到只剩键盘声，调细节时会比白天更专注。",
-        "body": "把一段 hover 过渡从 0.3 秒改到 0.45 秒，整个页面都像松了一口气。深夜做这种微调总有一点仪式感，像给页面悄悄盖上一层更柔软的光。茶喝到最后，已经有些凉了。",
+        "body": (
+            "把一段 hover 过渡从 0.3 秒改到 0.45 秒，整个页面都像松了一口气。深夜做这种微调总有一点仪式感，"
+            "像给页面悄悄盖上一层更柔软的光。茶喝到最后，已经有些凉了。"
+        ),
         "tags": ["night", "css"],
         "status": "published",
         "visibility": "public",
@@ -720,7 +762,10 @@ DEFAULT_DIARY_ENTRIES = [
         "slug": "bookstore-after-rain",
         "title": "雨后去了一趟书店",
         "summary": "空气里有纸张和潮气混在一起的味道，很适合慢慢走。",
-        "body": "下午雨停后去了常去的那家独立书店，翻到几本关于版式和建筑的旧书。书店里很安静，灯也不亮，但有一种很稳定的秩序感。回来之后我把首页的分隔和留白又调整了一次。",
+        "body": (
+            "下午雨停后去了常去的那家独立书店，翻到几本关于版式和建筑的旧书。书店里很安静，灯也不亮，"
+            "但有一种很稳定的秩序感。回来之后我把首页的分隔和留白又调整了一次。"
+        ),
         "tags": ["bookstore", "reading"],
         "status": "published",
         "visibility": "public",
@@ -747,7 +792,10 @@ DEFAULT_THOUGHTS = [
         "slug": "less-but-better-note",
         "title": "少即是多，还是少但更好",
         "summary": "删掉一个不必要的层级，往往比再加一个漂亮组件更难。",
-        "body": "最近越来越确信，前端不该一味堆视觉效果。真正重要的是信息的显隐、节奏的松紧，还有用户什么时候该被提醒、什么时候该被放过。",
+        "body": (
+            "最近越来越确信，前端不该一味堆视觉效果。真正重要的是信息的显隐、节奏的松紧，"
+            "还有用户什么时候该被提醒、什么时候该被放过。"
+        ),
         "tags": ["product", "reflection"],
         "status": "published",
         "visibility": "public",
@@ -769,7 +817,10 @@ DEFAULT_THOUGHTS = [
         "slug": "ui-is-editing",
         "title": "界面设计本质上也像编辑",
         "summary": "不是一味往里放内容，而是不断删去那些不该留下的句子。",
-        "body": "界面里每一个边界、间距和按钮文案，都像是在替用户做一次编辑判断。真正困难的不是加什么，而是删掉什么之后页面依然成立。",
+        "body": (
+            "界面里每一个边界、间距和按钮文案，都像是在替用户做一次编辑判断。真正困难的不是加什么，"
+            "而是删掉什么之后页面依然成立。"
+        ),
         "tags": ["ui", "editing"],
         "status": "published",
         "visibility": "public",
@@ -780,7 +831,10 @@ DEFAULT_THOUGHTS = [
         "slug": "soft-motion-note",
         "title": "柔一点的动效会更耐看",
         "summary": "同样的位移，稍微慢一点、轻一点，页面气氛就会完全不同。",
-        "body": "最近越来越喜欢那些不抢戏的动效。它们不会立刻让人注意到，但会让整页的节奏变得更顺，像把一个句子的停顿放在了更对的位置。",
+        "body": (
+            "最近越来越喜欢那些不抢戏的动效。它们不会立刻让人注意到，但会让整页的节奏变得更顺，"
+            "像把一个句子的停顿放在了更对的位置。"
+        ),
         "tags": ["motion", "frontend"],
         "status": "published",
         "visibility": "public",
@@ -791,7 +845,10 @@ DEFAULT_THOUGHTS = [
         "slug": "tiny-delight-matters",
         "title": "那些很小的愉悦其实很重要",
         "summary": "比如图标对齐一像素，比如 hover 之后多出来的一点呼吸。",
-        "body": "产品里真正留下来的记忆，很多时候都不是功能本身，而是那个刚刚好的小瞬间。它也许很小，但会让人觉得这个界面是被认真照顾过的。",
+        "body": (
+            "产品里真正留下来的记忆，很多时候都不是功能本身，而是那个刚刚好的小瞬间。它也许很小，"
+            "但会让人觉得这个界面是被认真照顾过的。"
+        ),
         "tags": ["details", "product"],
         "status": "published",
         "visibility": "public",
@@ -802,7 +859,10 @@ DEFAULT_THOUGHTS = [
         "slug": "interface-is-tone",
         "title": "界面其实也有语气",
         "summary": "同样一句提示，用什么排版、间距和色彩说出来，感觉完全不同。",
-        "body": "我越来越相信，界面不是纯信息容器，它也在说话。它的语气来自字重、留白、层级、边界和动效的速度，这些东西会一起决定用户感受到的是催促还是邀请。",
+        "body": (
+            "我越来越相信，界面不是纯信息容器，它也在说话。它的语气来自字重、留白、层级、边界和动效的速度，"
+            "这些东西会一起决定用户感受到的是催促还是邀请。"
+        ),
         "tags": ["tone", "writing"],
         "status": "published",
         "visibility": "public",
@@ -813,7 +873,10 @@ DEFAULT_THOUGHTS = [
         "slug": "shipping-beats-polish",
         "title": "先落地，再打磨",
         "summary": "很多细节只有真正上线之后，才知道值不值得继续抛光。",
-        "body": "不是说打磨不重要，而是有些判断必须在真实使用里完成。先把结构搭起来，再去看哪里值得继续投入，这比把每个角落都提前磨到极致更可靠。",
+        "body": (
+            "不是说打磨不重要，而是有些判断必须在真实使用里完成。先把结构搭起来，再去看哪里值得继续投入，"
+            "这比把每个角落都提前磨到极致更可靠。"
+        ),
         "tags": ["shipping", "workflow"],
         "status": "published",
         "visibility": "public",
@@ -839,7 +902,10 @@ DEFAULT_EXCERPTS = [
         "slug": "good-design-note",
         "title": "少，但更好",
         "summary": "不是少做东西，而是把非必要部分真正拿掉。",
-        "body": "当一个界面去掉多余装饰之后，剩下的层级、边界和节奏都会被放大。所以极简不是偷懒，而是把判断压力提前放回设计者自己身上。",
+        "body": (
+            "当一个界面去掉多余装饰之后，剩下的层级、边界和节奏都会被放大。"
+            "所以极简不是偷懒，而是把判断压力提前放回设计者自己身上。"
+        ),
         "tags": ["reading", "minimalism"],
         "status": "published",
         "visibility": "public",
@@ -863,7 +929,10 @@ DEFAULT_EXCERPTS = [
         "slug": "slow-work-note",
         "title": "慢工并不等于迟钝",
         "summary": "真正慢下来时，你反而会更清楚自己为什么这么做。",
-        "body": "所谓慢，不是拖延，而是在每个决定落下之前，给它一点真正被看见的时间。很多表面上的效率，其实只是把判断推迟到更后面。",
+        "body": (
+            "所谓慢，不是拖延，而是在每个决定落下之前，给它一点真正被看见的时间。"
+            "很多表面上的效率，其实只是把判断推迟到更后面。"
+        ),
         "tags": ["reading", "pace"],
         "status": "published",
         "visibility": "public",
@@ -875,7 +944,10 @@ DEFAULT_EXCERPTS = [
         "slug": "poetry-and-interface",
         "title": "界面也需要一点诗意",
         "summary": "不是为了装饰，而是为了让理性之外还留一点呼吸。",
-        "body": "当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，它是让系统从“可用”转向“愿意停留”的那一层温度。",
+        "body": (
+            "当设计只剩功能和效率，它当然能运转，但不一定能被喜欢。诗意不是多余物，"
+            "它是让系统从“可用”转向“愿意停留”的那一层温度。"
+        ),
         "tags": ["reading", "interface"],
         "status": "published",
         "visibility": "public",
@@ -887,7 +959,10 @@ DEFAULT_EXCERPTS = [
         "slug": "honest-materials",
         "title": "材料应该诚实地被使用",
         "summary": "数字界面也一样，视觉语言不该伪装自己是什么。",
-        "body": "当一种材料被过度装饰，它原有的特质反而会消失。界面中的玻璃、纸感、金属感也应该如此，关键不在像不像，而在它是否帮助用户理解层级与关系。",
+        "body": (
+            "当一种材料被过度装饰，它原有的特质反而会消失。界面中的玻璃、纸感、金属感也应该如此，"
+            "关键不在像不像，而在它是否帮助用户理解层级与关系。"
+        ),
         "tags": ["materials", "design"],
         "status": "published",
         "visibility": "public",
@@ -1234,7 +1309,9 @@ DEFAULT_LEGACY_COMMENTS = [
         "content_slug": "from-zero-design-system",
         "author_name": "林小北",
         "author_email": "linxiaobei@example.com",
-        "body": "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。",
+        "body": (
+            "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。"
+        ),
         "status": "approved",
         "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
         "parent_key": None,
@@ -1281,7 +1358,9 @@ DEFAULT_WALINE_COMMENTS = [
         "nick": "林小北",
         "mail": "linxiaobei@example.com",
         "link": None,
-        "comment": "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。",
+        "comment": (
+            "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。"
+        ),
         "status": "approved",
         "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
         "parent_key": None,

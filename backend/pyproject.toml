@@ -44,7 +44,7 @@ aerisun-reset-password = "aerisun.cli:reset_password"
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-ra"
 pythonpath = ["src"]
 testpaths = ["tests"]
 
@@ -55,7 +55,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-ignore = ["E501", "B008", "RUF001", "RUF002", "RUF003", "UP047"]
+ignore = ["B008", "RUF001", "RUF002", "RUF003", "UP047"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["aerisun"]

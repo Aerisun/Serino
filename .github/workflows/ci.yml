@@ -55,8 +55,8 @@ jobs:
           name: openapi-spec
           path: packages/api-client/openapi.json
 
-  frontend:
-    name: Frontend
+  api-client:
+    name: Generate API Client
     needs: [openapi]
     runs-on: ubuntu-latest
     steps:
@@ -68,11 +68,34 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Generate API client
         run: pnpm --filter @serino/api-client run generate:api
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-client-generated
+          path: |
+            packages/api-client/openapi.json
+            packages/api-client/src/generated
+
+  frontend:
+    name: Frontend
+    needs: [api-client]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-client-generated
+          path: packages/api-client
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
         working-directory: frontend
       - run: pnpm run build
@@ -80,22 +103,20 @@ jobs:
 
   admin:
     name: Admin
-    needs: [openapi]
+    needs: [api-client]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: openapi-spec
-          path: packages/api-client/
+          name: api-client-generated
+          path: packages/api-client
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Generate API client
-        run: pnpm --filter @serino/api-client run generate:api
       - run: pnpm run lint
         working-directory: admin
       - run: pnpm run build
@@ -103,7 +124,7 @@ jobs:
 
   contract:
     name: Contract Tests
-    needs: [backend, openapi]
+    needs: [backend, api-client]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,18 +136,16 @@ jobs:
           python-version: "3.13"
       - uses: actions/download-artifact@v4
         with:
-          name: openapi-spec
-          path: packages/api-client/
+          name: api-client-generated
+          path: packages/api-client
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: uv sync --dev
         working-directory: backend
       - run: pnpm install --frozen-lockfile
-      - name: Generate contract schemas
-        run: pnpm --filter @serino/api-client run generate:api
       - name: Export backend fixtures
         run: uv run pytest tests/test_contract_fixtures.py -v
         working-directory: backend

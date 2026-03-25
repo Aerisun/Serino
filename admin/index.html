@@ -6,7 +6,16 @@
     <title>Aerisun Admin</title>
     <script>
       (function(){
-        var t=localStorage.getItem('aerisun-admin-theme')||'system';
+        var currentKey='aerisun-admin-theme';
+        var legacyKey='serino-admin-theme';
+        var t=localStorage.getItem(currentKey);
+        if(t===null){
+          t=localStorage.getItem(legacyKey);
+          if(t!==null){
+            localStorage.setItem(currentKey, t);
+          }
+        }
+        t=t||'system';
         var d=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light':t;
         document.documentElement.classList.add(d)
       })();

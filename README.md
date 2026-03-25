@@ -3,6 +3,34 @@
 Aerisun 是一个个人发布系统，包含 FastAPI 后端、前台站点、管理后台，
 并支持使用 Docker 进行 SQLite、Litestream 以及备份/恢复相关流程。
 
+## 工具链基线
+
+- Node.js：推荐 `24.x`（当前 CI 也使用 Node 24）
+- pnpm：由根 `package.json` 固定为 `pnpm@10.31.0`
+- Python：`3.13`
+
+安装依赖时，前端工作区走根目录 `pnpm install`，后端走 `cd backend && uv sync --dev`。
+
+## 根级质量脚本
+
+日常代码质量检查统一从仓库根目录执行：
+
+```bash
+pnpm run generate:api
+pnpm run lint
+pnpm run test
+pnpm run check
+```
+
+这些命令分别负责：
+
+- `generate:api`：只在 `packages/api-client` 中执行 Orval 代码生成
+- `lint`：串行执行前端/后台 lint，以及 backend 的 Ruff format check
+- `test`：执行 backend `pytest` 和 `@serino/api-client` 契约/schema 测试
+- `check`：串行跑完生成、lint、test 和两个前端应用的生产构建
+
+`Makefile` 仍然保留给 Linux/macOS 本地进程编排；代码质量和构建入口以根 `package.json` 为准。
+
 ## 本地开发
 
 日常开发和多工作树并行开发都建议走这条路径。
