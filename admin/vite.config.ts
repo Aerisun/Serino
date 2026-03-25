@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
     base: adminBasePath,
     define: {
       __AERISUN_ADMIN_BASE_PATH__: JSON.stringify(adminBasePath),
+      __SERINO_DEV__: JSON.stringify(mode !== "production"),
     },
     server: {
       port: adminPort,

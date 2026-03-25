@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   return {
     define: {
       __AERISUN_API_BASE_URL__: JSON.stringify(apiBaseUrl),
+      __SERINO_DEV__: JSON.stringify(mode !== "production"),
     },
     server: {
       host: "::",
