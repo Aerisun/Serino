@@ -26,6 +26,7 @@
     "rehype-highlight": "^7.0.2",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "@serino/api-client": "workspace:*",
     "@serino/theme": "workspace:*",
     "@serino/types": "workspace:*",
     "@serino/utils": "workspace:*"
