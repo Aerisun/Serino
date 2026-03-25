@@ -12,7 +12,7 @@ import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
   createReactionApiV1PublicReactionsPost,
   readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGet,
-} from "@/lib/api/generated/public/public";
+} from "@serino/api-client/public";
 
 type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 

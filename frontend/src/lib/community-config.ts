@@ -8,7 +8,7 @@ import type {
 } from "@serino/types";
 
 export type { CommunitySurface, CommunityCommentSort, WalineSearchImage, WalineSearchOptions, WalineEmojiPreset, AvatarPreset };
-import { readCommunityConfigApiV1PublicCommunityConfigGet } from "@/lib/api/generated/public/public";
+import { readCommunityConfigApiV1PublicCommunityConfigGet } from "@serino/api-client/public";
 
 /** Default max image size in bytes before compression kicks in (512 KB) */
 const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;

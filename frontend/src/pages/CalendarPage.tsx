@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
-import { readCalendarApiV1PublicCalendarGet } from "@/lib/api/generated/public/public";
-import type { CalendarEventRead } from "@/lib/api/generated/model";
+import { readCalendarApiV1PublicCalendarGet } from "@serino/api-client/public";
+import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 

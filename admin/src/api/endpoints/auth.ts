@@ -1,5 +1,5 @@
 import client from "../client";
-import type { LoginRequest, LoginResponse, AdminUserRead } from "@/api/generated/model";
+import type { LoginRequest, LoginResponse, AdminUserRead } from "@serino/api-client/models";
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const res = await client.post<LoginResponse>("/api/v1/admin/auth/login", data);

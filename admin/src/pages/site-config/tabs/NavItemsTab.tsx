@@ -6,7 +6,7 @@ import {
   useUpdateNavItems,
   useDeleteNavItems,
   getListNavItemsQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/Dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import type { NavItemAdminRead } from "@/api/generated/model";
+import type { NavItemAdminRead } from "@serino/api-client/models";
 
 export function NavItemsTab() {
   const { t } = useI18n();

@@ -2,11 +2,11 @@ import { useMemo, useRef, useEffect, useState } from "react";
 import { useTheme } from "@serino/theme";
 import {
   readActivityHeatmapApiV1PublicActivityHeatmapGet,
-} from "@/lib/api/generated/public/public";
+} from "@serino/api-client/public";
 import type {
   ActivityHeatmapStatsRead,
   ActivityHeatmapWeekRead,
-} from "@/lib/api/generated/model";
+} from "@serino/api-client/models";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 interface WeeklyData {

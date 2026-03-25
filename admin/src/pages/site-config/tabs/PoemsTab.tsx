@@ -7,7 +7,7 @@ import {
   useUpdatePoems,
   useDeletePoems,
   getListPoemsQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { PoemAdminRead } from "@/api/generated/model";
+import type { PoemAdminRead } from "@serino/api-client/models";
 
 export function PoemsTab() {
   const { t } = useI18n();

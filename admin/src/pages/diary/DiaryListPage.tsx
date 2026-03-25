@@ -7,8 +7,8 @@ import {
   useBulkDeleteDiary,
   useBulkStatusDiary,
   getListDiaryQueryKey,
-} from "@/api/generated/admin/admin";
-import type { ContentAdminRead } from "@/api/generated/model";
+} from "@serino/api-client/admin";
+import type { ContentAdminRead } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";

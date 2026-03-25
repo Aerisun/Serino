@@ -4,7 +4,7 @@ import {
   useTriggerBackupApiV1AdminSystemBackupsPost,
   useRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost,
   getListBackupsApiV1AdminSystemBackupsGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -13,7 +13,7 @@ import { Database, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { BackupSnapshotRead } from "@/api/generated/model";
+import type { BackupSnapshotRead } from "@serino/api-client/models";
 
 export default function BackupsPage() {
   const { t } = useI18n();

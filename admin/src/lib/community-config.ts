@@ -1,7 +1,7 @@
-import type { CommunityConfigAdminRead } from "@/api/generated/model/communityConfigAdminRead";
-import type { CommunityConfigUpdate } from "@/api/generated/model/communityConfigUpdate";
-import type { AerisunApiAdminSchemasCommunitySurfaceRead } from "@/api/generated/model/aerisunApiAdminSchemasCommunitySurfaceRead";
-import type { CommunitySurfaceUpdate } from "@/api/generated/model/communitySurfaceUpdate";
+import type { CommunityConfigAdminRead } from "@serino/api-client/models";
+import type { CommunityConfigUpdate } from "@serino/api-client/models";
+import type { AerisunApiAdminSchemasCommunitySurfaceRead } from "@serino/api-client/models";
+import type { CommunitySurfaceUpdate } from "@serino/api-client/models";
 
 interface CommunityAvatarPreset {
   key: string;

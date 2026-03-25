@@ -9,8 +9,8 @@ import {
   formatPublishedDate,
   splitContentParagraphs,
 } from "@/lib/api/utils";
-import { readThoughtsApiV1PublicThoughtsGet } from "@/lib/api/generated/public/public";
-import type { ContentEntryRead } from "@/lib/api/generated/model";
+import { readThoughtsApiV1PublicThoughtsGet } from "@serino/api-client/public";
+import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Thought {

@@ -7,8 +7,8 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { formatPostCount } from "@/lib/format";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { readPostsApiV1PublicPostsGet } from "@/lib/api/generated/public/public";
-import type { ContentEntryRead } from "@/lib/api/generated/model";
+import { readPostsApiV1PublicPostsGet } from "@serino/api-client/public";
+import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface Post {

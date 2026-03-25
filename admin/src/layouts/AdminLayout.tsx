@@ -3,7 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import { useI18n } from "@/i18n";
-import { listCommentsApiV1AdminModerationCommentsGet, listGuestbookApiV1AdminModerationGuestbookGet } from "@/api/generated/admin/admin";
+import { listCommentsApiV1AdminModerationCommentsGet, listGuestbookApiV1AdminModerationGuestbookGet } from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import {
   LayoutDashboard,

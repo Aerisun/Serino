@@ -2,7 +2,7 @@ import {
   readSiteConfigApiV1PublicSiteGet,
   readPageCopyApiV1PublicPagesGet,
   readResumeApiV1PublicResumeGet,
-} from "@/lib/api/generated/public/public";
+} from "@serino/api-client/public";
 
 // ---------------------------------------------------------------------------
 // Width mapping (code constant — not personal data)

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { readFriendFeedApiV1PublicFriendFeedGet } from "@/lib/api/generated/public/public";
+import { readFriendFeedApiV1PublicFriendFeedGet } from "@serino/api-client/public";
 import { formatFriendFeedDate } from "@/lib/api/utils";
-import type { FriendFeedItemRead } from "@/lib/api/generated/model";
+import type { FriendFeedItemRead } from "@serino/api-client/models";
 
 interface FriendPost {
   avatar: string;

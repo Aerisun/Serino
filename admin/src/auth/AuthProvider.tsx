@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import type { AdminUserRead } from "@/api/generated/model";
+import type { AdminUserRead } from "@serino/api-client/models";
 import { getMe, login as apiLogin, logout as apiLogout } from "@/api/endpoints/auth";
 
 interface AuthState {

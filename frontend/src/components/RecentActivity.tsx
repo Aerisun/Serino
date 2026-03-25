@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Heart, MessageCircle, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { readRecentActivityApiV1PublicRecentActivityGet } from "@/lib/api/generated/public/public";
-import type { RecentActivityItemRead } from "@/lib/api/generated/model";
+import { readRecentActivityApiV1PublicRecentActivityGet } from "@serino/api-client/public";
+import type { RecentActivityItemRead } from "@serino/api-client/models";
 
 interface ActivityItem {
   type: "comment" | "like" | "reply" | "guestbook";
