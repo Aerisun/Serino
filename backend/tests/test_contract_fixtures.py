@@ -13,9 +13,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent / "packages" / "api-client" / "src" / "__tests__" / "fixtures"
+FIXTURES_DIR = (
+    Path(__file__).resolve().parent.parent.parent / "packages" / "api-client" / "src" / "__tests__" / "fixtures"
+)
 
 
 def _write_fixture(name: str, data: dict | list) -> None:
@@ -27,6 +27,7 @@ def _write_fixture(name: str, data: dict | list) -> None:
 # ---------------------------------------------------------------------------
 # Public endpoints (no auth required)
 # ---------------------------------------------------------------------------
+
 
 class TestPublicFixtures:
     def test_site_config(self, client):
@@ -53,6 +54,7 @@ class TestPublicFixtures:
 # ---------------------------------------------------------------------------
 # Admin endpoints (auth required)
 # ---------------------------------------------------------------------------
+
 
 class TestAdminFixtures:
     def test_admin_me(self, client, admin_headers):

@@ -2,7 +2,7 @@ import { useLocation, Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Home, Sparkles } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 
 const NotFound = () => {
   const location = useLocation();

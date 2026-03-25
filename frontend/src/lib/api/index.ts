@@ -11,10 +11,4 @@ export const API_BASE_URL = envApiBaseUrl;
 
 export { ApiError } from "@serino/api-client";
 
-export const buildApiUrl = (path: string) => {
-  if (/^https?:\/\//.test(path)) return path;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${normalizedPath}`;
-};
-
 export * from "./utils";

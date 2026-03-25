@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { ChevronDown, RefreshCw } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import {

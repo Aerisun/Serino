@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import { useSiteConfig } from "@/contexts/runtime-config";
 import { SocialIcon } from "@/components/icons/SocialIcon";
 
 const HeroContent = () => {

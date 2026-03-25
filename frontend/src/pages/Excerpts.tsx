@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { readExcerptsApiV1PublicExcerptsGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
@@ -95,7 +95,7 @@ const Excerpts = () => {
     };
   }, [pageSize, reloadKey]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
@@ -109,7 +109,7 @@ const Excerpts = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [hasMore, isLoadingMore, items.length, pageSize]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -120,7 +120,7 @@ const Excerpts = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, status, items.length]);
+  }, [hasMore, loadMore, status]);
 
   return (
     <PageShell

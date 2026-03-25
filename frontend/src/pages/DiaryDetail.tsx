@@ -11,7 +11,7 @@ import PageMeta from "@/components/PageMeta";
 import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
-import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
+import { useFeatureFlags } from "@/contexts/runtime-config";
 import { ApiError } from "@serino/api-client";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { readDiaryEntryApiV1PublicDiarySlugGet } from "@serino/api-client/public";

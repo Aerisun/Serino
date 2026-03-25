@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { buildPageTitle } from "@/config";
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import { useSiteConfig } from "@/contexts/runtime-config";
 
 interface PageMetaProps {
   title?: string;

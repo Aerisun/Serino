@@ -6,7 +6,8 @@ from collections.abc import Callable
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy.orm import Query as SAQuery, Session
+from sqlalchemy.orm import Query as SAQuery
+from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
 from aerisun.domain.crud import repository as repo
@@ -28,10 +29,15 @@ def list_items(
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> dict[str, Any]:
     items, total = repo.find_paginated(
-        session, model,
-        page=page, page_size=page_size,
-        status_filter=status_filter, tag_filter=tag_filter,
-        search=search, sort_by=sort_by, sort_order=sort_order,
+        session,
+        model,
+        page=page,
+        page_size=page_size,
+        status_filter=status_filter,
+        tag_filter=tag_filter,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
         base_query_factory=base_query_factory,
     )
     return {

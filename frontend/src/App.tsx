@@ -1,14 +1,12 @@
 import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@serino/theme";
-import {
-  RuntimeConfigProvider,
-  useFeatureFlags,
-} from "@/contexts/RuntimeConfigContext";
+import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
 import SearchModal from "@/components/SearchModal";
+import { useFeatureFlags } from "@/contexts/runtime-config";
 
 const Index = lazy(() => import("./pages/Index"));
 const Posts = lazy(() => import("./pages/Posts"));

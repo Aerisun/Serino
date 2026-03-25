@@ -6,12 +6,18 @@ from collections.abc import Callable
 from typing import Any
 
 from sqlalchemy import or_
-from sqlalchemy.orm import Query as SAQuery, Session
+from sqlalchemy.orm import Query as SAQuery
+from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
 
 _ALLOWED_SORT_COLUMNS = {
-    "created_at", "updated_at", "title", "published_at", "status", "slug",
+    "created_at",
+    "updated_at",
+    "title",
+    "published_at",
+    "status",
+    "slug",
 }
 
 
@@ -119,9 +125,7 @@ def bulk_delete(
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> int:
     affected = (
-        _scoped_query(session, model, base_query_factory)
-        .filter(model.id.in_(ids))
-        .delete(synchronize_session="fetch")
+        _scoped_query(session, model, base_query_factory).filter(model.id.in_(ids)).delete(synchronize_session="fetch")
     )
     session.commit()
     return affected

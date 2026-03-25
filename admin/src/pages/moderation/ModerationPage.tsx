@@ -134,6 +134,8 @@ const DEFAULT_FILTERS: ModerationFilters = {
   sort: "created_desc",
 };
 
+const EMPTY_MODERATION_ITEMS: ModerationRecord[] = [];
+
 const PAGE_SIZE = 20;
 const COMMENT_SURFACE_OPTIONS = [
   "",
@@ -780,7 +782,7 @@ function ModerationQueue({
     },
   });
 
-  const items = data?.items ?? [];
+  const items = data?.items ?? EMPTY_MODERATION_ITEMS;
   const total = data?.total ?? 0;
   const titleMap = useContentTitles(items);
   const selectedItem = items.find((item) => item.id === activeId) ?? null;
@@ -834,7 +836,6 @@ function ModerationQueue({
       for (const id of selectedIds) {
         // sequential by design: we reuse the existing single-item endpoint and keep the UI honest
         // until a batch endpoint exists on the backend.
-        // eslint-disable-next-line no-await-in-loop
         await moderateItem(id, { action, reason: null });
       }
       await queryClient.invalidateQueries({ queryKey: queryKeyFn() });

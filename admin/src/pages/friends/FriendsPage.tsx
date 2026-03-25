@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListFriends,
@@ -31,6 +31,8 @@ import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import type { FriendAdminRead, FriendFeedSourceAdminRead } from "@serino/api-client/models";
 
+const EMPTY_FRIENDS: FriendAdminRead[] = [];
+
 export default function FriendsPage() {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
@@ -50,15 +52,9 @@ export default function FriendsPage() {
 
   const { data: raw, isLoading } = useListFriends({ page });
   const data = raw?.data;
-  const items = data?.items ?? [];
+  const items = data?.items ?? EMPTY_FRIENDS;
   const total = data?.total ?? 0;
   const pageSize = data?.page_size ?? 20;
-
-  // Shuffle on every render / page change
-  const shuffledItems = useMemo(
-    () => [...items].sort(() => Math.random() - 0.5),
-    [items],
-  );
 
   const create = useCreateFriends({
     mutation: {
@@ -258,7 +254,7 @@ export default function FriendsPage() {
               ),
             },
           ]}
-          data={shuffledItems}
+          data={items}
           total={total}
           page={page}
           pageSize={pageSize}

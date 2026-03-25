@@ -43,7 +43,6 @@ import type {
 import { customFetch } from '../../mutators/public-fetch';
 
 /**
- * 返回站点基本信息、导航、社交链接、诗词等公开配置。
  * @summary 获取站点配置
  */
 export type readSiteConfigApiV1PublicSiteGetResponse200 = {
@@ -79,7 +78,6 @@ export const readSiteConfigApiV1PublicSiteGet = async ( options?: RequestInit): 
 
 
 /**
- * 返回各页面的标题、副标题、描述等可配置文案。
  * @summary 获取页面文案
  */
 export type readPageCopyApiV1PublicPagesGetResponse200 = {
@@ -115,7 +113,6 @@ export const readPageCopyApiV1PublicPagesGet = async ( options?: RequestInit): P
 
 
 /**
- * 返回 Waline 评论系统的前端配置项。
  * @summary 获取社区评论配置
  */
 export type readCommunityConfigApiV1PublicCommunityConfigGetResponse200 = {
@@ -151,7 +148,6 @@ export const readCommunityConfigApiV1PublicCommunityConfigGet = async ( options?
 
 
 /**
- * 返回简历基本信息、技能列表和工作经历。
  * @summary 获取简历数据
  */
 export type readResumeApiV1PublicResumeGetResponse200 = {
@@ -187,7 +183,6 @@ export const readResumeApiV1PublicResumeGet = async ( options?: RequestInit): Pr
 
 
 /**
- * 按发布时间倒序返回公开已发布文章，包含评论数和点赞数。
  * @summary 获取已发布文章列表
  */
 export type readPostsApiV1PublicPostsGetResponse200 = {
@@ -237,7 +232,6 @@ export const readPostsApiV1PublicPostsGet = async (params?: ReadPostsApiV1Public
 
 
 /**
- * 根据 slug 返回单篇公开已发布文章的完整内容。
  * @summary 获取单篇文章
  */
 export type readPostApiV1PublicPostsSlugGetResponse200 = {
@@ -280,7 +274,6 @@ export const readPostApiV1PublicPostsSlugGet = async (slug: string, options?: Re
 
 
 /**
- * 按发布时间倒序返回公开已发布日记条目。
  * @summary 获取日记列表
  */
 export type readDiaryApiV1PublicDiaryGetResponse200 = {
@@ -330,7 +323,6 @@ export const readDiaryApiV1PublicDiaryGet = async (params?: ReadDiaryApiV1Public
 
 
 /**
- * 根据 slug 返回单篇公开已发布日记的完整内容。
  * @summary 获取单篇日记
  */
 export type readDiaryEntryApiV1PublicDiarySlugGetResponse200 = {
@@ -373,7 +365,6 @@ export const readDiaryEntryApiV1PublicDiarySlugGet = async (slug: string, option
 
 
 /**
- * 按发布时间倒序返回公开已发布想法/短文。
  * @summary 获取想法列表
  */
 export type readThoughtsApiV1PublicThoughtsGetResponse200 = {
@@ -423,7 +414,6 @@ export const readThoughtsApiV1PublicThoughtsGet = async (params?: ReadThoughtsAp
 
 
 /**
- * 按发布时间倒序返回公开已发布书摘/引用。
  * @summary 获取摘录列表
  */
 export type readExcerptsApiV1PublicExcerptsGetResponse200 = {
@@ -473,7 +463,6 @@ export const readExcerptsApiV1PublicExcerptsGet = async (params?: ReadExcerptsAp
 
 
 /**
- * 返回已上线的友链列表，按排序权重排列。
  * @summary 获取友链列表
  */
 export type readFriendsApiV1PublicFriendsGetResponse200 = {
@@ -523,7 +512,6 @@ export const readFriendsApiV1PublicFriendsGet = async (params?: ReadFriendsApiV1
 
 
 /**
- * 返回友链 RSS 抓取的最新动态列表。
  * @summary 获取友链动态
  */
 export type readFriendFeedApiV1PublicFriendFeedGetResponse200 = {
@@ -573,7 +561,6 @@ export const readFriendFeedApiV1PublicFriendFeedGet = async (params?: ReadFriend
 
 
 /**
- * 返回已审核通过的留言板条目。
  * @summary 获取留言板
  */
 export type readGuestbookApiV1PublicGuestbookGetResponse200 = {
@@ -623,7 +610,6 @@ export const readGuestbookApiV1PublicGuestbookGet = async (params?: ReadGuestboo
 
 
 /**
- * 创建一条新留言，需审核通过后公开显示。
  * @summary 提交留言
  */
 export type createGuestbookApiV1PublicGuestbookPostResponse200 = {
@@ -667,7 +653,6 @@ export const createGuestbookApiV1PublicGuestbookPost = async (guestbookCreate: G
 
 
 /**
- * 返回指定内容（文章/日记等）下的嵌套评论树。
  * @summary 获取内容评论
  */
 export type readCommentsApiV1PublicCommentsContentTypeSlugGetResponse200 = {
@@ -712,7 +697,6 @@ export const readCommentsApiV1PublicCommentsContentTypeSlugGet = async (contentT
 
 
 /**
- * 在指定内容下发表评论，需审核通过后公开显示。
  * @summary 发表评论
  */
 export type createCommentApiV1PublicCommentsContentTypeSlugPostResponse200 = {
@@ -759,7 +743,6 @@ export const createCommentApiV1PublicCommentsContentTypeSlugPost = async (conten
 
 
 /**
- * 为指定内容注册一次互动反应（如点赞），返回当前总数。
  * @summary 提交互动反应
  */
 export type createReactionApiV1PublicReactionsPostResponse200 = {
@@ -803,7 +786,6 @@ export const createReactionApiV1PublicReactionsPost = async (reactionCreate: Rea
 
 
 /**
- * 查询指定内容某种反应类型的当前总数。
  * @summary 查询反应计数
  */
 export type readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGetResponse200 = {
@@ -850,7 +832,6 @@ export const readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGet = as
 
 
 /**
- * Accept a comment image, save to media dir, return its public URL.
  * @summary 评论图片上传
  */
 export type uploadCommentImageApiV1PublicCommentImagePostResponse200 = {
@@ -896,7 +877,6 @@ formData.append(`file`, bodyUploadCommentImageApiV1PublicCommentImagePost.file);
 
 
 /**
- * 返回指定日期范围内的内容发布事件，用于日历视图。
  * @summary 获取日历事件
  */
 export type readCalendarApiV1PublicCalendarGetResponse200 = {
@@ -946,7 +926,6 @@ export const readCalendarApiV1PublicCalendarGet = async (params?: ReadCalendarAp
 
 
 /**
- * 返回最近的评论、留言和点赞等互动动态。
  * @summary 获取最近动态
  */
 export type readRecentActivityApiV1PublicRecentActivityGetResponse200 = {
@@ -996,7 +975,6 @@ export const readRecentActivityApiV1PublicRecentActivityGet = async (params?: Re
 
 
 /**
- * 返回指定周数内每日活动计数，用于 GitHub 风格热力图。
  * @summary 获取活动热力图
  */
 export type readActivityHeatmapApiV1PublicActivityHeatmapGetResponse200 = {
@@ -1046,7 +1024,6 @@ export const readActivityHeatmapApiV1PublicActivityHeatmapGet = async (params?: 
 
 
 /**
- * 返回服务健康状态和数据库路径。
  * @summary 健康检查
  */
 export type healthzApiV1PublicHealthzGetResponse200 = {

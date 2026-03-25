@@ -1,77 +1,39 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { API_BASE_URL, ApiError } from "@/lib/api"
-import { loadRuntimeConfig, type RuntimeConfigSnapshot } from "@/lib/runtime-config"
-
-interface RuntimeConfigContextValue {
-  config: RuntimeConfigSnapshot
-}
-
-const RuntimeConfigContext = createContext<RuntimeConfigContextValue | null>(null)
-
-function describeRuntimeConfigError(error: Error | null) {
-  if (!error) {
-    return "站点配置未加载"
-  }
-
-  if (error instanceof ApiError) {
-    return `接口请求失败（HTTP ${error.status}）`
-  }
-
-  if (error.message === "Failed to fetch") {
-    return `无法访问接口 ${API_BASE_URL || "/api"}`
-  }
-
-  return error.message
-}
-
-export function useSiteConfig() {
-  const ctx = useContext(RuntimeConfigContext)
-  if (!ctx) throw new Error("useSiteConfig must be used within RuntimeConfigProvider")
-  return ctx.config.site
-}
-
-export function usePageConfig() {
-  const ctx = useContext(RuntimeConfigContext)
-  if (!ctx) throw new Error("usePageConfig must be used within RuntimeConfigProvider")
-  return ctx.config.pages
-}
-
-export function useFeatureFlags() {
-  const ctx = useContext(RuntimeConfigContext)
-  if (!ctx) throw new Error("useFeatureFlags must be used within RuntimeConfigProvider")
-  return ctx.config.site.featureFlags
-}
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { RuntimeConfigContext, describeRuntimeConfigError } from "@/contexts/runtime-config";
+import { loadRuntimeConfig, type RuntimeConfigSnapshot } from "@/lib/runtime-config";
 
 export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const snapshot = await loadRuntimeConfig()
-      setConfig(snapshot)
+      const snapshot = await loadRuntimeConfig();
+      setConfig(snapshot);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to load config"))
+      setError(err instanceof Error ? err : new Error("Failed to load config"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/60" />
       </div>
-    )
+    );
   }
 
   if (error || !config) {
-    const message = describeRuntimeConfigError(error)
+    const message = describeRuntimeConfigError(error);
 
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
@@ -86,12 +48,10 @@ export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
           重试
         </button>
       </div>
-    )
+    );
   }
 
   return (
-    <RuntimeConfigContext.Provider value={{ config }}>
-      {children}
-    </RuntimeConfigContext.Provider>
-  )
+    <RuntimeConfigContext.Provider value={{ config }}>{children}</RuntimeConfigContext.Provider>
+  );
 }

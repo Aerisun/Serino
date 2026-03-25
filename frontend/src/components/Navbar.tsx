@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import { useSiteConfig } from "@/contexts/runtime-config";
 import type { NavItem } from "@/lib/runtime-config";
 
 type NavbarGlassVariant = "default" | "hero";

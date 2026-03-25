@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Briefcase, GraduationCap, Code, Palette, Printer } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import type { ResumeExperienceConfig, PageMotionConfig } from "@/config";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 

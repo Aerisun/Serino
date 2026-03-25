@@ -1,13 +1,11 @@
 import type {
   CommunitySurface,
   CommunityCommentSort,
-  WalineSearchImage,
-  WalineSearchOptions,
   WalineEmojiPreset,
   AvatarPreset,
 } from "@serino/types";
 
-export type { CommunitySurface, CommunityCommentSort, WalineSearchImage, WalineSearchOptions, WalineEmojiPreset, AvatarPreset };
+export type { CommunitySurface, CommunityCommentSort, WalineEmojiPreset, AvatarPreset };
 import { readCommunityConfigApiV1PublicCommunityConfigGet } from "@serino/api-client/public";
 
 /** Default max image size in bytes before compression kicks in (512 KB) */
@@ -77,28 +75,7 @@ export interface CommunityConfigResponse {
   dark_selector?: string | null;
 }
 
-export type WalineRuntimeOptions = {
-  serverURL: string;
-  path: string;
-  dark: string;
-  meta: Array<"nick" | "mail" | "link">;
-  requiredMeta: Array<"nick" | "mail">;
-  login: "disable" | "enable" | "force";
-  imageUploader: (image: File) => Promise<string>;
-  emoji: Array<string | WalineEmojiPreset>;
-  search: WalineSearchOptions | boolean;
-  reaction: string[] | boolean;
-  pageview: boolean;
-  comment: boolean;
-  locale?: Record<string, string>;
-  lang?: string;
-  pageSize?: number;
-  commentSorting?: CommunityCommentSort;
-};
-
-export const communityConfigPath = "/api/v1/public/community-config";
-
-export const DEFAULT_WALINE_EMOJI: Array<string> = [
+const DEFAULT_WALINE_EMOJI: Array<string> = [
   "https://unpkg.com/@waline/emojis@1.1.0/weibo",
   "https://unpkg.com/@waline/emojis@1.1.0/qq",
   "https://unpkg.com/@waline/emojis@1.1.0/tieba",
@@ -108,7 +85,7 @@ export const DEFAULT_WALINE_EMOJI: Array<string> = [
   "https://unpkg.com/@waline/emojis@1.1.0/bmoji",
 ];
 
-export const DEFAULT_AVATAR_PRESETS: AvatarPreset[] = [
+const DEFAULT_AVATAR_PRESETS: AvatarPreset[] = [
   { key: "shiro", label: "Shiro", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro" },
   { key: "glass", label: "Glass", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Glass" },
   { key: "aurora", label: "Aurora", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora" },
@@ -146,90 +123,6 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
 
 const normalizeCommentSorting = (value: unknown): CommunityCommentSort => {
   return value === "oldest" || value === "hottest" ? value : "latest";
-};
-
-export const buildWalineSurfacePath = (surface: CommunitySurface, slug?: string) => {
-  if (surface === "guestbook") {
-    return "/guestbook";
-  }
-
-  if (!slug) {
-    throw new Error(`Waline surface "${surface}" requires a slug`);
-  }
-
-  return `/${surface}/${slug}`;
-};
-
-export const normalizeWalineSearchResult = (payload: unknown): WalineSearchImage[] => {
-  if (Array.isArray(payload)) {
-    return payload
-      .map((item) => {
-        if (!item || typeof item !== "object") return null;
-        const record = item as Record<string, unknown>;
-        const src = String(record.src ?? record.url ?? record.image ?? "");
-        if (!src) return null;
-        const title = record.title ?? record.alt ?? record.name;
-        const preview = record.preview ?? record.thumbnail ?? record.thumb;
-        return {
-          src,
-          ...(typeof title === "string" ? { title } : {}),
-          ...(typeof preview === "string" ? { preview } : {}),
-        };
-      })
-      .filter((item): item is WalineSearchImage => item !== null);
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return [];
-  }
-
-  const record = payload as Record<string, unknown>;
-  for (const candidate of [record.items, record.results, record.data, record.list, record.images]) {
-    if (Array.isArray(candidate)) {
-      return normalizeWalineSearchResult(candidate);
-    }
-  }
-
-  return [];
-};
-
-const createSearchEndpoint = (endpoint: string, fallbackWords: string[]) => {
-  const buildUrl = (word: string, page: number) => {
-    const url = new URL(endpoint, window.location.origin);
-    url.searchParams.set("q", word);
-    url.searchParams.set("page", String(page));
-    url.searchParams.set("pageSize", "20");
-    return url;
-  };
-
-  const search = async (word: string) => {
-    const response = await fetch(buildUrl(word, 1));
-    if (!response.ok) {
-      return [];
-    }
-    const payload = await response.json();
-    return normalizeWalineSearchResult(payload);
-  };
-
-  return {
-    search,
-    default: async () => {
-      for (const word of fallbackWords) {
-        const results = await search(word);
-        if (results.length) return results;
-      }
-      return [];
-    },
-    more: async (word: string, currentCount: number) => {
-      const page = Math.floor(currentCount / 20) + 1;
-      const response = await fetch(buildUrl(word, page));
-      if (!response.ok) {
-        return [];
-      }
-      const payload = await response.json();
-      return normalizeWalineSearchResult(payload);
-    },
-  } satisfies WalineSearchOptions;
 };
 
 const WALINE_EMOJI_CDN = "https://unpkg.com/@waline/emojis@1.1.0";
@@ -275,7 +168,7 @@ const normalizeServerURL = (raw: string): string => {
   }
 };
 
-export const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
+const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
   if (!payload || typeof payload !== "object") {
     return DEFAULT_WALINE_COMMUNITY_CONFIG;
   }
@@ -345,127 +238,5 @@ export async function loadCommunityConfig(init?: RequestInit): Promise<Community
     };
   }
 }
-
-/** Max pixel dimension (width or height) */
-const IMAGE_MAX_DIM = 1920;
-
-/**
- * Compress an image File via Canvas.  Returns the original if it's already
- * small enough or if it's not a raster format (SVG, etc.).
- */
-const compressImage = (file: File, maxBytes: number): Promise<File> => {
-  if (file.size <= maxBytes) return Promise.resolve(file);
-  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") return Promise.resolve(file);
-
-  const targetBytes = Math.floor(maxBytes * 0.94); // leave headroom
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(img.src);
-      let { width, height } = img;
-
-      // Scale down if either dimension exceeds the cap
-      if (width > IMAGE_MAX_DIM || height > IMAGE_MAX_DIM) {
-        const ratio = Math.min(IMAGE_MAX_DIM / width, IMAGE_MAX_DIM / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // Binary-search for a quality that stays under budget
-      let lo = 0.3;
-      let hi = 0.92;
-      const tryQuality = (q: number) =>
-        new Promise<Blob | null>((r) => canvas.toBlob((b) => r(b), "image/jpeg", q));
-
-      (async () => {
-        let best: Blob | null = null;
-        for (let i = 0; i < 5; i++) {
-          const mid = (lo + hi) / 2;
-          const blob = await tryQuality(mid);
-          if (!blob) break;
-          best = blob;
-          if (blob.size > targetBytes) {
-            hi = mid;
-          } else {
-            lo = mid;
-          }
-        }
-        if (!best) {
-          resolve(file);
-          return;
-        }
-        const name = file.name.replace(/\.[^.]+$/, ".jpg");
-        resolve(new File([best], name, { type: "image/jpeg" }));
-      })();
-    };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
-  });
-};
-
-/**
- * Build a Waline-compatible imageUploader that auto-compresses oversized
- * images before uploading to our backend's comment-image endpoint.
- */
-const createImageUploader = (_serverURL: string, maxBytes?: number | null) => {
-  const limit = maxBytes ?? DEFAULT_IMAGE_MAX_BYTES;
-  return async (image: File): Promise<string> => {
-    const compressed = await compressImage(image, limit);
-    const form = new FormData();
-    form.append("file", compressed);
-
-    const res = await fetch("/api/v1/public/comment-image", {
-      method: "POST",
-      body: form,
-    });
-
-    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-    const data = await res.json();
-    // Waline returns { errno: 0, data: { url: "..." } } on success
-    if (data?.errno !== 0) throw new Error(data?.errmsg ?? "Upload error");
-    return data.data?.url ?? data.data;
-  };
-};
-
-export const buildWalineRuntimeOptions = (
-  config: CommunityConfig,
-  surface: CommunitySurface,
-  slug?: string,
-  commentSorting: CommunityCommentSort = config.commentSorting ?? "latest",
-): WalineRuntimeOptions => {
-  const path = buildWalineSurfacePath(surface, slug);
-  const search = config.enableEnjoySearch && config.enjoySearchEndpoint
-    ? createSearchEndpoint(config.enjoySearchEndpoint, config.enjoySearchDefaultWords ?? [])
-    : false; // No GIF search — only emoji presets
-
-  return {
-    serverURL: config.serverURL,
-    path,
-    dark: config.darkSelector ?? "html.dark",
-    meta: config.meta,
-    requiredMeta: config.requiredMeta,
-    login: config.loginMode,
-    imageUploader: createImageUploader(config.serverURL, config.imageMaxBytes),
-    emoji: config.emojiPresets,
-    search,
-    reaction: false,
-    pageview: true,
-    comment: true,
-    locale: {
-      reaction0: "喜欢",
-      placeholder: "昵称必填，邮箱选填（填写可收到回复通知）。支持 Markdown 语法。",
-    },
-    lang: config.lang ?? "zh-CN",
-    pageSize: config.pageSize ?? 10,
-    commentSorting,
-  };
-};
 
 export const DEFAULT_COMMUNITY_CONFIG = DEFAULT_WALINE_COMMUNITY_CONFIG;

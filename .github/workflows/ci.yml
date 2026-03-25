@@ -53,7 +53,7 @@ jobs:
       - run: uv sync --dev
         working-directory: backend
       - name: Export OpenAPI spec
-        run: uv run python scripts/export-openapi.py
+        run: uv run python ../scripts/export-openapi.py
         working-directory: backend
       - run: pnpm install --frozen-lockfile
       - name: Generate API client
@@ -82,7 +82,7 @@ jobs:
       - run: uv sync --dev
         working-directory: backend
       - name: Export OpenAPI spec
-        run: uv run python scripts/export-openapi.py
+        run: uv run python ../scripts/export-openapi.py
         working-directory: backend
       - run: pnpm install --frozen-lockfile
       - name: Generate API client
@@ -112,7 +112,7 @@ jobs:
       - run: uv sync --dev
         working-directory: backend
       - name: Export OpenAPI spec
-        run: uv run python scripts/export-openapi.py
+        run: uv run python ../scripts/export-openapi.py
         working-directory: backend
       - run: pnpm install --frozen-lockfile
       - name: Generate contract schemas

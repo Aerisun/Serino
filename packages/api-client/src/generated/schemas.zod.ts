@@ -7,7 +7,6 @@
 import * as zod from 'zod';
 
 /**
- * 返回站点基本信息、导航、社交链接、诗词等公开配置。
  * @summary 获取站点配置
  */
 export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
@@ -49,7 +48,6 @@ export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
 
 
 /**
- * 返回各页面的标题、副标题、描述等可配置文案。
  * @summary 获取页面文案
  */
 export const ReadPageCopyApiV1PublicPagesGetResponse = zod.object({
@@ -72,7 +70,6 @@ export const ReadPageCopyApiV1PublicPagesGetResponse = zod.object({
 
 
 /**
- * 返回 Waline 评论系统的前端配置项。
  * @summary 获取社区评论配置
  */
 export const readCommunityConfigApiV1PublicCommunityConfigGetResponseImageMaxBytesDefault = 524288;
@@ -109,7 +106,6 @@ export const ReadCommunityConfigApiV1PublicCommunityConfigGetResponse = zod.obje
 
 
 /**
- * 返回简历基本信息、技能列表和工作经历。
  * @summary 获取简历数据
  */
 export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
@@ -133,7 +129,6 @@ export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
 
 
 /**
- * 按发布时间倒序返回公开已发布文章，包含评论数和点赞数。
  * @summary 获取已发布文章列表
  */
 export const readPostsApiV1PublicPostsGetQueryLimitDefault = 20;
@@ -184,7 +179,6 @@ export const ReadPostsApiV1PublicPostsGetResponse = zod.object({
 
 
 /**
- * 根据 slug 返回单篇公开已发布文章的完整内容。
  * @summary 获取单篇文章
  */
 export const ReadPostApiV1PublicPostsSlugGetParams = zod.object({
@@ -219,7 +213,6 @@ export const ReadPostApiV1PublicPostsSlugGetResponse = zod.object({
 
 
 /**
- * 按发布时间倒序返回公开已发布日记条目。
  * @summary 获取日记列表
  */
 export const readDiaryApiV1PublicDiaryGetQueryLimitDefault = 20;
@@ -270,7 +263,6 @@ export const ReadDiaryApiV1PublicDiaryGetResponse = zod.object({
 
 
 /**
- * 根据 slug 返回单篇公开已发布日记的完整内容。
  * @summary 获取单篇日记
  */
 export const ReadDiaryEntryApiV1PublicDiarySlugGetParams = zod.object({
@@ -305,7 +297,6 @@ export const ReadDiaryEntryApiV1PublicDiarySlugGetResponse = zod.object({
 
 
 /**
- * 按发布时间倒序返回公开已发布想法/短文。
  * @summary 获取想法列表
  */
 export const readThoughtsApiV1PublicThoughtsGetQueryLimitDefault = 40;
@@ -356,7 +347,6 @@ export const ReadThoughtsApiV1PublicThoughtsGetResponse = zod.object({
 
 
 /**
- * 按发布时间倒序返回公开已发布书摘/引用。
  * @summary 获取摘录列表
  */
 export const readExcerptsApiV1PublicExcerptsGetQueryLimitDefault = 40;
@@ -407,7 +397,6 @@ export const ReadExcerptsApiV1PublicExcerptsGetResponse = zod.object({
 
 
 /**
- * 返回已上线的友链列表，按排序权重排列。
  * @summary 获取友链列表
  */
 export const readFriendsApiV1PublicFriendsGetQueryLimitDefault = 100;
@@ -432,7 +421,6 @@ export const ReadFriendsApiV1PublicFriendsGetResponse = zod.object({
 
 
 /**
- * 返回友链 RSS 抓取的最新动态列表。
  * @summary 获取友链动态
  */
 export const readFriendFeedApiV1PublicFriendFeedGetQueryLimitDefault = 20;
@@ -457,7 +445,6 @@ export const ReadFriendFeedApiV1PublicFriendFeedGetResponse = zod.object({
 
 
 /**
- * 返回已审核通过的留言板条目。
  * @summary 获取留言板
  */
 export const readGuestbookApiV1PublicGuestbookGetQueryLimitDefault = 50;
@@ -484,7 +471,6 @@ export const ReadGuestbookApiV1PublicGuestbookGetResponse = zod.object({
 
 
 /**
- * 创建一条新留言，需审核通过后公开显示。
  * @summary 提交留言
  */
 export const CreateGuestbookApiV1PublicGuestbookPostBody = zod.object({
@@ -511,7 +497,6 @@ export const CreateGuestbookApiV1PublicGuestbookPostResponse = zod.object({
 
 
 /**
- * 返回指定内容（文章/日记等）下的嵌套评论树。
  * @summary 获取内容评论
  */
 export const ReadCommentsApiV1PublicCommentsContentTypeSlugGetParams = zod.object({
@@ -542,7 +527,6 @@ export const ReadCommentsApiV1PublicCommentsContentTypeSlugGetResponse = zod.obj
 
 
 /**
- * 在指定内容下发表评论，需审核通过后公开显示。
  * @summary 发表评论
  */
 export const CreateCommentApiV1PublicCommentsContentTypeSlugPostParams = zod.object({
@@ -582,7 +566,6 @@ export const CreateCommentApiV1PublicCommentsContentTypeSlugPostResponse = zod.o
 
 
 /**
- * 为指定内容注册一次互动反应（如点赞），返回当前总数。
  * @summary 提交互动反应
  */
 export const CreateReactionApiV1PublicReactionsPostBody = zod.object({
@@ -601,7 +584,6 @@ export const CreateReactionApiV1PublicReactionsPostResponse = zod.object({
 
 
 /**
- * 查询指定内容某种反应类型的当前总数。
  * @summary 查询反应计数
  */
 export const ReadReactionApiV1PublicReactionsContentTypeSlugReactionTypeGetParams = zod.object({
@@ -619,7 +601,6 @@ export const ReadReactionApiV1PublicReactionsContentTypeSlugReactionTypeGetRespo
 
 
 /**
- * Accept a comment image, save to media dir, return its public URL.
  * @summary 评论图片上传
  */
 export const UploadCommentImageApiV1PublicCommentImagePostBody = zod.object({
@@ -637,7 +618,6 @@ export const UploadCommentImageApiV1PublicCommentImagePostResponse = zod.object(
 
 
 /**
- * 返回指定日期范围内的内容发布事件，用于日历视图。
  * @summary 获取日历事件
  */
 export const ReadCalendarApiV1PublicCalendarGetQueryParams = zod.object({
@@ -659,7 +639,6 @@ export const ReadCalendarApiV1PublicCalendarGetResponse = zod.object({
 
 
 /**
- * 返回最近的评论、留言和点赞等互动动态。
  * @summary 获取最近动态
  */
 export const readRecentActivityApiV1PublicRecentActivityGetQueryLimitDefault = 8;
@@ -685,7 +664,6 @@ export const ReadRecentActivityApiV1PublicRecentActivityGetResponse = zod.object
 
 
 /**
- * 返回指定周数内每日活动计数，用于 GitHub 风格热力图。
  * @summary 获取活动热力图
  */
 export const readActivityHeatmapApiV1PublicActivityHeatmapGetQueryWeeksDefault = 52;
@@ -715,7 +693,6 @@ export const ReadActivityHeatmapApiV1PublicActivityHeatmapGetResponse = zod.obje
 
 
 /**
- * 返回服务健康状态和数据库路径。
  * @summary 健康检查
  */
 export const HealthzApiV1PublicHealthzGetResponse = zod.object({
@@ -803,7 +780,6 @@ export const RevokeSessionApiV1AdminAuthSessionsSessionIdDeleteParams = zod.obje
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-posts列表
  */
 export const listPostsQueryPageDefault = 1;
@@ -858,7 +834,6 @@ export const ListPostsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-posts
  */
 export const createPostsBodyStatusDefault = `draft`;
@@ -889,7 +864,6 @@ export const CreatePostsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-posts
  */
 export const GetPostsParams = zod.object({
@@ -925,7 +899,6 @@ export const GetPostsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-posts
  */
 export const UpdatePostsParams = zod.object({
@@ -981,7 +954,6 @@ export const UpdatePostsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-posts
  */
 export const DeletePostsParams = zod.object({
@@ -990,7 +962,6 @@ export const DeletePostsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-posts
  */
 export const BulkDeletePostsBody = zod.object({
@@ -1003,7 +974,6 @@ export const BulkDeletePostsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-posts状态
  */
 export const BulkStatusPostsBody = zod.object({
@@ -1017,7 +987,6 @@ export const BulkStatusPostsResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-diary列表
  */
 export const listDiaryQueryPageDefault = 1;
@@ -1072,7 +1041,6 @@ export const ListDiaryResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-diary
  */
 export const createDiaryBodyStatusDefault = `draft`;
@@ -1103,7 +1071,6 @@ export const CreateDiaryBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-diary
  */
 export const GetDiaryParams = zod.object({
@@ -1139,7 +1106,6 @@ export const GetDiaryResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-diary
  */
 export const UpdateDiaryParams = zod.object({
@@ -1195,7 +1161,6 @@ export const UpdateDiaryResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-diary
  */
 export const DeleteDiaryParams = zod.object({
@@ -1204,7 +1169,6 @@ export const DeleteDiaryParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-diary
  */
 export const BulkDeleteDiaryBody = zod.object({
@@ -1217,7 +1181,6 @@ export const BulkDeleteDiaryResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-diary状态
  */
 export const BulkStatusDiaryBody = zod.object({
@@ -1231,7 +1194,6 @@ export const BulkStatusDiaryResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-thoughts列表
  */
 export const listThoughtsQueryPageDefault = 1;
@@ -1286,7 +1248,6 @@ export const ListThoughtsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-thoughts
  */
 export const createThoughtsBodyStatusDefault = `draft`;
@@ -1317,7 +1278,6 @@ export const CreateThoughtsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-thoughts
  */
 export const GetThoughtsParams = zod.object({
@@ -1353,7 +1313,6 @@ export const GetThoughtsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-thoughts
  */
 export const UpdateThoughtsParams = zod.object({
@@ -1409,7 +1368,6 @@ export const UpdateThoughtsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-thoughts
  */
 export const DeleteThoughtsParams = zod.object({
@@ -1418,7 +1376,6 @@ export const DeleteThoughtsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-thoughts
  */
 export const BulkDeleteThoughtsBody = zod.object({
@@ -1431,7 +1388,6 @@ export const BulkDeleteThoughtsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-thoughts状态
  */
 export const BulkStatusThoughtsBody = zod.object({
@@ -1445,7 +1401,6 @@ export const BulkStatusThoughtsResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-excerpts列表
  */
 export const listExcerptsQueryPageDefault = 1;
@@ -1500,7 +1455,6 @@ export const ListExcerptsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-excerpts
  */
 export const createExcerptsBodyStatusDefault = `draft`;
@@ -1531,7 +1485,6 @@ export const CreateExcerptsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-excerpts
  */
 export const GetExcerptsParams = zod.object({
@@ -1567,7 +1520,6 @@ export const GetExcerptsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-excerpts
  */
 export const UpdateExcerptsParams = zod.object({
@@ -1623,7 +1575,6 @@ export const UpdateExcerptsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-excerpts
  */
 export const DeleteExcerptsParams = zod.object({
@@ -1632,7 +1583,6 @@ export const DeleteExcerptsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-excerpts
  */
 export const BulkDeleteExcerptsBody = zod.object({
@@ -1645,7 +1595,6 @@ export const BulkDeleteExcerptsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-excerpts状态
  */
 export const BulkStatusExcerptsBody = zod.object({
@@ -1659,7 +1608,6 @@ export const BulkStatusExcerptsResponse = zod.object({
 
 
 /**
- * 返回站点基本资料配置。
  * @summary 获取站点资料
  */
 export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
@@ -1682,7 +1630,6 @@ export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
 
 
 /**
- * 更新站点名称、描述、头像等基本资料。
  * @summary 更新站点资料
  */
 export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
@@ -1720,7 +1667,6 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutResponse = zod.object({
 
 
 /**
- * 返回社区评论系统的当前配置。
  * @summary 获取社区评论配置
  */
 export const getCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponseImageMaxBytesDefault = 524288;
@@ -1760,7 +1706,6 @@ export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = 
 
 
 /**
- * 更新社区评论系统的配置项。
  * @summary 更新社区评论配置
  */
 export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = zod.object({
@@ -1830,7 +1775,6 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export const listSocialLinksQueryPageDefault = 1;
@@ -1870,7 +1814,6 @@ export const ListSocialLinksResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export const createSocialLinksBodyPlacementDefault = `hero`;
@@ -1887,7 +1830,6 @@ export const CreateSocialLinksBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export const GetSocialLinksParams = zod.object({
@@ -1908,7 +1850,6 @@ export const GetSocialLinksResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export const UpdateSocialLinksParams = zod.object({
@@ -1937,7 +1878,6 @@ export const UpdateSocialLinksResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export const DeleteSocialLinksParams = zod.object({
@@ -1946,7 +1886,6 @@ export const DeleteSocialLinksParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export const BulkDeleteSocialLinksBody = zod.object({
@@ -1959,7 +1898,6 @@ export const BulkDeleteSocialLinksResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export const BulkStatusSocialLinksBody = zod.object({
@@ -1973,7 +1911,6 @@ export const BulkStatusSocialLinksResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export const listPoemsQueryPageDefault = 1;
@@ -2010,7 +1947,6 @@ export const ListPoemsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export const createPoemsBodyOrderIndexDefault = 0;
@@ -2023,7 +1959,6 @@ export const CreatePoemsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export const GetPoemsParams = zod.object({
@@ -2041,7 +1976,6 @@ export const GetPoemsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export const UpdatePoemsParams = zod.object({
@@ -2064,7 +1998,6 @@ export const UpdatePoemsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export const DeletePoemsParams = zod.object({
@@ -2073,7 +2006,6 @@ export const DeletePoemsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export const BulkDeletePoemsBody = zod.object({
@@ -2086,7 +2018,6 @@ export const BulkDeletePoemsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export const BulkStatusPoemsBody = zod.object({
@@ -2100,7 +2031,6 @@ export const BulkStatusPoemsResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export const listPageCopyQueryPageDefault = 1;
@@ -2146,7 +2076,6 @@ export const ListPageCopyResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export const CreatePageCopyBody = zod.object({
@@ -2166,7 +2095,6 @@ export const CreatePageCopyBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export const GetPageCopyParams = zod.object({
@@ -2193,7 +2121,6 @@ export const GetPageCopyResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export const UpdatePageCopyParams = zod.object({
@@ -2234,7 +2161,6 @@ export const UpdatePageCopyResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export const DeletePageCopyParams = zod.object({
@@ -2243,7 +2169,6 @@ export const DeletePageCopyParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export const BulkDeletePageCopyBody = zod.object({
@@ -2256,7 +2181,6 @@ export const BulkDeletePageCopyResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export const BulkStatusPageCopyBody = zod.object({
@@ -2270,7 +2194,6 @@ export const BulkStatusPageCopyResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export const listDisplayOptionsQueryPageDefault = 1;
@@ -2307,7 +2230,6 @@ export const ListDisplayOptionsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export const createDisplayOptionsBodyIsEnabledDefault = true;
@@ -2320,7 +2242,6 @@ export const CreateDisplayOptionsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export const GetDisplayOptionsParams = zod.object({
@@ -2338,7 +2259,6 @@ export const GetDisplayOptionsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export const UpdateDisplayOptionsParams = zod.object({
@@ -2361,7 +2281,6 @@ export const UpdateDisplayOptionsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export const DeleteDisplayOptionsParams = zod.object({
@@ -2370,7 +2289,6 @@ export const DeleteDisplayOptionsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export const BulkDeleteDisplayOptionsBody = zod.object({
@@ -2383,7 +2301,6 @@ export const BulkDeleteDisplayOptionsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export const BulkStatusDisplayOptionsBody = zod.object({
@@ -2397,7 +2314,6 @@ export const BulkStatusDisplayOptionsResponse = zod.object({
 
 
 /**
- * 批量更新导航项的父级关系和排序索引。
  * @summary 重排导航项顺序
  */
 export const ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutBodyItem = zod.object({
@@ -2425,7 +2341,6 @@ export const ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutResponse = zod
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export const listNavItemsQueryPageDefault = 1;
@@ -2468,7 +2383,6 @@ export const ListNavItemsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export const createNavItemsBodyTriggerDefault = `none`;
@@ -2489,7 +2403,6 @@ export const CreateNavItemsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export const GetNavItemsParams = zod.object({
@@ -2513,7 +2426,6 @@ export const GetNavItemsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export const UpdateNavItemsParams = zod.object({
@@ -2548,7 +2460,6 @@ export const UpdateNavItemsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export const DeleteNavItemsParams = zod.object({
@@ -2557,7 +2468,6 @@ export const DeleteNavItemsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export const BulkDeleteNavItemsBody = zod.object({
@@ -2570,7 +2480,6 @@ export const BulkDeleteNavItemsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export const BulkStatusNavItemsBody = zod.object({
@@ -2584,7 +2493,6 @@ export const BulkStatusNavItemsResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-resume列表
  */
 export const listBasicsQueryPageDefault = 1;
@@ -2622,7 +2530,6 @@ export const ListBasicsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-resume
  */
 export const CreateBasicsBody = zod.object({
@@ -2634,7 +2541,6 @@ export const CreateBasicsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-resume
  */
 export const GetBasicsParams = zod.object({
@@ -2653,7 +2559,6 @@ export const GetBasicsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-resume
  */
 export const UpdateBasicsParams = zod.object({
@@ -2679,7 +2584,6 @@ export const UpdateBasicsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-resume
  */
 export const DeleteBasicsParams = zod.object({
@@ -2688,7 +2592,6 @@ export const DeleteBasicsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-resume
  */
 export const BulkDeleteBasicsBody = zod.object({
@@ -2701,7 +2604,6 @@ export const BulkDeleteBasicsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-resume状态
  */
 export const BulkStatusBasicsBody = zod.object({
@@ -2715,7 +2617,6 @@ export const BulkStatusBasicsResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-resume列表
  */
 export const listSkillsQueryPageDefault = 1;
@@ -2753,7 +2654,6 @@ export const ListSkillsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-resume
  */
 export const createSkillsBodyOrderIndexDefault = 0;
@@ -2767,7 +2667,6 @@ export const CreateSkillsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-resume
  */
 export const GetSkillsParams = zod.object({
@@ -2786,7 +2685,6 @@ export const GetSkillsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-resume
  */
 export const UpdateSkillsParams = zod.object({
@@ -2811,7 +2709,6 @@ export const UpdateSkillsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-resume
  */
 export const DeleteSkillsParams = zod.object({
@@ -2820,7 +2717,6 @@ export const DeleteSkillsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-resume
  */
 export const BulkDeleteSkillsBody = zod.object({
@@ -2833,7 +2729,6 @@ export const BulkDeleteSkillsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-resume状态
  */
 export const BulkStatusSkillsBody = zod.object({
@@ -2847,7 +2742,6 @@ export const BulkStatusSkillsResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-resume列表
  */
 export const listExperiencesQueryPageDefault = 1;
@@ -2887,7 +2781,6 @@ export const ListExperiencesResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-resume
  */
 export const createExperiencesBodyOrderIndexDefault = 0;
@@ -2903,7 +2796,6 @@ export const CreateExperiencesBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-resume
  */
 export const GetExperiencesParams = zod.object({
@@ -2924,7 +2816,6 @@ export const GetExperiencesResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-resume
  */
 export const UpdateExperiencesParams = zod.object({
@@ -2953,7 +2844,6 @@ export const UpdateExperiencesResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-resume
  */
 export const DeleteExperiencesParams = zod.object({
@@ -2962,7 +2852,6 @@ export const DeleteExperiencesParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-resume
  */
 export const BulkDeleteExperiencesBody = zod.object({
@@ -2975,7 +2864,6 @@ export const BulkDeleteExperiencesResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-resume状态
  */
 export const BulkStatusExperiencesBody = zod.object({
@@ -2989,7 +2877,6 @@ export const BulkStatusExperiencesResponse = zod.object({
 
 
 /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-social列表
  */
 export const listFriendsQueryPageDefault = 1;
@@ -3029,7 +2916,6 @@ export const ListFriendsResponse = zod.object({
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-social
  */
 export const createFriendsBodyStatusDefault = `active`;
@@ -3046,7 +2932,6 @@ export const CreateFriendsBody = zod.object({
 
 
 /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-social
  */
 export const GetFriendsParams = zod.object({
@@ -3067,7 +2952,6 @@ export const GetFriendsResponse = zod.object({
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-social
  */
 export const UpdateFriendsParams = zod.object({
@@ -3097,7 +2981,6 @@ export const UpdateFriendsResponse = zod.object({
 
 
 /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-social
  */
 export const DeleteFriendsParams = zod.object({
@@ -3106,7 +2989,6 @@ export const DeleteFriendsParams = zod.object({
 
 
 /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-social
  */
 export const BulkDeleteFriendsBody = zod.object({
@@ -3119,7 +3001,6 @@ export const BulkDeleteFriendsResponse = zod.object({
 
 
 /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-social状态
  */
 export const BulkStatusFriendsBody = zod.object({
@@ -3133,7 +3014,6 @@ export const BulkStatusFriendsResponse = zod.object({
 
 
 /**
- * 手动触发所有已启用订阅源的抓取任务。
  * @summary 手动触发全量抓取
  */
 export const triggerFeedCrawlApiV1AdminSocialFeedsCrawlPostResponseStatusDefault = `completed`;
@@ -3161,7 +3041,6 @@ export const TriggerFeedCrawlApiV1AdminSocialFeedsCrawlPostResponse = zod.object
 
 
 /**
- * 手动触发指定订阅源的抓取任务。
  * @summary 手动触发单源抓取
  */
 export const TriggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPostParams = zod.object({
@@ -3183,7 +3062,6 @@ export const TriggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPostResponse 
 
 
 /**
- * 列出指定友链关联的所有订阅源。
  * @summary 获取友链订阅源
  */
 export const ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetParams = zod.object({
@@ -3205,7 +3083,6 @@ export const ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetResponse = zo
 
 
 /**
- * 为指定友链添加一个新的订阅源。
  * @summary 创建订阅源
  */
 export const CreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPostParams = zod.object({
@@ -3222,7 +3099,6 @@ export const CreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPostBody = zod.
 
 
 /**
- * 更新指定订阅源的配置信息。
  * @summary 更新订阅源
  */
 export const UpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutParams = zod.object({
@@ -3248,7 +3124,6 @@ export const UpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutResponse = zod.object
 
 
 /**
- * 删除指定的订阅源记录。
  * @summary 删除订阅源
  */
 export const DeleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteParams = zod.object({

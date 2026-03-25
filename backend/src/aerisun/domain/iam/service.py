@@ -7,7 +7,13 @@ import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
-from aerisun.domain.exceptions import AuthenticationFailed, PermissionDenied, ResourceNotFound, StateConflict, ValidationError
+from aerisun.domain.exceptions import (
+    AuthenticationFailed,
+    PermissionDenied,
+    ResourceNotFound,
+    StateConflict,
+    ValidationError,
+)
 from aerisun.domain.iam import repository as repo
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.iam.schemas import (

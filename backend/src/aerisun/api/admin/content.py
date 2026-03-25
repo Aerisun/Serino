@@ -3,7 +3,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
-from sqlalchemy.orm import Query as SAQuery, Session
+from sqlalchemy.orm import Query as SAQuery
+from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
 from aerisun.core.db import get_session
@@ -45,10 +46,16 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> dict[str, Any]:
         return crud_service.list_items(
-            session, model,
-            page=page, page_size=page_size, read_schema=read_schema,
-            status_filter=status_filter, tag_filter=tag, search=search,
-            sort_by=sort_by, sort_order=sort_order,
+            session,
+            model,
+            page=page,
+            page_size=page_size,
+            read_schema=read_schema,
+            status_filter=status_filter,
+            tag_filter=tag,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
             base_query_factory=base_query_factory,
         )
 
@@ -65,8 +72,11 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         return crud_service.create_item(
-            session, model, payload,
-            read_schema=read_schema, prepare_data=prepare_create_data,
+            session,
+            model,
+            payload,
+            read_schema=read_schema,
+            prepare_data=prepare_create_data,
         )
 
     @router.get("/{item_id}", response_model=read_schema, summary=f"获取单条{tag}", operation_id=f"get_{resource}")
@@ -76,8 +86,11 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         return crud_service.get_item(
-            session, model, item_id,
-            read_schema=read_schema, base_query_factory=base_query_factory,
+            session,
+            model,
+            item_id,
+            read_schema=read_schema,
+            base_query_factory=base_query_factory,
         )
 
     @router.put("/{item_id}", response_model=read_schema, summary=f"更新{tag}", operation_id=f"update_{resource}")
@@ -88,8 +101,12 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         return crud_service.update_item(
-            session, model, item_id, payload,
-            read_schema=read_schema, base_query_factory=base_query_factory,
+            session,
+            model,
+            item_id,
+            payload,
+            read_schema=read_schema,
+            base_query_factory=base_query_factory,
         )
 
     @router.delete(
@@ -127,7 +144,11 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         return crud_service.bulk_update_status_items(
-            session, model, payload.ids, payload.status, base_query_factory=base_query_factory,
+            session,
+            model,
+            payload.ids,
+            payload.status,
+            base_query_factory=base_query_factory,
         )
 
     return router

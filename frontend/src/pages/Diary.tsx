@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
 import { readDiaryApiV1PublicDiaryGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
@@ -121,7 +121,7 @@ const Diary = () => {
     };
   }, [pageSize, reloadKey]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
@@ -135,7 +135,7 @@ const Diary = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [hasMore, isLoadingMore, items.length, pageSize]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -146,7 +146,7 @@ const Diary = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, status, items.length]);
+  }, [hasMore, loadMore, status]);
 
   return (
     <PageShell

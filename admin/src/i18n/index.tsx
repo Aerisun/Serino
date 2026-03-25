@@ -15,7 +15,9 @@ function getInitialLang(): Lang {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "zh" || stored === "en") return stored;
-  } catch {}
+  } catch {
+    // Ignore storage access failures and fall back to the default locale.
+  }
   return "zh";
 }
 
@@ -24,7 +26,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang);
-    try { localStorage.setItem(STORAGE_KEY, newLang); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, newLang);
+    } catch {
+      // Ignore storage access failures and keep the in-memory locale.
+    }
   }, []);
 
   const t = useCallback((key: string): string => {
@@ -44,5 +50,4 @@ export function useI18n(): I18nContextValue {
   return ctx;
 }
 
-export { LanguageContext };
 export type { Lang };

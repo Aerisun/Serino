@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-r
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { readCalendarApiV1PublicCalendarGet } from "@serino/api-client/public";
 import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";

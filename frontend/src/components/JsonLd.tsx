@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext"
+import { useSiteConfig } from "@/contexts/runtime-config"
 
 interface JsonLdProps {
   title: string

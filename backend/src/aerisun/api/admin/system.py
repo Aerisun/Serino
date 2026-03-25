@@ -10,8 +10,14 @@ from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
 from aerisun.domain.iam.service import (
     create_api_key as _create_api_key,
+)
+from aerisun.domain.iam.service import (
     delete_api_key as _delete_api_key,
+)
+from aerisun.domain.iam.service import (
     list_api_keys as _list_api_keys,
+)
+from aerisun.domain.iam.service import (
     update_api_key as _update_api_key,
 )
 from aerisun.domain.ops.schemas import (
@@ -22,10 +28,20 @@ from aerisun.domain.ops.schemas import (
 )
 from aerisun.domain.ops.service import (
     create_backup_snapshot as _create_backup,
+)
+from aerisun.domain.ops.service import (
     get_dashboard_stats as _get_dashboard_stats,
+)
+from aerisun.domain.ops.service import (
     get_system_info as _get_system_info,
+)
+from aerisun.domain.ops.service import (
     list_audit_logs as _list_audit_logs,
+)
+from aerisun.domain.ops.service import (
     list_backups as _list_backups,
+)
+from aerisun.domain.ops.service import (
     restore_backup as _restore_backup,
 )
 
@@ -85,8 +101,13 @@ def list_audit_logs(
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return _list_audit_logs(
-        session, page=page, page_size=page_size, action=action,
-        actor_id=actor_id, date_from=date_from, date_to=date_to,
+        session,
+        page=page,
+        page_size=page_size,
+        action=action,
+        actor_id=actor_id,
+        date_from=date_from,
+        date_to=date_to,
     )
 
 

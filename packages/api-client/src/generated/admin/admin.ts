@@ -794,7 +794,6 @@ export const useRevokeSessionApiV1AdminAuthSessionsSessionIdDelete = <TError = E
       return useMutation(getRevokeSessionApiV1AdminAuthSessionsSessionIdDeleteMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-posts列表
  */
 export type listPostsResponse200 = {
@@ -919,7 +918,6 @@ export function useListPosts<TData = Awaited<ReturnType<typeof listPosts>>, TErr
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-posts
  */
 export type createPostsResponse201 = {
@@ -1009,7 +1007,6 @@ export const useCreatePosts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreatePostsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-posts
  */
 export type getPostsResponse200 = {
@@ -1127,7 +1124,6 @@ export function useGetPosts<TData = Awaited<ReturnType<typeof getPosts>>, TError
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-posts
  */
 export type updatePostsResponse200 = {
@@ -1218,7 +1214,6 @@ export const useUpdatePosts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdatePostsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-posts
  */
 export type deletePostsResponse204 = {
@@ -1307,7 +1302,6 @@ export const useDeletePosts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeletePostsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-posts
  */
 export type bulkDeletePostsResponse200 = {
@@ -1397,7 +1391,6 @@ export const useBulkDeletePosts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeletePostsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-posts状态
  */
 export type bulkStatusPostsResponse200 = {
@@ -1487,7 +1480,6 @@ export const useBulkStatusPosts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusPostsMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-diary列表
  */
 export type listDiaryResponse200 = {
@@ -1612,7 +1604,6 @@ export function useListDiary<TData = Awaited<ReturnType<typeof listDiary>>, TErr
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-diary
  */
 export type createDiaryResponse201 = {
@@ -1702,7 +1693,6 @@ export const useCreateDiary = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateDiaryMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-diary
  */
 export type getDiaryResponse200 = {
@@ -1820,7 +1810,6 @@ export function useGetDiary<TData = Awaited<ReturnType<typeof getDiary>>, TError
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-diary
  */
 export type updateDiaryResponse200 = {
@@ -1911,7 +1900,6 @@ export const useUpdateDiary = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateDiaryMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-diary
  */
 export type deleteDiaryResponse204 = {
@@ -2000,7 +1988,6 @@ export const useDeleteDiary = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteDiaryMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-diary
  */
 export type bulkDeleteDiaryResponse200 = {
@@ -2090,7 +2077,6 @@ export const useBulkDeleteDiary = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteDiaryMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-diary状态
  */
 export type bulkStatusDiaryResponse200 = {
@@ -2180,7 +2166,6 @@ export const useBulkStatusDiary = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusDiaryMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-thoughts列表
  */
 export type listThoughtsResponse200 = {
@@ -2305,7 +2290,6 @@ export function useListThoughts<TData = Awaited<ReturnType<typeof listThoughts>>
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-thoughts
  */
 export type createThoughtsResponse201 = {
@@ -2395,7 +2379,6 @@ export const useCreateThoughts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateThoughtsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-thoughts
  */
 export type getThoughtsResponse200 = {
@@ -2513,7 +2496,6 @@ export function useGetThoughts<TData = Awaited<ReturnType<typeof getThoughts>>, 
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-thoughts
  */
 export type updateThoughtsResponse200 = {
@@ -2604,7 +2586,6 @@ export const useUpdateThoughts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateThoughtsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-thoughts
  */
 export type deleteThoughtsResponse204 = {
@@ -2693,7 +2674,6 @@ export const useDeleteThoughts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteThoughtsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-thoughts
  */
 export type bulkDeleteThoughtsResponse200 = {
@@ -2783,7 +2763,6 @@ export const useBulkDeleteThoughts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteThoughtsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-thoughts状态
  */
 export type bulkStatusThoughtsResponse200 = {
@@ -2873,7 +2852,6 @@ export const useBulkStatusThoughts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusThoughtsMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-excerpts列表
  */
 export type listExcerptsResponse200 = {
@@ -2998,7 +2976,6 @@ export function useListExcerpts<TData = Awaited<ReturnType<typeof listExcerpts>>
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-excerpts
  */
 export type createExcerptsResponse201 = {
@@ -3088,7 +3065,6 @@ export const useCreateExcerpts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateExcerptsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-excerpts
  */
 export type getExcerptsResponse200 = {
@@ -3206,7 +3182,6 @@ export function useGetExcerpts<TData = Awaited<ReturnType<typeof getExcerpts>>, 
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-excerpts
  */
 export type updateExcerptsResponse200 = {
@@ -3297,7 +3272,6 @@ export const useUpdateExcerpts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateExcerptsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-excerpts
  */
 export type deleteExcerptsResponse204 = {
@@ -3386,7 +3360,6 @@ export const useDeleteExcerpts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteExcerptsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-excerpts
  */
 export type bulkDeleteExcerptsResponse200 = {
@@ -3476,7 +3449,6 @@ export const useBulkDeleteExcerpts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteExcerptsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-excerpts状态
  */
 export type bulkStatusExcerptsResponse200 = {
@@ -3566,7 +3538,6 @@ export const useBulkStatusExcerpts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusExcerptsMutationOptions(options), queryClient);
     }
     /**
- * 返回站点基本资料配置。
  * @summary 获取站点资料
  */
 export type getProfileApiV1AdminSiteConfigProfileGetResponse200 = {
@@ -3677,7 +3648,6 @@ export function useGetProfileApiV1AdminSiteConfigProfileGet<TData = Awaited<Retu
 
 
 /**
- * 更新站点名称、描述、头像等基本资料。
  * @summary 更新站点资料
  */
 export type updateProfileApiV1AdminSiteConfigProfilePutResponse200 = {
@@ -3767,7 +3737,6 @@ export const useUpdateProfileApiV1AdminSiteConfigProfilePut = <TError = ErrorTyp
       return useMutation(getUpdateProfileApiV1AdminSiteConfigProfilePutMutationOptions(options), queryClient);
     }
     /**
- * 返回社区评论系统的当前配置。
  * @summary 获取社区评论配置
  */
 export type getCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse200 = {
@@ -3878,7 +3847,6 @@ export function useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet<TDat
 
 
 /**
- * 更新社区评论系统的配置项。
  * @summary 更新社区评论配置
  */
 export type updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse200 = {
@@ -3968,7 +3936,6 @@ export const useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut = <T
       return useMutation(getUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export type listSocialLinksResponse200 = {
@@ -4093,7 +4060,6 @@ export function useListSocialLinks<TData = Awaited<ReturnType<typeof listSocialL
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export type createSocialLinksResponse201 = {
@@ -4183,7 +4149,6 @@ export const useCreateSocialLinks = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateSocialLinksMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export type getSocialLinksResponse200 = {
@@ -4301,7 +4266,6 @@ export function useGetSocialLinks<TData = Awaited<ReturnType<typeof getSocialLin
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export type updateSocialLinksResponse200 = {
@@ -4392,7 +4356,6 @@ export const useUpdateSocialLinks = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateSocialLinksMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export type deleteSocialLinksResponse204 = {
@@ -4481,7 +4444,6 @@ export const useDeleteSocialLinks = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteSocialLinksMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export type bulkDeleteSocialLinksResponse200 = {
@@ -4571,7 +4533,6 @@ export const useBulkDeleteSocialLinks = <TError = ErrorType<HTTPValidationError>
       return useMutation(getBulkDeleteSocialLinksMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export type bulkStatusSocialLinksResponse200 = {
@@ -4661,7 +4622,6 @@ export const useBulkStatusSocialLinks = <TError = ErrorType<HTTPValidationError>
       return useMutation(getBulkStatusSocialLinksMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export type listPoemsResponse200 = {
@@ -4786,7 +4746,6 @@ export function useListPoems<TData = Awaited<ReturnType<typeof listPoems>>, TErr
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export type createPoemsResponse201 = {
@@ -4876,7 +4835,6 @@ export const useCreatePoems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreatePoemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export type getPoemsResponse200 = {
@@ -4994,7 +4952,6 @@ export function useGetPoems<TData = Awaited<ReturnType<typeof getPoems>>, TError
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export type updatePoemsResponse200 = {
@@ -5085,7 +5042,6 @@ export const useUpdatePoems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdatePoemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export type deletePoemsResponse204 = {
@@ -5174,7 +5130,6 @@ export const useDeletePoems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeletePoemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export type bulkDeletePoemsResponse200 = {
@@ -5264,7 +5219,6 @@ export const useBulkDeletePoems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeletePoemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export type bulkStatusPoemsResponse200 = {
@@ -5354,7 +5308,6 @@ export const useBulkStatusPoems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusPoemsMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export type listPageCopyResponse200 = {
@@ -5479,7 +5432,6 @@ export function useListPageCopy<TData = Awaited<ReturnType<typeof listPageCopy>>
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export type createPageCopyResponse201 = {
@@ -5569,7 +5521,6 @@ export const useCreatePageCopy = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreatePageCopyMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export type getPageCopyResponse200 = {
@@ -5687,7 +5638,6 @@ export function useGetPageCopy<TData = Awaited<ReturnType<typeof getPageCopy>>, 
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export type updatePageCopyResponse200 = {
@@ -5778,7 +5728,6 @@ export const useUpdatePageCopy = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdatePageCopyMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export type deletePageCopyResponse204 = {
@@ -5867,7 +5816,6 @@ export const useDeletePageCopy = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeletePageCopyMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export type bulkDeletePageCopyResponse200 = {
@@ -5957,7 +5905,6 @@ export const useBulkDeletePageCopy = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeletePageCopyMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export type bulkStatusPageCopyResponse200 = {
@@ -6047,7 +5994,6 @@ export const useBulkStatusPageCopy = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusPageCopyMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export type listDisplayOptionsResponse200 = {
@@ -6172,7 +6118,6 @@ export function useListDisplayOptions<TData = Awaited<ReturnType<typeof listDisp
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export type createDisplayOptionsResponse201 = {
@@ -6262,7 +6207,6 @@ export const useCreateDisplayOptions = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateDisplayOptionsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export type getDisplayOptionsResponse200 = {
@@ -6380,7 +6324,6 @@ export function useGetDisplayOptions<TData = Awaited<ReturnType<typeof getDispla
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export type updateDisplayOptionsResponse200 = {
@@ -6471,7 +6414,6 @@ export const useUpdateDisplayOptions = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateDisplayOptionsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export type deleteDisplayOptionsResponse204 = {
@@ -6560,7 +6502,6 @@ export const useDeleteDisplayOptions = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteDisplayOptionsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export type bulkDeleteDisplayOptionsResponse200 = {
@@ -6650,7 +6591,6 @@ export const useBulkDeleteDisplayOptions = <TError = ErrorType<HTTPValidationErr
       return useMutation(getBulkDeleteDisplayOptionsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export type bulkStatusDisplayOptionsResponse200 = {
@@ -6740,7 +6680,6 @@ export const useBulkStatusDisplayOptions = <TError = ErrorType<HTTPValidationErr
       return useMutation(getBulkStatusDisplayOptionsMutationOptions(options), queryClient);
     }
     /**
- * 批量更新导航项的父级关系和排序索引。
  * @summary 重排导航项顺序
  */
 export type reorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutResponse200 = {
@@ -6830,7 +6769,6 @@ export const useReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPut = <TError 
       return useMutation(getReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-site-config列表
  */
 export type listNavItemsResponse200 = {
@@ -6955,7 +6893,6 @@ export function useListNavItems<TData = Awaited<ReturnType<typeof listNavItems>>
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-site-config
  */
 export type createNavItemsResponse201 = {
@@ -7045,7 +6982,6 @@ export const useCreateNavItems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateNavItemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-site-config
  */
 export type getNavItemsResponse200 = {
@@ -7163,7 +7099,6 @@ export function useGetNavItems<TData = Awaited<ReturnType<typeof getNavItems>>, 
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-site-config
  */
 export type updateNavItemsResponse200 = {
@@ -7254,7 +7189,6 @@ export const useUpdateNavItems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateNavItemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-site-config
  */
 export type deleteNavItemsResponse204 = {
@@ -7343,7 +7277,6 @@ export const useDeleteNavItems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteNavItemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-site-config
  */
 export type bulkDeleteNavItemsResponse200 = {
@@ -7433,7 +7366,6 @@ export const useBulkDeleteNavItems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteNavItemsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-site-config状态
  */
 export type bulkStatusNavItemsResponse200 = {
@@ -7523,7 +7455,6 @@ export const useBulkStatusNavItems = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusNavItemsMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-resume列表
  */
 export type listBasicsResponse200 = {
@@ -7648,7 +7579,6 @@ export function useListBasics<TData = Awaited<ReturnType<typeof listBasics>>, TE
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-resume
  */
 export type createBasicsResponse201 = {
@@ -7738,7 +7668,6 @@ export const useCreateBasics = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateBasicsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-resume
  */
 export type getBasicsResponse200 = {
@@ -7856,7 +7785,6 @@ export function useGetBasics<TData = Awaited<ReturnType<typeof getBasics>>, TErr
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-resume
  */
 export type updateBasicsResponse200 = {
@@ -7947,7 +7875,6 @@ export const useUpdateBasics = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateBasicsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-resume
  */
 export type deleteBasicsResponse204 = {
@@ -8036,7 +7963,6 @@ export const useDeleteBasics = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteBasicsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-resume
  */
 export type bulkDeleteBasicsResponse200 = {
@@ -8126,7 +8052,6 @@ export const useBulkDeleteBasics = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteBasicsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-resume状态
  */
 export type bulkStatusBasicsResponse200 = {
@@ -8216,7 +8141,6 @@ export const useBulkStatusBasics = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusBasicsMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-resume列表
  */
 export type listSkillsResponse200 = {
@@ -8341,7 +8265,6 @@ export function useListSkills<TData = Awaited<ReturnType<typeof listSkills>>, TE
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-resume
  */
 export type createSkillsResponse201 = {
@@ -8431,7 +8354,6 @@ export const useCreateSkills = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateSkillsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-resume
  */
 export type getSkillsResponse200 = {
@@ -8549,7 +8471,6 @@ export function useGetSkills<TData = Awaited<ReturnType<typeof getSkills>>, TErr
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-resume
  */
 export type updateSkillsResponse200 = {
@@ -8640,7 +8561,6 @@ export const useUpdateSkills = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateSkillsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-resume
  */
 export type deleteSkillsResponse204 = {
@@ -8729,7 +8649,6 @@ export const useDeleteSkills = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteSkillsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-resume
  */
 export type bulkDeleteSkillsResponse200 = {
@@ -8819,7 +8738,6 @@ export const useBulkDeleteSkills = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteSkillsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-resume状态
  */
 export type bulkStatusSkillsResponse200 = {
@@ -8909,7 +8827,6 @@ export const useBulkStatusSkills = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusSkillsMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-resume列表
  */
 export type listExperiencesResponse200 = {
@@ -9034,7 +8951,6 @@ export function useListExperiences<TData = Awaited<ReturnType<typeof listExperie
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-resume
  */
 export type createExperiencesResponse201 = {
@@ -9124,7 +9040,6 @@ export const useCreateExperiences = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateExperiencesMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-resume
  */
 export type getExperiencesResponse200 = {
@@ -9242,7 +9157,6 @@ export function useGetExperiences<TData = Awaited<ReturnType<typeof getExperienc
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-resume
  */
 export type updateExperiencesResponse200 = {
@@ -9333,7 +9247,6 @@ export const useUpdateExperiences = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateExperiencesMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-resume
  */
 export type deleteExperiencesResponse204 = {
@@ -9422,7 +9335,6 @@ export const useDeleteExperiences = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteExperiencesMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-resume
  */
 export type bulkDeleteExperiencesResponse200 = {
@@ -9512,7 +9424,6 @@ export const useBulkDeleteExperiences = <TError = ErrorType<HTTPValidationError>
       return useMutation(getBulkDeleteExperiencesMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-resume状态
  */
 export type bulkStatusExperiencesResponse200 = {
@@ -9602,7 +9513,6 @@ export const useBulkStatusExperiences = <TError = ErrorType<HTTPValidationError>
       return useMutation(getBulkStatusExperiencesMutationOptions(options), queryClient);
     }
     /**
- * 分页查询并返回列表数据。
  * @summary 获取admin-social列表
  */
 export type listFriendsResponse200 = {
@@ -9727,7 +9637,6 @@ export function useListFriends<TData = Awaited<ReturnType<typeof listFriends>>, 
 
 
 /**
- * 接收数据并创建一条新记录。
  * @summary 创建admin-social
  */
 export type createFriendsResponse201 = {
@@ -9817,7 +9726,6 @@ export const useCreateFriends = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getCreateFriendsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 获取单条记录详情。
  * @summary 获取单条admin-social
  */
 export type getFriendsResponse200 = {
@@ -9935,7 +9843,6 @@ export function useGetFriends<TData = Awaited<ReturnType<typeof getFriends>>, TE
 
 
 /**
- * 根据 ID 更新一条记录的字段。
  * @summary 更新admin-social
  */
 export type updateFriendsResponse200 = {
@@ -10026,7 +9933,6 @@ export const useUpdateFriends = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getUpdateFriendsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 删除一条记录。
  * @summary 删除admin-social
  */
 export type deleteFriendsResponse204 = {
@@ -10115,7 +10021,6 @@ export const useDeleteFriends = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getDeleteFriendsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量删除记录。
  * @summary 批量删除admin-social
  */
 export type bulkDeleteFriendsResponse200 = {
@@ -10205,7 +10110,6 @@ export const useBulkDeleteFriends = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteFriendsMutationOptions(options), queryClient);
     }
     /**
- * 根据 ID 列表批量更新记录状态。
  * @summary 批量更新admin-social状态
  */
 export type bulkStatusFriendsResponse200 = {
@@ -10295,7 +10199,6 @@ export const useBulkStatusFriends = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusFriendsMutationOptions(options), queryClient);
     }
     /**
- * 手动触发所有已启用订阅源的抓取任务。
  * @summary 手动触发全量抓取
  */
 export type triggerFeedCrawlApiV1AdminSocialFeedsCrawlPostResponse200 = {
@@ -10377,7 +10280,6 @@ export const useTriggerFeedCrawlApiV1AdminSocialFeedsCrawlPost = <TError = Error
       return useMutation(getTriggerFeedCrawlApiV1AdminSocialFeedsCrawlPostMutationOptions(options), queryClient);
     }
     /**
- * 手动触发指定订阅源的抓取任务。
  * @summary 手动触发单源抓取
  */
 export type triggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPostResponse200 = {
@@ -10466,7 +10368,6 @@ export const useTriggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPost = <TE
       return useMutation(getTriggerSingleFeedCrawlApiV1AdminSocialFeedsFeedIdCrawlPostMutationOptions(options), queryClient);
     }
     /**
- * 列出指定友链关联的所有订阅源。
  * @summary 获取友链订阅源
  */
 export type listFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetResponse200 = {
@@ -10584,7 +10485,6 @@ export function useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet<TData 
 
 
 /**
- * 为指定友链添加一个新的订阅源。
  * @summary 创建订阅源
  */
 export type createFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPostResponse201 = {
@@ -10675,7 +10575,6 @@ export const useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost = <TErr
       return useMutation(getCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPostMutationOptions(options), queryClient);
     }
     /**
- * 更新指定订阅源的配置信息。
  * @summary 更新订阅源
  */
 export type updateFriendFeedApiV1AdminSocialFeedsFeedIdPutResponse200 = {
@@ -10766,7 +10665,6 @@ export const useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut = <TError = Error
       return useMutation(getUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutMutationOptions(options), queryClient);
     }
     /**
- * 删除指定的订阅源记录。
  * @summary 删除订阅源
  */
 export type deleteFriendFeedApiV1AdminSocialFeedsFeedIdDeleteResponse204 = {

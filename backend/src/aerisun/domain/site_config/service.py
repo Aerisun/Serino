@@ -5,8 +5,8 @@ import json
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from aerisun.domain.site_config import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound
+from aerisun.domain.site_config import repository as repo
 from aerisun.domain.site_config.schemas import (
     CommunityConfigAdminRead,
     CommunityConfigRead,
@@ -220,10 +220,7 @@ def reorder_nav_items_admin(session: Session, reorder_list: list) -> list[NavIte
         nav_item.order_index = reorder_item.order_index
     session.commit()
     items = list(
-        session.query(NavItem)
-        .filter(NavItem.site_profile_id == profile.id)
-        .order_by(NavItem.order_index.asc())
-        .all()
+        session.query(NavItem).filter(NavItem.site_profile_id == profile.id).order_by(NavItem.order_index.asc()).all()
     )
     return [NavItemAdminRead.model_validate(item) for item in items]
 

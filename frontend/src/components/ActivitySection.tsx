@@ -2,7 +2,7 @@ import FriendCircle from "./FriendCircle";
 import RecentActivity from "./RecentActivity";
 import ActivityHeatmap from "./ActivityHeatmap";
 import Footer from "./Footer";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 
 interface ActivitySectionConfig {
   dashboardLabel?: string;

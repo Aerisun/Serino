@@ -1,6 +1,5 @@
 import type { CommunityConfigAdminRead } from "@serino/api-client/models";
 import type { CommunityConfigUpdate } from "@serino/api-client/models";
-import type { AerisunApiAdminSchemasCommunitySurfaceRead } from "@serino/api-client/models";
 import type { CommunitySurfaceUpdate } from "@serino/api-client/models";
 
 interface CommunityAvatarPreset {
@@ -35,9 +34,7 @@ export interface CommunityConfigFormState {
   draft_enabled: boolean;
 }
 
-export const COMMUNITY_CONFIG_ENDPOINTS = ["/api/v1/admin/site-config/community-config"] as const;
-
-export const DEFAULT_COMMUNITY_SURFACES: AerisunApiAdminSchemasCommunitySurfaceRead[] = [
+const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceUpdate[] = [
   { key: "posts", label: "Posts", path: "/posts/{slug}", enabled: true },
   { key: "diary", label: "Diary", path: "/diary/{slug}", enabled: true },
   { key: "guestbook", label: "Guestbook", path: "/guestbook", enabled: true },
@@ -232,11 +229,3 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   avatar_strategy: form.avatar_strategy.trim() || "identicon",
   avatar_helper_copy: form.helper_copy.trim() || null,
 });
-
-export const formatCommunitySurfaces = (value: AerisunApiAdminSchemasCommunitySurfaceRead[]) => toPrettyJson(value);
-
-export const parseCommunityList = (value: string) =>
-  value
-    .split(/[\n,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);

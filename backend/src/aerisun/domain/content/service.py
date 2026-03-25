@@ -5,8 +5,6 @@ from typing import TypeVar
 
 from sqlalchemy.orm import Session
 
-from aerisun.domain.exceptions import ResourceNotFound
-
 from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
     DiaryEntry,
@@ -15,6 +13,7 @@ from aerisun.domain.content.models import (
     ThoughtEntry,
 )
 from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls, get_counter_stats_by_urls
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)

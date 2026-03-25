@@ -6,8 +6,6 @@ from hashlib import sha256
 from sqlalchemy.orm import Session
 
 from aerisun.domain.engagement import repository as repo
-from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError as DomainValidationError
-from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -20,6 +18,9 @@ from aerisun.domain.engagement.schemas import (
     ReactionCreate,
     ReactionRead,
 )
+from aerisun.domain.exceptions import ResourceNotFound, StateConflict
+from aerisun.domain.exceptions import ValidationError as DomainValidationError
+from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.waline.service import (
     build_comment_path,
     create_waline_record,
@@ -29,10 +30,9 @@ from aerisun.domain.waline.service import (
     list_records_for_url,
     normalize_comment_mail,
     normalize_comment_nick,
-    upsert_waline_nick_identity,
     update_waline_comment_avatars,
+    upsert_waline_nick_identity,
 )
-
 
 DEFAULT_COMMENT_AVATAR_PRESETS = [
     {"key": "shiro", "label": "Shiro", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro"},
@@ -209,9 +209,7 @@ def _resolve_avatar_selection(
     presets = _load_avatar_presets(session)
     preset_by_key = {preset["key"]: preset for preset in presets}
     occupied_by_others = {
-        record.avatar_key
-        for record in records
-        if record.avatar_key and _name_key(record.nick) != author_name_key
+        record.avatar_key for record in records if record.avatar_key and _name_key(record.nick) != author_name_key
     }
 
     if requested_avatar_key:

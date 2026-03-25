@@ -6,7 +6,8 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
-from aerisun.domain.exceptions import PayloadTooLarge, ResourceNotFound, ValidationError as DomainValidationError
+from aerisun.domain.exceptions import PayloadTooLarge, ResourceNotFound
+from aerisun.domain.exceptions import ValidationError as DomainValidationError
 from aerisun.domain.media import repository as repo
 from aerisun.domain.media.schemas import AssetAdminRead
 

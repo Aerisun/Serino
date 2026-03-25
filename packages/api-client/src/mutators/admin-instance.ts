@@ -26,7 +26,5 @@ export const customInstance = <T>(
   return instance<T>(url, options);
 };
 
-export default customInstance;
-
 export type ErrorType<Error> = import("axios").AxiosError<Error>;
 export type BodyType<BodyData> = BodyData;

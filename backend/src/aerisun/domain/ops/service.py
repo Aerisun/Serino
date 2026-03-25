@@ -12,7 +12,6 @@ from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, T
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops import repository as repo
-from aerisun.domain.ops.models import BackupSnapshot
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     BackupSnapshotRead,
@@ -47,7 +46,12 @@ def list_audit_logs(
         date_from=date_from,
         date_to=date_to,
     )
-    return {"items": [AuditLogRead.model_validate(i) for i in items], "total": total, "page": page, "page_size": page_size}
+    return {
+        "items": [AuditLogRead.model_validate(i) for i in items],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 def list_backups(session: Session) -> list[BackupSnapshotRead]:

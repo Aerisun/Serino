@@ -37,9 +37,15 @@ def list_comments(
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return list_admin_comments(
-        page=page, page_size=page_size, status=status_filter,
-        path=path_filter, surface=surface_filter, keyword=keyword_filter,
-        author=author_filter, email=email_filter, sort=sort,
+        page=page,
+        page_size=page_size,
+        status=status_filter,
+        path=path_filter,
+        surface=surface_filter,
+        keyword=keyword_filter,
+        author=author_filter,
+        email=email_filter,
+        sort=sort,
     )
 
 
@@ -52,8 +58,8 @@ def moderate_comment_endpoint(
 ) -> Any:
     try:
         waline_id = int(comment_id)
-    except ValueError:
-        raise ResourceNotFound("Comment not found")
+    except ValueError as err:
+        raise ResourceNotFound("Comment not found") from err
     result = moderate_comment(session, waline_id, payload.action, payload.reason)
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
@@ -74,9 +80,14 @@ def list_guestbook(
     _session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return list_admin_guestbook(
-        page=page, page_size=page_size, status=status_filter,
-        path=path_filter, keyword=keyword_filter,
-        author=author_filter, email=email_filter, sort=sort,
+        page=page,
+        page_size=page_size,
+        status=status_filter,
+        path=path_filter,
+        keyword=keyword_filter,
+        author=author_filter,
+        email=email_filter,
+        sort=sort,
     )
 
 
@@ -89,8 +100,8 @@ def moderate_guestbook_endpoint(
 ) -> Any:
     try:
         waline_id = int(entry_id)
-    except ValueError:
-        raise ResourceNotFound("Guestbook entry not found")
+    except ValueError as err:
+        raise ResourceNotFound("Guestbook entry not found") from err
     result = moderate_guestbook_entry(session, waline_id, payload.action, payload.reason)
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)

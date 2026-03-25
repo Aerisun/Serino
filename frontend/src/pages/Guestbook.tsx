@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import CommentSection from "@/components/CommentSection";
 import PageShell from "@/components/PageShell";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface GuestbookPageConfig extends BaseViewPageConfig {

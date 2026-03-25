@@ -3,8 +3,8 @@ from __future__ import annotations
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from aerisun.domain.social import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound
+from aerisun.domain.social import repository as repo
 from aerisun.domain.social.schemas import (
     FriendCollectionRead,
     FriendFeedCollectionRead,

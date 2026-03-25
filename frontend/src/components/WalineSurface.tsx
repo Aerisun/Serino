@@ -376,9 +376,11 @@ const WalineSurface = ({
   }, [communityConfig]);
 
   const resolvedConfig = config ?? DEFAULT_COMMUNITY_CONFIG;
-  const avatarPresets = useMemo(() => {
+  const [avatarPresets, setAvatarPresets] = useState<AvatarPreset[]>(FALLBACK_AVATAR_PRESETS);
+
+  useEffect(() => {
     const source = resolvedConfig.avatarPresets?.length ? resolvedConfig.avatarPresets : FALLBACK_AVATAR_PRESETS;
-    return shufflePresets(source);
+    setAvatarPresets(shufflePresets(source));
   }, [resolvedConfig.avatarPresets, refreshSeed]);
 
   useEffect(() => {

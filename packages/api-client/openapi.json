@@ -11,7 +11,6 @@
           "public"
         ],
         "summary": "获取站点配置",
-        "description": "返回站点基本信息、导航、社交链接、诗词等公开配置。",
         "operationId": "read_site_config_api_v1_public_site_get",
         "responses": {
           "200": {
@@ -33,7 +32,6 @@
           "public"
         ],
         "summary": "获取页面文案",
-        "description": "返回各页面的标题、副标题、描述等可配置文案。",
         "operationId": "read_page_copy_api_v1_public_pages_get",
         "responses": {
           "200": {
@@ -55,7 +53,6 @@
           "public"
         ],
         "summary": "获取社区评论配置",
-        "description": "返回 Waline 评论系统的前端配置项。",
         "operationId": "read_community_config_api_v1_public_community_config_get",
         "responses": {
           "200": {
@@ -77,7 +74,6 @@
           "public"
         ],
         "summary": "获取简历数据",
-        "description": "返回简历基本信息、技能列表和工作经历。",
         "operationId": "read_resume_api_v1_public_resume_get",
         "responses": {
           "200": {
@@ -99,7 +95,6 @@
           "public"
         ],
         "summary": "获取已发布文章列表",
-        "description": "按发布时间倒序返回公开已发布文章，包含评论数和点赞数。",
         "operationId": "read_posts_api_v1_public_posts_get",
         "parameters": [
           {
@@ -156,7 +151,6 @@
           "public"
         ],
         "summary": "获取单篇文章",
-        "description": "根据 slug 返回单篇公开已发布文章的完整内容。",
         "operationId": "read_post_api_v1_public_posts__slug__get",
         "parameters": [
           {
@@ -199,7 +193,6 @@
           "public"
         ],
         "summary": "获取日记列表",
-        "description": "按发布时间倒序返回公开已发布日记条目。",
         "operationId": "read_diary_api_v1_public_diary_get",
         "parameters": [
           {
@@ -256,7 +249,6 @@
           "public"
         ],
         "summary": "获取单篇日记",
-        "description": "根据 slug 返回单篇公开已发布日记的完整内容。",
         "operationId": "read_diary_entry_api_v1_public_diary__slug__get",
         "parameters": [
           {
@@ -299,7 +291,6 @@
           "public"
         ],
         "summary": "获取想法列表",
-        "description": "按发布时间倒序返回公开已发布想法/短文。",
         "operationId": "read_thoughts_api_v1_public_thoughts_get",
         "parameters": [
           {
@@ -356,7 +347,6 @@
           "public"
         ],
         "summary": "获取摘录列表",
-        "description": "按发布时间倒序返回公开已发布书摘/引用。",
         "operationId": "read_excerpts_api_v1_public_excerpts_get",
         "parameters": [
           {
@@ -413,7 +403,6 @@
           "public"
         ],
         "summary": "获取友链列表",
-        "description": "返回已上线的友链列表，按排序权重排列。",
         "operationId": "read_friends_api_v1_public_friends_get",
         "parameters": [
           {
@@ -459,7 +448,6 @@
           "public"
         ],
         "summary": "获取友链动态",
-        "description": "返回友链 RSS 抓取的最新动态列表。",
         "operationId": "read_friend_feed_api_v1_public_friend_feed_get",
         "parameters": [
           {
@@ -505,7 +493,6 @@
           "public"
         ],
         "summary": "获取留言板",
-        "description": "返回已审核通过的留言板条目。",
         "operationId": "read_guestbook_api_v1_public_guestbook_get",
         "parameters": [
           {
@@ -549,7 +536,6 @@
           "public"
         ],
         "summary": "提交留言",
-        "description": "创建一条新留言，需审核通过后公开显示。",
         "operationId": "create_guestbook_api_v1_public_guestbook_post",
         "requestBody": {
           "required": true,
@@ -591,7 +577,6 @@
           "public"
         ],
         "summary": "获取内容评论",
-        "description": "返回指定内容（文章/日记等）下的嵌套评论树。",
         "operationId": "read_comments_api_v1_public_comments__content_type___slug__get",
         "parameters": [
           {
@@ -641,7 +626,6 @@
           "public"
         ],
         "summary": "发表评论",
-        "description": "在指定内容下发表评论，需审核通过后公开显示。",
         "operationId": "create_comment_api_v1_public_comments__content_type___slug__post",
         "parameters": [
           {
@@ -703,7 +687,6 @@
           "public"
         ],
         "summary": "提交互动反应",
-        "description": "为指定内容注册一次互动反应（如点赞），返回当前总数。",
         "operationId": "create_reaction_api_v1_public_reactions_post",
         "requestBody": {
           "content": {
@@ -745,7 +728,6 @@
           "public"
         ],
         "summary": "查询反应计数",
-        "description": "查询指定内容某种反应类型的当前总数。",
         "operationId": "read_reaction_api_v1_public_reactions__content_type___slug___reaction_type__get",
         "parameters": [
           {
@@ -806,7 +788,6 @@
           "public"
         ],
         "summary": "评论图片上传",
-        "description": "Accept a comment image, save to media dir, return its public URL.",
         "operationId": "upload_comment_image_api_v1_public_comment_image_post",
         "requestBody": {
           "content": {
@@ -848,7 +829,6 @@
           "public"
         ],
         "summary": "获取日历事件",
-        "description": "返回指定日期范围内的内容发布事件，用于日历视图。",
         "operationId": "read_calendar_api_v1_public_calendar_get",
         "parameters": [
           {
@@ -914,7 +894,6 @@
           "public"
         ],
         "summary": "获取最近动态",
-        "description": "返回最近的评论、留言和点赞等互动动态。",
         "operationId": "read_recent_activity_api_v1_public_recent_activity_get",
         "parameters": [
           {
@@ -960,7 +939,6 @@
           "public"
         ],
         "summary": "获取活动热力图",
-        "description": "返回指定周数内每日活动计数，用于 GitHub 风格热力图。",
         "operationId": "read_activity_heatmap_api_v1_public_activity_heatmap_get",
         "parameters": [
           {
@@ -1022,7 +1000,6 @@
           "public"
         ],
         "summary": "健康检查",
-        "description": "返回服务健康状态和数据库路径。",
         "operationId": "healthz_api_v1_public_healthz_get",
         "responses": {
           "200": {
@@ -1312,7 +1289,6 @@
           "admin-posts"
         ],
         "summary": "获取admin-posts列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_posts",
         "security": [
           {
@@ -1441,7 +1417,6 @@
           "admin-posts"
         ],
         "summary": "创建admin-posts",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_posts",
         "security": [
           {
@@ -1489,7 +1464,6 @@
           "admin-posts"
         ],
         "summary": "获取单条admin-posts",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_posts",
         "security": [
           {
@@ -1536,7 +1510,6 @@
           "admin-posts"
         ],
         "summary": "更新admin-posts",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_posts",
         "security": [
           {
@@ -1593,7 +1566,6 @@
           "admin-posts"
         ],
         "summary": "删除admin-posts",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_posts",
         "security": [
           {
@@ -1635,7 +1607,6 @@
           "admin-posts"
         ],
         "summary": "批量删除admin-posts",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_posts",
         "requestBody": {
           "content": {
@@ -1683,7 +1654,6 @@
           "admin-posts"
         ],
         "summary": "批量更新admin-posts状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_posts",
         "requestBody": {
           "content": {
@@ -1731,7 +1701,6 @@
           "admin-diary"
         ],
         "summary": "获取admin-diary列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_diary",
         "security": [
           {
@@ -1860,7 +1829,6 @@
           "admin-diary"
         ],
         "summary": "创建admin-diary",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_diary",
         "security": [
           {
@@ -1908,7 +1876,6 @@
           "admin-diary"
         ],
         "summary": "获取单条admin-diary",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_diary",
         "security": [
           {
@@ -1955,7 +1922,6 @@
           "admin-diary"
         ],
         "summary": "更新admin-diary",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_diary",
         "security": [
           {
@@ -2012,7 +1978,6 @@
           "admin-diary"
         ],
         "summary": "删除admin-diary",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_diary",
         "security": [
           {
@@ -2054,7 +2019,6 @@
           "admin-diary"
         ],
         "summary": "批量删除admin-diary",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_diary",
         "requestBody": {
           "content": {
@@ -2102,7 +2066,6 @@
           "admin-diary"
         ],
         "summary": "批量更新admin-diary状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_diary",
         "requestBody": {
           "content": {
@@ -2150,7 +2113,6 @@
           "admin-thoughts"
         ],
         "summary": "获取admin-thoughts列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_thoughts",
         "security": [
           {
@@ -2279,7 +2241,6 @@
           "admin-thoughts"
         ],
         "summary": "创建admin-thoughts",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_thoughts",
         "security": [
           {
@@ -2327,7 +2288,6 @@
           "admin-thoughts"
         ],
         "summary": "获取单条admin-thoughts",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_thoughts",
         "security": [
           {
@@ -2374,7 +2334,6 @@
           "admin-thoughts"
         ],
         "summary": "更新admin-thoughts",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_thoughts",
         "security": [
           {
@@ -2431,7 +2390,6 @@
           "admin-thoughts"
         ],
         "summary": "删除admin-thoughts",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_thoughts",
         "security": [
           {
@@ -2473,7 +2431,6 @@
           "admin-thoughts"
         ],
         "summary": "批量删除admin-thoughts",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_thoughts",
         "requestBody": {
           "content": {
@@ -2521,7 +2478,6 @@
           "admin-thoughts"
         ],
         "summary": "批量更新admin-thoughts状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_thoughts",
         "requestBody": {
           "content": {
@@ -2569,7 +2525,6 @@
           "admin-excerpts"
         ],
         "summary": "获取admin-excerpts列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_excerpts",
         "security": [
           {
@@ -2698,7 +2653,6 @@
           "admin-excerpts"
         ],
         "summary": "创建admin-excerpts",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_excerpts",
         "security": [
           {
@@ -2746,7 +2700,6 @@
           "admin-excerpts"
         ],
         "summary": "获取单条admin-excerpts",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_excerpts",
         "security": [
           {
@@ -2793,7 +2746,6 @@
           "admin-excerpts"
         ],
         "summary": "更新admin-excerpts",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_excerpts",
         "security": [
           {
@@ -2850,7 +2802,6 @@
           "admin-excerpts"
         ],
         "summary": "删除admin-excerpts",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_excerpts",
         "security": [
           {
@@ -2892,7 +2843,6 @@
           "admin-excerpts"
         ],
         "summary": "批量删除admin-excerpts",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_excerpts",
         "requestBody": {
           "content": {
@@ -2940,7 +2890,6 @@
           "admin-excerpts"
         ],
         "summary": "批量更新admin-excerpts状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_excerpts",
         "requestBody": {
           "content": {
@@ -2988,7 +2937,6 @@
           "admin-site-config"
         ],
         "summary": "获取站点资料",
-        "description": "返回站点基本资料配置。",
         "operationId": "get_profile_api_v1_admin_site_config_profile_get",
         "responses": {
           "200": {
@@ -3014,7 +2962,6 @@
           "admin-site-config"
         ],
         "summary": "更新站点资料",
-        "description": "更新站点名称、描述、头像等基本资料。",
         "operationId": "update_profile_api_v1_admin_site_config_profile_put",
         "requestBody": {
           "content": {
@@ -3062,7 +3009,6 @@
           "admin-site-config"
         ],
         "summary": "获取社区评论配置",
-        "description": "返回社区评论系统的当前配置。",
         "operationId": "get_community_config_api_v1_admin_site_config_community_config_get",
         "responses": {
           "200": {
@@ -3088,7 +3034,6 @@
           "admin-site-config"
         ],
         "summary": "更新社区评论配置",
-        "description": "更新社区评论系统的配置项。",
         "operationId": "update_community_config_api_v1_admin_site_config_community_config_put",
         "requestBody": {
           "content": {
@@ -3137,7 +3082,6 @@
           "admin-site-config"
         ],
         "summary": "获取admin-site-config列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_social-links",
         "security": [
           {
@@ -3267,7 +3211,6 @@
           "admin-site-config"
         ],
         "summary": "创建admin-site-config",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_social-links",
         "security": [
           {
@@ -3316,7 +3259,6 @@
           "admin-site-config"
         ],
         "summary": "获取单条admin-site-config",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_social-links",
         "security": [
           {
@@ -3364,7 +3306,6 @@
           "admin-site-config"
         ],
         "summary": "更新admin-site-config",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_social-links",
         "security": [
           {
@@ -3422,7 +3363,6 @@
           "admin-site-config"
         ],
         "summary": "删除admin-site-config",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_social-links",
         "security": [
           {
@@ -3465,7 +3405,6 @@
           "admin-site-config"
         ],
         "summary": "批量删除admin-site-config",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_social-links",
         "requestBody": {
           "content": {
@@ -3514,7 +3453,6 @@
           "admin-site-config"
         ],
         "summary": "批量更新admin-site-config状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_social-links",
         "requestBody": {
           "content": {
@@ -3563,7 +3501,6 @@
           "admin-site-config"
         ],
         "summary": "获取admin-site-config列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_poems",
         "security": [
           {
@@ -3693,7 +3630,6 @@
           "admin-site-config"
         ],
         "summary": "创建admin-site-config",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_poems",
         "security": [
           {
@@ -3742,7 +3678,6 @@
           "admin-site-config"
         ],
         "summary": "获取单条admin-site-config",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_poems",
         "security": [
           {
@@ -3790,7 +3725,6 @@
           "admin-site-config"
         ],
         "summary": "更新admin-site-config",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_poems",
         "security": [
           {
@@ -3848,7 +3782,6 @@
           "admin-site-config"
         ],
         "summary": "删除admin-site-config",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_poems",
         "security": [
           {
@@ -3891,7 +3824,6 @@
           "admin-site-config"
         ],
         "summary": "批量删除admin-site-config",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_poems",
         "requestBody": {
           "content": {
@@ -3940,7 +3872,6 @@
           "admin-site-config"
         ],
         "summary": "批量更新admin-site-config状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_poems",
         "requestBody": {
           "content": {
@@ -3989,7 +3920,6 @@
           "admin-site-config"
         ],
         "summary": "获取admin-site-config列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_page-copy",
         "security": [
           {
@@ -4119,7 +4049,6 @@
           "admin-site-config"
         ],
         "summary": "创建admin-site-config",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_page-copy",
         "security": [
           {
@@ -4168,7 +4097,6 @@
           "admin-site-config"
         ],
         "summary": "获取单条admin-site-config",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_page-copy",
         "security": [
           {
@@ -4216,7 +4144,6 @@
           "admin-site-config"
         ],
         "summary": "更新admin-site-config",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_page-copy",
         "security": [
           {
@@ -4274,7 +4201,6 @@
           "admin-site-config"
         ],
         "summary": "删除admin-site-config",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_page-copy",
         "security": [
           {
@@ -4317,7 +4243,6 @@
           "admin-site-config"
         ],
         "summary": "批量删除admin-site-config",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_page-copy",
         "requestBody": {
           "content": {
@@ -4366,7 +4291,6 @@
           "admin-site-config"
         ],
         "summary": "批量更新admin-site-config状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_page-copy",
         "requestBody": {
           "content": {
@@ -4415,7 +4339,6 @@
           "admin-site-config"
         ],
         "summary": "获取admin-site-config列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_display-options",
         "security": [
           {
@@ -4545,7 +4468,6 @@
           "admin-site-config"
         ],
         "summary": "创建admin-site-config",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_display-options",
         "security": [
           {
@@ -4594,7 +4516,6 @@
           "admin-site-config"
         ],
         "summary": "获取单条admin-site-config",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_display-options",
         "security": [
           {
@@ -4642,7 +4563,6 @@
           "admin-site-config"
         ],
         "summary": "更新admin-site-config",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_display-options",
         "security": [
           {
@@ -4700,7 +4620,6 @@
           "admin-site-config"
         ],
         "summary": "删除admin-site-config",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_display-options",
         "security": [
           {
@@ -4743,7 +4662,6 @@
           "admin-site-config"
         ],
         "summary": "批量删除admin-site-config",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_display-options",
         "requestBody": {
           "content": {
@@ -4792,7 +4710,6 @@
           "admin-site-config"
         ],
         "summary": "批量更新admin-site-config状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_display-options",
         "requestBody": {
           "content": {
@@ -4840,7 +4757,6 @@
           "admin-site-config"
         ],
         "summary": "重排导航项顺序",
-        "description": "批量更新导航项的父级关系和排序索引。",
         "operationId": "reorder_nav_items_api_v1_admin_site_config_nav_items_reorder_put",
         "requestBody": {
           "content": {
@@ -4897,7 +4813,6 @@
           "admin-site-config"
         ],
         "summary": "获取admin-site-config列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_nav-items",
         "security": [
           {
@@ -5027,7 +4942,6 @@
           "admin-site-config"
         ],
         "summary": "创建admin-site-config",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_nav-items",
         "security": [
           {
@@ -5076,7 +4990,6 @@
           "admin-site-config"
         ],
         "summary": "获取单条admin-site-config",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_nav-items",
         "security": [
           {
@@ -5124,7 +5037,6 @@
           "admin-site-config"
         ],
         "summary": "更新admin-site-config",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_nav-items",
         "security": [
           {
@@ -5182,7 +5094,6 @@
           "admin-site-config"
         ],
         "summary": "删除admin-site-config",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_nav-items",
         "security": [
           {
@@ -5225,7 +5136,6 @@
           "admin-site-config"
         ],
         "summary": "批量删除admin-site-config",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_nav-items",
         "requestBody": {
           "content": {
@@ -5274,7 +5184,6 @@
           "admin-site-config"
         ],
         "summary": "批量更新admin-site-config状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_nav-items",
         "requestBody": {
           "content": {
@@ -5323,7 +5232,6 @@
           "admin-resume"
         ],
         "summary": "获取admin-resume列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_basics",
         "security": [
           {
@@ -5453,7 +5361,6 @@
           "admin-resume"
         ],
         "summary": "创建admin-resume",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_basics",
         "security": [
           {
@@ -5502,7 +5409,6 @@
           "admin-resume"
         ],
         "summary": "获取单条admin-resume",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_basics",
         "security": [
           {
@@ -5550,7 +5456,6 @@
           "admin-resume"
         ],
         "summary": "更新admin-resume",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_basics",
         "security": [
           {
@@ -5608,7 +5513,6 @@
           "admin-resume"
         ],
         "summary": "删除admin-resume",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_basics",
         "security": [
           {
@@ -5651,7 +5555,6 @@
           "admin-resume"
         ],
         "summary": "批量删除admin-resume",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_basics",
         "requestBody": {
           "content": {
@@ -5700,7 +5603,6 @@
           "admin-resume"
         ],
         "summary": "批量更新admin-resume状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_basics",
         "requestBody": {
           "content": {
@@ -5749,7 +5651,6 @@
           "admin-resume"
         ],
         "summary": "获取admin-resume列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_skills",
         "security": [
           {
@@ -5879,7 +5780,6 @@
           "admin-resume"
         ],
         "summary": "创建admin-resume",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_skills",
         "security": [
           {
@@ -5928,7 +5828,6 @@
           "admin-resume"
         ],
         "summary": "获取单条admin-resume",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_skills",
         "security": [
           {
@@ -5976,7 +5875,6 @@
           "admin-resume"
         ],
         "summary": "更新admin-resume",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_skills",
         "security": [
           {
@@ -6034,7 +5932,6 @@
           "admin-resume"
         ],
         "summary": "删除admin-resume",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_skills",
         "security": [
           {
@@ -6077,7 +5974,6 @@
           "admin-resume"
         ],
         "summary": "批量删除admin-resume",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_skills",
         "requestBody": {
           "content": {
@@ -6126,7 +6022,6 @@
           "admin-resume"
         ],
         "summary": "批量更新admin-resume状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_skills",
         "requestBody": {
           "content": {
@@ -6175,7 +6070,6 @@
           "admin-resume"
         ],
         "summary": "获取admin-resume列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_experiences",
         "security": [
           {
@@ -6305,7 +6199,6 @@
           "admin-resume"
         ],
         "summary": "创建admin-resume",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_experiences",
         "security": [
           {
@@ -6354,7 +6247,6 @@
           "admin-resume"
         ],
         "summary": "获取单条admin-resume",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_experiences",
         "security": [
           {
@@ -6402,7 +6294,6 @@
           "admin-resume"
         ],
         "summary": "更新admin-resume",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_experiences",
         "security": [
           {
@@ -6460,7 +6351,6 @@
           "admin-resume"
         ],
         "summary": "删除admin-resume",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_experiences",
         "security": [
           {
@@ -6503,7 +6393,6 @@
           "admin-resume"
         ],
         "summary": "批量删除admin-resume",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_experiences",
         "requestBody": {
           "content": {
@@ -6552,7 +6441,6 @@
           "admin-resume"
         ],
         "summary": "批量更新admin-resume状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_experiences",
         "requestBody": {
           "content": {
@@ -6601,7 +6489,6 @@
           "admin-social"
         ],
         "summary": "获取admin-social列表",
-        "description": "分页查询并返回列表数据。",
         "operationId": "list_friends",
         "security": [
           {
@@ -6731,7 +6618,6 @@
           "admin-social"
         ],
         "summary": "创建admin-social",
-        "description": "接收数据并创建一条新记录。",
         "operationId": "create_friends",
         "security": [
           {
@@ -6780,7 +6666,6 @@
           "admin-social"
         ],
         "summary": "获取单条admin-social",
-        "description": "根据 ID 获取单条记录详情。",
         "operationId": "get_friends",
         "security": [
           {
@@ -6828,7 +6713,6 @@
           "admin-social"
         ],
         "summary": "更新admin-social",
-        "description": "根据 ID 更新一条记录的字段。",
         "operationId": "update_friends",
         "security": [
           {
@@ -6886,7 +6770,6 @@
           "admin-social"
         ],
         "summary": "删除admin-social",
-        "description": "根据 ID 删除一条记录。",
         "operationId": "delete_friends",
         "security": [
           {
@@ -6929,7 +6812,6 @@
           "admin-social"
         ],
         "summary": "批量删除admin-social",
-        "description": "根据 ID 列表批量删除记录。",
         "operationId": "bulk_delete_friends",
         "requestBody": {
           "content": {
@@ -6978,7 +6860,6 @@
           "admin-social"
         ],
         "summary": "批量更新admin-social状态",
-        "description": "根据 ID 列表批量更新记录状态。",
         "operationId": "bulk_status_friends",
         "requestBody": {
           "content": {
@@ -7026,7 +6907,6 @@
           "admin-social"
         ],
         "summary": "手动触发全量抓取",
-        "description": "手动触发所有已启用订阅源的抓取任务。",
         "operationId": "trigger_feed_crawl_api_v1_admin_social_feeds_crawl_post",
         "responses": {
           "200": {
@@ -7054,7 +6934,6 @@
           "admin-social"
         ],
         "summary": "手动触发单源抓取",
-        "description": "手动触发指定订阅源的抓取任务。",
         "operationId": "trigger_single_feed_crawl_api_v1_admin_social_feeds__feed_id__crawl_post",
         "security": [
           {
@@ -7103,7 +6982,6 @@
           "admin-social"
         ],
         "summary": "获取友链订阅源",
-        "description": "列出指定友链关联的所有订阅源。",
         "operationId": "list_friend_feeds_api_v1_admin_social_friends__friend_id__feeds_get",
         "security": [
           {
@@ -7154,7 +7032,6 @@
           "admin-social"
         ],
         "summary": "创建订阅源",
-        "description": "为指定友链添加一个新的订阅源。",
         "operationId": "create_friend_feed_api_v1_admin_social_friends__friend_id__feeds_post",
         "security": [
           {
@@ -7213,7 +7090,6 @@
           "admin-social"
         ],
         "summary": "更新订阅源",
-        "description": "更新指定订阅源的配置信息。",
         "operationId": "update_friend_feed_api_v1_admin_social_feeds__feed_id__put",
         "security": [
           {
@@ -7270,7 +7146,6 @@
           "admin-social"
         ],
         "summary": "删除订阅源",
-        "description": "删除指定的订阅源记录。",
         "operationId": "delete_friend_feed_api_v1_admin_social_feeds__feed_id__delete",
         "security": [
           {

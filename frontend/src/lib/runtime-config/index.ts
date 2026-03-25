@@ -146,15 +146,6 @@ export interface RuntimeConfigSnapshot {
 }
 
 // ---------------------------------------------------------------------------
-// API paths
-// ---------------------------------------------------------------------------
-export const runtimeConfigPaths = {
-  site: "/api/v1/public/site",
-  pages: "/api/v1/public/pages",
-  resume: "/api/v1/public/resume",
-} as const;
-
-// ---------------------------------------------------------------------------
 // Default motion configs (code constants — not personal data)
 // ---------------------------------------------------------------------------
 const DEFAULT_MOTION: PageMotionConfig = { duration: 0.4, delay: 0.06, stagger: 0.04 };

@@ -3,15 +3,6 @@
  * These do NOT call any API endpoints.
  */
 
-export type PublicContentKind = "posts" | "diary" | "thoughts" | "excerpts";
-
-export const publicContentPaths: Record<PublicContentKind, string> = {
-  posts: "/api/v1/public/posts",
-  diary: "/api/v1/public/diary",
-  thoughts: "/api/v1/public/thoughts",
-  excerpts: "/api/v1/public/excerpts",
-};
-
 export const formatPublishedDate = (value: string | null | undefined) => {
   if (!value) return "";
 

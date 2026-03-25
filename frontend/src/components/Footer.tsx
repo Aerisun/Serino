@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { SocialIcon } from "@/components/icons/SocialIcon";
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import { useSiteConfig } from "@/contexts/runtime-config";
 
 interface InternalLinkItem {
   label: string;

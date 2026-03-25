@@ -26,9 +26,5 @@ export const customFetch = async <T>(
   }
   return instance<T>(url, options);
 };
-
-export default customFetch;
-
-export { ApiError } from "../errors";
 export type ErrorType<Error> = import("../errors").ApiError;
 export type BodyType<BodyData> = BodyData;

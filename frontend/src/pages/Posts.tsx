@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
-import { usePageConfig } from "@/contexts/RuntimeConfigContext";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPostCount } from "@/lib/format";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { readPostsApiV1PublicPostsGet } from "@serino/api-client/public";
@@ -97,7 +97,7 @@ const Posts = () => {
     };
   }, []);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
@@ -111,7 +111,7 @@ const Posts = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [hasMore, isLoadingMore, items.length, pageSize]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -122,7 +122,7 @@ const Posts = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, status, items.length]);
+  }, [hasMore, loadMore, status]);
 
   const allCategories = [
     allCategoryLabel,

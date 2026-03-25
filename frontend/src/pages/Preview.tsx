@@ -12,7 +12,7 @@ import FallingPetals from "@/components/FallingPetals";
 import BackToTop from "@/components/BackToTop";
 import CodeHighlighter from "@/components/CodeHighlighter";
 import TableOfContents from "@/components/TableOfContents";
-import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
+import { useFeatureFlags } from "@/contexts/runtime-config";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 const STORAGE_KEY_PREFIX = "aerisun-preview-";

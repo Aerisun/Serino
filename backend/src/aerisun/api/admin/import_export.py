@@ -55,8 +55,8 @@ async def import_content(
     raw = await file.read()
     try:
         items_data = json.loads(raw)
-    except json.JSONDecodeError:
-        raise DomainValidationError("Invalid JSON")
+    except json.JSONDecodeError as err:
+        raise DomainValidationError("Invalid JSON") from err
     if not isinstance(items_data, list):
         raise DomainValidationError("Expected JSON array")
     return import_content_json(session, content_type, items_data)

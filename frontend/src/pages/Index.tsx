@@ -3,7 +3,7 @@ import HeroContent from "@/components/HeroContent";
 import ActivitySection from "@/components/ActivitySection";
 import PageMeta from "@/components/PageMeta";
 import { useTheme } from "@serino/theme";
-import { useSiteConfig } from "@/contexts/RuntimeConfigContext";
+import { useSiteConfig } from "@/contexts/runtime-config";
 
 const Index = () => {
   const { resolvedTheme } = useTheme();
