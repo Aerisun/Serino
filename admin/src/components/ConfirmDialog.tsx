@@ -29,8 +29,8 @@ export function ConfirmDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(v) => !v && onCancel()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl admin-glass-strong p-6 shadow-lg">
           <div className="flex items-start gap-4">
             {variant === "destructive" && (
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">

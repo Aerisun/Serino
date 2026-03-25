@@ -5,7 +5,7 @@ const badgeVariants: Record<string, string> = {
   default: "bg-primary text-primary-foreground",
   secondary: "bg-secondary text-secondary-foreground",
   destructive: "bg-destructive text-destructive-foreground",
-  outline: "border text-foreground",
+  outline: "text-foreground",
   success:
     "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
   warning:
@@ -24,7 +24,7 @@ export function Badge({
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors",
+        "inline-flex items-center rounded-full border border-white/20 dark:border-white/10 backdrop-blur-sm px-2.5 py-0.5 text-xs font-semibold transition-colors",
         badgeVariants[variant] || badgeVariants.default,
         className,
       )}

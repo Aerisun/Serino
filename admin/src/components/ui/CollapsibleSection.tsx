@@ -36,11 +36,11 @@ export function CollapsibleSection({
   }, [open]);
 
   return (
-    <div className={cn("border rounded-lg", className)}>
+    <div className={cn("rounded-lg admin-glass", className)}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 py-3 px-4 cursor-pointer rounded-lg hover:bg-muted/50 transition-colors"
+        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-4 py-3 transition-colors hover:bg-white/20 dark:hover:bg-white/5"
       >
         <ChevronRight
           className={cn(

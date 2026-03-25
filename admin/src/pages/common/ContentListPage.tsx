@@ -155,7 +155,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
           onChange={(e) => handleSearch(e.target.value)}
         />
         <select
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+          className="h-9 rounded-md admin-glass-input px-3 text-sm"
           value={sort}
           onChange={(e) => {
             setSort(e.target.value);
@@ -196,7 +196,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         ]}
       />
 
-      <div className="border rounded-lg">
+      <div className="rounded-lg admin-glass overflow-hidden">
         <DataTable<ContentAdminRead>
           columns={config.columns}
           data={items}
