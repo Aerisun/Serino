@@ -27,6 +27,13 @@ _STATUS_MAP: dict[type[DomainError], int] = {
 
 async def _domain_exception_handler(_request: Request, exc: DomainError) -> JSONResponse:
     status_code = _STATUS_MAP.get(type(exc), 400)
+    if status_code >= 500:
+        try:
+            import sentry_sdk
+
+            sentry_sdk.capture_exception(exc)
+        except ImportError:
+            pass
     return JSONResponse(status_code=status_code, content={"detail": exc.detail})
 
 

@@ -12100,11 +12100,6 @@
             "title": "Status",
             "description": "Service health status"
           },
-          "database_path": {
-            "type": "string",
-            "title": "Database Path",
-            "description": "SQLite database file path"
-          },
           "timestamp": {
             "type": "string",
             "format": "date-time",
@@ -12115,7 +12110,6 @@
         "type": "object",
         "required": [
           "status",
-          "database_path",
           "timestamp"
         ],
         "title": "HealthRead"

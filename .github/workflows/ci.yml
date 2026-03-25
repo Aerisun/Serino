@@ -34,8 +34,8 @@ jobs:
       - name: Test (pytest)
         run: uv run pytest
 
-  frontend:
-    name: Frontend
+  openapi:
+    name: Export OpenAPI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,16 +45,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
       - run: uv sync --dev
         working-directory: backend
       - name: Export OpenAPI spec
         run: uv run python ../scripts/export-openapi.py
         working-directory: backend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: packages/api-client/openapi.json
+
+  frontend:
+    name: Frontend
+    needs: [openapi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: packages/api-client/
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Generate API client
         run: pnpm --filter @serino/api-client run generate:api
@@ -65,25 +80,19 @@ jobs:
 
   admin:
     name: Admin
+    needs: [openapi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: actions/download-artifact@v4
         with:
-          version: "latest"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+          name: openapi-spec
+          path: packages/api-client/
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-      - run: uv sync --dev
-        working-directory: backend
-      - name: Export OpenAPI spec
-        run: uv run python ../scripts/export-openapi.py
-        working-directory: backend
       - run: pnpm install --frozen-lockfile
       - name: Generate API client
         run: pnpm --filter @serino/api-client run generate:api
@@ -94,7 +103,7 @@ jobs:
 
   contract:
     name: Contract Tests
-    needs: backend
+    needs: [backend, openapi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -104,15 +113,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      - uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: packages/api-client/
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
       - run: uv sync --dev
-        working-directory: backend
-      - name: Export OpenAPI spec
-        run: uv run python ../scripts/export-openapi.py
         working-directory: backend
       - run: pnpm install --frozen-lockfile
       - name: Generate contract schemas

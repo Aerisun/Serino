@@ -697,7 +697,6 @@ export const ReadActivityHeatmapApiV1PublicActivityHeatmapGetResponse = zod.obje
  */
 export const HealthzApiV1PublicHealthzGetResponse = zod.object({
   "status": zod.string().describe('Service health status'),
-  "database_path": zod.string().describe('SQLite database file path'),
   "timestamp": zod.string().datetime({}).describe('Current server timestamp')
 })
 

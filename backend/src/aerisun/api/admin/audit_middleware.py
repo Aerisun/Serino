@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import structlog
 from fastapi import Request, Response
-from sqlalchemy.orm import Session
+from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from aerisun.core.db import get_engine
+from aerisun.core.db import get_session_factory
 from aerisun.domain.ops.models import AuditLog
+
+logger = structlog.get_logger("aerisun.audit")
 
 
 class AuditLogMiddleware(BaseHTTPMiddleware):
@@ -53,9 +56,11 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                     token = auth[7:]
                     from aerisun.domain.iam.models import AdminSession
 
-                    engine = get_engine()
-                    with Session(engine) as db:
-                        admin_session = db.query(AdminSession).filter(AdminSession.session_token == token).first()
+                    factory = get_session_factory()
+                    with factory() as db:
+                        admin_session = db.scalars(
+                            select(AdminSession).where(AdminSession.session_token == token)
+                        ).first()
                         if admin_session:
                             actor_id = admin_session.admin_user_id
 
@@ -70,6 +75,6 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                         db.add(log)
                         db.commit()
             except Exception:
-                pass  # Don't let audit logging break the request
+                logger.exception("audit_log_write_failed", path=path, method=method)
 
         return response

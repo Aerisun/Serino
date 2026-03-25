@@ -10,7 +10,6 @@ from aerisun.api.admin.schemas import CommentImageUploadResponse
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, limiter
 from aerisun.core.schemas import HealthRead
-from aerisun.core.settings import get_settings as _get_settings
 from aerisun.domain.activity.schemas import ActivityHeatmapRead, CalendarRead, RecentActivityRead
 from aerisun.domain.activity.service import build_activity_heatmap, list_calendar_events, list_recent_activity
 from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
@@ -238,10 +237,8 @@ def read_activity_heatmap(
 
 @router.get("/healthz", response_model=HealthRead, summary="健康检查")
 def healthz() -> HealthRead:
-    settings = _get_settings()
     return HealthRead(
         status="ok",
-        database_path=str(settings.db_path),
         timestamp=datetime.now(UTC),
     )
 

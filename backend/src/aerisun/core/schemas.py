@@ -11,5 +11,4 @@ class ModelBase(BaseModel):
 
 class HealthRead(ModelBase):
     status: str = Field(description="Service health status")
-    database_path: str = Field(description="SQLite database file path")
     timestamp: datetime = Field(description="Current server timestamp")
