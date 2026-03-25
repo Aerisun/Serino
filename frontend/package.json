@@ -4,10 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "generate:api": "orval",
-    "dev": "orval && vite",
+    "dev": "vite",
     "dev:process": "VITE_API_PROXY_TARGET=http://127.0.0.1:8001 VITE_WALINE_PROXY_TARGET=http://127.0.0.1:8360 vite",
-    "build": "orval && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -44,7 +43,6 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "orval": "^8.6.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

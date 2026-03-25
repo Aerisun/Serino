@@ -10,7 +10,7 @@ import {
   useUpdateDisplayOptions,
   getListPageCopyQueryKey,
   getListDisplayOptionsQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -27,7 +27,7 @@ import { Plus, Save, Trash2, Pencil, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { PAGE_KEYS, PAGE_KEY_LABELS, optionLabel } from "../constants";
-import type { PageCopyAdminRead, PageDisplayOptionAdminRead } from "@/api/generated/model";
+import type { PageCopyAdminRead, PageDisplayOptionAdminRead } from "@serino/api-client/models";
 
 export function PagesTab() {
   const { t, lang } = useI18n();

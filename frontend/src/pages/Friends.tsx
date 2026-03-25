@@ -9,9 +9,9 @@ import type { BaseViewPageConfig } from "@/lib/page-config";
 import {
   readFriendFeedApiV1PublicFriendFeedGet,
   readFriendsApiV1PublicFriendsGet,
-} from "@/lib/api/generated/public/public";
+} from "@serino/api-client/public";
 import { formatFriendFeedDate } from "@/lib/api/utils";
-import type { FriendRead, FriendFeedItemRead } from "@/lib/api/generated/model";
+import type { FriendRead, FriendFeedItemRead } from "@serino/api-client/models";
 
 interface Friend {
   name: string;

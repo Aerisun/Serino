@@ -7,7 +7,7 @@ import {
   useUpdateSocialLinks,
   useDeleteSocialLinks,
   getListSocialLinksQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { SocialLinkAdminRead } from "@/api/generated/model";
+import type { SocialLinkAdminRead } from "@serino/api-client/models";
 
 export function SocialLinksTab() {
   const { t } = useI18n();

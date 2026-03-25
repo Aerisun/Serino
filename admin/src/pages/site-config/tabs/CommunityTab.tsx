@@ -4,7 +4,7 @@ import {
   useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet,
   useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut,
   getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";

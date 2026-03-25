@@ -5,6 +5,15 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/generated/admin/admin.ts",
+    "./public": "./src/generated/public/public.ts",
+    "./search": "./src/generated/search/search.ts",
+    "./seo": "./src/generated/seo/seo.ts",
+    "./models": "./src/generated/model/index.ts",
+    "./schemas": "./src/generated/schemas.zod.ts"
+  },
   "scripts": {
     "generate:api": "orval",
     "test": "vitest run"

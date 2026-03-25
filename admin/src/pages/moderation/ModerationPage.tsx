@@ -7,15 +7,15 @@ import {
   moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost as moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
   getListCommentsApiV1AdminModerationCommentsGetQueryKey,
   getListGuestbookApiV1AdminModerationGuestbookGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import type {
   ListCommentsApiV1AdminModerationCommentsGetParams,
   ListGuestbookApiV1AdminModerationGuestbookGetParams,
   CommentAdminRead,
   GuestbookAdminRead,
   ModerateAction,
-} from "@/api/generated/model";
-import { listPosts, listDiary, listThoughts, listExcerpts } from "@/api/generated/admin/admin";
+} from "@serino/api-client/models";
+import { listPosts, listDiary, listThoughts, listExcerpts } from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";

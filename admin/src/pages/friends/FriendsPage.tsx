@@ -11,7 +11,7 @@ import {
   useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut,
   useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete,
   getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -29,7 +29,7 @@ import { Plus, Trash2, Pencil, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { FriendAdminRead, FriendFeedSourceAdminRead } from "@/api/generated/model";
+import type { FriendAdminRead, FriendFeedSourceAdminRead } from "@serino/api-client/models";
 
 export default function FriendsPage() {
   const { t } = useI18n();

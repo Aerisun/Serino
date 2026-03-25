@@ -6,8 +6,8 @@ import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/RuntimeConfigContext";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
-import { readDiaryApiV1PublicDiaryGet } from "@/lib/api/generated/public/public";
-import type { ContentEntryRead } from "@/lib/api/generated/model";
+import { readDiaryApiV1PublicDiaryGet } from "@serino/api-client/public";
+import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface DiaryEntry {

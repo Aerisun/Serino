@@ -13,10 +13,10 @@ import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/RuntimeConfigContext";
-import { ApiError } from "@/lib/api/mutator/custom-fetch";
+import { ApiError } from "@serino/api-client";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { readPostApiV1PublicPostsSlugGet } from "@/lib/api/generated/public/public";
-import type { ContentEntryRead } from "@/lib/api/generated/model";
+import { readPostApiV1PublicPostsSlugGet } from "@serino/api-client/public";
+import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface PostData {

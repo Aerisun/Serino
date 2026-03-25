@@ -12,8 +12,8 @@ import {
   useDeleteDiary,
   getListDiaryQueryKey,
   getGetDiaryQueryKey,
-} from "@/api/generated/admin/admin";
-import type { ContentCreate, ContentUpdate } from "@/api/generated/model";
+} from "@serino/api-client/admin";
+import type { ContentCreate, ContentUpdate } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";

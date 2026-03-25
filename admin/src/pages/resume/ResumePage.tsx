@@ -13,7 +13,7 @@ import {
   useCreateExperiences,
   useDeleteExperiences,
   getListExperiencesQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { DataTable } from "@/components/DataTable";
@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ResumeSkillGroupAdminRead, ResumeExperienceAdminRead } from "@/api/generated/model";
+import type { ResumeSkillGroupAdminRead, ResumeExperienceAdminRead } from "@serino/api-client/models";
 
 export default function ResumePage() {
   const { t } = useI18n();

@@ -4,7 +4,7 @@ import {
   useGetProfileApiV1AdminSiteConfigProfileGet,
   useUpdateProfileApiV1AdminSiteConfigProfilePut,
   getGetProfileApiV1AdminSiteConfigProfileGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -14,7 +14,7 @@ import { Save } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { SiteProfileAdminRead } from "@/api/generated/model";
+import type { SiteProfileAdminRead } from "@serino/api-client/models";
 
 export function ProfileTab() {
   const { t } = useI18n();

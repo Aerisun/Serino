@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { useDashboardStatsApiV1AdminSystemDashboardStatsGet } from "@/api/generated/admin/admin";
+import { useDashboardStatsApiV1AdminSystemDashboardStatsGet } from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FileText, BookOpen, Lightbulb, Quote, MessageSquare, Users, Image, Clock } from "lucide-react";
 import { useI18n } from "@/i18n";
-import type { EnhancedDashboardStats, RecentContentItem } from "@/api/generated/model";
+import type { EnhancedDashboardStats, RecentContentItem } from "@serino/api-client/models";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",

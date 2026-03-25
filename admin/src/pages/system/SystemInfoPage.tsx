@@ -1,9 +1,9 @@
-import { useSystemInfoApiV1AdminSystemInfoGet } from "@/api/generated/admin/admin";
+import { useSystemInfoApiV1AdminSystemInfoGet } from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Server, Database, HardDrive, Clock, Code } from "lucide-react";
 import { useI18n } from "@/i18n";
-import type { SystemInfo } from "@/api/generated/model";
+import type { SystemInfo } from "@serino/api-client/models";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";

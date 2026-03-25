@@ -5,7 +5,7 @@ import {
   useUploadAssetEndpointApiV1AdminAssetsPost as useUploadAssetApiV1AdminAssetsPost,
   useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete as useDeleteAssetApiV1AdminAssetsAssetIdDelete,
   getListAssetsEndpointApiV1AdminAssetsGetQueryKey as getListAssetsApiV1AdminAssetsGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -13,7 +13,7 @@ import { Upload, Trash2 } from "lucide-react";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { AssetAdminRead } from "@/api/generated/model";
+import type { AssetAdminRead } from "@serino/api-client/models";
 
 export default function AssetsPage() {
   const { t } = useI18n();

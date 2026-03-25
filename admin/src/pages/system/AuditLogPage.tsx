@@ -1,14 +1,14 @@
 import { useState } from "react";
 import {
   useListAuditLogsApiV1AdminSystemAuditLogsGet,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
-import type { AuditLogRead } from "@/api/generated/model";
+import type { AuditLogRead } from "@serino/api-client/models";
 
 export default function AuditLogPage() {
   const { t } = useI18n();

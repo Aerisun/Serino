@@ -21,8 +21,8 @@ import {
   readCommentsApiV1PublicCommentsContentTypeSlugGet,
   readGuestbookApiV1PublicGuestbookGet,
   uploadCommentImageApiV1PublicCommentImagePost,
-} from "@/lib/api/generated/public/public";
-import { ApiError } from "@/lib/api/mutator/custom-fetch";
+} from "@serino/api-client/public";
+import { ApiError } from "@serino/api-client";
 import {
   DEFAULT_COMMUNITY_CONFIG,
   loadCommunityConfig,

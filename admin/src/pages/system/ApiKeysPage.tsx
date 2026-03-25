@@ -5,7 +5,7 @@ import {
   useCreateApiKeyApiV1AdminSystemApiKeysPost,
   useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete,
   getListApiKeysApiV1AdminSystemApiKeysGetQueryKey,
-} from "@/api/generated/admin/admin";
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,7 @@ import { Plus, Trash2, Copy } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { ApiKeyAdminRead } from "@/api/generated/model";
+import type { ApiKeyAdminRead } from "@serino/api-client/models";
 
 export default function ApiKeysPage() {
   const { t } = useI18n();

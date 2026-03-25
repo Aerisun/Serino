@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Search, X, FileText, BookOpen, MessageSquare, Quote } from "lucide-react"
-import { searchContentApiV1PublicSearchGet } from "@/lib/api/generated/search/search"
+import { searchContentApiV1PublicSearchGet } from "@serino/api-client/search"
 
 interface SearchResult {
   type: string
