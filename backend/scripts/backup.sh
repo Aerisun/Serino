@@ -92,7 +92,7 @@ rsync -a -e "${SSH_CMD_STR}" \
   "${REMOTE_HOST}:${REMOTE_PATH}/manifests/backup-${MANIFEST_TS}.txt"
 
 rsync -a -e "${SSH_CMD_STR}" \
-  docker-compose.yml .env.example README.md backend/Dockerfile backend/pyproject.toml backend/alembic.ini backend/README.md backend/.gitignore backend/litestream.yml.template backend/scripts/*.sh \
+  docker-compose.yml .env .env.development .env.production .env.production.local.example README.md backend/Dockerfile backend/pyproject.toml backend/alembic.ini backend/README.md backend/.gitignore backend/litestream.yml.template backend/scripts/*.sh \
   "${REMOTE_HOST}:${REMOTE_PATH}/manifests/"
 
 echo "backup complete: ${MANIFEST_TS}"

@@ -38,9 +38,9 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
 
     seed_reference_data()
 
-    from aerisun.main import app
+    from aerisun.core.app_factory import create_app
 
-    with TestClient(app) as test_client:
+    with TestClient(create_app()) as test_client:
         yield test_client
 
     engine = get_engine()

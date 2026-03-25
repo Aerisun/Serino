@@ -1,0 +1,16 @@
+.git
+.dev
+.store
+temp
+openspec
+.claude
+.codex
+.playwright-cli
+.env.local
+.env.*.local
+**/node_modules
+**/dist
+**/.vite
+**/.pytest_cache
+**/.ruff_cache
+**/.venv

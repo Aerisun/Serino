@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { API_BASE_URL, ApiError } from "@/lib/api";
+import { API_BASE_PATH, API_BASE_URL, ApiError } from "@/lib/api";
 import type { RuntimeConfigSnapshot } from "@/lib/runtime-config";
 
 interface RuntimeConfigContextValue {
@@ -18,7 +18,7 @@ export function describeRuntimeConfigError(error: Error | null) {
   }
 
   if (error.message === "Failed to fetch") {
-    return `无法访问接口 ${API_BASE_URL || "/api"}`;
+    return `无法访问接口 ${API_BASE_URL || API_BASE_PATH}`;
   }
 
   return error.message;

@@ -1,28 +1,34 @@
 {$AERISUN_DOMAIN:localhost} {
-    # API 后端
-    handle /api/* {
-        reverse_proxy api:8000
-    }
+    encode zstd gzip
 
-    # 管理端 SPA
-    handle_path /admin* {
-        reverse_proxy {$AERISUN_ADMIN_UPSTREAM:host.docker.internal:3001}
+    # API 后端
+    handle {$AERISUN_API_BASE_PATH:/api}/* {
+        reverse_proxy api:{$AERISUN_PORT:8000}
     }
 
     # Waline 评论服务
-    handle /waline/* {
-        uri strip_prefix /waline
+    handle {$AERISUN_WALINE_BASE_PATH:/waline}* {
+        uri strip_prefix {$AERISUN_WALINE_BASE_PATH:/waline}
         reverse_proxy waline:8360
     }
 
     # Sitemap 重写
     handle /sitemap.xml {
         rewrite * /api/v1/public/sitemap.xml
-        reverse_proxy api:8000
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    # 管理端 SPA
+    handle_path {$AERISUN_ADMIN_BASE_PATH:/admin/}* {
+        root * {$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}
+        try_files {path} /index.html
+        file_server
     }
 
     # 前端 SPA
     handle {
-        reverse_proxy {$AERISUN_FRONTEND_UPSTREAM:host.docker.internal:8080}
+        root * {$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}
+        try_files {path} /index.html
+        file_server
     }
 }

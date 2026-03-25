@@ -126,6 +126,16 @@ const normalizeCommentSorting = (value: unknown): CommunityCommentSort => {
 };
 
 const WALINE_EMOJI_CDN = "https://unpkg.com/@waline/emojis@1.1.0";
+const normalizeBasePath = (value: string, fallback: string) => {
+  const trimmed = value.trim();
+  const candidate = trimmed || fallback;
+  return candidate.replace(/\/+$/, "") || fallback;
+};
+
+const WALINE_BASE_PATH = normalizeBasePath(
+  typeof __AERISUN_WALINE_BASE_PATH__ === "string" ? __AERISUN_WALINE_BASE_PATH__ : "",
+  "/waline",
+);
 
 /** Backend preset names that differ from CDN directory names */
 const EMOJI_PRESET_ALIAS: Record<string, string> = {
@@ -145,7 +155,7 @@ const normalizeEmojiPreset = (preset: string | WalineEmojiPreset): string | Wali
 
 /**
  * The backend stores the Waline origin (e.g. "http://localhost:8360") but
- * the browser must use a same-origin path ("/waline") so the Vite dev proxy
+ * the browser must use a same-origin path (WALINE_BASE_PATH) so the Vite dev proxy
  * or Caddy reverse-proxy can forward requests without CORS issues.
  *
  * Waline client uses `new URL(path, serverURL)` internally, so the serverURL
@@ -153,18 +163,18 @@ const normalizeEmojiPreset = (preset: string | WalineEmojiPreset): string | Wali
  */
 const normalizeServerURL = (raw: string): string => {
   const trimmed = raw.trim();
-  if (!trimmed) return `${window.location.origin}/waline`;
+  if (!trimmed) return `${window.location.origin}${WALINE_BASE_PATH}`;
   // Already a relative path — prepend current origin
   if (trimmed.startsWith("/")) return `${window.location.origin}${trimmed}`;
   // Absolute URL pointing to a different port/host — use proxy path
   try {
     const parsed = new URL(trimmed);
     if (parsed.origin !== window.location.origin) {
-      return `${window.location.origin}/waline`;
+      return `${window.location.origin}${WALINE_BASE_PATH}`;
     }
     return trimmed;
   } catch {
-    return `${window.location.origin}/waline`;
+    return `${window.location.origin}${WALINE_BASE_PATH}`;
   }
 };
 

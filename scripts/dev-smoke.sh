@@ -12,15 +12,39 @@ PID_FILE="${DEV_DIR}/dev.pid"
 backend_port="${BACKEND_PORT:-${AERISUN_PORT:-8000}}"
 frontend_port="${FRONTEND_PORT:-${AERISUN_FRONTEND_PORT:-5173}}"
 admin_port="${ADMIN_PORT:-${AERISUN_ADMIN_PORT:-5174}}"
+healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
+admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"
+
+source_env_file() {
+  local env_file="$1"
+  if [[ -f "${env_file}" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${env_file}"
+    set +a
+  fi
+}
+
+ensure_trailing_slash() {
+  local value="$1"
+  if [[ "${value}" == */ ]]; then
+    printf '%s' "${value}"
+    return 0
+  fi
+  printf '%s/' "${value}"
+}
 
 load_env_ports() {
-  if [[ -f "${ENV_FILE}" ]]; then
-    # shellcheck disable=SC1090
-    source "${ENV_FILE}"
-    backend_port="${BACKEND_PORT:-${AERISUN_PORT:-8000}}"
-    frontend_port="${FRONTEND_PORT:-${AERISUN_FRONTEND_PORT:-5173}}"
-    admin_port="${ADMIN_PORT:-${AERISUN_ADMIN_PORT:-5174}}"
-  fi
+  local env_name="${AERISUN_ENVIRONMENT:-development}"
+  source_env_file "${PROJECT_DIR}/.env"
+  source_env_file "${PROJECT_DIR}/.env.${env_name}"
+  source_env_file "${PROJECT_DIR}/.env.local"
+  source_env_file "${PROJECT_DIR}/.env.${env_name}.local"
+  backend_port="${BACKEND_PORT:-${AERISUN_PORT:-8000}}"
+  frontend_port="${FRONTEND_PORT:-${AERISUN_FRONTEND_PORT:-5173}}"
+  admin_port="${ADMIN_PORT:-${AERISUN_ADMIN_PORT:-5174}}"
+  healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
+  admin_base_path="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"
 }
 
 url_is_ready() {
@@ -58,9 +82,9 @@ wait_for_url() {
 }
 
 wait_for_stack_ready() {
-  wait_for_url "http://127.0.0.1:${backend_port}/api/v1/public/healthz" "backend"
+  wait_for_url "http://127.0.0.1:${backend_port}${healthcheck_path}" "backend"
   wait_for_url "http://127.0.0.1:${frontend_port}/" "frontend"
-  wait_for_url "http://127.0.0.1:${admin_port}/admin/" "admin"
+  wait_for_url "http://127.0.0.1:${admin_port}${admin_base_path}" "admin"
 }
 
 # ── 检测 make dev 是否已经在运行 ──────────────────────────

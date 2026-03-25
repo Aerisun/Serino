@@ -1,0 +1,74 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def read_project_file(relative_path: str) -> str:
+    return (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def test_shared_path_defaults_are_tracked_in_root_env():
+    env_text = read_project_file(".env")
+
+    assert "AERISUN_API_BASE_PATH=/api" in env_text
+    assert "AERISUN_ADMIN_BASE_PATH=/admin/" in env_text
+    assert "AERISUN_WALINE_BASE_PATH=/waline" in env_text
+    assert "AERISUN_HEALTHCHECK_PATH=/api/v1/public/healthz" in env_text
+    assert "AERISUN_FRONTEND_DIST_DIR=/srv/aerisun/frontend" in env_text
+    assert "AERISUN_ADMIN_DIST_DIR=/srv/aerisun/admin" in env_text
+
+
+def test_deploy_contract_reuses_shared_env_keys():
+    compose_text = read_project_file("docker-compose.yml")
+    caddy_text = read_project_file("Caddyfile")
+    smoke_text = read_project_file("scripts/docker-smoke.sh")
+    dev_smoke_text = read_project_file("scripts/dev-smoke.sh")
+    dev_start_text = read_project_file("scripts/dev-start.sh")
+    frontend_vite_text = read_project_file("frontend/vite.config.ts")
+    admin_vite_text = read_project_file("admin/vite.config.ts")
+
+    assert "AERISUN_PORT: ${AERISUN_PORT:-8000}" in compose_text
+    assert "AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}" in compose_text
+    assert 'curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}' in compose_text
+    assert "WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}" in compose_text
+    assert "AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}" in compose_text
+    assert "AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}" in compose_text
+    assert "AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}" in compose_text
+    assert "AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}" in compose_text
+    assert "AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}" in compose_text
+    assert '- "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"' in compose_text
+    assert "image: litestream/litestream:latest" in compose_text
+
+    assert "{$AERISUN_PORT:8000}" in caddy_text
+    assert "{$AERISUN_API_BASE_PATH:/api}" in caddy_text
+    assert "{$AERISUN_ADMIN_BASE_PATH:/admin/}" in caddy_text
+    assert "{$AERISUN_WALINE_BASE_PATH:/waline}" in caddy_text
+    assert "{$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}" in caddy_text
+    assert "{$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}" in caddy_text
+
+    assert 'HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"' in smoke_text
+    assert 'ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"' in smoke_text
+    assert 'WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"' in smoke_text
+    assert "AERISUN_DOMAIN=http://${SITE_HOST}" in smoke_text
+    assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
+
+    assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"' in dev_smoke_text
+    assert 'admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"' in dev_smoke_text
+    assert 'backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"' in dev_start_text
+    assert 'const apiBasePath = stripTrailingSlash(env.AERISUN_API_BASE_PATH ?? "/api");' in frontend_vite_text
+    assert 'const walineBasePath = stripTrailingSlash(env.AERISUN_WALINE_BASE_PATH ?? "/waline");' in frontend_vite_text
+    assert 'const adminBasePath = normalizeBasePath(env.AERISUN_ADMIN_BASE_PATH || "", "/admin/");' in admin_vite_text
+    assert 'const apiBasePath = (env.AERISUN_API_BASE_PATH || "/api").replace(/\\/+$/, "");' in admin_vite_text
+
+
+def test_production_defaults_do_not_track_dev_only_upstreams():
+    production_text = read_project_file(".env.production")
+    dockerignore_text = read_project_file(".dockerignore")
+
+    assert "AERISUN_FRONTEND_UPSTREAM" not in production_text
+    assert "AERISUN_ADMIN_UPSTREAM" not in production_text
+    assert ".env.local" in dockerignore_text
+    assert ".env.*.local" in dockerignore_text

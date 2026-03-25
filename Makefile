@@ -1,4 +1,4 @@
-.PHONY: dev dev-smoke dev-stop docker-dev docker-prod setup-ports
+.PHONY: dev dev-smoke dev-stop docker-dev docker-prod docker-smoke setup-ports
 
 # ── 本地开发（不走 Docker）──────────────────────────────
 dev: 
@@ -18,6 +18,9 @@ docker-dev:
 # ── Docker 生产 ─────────────────────────────────────────
 docker-prod:
 	docker compose --env-file .env --env-file .env.production --env-file .env.production.local up -d --build
+
+docker-smoke:
+	@bash ./scripts/docker-smoke.sh
 
 # ── Worktree 端口自动检测 ───────────────────────────────
 setup-ports:

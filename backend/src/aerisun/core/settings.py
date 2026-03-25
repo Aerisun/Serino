@@ -8,7 +8,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Use absolute path WITHOUT resolving symlinks so each git worktree gets its own .store/ directory instead of sharing the main branch's.
+# Use absolute path WITHOUT resolving symlinks so each git worktree gets its
+# own .store/ directory instead of sharing the main branch's.
 BACKEND_ROOT = Path(__file__).absolute().parents[3]
 PROJECT_ROOT = BACKEND_ROOT.parent
 
@@ -61,6 +62,12 @@ class Settings(BaseSettings):
     secrets_dir: Path = PROJECT_ROOT / ".store" / "secrets"
     db_path: Path = PROJECT_ROOT / ".store" / "aerisun.db"
     waline_db_path: Path = PROJECT_ROOT / ".store" / "waline.db"
+    api_base_path: str = "/api"
+    admin_base_path: str = "/admin/"
+    waline_base_path: str = "/waline"
+    healthcheck_path: str = "/api/v1/public/healthz"
+    frontend_dist_dir: Path = Path("/srv/aerisun/frontend")
+    admin_dist_dir: Path = Path("/srv/aerisun/admin")
     site_url: str = "http://localhost:5173"
     waline_server_url: str = "/waline"
     litestream_config_path: Path = BACKEND_ROOT / "litestream.yml"

@@ -15,6 +15,14 @@ source_env_file() {
   fi
 }
 
+source_runtime_env_chain() {
+  local env_name="${AERISUN_ENVIRONMENT:-development}"
+  source_env_file "${PROJECT_DIR}/.env"
+  source_env_file "${PROJECT_DIR}/.env.${env_name}"
+  source_env_file "${PROJECT_DIR}/.env.local"
+  source_env_file "${PROJECT_DIR}/.env.${env_name}.local"
+}
+
 log() {
   echo "$*"
 }
@@ -44,7 +52,7 @@ if [[ ! -f "${PROJECT_DIR}/.env.local" ]]; then
   exit 1
 fi
 
-source_env_file "${PROJECT_DIR}/.env.local"
+source_runtime_env_chain
 
 mkdir -p "${DEV_DIR}"
 
@@ -99,7 +107,7 @@ admin_pid=
 project_dir=${PROJECT_DIR}
 EOF
 
-backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}/api/v1/public/healthz"
+backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
 # 后端检查到位后才启动前台和管理后台
 wait_for_backend_ready "${backend_health_url}" "${backend_pid}"
 
