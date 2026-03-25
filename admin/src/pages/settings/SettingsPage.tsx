@@ -151,7 +151,7 @@ export default function SettingsPage() {
               ) : (
                 <div className="space-y-3">
                   {sessions.map((s: AdminSession) => (
-                    <div key={s.id} className="flex items-center justify-between rounded-lg border p-4">
+                    <div key={s.id} className="flex items-center justify-between rounded-lg admin-glass p-3">
                       <div className="flex items-center gap-3">
                         <Monitor className="h-5 w-5 text-muted-foreground" />
                         <div>

@@ -31,13 +31,13 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    { label: t("nav.posts"), value: stats.posts, icon: FileText, color: "text-blue-500" },
-    { label: t("nav.diary"), value: stats.diary_entries, icon: BookOpen, color: "text-green-500" },
-    { label: t("nav.thoughts"), value: stats.thoughts, icon: Lightbulb, color: "text-yellow-500" },
-    { label: t("nav.excerpts"), value: stats.excerpts, icon: Quote, color: "text-purple-500" },
-    { label: t("nav.moderation"), value: stats.comments, icon: MessageSquare, color: "text-orange-500" },
-    { label: t("nav.friends"), value: stats.friends, icon: Users, color: "text-pink-500" },
-    { label: t("nav.assets"), value: stats.assets, icon: Image, color: "text-cyan-500" },
+    { label: t("nav.posts"), value: stats.posts, icon: FileText, color: "text-blue-500", accent: "border-l-2 border-l-blue-400/60" },
+    { label: t("nav.diary"), value: stats.diary_entries, icon: BookOpen, color: "text-purple-500", accent: "border-l-2 border-l-purple-400/60" },
+    { label: t("nav.thoughts"), value: stats.thoughts, icon: Lightbulb, color: "text-green-500", accent: "border-l-2 border-l-green-400/60" },
+    { label: t("nav.excerpts"), value: stats.excerpts, icon: Quote, color: "text-amber-500", accent: "border-l-2 border-l-amber-400/60" },
+    { label: t("nav.moderation"), value: stats.comments, icon: MessageSquare, color: "text-pink-500", accent: "border-l-2 border-l-pink-400/60" },
+    { label: t("nav.friends"), value: stats.friends, icon: Users, color: "text-cyan-500", accent: "border-l-2 border-l-cyan-400/60" },
+    { label: t("nav.assets"), value: stats.assets, icon: Image, color: "text-indigo-500", accent: "border-l-2 border-l-indigo-400/60" },
   ];
 
   const formatDate = (dateStr: string) => {
@@ -57,7 +57,7 @@ export default function DashboardPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
         {statCards.map((card) => (
-          <Card key={card.label}>
+          <Card key={card.label} className={card.accent}>
             <CardContent className="pt-4 pb-4 px-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -86,7 +86,7 @@ export default function DashboardPage() {
                   return (
                     <div key={status} className="flex items-center gap-3">
                       <StatusBadge status={status} />
-                      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="flex-1 h-2 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-primary transition-all"
                           style={{ width: `${pct}%` }}
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                 {stats.recent_content.map((item: RecentContentItem) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                    className="flex items-center justify-between rounded-lg p-3 cursor-pointer hover:bg-white/30 dark:hover:bg-white/5 transition-colors"
                     onClick={() => navigate(`${CONTENT_TYPE_ROUTES[item.content_type] || "/posts"}/${item.id}`)}
                   >
                     <div className="flex items-center gap-3">
