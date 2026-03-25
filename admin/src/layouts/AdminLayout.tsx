@@ -116,8 +116,8 @@ export default function AdminLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-accent",
-                    isActive && "bg-accent text-accent-foreground font-medium",
+                    "flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/10 dark:hover:bg-white/5",
+                    isActive && "bg-white/15 dark:bg-white/8 text-accent-foreground font-medium",
                     collapsed && "justify-center px-2",
                   )
                 }
@@ -139,7 +139,7 @@ export default function AdminLayout() {
         ))}
       </nav>
 
-      <div className="border-t p-3">
+      <div className="border-t border-white/10 dark:border-white/5 p-3">
         <div
           className={cn(
             "flex items-center gap-2",
@@ -175,11 +175,11 @@ export default function AdminLayout() {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-card transition-transform duration-200 md:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col admin-glass-sidebar transition-transform duration-200 md:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b px-4">
+        <div className="flex h-14 items-center justify-between border-b border-white/10 dark:border-white/5 px-4">
           <span className="font-semibold text-lg">{t("nav.admin")}</span>
           <Button
             variant="ghost"
@@ -195,11 +195,11 @@ export default function AdminLayout() {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden md:flex md:flex-col border-r bg-card transition-all duration-200",
+          "hidden md:flex md:flex-col admin-glass-sidebar transition-all duration-200",
           collapsed ? "md:w-16" : "md:w-60",
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b px-4">
+        <div className="flex h-14 items-center justify-between border-b border-white/10 dark:border-white/5 px-4">
           {!collapsed && (
             <span className="font-semibold text-lg">{t("nav.admin")}</span>
           )}
@@ -219,8 +219,8 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="h-14 border-b flex items-center justify-between px-6">
+      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background/90 to-muted/30">
+        <div className="h-14 admin-glass-topbar flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

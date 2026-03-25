@@ -10,8 +10,8 @@ const variants: Record<string, string> = {
   default: "bg-primary text-primary-foreground hover:bg-primary/90",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-  outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-  ghost: "hover:bg-accent hover:text-accent-foreground",
+  outline: "admin-glass-input hover:bg-white/20 dark:hover:bg-white/8 hover:text-accent-foreground",
+  ghost: "hover:bg-white/15 dark:hover:bg-white/5 hover:text-accent-foreground",
 };
 
 const sizes: Record<string, string> = {
