@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 启动前的 Orval 同步流程：
 # 1. 先用后端当前环境导出最新 OpenAPI 规范。
-# 2. 再分别比较 admin / frontend 的生成输入有没有变化。
+# 2. 比较 @serino/api-client 的生成输入有没有变化。
 #    输入包括 openapi.json、orval 配置、package.json 和 mutator。
 # 3. 只有检测到变化时才运行 Orval 重新生成接口代码。
 # 4. 如果没有变化就直接跳过，避免每次 make dev 都全量重生成。
@@ -98,36 +98,16 @@ log "==> 正在导出 OpenAPI 规范..."
 run_export_openapi
 
 run_orval_if_needed \
-  "admin" \
-  "admin" \
-  "admin/src/api/generated/admin/admin.ts" \
-  "admin_codegen_fingerprint" \
-  "${PROJECT_DIR}/packages/api-client/openapi.json" \
-  "${PROJECT_DIR}/admin/orval.config.ts" \
-  "${PROJECT_DIR}/admin/package.json" \
-  "${PROJECT_DIR}/admin/src/api/mutator/custom-instance.ts"
-
-run_orval_if_needed \
-  "frontend" \
-  "frontend" \
-  "frontend/src/lib/api/generated/public/public.ts" \
-  "frontend_codegen_fingerprint" \
-  "${PROJECT_DIR}/packages/api-client/openapi.json" \
-  "${PROJECT_DIR}/frontend/orval.config.ts" \
-  "${PROJECT_DIR}/frontend/package.json" \
-  "${PROJECT_DIR}/frontend/src/lib/api/mutator/custom-fetch.ts"
-
-run_orval_if_needed \
-  "contract-schemas" \
+  "api-client" \
   "packages/api-client" \
-  "packages/api-client/src/generated/schemas.zod.ts" \
-  "contract_codegen_fingerprint" \
+  "packages/api-client/src/generated/admin/admin.ts" \
+  "api_client_codegen_fingerprint" \
   "${PROJECT_DIR}/packages/api-client/openapi.json" \
   "${PROJECT_DIR}/packages/api-client/orval.config.ts" \
-  "${PROJECT_DIR}/packages/api-client/package.json"
+  "${PROJECT_DIR}/packages/api-client/package.json" \
+  "${PROJECT_DIR}/packages/api-client/src/mutators/admin-instance.ts" \
+  "${PROJECT_DIR}/packages/api-client/src/mutators/public-fetch.ts"
 
 cat >"${STATE_FILE}" <<EOF
-admin_codegen_fingerprint=${admin_codegen_fingerprint}
-frontend_codegen_fingerprint=${frontend_codegen_fingerprint}
-contract_codegen_fingerprint=${contract_codegen_fingerprint}
+api_client_codegen_fingerprint=${api_client_codegen_fingerprint}
 EOF

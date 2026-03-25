@@ -56,6 +56,8 @@ jobs:
         run: uv run python scripts/export-openapi.py
         working-directory: backend
       - run: pnpm install --frozen-lockfile
+      - name: Generate API client
+        run: pnpm --filter @serino/api-client run generate:api
       - run: pnpm run lint
         working-directory: frontend
       - run: pnpm run build
@@ -83,6 +85,8 @@ jobs:
         run: uv run python scripts/export-openapi.py
         working-directory: backend
       - run: pnpm install --frozen-lockfile
+      - name: Generate API client
+        run: pnpm --filter @serino/api-client run generate:api
       - run: pnpm run lint
         working-directory: admin
       - run: pnpm run build

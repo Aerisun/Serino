@@ -104,9 +104,6 @@ importers:
       globals:
         specifier: ^15.15.0
         version: 15.15.0
-      orval:
-        specifier: ^8.6.2
-        version: 8.6.2(typescript@5.9.3)
       postcss:
         specifier: ^8.5.6
         version: 8.5.8
@@ -216,9 +213,6 @@ importers:
       globals:
         specifier: ^15.15.0
         version: 15.15.0
-      orval:
-        specifier: ^8.6.2
-        version: 8.6.2(typescript@5.9.3)
       postcss:
         specifier: ^8.5.6
         version: 8.5.8
@@ -2842,6 +2836,7 @@ packages:
   glob@11.1.0:
     resolution: {integrity: sha512-vuNwKSaKiqm7g0THUBu2x7ckSs3XJLXE+2ssL7/MfTGPLLcrJQ/4Uq1CjPTtO5cCIiRxqvN6Twy1qOwhL0Xjcw==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   globals@14.0.0:
