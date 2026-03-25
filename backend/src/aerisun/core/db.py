@@ -57,6 +57,14 @@ def get_session() -> Iterator[Session]:
         session.close()
 
 
+def dispose_engine() -> None:
+    """Dispose the SQLAlchemy engine and clear cached factories."""
+    engine = get_engine()
+    engine.dispose()
+    get_engine.cache_clear()
+    get_session_factory.cache_clear()
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=get_engine())
 

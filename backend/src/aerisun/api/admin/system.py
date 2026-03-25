@@ -95,8 +95,7 @@ def list_backups(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    backups = _list_backups(session)
-    return [BackupSnapshotRead.model_validate(s) for s in backups]
+    return _list_backups(session)
 
 
 @router.post("/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED, summary="创建备份快照")
@@ -104,8 +103,7 @@ def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    snapshot = _create_backup(session)
-    return BackupSnapshotRead.model_validate(snapshot)
+    return _create_backup(session)
 
 
 @router.post("/backups/{snapshot_id}/restore", response_model=BackupSnapshotRead, summary="从备份恢复")
@@ -114,8 +112,7 @@ def restore_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    snapshot = _restore_backup(session, snapshot_id)
-    return BackupSnapshotRead.model_validate(snapshot)
+    return _restore_backup(session, snapshot_id)
 
 
 @router.get("/dashboard/stats", response_model=EnhancedDashboardStats, summary="获取仪表盘统计")

@@ -13,6 +13,14 @@ from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops import repository as repo
 from aerisun.domain.ops.models import BackupSnapshot
+from aerisun.domain.ops.schemas import (
+    AuditLogRead,
+    BackupSnapshotRead,
+    EnhancedDashboardStats,
+    MonthlyCount,
+    RecentContentItem,
+    SystemInfo,
+)
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records
 
@@ -39,15 +47,15 @@ def list_audit_logs(
         date_from=date_from,
         date_to=date_to,
     )
-    return {"items": items, "total": total, "page": page, "page_size": page_size}
+    return {"items": [AuditLogRead.model_validate(i) for i in items], "total": total, "page": page, "page_size": page_size}
 
 
-def list_backups(session: Session) -> list[BackupSnapshot]:
+def list_backups(session: Session) -> list[BackupSnapshotRead]:
     """List all backup snapshots."""
-    return repo.find_all_backups(session)
+    return [BackupSnapshotRead.model_validate(s) for s in repo.find_all_backups(session)]
 
 
-def create_backup_snapshot(session: Session) -> BackupSnapshot:
+def create_backup_snapshot(session: Session) -> BackupSnapshotRead:
     """Create a manual backup snapshot. Commits."""
     settings = get_settings()
     snapshot = repo.create_backup(
@@ -59,10 +67,10 @@ def create_backup_snapshot(session: Session) -> BackupSnapshot:
     )
     session.commit()
     session.refresh(snapshot)
-    return snapshot
+    return BackupSnapshotRead.model_validate(snapshot)
 
 
-def restore_backup(session: Session, snapshot_id: str) -> BackupSnapshot:
+def restore_backup(session: Session, snapshot_id: str) -> BackupSnapshotRead:
     """Mark a backup as restoring. Raises LookupError if not found. Commits."""
     snapshot = repo.find_backup_by_id(session, snapshot_id)
     if snapshot is None:
@@ -70,10 +78,10 @@ def restore_backup(session: Session, snapshot_id: str) -> BackupSnapshot:
     snapshot.status = "restoring"
     session.commit()
     session.refresh(snapshot)
-    return snapshot
+    return BackupSnapshotRead.model_validate(snapshot)
 
 
-def get_dashboard_stats(session: Session) -> dict:
+def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
     """Aggregate dashboard statistics from all domains."""
     now = datetime.now(UTC)
     six_months_ago = now - timedelta(days=180)
@@ -110,8 +118,8 @@ def get_dashboard_stats(session: Session) -> dict:
             month_data[month_str][type_key] = count
 
     content_by_month = sorted(
-        [{"month": m, **counts} for m, counts in month_data.items()],
-        key=lambda x: x["month"],
+        [MonthlyCount(month=m, **counts) for m, counts in month_data.items()],
+        key=lambda x: x.month,
     )
 
     # Recent content (last 5 most recently updated across all types)
@@ -121,37 +129,37 @@ def get_dashboard_stats(session: Session) -> dict:
         (ThoughtEntry, "thought"),
         (ExcerptEntry, "excerpt"),
     ]
-    recent_items = []
+    recent_items: list[RecentContentItem] = []
     for model, type_key in recent_type_map:
         for row in repo.find_recent(session, model, limit=5):
             recent_items.append(
-                {
-                    "id": row.id,
-                    "title": row.title,
-                    "content_type": type_key,
-                    "status": row.status,
-                    "updated_at": row.updated_at,
-                }
+                RecentContentItem(
+                    id=row.id,
+                    title=row.title,
+                    content_type=type_key,
+                    status=row.status,
+                    updated_at=row.updated_at,
+                )
             )
-    recent_items.sort(key=lambda x: x["updated_at"], reverse=True)
+    recent_items.sort(key=lambda x: x.updated_at, reverse=True)
     recent_content = recent_items[:5]
 
-    return {
-        "posts": posts_count,
-        "diary_entries": diary_count,
-        "thoughts": thoughts_count,
-        "excerpts": excerpts_count,
-        "comments": count_waline_records(),
-        "guestbook_entries": count_waline_records(guestbook_only=True),
-        "friends": friends_count,
-        "assets": assets_count,
-        "posts_by_status": posts_by_status,
-        "content_by_month": content_by_month,
-        "recent_content": recent_content,
-    }
+    return EnhancedDashboardStats(
+        posts=posts_count,
+        diary_entries=diary_count,
+        thoughts=thoughts_count,
+        excerpts=excerpts_count,
+        comments=count_waline_records(),
+        guestbook_entries=count_waline_records(guestbook_only=True),
+        friends=friends_count,
+        assets=assets_count,
+        posts_by_status=posts_by_status,
+        content_by_month=content_by_month,
+        recent_content=recent_content,
+    )
 
 
-def get_system_info() -> dict:
+def get_system_info() -> SystemInfo:
     """Gather system runtime information."""
     settings = get_settings()
 
@@ -167,10 +175,10 @@ def get_system_info() -> dict:
             if f.is_file():
                 media_size += f.stat().st_size
 
-    return {
-        "python_version": sys.version.split()[0],
-        "db_size_bytes": db_size,
-        "media_dir_size_bytes": media_size,
-        "uptime_seconds": time.time() - _STARTUP_TIME,
-        "environment": settings.environment,
-    }
+    return SystemInfo(
+        python_version=sys.version.split()[0],
+        db_size_bytes=db_size,
+        media_dir_size_bytes=media_size,
+        uptime_seconds=time.time() - _STARTUP_TIME,
+        environment=settings.environment,
+    )

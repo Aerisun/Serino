@@ -22,6 +22,10 @@ from aerisun.domain.iam.schemas import (
 SESSION_TTL_HOURS = 24
 
 
+def get_admin_profile(admin: AdminUser) -> AdminUserRead:
+    return AdminUserRead.model_validate(admin)
+
+
 def authenticate_admin(session: Session, username: str, password: str) -> AdminUser:
     """Verify credentials and return the admin user. Raises LookupError or PermissionError."""
     user = repo.find_admin_by_username(session, username)

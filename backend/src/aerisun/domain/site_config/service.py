@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import json
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from aerisun.domain.site_config import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.site_config.schemas import (
+    CommunityConfigAdminRead,
     CommunityConfigRead,
     NavChildRead,
+    NavItemAdminRead,
     NavItemRead,
     PageCollectionRead,
     PageCopyRead,
@@ -17,6 +20,7 @@ from aerisun.domain.site_config.schemas import (
     ResumeRead,
     ResumeSkillGroupRead,
     SiteConfigRead,
+    SiteProfileAdminRead,
     SiteProfileRead,
     SocialLinkRead,
 )
@@ -144,8 +148,8 @@ load_resume_bundle = get_resume
 # ---------------------------------------------------------------------------
 
 
-def get_site_profile_admin(session: Session):
-    """Return the primary SiteProfile, raising ResourceNotFound if missing."""
+def _get_site_profile_orm(session: Session):
+    """Return the primary SiteProfile ORM object, raising ResourceNotFound if missing."""
     from aerisun.domain.site_config.models import SiteProfile
 
     profile = session.query(SiteProfile).order_by(SiteProfile.created_at.asc()).first()
@@ -154,18 +158,24 @@ def get_site_profile_admin(session: Session):
     return profile
 
 
-def update_site_profile_admin(session: Session, data: dict):
+def get_site_profile_admin(session: Session) -> SiteProfileAdminRead:
+    """Return the primary SiteProfile as a DTO."""
+    profile = _get_site_profile_orm(session)
+    return SiteProfileAdminRead.model_validate(profile)
+
+
+def update_site_profile_admin(session: Session, payload: BaseModel) -> SiteProfileAdminRead:
     """Update the primary SiteProfile fields."""
-    profile = get_site_profile_admin(session)
-    for key, value in data.items():
+    profile = _get_site_profile_orm(session)
+    for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(profile, key, value)
     session.commit()
     session.refresh(profile)
-    return profile
+    return SiteProfileAdminRead.model_validate(profile)
 
 
-def get_community_config_admin(session: Session):
-    """Return CommunityConfig, raising ResourceNotFound if missing."""
+def _get_community_config_orm(session: Session):
+    """Return the CommunityConfig ORM object, raising ResourceNotFound if missing."""
     from aerisun.domain.site_config.models import CommunityConfig
 
     config = session.query(CommunityConfig).first()
@@ -174,21 +184,27 @@ def get_community_config_admin(session: Session):
     return config
 
 
-def update_community_config_admin(session: Session, data: dict):
+def get_community_config_admin(session: Session) -> CommunityConfigAdminRead:
+    """Return CommunityConfig as a DTO."""
+    config = _get_community_config_orm(session)
+    return CommunityConfigAdminRead.model_validate(config)
+
+
+def update_community_config_admin(session: Session, payload: BaseModel) -> CommunityConfigAdminRead:
     """Update CommunityConfig fields."""
-    config = get_community_config_admin(session)
-    for key, value in data.items():
+    config = _get_community_config_orm(session)
+    for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(config, key, value)
     session.commit()
     session.refresh(config)
-    return config
+    return CommunityConfigAdminRead.model_validate(config)
 
 
-def reorder_nav_items_admin(session: Session, reorder_list: list) -> list:
+def reorder_nav_items_admin(session: Session, reorder_list: list) -> list[NavItemAdminRead]:
     """Reorder nav items by updating parent_id and order_index."""
     from aerisun.domain.site_config.models import NavItem
 
-    profile = get_site_profile_admin(session)
+    profile = _get_site_profile_orm(session)
     scoped = {
         item.id: item
         for item in session.query(NavItem)
@@ -203,23 +219,24 @@ def reorder_nav_items_admin(session: Session, reorder_list: list) -> list:
         nav_item.parent_id = reorder_item.parent_id
         nav_item.order_index = reorder_item.order_index
     session.commit()
-    return list(
+    items = list(
         session.query(NavItem)
         .filter(NavItem.site_profile_id == profile.id)
         .order_by(NavItem.order_index.asc())
         .all()
     )
+    return [NavItemAdminRead.model_validate(item) for item in items]
 
 
 def site_profile_scoped_query(session: Session, model):
     """Return a query scoped to the primary SiteProfile."""
-    profile = get_site_profile_admin(session)
+    profile = _get_site_profile_orm(session)
     return session.query(model).filter(model.site_profile_id == profile.id)
 
 
 def attach_site_profile_id(session: Session, data: dict) -> dict:
     """Ensure data dict includes the primary site_profile_id."""
-    profile = get_site_profile_admin(session)
+    profile = _get_site_profile_orm(session)
     if not data.get("site_profile_id"):
         data["site_profile_id"] = profile.id
     return data

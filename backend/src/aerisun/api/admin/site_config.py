@@ -51,7 +51,7 @@ def get_profile(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return SiteProfileAdminRead.model_validate(get_site_profile_admin(session))
+    return get_site_profile_admin(session)
 
 
 @router.put("/profile", response_model=SiteProfileAdminRead, summary="更新站点资料")
@@ -60,8 +60,7 @@ def update_profile(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    profile = update_site_profile_admin(session, payload.model_dump(exclude_unset=True))
-    return SiteProfileAdminRead.model_validate(profile)
+    return update_site_profile_admin(session, payload)
 
 
 @router.get("/community-config", response_model=CommunityConfigAdminRead, summary="获取社区评论配置")
@@ -69,7 +68,7 @@ def get_community_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return CommunityConfigAdminRead.model_validate(get_community_config_admin(session))
+    return get_community_config_admin(session)
 
 
 @router.put("/community-config", response_model=CommunityConfigAdminRead, summary="更新社区评论配置")
@@ -78,8 +77,7 @@ def update_community_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    config = update_community_config_admin(session, payload.model_dump(exclude_unset=True))
-    return CommunityConfigAdminRead.model_validate(config)
+    return update_community_config_admin(session, payload)
 
 
 social_links_router = build_crud_router(
@@ -134,8 +132,7 @@ def reorder_nav_items(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    nav_items = reorder_nav_items_admin(session, items)
-    return [NavItemAdminRead.model_validate(item) for item in nav_items]
+    return reorder_nav_items_admin(session, items)
 
 
 nav_items_router = build_crud_router(

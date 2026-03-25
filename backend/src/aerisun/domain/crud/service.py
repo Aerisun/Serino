@@ -59,11 +59,12 @@ def get_item(
 def create_item(
     session: Session,
     model: type[Base],
-    data: dict[str, Any],
+    payload: BaseModel,
     *,
     read_schema: type[BaseModel],
     prepare_data: Callable[[Session, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> BaseModel:
+    data = payload.model_dump()
     obj = repo.create_one(session, model, data, prepare_data=prepare_data)
     return read_schema.model_validate(obj)
 
@@ -72,11 +73,12 @@ def update_item(
     session: Session,
     model: type[Base],
     item_id: str,
-    data: dict[str, Any],
+    payload: BaseModel,
     *,
     read_schema: type[BaseModel],
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> BaseModel:
+    data = payload.model_dump(exclude_unset=True)
     obj = repo.find_by_id(session, model, item_id, base_query_factory=base_query_factory)
     if obj is None:
         raise ResourceNotFound("Not found")

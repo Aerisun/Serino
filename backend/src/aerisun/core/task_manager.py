@@ -44,5 +44,7 @@ class TaskManager:
     async def stop(self) -> None:
         for task in self._async_tasks:
             task.cancel()
+        if self._async_tasks:
+            await asyncio.gather(*self._async_tasks, return_exceptions=True)
         if self._scheduler is not None:
-            self._scheduler.shutdown(wait=False)
+            self._scheduler.shutdown(wait=True)

@@ -19,6 +19,7 @@ from aerisun.domain.iam.service import (
     change_admin_password,
     create_admin_session,
     destroy_admin_sessions,
+    get_admin_profile,
     list_admin_sessions,
     revoke_admin_session,
     update_admin_profile,
@@ -53,7 +54,7 @@ def logout(
 
 @router.get("/me", response_model=AdminUserRead, summary="获取当前管理员信息")
 def me(admin: AdminUser = Depends(get_current_admin)) -> AdminUserRead:
-    return AdminUserRead.model_validate(admin)
+    return get_admin_profile(admin)
 
 
 @router.put("/password", status_code=204, summary="修改密码")

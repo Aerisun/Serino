@@ -67,8 +67,7 @@ def list_friend_feeds(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    sources = list_friend_feeds_admin(session, friend_id)
-    return [FriendFeedSourceAdminRead.model_validate(s) for s in sources]
+    return list_friend_feeds_admin(session, friend_id)
 
 
 @router.post(
@@ -83,8 +82,7 @@ def create_friend_feed(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    obj = create_friend_feed_admin(session, friend_id, payload.model_dump())
-    return FriendFeedSourceAdminRead.model_validate(obj)
+    return create_friend_feed_admin(session, friend_id, payload)
 
 
 @router.put("/feeds/{feed_id}", response_model=FriendFeedSourceAdminRead, summary="更新订阅源")
@@ -94,8 +92,7 @@ def update_friend_feed(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    obj = update_friend_feed_admin(session, feed_id, payload.model_dump(exclude_unset=True))
-    return FriendFeedSourceAdminRead.model_validate(obj)
+    return update_friend_feed_admin(session, feed_id, payload)
 
 
 @router.delete("/feeds/{feed_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除订阅源")

@@ -65,7 +65,7 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         return crud_service.create_item(
-            session, model, payload.model_dump(),
+            session, model, payload,
             read_schema=read_schema, prepare_data=prepare_create_data,
         )
 
@@ -88,7 +88,7 @@ def build_crud_router(
         session: Session = Depends(get_session),
     ) -> Any:
         return crud_service.update_item(
-            session, model, item_id, payload.model_dump(exclude_unset=True),
+            session, model, item_id, payload,
             read_schema=read_schema, base_query_factory=base_query_factory,
         )
 
