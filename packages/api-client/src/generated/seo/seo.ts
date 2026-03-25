@@ -4,7 +4,32 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import { customFetch } from '../../mutators/public-fetch';
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
+import { customInstance } from '../../mutators/public-instance';
+import type { ErrorType } from '../../mutators/public-instance';
+
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
 
 /**
  * @summary Sitemap
@@ -31,7 +56,7 @@ export const getSitemapSitemapXmlGetUrl = () => {
 
 export const sitemapSitemapXmlGet = async ( options?: RequestInit): Promise<sitemapSitemapXmlGetResponse> => {
 
-  return customFetch<sitemapSitemapXmlGetResponse>(getSitemapSitemapXmlGetUrl(),
+  return customInstance<sitemapSitemapXmlGetResponse>(getSitemapSitemapXmlGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -39,6 +64,81 @@ export const sitemapSitemapXmlGet = async ( options?: RequestInit): Promise<site
 
   }
 );}
+
+
+
+
+
+export const getSitemapSitemapXmlGetQueryKey = () => {
+    return [
+    `/sitemap.xml`
+    ] as const;
+    }
+
+
+export const getSitemapSitemapXmlGetQueryOptions = <TData = Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSitemapSitemapXmlGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>> = ({ signal }) => sitemapSitemapXmlGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SitemapSitemapXmlGetQueryResult = NonNullable<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>>
+export type SitemapSitemapXmlGetQueryError = ErrorType<unknown>
+
+
+export function useSitemapSitemapXmlGet<TData = Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sitemapSitemapXmlGet>>,
+          TError,
+          Awaited<ReturnType<typeof sitemapSitemapXmlGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSitemapSitemapXmlGet<TData = Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sitemapSitemapXmlGet>>,
+          TError,
+          Awaited<ReturnType<typeof sitemapSitemapXmlGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSitemapSitemapXmlGet<TData = Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Sitemap
+ */
+
+export function useSitemapSitemapXmlGet<TData = Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sitemapSitemapXmlGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSitemapSitemapXmlGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 
 /**
@@ -66,7 +166,7 @@ export const getRobotsTxtRobotsTxtGetUrl = () => {
 
 export const robotsTxtRobotsTxtGet = async ( options?: RequestInit): Promise<robotsTxtRobotsTxtGetResponse> => {
 
-  return customFetch<robotsTxtRobotsTxtGetResponse>(getRobotsTxtRobotsTxtGetUrl(),
+  return customInstance<robotsTxtRobotsTxtGetResponse>(getRobotsTxtRobotsTxtGetUrl(),
   {
     ...options,
     method: 'GET'
@@ -74,5 +174,80 @@ export const robotsTxtRobotsTxtGet = async ( options?: RequestInit): Promise<rob
 
   }
 );}
+
+
+
+
+
+export const getRobotsTxtRobotsTxtGetQueryKey = () => {
+    return [
+    `/robots.txt`
+    ] as const;
+    }
+
+
+export const getRobotsTxtRobotsTxtGetQueryOptions = <TData = Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRobotsTxtRobotsTxtGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>> = ({ signal }) => robotsTxtRobotsTxtGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RobotsTxtRobotsTxtGetQueryResult = NonNullable<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>>
+export type RobotsTxtRobotsTxtGetQueryError = ErrorType<unknown>
+
+
+export function useRobotsTxtRobotsTxtGet<TData = Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>,
+          TError,
+          Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRobotsTxtRobotsTxtGet<TData = Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>,
+          TError,
+          Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRobotsTxtRobotsTxtGet<TData = Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Robots Txt
+ */
+
+export function useRobotsTxtRobotsTxtGet<TData = Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof robotsTxtRobotsTxtGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRobotsTxtRobotsTxtGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
 
 

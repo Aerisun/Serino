@@ -14,3 +14,5 @@ initPublicClient({ baseUrl: envApiBaseUrl });
 initSentry();
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+declare const __AERISUN_API_BASE_URL__: string | undefined;

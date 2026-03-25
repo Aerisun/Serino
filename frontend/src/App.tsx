@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@serino/theme";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -78,12 +79,24 @@ function AppContent() {
   );
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+    },
+  },
+});
+
 const App = () => (
-  <ThemeProvider>
-    <RuntimeConfigProvider>
-      <AppContent />
-    </RuntimeConfigProvider>
-  </ThemeProvider>
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <RuntimeConfigProvider>
+        <AppContent />
+      </RuntimeConfigProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
 );
 
 export default App;
