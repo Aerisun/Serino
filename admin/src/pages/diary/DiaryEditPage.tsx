@@ -12,6 +12,7 @@ import {
   useDeleteDiary,
   getListDiaryQueryKey,
   getGetDiaryQueryKey,
+  useSystemInfoApiV1AdminSystemInfoGet,
 } from "@serino/api-client/admin";
 import type { ContentCreate, ContentUpdate } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
@@ -140,8 +141,11 @@ export default function DiaryEditPage() {
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const previewWindowRef = useRef<Window | null>(null);
-  const frontendUrl =
-    import.meta.env.VITE_FRONTEND_URL || "http://localhost:8080";
+  const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
+  const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(
+    /\/+$/,
+    "",
+  );
   const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
   const storageKey = `aerisun-preview-${id ?? "new"}`;
   const previewPayload = useMemo(

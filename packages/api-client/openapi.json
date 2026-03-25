@@ -15408,6 +15408,10 @@
           "environment": {
             "type": "string",
             "title": "Environment"
+          },
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
           }
         },
         "type": "object",
@@ -15416,7 +15420,8 @@
           "db_size_bytes",
           "media_dir_size_bytes",
           "uptime_seconds",
-          "environment"
+          "environment",
+          "site_url"
         ],
         "title": "SystemInfo"
       },

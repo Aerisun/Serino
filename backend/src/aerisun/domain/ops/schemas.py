@@ -123,3 +123,4 @@ class SystemInfo(BaseModel):
     media_dir_size_bytes: int
     uptime_seconds: float
     environment: str
+    site_url: str

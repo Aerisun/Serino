@@ -3514,7 +3514,8 @@ export const SystemInfoApiV1AdminSystemInfoGetResponse = zod.object({
   "db_size_bytes": zod.number(),
   "media_dir_size_bytes": zod.number(),
   "uptime_seconds": zod.number(),
-  "environment": zod.string()
+  "environment": zod.string(),
+  "site_url": zod.string()
 })
 
 

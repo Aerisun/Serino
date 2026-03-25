@@ -185,4 +185,5 @@ def get_system_info() -> SystemInfo:
         media_dir_size_bytes=media_size,
         uptime_seconds=time.time() - _STARTUP_TIME,
         environment=settings.environment,
+        site_url=settings.site_url,
     )

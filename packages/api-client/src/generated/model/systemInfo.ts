@@ -12,4 +12,5 @@ export interface SystemInfo {
   media_dir_size_bytes: number;
   uptime_seconds: number;
   environment: string;
+  site_url: string;
 }
