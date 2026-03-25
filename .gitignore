@@ -31,7 +31,10 @@
 
 # vibe coding
 /temp
-/openspec
+# OpenSpec skill data (auto-generated)
+/openspec/*
+!/openspec/openapi.json
+!/openspec/fixtures/
 /.claude
 /.codex
 /.playwright-cli
