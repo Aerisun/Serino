@@ -22,6 +22,7 @@ def list_items(
     page_size: int,
     read_schema: type[BaseModel],
     status_filter: str | None = None,
+    visibility_filter: str | None = None,
     tag_filter: str | None = None,
     search: str | None = None,
     sort_by: str = "created_at",
@@ -34,6 +35,7 @@ def list_items(
         page=page,
         page_size=page_size,
         status_filter=status_filter,
+        visibility_filter=visibility_filter,
         tag_filter=tag_filter,
         search=search,
         sort_by=sort_by,
@@ -83,11 +85,14 @@ def update_item(
     *,
     read_schema: type[BaseModel],
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
+    prepare_data: Callable[[Session, Any, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> BaseModel:
     data = payload.model_dump(exclude_unset=True)
     obj = repo.find_by_id(session, model, item_id, base_query_factory=base_query_factory)
     if obj is None:
         raise ResourceNotFound("Not found")
+    if prepare_data is not None:
+        data = prepare_data(session, obj, data)
     obj = repo.update_one(session, obj, data)
     return read_schema.model_validate(obj)
 
@@ -126,5 +131,18 @@ def bulk_update_status_items(
 ) -> dict[str, int]:
     if not hasattr(model, "status"):
         raise ValidationError("Model does not support status")
-    affected = repo.bulk_update_status(session, model, ids, status, base_query_factory=base_query_factory)
+    visibility: str | None = None
+    if hasattr(model, "visibility"):
+        if status == "archived":
+            visibility = "private"
+        elif status in {"draft", "published"}:
+            visibility = "public"
+    affected = repo.bulk_update_status(
+        session,
+        model,
+        ids,
+        status,
+        visibility=visibility,
+        base_query_factory=base_query_factory,
+    )
     return {"affected": affected}

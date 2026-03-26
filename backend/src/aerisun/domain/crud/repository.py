@@ -38,6 +38,7 @@ def find_paginated(
     page: int,
     page_size: int,
     status_filter: str | None = None,
+    visibility_filter: str | None = None,
     tag_filter: str | None = None,
     search: str | None = None,
     sort_by: str = "created_at",
@@ -48,6 +49,8 @@ def find_paginated(
 
     if status_filter and hasattr(model, "status"):
         q = q.filter(model.status == status_filter)
+    if visibility_filter and hasattr(model, "visibility"):
+        q = q.filter(model.visibility == visibility_filter)
     if tag_filter and hasattr(model, "tags"):
         q = q.filter(model.tags.contains(f'"{tag_filter}"'))
     if search and hasattr(model, "title"):
@@ -137,12 +140,16 @@ def bulk_update_status(
     ids: list[str],
     status: str,
     *,
+    visibility: str | None = None,
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> int:
+    values: dict[str, Any] = {"status": status}
+    if visibility is not None and hasattr(model, "visibility"):
+        values["visibility"] = visibility
     affected = (
         _scoped_query(session, model, base_query_factory)
         .filter(model.id.in_(ids))
-        .update({"status": status}, synchronize_session="fetch")
+        .update(values, synchronize_session="fetch")
     )
     session.commit()
     return affected

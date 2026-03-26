@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from hashlib import sha256
+from urllib.parse import quote, urljoin
 
+import httpx
 from sqlalchemy.orm import Session
 
+from aerisun.core.settings import get_settings
 from aerisun.domain.engagement import repository as repo
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
@@ -20,6 +24,8 @@ from aerisun.domain.engagement.schemas import (
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
+from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.service import get_admin_comment_identity, is_site_user_admin
 from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.waline.service import (
     build_comment_path,
@@ -48,15 +54,128 @@ DEFAULT_COMMENT_AVATAR_PRESETS = [
     {"key": "plum", "label": "Plum", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Plum"},
     {"key": "linen", "label": "Linen", "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Linen"},
 ]
+AVATAR_PICKER_COUNT = 16
+AVATAR_POOL_SIZE = 1000
+DICEBEAR_NOTIONISTS_BASE_URL = "https://api.dicebear.com/9.x/notionists/svg"
+
+
+@dataclass(slots=True)
+class AuthenticatedCommentProfile:
+    nick: str
+    mail: str
+    link: str | None
+    avatar_key: str
+    avatar_url: str
 
 
 def _avatar_for_name(name: str) -> str:
-    return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
+    return _avatar_url_for_seed(_avatar_seed(_normalize_avatar_identity(name), 0))
 
 
-def _is_author_name(name: str) -> bool:
-    normalized = name.strip().lower()
-    return normalized in {"博主", "felix", "aerisun"}
+def _normalize_avatar_identity(value: str | None) -> str:
+    normalized = " ".join((value or "").strip().split()).lower()
+    return normalized or "visitor"
+
+
+def _avatar_hash(value: str) -> int:
+    hash_value = 0x811C9DC5
+    for character in value:
+        hash_value ^= ord(character)
+        hash_value = (hash_value * 0x01000193) & 0xFFFFFFFF
+    return hash_value
+
+
+def _seeded_random(seed_value: str) -> int:
+    state = _avatar_hash(seed_value) or 1
+    return state
+
+
+def _next_seeded_random(state: int) -> tuple[int, float]:
+    next_state = (state * 1664525 + 1013904223) & 0xFFFFFFFF
+    return next_state, next_state / 0x100000000
+
+
+def _sample_avatar_indexes(identity: str, count: int = AVATAR_PICKER_COUNT) -> list[int]:
+    normalized_identity = _normalize_avatar_identity(identity)
+    pool = list(range(AVATAR_POOL_SIZE))
+    state = _seeded_random(normalized_identity)
+
+    for index in range(len(pool) - 1, 0, -1):
+        state, random_value = _next_seeded_random(state)
+        target = int(random_value * (index + 1))
+        pool[index], pool[target] = pool[target], pool[index]
+
+    return pool[:count]
+
+
+def _avatar_seed(identity: str, index: int) -> str:
+    return f"{_avatar_hash(f'{identity}:{index}'):08x}"
+
+
+def _avatar_url_for_seed(seed: str) -> str:
+    return f"{DICEBEAR_NOTIONISTS_BASE_URL}?seed={quote(seed)}"
+
+
+def _build_avatar_candidates(identity: str, count: int = AVATAR_PICKER_COUNT) -> list[dict[str, str]]:
+    candidates: list[dict[str, str]] = []
+    for pool_index in _sample_avatar_indexes(identity, count):
+        seed = _avatar_seed(_normalize_avatar_identity(identity), pool_index)
+        candidates.append(
+            {
+                "key": seed,
+                "label": f"Notionists {pool_index:03d}",
+                "avatar_url": _avatar_url_for_seed(seed),
+            }
+        )
+    return candidates
+
+
+def _default_avatar_candidate(identity: str) -> tuple[str, str]:
+    candidates = _build_avatar_candidates(identity)
+    if not candidates:
+        return _auto_avatar(identity)
+
+    candidate = candidates[0]
+    return candidate["key"], candidate["avatar_url"]
+
+
+def _is_author_name(session: Session, name: str) -> bool:
+    normalized = _clean_display_name(name).lower()
+    if not normalized:
+        return False
+    site = site_config_repo.find_site_profile(session)
+    candidates = {
+        _clean_display_name(site.title if site else "").lower(),
+        _clean_display_name(site.author if site else "").lower(),
+        _clean_display_name(site.name if site else "").lower(),
+        "博主",
+        "felix",
+        "aerisun",
+    }
+    return normalized in {item for item in candidates if item}
+
+
+def _build_authenticated_site_user_profile(
+    session: Session,
+    current_user: SiteUser,
+) -> AuthenticatedCommentProfile:
+    if is_site_user_admin(session, current_user):
+        nick, avatar_key, avatar_url = get_admin_comment_identity(session)
+        return AuthenticatedCommentProfile(
+            nick=nick,
+            mail=current_user.email,
+            link=None,
+            avatar_key=avatar_key,
+            avatar_url=avatar_url,
+        )
+
+    return AuthenticatedCommentProfile(
+        nick=current_user.display_name,
+        mail=current_user.email,
+        link=None,
+        avatar_key=f"site-user-{current_user.id}",
+        avatar_url=current_user.avatar_url,
+    )
 
 
 def _clean_display_name(name: str | None) -> str:
@@ -70,6 +189,71 @@ def _name_key(name: str | None) -> str:
 
 def _email_key(email: str | None) -> str:
     return normalize_comment_mail(email)
+
+
+def _resolve_waline_server_url(session: Session) -> str:
+    config = site_config_repo.find_community_config(session)
+    raw_server_url = (config.server_url if config and config.server_url else "").strip()
+    if not raw_server_url:
+        raw_server_url = get_settings().waline_server_url.strip()
+
+    if raw_server_url.startswith(("http://", "https://")):
+        return raw_server_url.rstrip("/")
+
+    site_url = get_settings().site_url.strip().rstrip("/")
+    return urljoin(f"{site_url}/", raw_server_url.lstrip("/")).rstrip("/")
+
+
+def _load_authenticated_profile(session: Session, token: str) -> AuthenticatedCommentProfile:
+    clean_token = token.strip()
+    if not clean_token:
+        raise DomainValidationError("登录状态已失效，请重新登录。")
+
+    endpoint = f"{_resolve_waline_server_url(session)}/api/token"
+    try:
+        response = httpx.get(
+            endpoint,
+            headers={"Authorization": f"Bearer {clean_token}"},
+            params={"lang": "zh-CN"},
+            timeout=5.0,
+            follow_redirects=True,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise DomainValidationError("登录状态校验失败，请重新登录。") from exc
+
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise DomainValidationError("登录状态校验失败，请重新登录。") from exc
+
+    if not isinstance(payload, dict):
+        raise DomainValidationError("登录状态校验失败，请重新登录。")
+
+    if payload.get("errno") not in (None, 0):
+        raise DomainValidationError(str(payload.get("errmsg") or "登录状态校验失败，请重新登录。"))
+
+    raw_profile = payload.get("data")
+    if not isinstance(raw_profile, dict) or not raw_profile.get("objectId"):
+        raise DomainValidationError("登录状态已失效，请重新登录。")
+
+    display_name = _clean_display_name(str(raw_profile.get("display_name") or raw_profile.get("nick") or "访客"))
+    object_id = str(raw_profile.get("objectId") or "").strip()
+    mail = _email_key(raw_profile.get("email"))
+    if not mail:
+                digest = sha256(clean_token.encode("utf-8")).hexdigest()[:12]
+                mail = f"oauth-{object_id or digest}@waline.local"
+
+    avatar_url = str(raw_profile.get("avatar") or "").strip() or _avatar_for_name(display_name)
+    avatar_key = f"oauth-{object_id}" if object_id else f"oauth-{sha256(clean_token.encode('utf-8')).hexdigest()[:12]}"
+
+    return AuthenticatedCommentProfile(
+        nick=display_name,
+        mail=mail,
+        link=str(raw_profile.get("url") or "").strip() or None,
+        avatar_key=avatar_key,
+        avatar_url=avatar_url,
+    )
 
 
 def _load_avatar_presets(session: Session) -> list[dict[str, str]]:
@@ -101,7 +285,7 @@ def _auto_avatar(seed: str) -> tuple[str, str]:
     digest = sha256(seed.encode("utf-8")).hexdigest()[:12]
     return (
         f"auto-{digest}",
-        f"https://api.dicebear.com/9.x/notionists/svg?seed={digest}",
+        _avatar_url_for_seed(digest),
     )
 
 
@@ -124,48 +308,48 @@ def _pick_available_avatar(
 
 
 def _ensure_comment_avatar_assignments(session: Session, url: str) -> list:
-    presets = _load_avatar_presets(session)
-    valid_preset_keys = {preset["key"] for preset in presets}
     records = list_records_for_url(url=url, status=None, order="asc")
     if not records:
         return records
 
     assignments: dict[int, tuple[str, str]] = {}
-    avatar_by_name: dict[str, tuple[str, str]] = {}
+    avatar_by_identity: dict[str, tuple[str, str]] = {}
     occupied_keys: set[str] = set()
 
     for record in records:
-        name_key = _name_key(record.nick)
+        identity_key = _email_key(record.mail) or _name_key(record.nick)
         if record.avatar_key and record.avatar_url:
-            avatar_by_name.setdefault(name_key, (record.avatar_key, record.avatar_url))
+            avatar_by_identity.setdefault(identity_key, (record.avatar_key, record.avatar_url))
             occupied_keys.add(record.avatar_key)
             continue
 
         if record.avatar_url and not record.avatar_key:
             synthetic_key = f"url-{sha256(record.avatar_url.encode('utf-8')).hexdigest()[:12]}"
-            avatar_by_name.setdefault(name_key, (synthetic_key, record.avatar_url))
+            avatar_by_identity.setdefault(identity_key, (synthetic_key, record.avatar_url))
             occupied_keys.add(synthetic_key)
             assignments[record.id] = (synthetic_key, record.avatar_url)
             record.avatar_key = synthetic_key
             continue
 
-        if record.avatar_key and record.avatar_key not in valid_preset_keys and record.avatar_url:
-            avatar_by_name.setdefault(name_key, (record.avatar_key, record.avatar_url))
+        if record.avatar_key and record.avatar_url:
+            avatar_by_identity.setdefault(identity_key, (record.avatar_key, record.avatar_url))
             occupied_keys.add(record.avatar_key)
 
     for record in records:
         if record.avatar_key and record.avatar_url:
             continue
 
-        name_key = _name_key(record.nick)
-        chosen = avatar_by_name.get(name_key)
+        identity_key = _email_key(record.mail) or _name_key(record.nick)
+        chosen = avatar_by_identity.get(identity_key)
         if chosen is None:
-            chosen = _pick_available_avatar(
-                presets,
-                occupied_keys,
-                f"{url}:{name_key}:{_email_key(record.mail)}",
-            )
-            avatar_by_name[name_key] = chosen
+            chosen = _default_avatar_candidate(identity_key)
+            if chosen[0] in occupied_keys:
+                for candidate in _build_avatar_candidates(identity_key):
+                    candidate_pair = (candidate["key"], candidate["avatar_url"])
+                    if candidate_pair[0] not in occupied_keys:
+                        chosen = candidate_pair
+                        break
+            avatar_by_identity[identity_key] = chosen
             occupied_keys.add(chosen[0])
 
         assignments[record.id] = chosen
@@ -191,6 +375,23 @@ def _validate_identity(name: str, email: str | None) -> tuple[str, str]:
     return author_name, author_email
 
 
+def _ensure_anonymous_comments_allowed(session: Session, *, surface: str, authenticated: bool = False) -> None:
+    config = site_config_repo.find_community_config(session)
+    if authenticated or config is None or config.anonymous_enabled:
+        return
+
+    if surface == "guestbook":
+        raise DomainValidationError("当前站点已关闭匿名留言，请先登录后再留言。")
+
+    raise DomainValidationError("当前站点已关闭匿名评论，请先登录后再发表评论。")
+
+
+def ensure_comment_image_upload_allowed(session: Session) -> None:
+    config = site_config_repo.find_community_config(session)
+    if config is not None and not config.image_uploader:
+        raise DomainValidationError("当前站点已关闭评论图片上传。")
+
+
 def _resolve_avatar_selection(
     session: Session,
     *,
@@ -200,19 +401,27 @@ def _resolve_avatar_selection(
     requested_avatar_key: str | None,
 ) -> tuple[str, str]:
     records = _ensure_comment_avatar_assignments(session, url)
-    author_name_key = _name_key(author_name)
+    author_identity_key = _email_key(author_email) or _name_key(author_name)
 
     for record in records:
-        if _name_key(record.nick) == author_name_key and record.avatar_key and record.avatar_url:
+        record_identity_key = _email_key(record.mail) or _name_key(record.nick)
+        if record_identity_key == author_identity_key and record.avatar_key and record.avatar_url:
             return record.avatar_key, record.avatar_url
 
     presets = _load_avatar_presets(session)
     preset_by_key = {preset["key"]: preset for preset in presets}
+    candidate_by_key = {candidate["key"]: candidate for candidate in _build_avatar_candidates(author_identity_key)}
     occupied_by_others = {
-        record.avatar_key for record in records if record.avatar_key and _name_key(record.nick) != author_name_key
+        record.avatar_key
+        for record in records
+        if record.avatar_key and (_email_key(record.mail) or _name_key(record.nick)) != author_identity_key
     }
 
     if requested_avatar_key:
+        candidate = candidate_by_key.get(requested_avatar_key)
+        if candidate is not None:
+            return candidate["key"], candidate["avatar_url"]
+
         preset = preset_by_key.get(requested_avatar_key)
         if preset is None:
             raise DomainValidationError("所选头像不存在，请重新选择。")
@@ -220,11 +429,7 @@ def _resolve_avatar_selection(
             raise StateConflict("这个头像已经被当前页面里的其他昵称占用，请换一个。")
         return preset["key"], preset["avatar_url"]
 
-    return _pick_available_avatar(
-        presets,
-        occupied_by_others,
-        f"{url}:{author_name_key}:{author_email}",
-    )
+    return _default_avatar_candidate(author_identity_key)
 
 
 def list_public_guestbook_entries(session: Session, limit: int = 50) -> GuestbookCollectionRead:
@@ -247,22 +452,44 @@ def list_public_guestbook_entries(session: Session, limit: int = 50) -> Guestboo
     )
 
 
-def create_public_guestbook_entry(session: Session, payload: GuestbookCreate) -> GuestbookCreateResponse:
+def create_public_guestbook_entry(
+    session: Session,
+    payload: GuestbookCreate,
+    *,
+    current_user: SiteUser | None = None,
+) -> GuestbookCreateResponse:
     if not payload.body.strip():
         raise DomainValidationError("留言内容不能为空。")
-    author_name, author_email = _validate_identity(payload.name, payload.email)
-    avatar_key, avatar_url = _resolve_avatar_selection(
-        session,
-        url=build_comment_path("guestbook", "guestbook"),
-        author_name=author_name,
-        author_email=author_email,
-        requested_avatar_key=getattr(payload, "avatar_key", None),
-    )
+
+    auth_profile = None
+    if current_user is not None:
+        auth_profile = _build_authenticated_site_user_profile(session, current_user)
+    elif payload.auth_token:
+        auth_profile = _load_authenticated_profile(session, payload.auth_token)
+    _ensure_anonymous_comments_allowed(session, surface="guestbook", authenticated=auth_profile is not None)
+
+    if auth_profile is not None:
+        author_name = auth_profile.nick
+        author_email = auth_profile.mail
+        website = auth_profile.link
+        avatar_key = auth_profile.avatar_key
+        avatar_url = auth_profile.avatar_url
+    else:
+        author_name, author_email = _validate_identity(payload.name, payload.email)
+        website = payload.website.strip() if payload.website else None
+        avatar_key, avatar_url = _resolve_avatar_selection(
+            session,
+            url=build_comment_path("guestbook", "guestbook"),
+            author_name=author_name,
+            author_email=author_email,
+            requested_avatar_key=getattr(payload, "avatar_key", None),
+        )
+
     entry = create_waline_record(
         comment=payload.body.strip(),
         nick=author_name,
         mail=author_email,
-        link=payload.website.strip() if payload.website else None,
+        link=website,
         status="pending",
         url=build_comment_path("guestbook", "guestbook"),
         avatar_key=avatar_key,
@@ -283,7 +510,7 @@ def create_public_guestbook_entry(session: Session, payload: GuestbookCreate) ->
     )
 
 
-def _build_waline_comment_tree(items) -> list[CommentRead]:
+def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
     by_parent: dict[int | None, list] = defaultdict(list)
     for item in items:
         by_parent[item.pid].append(item)
@@ -302,7 +529,7 @@ def _build_waline_comment_tree(items) -> list[CommentRead]:
             avatar_url=avatar,
             like_count=node.like,
             liked=False,
-            is_author=_is_author_name(author_name),
+            is_author=_is_author_name(session, author_name),
             replies=[convert(child) for child in by_parent.get(node.id, [])],
         )
 
@@ -321,7 +548,7 @@ def list_public_comments(session: Session, content_type: str, content_slug: str)
         status="approved",
         order="asc",
     )
-    return CommentCollectionRead(items=_build_waline_comment_tree(items))
+    return CommentCollectionRead(items=_build_waline_comment_tree(session, items))
 
 
 def create_public_comment(
@@ -329,13 +556,36 @@ def create_public_comment(
     content_type: str,
     content_slug: str,
     payload: CommentCreate,
+    *,
+    current_user: SiteUser | None = None,
 ) -> CommentCreateResponse:
     if not repo.content_exists(session, content_type, content_slug):
         raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
     if not payload.body.strip():
         raise DomainValidationError("评论内容不能为空。")
 
-    author_name, author_email = _validate_identity(payload.author_name, payload.author_email)
+    auth_profile = None
+    if current_user is not None:
+        auth_profile = _build_authenticated_site_user_profile(session, current_user)
+    elif payload.auth_token:
+        auth_profile = _load_authenticated_profile(session, payload.auth_token)
+    _ensure_anonymous_comments_allowed(session, surface="comment", authenticated=auth_profile is not None)
+
+    if auth_profile is not None:
+        author_name = auth_profile.nick
+        author_email = auth_profile.mail
+        avatar_key = auth_profile.avatar_key
+        avatar_url = auth_profile.avatar_url
+    else:
+        author_name, author_email = _validate_identity(payload.author_name, payload.author_email)
+        avatar_key, avatar_url = _resolve_avatar_selection(
+            session,
+            url=build_comment_path(content_type, content_slug),
+            author_name=author_name,
+            author_email=author_email,
+            requested_avatar_key=getattr(payload, "avatar_key", None),
+        )
+
     url = build_comment_path(content_type, content_slug)
     parent_id: int | None = None
     if payload.parent_id:
@@ -348,13 +598,6 @@ def create_public_comment(
         if parent is None or parent.url != url:
             raise ResourceNotFound(f"comment parent '{payload.parent_id}' was not found")
 
-    avatar_key, avatar_url = _resolve_avatar_selection(
-        session,
-        url=url,
-        author_name=author_name,
-        author_email=author_email,
-        requested_avatar_key=getattr(payload, "avatar_key", None),
-    )
     item = create_waline_record(
         comment=payload.body.strip(),
         nick=author_name,
@@ -378,7 +621,7 @@ def create_public_comment(
             avatar_url=item.avatar_url or _avatar_for_name(item.nick or "访客"),
             like_count=item.like,
             liked=False,
-            is_author=_is_author_name(item.nick or "访客"),
+            is_author=_is_author_name(session, item.nick or "访客"),
             replies=[],
         ),
         accepted=True,

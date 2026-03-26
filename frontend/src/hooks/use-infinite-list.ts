@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useCallback } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { clampPageSize } from "@/lib/page-size";
 
 interface UseInfiniteListOptions<TRemote, TLocal> {
   queryKey: readonly unknown[];
@@ -26,6 +27,7 @@ export function useInfiniteList<TRemote, TLocal>(
   options: UseInfiniteListOptions<TRemote, TLocal>,
 ): UseInfiniteListResult<TLocal> {
   const { queryKey, queryFn, pageSize, mapItem, enabled = true } = options;
+  const safePageSize = clampPageSize(pageSize, 20);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
 
@@ -40,7 +42,7 @@ export function useInfiniteList<TRemote, TLocal>(
   } = useInfiniteQuery({
     queryKey,
     queryFn: ({ pageParam = 0 }) =>
-      queryFn({ limit: pageSize, offset: pageParam as number }),
+      queryFn({ limit: safePageSize, offset: pageParam as number }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.has_more) return undefined;

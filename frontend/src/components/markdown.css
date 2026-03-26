@@ -88,3 +88,105 @@
   margin-right: 0.5em;
   accent-color: rgb(var(--shiro-accent-rgb));
 }
+
+.resume-markdown.prose {
+  color: rgb(var(--shiro-foreground-rgb) / 0.78);
+}
+
+.resume-markdown.prose h2 {
+  margin-top: 2.4rem;
+  margin-bottom: 1rem;
+  border-left: 0;
+  padding-left: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(var(--shiro-foreground-rgb) / 0.42);
+}
+
+.resume-markdown.prose h3 {
+  margin-top: 1.4rem;
+  margin-bottom: 0.35rem;
+  font-size: 1.05rem;
+  color: rgb(var(--shiro-foreground-rgb) / 0.88);
+}
+
+.resume-markdown.prose p,
+.resume-markdown.prose li {
+  line-height: 1.9;
+}
+
+.resume-markdown.prose ul {
+  padding-left: 1.1rem;
+}
+
+.editorial-markdown.prose strong {
+  color: rgb(var(--shiro-foreground-rgb) / 0.84);
+}
+
+.timeline-markdown.prose h2 {
+  position: relative;
+}
+
+.timeline-markdown.prose h2::before {
+  content: "";
+  position: absolute;
+  left: -1.9rem;
+  top: 0.45rem;
+  height: 0.6rem;
+  width: 0.6rem;
+  border-radius: 999px;
+  background: rgb(var(--shiro-accent-rgb) / 0.55);
+  box-shadow: 0 0 0 6px rgb(var(--shiro-accent-rgb) / 0.08);
+}
+
+.compact-markdown.prose {
+  font-size: 0.92rem;
+}
+
+.compact-markdown.prose h2 {
+  margin-top: 1.9rem;
+  border-top: 1px solid rgb(var(--shiro-border-rgb) / 0.2);
+  padding-top: 0.9rem;
+}
+
+.single-resume-markdown.prose {
+  font-size: 0.98rem;
+  color: rgba(12, 16, 22, 0.78);
+  font-family: "Barlow", sans-serif;
+}
+
+.single-resume-markdown.prose h2 {
+  margin-top: 2.5rem;
+  margin-bottom: 0.95rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 1rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.4);
+  font-family: "Barlow", sans-serif;
+}
+
+.single-resume-markdown.prose h3 {
+  margin-top: 1.35rem;
+  margin-bottom: 0.25rem;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.88);
+  font-family: "Instrument Serif", serif;
+}
+
+.single-resume-markdown.prose p,
+.single-resume-markdown.prose li {
+  line-height: 1.95;
+}
+
+.single-resume-markdown.prose ul {
+  padding-left: 1.1rem;
+}
+
+.single-resume-markdown.prose strong {
+  color: rgba(15, 23, 42, 0.82);
+}

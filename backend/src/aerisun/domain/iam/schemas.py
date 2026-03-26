@@ -21,6 +21,15 @@ class LoginResponse(ModelBase):
     expires_at: datetime
 
 
+class AdminLoginOptionsRead(ModelBase):
+    oauth_providers: list[str] = Field(default_factory=list)
+    email_enabled: bool = False
+
+
+class AdminEmailLoginRequest(BaseModel):
+    email: str
+
+
 class AdminUserRead(ModelBase):
     id: str
     username: str

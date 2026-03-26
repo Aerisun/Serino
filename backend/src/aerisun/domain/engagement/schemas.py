@@ -24,6 +24,7 @@ class GuestbookCreate(ModelBase):
     website: str | None = Field(default=None, description="Guest personal website URL")
     body: str = Field(description="Guestbook message body")
     avatar_key: str | None = Field(default=None, description="Selected guest avatar preset key")
+    auth_token: str | None = Field(default=None, description="Waline login token for authenticated posting")
 
 
 class GuestbookCollectionRead(ModelBase):
@@ -60,6 +61,7 @@ class CommentCreate(ModelBase):
     body: str = Field(description="Comment body text")
     parent_id: str | None = Field(default=None, description="Parent comment ID for replies")
     avatar_key: str | None = Field(default=None, description="Selected comment avatar preset key")
+    auth_token: str | None = Field(default=None, description="Waline login token for authenticated posting")
 
 
 class CommentCreateResponse(ModelBase):

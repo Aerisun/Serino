@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from aerisun.core.schemas import ModelBase
 
 # Re-export domain schemas for backward compatibility
 from aerisun.domain.content.schemas import (  # noqa: F401
-    CategoryInfo,
     ContentAdminRead,
     ContentCreate,
     ContentUpdate,
@@ -93,7 +94,7 @@ class BulkDeleteRequest(BaseModel):
 
 class BulkStatusRequest(BaseModel):
     ids: list[str] = Field(description="List of item IDs to update")
-    status: str = Field(description="New status value to set")
+    status: Literal["draft", "published", "archived"] = Field(description="New status value to set")
 
 
 class BulkActionResponse(BaseModel):

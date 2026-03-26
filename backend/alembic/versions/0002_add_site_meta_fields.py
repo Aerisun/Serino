@@ -24,7 +24,7 @@ def upgrade() -> None:
         if "author" not in site_profile_columns:
             batch_op.add_column(sa.Column("author", sa.String(120), nullable=False, server_default=""))
         if "og_image" not in site_profile_columns:
-            batch_op.add_column(sa.Column("og_image", sa.String(500), nullable=False, server_default="/images/hero_bg.jpeg"))
+            batch_op.add_column(sa.Column("og_image", sa.String(500), nullable=False, server_default=""))
         if "meta_description" not in site_profile_columns:
             batch_op.add_column(sa.Column("meta_description", sa.Text(), nullable=False, server_default=""))
         if "copyright" not in site_profile_columns:

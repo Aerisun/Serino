@@ -4,7 +4,7 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from aerisun.core.settings import get_settings
@@ -38,6 +38,7 @@ class WalineCommentRecord:
 
 @dataclass(slots=True)
 class WalineCounterStats:
+    url: str = ""
     pageview_count: int = 0
     reaction_count: int = 0
 
@@ -502,11 +503,97 @@ def get_counter_stats_by_urls(
         ).fetchall()
         return {
             str(row["url"]): WalineCounterStats(
+                url=str(row["url"]),
                 pageview_count=int(row["pageview_count"] or 0),
                 reaction_count=int(row["reaction_count"] or 0),
             )
             for row in rows
         }
+
+
+def list_counter_stats(
+    *,
+    db_path: Path | None = None,
+    exclude_guestbook: bool = False,
+) -> list[WalineCounterStats]:
+    reaction_sum = " + ".join(f"COALESCE({column}, 0)" for column in WALINE_REACTION_COLUMNS)
+    query = f"""
+        SELECT
+            url,
+            SUM(COALESCE(time, 0)) AS pageview_count,
+            SUM({reaction_sum}) AS reaction_count
+        FROM wl_counter
+    """
+    params: list[object] = []
+    if exclude_guestbook:
+        query += " WHERE url != ?"
+        params.append(WALINE_GUESTBOOK_PATH)
+    query += " GROUP BY url ORDER BY pageview_count DESC, url ASC"
+
+    with connect_waline_db(db_path) as connection:
+        rows = connection.execute(query, params).fetchall()
+        return [
+            WalineCounterStats(
+                url=str(row["url"]),
+                pageview_count=int(row["pageview_count"] or 0),
+                reaction_count=int(row["reaction_count"] or 0),
+            )
+            for row in rows
+        ]
+
+
+def set_counter_value(
+    *,
+    url: str,
+    pageview_count: int,
+    reaction_counts: dict[int, int] | None = None,
+    db_path: Path | None = None,
+) -> None:
+    reaction_counts = reaction_counts or {}
+    columns = ["url", "time", *WALINE_REACTION_COLUMNS]
+    placeholders = ", ".join("?" for _ in columns)
+    values = [url, pageview_count, *[reaction_counts.get(index, 0) for index in range(9)]]
+
+    with connect_waline_db(db_path) as connection:
+        connection.execute("DELETE FROM wl_counter WHERE url = ?", (url,))
+        connection.execute(
+            f"""
+            INSERT INTO wl_counter ({", ".join(columns)}, createdAt, updatedAt)
+            VALUES ({placeholders}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+            values,
+        )
+        connection.commit()
+
+
+def list_counter_history_by_date(
+    *,
+    db_path: Path | None = None,
+) -> dict[date, dict[str, WalineCounterStats]]:
+    reaction_sum = " + ".join(f"COALESCE({column}, 0)" for column in WALINE_REACTION_COLUMNS)
+    with connect_waline_db(db_path) as connection:
+        rows = connection.execute(
+            f"""
+            SELECT
+                DATE(updatedAt) AS snapshot_date,
+                url,
+                SUM(COALESCE(time, 0)) AS pageview_count,
+                SUM({reaction_sum}) AS reaction_count
+            FROM wl_counter
+            GROUP BY DATE(updatedAt), url
+            ORDER BY DATE(updatedAt) ASC, url ASC
+            """
+        ).fetchall()
+
+    history: dict[date, dict[str, WalineCounterStats]] = {}
+    for row in rows:
+        snapshot_date = date.fromisoformat(str(row["snapshot_date"]))
+        history.setdefault(snapshot_date, {})[str(row["url"])] = WalineCounterStats(
+            url=str(row["url"]),
+            pageview_count=int(row["pageview_count"] or 0),
+            reaction_count=int(row["reaction_count"] or 0),
+        )
+    return history
 
 
 def get_waline_record_by_id(
@@ -591,6 +678,54 @@ def update_waline_comment_avatars(
             [(avatar_key, avatar_url, record_id) for record_id, (avatar_key, avatar_url) in assignments.items()],
         )
         connection.commit()
+
+
+def sync_site_user_comment_profile(
+    *,
+    site_user_id: str,
+    nick: str,
+    avatar_url: str,
+    db_path: Path | None = None,
+) -> int:
+    avatar_key = f"site-user-{site_user_id}"
+    display_nick = " ".join((nick or "").strip().split())
+    if not avatar_key or not display_nick or not avatar_url.strip():
+        return 0
+
+    with connect_waline_db(db_path) as connection:
+        cursor = connection.execute(
+            """
+            UPDATE wl_comment
+            SET nick = ?, avatar = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE avatar_key = ?
+            """,
+            (display_nick, avatar_url.strip(), avatar_key),
+        )
+        connection.commit()
+        return int(cursor.rowcount or 0)
+
+
+def sync_admin_comment_profile(
+    *,
+    nick: str,
+    avatar_url: str,
+    db_path: Path | None = None,
+) -> int:
+    display_nick = " ".join((nick or "").strip().split())
+    if not display_nick or not avatar_url.strip():
+        return 0
+
+    with connect_waline_db(db_path) as connection:
+        cursor = connection.execute(
+            """
+            UPDATE wl_comment
+            SET nick = ?, avatar = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE avatar_key = ?
+            """,
+            (display_nick, avatar_url.strip(), "site-admin"),
+        )
+        connection.commit()
+        return int(cursor.rowcount or 0)
 
 
 def create_waline_record(

@@ -23,6 +23,7 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
     monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
+    monkeypatch.setenv("AERISUN_IP_GEO_ENABLED", "false")
 
     from aerisun.core.db import get_engine, get_session_factory
     from aerisun.core.rate_limit import limiter
@@ -102,6 +103,7 @@ def seeded_session(tmp_path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
     monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
     monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
+    monkeypatch.setenv("AERISUN_IP_GEO_ENABLED", "false")
 
     from aerisun.core.db import get_engine, get_session_factory
     from aerisun.core.rate_limit import limiter
