@@ -20,17 +20,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { Label } from "@/components/ui/Label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/Select";
+import { StatusVisibilityPills } from "@/components/StatusVisibilityPills";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import { Trash2, Save, ExternalLink, Eye } from "lucide-react";
+import { Trash2, LogOut, ExternalLink, Eye, Check } from "lucide-react";
 
 export default function PostEditPage() {
   const { id } = useParams();
@@ -51,10 +46,9 @@ export default function PostEditPage() {
     body: "",
     tags: [],
     status: "draft",
-    visibility: "public",
+    visibility: "private",
     published_at: null,
     category: "",
-    view_count: 0,
   });
 
   useEffect(() => {
@@ -69,7 +63,6 @@ export default function PostEditPage() {
         visibility: post.visibility,
         published_at: post.published_at,
         category: post.category || "",
-        view_count: post.view_count || 0,
       });
     }
   }, [post]);
@@ -124,19 +117,27 @@ export default function PostEditPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const savePost = async (mode: "draft" | "confirm") => {
+    const nextStatus = mode === "draft" ? "draft" : form.visibility === "public" ? "published" : "archived";
+    const nextForm = { ...form, status: nextStatus };
+
     setIsSaving(true);
     try {
       if (isNew) {
-        await createPost({ data: form });
+        await createPost({ data: nextForm });
       } else {
-        const update: ContentUpdate = { ...form };
+        const update: ContentUpdate = { ...nextForm };
         await updatePost({ itemId: id!, data: update });
       }
+      setForm((prev) => ({ ...prev, status: nextStatus }));
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await savePost("confirm");
   };
 
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -248,10 +249,15 @@ export default function PostEditPage() {
       <PageHeader
         title={isNew ? t("posts.newPost") : t("posts.editPost")}
         actions={
-          <div className="flex gap-2">
-            {form.status === "published" && !isNew && form.slug ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusVisibilityPills
+              visibility={form.visibility}
+              onToggleVisibility={() => setField("visibility", form.visibility === "public" ? "private" : "public")}
+            />
+            {form.status === "published" && form.visibility === "public" && !isNew && form.slug ? (
               <Button
                 variant="outline"
+                className="preview-glow-button"
                 onClick={() =>
                   window.open(`${frontendUrl}/posts/${form.slug}`, "_blank")
                 }
@@ -261,26 +267,20 @@ export default function PostEditPage() {
             ) : (
               <Button
                 variant="outline"
+                className="preview-glow-button"
                 onClick={openPreview}
                 disabled={!form.body}
               >
                 <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}
               </Button>
             )}
-            {!isNew && (
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  if (confirm(t("posts.deleteConfirm")))
-                    deletePostMutate({ itemId: id! });
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
-              </Button>
-            )}
-            <Button onClick={handleSubmit} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />{" "}
-              {isSaving ? t("common.saving") : t("common.save")}
+            <Button variant="secondary" className="bg-slate-100 text-slate-900 border-slate-200 shadow-none backdrop-blur-0 ring-0 hover:bg-slate-200 hover:text-slate-950 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" onClick={() => void savePost("draft")} disabled={isSaving}>
+              <LogOut className="h-4 w-4 mr-2" />{" "}
+              {isSaving ? t("common.saving") : t("common.saveDraft")}
+            </Button>
+            <Button variant="secondary" className="bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:text-white dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400" onClick={() => void savePost("confirm")} disabled={isSaving}>
+              <Check className="h-4 w-4 mr-2" />{" "}
+              {isSaving ? t("common.saving") : t("common.confirm")}
             </Button>
           </div>
         }
@@ -341,81 +341,50 @@ export default function PostEditPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>分类</Label>
-            <Input
-              value={form.category || ""}
-              onChange={(e) => setField("category", e.target.value)}
-              placeholder="文章分类"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>浏览量</Label>
-            <Input
-              type="number"
-              value={form.view_count || 0}
-              onChange={(e) =>
-                setField("view_count", parseInt(e.target.value) || 0)
-              }
-            />
-          </div>
+          <ContentCategoryField
+            contentType="posts"
+            label={t("contentCategories.fieldLabel")}
+            value={form.category || ""}
+            placeholder={t("contentCategories.postPlaceholder")}
+            onChange={(nextValue) => setField("category", nextValue)}
+          />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label>{t("posts.status")}</Label>
-            <Select
-              value={form.status}
-              onValueChange={(v) => setField("status", v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">{t("posts.draft")}</SelectItem>
-                <SelectItem value="published">
-                  {t("posts.published")}
-                </SelectItem>
-                <SelectItem value="archived">{t("posts.archived")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("posts.visibility")}</Label>
-            <Select
-              value={form.visibility}
-              onValueChange={(v) => setField("visibility", v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="public">{t("posts.public")}</SelectItem>
-                <SelectItem value="private">{t("posts.private")}</SelectItem>
-                <SelectItem value="unlisted">{t("posts.unlisted")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("posts.publishedAt")}</Label>
-            <Input
-              type="datetime-local"
-              value={
-                form.published_at
-                  ? new Date(form.published_at).toISOString().slice(0, 16)
-                  : ""
-              }
-              onChange={(e) =>
-                setField(
-                  "published_at",
-                  e.target.value
-                    ? new Date(e.target.value).toISOString()
-                    : null,
-                )
-              }
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>{t("posts.publishedAt")}</Label>
+          <Input
+            type="datetime-local"
+            value={
+              form.published_at
+                ? new Date(form.published_at).toISOString().slice(0, 16)
+                : ""
+            }
+            onChange={(e) =>
+              setField(
+                "published_at",
+                e.target.value
+                  ? new Date(e.target.value).toISOString()
+                  : null,
+              )
+            }
+          />
         </div>
+
+        {!isNew && (
+          <div className="pt-6 border-t border-border flex justify-start">
+            <Button
+              variant="destructive"
+              type="button"
+              onClick={() => {
+                if (confirm(t("posts.deleteConfirm"))) {
+                  deletePostMutate({ itemId: id! });
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );

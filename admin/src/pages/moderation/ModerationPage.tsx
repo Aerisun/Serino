@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import type { Components } from "react-markdown";
 import {
   listCommentsApiV1AdminModerationCommentsGet,
   listGuestbookApiV1AdminModerationGuestbookGet,
@@ -7,6 +11,10 @@ import {
   moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost as moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
   getListCommentsApiV1AdminModerationCommentsGetQueryKey,
   getListGuestbookApiV1AdminModerationGuestbookGetQueryKey,
+  listPosts,
+  listDiary,
+  listThoughts,
+  listExcerpts,
 } from "@serino/api-client/admin";
 import type {
   ListCommentsApiV1AdminModerationCommentsGetParams,
@@ -15,30 +23,29 @@ import type {
   GuestbookAdminRead,
   ModerateAction,
 } from "@serino/api-client/models";
-import { listPosts, listDiary, listThoughts, listExcerpts } from "@serino/api-client/admin";
-import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/Dialog";
-import { formatDate } from "@/lib/utils";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import { cn, formatDate } from "@/lib/utils";
 import {
   Check,
-  ChevronDown,
   History,
   RotateCcw,
   Search,
-  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -50,6 +57,12 @@ import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 type ModerationRecord = CommentAdminRead | GuestbookAdminRead;
 type ModerationKind = "comments" | "guestbook";
 type ModerationListParams = ListCommentsApiV1AdminModerationCommentsGetParams & ListGuestbookApiV1AdminModerationGuestbookGetParams;
+
+const envApiBaseUrl =
+  (typeof __AERISUN_API_BASE_URL__ === "string" ? __AERISUN_API_BASE_URL__ : "").replace(
+    /\/+$/,
+    "",
+  );
 
 /* slug → title cache, populated by useContentTitles */
 type TitleMap = Map<string, string>;
@@ -148,6 +161,100 @@ const GUESTBOOK_SURFACE_OPTIONS = ["", "guestbook"] as const;
 const STATUS_OPTIONS = ["", "pending", "approved", "rejected"] as const;
 const SORT_OPTIONS = ["created_desc", "created_asc", "status", "path"] as const;
 
+function resolveModerationMediaSrc(src?: string) {
+  if (!src) return src;
+  if (!src.startsWith("/")) return src;
+  if (!envApiBaseUrl) return src;
+
+  try {
+    return new URL(src, envApiBaseUrl).toString();
+  } catch {
+    return src;
+  }
+}
+
+const moderationPreviewComponents: Components = {
+  a: ({ children, href, ...props }) => (
+    <a
+      href={href}
+      className="font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary"
+      target={href?.startsWith("http") ? "_blank" : undefined}
+      rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  img: ({ src, alt, ...props }) => (
+    <img
+      src={resolveModerationMediaSrc(src)}
+      alt={alt}
+      className="my-4 block h-auto max-w-full rounded-2xl border border-white/10 shadow-[0_18px_40px_rgba(15,23,42,0.18)]"
+      style={{ width: "auto", maxWidth: "min(100%, 28rem)" }}
+      loading="lazy"
+      {...props}
+    />
+  ),
+  pre: ({ children, ...props }) => (
+    <pre
+      className="my-4 overflow-x-auto rounded-2xl border border-white/10 bg-background/70 px-4 py-3 text-[13px]"
+      {...props}
+    >
+      {children}
+    </pre>
+  ),
+  code: ({ inline, children, ...props }: any) =>
+    inline ? (
+      <code
+        className="rounded-md bg-background/80 px-1.5 py-0.5 text-[0.9em] text-foreground"
+        {...props}
+      >
+        {children}
+      </code>
+    ) : (
+      <code {...props}>{children}</code>
+    ),
+  blockquote: ({ children, ...props }) => (
+    <blockquote
+      className="my-4 rounded-r-xl border-l-2 border-primary/30 bg-background/45 px-4 py-3 text-foreground/80"
+      {...props}
+    >
+      {children}
+    </blockquote>
+  ),
+};
+
+function ModerationBodyPreview({ content }: { content: string }) {
+  const { t } = useI18n();
+
+  if (!content.trim()) {
+    return (
+      <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
+        {t("common.noData")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border bg-muted/35 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          {t("common.preview")}
+        </span>
+      </div>
+      <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/85 [&>:first-child]:mt-0 [&>:last-child]:mb-0">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight]}
+          components={moderationPreviewComponents}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+}
+
 function getModerationAuthor(
   item: ModerationRecord,
   fallback: string = "访客",
@@ -163,10 +270,12 @@ function getModerationBody(item: ModerationRecord) {
   return "";
 }
 
-function getModerationSource(item: ModerationRecord) {
+function getModerationSource(item: ModerationRecord, lang: "zh" | "en" = "zh") {
   if ("source" in item && item.source) return item.source;
-  if ("content_type" in item && item.content_type) return item.content_type;
-  if ("website" in item) return "guestbook";
+  if ("content_type" in item && item.content_type) {
+    return optionLabel(PAGE_KEY_LABELS, item.content_type, lang);
+  }
+  if ("website" in item) return optionLabel(PAGE_KEY_LABELS, "guestbook", lang);
   return "-";
 }
 
@@ -276,92 +385,6 @@ function findThreadForItem(
   return [root];
 }
 
-function useReasonDialog() {
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [pending, setPending] = useState<{
-    id: string;
-    action: ModerateAction["action"];
-  } | null>(null);
-
-  function prompt(id: string, action: ModerateAction["action"]) {
-    setPending({ id, action });
-    setReason("");
-    setOpen(true);
-  }
-
-  function close() {
-    setOpen(false);
-    setPending(null);
-    setReason("");
-  }
-
-  return { open, reason, setReason, pending, prompt, close };
-}
-
-function ReasonDialog({
-  dialog,
-  onConfirm,
-  isPending,
-}: {
-  dialog: ReturnType<typeof useReasonDialog>;
-  onConfirm: (
-    id: string,
-    action: ModerateAction["action"],
-    reason: string,
-  ) => void;
-  isPending: boolean;
-}) {
-  const { t } = useI18n();
-  return (
-    <Dialog
-      open={dialog.open}
-      onOpenChange={(v) => {
-        if (!v) dialog.close();
-      }}
-    >
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="capitalize">
-            {dialog.pending?.action} Item
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>{t("moderation.reason")}</Label>
-            <Input
-              value={dialog.reason}
-              onChange={(e) => dialog.setReason(e.target.value)}
-              placeholder={t("moderation.enterReason")}
-            />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => dialog.close()}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant={
-                dialog.pending?.action === "delete" ? "destructive" : "default"
-              }
-              onClick={() => {
-                if (dialog.pending)
-                  onConfirm(
-                    dialog.pending.id,
-                    dialog.pending.action,
-                    dialog.reason,
-                  );
-              }}
-              disabled={isPending}
-            >
-              {t("common.confirm")}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function ModerationHistory({
   item,
   titleMap,
@@ -380,7 +403,7 @@ function ModerationHistory({
       <dl className="grid gap-x-4 gap-y-2 text-xs grid-cols-2">
         <div className="space-y-1">
           <dt className="text-muted-foreground">{t("moderation.source")}</dt>
-          <dd>{getModerationSource(item)}</dd>
+          <dd>{getModerationSource(item, lang)}</dd>
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground">{t("moderation.path")}</dt>
@@ -401,9 +424,7 @@ function ModerationHistory({
           <dd>{formatDate(item.updated_at)}</dd>
         </div>
       </dl>
-      <div className="rounded-lg border bg-muted/40 p-3 text-sm whitespace-pre-wrap break-words">
-        {getModerationBody(item) || t("common.noData")}
-      </div>
+      <ModerationBodyPreview content={getModerationBody(item)} />
     </div>
   );
 }
@@ -517,21 +538,31 @@ function ModerationStats({
   ];
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-2.5 grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.label}>
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className="mt-2 text-3xl font-semibold tracking-tight">
-                  {card.value}
-                </p>
-              </div>
-              <Badge variant={card.tone}>{card.label}</Badge>
+        <div
+          key={card.label}
+          className={cn(
+            "rounded-2xl border border-border/45 bg-background/45 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm",
+            card.tone === "success" && "border-emerald-500/20 bg-emerald-500/[0.05]",
+            card.tone === "warning" && "border-amber-500/20 bg-amber-500/[0.05]",
+            card.tone === "destructive" && "border-rose-500/20 bg-rose-500/[0.05]",
+          )}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground/85">
+                {card.label}
+              </p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight">
+                {card.value}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <Badge variant={card.tone} className="shrink-0">
+              {card.label}
+            </Badge>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -558,7 +589,6 @@ function FiltersBar({
   onReset: () => void;
 }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
   const surfaceOptions =
     kind === "comments" ? COMMENT_SURFACE_OPTIONS : GUESTBOOK_SURFACE_OPTIONS;
 
@@ -575,138 +605,133 @@ function FiltersBar({
     setFilters({ ...filters, [key]: value });
   };
 
-  return (
-    <div className="mt-4 space-y-2">
-      <Button
-        variant="outline"
-        className="w-full justify-between"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4" />
-          {t("moderation.searchTitle")}
-          {activeCount > 0 && (
-            <Badge variant="secondary" className="ml-1">
-              {activeCount}
-            </Badge>
-          )}
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </Button>
-
-      {open && (
-        <Card>
-          <CardContent className="pt-4">
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                onApply();
-                setOpen(false);
-              }}
-            >
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchKeyword")}</Label>
-                  <Input
-                    value={filters.keyword}
-                    onChange={(e) => update("keyword", e.target.value)}
-                    placeholder={t("common.search")}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchAuthor")}</Label>
-                  <Input
-                    value={filters.author}
-                    onChange={(e) => update("author", e.target.value)}
-                    placeholder={t("common.author")}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchEmail")}</Label>
-                  <Input
-                    value={filters.email}
-                    onChange={(e) => update("email", e.target.value)}
-                    placeholder="mail@example.com"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchPath")}</Label>
-                  <Input
-                    value={filters.path}
-                    onChange={(e) => update("path", e.target.value)}
-                    placeholder="/posts/slug"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchSurface")}</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={filters.surface}
-                    onChange={(e) => update("surface", e.target.value)}
-                  >
-                    {surfaceOptions.map((option) => (
-                      <option key={option || "all"} value={option}>
-                        {option || t("common.all")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchStatus")}</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={filters.status}
-                    onChange={(e) => update("status", e.target.value)}
-                  >
-                    {STATUS_OPTIONS.map((option) => (
-                      <option key={option || "all"} value={option}>
-                        {option || t("common.all")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label>{t("moderation.searchSort")}</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={filters.sort}
-                    onChange={(e) => update("sort", e.target.value)}
-                  >
-                    {SORT_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {SORT_LABELS[option] ?? option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" size="sm">
-                  <Search className="mr-1.5 h-3.5 w-3.5" />
-                  {t("moderation.searchApply")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    onReset();
-                    setOpen(false);
-                  }}
-                >
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                  {t("moderation.searchReset")}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+  const renderSelect = (
+    label: string,
+    value: string,
+    onChange: (nextValue: string) => void,
+    options: Array<{ value: string; label: string }>,
+  ) => (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Select value={value || "__all"} onValueChange={(nextValue) => onChange(nextValue === "__all" ? "" : nextValue)}>
+        <SelectTrigger className="h-10 rounded-xl border-border/45 bg-background/70 px-3 text-sm">
+          <SelectValue placeholder={t("common.all")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all">{t("common.all")}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
+  );
+
+  return (
+    <CollapsibleSection
+      title={t("moderation.searchTitle")}
+      defaultOpen={false}
+      badge={activeCount > 0 ? `${activeCount}` : undefined}
+      className="rounded-2xl border border-border/40 bg-muted/[0.16] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+    >
+      <div className="space-y-4">
+        <p className="text-xs text-muted-foreground">
+          只保留真正需要的筛选条件，避免审核页过重。
+        </p>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onApply();
+          }}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-1.5">
+              <Label>{t("moderation.searchKeyword")}</Label>
+              <Input
+                value={filters.keyword}
+                onChange={(e) => update("keyword", e.target.value)}
+                placeholder={t("common.search")}
+                className="border-border/45 bg-background/70"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("moderation.searchAuthor")}</Label>
+              <Input
+                value={filters.author}
+                onChange={(e) => update("author", e.target.value)}
+                placeholder={t("common.author")}
+                className="border-border/45 bg-background/70"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("moderation.searchEmail")}</Label>
+              <Input
+                value={filters.email}
+                onChange={(e) => update("email", e.target.value)}
+                placeholder="mail@example.com"
+                className="border-border/45 bg-background/70"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("moderation.searchPath")}</Label>
+              <Input
+                value={filters.path}
+                onChange={(e) => update("path", e.target.value)}
+                placeholder="/posts/slug"
+                className="border-border/45 bg-background/70"
+              />
+            </div>
+            {renderSelect(
+              t("moderation.searchSurface"),
+              filters.surface,
+              (nextValue) => update("surface", nextValue),
+              surfaceOptions.filter(Boolean).map((option) => ({
+                value: option,
+                label: option || t("common.all"),
+              })),
+            )}
+            {renderSelect(
+              t("moderation.searchStatus"),
+              filters.status,
+              (nextValue) => update("status", nextValue),
+              STATUS_OPTIONS.filter(Boolean).map((option) => ({
+                value: option,
+                label: option || t("common.all"),
+              })),
+            )}
+            {renderSelect(
+              t("moderation.searchSort"),
+              filters.sort,
+              (nextValue) => update("sort", nextValue),
+              SORT_OPTIONS.map((option) => ({
+                value: option,
+                label: SORT_LABELS[option] ?? option,
+              })),
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" size="sm" className="rounded-xl">
+              <Search className="mr-1.5 h-3.5 w-3.5" />
+              {t("moderation.searchApply")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-border/45 bg-background/50"
+              onClick={onReset}
+            >
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+              {t("moderation.searchReset")}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </CollapsibleSection>
   );
 }
 
@@ -720,7 +745,6 @@ function ModerationQueue({
 }: {
   kind: ModerationKind;
   title: string;
-  description: string;
   loadItems: (
     params: ModerationListParams,
   ) => Promise<any>;
@@ -738,7 +762,7 @@ function ModerationQueue({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [bulkPending, setBulkPending] = useState(false);
-  const dialog = useReasonDialog();
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const params = useMemo<ModerationListParams>(
     () => ({
@@ -773,7 +797,7 @@ function ModerationQueue({
     }) => moderateItem(id, { action, reason: reason || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeyFn() });
-      dialog.close();
+      setDeleteTargetId(null);
       toast.success(t("common.operationSuccess"));
     },
     onError: (error: any) => {
@@ -846,271 +870,287 @@ function ModerationQueue({
   };
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="rounded-lg border bg-muted/20 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">{title}</p>
-            <p className="text-xs text-muted-foreground">{description}</p>
-          </div>
-          <Badge variant="outline">
-            {t("moderation.currentPage")} {page}
-          </Badge>
-        </div>
-        <div className="mt-3">
-          <ModerationStats total={total} items={items} />
-        </div>
-      </div>
-
-      <FiltersBar
-        kind={kind}
-        filters={draft}
-        setFilters={setDraft}
-        onApply={applyFilters}
-        onReset={resetFilters}
-      />
-
-      <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">
-            {selectedIds.length} {t("common.items")}
-          </Badge>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
-            {t("moderation.bulkNote")}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button variant="outline" size="sm" onClick={selectCurrentPage}>
-            {t("moderation.selectCurrentPage")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedIds([])}
-            disabled={!selectedIds.length}
-          >
-            {t("common.clear")}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => void runBulkAction("approve")}
-            disabled={moderate.isPending || bulkPending || !selectedIds.length}
-          >
-            <Check className="mr-1 h-3.5 w-3.5" />
-            {t("moderation.bulkApprove")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void runBulkAction("reject")}
-            disabled={moderate.isPending || bulkPending || !selectedIds.length}
-          >
-            <X className="mr-1 h-3.5 w-3.5" />
-            {t("moderation.bulkReject")}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => void runBulkAction("delete")}
-            disabled={moderate.isPending || bulkPending || !selectedIds.length}
-          >
-            <Trash2 className="mr-1 h-3.5 w-3.5" />
-            {t("moderation.bulkDelete")}
-          </Button>
-        </div>
-      </div>
-
+    <div className="mt-4 space-y-5">
       <div className="space-y-3">
-        <ReasonDialog
-          dialog={dialog}
-          onConfirm={(id, action, reason) =>
-            moderate.mutate({ id, action, reason })
-          }
-          isPending={moderate.isPending}
-        />
-        <div className="rounded-lg border">
-          <DataTable<ModerationRecord>
-            columns={[
-              {
-                header: "",
-                accessor: (row) => (
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-border"
-                      checked={selectedIds.includes(row.id)}
-                      onChange={(e) =>
-                        toggleSelection(row.id, e.target.checked)
-                      }
-                    />
-                  </div>
-                ),
-                className: "w-10",
-              },
-              {
-                header: t("common.author"),
-                accessor: (row) => (
-                  <span className="whitespace-nowrap font-medium">
-                    {getModerationAuthor(row, t("moderation.guest"))}
-                  </span>
-                ),
-              },
-              {
-                header: t("moderation.source"),
-                accessor: (row) => (
-                  <Badge variant="outline">{getModerationSource(row)}</Badge>
-                ),
-                className: "hidden md:table-cell",
-              },
-              {
-                header: t("common.body"),
-                accessor: (row) => (
-                  <span className="line-clamp-2 text-xs">
-                    {getModerationBody(row)}
-                  </span>
-                ),
-              },
-              {
-                header: t("common.status"),
-                accessor: (row) => (
-                  <StatusBadge status={normalizeModerationStatus(row.status)} />
-                ),
-              },
-              {
-                header: t("moderation.time"),
-                accessor: (row) => (
-                  <span className="whitespace-nowrap text-xs">
-                    {formatDate(row.created_at)}
-                  </span>
-                ),
-                className: "hidden sm:table-cell",
-              },
-              {
-                header: t("common.actions"),
-                accessor: (row) => (
-                  <div className="flex gap-0.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dialog.prompt(row.id, "approve");
-                      }}
-                      title={t("moderation.approve")}
-                    >
-                      <Check className="h-4 w-4 text-green-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dialog.prompt(row.id, "reject");
-                      }}
-                      title={t("moderation.reject")}
-                    >
-                      <X className="h-4 w-4 text-orange-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dialog.prompt(row.id, "delete");
-                      }}
-                      title={t("common.delete")}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                ),
-                className: "w-28",
-              },
-            ]}
-            data={items}
-            total={total}
-            page={page}
-            pageSize={data?.page_size ?? PAGE_SIZE}
-            onPageChange={(nextPage) => {
-              setPage(nextPage);
-              setSelectedIds([]);
-              setActiveId(null);
-            }}
-            isLoading={isLoading}
-            onRowClick={(row) =>
-              setActiveId((prev) => (prev === row.id ? null : row.id))
-            }
-          />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold tracking-[0.01em]">{title}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("moderation.currentPage")} {page}
+            </p>
+          </div>
         </div>
+        <ModerationStats total={total} items={items} />
+      </div>
 
-        {selectedItem && (
-          <Card>
-            <CardContent className="pt-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">
-                    {getModerationAuthor(selectedItem, t("moderation.guest"))}
-                  </span>
-                  <StatusBadge
-                    status={normalizeModerationStatus(selectedItem.status)}
-                  />
-                  <Badge variant="outline">
-                    {getModerationSource(selectedItem)}
-                  </Badge>
-                </div>
+      <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
+        <div className="space-y-4">
+          <FiltersBar
+            kind={kind}
+            filters={draft}
+            setFilters={setDraft}
+            onApply={applyFilters}
+            onReset={resetFilters}
+          />
+
+          <ConfirmDialog
+            open={deleteTargetId !== null}
+            onConfirm={() => {
+              if (deleteTargetId) {
+                moderate.mutate({ id: deleteTargetId, action: "delete" });
+              }
+            }}
+            onCancel={() => setDeleteTargetId(null)}
+            title={t("moderation.deleteConfirm")}
+            description={t("common.deleteConfirmDesc")}
+            confirmLabel={t("common.delete")}
+            variant="destructive"
+            isPending={moderate.isPending}
+          />
+
+          <div className="overflow-hidden rounded-3xl border border-border/35 bg-background/55 shadow-[0_20px_50px_-44px_rgba(15,23,42,0.55)] ring-1 ring-white/5">
+            <div className="flex flex-col gap-3 border-b border-border/25 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="rounded-full">
+                  {selectedIds.length} {t("common.items")}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-border/45 bg-background/50"
+                  onClick={selectCurrentPage}
+                >
+                  {t("moderation.selectCurrentPage")}
+                </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  onClick={() => setActiveId(null)}
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => setSelectedIds([])}
+                  disabled={!selectedIds.length}
                 >
-                  <X className="h-4 w-4" />
+                  {t("common.clear")}
+                </Button>
+                <Button
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => void runBulkAction("approve")}
+                  disabled={moderate.isPending || bulkPending || !selectedIds.length}
+                >
+                  <Check className="mr-1 h-3.5 w-3.5" />
+                  {t("moderation.bulkApprove")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-border/45 bg-background/50"
+                  onClick={() => void runBulkAction("reject")}
+                  disabled={moderate.isPending || bulkPending || !selectedIds.length}
+                >
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  {t("moderation.bulkReject")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => void runBulkAction("delete")}
+                  disabled={moderate.isPending || bulkPending || !selectedIds.length}
+                >
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  {t("moderation.bulkDelete")}
                 </Button>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <DataTable<ModerationRecord>
+              columns={[
+                {
+                  header: "",
+                  accessor: (row) => (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border"
+                        checked={selectedIds.includes(row.id)}
+                        onChange={(e) =>
+                          toggleSelection(row.id, e.target.checked)
+                        }
+                      />
+                    </div>
+                  ),
+                  className: "w-10",
+                },
+                {
+                  header: t("common.author"),
+                  accessor: (row) => (
+                    <span className="whitespace-nowrap font-medium">
+                      {getModerationAuthor(row, t("moderation.guest"))}
+                    </span>
+                  ),
+                },
+                {
+                  header: t("moderation.source"),
+                  accessor: (row) => (
+                    <Badge variant="outline">{getModerationSource(row, lang)}</Badge>
+                  ),
+                  className: "hidden md:table-cell",
+                },
+                {
+                  header: t("common.status"),
+                  accessor: (row) => (
+                    <StatusBadge status={normalizeModerationStatus(row.status)} />
+                  ),
+                },
+                {
+                  header: t("common.actions"),
+                  accessor: (row) => (
+                    <div className="flex gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moderate.mutate({ id: row.id, action: "approve" });
+                        }}
+                        title={t("moderation.approve")}
+                        disabled={moderate.isPending}
+                      >
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moderate.mutate({ id: row.id, action: "reject" });
+                        }}
+                        title={t("moderation.reject")}
+                        disabled={moderate.isPending}
+                      >
+                        <X className="h-4 w-4 text-orange-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTargetId(row.id);
+                        }}
+                        title={t("common.delete")}
+                        disabled={moderate.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ),
+                  className: "w-28",
+                },
+              ]}
+              data={items}
+              total={total}
+              page={page}
+              pageSize={data?.page_size ?? PAGE_SIZE}
+              onPageChange={(nextPage) => {
+                setPage(nextPage);
+                setSelectedIds([]);
+                setActiveId(null);
+              }}
+              isLoading={isLoading}
+              onRowClick={(row) =>
+                setActiveId((prev) => (prev === row.id ? null : row.id))
+              }
+            />
+          </div>
+        </div>
+
+        <div className="xl:sticky xl:top-6">
+          <Card className="rounded-3xl border border-border/35 bg-gradient-to-b from-background via-background to-muted/20 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.6)] backdrop-blur-sm">
+            <CardContent className="space-y-4 pt-5">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <dt className="text-muted-foreground">
-                    {t("moderation.path")}
-                  </dt>
-                  <dd className="break-all mt-0.5">
-                    {getModerationPath(selectedItem, lang, titleMap)}
-                  </dd>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
+                    {t("moderation.detail")}
+                  </p>
+                  <h3 className="mt-1 text-base font-semibold tracking-tight">
+                    {selectedItem
+                      ? getModerationAuthor(selectedItem, t("moderation.guest"))
+                      : t("moderation.noSelection")}
+                  </h3>
                 </div>
-                <div>
-                  <dt className="text-muted-foreground">{t("common.email")}</dt>
-                  <dd className="mt-0.5">{getModerationEmail(selectedItem)}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">
-                    {t("moderation.updated")}
-                  </dt>
-                  <dd className="mt-0.5">
-                    {formatDate(selectedItem.updated_at)}
-                  </dd>
-                </div>
+                {selectedItem ? null : (
+                  <Badge variant="secondary" className="rounded-full">
+                    {t("common.noData")}
+                  </Badge>
+                )}
               </div>
 
-              <div className="rounded-lg border bg-muted/40 p-3 text-sm whitespace-pre-wrap break-words">
-                {getModerationBody(selectedItem) || t("common.noData")}
-              </div>
-
-              {activeThread.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <History className="h-4 w-4" />
-                    {t("moderation.thread")}
+              {selectedItem ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">
+                      {getModerationAuthor(selectedItem, t("moderation.guest"))}
+                    </span>
+                    <StatusBadge
+                      status={normalizeModerationStatus(selectedItem.status)}
+                    />
+                    <Badge variant="outline">
+                      {getModerationSource(selectedItem, lang)}
+                    </Badge>
                   </div>
-                  <ThreadTree
-                    nodes={activeThread}
-                    activeId={selectedItem.id}
-                    onSelect={setActiveId}
-                    titleMap={titleMap}
-                  />
+
+                  <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+                    <div className="rounded-2xl border border-border/30 bg-background/65 px-3 py-3">
+                      <dt className="text-muted-foreground">
+                        {t("moderation.path")}
+                      </dt>
+                      <dd className="mt-1 break-all text-foreground/90">
+                        {getModerationPath(selectedItem, lang, titleMap)}
+                      </dd>
+                    </div>
+                    <div className="rounded-2xl border border-border/30 bg-background/65 px-3 py-3">
+                      <dt className="text-muted-foreground">{t("common.email")}</dt>
+                      <dd className="mt-1 text-foreground/90">
+                        {getModerationEmail(selectedItem)}
+                      </dd>
+                    </div>
+                    <div className="rounded-2xl border border-border/30 bg-background/65 px-3 py-3 sm:col-span-2">
+                      <dt className="text-muted-foreground">
+                        {t("moderation.updated")}
+                      </dt>
+                      <dd className="mt-1 text-foreground/90">
+                        {formatDate(selectedItem.updated_at)}
+                      </dd>
+                    </div>
+                  </div>
+
+                  <ModerationBodyPreview content={getModerationBody(selectedItem)} />
+
+                  {activeThread.length > 0 && (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <History className="h-4 w-4" />
+                        {t("moderation.thread")}
+                      </div>
+                      <ThreadTree
+                        nodes={activeThread}
+                        activeId={selectedItem.id}
+                        onSelect={setActiveId}
+                        titleMap={titleMap}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border/45 bg-background/60 px-4 py-8 text-sm text-muted-foreground">
+                  {t("moderation.noSelection")}
                 </div>
               )}
             </CardContent>
           </Card>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -1118,58 +1158,77 @@ function ModerationQueue({
 
 export default function ModerationPage() {
   const { t } = useI18n();
+  const [activeTab, setActiveTab] = useState<ModerationKind>("comments");
+
   return (
-    <div>
-      <PageHeader
-        title={t("moderation.title")}
-        description={t("moderation.description")}
-      />
-      <Card className="mt-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">
-            {t("siteConfig.community")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {t("moderation.unifiedNote")}
-        </CardContent>
-      </Card>
-      <Tabs defaultValue="comments">
-        <TabsList>
-          <TabsTrigger value="comments">{t("moderation.comments")}</TabsTrigger>
-          <TabsTrigger value="guestbook">
-            {t("moderation.guestbook")}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="comments">
-          <ModerationQueue
-            kind="comments"
-            title={t("moderation.comments")}
-            description={t("moderation.unifiedNote")}
-            loadItems={(params) =>
-              listCommentsApiV1AdminModerationCommentsGet(params) as Promise<any>
-            }
-            moderateItem={(id, payload) =>
-              moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost(id, payload) as Promise<any>
-            }
-            queryKeyFn={(params?) => getListCommentsApiV1AdminModerationCommentsGetQueryKey(params)}
-          />
-        </TabsContent>
-        <TabsContent value="guestbook">
-          <ModerationQueue
-            kind="guestbook"
-            title={t("moderation.guestbook")}
-            description={t("moderation.unifiedNote")}
-            loadItems={(params) =>
-              listGuestbookApiV1AdminModerationGuestbookGet(params) as Promise<any>
-            }
-            moderateItem={(id, payload) =>
-              moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(id, payload) as Promise<any>
-            }
-            queryKeyFn={(params?) => getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params)}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) =>
+        setActiveTab(value === "guestbook" ? "guestbook" : "comments")
+      }
+      className="space-y-0"
+    >
+      <div className="mb-6 rounded-3xl border border-border/35 bg-gradient-to-br from-muted/25 via-background to-background px-5 py-5 shadow-[0_22px_60px_-46px_rgba(15,23,42,0.55)]">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground/70">
+              {t("moderation.title")}
+            </p>
+            <h1 className="text-[2.15rem] font-semibold tracking-tight">
+              {t("moderation.title")}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {t("moderation.description")}
+            </p>
+          </div>
+          <TabsList className="inline-flex h-12 items-center self-start rounded-2xl border border-border/45 bg-background/75 p-1.5 text-muted-foreground shadow-[0_16px_40px_-26px_rgba(15,23,42,0.55)] backdrop-blur-sm md:self-auto">
+            <TabsTrigger
+              value="comments"
+              className="group h-9 rounded-xl border border-transparent px-4 text-sm font-medium tracking-[0.01em] transition-all data-[state=active]:border-transparent data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-[0_10px_24px_rgba(15,23,42,0.18),0_0_0_1px_rgba(56,189,248,0.38),0_0_0_3px_rgba(45,212,191,0.18)]"
+            >
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-current/70 opacity-70 group-data-[state=active]:opacity-100" />
+                {t("moderation.comments")}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="guestbook"
+              className="group h-9 rounded-xl border border-transparent px-4 text-sm font-medium tracking-[0.01em] transition-all data-[state=active]:border-transparent data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-[0_10px_24px_rgba(15,23,42,0.18),0_0_0_1px_rgba(56,189,248,0.38),0_0_0_3px_rgba(45,212,191,0.18)]"
+            >
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-current/70 opacity-70 group-data-[state=active]:opacity-100" />
+                {t("moderation.guestbook")}
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+      </div>
+      <TabsContent value="comments">
+        <ModerationQueue
+          kind="comments"
+          title={t("moderation.comments")}
+          loadItems={(params) =>
+            listCommentsApiV1AdminModerationCommentsGet(params) as Promise<any>
+          }
+          moderateItem={(id, payload) =>
+            moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost(id, payload) as Promise<any>
+          }
+          queryKeyFn={(params?) => getListCommentsApiV1AdminModerationCommentsGetQueryKey(params)}
+        />
+      </TabsContent>
+      <TabsContent value="guestbook">
+        <ModerationQueue
+          kind="guestbook"
+          title={t("moderation.guestbook")}
+          loadItems={(params) =>
+            listGuestbookApiV1AdminModerationGuestbookGet(params) as Promise<any>
+          }
+          moderateItem={(id, payload) =>
+            moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(id, payload) as Promise<any>
+          }
+          queryKeyFn={(params?) => getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params)}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }

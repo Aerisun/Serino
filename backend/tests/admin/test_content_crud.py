@@ -25,6 +25,7 @@ def _make_payload(content_type: str, suffix: str = "") -> dict:
         "body": f"Test {content_type} body content{suffix}",
         "tags": ["test"],
         "status": "draft",
+        "visibility": "public",
     }
 
 
@@ -47,6 +48,16 @@ class TestContentCRUDLifecycle:
         assert data["status"] == "draft"
         assert "id" in data
         assert "created_at" in data
+
+    def test_create_private_persists_as_archived(self, client, admin_headers, content_type):
+        payload = _make_payload(content_type, "-private")
+        payload["status"] = "published"
+        payload["visibility"] = "private"
+        resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["status"] == "archived"
+        assert data["visibility"] == "private"
 
     def test_read(self, client, admin_headers, content_type):
         # Create first
@@ -74,6 +85,22 @@ class TestContentCRUDLifecycle:
         assert resp.json()["title"] == "Updated Title"
         # slug should remain unchanged
         assert resp.json()["slug"] == payload["slug"]
+
+    def test_update_archived_private_to_public_becomes_draft(self, client, admin_headers, content_type):
+        payload = _make_payload(content_type, "-restore")
+        payload["status"] = "published"
+        payload["visibility"] = "private"
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        item_id = create_resp.json()["id"]
+
+        resp = client.put(
+            f"{BASE}/{content_type}/{item_id}",
+            json={"visibility": "public"},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "draft"
+        assert resp.json()["visibility"] == "public"
 
     def test_list(self, client, admin_headers, content_type):
         # Ensure at least one item exists
@@ -170,9 +197,29 @@ class TestContentBulkOperations:
         assert resp.status_code == 200
         assert resp.json()["affected"] == 1
 
-        # Verify status changed
         resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.json()["status"] == "published"
+        assert resp.json()["visibility"] == "public"
+
+    def test_bulk_archive_sets_private_visibility(self, client, admin_headers, content_type):
+        resp = client.post(
+            f"{BASE}/{content_type}/",
+            json=_make_payload(content_type, "-ba"),
+            headers=admin_headers,
+        )
+        item_id = resp.json()["id"]
+
+        resp = client.post(
+            f"{BASE}/{content_type}/bulk-status",
+            json={"ids": [item_id], "status": "archived"},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["affected"] == 1
+
+        resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
+        assert resp.json()["status"] == "archived"
+        assert resp.json()["visibility"] == "private"
 
 
 # ── Search & pagination ───────────────────────────────────────────────

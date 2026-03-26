@@ -29,7 +29,10 @@ import { Plus, Trash2, Pencil, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import type { FriendAdminRead, FriendFeedSourceAdminRead } from "@serino/api-client/models";
+import type {
+  FriendAdminRead,
+  FriendFeedSourceAdminRead,
+} from "@serino/api-client/models";
 
 const EMPTY_FRIENDS: FriendAdminRead[] = [];
 
@@ -38,7 +41,9 @@ export default function FriendsPage() {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editingFriend, setEditingFriend] = useState<FriendAdminRead | null>(null);
+  const [editingFriend, setEditingFriend] = useState<FriendAdminRead | null>(
+    null,
+  );
   const queryClient = useQueryClient();
   const emptyForm = {
     name: "",
@@ -48,7 +53,9 @@ export default function FriendsPage() {
     status: "active",
     order_index: 0,
   };
+  const emptyFeedDraft = { feed_url: "", is_enabled: true };
   const [form, setForm] = useState(emptyForm);
+  const [createFeedDrafts, setCreateFeedDrafts] = useState([emptyFeedDraft]);
 
   const { data: raw, isLoading } = useListFriends({ page });
   const data = raw?.data;
@@ -60,12 +67,20 @@ export default function FriendsPage() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListFriendsQueryKey() });
-        setCreateOpen(false);
-        setForm(emptyForm);
-        toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
+        toast.error(msg);
+      },
+    },
+  });
+
+  const createFeed = useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost({
+    mutation: {
+      onError: (error: any) => {
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
         toast.error(msg);
       },
     },
@@ -80,7 +95,8 @@ export default function FriendsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
         toast.error(msg);
       },
     },
@@ -93,7 +109,8 @@ export default function FriendsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
         toast.error(msg);
       },
     },
@@ -110,6 +127,66 @@ export default function FriendsPage() {
       order_index: friend.order_index,
     });
     setEditOpen(true);
+  }
+
+  function resetCreateDialog() {
+    setForm(emptyForm);
+    setCreateFeedDrafts([emptyFeedDraft]);
+  }
+
+  function addCreateFeedDraft() {
+    setCreateFeedDrafts((prev) => [...prev, emptyFeedDraft]);
+  }
+
+  function updateCreateFeedDraft(
+    index: number,
+    key: "feed_url" | "is_enabled",
+    value: string | boolean,
+  ) {
+    setCreateFeedDrafts((prev) =>
+      prev.map((draft, draftIndex) =>
+        draftIndex === index ? { ...draft, [key]: value } : draft,
+      ),
+    );
+  }
+
+  function removeCreateFeedDraft(index: number) {
+    setCreateFeedDrafts((prev) =>
+      prev.length === 1 ? prev : prev.filter((_, draftIndex) => draftIndex !== index),
+    );
+  }
+
+  async function handleCreateFriend() {
+    const created = await create.mutateAsync({ data: form });
+    const friend = created.data;
+
+    if (!friend) {
+      throw new Error(t("common.operationFailed"));
+    }
+
+    const feedDrafts = createFeedDrafts
+      .map((draft) => ({
+        feed_url: draft.feed_url.trim(),
+        is_enabled: draft.is_enabled,
+      }))
+      .filter((draft) => draft.feed_url.length > 0);
+
+    for (const draft of feedDrafts) {
+      await createFeed.mutateAsync({
+        friendId: friend.id,
+        data: {
+          friend_id: friend.id,
+          feed_url: draft.feed_url,
+          is_enabled: draft.is_enabled,
+        },
+      });
+    }
+
+    setCreateOpen(false);
+    resetCreateDialog();
+    setEditingFriend(friend);
+    setEditOpen(true);
+    toast.success(t("common.operationSuccess"));
   }
 
   const fieldLabels: Record<string, string> = {
@@ -169,7 +246,7 @@ export default function FriendsPage() {
             open={createOpen}
             onOpenChange={(v) => {
               setCreateOpen(v);
-              if (!v) setForm(emptyForm);
+              if (!v) resetCreateDialog();
             }}
           >
             <DialogTrigger asChild>
@@ -177,17 +254,67 @@ export default function FriendsPage() {
                 <Plus className="h-4 w-4 mr-2" /> {t("friends.addFriend")}
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("friends.newFriend")}</DialogTitle>
-              </DialogHeader>
-              <FriendFormFields />
-              <Button
-                onClick={() => create.mutate({ data: form })}
-                disabled={create.isPending}
-              >
-                {t("common.create")}
-              </Button>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+              <div className="flex max-h-[calc(80vh-3rem)] flex-col gap-4 overflow-y-auto pr-1">
+                <DialogHeader>
+                  <DialogTitle>{t("friends.newFriend")}</DialogTitle>
+                </DialogHeader>
+                <FriendFormFields />
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold">
+                      <Rss className="h-4 w-4" /> {t("friends.feedSources")}
+                    </h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={addCreateFeedDraft}
+                      type="button"
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> {t("friends.addFeed")}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {createFeedDrafts.map((draft, index) => (
+                      <div key={index} className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs">{t("friends.feedUrl")}</Label>
+                          <Input
+                            value={draft.feed_url}
+                            onChange={(e) =>
+                              updateCreateFeedDraft(index, "feed_url", e.target.value)
+                            }
+                            placeholder="https://example.com/feed.xml"
+                          />
+                        </div>
+                        <label className="flex items-center gap-1 text-sm pb-2">
+                          <input
+                            type="checkbox"
+                            checked={draft.is_enabled}
+                            onChange={(e) =>
+                              updateCreateFeedDraft(index, "is_enabled", e.target.checked)
+                            }
+                          />
+                          {t("siteConfig.enabled")}
+                        </label>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          type="button"
+                          onClick={() => removeCreateFeedDraft(index)}
+                          disabled={createFeedDrafts.length === 1}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <Button onClick={() => void handleCreateFriend()} disabled={create.isPending}>
+                  {t("common.create")}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         }
@@ -201,16 +328,23 @@ export default function FriendsPage() {
           if (!v) setEditingFriend(null);
         }}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("friends.editFriend")}</DialogTitle>
-          </DialogHeader>
-          <FriendFormFields />
-          <Button onClick={() => update.mutate({ itemId: editingFriend!.id, data: form })} disabled={update.isPending}>
-            {t("common.save")}
-          </Button>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+          <div className="flex max-h-[calc(80vh-3rem)] flex-col gap-4 overflow-y-auto pr-1">
+            <DialogHeader>
+              <DialogTitle>{t("friends.editFriend")}</DialogTitle>
+            </DialogHeader>
+            <FriendFormFields />
+            <Button
+              onClick={() =>
+                update.mutate({ itemId: editingFriend!.id, data: form })
+              }
+              disabled={update.isPending}
+            >
+              {t("common.save")}
+            </Button>
 
-          {editingFriend && <FeedSourcesSection friendId={editingFriend.id} />}
+            {editingFriend && <FeedSourcesSection friendId={editingFriend.id} />}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -269,36 +403,50 @@ export default function FriendsPage() {
 function FeedSourcesSection({ friendId }: { friendId: string }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: feedsRaw, isLoading } = useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet(friendId);
+  const { data: feedsRaw, isLoading } =
+    useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet(friendId);
   const feeds = feedsRaw?.data;
   const [addOpen, setAddOpen] = useState(false);
   const [feedForm, setFeedForm] = useState({ feed_url: "", is_enabled: true });
   const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
 
-  const createFeed = useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId) });
-        setAddOpen(false);
-        setFeedForm({ feed_url: "", is_enabled: true });
-        toast.success(t("common.operationSuccess"));
+  const createFeed =
+    useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost({
+      mutation: {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey:
+              getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(
+                friendId,
+              ),
+          });
+          setAddOpen(false);
+          setFeedForm({ feed_url: "", is_enabled: true });
+          toast.success(t("common.operationSuccess"));
+        },
+        onError: (error: any) => {
+          const msg =
+            error?.response?.data?.detail || t("common.operationFailed");
+          toast.error(msg);
+        },
       },
-      onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
-      },
-    },
-  });
+    });
 
   const updateFeed = useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId) });
+        queryClient.invalidateQueries({
+          queryKey:
+            getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(
+              friendId,
+            ),
+        });
         setEditingFeedId(null);
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
         toast.error(msg);
       },
     },
@@ -307,11 +455,17 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
   const delFeed = useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(friendId) });
+        queryClient.invalidateQueries({
+          queryKey:
+            getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(
+              friendId,
+            ),
+        });
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
         toast.error(msg);
       },
     },
@@ -361,14 +515,16 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
           </label>
           <Button
             size="sm"
-            onClick={() => createFeed.mutate({
-              friendId,
-              data: {
-                friend_id: friendId,
-                feed_url: feedForm.feed_url,
-                is_enabled: feedForm.is_enabled,
-              },
-            })}
+            onClick={() =>
+              createFeed.mutate({
+                friendId,
+                data: {
+                  friend_id: friendId,
+                  feed_url: feedForm.feed_url,
+                  is_enabled: feedForm.is_enabled,
+                },
+              })
+            }
             disabled={createFeed.isPending}
           >
             {t("common.add")}
@@ -410,13 +566,15 @@ function FeedSourcesSection({ friendId }: { friendId: string }) {
               </label>
               <Button
                 size="sm"
-                onClick={() => updateFeed.mutate({
-                  feedId: editingFeedId!,
-                  data: {
-                    feed_url: feedForm.feed_url,
-                    is_enabled: feedForm.is_enabled,
-                  },
-                })}
+                onClick={() =>
+                  updateFeed.mutate({
+                    feedId: editingFeedId!,
+                    data: {
+                      feed_url: feedForm.feed_url,
+                      is_enabled: feedForm.is_enabled,
+                    },
+                  })
+                }
                 disabled={updateFeed.isPending}
               >
                 {t("common.save")}

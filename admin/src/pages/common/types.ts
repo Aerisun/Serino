@@ -12,13 +12,19 @@ interface ColumnDef {
   className?: string;
 }
 
-type UseListHook = (
-  params: Record<string, unknown>,
-) => { data?: { data?: { items?: unknown[]; total?: number; page_size?: number } }; isLoading: boolean };
+type UseListHook = (params: Record<string, unknown>) => {
+  data?: { data?: { items?: unknown[]; total?: number; page_size?: number } };
+  isLoading: boolean;
+};
 
-type UseBulkMutationHook = (
-  options?: { mutation?: { onSuccess?: () => void } },
-) => { mutateAsync: (args: { data: { ids: string[]; status?: string } }) => Promise<{ data: { affected: number } }>; isPending: boolean };
+type UseBulkMutationHook = (options?: {
+  mutation?: { onSuccess?: () => void };
+}) => {
+  mutateAsync: (args: {
+    data: { ids: string[]; status?: string };
+  }) => Promise<{ data: { affected: number } }>;
+  isPending: boolean;
+};
 
 type GetQueryKeyFn = () => readonly unknown[];
 
@@ -39,10 +45,14 @@ export interface ContentListConfig {
 }
 
 export const DEFAULT_SORT_OPTIONS: SortOption[] = [
-  { value: "created_at:desc", labelKey: "common.sortNewest" },
-  { value: "created_at:asc", labelKey: "common.sortOldest" },
-  { value: "updated_at:desc", labelKey: "common.sortUpdated" },
-  { value: "title:asc", labelKey: "common.sortTitle" },
+  { value: "updated_at:desc", labelKey: "common.sortLastUpdatedDesc" },
+  { value: "updated_at:asc", labelKey: "common.sortLastUpdatedAsc" },
+  { value: "published_at:desc", labelKey: "common.sortRecordedAtDesc" },
+  { value: "published_at:asc", labelKey: "common.sortRecordedAtAsc" },
 ];
 
-export const DEFAULT_STATUS_TABS = ["draft", "published", "archived"];
+export const DEFAULT_STATUS_TABS = [
+  "draft",
+  "public_publish",
+  "private_archive",
+];

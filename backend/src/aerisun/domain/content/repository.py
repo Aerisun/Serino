@@ -7,6 +7,7 @@ from sqlalchemy import Select, desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import (
+    ContentCategory,
     DiaryEntry,
     ExcerptEntry,
     PostEntry,
@@ -112,15 +113,56 @@ def count_by_tags(session: Session) -> dict[str, int]:
     return tag_counts
 
 
-def count_by_category(session: Session) -> list[tuple[str, int]]:
-    """PostEntry category aggregation."""
-    return list(
-        session.query(PostEntry.category, func.count(PostEntry.id))
-        .filter(PostEntry.category.isnot(None), PostEntry.category != "")
-        .group_by(PostEntry.category)
-        .order_by(func.count(PostEntry.id).desc())
+def list_categories(session: Session, *, content_type: str | None = None) -> list[ContentCategory]:
+    query = session.query(ContentCategory)
+    if content_type:
+        query = query.filter(ContentCategory.content_type == content_type)
+    return list(query.order_by(ContentCategory.content_type.asc(), ContentCategory.name.asc()).all())
+
+
+def list_distinct_content_categories(session: Session, *, content_type: str) -> list[str]:
+    model = CONTENT_MODELS[content_type]
+    rows = (
+        session.query(model.category)
+        .filter(model.category.isnot(None), model.category != "")
+        .distinct()
+        .order_by(model.category.asc())
         .all()
     )
+    return [name for (name,) in rows if name]
+
+
+def get_category(session: Session, category_id: str) -> ContentCategory | None:
+    return session.query(ContentCategory).filter(ContentCategory.id == category_id).first()
+
+
+def get_category_by_name(session: Session, *, content_type: str, name: str) -> ContentCategory | None:
+    return (
+        session.query(ContentCategory)
+        .filter(ContentCategory.content_type == content_type, ContentCategory.name == name)
+        .first()
+    )
+
+
+def create_category(session: Session, *, category_id: str, content_type: str, name: str) -> ContentCategory:
+    category = ContentCategory(id=category_id, content_type=content_type, name=name)
+    session.add(category)
+    session.commit()
+    session.refresh(category)
+    return category
+
+
+def update_category_name(session: Session, category: ContentCategory, *, name: str) -> ContentCategory:
+    category.name = name
+    session.add(category)
+    session.commit()
+    session.refresh(category)
+    return category
+
+
+def delete_category(session: Session, category: ContentCategory) -> None:
+    session.delete(category)
+    session.commit()
 
 
 def find_all_for_export(session: Session, model: type[ContentModel]) -> list:

@@ -25,6 +25,7 @@ def build_crud_router(
     tag: str,
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
     prepare_create_data: Callable[[Session, dict[str, Any]], dict[str, Any]] | None = None,
+    prepare_update_data: Callable[[Session, Any, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> APIRouter:
     """Factory that returns a full CRUD router for a given SQLAlchemy model."""
 
@@ -38,6 +39,7 @@ def build_crud_router(
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=20, ge=1, le=100),
         status_filter: str | None = Query(default=None, alias="status"),
+        visibility_filter: str | None = Query(default=None, alias="visibility"),
         tag: str | None = Query(default=None),
         search: str | None = Query(default=None),
         sort_by: str = Query(default="created_at"),
@@ -52,6 +54,7 @@ def build_crud_router(
             page_size=page_size,
             read_schema=read_schema,
             status_filter=status_filter,
+            visibility_filter=visibility_filter,
             tag_filter=tag,
             search=search,
             sort_by=sort_by,
@@ -107,6 +110,7 @@ def build_crud_router(
             payload,
             read_schema=read_schema,
             base_query_factory=base_query_factory,
+            prepare_data=prepare_update_data,
         )
 
     @router.delete(

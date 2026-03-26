@@ -4,7 +4,7 @@ import { useI18n } from "@/i18n";
 const statusVariantMap: Record<string, string> = {
   draft: "secondary",
   published: "success",
-  archived: "outline",
+  archived: "info",
   pending: "warning",
   approved: "success",
   rejected: "destructive",
@@ -15,7 +15,7 @@ const statusVariantMap: Record<string, string> = {
   failed: "destructive",
   restoring: "warning",
   public: "success",
-  private: "secondary",
+  private: "info",
   unlisted: "outline",
 };
 

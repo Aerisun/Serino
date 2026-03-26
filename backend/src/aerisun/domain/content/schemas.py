@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -50,8 +51,8 @@ class ContentCreate(BaseModel):
     summary: str | None = Field(default=None, description="Brief summary or excerpt")
     body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(default_factory=list, description="List of tag names")
-    status: str = Field(default="draft", description="Publication status: draft, published, or archived")
-    visibility: str = Field(default="public", description="Visibility level: public or private")
+    status: Literal["draft", "published", "archived"] = Field(default="draft", description="Publication status: draft, public publish, or private archive")
+    visibility: Literal["public", "private"] = Field(default="public", description="Visibility level: public or private")
     published_at: datetime | None = Field(default=None, description="Publication timestamp")
     category: str | None = Field(default=None, description="Content category name")
     mood: str | None = Field(default=None, description="Author mood (diary-specific)")
@@ -70,8 +71,8 @@ class ContentUpdate(BaseModel):
     summary: str | None = Field(default=None, description="Brief summary or excerpt")
     body: str | None = Field(default=None, description="Full content body in Markdown")
     tags: list[str] | None = Field(default=None, description="List of tag names")
-    status: str | None = Field(default=None, description="Publication status")
-    visibility: str | None = Field(default=None, description="Visibility level")
+    status: Literal["draft", "published", "archived"] | None = Field(default=None, description="Publication status")
+    visibility: Literal["public", "private"] | None = Field(default=None, description="Visibility level")
     published_at: datetime | None = Field(default=None, description="Publication timestamp")
     category: str | None = Field(default=None, description="Content category name")
     mood: str | None = Field(default=None, description="Author mood (diary-specific)")
@@ -127,9 +128,22 @@ class TagInfo(BaseModel):
     count: int = Field(description="Number of entries with this tag")
 
 
-class CategoryInfo(BaseModel):
+class ContentCategoryRead(ModelBase):
+    id: str = Field(description="Category identifier")
+    content_type: str = Field(description="Content type bucket")
     name: str = Field(description="Category name")
-    count: int = Field(description="Number of entries in this category")
+    usage_count: int = Field(default=0, description="How many entries use this category")
+
+
+class ContentCategoryCreate(BaseModel):
+    content_type: Literal["posts", "thoughts", "excerpts"] = Field(
+        description="Content type bucket",
+    )
+    name: str = Field(min_length=1, max_length=80, description="Category name")
+
+
+class ContentCategoryUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=80, description="Category name")
 
 
 # Import/Export

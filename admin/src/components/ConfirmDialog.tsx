@@ -1,5 +1,11 @@
-import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import { AlertTriangle } from "lucide-react";
 import { useI18n } from "@/i18n";
 
@@ -27,39 +33,46 @@ export function ConfirmDialog({
   const { t } = useI18n();
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => !v && onCancel()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl admin-glass-strong p-6 shadow-lg">
+    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
+      <DialogContent hideCloseButton className="max-w-[420px] rounded-2xl p-0 overflow-hidden">
+        <div className="border-b border-white/10 px-6 pb-4 pt-5 dark:border-white/5">
           <div className="flex items-start gap-4">
             {variant === "destructive" && (
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+              <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 ring-1 ring-destructive/20">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
             )}
-            <div className="flex-1">
-              <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
+            <DialogHeader className="flex-1 space-y-2 text-left">
+              <DialogTitle className="text-base font-semibold tracking-tight">
+                {title}
+              </DialogTitle>
               {description && (
-                <Dialog.Description className="mt-2 text-sm text-muted-foreground">
+                <DialogDescription className="leading-6">
                   {description}
-                </Dialog.Description>
+                </DialogDescription>
               )}
-            </div>
+            </DialogHeader>
           </div>
-          <div className="mt-6 flex justify-end gap-3">
-            <Button variant="outline" onClick={onCancel} disabled={isPending}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant={variant === "destructive" ? "destructive" : "default"}
-              onClick={onConfirm}
-              disabled={isPending}
-            >
-              {isPending ? t("common.loading") : confirmLabel || t("common.confirm")}
-            </Button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </div>
+        <div className="flex justify-end gap-2 px-6 py-4">
+          <Button
+            variant="outline"
+            className="min-w-20"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant={variant === "destructive" ? "destructive" : "default"}
+            className="min-w-20"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {isPending ? t("common.loading") : confirmLabel || t("common.confirm")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

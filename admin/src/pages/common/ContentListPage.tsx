@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,9 +9,16 @@ import { BulkActionBar } from "@/components/BulkActionBar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { Plus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { cn } from "@/lib/utils";
 import type { ContentListConfig } from "./types";
 import { DEFAULT_SORT_OPTIONS, DEFAULT_STATUS_TABS } from "./types";
 
@@ -26,12 +33,35 @@ export default function ContentListPage({ config }: ContentListPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [page, setPage] = useState(() => Number(searchParams.get("page")) || 1);
-  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") || "");
+  const [statusFilter, setStatusFilter] = useState(
+    () => searchParams.get("status") || "",
+  );
+  const [visibilityFilter, setVisibilityFilter] = useState(
+    () => searchParams.get("visibility") || "",
+  );
+  const initialFilterMode = (() => {
+    if (searchParams.get("status") === "draft") return "draft";
+    if (
+      searchParams.get("status") === "published" &&
+      searchParams.get("visibility") === "public"
+    )
+      return "public_publish";
+    if (
+      searchParams.get("status") === "archived" &&
+      searchParams.get("visibility") === "private"
+    )
+      return "private_archive";
+    return "";
+  })();
+  const [filterMode, setFilterMode] = useState(initialFilterMode);
   const [search, setSearch] = useState(() => searchParams.get("q") || "");
-  const [searchDebounced, setSearchDebounced] = useState(() => searchParams.get("q") || "");
-  const [sort, setSort] = useState("created_at:desc");
+  const [searchDebounced, setSearchDebounced] = useState(
+    () => searchParams.get("q") || "",
+  );
+  const [sort, setSort] = useState("updated_at:desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [filterActionsExpanded, setFilterActionsExpanded] = useState(false);
 
   const [sort_by, sort_order] = sort.split(":");
   const sortOptions = config.sortOptions ?? DEFAULT_SORT_OPTIONS;
@@ -44,32 +74,53 @@ export default function ContentListPage({ config }: ContentListPageProps) {
     searchTimer.current = setTimeout(() => {
       setSearchDebounced(value);
       setPage(1);
-      syncUrl(1, statusFilter, value);
+      syncUrl(1, statusFilter, visibilityFilter, value);
     }, 300);
   };
 
-  const syncUrl = (p: number, status: string, q: string) => {
+  const syncUrl = (
+    p: number,
+    status: string,
+    visibility: string,
+    q: string,
+  ) => {
     const params: Record<string, string> = {};
     if (p > 1) params.page = String(p);
     if (status) params.status = status;
+    if (visibility) params.visibility = visibility;
     if (q) params.q = q;
     setSearchParams(params, { replace: true });
   };
 
   const handlePageChange = (p: number) => {
     setPage(p);
-    syncUrl(p, statusFilter, searchDebounced);
+    syncUrl(p, statusFilter, visibilityFilter, searchDebounced);
   };
 
   const handleStatusChange = (v: string) => {
-    setStatusFilter(v);
+    let nextStatus = "";
+    let nextVisibility = "";
+    if (v === "draft") {
+      nextStatus = "draft";
+      nextVisibility = "public";
+    } else if (v === "public_publish") {
+      nextStatus = "published";
+      nextVisibility = "public";
+    } else if (v === "private_archive") {
+      nextStatus = "archived";
+      nextVisibility = "private";
+    }
+    setFilterMode(v);
+    setStatusFilter(nextStatus);
+    setVisibilityFilter(nextVisibility);
     setPage(1);
-    syncUrl(1, v, searchDebounced);
+    syncUrl(1, nextStatus, nextVisibility, searchDebounced);
   };
 
   const params = {
     page,
     status: statusFilter || undefined,
+    visibility: visibilityFilter || undefined,
     search: searchDebounced || undefined,
     sort_by,
     sort_order,
@@ -83,7 +134,9 @@ export default function ContentListPage({ config }: ContentListPageProps) {
     config.useBulkDelete({
       mutation: {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: [...config.getQueryKey()] });
+          queryClient.invalidateQueries({
+            queryKey: [...config.getQueryKey()],
+          });
         },
       },
     });
@@ -101,9 +154,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
       const res = await bulkDelete({
         data: { ids: Array.from(selectedIds) },
       });
-      toast.success(
-        t("common.operationSuccess") + ` (${res.data.affected})`,
-      );
+      toast.success(t("common.operationSuccess") + ` (${res.data.affected})`);
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
     } catch {
@@ -116,9 +167,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
       const res = await bulkStatus({
         data: { ids: Array.from(selectedIds), status },
       });
-      toast.success(
-        t("common.operationSuccess") + ` (${res.data.affected})`,
-      );
+      toast.success(t("common.operationSuccess") + ` (${res.data.affected})`);
       setSelectedIds(new Set());
     } catch {
       toast.error(t("common.operationFailed"));
@@ -137,37 +186,78 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         }
       />
 
-      <div className="flex items-center gap-4 mb-4">
-        <Tabs value={statusFilter} onValueChange={handleStatusChange}>
-          <TabsList>
-            <TabsTrigger value="">{t("common.all")}</TabsTrigger>
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button
+            variant={filterMode === "" ? "default" : "outline"}
+            onClick={() => handleStatusChange("")}
+          >
+            {t("common.all")}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            aria-label={filterActionsExpanded ? "收起筛选选项" : "展开筛选选项"}
+            aria-expanded={filterActionsExpanded}
+            onClick={() => setFilterActionsExpanded((open) => !open)}
+          >
+            {filterActionsExpanded ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+          <div
+            className={cn(
+              "flex items-center gap-2 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out",
+              filterActionsExpanded
+                ? "max-w-[520px] opacity-100 translate-x-0"
+                : "max-w-0 opacity-0 -translate-x-2 pointer-events-none",
+            )}
+          >
             {statusTabs.map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {t(`posts.${tab}`)}
-              </TabsTrigger>
+              <Button
+                key={tab}
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => handleStatusChange(tab)}
+              >
+                {tab === "public_publish"
+                  ? t("posts.published")
+                  : tab === "private_archive"
+                    ? t("posts.archived")
+                    : t(`posts.${tab}`)}
+              </Button>
             ))}
-          </TabsList>
-        </Tabs>
-        <Input
-          placeholder={t("common.searchPlaceholder")}
-          className="max-w-xs"
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-        />
-        <select
-          className="h-9 rounded-md admin-glass-input px-3 text-sm"
+          </div>
+        </div>
+        <Select
           value={sort}
-          onChange={(e) => {
-            setSort(e.target.value);
+          onValueChange={(value) => {
+            setSort(value);
             setPage(1);
           }}
         >
-          {sortOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {t(opt.labelKey)}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-9 w-[220px] shrink-0 rounded-md px-3 text-sm">
+            <SelectValue placeholder={t("common.sortBy")} />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {t(opt.labelKey)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          placeholder={t("common.searchPlaceholder")}
+          className="max-w-xs flex-1 min-w-[220px]"
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
       </div>
 
       <BulkActionBar
@@ -179,13 +269,13 @@ export default function ContentListPage({ config }: ContentListPageProps) {
             onClick: () => handleBulkStatus("published"),
           },
           {
-            label: t("common.bulkDraft"),
-            onClick: () => handleBulkStatus("draft"),
+            label: t("posts.archived"),
+            onClick: () => handleBulkStatus("archived"),
             variant: "outline",
           },
           {
-            label: t("common.bulkArchive"),
-            onClick: () => handleBulkStatus("archived"),
+            label: t("common.bulkDraft"),
+            onClick: () => handleBulkStatus("draft"),
             variant: "outline",
           },
           {

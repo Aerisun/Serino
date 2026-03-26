@@ -1,3 +1,4 @@
+import { Fragment, useState } from "react";
 import {
   Table,
   TableHeader,
@@ -7,7 +8,7 @@ import {
   TableCell,
 } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 interface Column<T> {
@@ -28,6 +29,7 @@ interface DataTableProps<T> {
   selectable?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
+  renderExpandedRow?: (row: T) => React.ReactNode;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -42,9 +44,12 @@ export function DataTable<T extends { id: string }>({
   selectable,
   selectedIds,
   onSelectionChange,
+  renderExpandedRow,
 }: DataTableProps<T>) {
   const { t } = useI18n();
   const totalPages = Math.ceil(total / pageSize);
+  const hasExpandedRow = Boolean(renderExpandedRow);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const allPageSelected =
     data.length > 0 && data.every((row) => selectedIds?.has(row.id));
@@ -72,13 +77,27 @@ export function DataTable<T extends { id: string }>({
     onSelectionChange(next);
   };
 
-  const colSpan = columns.length + (selectable ? 1 : 0);
+  const toggleExpanded = (id: string) => {
+    if (!renderExpandedRow) return;
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const colSpan = columns.length + (selectable ? 1 : 0) + (hasExpandedRow ? 1 : 0);
 
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
+            {hasExpandedRow && <TableHead className="w-10" />}
             {selectable && (
               <TableHead className="w-10">
                 <input
@@ -121,32 +140,61 @@ export function DataTable<T extends { id: string }>({
             </TableRow>
           ) : (
             data.map((row) => (
-              <TableRow
-                key={row.id}
-                className={onRowClick ? "cursor-pointer" : ""}
-                onClick={() => onRowClick?.(row)}
-              >
-                {selectable && (
-                  <TableCell
-                    className="w-10"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300"
-                      checked={selectedIds?.has(row.id) ?? false}
-                      onChange={() => toggleRow(row.id)}
-                    />
-                  </TableCell>
-                )}
-                {columns.map((col, i) => (
-                  <TableCell key={i} className={col.className}>
-                    {typeof col.accessor === "function"
-                      ? col.accessor(row)
-                      : (row[col.accessor] as React.ReactNode)}
-                  </TableCell>
-                ))}
-              </TableRow>
+              <Fragment key={row.id}>
+                <TableRow
+                  className={onRowClick ? "cursor-pointer" : ""}
+                  onClick={() => onRowClick?.(row)}
+                >
+                  {hasExpandedRow && (
+                    <TableCell
+                      className="w-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => toggleExpanded(row.id)}
+                        aria-label={expandedIds.has(row.id) ? t("common.collapse") : t("common.expand")}
+                      >
+                        {expandedIds.has(row.id) ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                  )}
+                  {selectable && (
+                    <TableCell
+                      className="w-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300"
+                        checked={selectedIds?.has(row.id) ?? false}
+                        onChange={() => toggleRow(row.id)}
+                      />
+                    </TableCell>
+                  )}
+                  {columns.map((col, i) => (
+                    <TableCell key={i} className={col.className}>
+                      {typeof col.accessor === "function"
+                        ? col.accessor(row)
+                        : (row[col.accessor] as React.ReactNode)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {hasExpandedRow && expandedIds.has(row.id) ? (
+                  <TableRow>
+                    <TableCell colSpan={colSpan} className="bg-muted/20 px-4 py-0">
+                      {renderExpandedRow(row)}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </Fragment>
             ))
           )}
         </TableBody>

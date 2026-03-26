@@ -3,20 +3,88 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TypeVar
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from aerisun.core.base import uuid_str
 from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
+    ContentCategory,
     DiaryEntry,
     ExcerptEntry,
     PostEntry,
     ThoughtEntry,
 )
-from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
-from aerisun.domain.exceptions import ResourceNotFound
+from aerisun.domain.content.schemas import ContentCategoryRead, ContentCollectionRead, ContentEntryRead
+from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls, get_counter_stats_by_urls
 
 ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
+
+CONTENT_CATEGORY_TYPES = {"posts", "thoughts", "excerpts"}
+
+
+CONTENT_STATUS_VALUES = {"draft", "published", "archived"}
+CONTENT_VISIBILITY_VALUES = {"public", "private"}
+MANAGED_MODEL_CONTENT_TYPES = {
+    PostEntry: "posts",
+    ThoughtEntry: "thoughts",
+    ExcerptEntry: "excerpts",
+}
+
+
+def normalize_content_create_state(session: Session, data: dict) -> dict:
+    normalized = dict(data)
+    _normalize_and_sync_category(session, normalized, content_type=normalized.pop("_content_type", None))
+    status = normalized.get("status", "draft")
+    visibility = normalized.get("visibility", "public")
+
+    if status not in CONTENT_STATUS_VALUES:
+        status = "draft"
+    if visibility not in CONTENT_VISIBILITY_VALUES:
+        visibility = "public"
+
+    if visibility == "private":
+        normalized["visibility"] = "private"
+        normalized["status"] = "archived"
+        return normalized
+
+    normalized["visibility"] = "public"
+    normalized["status"] = status
+    return normalized
+
+
+def normalize_content_update_state(session: Session, existing: ContentModel, patch: dict) -> dict:
+    normalized = dict(patch)
+    _normalize_and_sync_category(
+        session,
+        normalized,
+        content_type=MANAGED_MODEL_CONTENT_TYPES.get(type(existing)),
+    )
+    current_status = getattr(existing, "status", "draft") or "draft"
+    current_visibility = getattr(existing, "visibility", "public") or "public"
+
+    target_status = normalized.get("status", current_status)
+    target_visibility = normalized.get("visibility", current_visibility)
+
+    if target_status not in CONTENT_STATUS_VALUES:
+        target_status = current_status if current_status in CONTENT_STATUS_VALUES else "draft"
+    if target_visibility not in CONTENT_VISIBILITY_VALUES:
+        target_visibility = current_visibility if current_visibility in CONTENT_VISIBILITY_VALUES else "public"
+
+    if target_visibility == "private":
+        normalized["visibility"] = "private"
+        normalized["status"] = "archived"
+        return normalized
+
+    if current_visibility == "private" and current_status == "archived" and target_visibility == "public":
+        normalized["visibility"] = "public"
+        normalized["status"] = "draft"
+        return normalized
+
+    normalized["visibility"] = "public"
+    normalized["status"] = target_status
+    return normalized
 
 
 def _estimate_read_time(value: str) -> str:
@@ -184,9 +252,145 @@ def aggregate_tags(session: Session) -> list:
     )
 
 
-def aggregate_categories(session: Session) -> list:
-    """Aggregate post categories with counts."""
-    from aerisun.domain.content.schemas import CategoryInfo
+def normalize_category_name(name: str) -> str:
+    normalized = " ".join(name.split()).strip()
+    if not normalized:
+        raise ValidationError("分类名称不能为空")
+    if len(normalized) > 80:
+        raise ValidationError("分类名称不能超过 80 个字符")
+    return normalized
 
-    rows = repo.count_by_category(session)
-    return [CategoryInfo(name=name, count=count) for name, count in rows]
+
+def _normalize_and_sync_category(
+    session: Session,
+    data: dict,
+    *,
+    content_type: str | None,
+) -> None:
+    if "category" not in data:
+        return
+
+    raw_value = data.get("category")
+    if raw_value is None:
+        return
+
+    if not isinstance(raw_value, str):
+        raise ValidationError("分类名称格式不正确")
+
+    normalized_name = " ".join(raw_value.split()).strip()
+    data["category"] = normalized_name or None
+
+    if normalized_name and content_type:
+        create_managed_category(session, content_type=content_type, name=normalized_name)
+
+
+def ensure_content_type(content_type: str) -> str:
+    if content_type not in CONTENT_CATEGORY_TYPES:
+        raise ValidationError("不支持的内容类型")
+    return content_type
+
+
+def _category_usage_count(session: Session, *, content_type: str, name: str) -> int:
+    model = repo.CONTENT_MODELS[content_type]
+    return (
+        session.query(func.count(model.id))
+        .filter(model.category == name)
+        .scalar()
+        or 0
+    )
+
+
+def _to_category_read(session: Session, category: ContentCategory) -> ContentCategoryRead:
+    return ContentCategoryRead(
+        id=category.id,
+        content_type=category.content_type,
+        name=category.name,
+        usage_count=_category_usage_count(
+            session,
+            content_type=category.content_type,
+            name=category.name,
+        ),
+    )
+
+
+def sync_managed_categories_from_content(session: Session, *, content_type: str | None = None) -> None:
+    target_types = [content_type] if content_type else sorted(CONTENT_CATEGORY_TYPES)
+    for current_type in target_types:
+        ensure_content_type(current_type)
+        existing_names = {
+            category.name
+            for category in repo.list_categories(session, content_type=current_type)
+        }
+        discovered_names = repo.list_distinct_content_categories(session, content_type=current_type)
+        for name in discovered_names:
+            normalized_name = normalize_category_name(name)
+            if normalized_name in existing_names:
+                continue
+            repo.create_category(
+                session,
+                category_id=uuid_str(),
+                content_type=current_type,
+                name=normalized_name,
+            )
+            existing_names.add(normalized_name)
+
+
+def list_managed_categories(session: Session, *, content_type: str | None = None) -> list[ContentCategoryRead]:
+    if content_type is not None:
+        ensure_content_type(content_type)
+    sync_managed_categories_from_content(session, content_type=content_type)
+    categories = [
+        category
+        for category in repo.list_categories(session, content_type=content_type)
+        if category.content_type in CONTENT_CATEGORY_TYPES
+    ]
+    return [_to_category_read(session, category) for category in categories]
+
+
+def create_managed_category(session: Session, *, content_type: str, name: str) -> ContentCategoryRead:
+    category_type = ensure_content_type(content_type)
+    normalized_name = normalize_category_name(name)
+    existing = repo.get_category_by_name(session, content_type=category_type, name=normalized_name)
+    if existing is not None:
+        return _to_category_read(session, existing)
+    category = repo.create_category(
+        session,
+        category_id=uuid_str(),
+        content_type=category_type,
+        name=normalized_name,
+    )
+    return _to_category_read(session, category)
+
+
+def update_managed_category(session: Session, *, category_id: str, name: str) -> ContentCategoryRead:
+    category = repo.get_category(session, category_id)
+    if category is None:
+        raise ResourceNotFound("Category not found")
+
+    normalized_name = normalize_category_name(name)
+    duplicate = repo.get_category_by_name(
+        session,
+        content_type=category.content_type,
+        name=normalized_name,
+    )
+    if duplicate is not None and duplicate.id != category.id:
+        raise ValidationError("该分类已存在")
+
+    previous_name = category.name
+    category = repo.update_category_name(session, category, name=normalized_name)
+    if previous_name != normalized_name:
+        model = repo.CONTENT_MODELS[category.content_type]
+        items = session.query(model).filter(model.category == previous_name).all()
+        for item in items:
+            item.category = normalized_name
+        session.commit()
+    return _to_category_read(session, category)
+
+
+def delete_managed_category(session: Session, *, category_id: str) -> None:
+    category = repo.get_category(session, category_id)
+    if category is None:
+        raise ResourceNotFound("Category not found")
+    if _category_usage_count(session, content_type=category.content_type, name=category.name) > 0:
+        raise ValidationError("该分类仍在使用中，无法删除")
+    repo.delete_category(session, category)

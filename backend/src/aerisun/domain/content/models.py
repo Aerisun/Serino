@@ -1,15 +1,25 @@
 from __future__ import annotations
 
-from sqlalchemy import Integer, String, Text
+from sqlalchemy import Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, ContentMixin, TimestampMixin
 
 
+class ContentCategory(Base, TimestampMixin):
+    __tablename__ = "content_categories"
+    __table_args__ = (
+        UniqueConstraint("content_type", "name", name="uq_content_categories_type_name"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    content_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+
+
 class PostEntry(ContentMixin, Base, TimestampMixin):
     __tablename__ = "posts"
 
-    category: Mapped[str | None] = mapped_column(String(80), nullable=True)
     view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 

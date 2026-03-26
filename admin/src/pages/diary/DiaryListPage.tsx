@@ -21,10 +21,22 @@ function useDiaryListConfig(): ContentListConfig {
     editPath: (id) => `/diary/${id}`,
     columns: [
       { header: t("common.title"), accessor: "title" },
-      { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
-      { header: t("posts.visibility"), accessor: (row) => <StatusBadge status={row.visibility} /> },
-      { header: t("posts.published"), accessor: (row) => formatDate(row.published_at) },
-      { header: t("diary.created"), accessor: (row) => formatDate(row.created_at) },
+      {
+        header: t("common.status"),
+        accessor: (row) => <StatusBadge status={row.status} />,
+      },
+      {
+        header: t("posts.visibility"),
+        accessor: (row) => <StatusBadge status={row.visibility} />,
+      },
+      {
+        header: t("common.recordedAt"),
+        accessor: (row) => formatDate(row.published_at),
+      },
+      {
+        header: t("diary.created"),
+        accessor: (row) => formatDate(row.created_at),
+      },
     ],
     useList: useListDiary as ContentListConfig["useList"],
     useBulkDelete: useBulkDeleteDiary as ContentListConfig["useBulkDelete"],
