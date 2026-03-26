@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@sentry/react": "^10.45.0",
+    "@waline/api": "^1.1.0",
     "@serino/api-client": "workspace:*",
     "@serino/theme": "workspace:*",
     "@serino/types": "workspace:*",
