@@ -3,10 +3,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from aerisun.api.public_auth import get_current_site_user
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_AUTH_LOGIN, limiter
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import (
+    AdminEmailLoginRequest,
+    AdminLoginOptionsRead,
     AdminProfileUpdate,
     AdminSessionRead,
     AdminUserRead,
@@ -23,6 +26,12 @@ from aerisun.domain.iam.service import (
     list_admin_sessions,
     revoke_admin_session,
     update_admin_profile,
+)
+from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.service import (
+    get_admin_login_options,
+    resolve_admin_user_id_for_email,
+    resolve_admin_user_id_for_site_user,
 )
 
 from .deps import get_current_admin
@@ -42,6 +51,33 @@ def _extract_token(request: Request) -> str | None:
 def login(request: Request, payload: LoginRequest, session: Session = Depends(get_session)) -> LoginResponse:
     user = authenticate_admin(session, payload.username, payload.password)
     return create_admin_session(session, user.id)
+
+
+@router.get("/options", response_model=AdminLoginOptionsRead, summary="获取管理员登录方式")
+def login_options(session: Session = Depends(get_session)) -> AdminLoginOptionsRead:
+    return AdminLoginOptionsRead(**get_admin_login_options(session))
+
+
+@router.post("/email", response_model=LoginResponse, summary="通过管理员邮箱登录")
+@limiter.limit(RATE_AUTH_LOGIN)
+def login_with_bound_email(
+    request: Request,
+    payload: AdminEmailLoginRequest,
+    session: Session = Depends(get_session),
+) -> LoginResponse:
+    admin_user_id = resolve_admin_user_id_for_email(session, payload.email)
+    return create_admin_session(session, admin_user_id)
+
+
+@router.post("/exchange-site-user", response_model=LoginResponse, summary="将当前前台管理员身份换成后台登录")
+@limiter.limit(RATE_AUTH_LOGIN)
+def exchange_site_user_login(
+    request: Request,
+    current_site_user: SiteUser = Depends(get_current_site_user),
+    session: Session = Depends(get_session),
+) -> LoginResponse:
+    admin_user_id = resolve_admin_user_id_for_site_user(session, current_site_user)
+    return create_admin_session(session, admin_user_id)
 
 
 @router.post("/logout", status_code=204, summary="管理员登出")

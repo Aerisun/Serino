@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, X, Search } from "lucide-react";
+import { ChevronDown, LogOut, Menu, PencilLine, Search, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { transition } from "@/config";
+import { useSiteAuth } from "@/contexts/site-auth";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import type { NavItem } from "@/lib/runtime-config";
@@ -21,6 +22,9 @@ const getItemIsActive = (item: NavItem, pathname: string) =>
   isPathActive(item.href, pathname) ||
   item.children?.some((child) => isPathActive(child.href, pathname)) ||
   false;
+
+const authProviderLabel = (provider: string) =>
+  provider === "google" ? "Google" : provider === "github" ? "GitHub" : "邮箱识别";
 
 const NavDropdown = ({
   item,
@@ -241,11 +245,19 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [authMenuOpen, setAuthMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
+  const authMenuRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotionPreference();
+  const { user, openLogin, openProfileEditor, logout } = useSiteAuth();
   const navGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
   const navStrongGlassClass =
     glassVariant === "hero" ? "liquid-glass-hero-strong" : "liquid-glass-strong";
+  const iconButtonGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
+  const iconButtonToneClass =
+    glassVariant === "hero"
+      ? "text-white/72 hover:text-white"
+      : "text-foreground/60 hover:text-foreground";
   const navItemTextClass =
     glassVariant === "hero"
       ? "text-white/82 hover:text-white"
@@ -311,6 +323,19 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
       window.removeEventListener("resize", handleResize);
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!authMenuOpen) return;
+
+    const handler = (event: MouseEvent) => {
+      if (!authMenuRef.current?.contains(event.target as Node)) {
+        setAuthMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [authMenuOpen]);
 
   const goTo = (path: string) => {
     setMobileOpen(false);
@@ -431,8 +456,93 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
       }}
       transition={transition({ duration: 0.35, reducedMotion: prefersReducedMotion })}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="w-9 md:w-9">
+      <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-0">
+        <div className="flex items-center gap-2 md:justify-self-start">
+          <div className="relative flex items-center" ref={authMenuRef}>
+            {user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setAuthMenuOpen((current) => !current)}
+                  aria-label={`${user.effective_display_name} 账户菜单`}
+                  className={`inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border px-0 transition-all sm:w-auto sm:justify-start sm:gap-2 sm:px-2.5 sm:pr-3 ${navGlassClass} ${
+                    glassVariant === "hero"
+                      ? "border-white/14 text-white/86 hover:text-white"
+                      : "border-[rgb(var(--shiro-border-rgb)/0.22)] text-foreground/76 hover:text-foreground"
+                  }`}
+                >
+                  <img
+                    src={user.effective_avatar_url}
+                    alt={user.effective_display_name}
+                    className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-black/5"
+                  />
+                  <span className="hidden text-sm font-medium sm:inline">{user.effective_display_name}</span>
+                  {user.is_admin ? (
+                    <span className="hidden rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.2)] bg-[rgb(var(--shiro-accent-rgb)/0.08)] px-2 py-0.5 text-[0.66rem] font-semibold text-[rgb(var(--shiro-accent-rgb)/0.88)] sm:inline-flex">
+                      Admin
+                    </span>
+                  ) : null}
+                </button>
+                <AnimatePresence>
+                  {authMenuOpen ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={transition({ duration: 0.18, reducedMotion: prefersReducedMotion })}
+                      className={`absolute left-0 top-[calc(100%+0.75rem)] w-60 overflow-hidden rounded-[1.35rem] border p-2 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ${navStrongGlassClass}`}
+                      style={{ borderColor: "rgb(var(--shiro-border-rgb) / 0.34)" }}
+                    >
+                      <div className="px-3 py-2">
+                        <div className="text-sm font-semibold text-foreground">{user.effective_display_name}</div>
+                        <div className="mt-1 text-xs text-foreground/46">
+                          {user.is_admin
+                            ? `当前是管理员模式 · 来源：${authProviderLabel(user.primary_auth_provider)}`
+                            : `当前身份来源：${authProviderLabel(user.primary_auth_provider)}`}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openProfileEditor();
+                          setAuthMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                      >
+                        <PencilLine className="h-4 w-4" />
+                        修改资料
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void logout().then(() => setAuthMenuOpen(false))}
+                        className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        退出登录
+                      </button>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={openLogin}
+                className={[
+                  "group relative inline-flex h-9 items-center gap-2 overflow-hidden rounded-full px-3.5 text-sm font-medium transition-all active:scale-[0.98]",
+                  glassVariant === "hero"
+                    ? "text-white"
+                    : "text-[rgb(var(--shiro-accent-rgb)/0.92)]",
+                ].join(" ")}
+              >
+                <span className="absolute inset-0 rounded-full border border-white/10 bg-[linear-gradient(135deg,rgb(66_133_244/0.22),rgb(234_67_53/0.12),rgb(251_188_5/0.12),rgb(52_168_83/0.22))]" />
+                <span className="absolute inset-[1px] rounded-full bg-background/[0.88] dark:bg-card/[0.88]" />
+                <span className="absolute -inset-x-2 top-1/2 h-6 -translate-y-1/2 bg-[radial-gradient(circle,_rgb(255_255_255/0.28),_transparent_58%)] opacity-0 blur-md transition-opacity group-hover:opacity-100" />
+                <Sparkles className="relative h-4 w-4" />
+                <span className="relative hidden sm:inline">登录</span>
+              </button>
+            )}
+          </div>
           <button
             type="button"
             aria-label="打开导航菜单"
@@ -446,7 +556,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
         </div>
 
         <div
-          className={`relative hidden overflow-hidden md:flex items-center rounded-full px-2 py-1.5 gap-1 shadow-[0_18px_48px_rgba(15,23,42,0.08)] ${navGlassClass}`}
+          className={`relative hidden overflow-hidden md:flex md:justify-self-center items-center rounded-full px-2 py-1.5 gap-1 shadow-[0_18px_48px_rgba(15,23,42,0.08)] ${navGlassClass}`}
         >
           <div
             className="pointer-events-none absolute inset-x-5 top-0 h-px"
@@ -490,11 +600,11 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 mr-1 md:mr-0">
+        <div className="relative flex items-center gap-2 mr-1 md:mr-0 md:justify-self-end">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-search"))}
-            className="flex items-center justify-center h-8 w-8 rounded-full text-foreground/30 hover:text-foreground/60 transition-colors"
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95`}
             aria-label="搜索"
           >
             <Search className="h-4 w-4" />

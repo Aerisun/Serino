@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@serino/theme";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
+import { SiteAuthProvider } from "@/contexts/site-auth";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
@@ -47,34 +48,36 @@ function AppContent() {
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <ShiroAccentController />
-      {featureFlags.reading_progress && <ReadingProgress />}
-      <ErrorBoundary>
-        <Suspense
-          fallback={
-            <div className="flex h-screen items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" />
-            </div>
-          }
-        >
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/posts" element={<Posts />} />
-            <Route path="/posts/:id" element={<PostDetail />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/thoughts" element={<Thoughts />} />
-            <Route path="/diary" element={<Diary />} />
-            <Route path="/diary/:id" element={<DiaryDetail />} />
-            <Route path="/excerpts" element={<Excerpts />} />
-            <Route path="/resume" element={<Resume />} />
-            <Route path="/guestbook" element={<Guestbook />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/preview" element={<Preview />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-      <SearchModal open={searchOpen} onClose={closeSearch} />
+      <SiteAuthProvider>
+        <ShiroAccentController />
+        {featureFlags.reading_progress && <ReadingProgress />}
+        <ErrorBoundary>
+          <Suspense
+            fallback={
+              <div className="flex h-screen items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent opacity-60" />
+              </div>
+            }
+          >
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/posts" element={<Posts />} />
+              <Route path="/posts/:id" element={<PostDetail />} />
+              <Route path="/friends" element={<Friends />} />
+              <Route path="/thoughts" element={<Thoughts />} />
+              <Route path="/diary" element={<Diary />} />
+              <Route path="/diary/:id" element={<DiaryDetail />} />
+              <Route path="/excerpts" element={<Excerpts />} />
+              <Route path="/resume" element={<Resume />} />
+              <Route path="/guestbook" element={<Guestbook />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/preview" element={<Preview />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+        <SearchModal open={searchOpen} onClose={closeSearch} />
+      </SiteAuthProvider>
     </BrowserRouter>
   );
 }

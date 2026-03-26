@@ -1,6 +1,9 @@
 import {
   changePasswordApiV1AdminAuthPasswordPut,
+  exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost,
+  loginOptionsApiV1AdminAuthOptionsGet,
   listSessionsEndpointApiV1AdminAuthSessionsGet,
+  loginWithBoundEmailApiV1AdminAuthEmailPost,
   loginApiV1AdminAuthLoginPost,
   logoutApiV1AdminAuthLogoutPost,
   meApiV1AdminAuthMeGet,
@@ -8,6 +11,8 @@ import {
   updateProfileEndpointApiV1AdminAuthProfilePut,
 } from "@serino/api-client/admin";
 import type {
+  AdminEmailLoginRequest,
+  AdminLoginOptionsRead,
   AdminProfileUpdate,
   AdminSessionRead,
   AdminUserRead,
@@ -18,6 +23,21 @@ import type {
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const response = await loginApiV1AdminAuthLoginPost(data);
+  return response.data as LoginResponse;
+}
+
+export async function getLoginOptions(): Promise<AdminLoginOptionsRead> {
+  const response = await loginOptionsApiV1AdminAuthOptionsGet();
+  return response.data as AdminLoginOptionsRead;
+}
+
+export async function loginWithBoundEmail(data: AdminEmailLoginRequest): Promise<LoginResponse> {
+  const response = await loginWithBoundEmailApiV1AdminAuthEmailPost(data);
+  return response.data as LoginResponse;
+}
+
+export async function exchangeSiteUserLogin(): Promise<LoginResponse> {
+  const response = await exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost();
   return response.data as LoginResponse;
 }
 

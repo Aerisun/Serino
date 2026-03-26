@@ -25,10 +25,13 @@ const ThoughtListPage = lazy(() => import("@/pages/thoughts/ThoughtListPage"));
 const ThoughtEditPage = lazy(() => import("@/pages/thoughts/ThoughtEditPage"));
 const ExcerptListPage = lazy(() => import("@/pages/excerpts/ExcerptListPage"));
 const ExcerptEditPage = lazy(() => import("@/pages/excerpts/ExcerptEditPage"));
+const ContentCategoriesPage = lazy(() => import("@/pages/content/ContentCategoriesPage"));
 const SiteConfigPage = lazy(() => import("@/pages/site-config/SiteConfigPage"));
+const MorePage = lazy(() => import("@/pages/more/MorePage"));
 const ResumePage = lazy(() => import("@/pages/resume/ResumePage"));
 const FriendsPage = lazy(() => import("@/pages/friends/FriendsPage"));
 const ModerationPage = lazy(() => import("@/pages/moderation/ModerationPage"));
+const VisitorsPage = lazy(() => import("@/pages/visitors/VisitorsPage"));
 const AssetsPage = lazy(() => import("@/pages/assets/AssetsPage"));
 const ApiKeysPage = lazy(() => import("@/pages/system/ApiKeysPage"));
 const AuditLogPage = lazy(() => import("@/pages/system/AuditLogPage"));
@@ -66,10 +69,14 @@ function ProtectedRoutes() {
           <Route path="thoughts/:id" element={<ThoughtEditPage />} />
           <Route path="excerpts" element={<ExcerptListPage />} />
           <Route path="excerpts/:id" element={<ExcerptEditPage />} />
-          <Route path="site-config" element={<SiteConfigPage />} />
+          <Route path="content/categories" element={<ContentCategoriesPage />} />
+          <Route path="site-config/:section?" element={<SiteConfigPage />} />
+          <Route path="site-config/more" element={<Navigate to="/more" replace />} />
+          <Route path="more" element={<MorePage />} />
           <Route path="resume" element={<ResumePage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="moderation" element={<ModerationPage />} />
+          <Route path="visitors" element={<VisitorsPage />} />
           <Route path="assets" element={<AssetsPage />} />
           <Route path="system/api-keys" element={<ApiKeysPage />} />
           <Route path="system/audit-log" element={<AuditLogPage />} />

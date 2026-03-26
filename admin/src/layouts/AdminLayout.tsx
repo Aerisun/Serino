@@ -11,6 +11,7 @@ import {
   BookOpen,
   MessageSquare,
   Quote,
+  FolderTree,
   Settings,
   Briefcase,
   Users,
@@ -25,6 +26,7 @@ import {
   Globe,
   Moon,
   Sun,
+  User,
   UserCog,
   Info,
 } from "lucide-react";
@@ -43,13 +45,15 @@ const navGroups = [
       { to: "/diary", icon: BookOpen, labelKey: "nav.diary" },
       { to: "/thoughts", icon: MessageSquare, labelKey: "nav.thoughts" },
       { to: "/excerpts", icon: Quote, labelKey: "nav.excerpts" },
+      { to: "/content/categories", icon: FolderTree, labelKey: "nav.contentCategories" },
+      { to: "/resume", icon: Briefcase, labelKey: "nav.resume" },
     ],
   },
   {
     labelKey: "nav.configuration",
     items: [
       { to: "/site-config", icon: Settings, labelKey: "nav.siteConfig" },
-      { to: "/resume", icon: Briefcase, labelKey: "nav.resume" },
+      { to: "/more", icon: Settings, labelKey: "nav.more" },
       { to: "/friends", icon: Users, labelKey: "nav.friends" },
     ],
   },
@@ -57,6 +61,7 @@ const navGroups = [
     labelKey: "nav.moderation",
     items: [
       { to: "/moderation", icon: Shield, labelKey: "nav.moderation" },
+      { to: "/visitors", icon: User, labelKey: "nav.visitors" },
       { to: "/assets", icon: Image, labelKey: "nav.assets" },
     ],
   },
@@ -163,7 +168,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-background via-background/95 to-muted/35">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -219,7 +224,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background/90 to-muted/30">
+      <main className="flex-1 overflow-y-auto overscroll-contain bg-gradient-to-br from-background via-background/90 to-muted/30">
         <div className="h-14 admin-glass-topbar flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <Button
