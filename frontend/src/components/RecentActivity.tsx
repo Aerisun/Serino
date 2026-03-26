@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Heart, MessageCircle, ArrowUpRight } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useReadRecentActivityApiV1PublicRecentActivityGet } from "@serino/api-client/public";
 import type { RecentActivityItemRead } from "@serino/api-client/models";
@@ -105,10 +105,6 @@ const RecentActivity = () => {
         <h3 className="text-sm font-body font-medium uppercase tracking-widest text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.74)]">
           最近动态
         </h3>
-        <span className="flex items-center gap-1 text-[11px] font-body text-foreground/25">
-          <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb,60_100_200)/0.42)]" />
-          静态流 <ArrowUpRight className="h-3 w-3" />
-        </span>
       </div>
 
       <div className="scrollbar-hide -mr-1 max-h-[420px] overflow-y-auto pr-1">

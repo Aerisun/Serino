@@ -25,6 +25,7 @@ from aerisun.domain.ops.schemas import (
     BackupSnapshotRead,
     EnhancedDashboardStats,
     SystemInfo,
+    VisitorRecordRead,
 )
 from aerisun.domain.ops.service import (
     create_backup_snapshot as _create_backup,
@@ -40,6 +41,9 @@ from aerisun.domain.ops.service import (
 )
 from aerisun.domain.ops.service import (
     list_backups as _list_backups,
+)
+from aerisun.domain.ops.service import (
+    list_visitor_records as _list_visitor_records,
 )
 from aerisun.domain.ops.service import (
     restore_backup as _restore_backup,
@@ -142,6 +146,30 @@ def dashboard_stats(
     session: Session = Depends(get_session),
 ) -> Any:
     return _get_dashboard_stats(session)
+
+
+@router.get("/visitor-records", response_model=PaginatedResponse[VisitorRecordRead], summary="获取访客访问记录")
+def visitor_records(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    path: str | None = Query(default=None),
+    ip: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    include_bots: bool = Query(default=False),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    return _list_visitor_records(
+        session,
+        page=page,
+        page_size=page_size,
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+        include_bots=include_bots,
+    )
 
 
 @router.get("/info", response_model=SystemInfo, summary="获取系统信息")

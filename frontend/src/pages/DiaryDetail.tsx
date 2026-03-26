@@ -1,7 +1,22 @@
 import { useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } from "lucide-react";
+import {
+  ArrowLeft,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudRainWind,
+  CloudSnow,
+  CloudSunRain,
+  CloudHail,
+  Haze,
+  Snowflake,
+  Sun,
+  Wind,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
@@ -17,13 +32,35 @@ import { useReadDiaryEntryApiV1PublicDiarySlugGet } from "@serino/api-client/pub
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
-type Weather = "sunny" | "cloudy" | "rainy" | "snowy" | "stormy" | "windy";
+type Weather =
+  | "sunny"
+  | "cloudy"
+  | "fog"
+  | "haze"
+  | "light_rain"
+  | "shower"
+  | "rainy"
+  | "heavy_rain"
+  | "light_snow"
+  | "snowy"
+  | "heavy_snow"
+  | "sleet"
+  | "stormy"
+  | "windy";
 
 const weatherIcons: Record<Weather, typeof Sun> = {
   sunny: Sun,
   cloudy: Cloud,
+  fog: CloudFog,
+  haze: Haze,
+  light_rain: CloudDrizzle,
+  shower: CloudSunRain,
   rainy: CloudRain,
+  heavy_rain: CloudRainWind,
+  light_snow: CloudSnow,
   snowy: CloudSnow,
+  heavy_snow: Snowflake,
+  sleet: CloudHail,
   stormy: CloudLightning,
   windy: Wind,
 };
@@ -31,8 +68,16 @@ const weatherIcons: Record<Weather, typeof Sun> = {
 const weatherLabels: Record<Weather, string> = {
   sunny: "晴",
   cloudy: "多云",
+  fog: "雾",
+  haze: "霾",
+  light_rain: "小雨",
+  shower: "阵雨",
   rainy: "雨",
+  heavy_rain: "大雨",
+  light_snow: "小雪",
   snowy: "雪",
+  heavy_snow: "大雪",
+  sleet: "雨夹雪",
   stormy: "雷阵雨",
   windy: "大风",
 };

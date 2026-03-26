@@ -1,12 +1,34 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from aerisun.domain.ops.models import AuditLog, BackupSnapshot
+from aerisun.domain.ops.models import AuditLog, BackupSnapshot, TrafficDailySnapshot, VisitRecord
+
+
+def _apply_visit_filters(
+    query,
+    *,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    include_bots: bool = False,
+):
+    if path:
+        query = query.filter(VisitRecord.path.contains(path))
+    if ip:
+        query = query.filter(VisitRecord.ip_address.contains(ip))
+    if date_from:
+        query = query.filter(VisitRecord.visited_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        query = query.filter(VisitRecord.visited_at <= datetime.fromisoformat(date_to))
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    return query
 
 
 def find_audit_logs_paginated(
@@ -86,3 +108,246 @@ def count_by_month(
 def find_recent(session: Session, model: type, *, limit: int = 5) -> list[Any]:
     """Find most recently updated items for a model."""
     return list(session.query(model).order_by(model.updated_at.desc()).limit(limit).all())
+
+
+def count_with_filters(session: Session, model: type, /, *criteria: Any) -> int:
+    """Count rows for a model with optional SQLAlchemy filter criteria."""
+    query = session.query(func.count(model.id))
+    if criteria:
+        query = query.filter(*criteria)
+    return query.scalar() or 0
+
+
+def upsert_traffic_daily_snapshot(
+    session: Session,
+    *,
+    snapshot_date: date,
+    url: str,
+    cumulative_views: int,
+    daily_views: int,
+    cumulative_reactions: int,
+) -> TrafficDailySnapshot:
+    snapshot = (
+        session.query(TrafficDailySnapshot)
+        .filter(
+            TrafficDailySnapshot.snapshot_date == snapshot_date,
+            TrafficDailySnapshot.url == url,
+        )
+        .one_or_none()
+    )
+    if snapshot is None:
+        snapshot = TrafficDailySnapshot(
+            snapshot_date=snapshot_date,
+            url=url,
+            cumulative_views=cumulative_views,
+            daily_views=daily_views,
+            cumulative_reactions=cumulative_reactions,
+        )
+        session.add(snapshot)
+        return snapshot
+
+    snapshot.cumulative_views = cumulative_views
+    snapshot.daily_views = daily_views
+    snapshot.cumulative_reactions = cumulative_reactions
+    return snapshot
+
+
+def get_latest_traffic_snapshot_for_url(
+    session: Session,
+    *,
+    url: str,
+    before_date: date | None = None,
+) -> TrafficDailySnapshot | None:
+    query = session.query(TrafficDailySnapshot).filter(TrafficDailySnapshot.url == url)
+    if before_date is not None:
+        query = query.filter(TrafficDailySnapshot.snapshot_date <= before_date)
+    return query.order_by(TrafficDailySnapshot.snapshot_date.desc(), TrafficDailySnapshot.created_at.desc()).first()
+
+
+def list_traffic_snapshots_between(
+    session: Session,
+    *,
+    start_date: date,
+    end_date: date,
+) -> list[TrafficDailySnapshot]:
+    return list(
+        session.query(TrafficDailySnapshot)
+        .filter(
+            TrafficDailySnapshot.snapshot_date >= start_date,
+            TrafficDailySnapshot.snapshot_date <= end_date,
+        )
+        .order_by(TrafficDailySnapshot.snapshot_date.asc(), TrafficDailySnapshot.url.asc())
+        .all()
+    )
+
+
+def list_latest_traffic_snapshots(
+    session: Session,
+    *,
+    as_of_date: date | None = None,
+) -> list[TrafficDailySnapshot]:
+    subquery = session.query(
+        TrafficDailySnapshot.url.label("url"),
+        func.max(TrafficDailySnapshot.snapshot_date).label("snapshot_date"),
+    )
+    if as_of_date is not None:
+        subquery = subquery.filter(TrafficDailySnapshot.snapshot_date <= as_of_date)
+    subquery = subquery.group_by(TrafficDailySnapshot.url).subquery()
+
+    return list(
+        session.query(TrafficDailySnapshot)
+        .join(
+            subquery,
+            (TrafficDailySnapshot.url == subquery.c.url)
+            & (TrafficDailySnapshot.snapshot_date == subquery.c.snapshot_date),
+        )
+        .order_by(TrafficDailySnapshot.cumulative_views.desc(), TrafficDailySnapshot.url.asc())
+        .all()
+    )
+
+
+def get_latest_traffic_snapshot_timestamp(session: Session) -> datetime | None:
+    value = session.query(func.max(TrafficDailySnapshot.updated_at)).scalar()
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def has_traffic_snapshot_for_date(session: Session, *, snapshot_date: date) -> bool:
+    return (
+        session.query(TrafficDailySnapshot.id)
+        .filter(TrafficDailySnapshot.snapshot_date == snapshot_date)
+        .first()
+        is not None
+    )
+
+
+def default_traffic_history_start(days: int) -> date:
+    return datetime.now(UTC).date() - timedelta(days=max(days - 1, 0))
+
+
+def create_visit_record(
+    session: Session,
+    *,
+    visited_at: datetime,
+    path: str,
+    ip_address: str,
+    user_agent: str | None,
+    referer: str | None,
+    status_code: int,
+    duration_ms: int,
+    is_bot: bool,
+) -> VisitRecord:
+    record = VisitRecord(
+        visited_at=visited_at,
+        path=path,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        referer=referer,
+        status_code=status_code,
+        duration_ms=duration_ms,
+        is_bot=is_bot,
+    )
+    session.add(record)
+    return record
+
+
+def find_visit_records_paginated(
+    session: Session,
+    *,
+    page: int,
+    page_size: int,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    include_bots: bool = False,
+) -> tuple[list[VisitRecord], int]:
+    query = _apply_visit_filters(
+        session.query(VisitRecord),
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+        include_bots=include_bots,
+    )
+    total = query.count()
+    items = list(
+        query.order_by(VisitRecord.visited_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return items, total
+
+
+def count_visit_records_since(session: Session, *, since: datetime, include_bots: bool = False) -> int:
+    query = session.query(func.count(VisitRecord.id)).filter(VisitRecord.visited_at >= since)
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    return query.scalar() or 0
+
+
+def count_unique_visitors_since(session: Session, *, since: datetime, include_bots: bool = False) -> int:
+    query = session.query(func.count(func.distinct(VisitRecord.ip_address))).filter(VisitRecord.visited_at >= since)
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    return query.scalar() or 0
+
+
+def average_visit_duration_since(session: Session, *, since: datetime, include_bots: bool = False) -> int:
+    query = session.query(func.avg(VisitRecord.duration_ms)).filter(VisitRecord.visited_at >= since)
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    value = query.scalar()
+    return int(round(value)) if value is not None else 0
+
+
+def list_visit_top_pages(session: Session, *, since: datetime, limit: int, include_bots: bool = False) -> list[tuple[str, int]]:
+    query = session.query(VisitRecord.path, func.count(VisitRecord.id).label("views")).filter(VisitRecord.visited_at >= since)
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    query = query.group_by(VisitRecord.path).order_by(func.count(VisitRecord.id).desc(), VisitRecord.path.asc()).limit(limit)
+    return list(query.all())
+
+
+def list_visit_history_by_day(
+    session: Session,
+    *,
+    start_date: date,
+    end_date: date,
+    include_bots: bool = False,
+) -> list[tuple[str, int]]:
+    query = (
+        session.query(
+            func.strftime("%Y-%m-%d", VisitRecord.visited_at),
+            func.count(VisitRecord.id),
+        )
+        .filter(
+            VisitRecord.visited_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
+            VisitRecord.visited_at < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC),
+        )
+        .group_by(func.strftime("%Y-%m-%d", VisitRecord.visited_at))
+        .order_by(func.strftime("%Y-%m-%d", VisitRecord.visited_at).asc())
+    )
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    return list(query.all())
+
+
+def get_latest_visit_timestamp(session: Session, *, include_bots: bool = False) -> datetime | None:
+    query = session.query(func.max(VisitRecord.visited_at))
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    value = query.scalar()
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def delete_visit_records_before(session: Session, *, before: datetime) -> int:
+    return session.query(VisitRecord).filter(VisitRecord.visited_at < before).delete()

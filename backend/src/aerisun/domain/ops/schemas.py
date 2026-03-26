@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -91,6 +91,60 @@ class RecentContentItem(BaseModel):
     updated_at: datetime
 
 
+class TrafficTrendPoint(BaseModel):
+    date: date
+    views: int = 0
+
+
+class TopPageMetric(BaseModel):
+    url: str
+    views: int = 0
+    share: float = 0.0
+
+
+class DashboardTrafficMetrics(BaseModel):
+    total_views: int = 0
+    top_pages: list[TopPageMetric] = Field(default_factory=list)
+    distribution: list[TopPageMetric] = Field(default_factory=list)
+    history: list[TrafficTrendPoint] = Field(default_factory=list)
+    last_snapshot_at: datetime | None = None
+
+
+class VisitorRecordRead(ModelBase):
+    id: str
+    visited_at: datetime
+    path: str
+    ip_address: str
+    location: str | None = None
+    isp: str | None = None
+    owner: str | None = None
+    status_text: str | None = None
+    user_agent: str | None = None
+    referer: str | None = None
+    status_code: int
+    duration_ms: int
+    is_bot: bool = False
+
+
+class DashboardVisitorMetrics(BaseModel):
+    total_visits: int = 0
+    unique_visitors_24h: int = 0
+    unique_visitors_7d: int = 0
+    average_request_duration_ms: int = 0
+    top_pages: list[TopPageMetric] = Field(default_factory=list)
+    history: list[TrafficTrendPoint] = Field(default_factory=list)
+    recent_visits: list[VisitorRecordRead] = Field(default_factory=list)
+    last_visit_at: datetime | None = None
+
+
+class DashboardAuxMetrics(BaseModel):
+    pending_moderation: int = 0
+    published_posts: int = 0
+    published_diary_entries: int = 0
+    published_thoughts: int = 0
+    published_excerpts: int = 0
+
+
 class DashboardStats(ModelBase):
     posts: int
     diary_entries: int
@@ -114,6 +168,9 @@ class EnhancedDashboardStats(ModelBase):
     posts_by_status: dict[str, int] = Field(default_factory=dict)
     content_by_month: list[MonthlyCount] = Field(default_factory=list)
     recent_content: list[RecentContentItem] = Field(default_factory=list)
+    traffic: DashboardTrafficMetrics = Field(default_factory=DashboardTrafficMetrics)
+    visitors: DashboardVisitorMetrics = Field(default_factory=DashboardVisitorMetrics)
+    aux_metrics: DashboardAuxMetrics = Field(default_factory=DashboardAuxMetrics)
 
 
 class SystemInfo(BaseModel):

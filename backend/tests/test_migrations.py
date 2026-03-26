@@ -207,6 +207,37 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
                 json.dumps(["twemoji", "qq", "bilibili"], ensure_ascii=False),
             ),
         )
+        connection.execute(
+            """
+            CREATE TABLE assets (
+                id TEXT PRIMARY KEY,
+                file_name TEXT NOT NULL,
+                storage_path TEXT NOT NULL,
+                mime_type TEXT,
+                byte_size INTEGER,
+                sha256 TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO assets (
+                id, file_name, storage_path,
+                mime_type, byte_size, sha256, created_at, updated_at
+            ) VALUES (
+                'asset-1',
+                'image.png',
+                '/tmp/image.png',
+                NULL,
+                NULL,
+                NULL,
+                '2026-03-21 00:00:00',
+                '2026-03-21 00:00:00'
+            )
+            """
+        )
         connection.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
         connection.execute("INSERT INTO alembic_version (version_num) VALUES ('0002_add_site_meta_fields')")
         connection.commit()
@@ -230,6 +261,8 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
     excerpts_columns = _get_columns(str(db_path), "excerpts")
     nav_item_columns = _get_columns(str(db_path), "nav_items")
     community_config_columns = _get_columns(str(db_path), "community_config")
+    assets_columns = _get_columns(str(db_path), "assets")
+    traffic_snapshot_columns = _get_columns(str(db_path), "traffic_daily_snapshots")
 
     assert "hero_video_url" in site_profile_columns
     assert {"category", "view_count"} <= posts_columns
@@ -253,14 +286,33 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
         "guest_avatar_mode",
         "draft_enabled",
     } <= community_config_columns
+    assert {"resource_key", "visibility", "category", "note", "scope"} <= assets_columns
+    assert {
+        "snapshot_date",
+        "url",
+        "cumulative_views",
+        "daily_views",
+        "cumulative_reactions",
+        "created_at",
+        "updated_at",
+    } <= traffic_snapshot_columns
 
-    row = _get_row(str(db_path), "community_config")
-    assert row is not None
-    assert json.loads(row["oauth_providers"]) == ["github", "google"]
-    assert row["anonymous_enabled"] in (1, True)
-    assert row["moderation_mode"] == "all_pending"
-    assert row["default_sorting"] == "latest"
-    assert row["page_size"] == 20
-    assert json.loads(row["avatar_presets"])[0]["key"] == "shiro"
-    assert row["guest_avatar_mode"] == "preset"
-    assert row["draft_enabled"] in (1, True)
+    community_config_row = _get_row(str(db_path), "community_config")
+    asset_row = _get_row(str(db_path), "assets")
+
+    assert community_config_row is not None
+    assert json.loads(community_config_row["oauth_providers"]) == ["github", "google"]
+    assert community_config_row["anonymous_enabled"] in (1, True)
+    assert community_config_row["moderation_mode"] == "all_pending"
+    assert community_config_row["default_sorting"] == "latest"
+    assert community_config_row["page_size"] == 20
+    assert json.loads(community_config_row["avatar_presets"])[0]["key"] == "shiro"
+    assert community_config_row["guest_avatar_mode"] == "preset"
+    assert community_config_row["draft_enabled"] in (1, True)
+
+    assert asset_row is not None
+    assert asset_row["resource_key"] == "internal/assets/general/asset1.png"
+    assert asset_row["visibility"] == "internal"
+    assert asset_row["category"] == "general"
+    assert asset_row["scope"] == "user"
+    assert asset_row["note"] is None

@@ -13,6 +13,7 @@ import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/runtime-config";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { useReadPostApiV1PublicPostsSlugGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
@@ -31,24 +32,13 @@ interface PostData {
   content: string;
 }
 
-const categoryMap: Record<string, string> = {
-  "design-system": "设计",
-  frontend: "设计",
-  css: "技术",
-  performance: "技术",
-  react: "技术",
-  animation: "技术",
-  essay: "随想",
-  career: "随想",
-};
-
 const estimateReadTime = (value: string) => `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
 
-const buildRemotePost = (entry: ContentEntryRead): PostData => ({
+const buildRemotePost = (entry: ContentEntryRead, fallbackCategoryLabel: string): PostData => ({
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
-  category: entry.category || categoryMap[entry.tags[0] ?? ""] || entry.tags[0] || "内容",
+  category: entry.category || fallbackCategoryLabel,
   tags: entry.tags,
   likes: entry.like_count ?? 0,
   views: entry.view_count ?? 0,
@@ -61,12 +51,15 @@ const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
+  const pages = usePageConfig();
+  const postsConfig = (pages.posts ?? {}) as { categories?: { fallback?: string } };
+  const fallbackCategoryLabel = postsConfig.categories?.fallback ?? "未分类";
   const articleRef = useRef<HTMLElement>(null);
 
   const slug = id ? decodeURIComponent(id) : "";
   const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1PublicPostsSlugGet(slug, { query: { enabled: !!id } });
 
-  const post = response?.data ? buildRemotePost(response.data) : null;
+  const post = response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null;
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
   const status: "loading" | "ready" | "empty" | "error" = isLoading
     ? "loading"

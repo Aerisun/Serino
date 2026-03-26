@@ -134,6 +134,75 @@ def test_admin_resume_updates_flow_to_public_resume(seeded_session, admin_user) 
     assert any(group.category == "Flow Skills" for group in payload.skill_groups)
 
 
+def test_admin_private_archive_does_not_flow_to_public_reads(seeded_session, admin_user) -> None:
+    created_post = CREATE_POST(
+        payload=ContentCreate(
+            slug="admin-private-round-trip",
+            title="Admin Private Round Trip",
+            summary="Created in admin but should stay out of public APIs.",
+            body="This private archived post must not be visible to the public content endpoints.",
+            tags=["integration", "private"],
+            status="published",
+            visibility="private",
+        ),
+        _admin=admin_user,
+        session=seeded_session,
+    )
+
+    post_row = seeded_session.query(PostEntry).filter(PostEntry.slug == "admin-private-round-trip").first()
+    assert created_post.status == "archived"
+    assert created_post.visibility == "private"
+    assert post_row is not None
+    assert post_row.status == "archived"
+    assert post_row.visibility == "private"
+
+    listing = read_posts(limit=20, offset=0, session=seeded_session)
+    assert all(item.slug != "admin-private-round-trip" for item in listing.items)
+
+
+def test_private_archive_must_return_to_draft_before_republish(seeded_session, admin_user) -> None:
+    from aerisun.domain.content.schemas import ContentUpdate
+
+    created_post = CREATE_POST(
+        payload=ContentCreate(
+            slug="admin-republish-round-trip",
+            title="Admin Republish Round Trip",
+            summary="Switching private back to public should go through draft first.",
+            body="This post should require an extra publish step after leaving private archive.",
+            tags=["integration", "republish"],
+            status="published",
+            visibility="private",
+        ),
+        _admin=admin_user,
+        session=seeded_session,
+    )
+
+    update_post = _endpoint("/api/v1/admin/posts/{item_id}", "PUT")
+    restored = update_post(
+        item_id=created_post.id,
+        payload=ContentUpdate(visibility="public"),
+        _admin=admin_user,
+        session=seeded_session,
+    )
+    assert restored.status == "draft"
+    assert restored.visibility == "public"
+
+    listing = read_posts(limit=20, offset=0, session=seeded_session)
+    assert all(item.slug != "admin-republish-round-trip" for item in listing.items)
+
+    republished = update_post(
+        item_id=created_post.id,
+        payload=ContentUpdate(status="published"),
+        _admin=admin_user,
+        session=seeded_session,
+    )
+    assert republished.status == "published"
+    assert republished.visibility == "public"
+
+    detail = read_post("admin-republish-round-trip", session=seeded_session)
+    assert detail.title == "Admin Republish Round Trip"
+
+
 def test_admin_page_copy_and_published_post_flow_to_public_reads(seeded_session, admin_user) -> None:
     posts_copy = seeded_session.query(PageCopy).filter(PageCopy.page_key == "posts").first()
     assert posts_copy is not None

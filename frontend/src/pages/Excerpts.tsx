@@ -6,6 +6,7 @@ import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
+import { clampPageSize } from "@/lib/page-size";
 import { readExcerptsApiV1PublicExcerptsGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
@@ -42,7 +43,7 @@ const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
 const Excerpts = () => {
   const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const pageSize = config.pageSize ?? 40;
+  const pageSize = clampPageSize(config.pageSize, 40);
   const [showModalComments, setShowModalComments] = useState(false);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({

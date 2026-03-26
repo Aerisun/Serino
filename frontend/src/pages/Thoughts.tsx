@@ -6,6 +6,7 @@ import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
+import { clampPageSize } from "@/lib/page-size";
 import {
   formatPublishedDate,
   splitContentParagraphs,
@@ -42,7 +43,7 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
 
 const Thoughts = () => {
   const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
-  const pageSize = config.pageSize ?? 30;
+  const pageSize = clampPageSize(config.pageSize, 30);
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({

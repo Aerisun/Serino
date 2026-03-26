@@ -56,7 +56,7 @@ const components: Components = {
     <img
       src={resolveMarkdownImageSrc(src)}
       alt={alt}
-      className="rounded-lg max-w-full"
+      className="block max-w-full rounded-2xl"
       loading="lazy"
       {...props}
     />

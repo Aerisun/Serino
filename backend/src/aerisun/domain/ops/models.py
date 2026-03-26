@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, uuid_str
@@ -63,3 +63,37 @@ class SyncRun(Base, TimestampMixin):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     message: Mapped[str | None] = mapped_column(Text)
+
+
+class TrafficDailySnapshot(Base, TimestampMixin):
+    __tablename__ = "traffic_daily_snapshots"
+    __table_args__ = (
+        UniqueConstraint("snapshot_date", "url", name="uq_traffic_daily_snapshots_date_url"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    snapshot_date: Mapped[date] = mapped_column(Date(), nullable=False)
+    url: Mapped[str] = mapped_column(String(255), nullable=False)
+    cumulative_views: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    daily_views: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    cumulative_reactions: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+
+
+class VisitRecord(Base, TimestampMixin):
+    __tablename__ = "visit_records"
+    __table_args__ = (
+        Index("ix_visit_records_visited_at", "visited_at"),
+        Index("ix_visit_records_path_visited_at", "path", "visited_at"),
+        Index("ix_visit_records_ip_address_visited_at", "ip_address", "visited_at"),
+        Index("ix_visit_records_is_bot", "is_bot"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    visited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    path: Mapped[str] = mapped_column(String(255), nullable=False)
+    ip_address: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_agent: Mapped[str | None] = mapped_column(Text)
+    referer: Mapped[str | None] = mapped_column(String(500))
+    status_code: Mapped[int] = mapped_column(Integer(), nullable=False)
+    duration_ms: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    is_bot: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)

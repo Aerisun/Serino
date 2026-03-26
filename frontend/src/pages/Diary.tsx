@@ -1,12 +1,28 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronDown, Cloud, CloudLightning, CloudRain, CloudSnow, Sun, Wind } from "lucide-react";
+import {
+  ChevronDown,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudRainWind,
+  CloudSnow,
+  CloudSunRain,
+  CloudHail,
+  Haze,
+  Snowflake,
+  Sun,
+  Wind,
+} from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
+import { clampPageSize } from "@/lib/page-size";
 import { readDiaryApiV1PublicDiaryGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
@@ -30,8 +46,16 @@ type DiaryPageConfig = BaseViewPageConfig;
 const weatherIcons: Record<string, WeatherIconComponent> = {
   sunny: Sun,
   cloudy: Cloud,
+  fog: CloudFog,
+  haze: Haze,
+  light_rain: CloudDrizzle,
+  shower: CloudSunRain,
   rainy: CloudRain,
+  heavy_rain: CloudRainWind,
+  light_snow: CloudSnow,
   snowy: CloudSnow,
+  heavy_snow: Snowflake,
+  sleet: CloudHail,
   stormy: CloudLightning,
   windy: Wind,
 };
@@ -39,8 +63,16 @@ const weatherIcons: Record<string, WeatherIconComponent> = {
 const weatherLabels: Record<string, string> = {
   sunny: "晴",
   cloudy: "多云",
+  fog: "雾",
+  haze: "霾",
+  light_rain: "小雨",
+  shower: "阵雨",
   rainy: "雨",
+  heavy_rain: "大雨",
+  light_snow: "小雪",
   snowy: "雪",
+  heavy_snow: "大雪",
+  sleet: "雨夹雪",
   stormy: "雷阵雨",
   windy: "大风",
 };
@@ -79,7 +111,7 @@ const Diary = () => {
   const config = usePageConfig().diary as unknown as DiaryPageConfig;
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const pageSize = config.pageSize ?? 20;
+  const pageSize = clampPageSize(config.pageSize, 20);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
     queryKey: ["public", "diary"],

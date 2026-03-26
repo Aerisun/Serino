@@ -48,6 +48,18 @@
   * {
     @apply border-border;
   }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: system-ui, -apple-system, sans-serif;
@@ -210,6 +222,95 @@ body {
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+.preview-glow-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.58)),
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.18), transparent 35%),
+    radial-gradient(circle at 80% 10%, rgba(168, 85, 247, 0.18), transparent 34%),
+    radial-gradient(circle at 80% 80%, rgba(34, 197, 94, 0.16), transparent 36%),
+    radial-gradient(circle at 10% 80%, rgba(236, 72, 153, 0.16), transparent 36%);
+  color: rgb(15, 23, 42) !important;
+  box-shadow:
+    0 12px 32px -18px rgba(59, 130, 246, 0.55),
+    0 10px 28px -18px rgba(168, 85, 247, 0.5),
+    0 12px 28px -18px rgba(34, 197, 94, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.35) inset;
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+}
+
+.preview-glow-button::before {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  z-index: -1;
+  background: conic-gradient(
+    from 180deg,
+    rgba(59, 130, 246, 0.0),
+    rgba(59, 130, 246, 0.7),
+    rgba(168, 85, 247, 0.78),
+    rgba(34, 197, 94, 0.72),
+    rgba(251, 191, 36, 0.74),
+    rgba(236, 72, 153, 0.76),
+    rgba(59, 130, 246, 0.0)
+  );
+  filter: blur(22px);
+  opacity: 0.72;
+  animation: preview-glow-spin 7s linear infinite;
+}
+
+.preview-glow-button::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.preview-glow-button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 40px -18px rgba(59, 130, 246, 0.7),
+    0 16px 36px -18px rgba(168, 85, 247, 0.65),
+    0 16px 36px -18px rgba(34, 197, 94, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+}
+
+.preview-glow-button:disabled {
+  opacity: 0.55;
+}
+
+.dark .preview-glow-button {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08)),
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.3), transparent 35%),
+    radial-gradient(circle at 80% 10%, rgba(168, 85, 247, 0.28), transparent 34%),
+    radial-gradient(circle at 80% 80%, rgba(34, 197, 94, 0.24), transparent 36%),
+    radial-gradient(circle at 10% 80%, rgba(236, 72, 153, 0.22), transparent 36%);
+  color: rgb(255, 255, 255) !important;
+  box-shadow:
+    0 12px 32px -18px rgba(59, 130, 246, 0.75),
+    0 12px 30px -18px rgba(168, 85, 247, 0.65),
+    0 12px 28px -18px rgba(34, 197, 94, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.dark .preview-glow-button::after {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.25));
+}
+
+@keyframes preview-glow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Form */

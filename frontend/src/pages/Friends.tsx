@@ -6,6 +6,7 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+import { clampPageSize } from "@/lib/page-size";
 import {
   useReadFriendFeedApiV1PublicFriendFeedGet,
   useReadFriendsApiV1PublicFriendsGet,
@@ -52,7 +53,7 @@ const toCirclePost = (value: FriendFeedItemRead): CirclePost => ({
 
 const Friends = () => {
   const config = usePageConfig().friends as unknown as FriendsPageConfig;
-  const pageSize = Number(config.pageSize ?? 10);
+  const pageSize = clampPageSize(config.pageSize, 10);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreTimerRef = useRef<number | null>(null);

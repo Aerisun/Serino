@@ -11,6 +11,7 @@ import { readPostsApiV1PublicPostsGet } from "@serino/api-client/public";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
+import { clampPageSize } from "@/lib/page-size";
 
 interface Post {
   slug: string;
@@ -24,9 +25,9 @@ interface Post {
 }
 
 interface PostsPageConfig extends BaseViewPageConfig {
-  searchPlaceholder?: string;
   categories?: {
     all?: string;
+    fallback?: string;
   };
 }
 
@@ -44,18 +45,22 @@ const mapRemotePost = (entry: ContentEntryRead): Post => ({
 const Posts = () => {
   const config = usePageConfig().posts as unknown as PostsPageConfig;
   const allCategoryLabel = config.categories?.all ?? "全部";
+  const fallbackCategoryLabel = config.categories?.fallback ?? "未分类";
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
-  const pageSize = config.pageSize ?? 20;
+  const pageSize = clampPageSize(config.pageSize, 20);
   const navigate = useNavigate();
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
     queryKey: ["public", "posts"],
     queryFn: (p) => readPostsApiV1PublicPostsGet(p).then(r => r.data),
     pageSize,
-    mapItem: mapRemotePost,
+    mapItem: (entry) => ({
+      ...mapRemotePost(entry),
+      category: entry.category || fallbackCategoryLabel,
+    }),
   });
 
   useEffect(() => {
@@ -101,7 +106,7 @@ const Posts = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
           <input
             type="text"
-            placeholder={config.searchPlaceholder}
+            placeholder="搜索文章..."
             value={rawSearch}
             onChange={(event) => {
               const val = event.target.value;
