@@ -6,11 +6,15 @@ import logging
 import time
 import uuid
 from contextvars import ContextVar
+from datetime import UTC, datetime
 
 import structlog
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+
+from aerisun.core.db import get_session_factory
+from aerisun.domain.ops.repository import create_visit_record
 
 # ---------------------------------------------------------------------------
 # Context variable that holds the current request ID
@@ -84,6 +88,76 @@ def setup_logging(settings) -> None:
 # ---------------------------------------------------------------------------
 
 
+_VISITOR_SKIP_PREFIXES = (
+    "/api",
+    "/admin",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+    "/media",
+    "/health",
+    "/favicon",
+)
+_VISITOR_SKIP_EXTENSIONS = (
+    ".js",
+    ".css",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".webp",
+    ".avif",
+    ".map",
+    ".json",
+    ".txt",
+    ".xml",
+    ".woff",
+    ".woff2",
+    ".ttf",
+)
+_BOT_MARKERS = (
+    "bot",
+    "spider",
+    "crawler",
+    "curl",
+    "wget",
+    "headless",
+    "python-requests",
+    "httpx",
+)
+
+
+def _is_public_visit_candidate(request: Request) -> bool:
+    if request.method != "GET":
+        return False
+    path = request.url.path or "/"
+    if any(path.startswith(prefix) for prefix in _VISITOR_SKIP_PREFIXES):
+        return False
+    lowered = path.lower()
+    return not lowered.endswith(_VISITOR_SKIP_EXTENSIONS)
+
+
+def _get_client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        first = forwarded_for.split(",", 1)[0].strip()
+        if first:
+            return first
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _is_bot_request(user_agent: str | None) -> bool:
+    if not user_agent:
+        return False
+    lowered = user_agent.lower()
+    return any(marker in lowered for marker in _BOT_MARKERS)
+
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Assign a unique ID to every HTTP request.
 
@@ -101,6 +175,12 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         request_id_var.set(rid)
         structlog.contextvars.bind_contextvars(request_id=rid)
         start = time.perf_counter()
+        should_track_visit = _is_public_visit_candidate(request)
+        visited_at = datetime.now(UTC)
+        client_ip = _get_client_ip(request) if should_track_visit else ""
+        user_agent = request.headers.get("user-agent") if should_track_visit else None
+        referer = request.headers.get("referer") if should_track_visit else None
+        is_bot = _is_bot_request(user_agent) if should_track_visit else False
         try:
             response = await call_next(request)
             response.headers["X-Request-ID"] = rid
@@ -113,6 +193,23 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 status=response.status_code,
                 duration_ms=duration_ms,
             )
+            if should_track_visit:
+                try:
+                    with get_session_factory()() as session:
+                        create_visit_record(
+                            session,
+                            visited_at=visited_at,
+                            path=request.url.path,
+                            ip_address=client_ip,
+                            user_agent=user_agent,
+                            referer=referer,
+                            status_code=response.status_code,
+                            duration_ms=int(duration_ms),
+                            is_bot=is_bot,
+                        )
+                        session.commit()
+                except Exception:
+                    log.exception("visit_record_failed", path=request.url.path)
             if duration_ms > self.SLOW_REQUEST_THRESHOLD_MS:
                 log.warning(
                     "slow_request",

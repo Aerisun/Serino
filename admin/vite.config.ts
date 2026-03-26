@@ -10,6 +10,7 @@ const normalizeBasePath = (value: string, fallback: string) => {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, ".."), "");
+  const apiBaseUrl = (env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
   const backendPort = env.AERISUN_PORT || "8000";
   const adminPort = parseInt(env.AERISUN_ADMIN_PORT || "3001", 10);
   const adminBasePath = normalizeBasePath(env.AERISUN_ADMIN_BASE_PATH || "", "/admin/");
@@ -19,12 +20,17 @@ export default defineConfig(({ mode }) => {
     base: adminBasePath,
     define: {
       __AERISUN_ADMIN_BASE_PATH__: JSON.stringify(adminBasePath),
+      __AERISUN_API_BASE_URL__: JSON.stringify(apiBaseUrl),
       __SERINO_DEV__: JSON.stringify(mode !== "production"),
     },
     server: {
       port: adminPort,
       proxy: {
         [apiBasePath]: {
+          target: `http://localhost:${backendPort}`,
+          changeOrigin: true,
+        },
+        "/media": {
           target: `http://localhost:${backendPort}`,
           changeOrigin: true,
         },

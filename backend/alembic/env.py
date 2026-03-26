@@ -21,6 +21,7 @@ import aerisun.domain.engagement.models  # noqa: E402, F401
 import aerisun.domain.iam.models  # noqa: E402, F401
 import aerisun.domain.media.models  # noqa: E402, F401
 import aerisun.domain.ops.models  # noqa: E402, F401
+import aerisun.domain.site_auth.models  # noqa: E402, F401
 import aerisun.domain.site_config.models  # noqa: E402, F401
 import aerisun.domain.social.models  # noqa: E402, F401
 
@@ -68,4 +69,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

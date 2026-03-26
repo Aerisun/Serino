@@ -35,6 +35,9 @@ export interface SiteConfig {
   author: string;
   ogImage: string;
   poems: string[];
+  poemSource: "custom" | "hitokoto";
+  poemHitokotoTypes: string[];
+  poemHitokotoKeywords: string[];
   socialLinks: SiteSocialLink[];
   heroActions: SiteActionLink[];
   navigation: SiteNavItem[];

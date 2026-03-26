@@ -7,6 +7,7 @@ import logging
 
 from aerisun.core.settings import Settings
 from aerisun.core.tasks import cleanup_expired_sessions
+from aerisun.domain.ops.service import record_daily_traffic_snapshot
 
 logger = logging.getLogger("aerisun.startup")
 
@@ -22,12 +23,28 @@ class TaskManager:
     async def start(self) -> None:
         self._async_tasks.append(asyncio.create_task(cleanup_expired_sessions()))
 
-        if self._settings.feed_crawl_enabled:
-            from apscheduler.schedulers.background import BackgroundScheduler
+        from aerisun.core.db import get_session_factory
+        from apscheduler.schedulers.background import BackgroundScheduler
 
+        with get_session_factory()() as session:
+            record_daily_traffic_snapshot(session)
+
+        self._scheduler = BackgroundScheduler(daemon=True)
+        self._scheduler.add_job(
+            self._snapshot_daily_traffic,
+            trigger="cron",
+            hour=0,
+            minute=5,
+            id="traffic_daily_snapshot",
+            name="Traffic daily snapshot",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        if self._settings.feed_crawl_enabled:
             from aerisun.domain.social.crawler import crawl_all_feeds
 
-            self._scheduler = BackgroundScheduler(daemon=True)
             self._scheduler.add_job(
                 crawl_all_feeds,
                 trigger="interval",
@@ -38,8 +55,14 @@ class TaskManager:
                 max_instances=1,
                 coalesce=True,
             )
-            self._scheduler.start()
-            logger.info("Feed crawler scheduler started (interval=%dh)", self._settings.feed_crawl_interval_hours)
+        self._scheduler.start()
+        logger.info("Background scheduler started")
+
+    def _snapshot_daily_traffic(self) -> None:
+        from aerisun.core.db import get_session_factory
+
+        with get_session_factory()() as session:
+            record_daily_traffic_snapshot(session)
 
     async def stop(self) -> None:
         for task in self._async_tasks:

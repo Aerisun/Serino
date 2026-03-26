@@ -3,6 +3,7 @@ import {
   readPageCopyApiV1PublicPagesGet,
   readResumeApiV1PublicResumeGet,
 } from "@serino/api-client/public";
+import { clampPageSize } from "@/lib/page-size";
 
 // ---------------------------------------------------------------------------
 // Width mapping (code constant — not personal data)
@@ -26,10 +27,15 @@ type BackendSiteResponse = {
     role: string;
     author: string;
     og_image: string;
+    hero_image_url: string;
+    hero_poster_url: string;
     meta_description: string;
     copyright: string;
     footer_text?: string;
     hero_video_url?: string | null;
+    poem_source?: "custom" | "hitokoto";
+    poem_hitokoto_types?: string[];
+    poem_hitokoto_keywords?: string[];
     hero_actions?: Array<{
       label: string;
       href: string;
@@ -60,9 +66,7 @@ type BackendSiteResponse = {
 type BackendPageCopyItem = {
   page_key: string;
   title: string;
-  subtitle: string;
   description?: string | null;
-  search_placeholder?: string | null;
   empty_message?: string | null;
   max_width?: string | null;
   page_size?: number | null;
@@ -80,14 +84,27 @@ type BackendResumeResponse = {
   subtitle: string;
   summary: string;
   download_label: string;
+  template_key: string;
+  accent_tone: string;
+  location: string;
+  availability: string;
+  email: string;
+  website: string;
+  profile_image_url: string;
+  highlights: string[];
   skill_groups: Array<{
+    category: string;
     items: string[];
   }>;
   experiences: Array<{
     title: string;
     company: string;
     period: string;
+    location: string;
+    employment_type: string;
     summary: string;
+    achievements: string[];
+    tech_stack: string[];
   }>;
 };
 
@@ -116,7 +133,23 @@ export interface ResumeExperienceConfig {
   role: string;
   org: string;
   period: string;
+  location?: string;
+  employmentType?: string;
   desc: string;
+  achievements?: string[];
+  techStack?: string[];
+}
+
+export interface ResumeSkillGroupConfig {
+  category: string;
+  items: string[];
+}
+
+export interface ResumeContactConfig {
+  location?: string;
+  availability?: string;
+  email?: string;
+  website?: string;
 }
 
 export interface PageConfig {
@@ -132,10 +165,15 @@ export interface RuntimeConfigSnapshot {
     role: string;
     author: string;
     ogImage: string;
+    heroImageUrl: string;
+    heroPosterUrl: string;
     metaDescription: string;
     copyright: string;
     socialLinks: Array<{ name: string; href: string; iconKey: string; placement: "hero" | "footer" | "both" }>;
     poems: string[];
+    poemSource: "custom" | "hitokoto";
+    poemHitokotoTypes: string[];
+    poemHitokotoKeywords: string[];
     heroActions: Array<{ label: string; href: string; iconKey: string }>;
     heroVideoUrl?: string;
     navigation: NavItem[];
@@ -224,9 +262,14 @@ const normalizeSiteConfig = (
     role: payload.site.role,
     author: payload.site.author,
     ogImage: payload.site.og_image,
+    heroImageUrl: payload.site.hero_image_url,
+    heroPosterUrl: payload.site.hero_poster_url,
     metaDescription: payload.site.meta_description,
     copyright: payload.site.copyright,
     poems: payload.poems.map((p) => p.content).filter(Boolean),
+    poemSource: payload.site.poem_source ?? "custom",
+    poemHitokotoTypes: payload.site.poem_hitokoto_types ?? [],
+    poemHitokotoKeywords: payload.site.poem_hitokoto_keywords ?? [],
     socialLinks: payload.social_links.map((link) => ({
       name: link.name,
       href: link.href,
@@ -263,12 +306,10 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
 
     const page: PageConfig = {
       title: item.title,
-      subtitle: item.subtitle,
       description: item.description ?? undefined,
-      searchPlaceholder: item.search_placeholder ?? undefined,
       emptyMessage: item.empty_message ?? undefined,
       width: widthFromApi ?? defaults?.width,
-      pageSize: item.page_size ?? defaults?.pageSize,
+      pageSize: clampPageSize(item.page_size, defaults?.pageSize ?? 20),
       downloadLabel: item.download_label ?? undefined,
       motion: defaults?.motion ?? DEFAULT_MOTION,
     };
@@ -276,7 +317,16 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
     // Merge extras
     if (item.extras) {
       if (typeof item.extras.category_all_label === "string") {
-        page.categories = { all: item.extras.category_all_label };
+        page.categories = {
+          ...(typeof page.categories === "object" && page.categories ? page.categories as Record<string, unknown> : {}),
+          all: item.extras.category_all_label,
+        };
+      }
+      if (typeof item.extras.category_fallback_label === "string") {
+        page.categories = {
+          ...(typeof page.categories === "object" && page.categories ? page.categories as Record<string, unknown> : {}),
+          fallback: item.extras.category_fallback_label,
+        };
       }
       if (typeof item.extras.circle_title === "string") {
         page.circleTitle = item.extras.circle_title;
@@ -286,7 +336,13 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
       }
       // Pass through remaining extras
       for (const [key, value] of Object.entries(item.extras)) {
-        if (!(key in page) && key !== "category_all_label" && key !== "circle_title" && key !== "eyebrow") {
+        if (
+          !(key in page) &&
+          key !== "category_all_label" &&
+          key !== "category_fallback_label" &&
+          key !== "circle_title" &&
+          key !== "eyebrow"
+        ) {
           page[key] = value;
         }
       }
@@ -309,12 +365,30 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
     description: payload.summary,
     downloadLabel: payload.download_label,
     bio: payload.summary,
+    templateKey: payload.template_key,
+    accentTone: payload.accent_tone,
+    profileImageUrl: payload.profile_image_url,
+    highlights: payload.highlights,
+    contacts: {
+      location: payload.location,
+      availability: payload.availability,
+      email: payload.email,
+      website: payload.website,
+    },
     skills: payload.skill_groups.flatMap((group) => group.items),
+    skillGroups: payload.skill_groups.map((group) => ({
+      category: group.category,
+      items: group.items,
+    })),
     experience: payload.experiences.map((item) => ({
       role: item.title,
       org: item.company,
       period: item.period,
+      location: item.location,
+      employmentType: item.employment_type,
       desc: item.summary,
+      achievements: item.achievements,
+      techStack: item.tech_stack,
     })),
     width: defaults?.width,
     motion: defaults?.motion,

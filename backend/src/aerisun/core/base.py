@@ -39,6 +39,7 @@ class ContentMixin:
     title: Mapped[str] = mapped_column(String(240), nullable=False)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str | None] = mapped_column(String(80), nullable=True)
     tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     visibility: Mapped[str] = mapped_column(String(32), nullable=False, default="public")

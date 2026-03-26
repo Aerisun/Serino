@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
+import mimetypes
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 
 import bcrypt
 from sqlalchemy import func, select
@@ -14,6 +16,8 @@ from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.media.models import Asset
+from aerisun.domain.ops.models import TrafficDailySnapshot, VisitRecord
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -26,8 +30,116 @@ from aerisun.domain.site_config.models import (
     SiteProfile,
     SocialLink,
 )
+from aerisun.domain.site_auth.models import SiteAuthConfig
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import build_comment_path, connect_waline_db, make_waline_comment_row
+
+def _ensure_seed_content_asset(
+    session: Session,
+    *,
+    file_name: str,
+    content: bytes,
+    mime_type: str | None,
+    category: str,
+    visibility: str = "internal",
+    note: str | None = None,
+) -> str:
+    settings = get_settings()
+    media_dir = settings.media_dir.expanduser().resolve()
+    digest = __import__("hashlib").sha256(content).hexdigest()[:12]
+    ext = Path(file_name).suffix.lower().lstrip(".") or (mimetypes.guess_extension(mime_type or "") or ".bin").lstrip(".")
+    resource_key = f"{visibility}/assets/{category}/{digest}.{ext}"
+    existing = session.query(Asset).filter(Asset.resource_key == resource_key).first()
+    if existing is not None:
+        if existing.scope != "system":
+            existing.scope = "system"
+        if note and not existing.note:
+            existing.note = note
+        session.flush()
+        return f"/media/{existing.resource_key}"
+
+    storage_path = media_dir / resource_key
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+    if not storage_path.exists():
+        storage_path.write_bytes(content)
+
+    asset = Asset(
+        file_name=file_name,
+        resource_key=resource_key,
+        visibility=visibility,
+        scope="system",
+        category=category,
+        note=note,
+        storage_path=str(storage_path),
+        mime_type=mime_type,
+        byte_size=len(content),
+        sha256=__import__("hashlib").sha256(content).hexdigest(),
+    )
+    session.add(asset)
+    session.flush()
+    return f"/media/{asset.resource_key}"
+
+
+def _build_seed_avatar_svg(label: str) -> bytes:
+    initials = (label.strip()[:2] or "A").upper()
+    color_seed = __import__("hashlib").sha256(label.encode("utf-8")).hexdigest()[:6]
+    bg = f"#{color_seed}"
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="{label}">
+<rect width="256" height="256" rx="56" fill="{bg}"/>
+<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="Inter, Arial, sans-serif" font-size="88" font-weight="700" fill="white">{initials}</text>
+</svg>'''
+    return svg.encode("utf-8")
+
+
+
+def _ensure_seed_asset(
+    session: Session,
+    *,
+    source_path: Path,
+    category: str,
+    visibility: str = "internal",
+    note: str | None = None,
+) -> str:
+    settings = get_settings()
+    media_dir = settings.media_dir.expanduser().resolve()
+    if not source_path.exists():
+        return ""
+
+    content = source_path.read_bytes()
+    digest = __import__("hashlib").sha256(content).hexdigest()[:12]
+    ext = source_path.suffix.lower().lstrip(".") or "bin"
+    resource_key = f"{visibility}/assets/{category}/{digest}.{ext}"
+    existing = session.query(Asset).filter(Asset.resource_key == resource_key).first()
+    if existing is not None:
+        if existing.scope != "system":
+            existing.scope = "system"
+        if note and not existing.note:
+            existing.note = note
+        session.flush()
+        return f"/media/{existing.resource_key}"
+
+    storage_path = media_dir / resource_key
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+    if not storage_path.exists():
+        storage_path.write_bytes(content)
+
+    mime_type, _ = mimetypes.guess_type(source_path.name)
+    asset = Asset(
+        file_name=source_path.name,
+        resource_key=resource_key,
+        visibility=visibility,
+        scope="system",
+        category=category,
+        note=note,
+        storage_path=str(storage_path),
+        mime_type=mime_type,
+        byte_size=len(content),
+        sha256=__import__("hashlib").sha256(content).hexdigest(),
+    )
+    session.add(asset)
+    session.flush()
+    return f"/media/{asset.resource_key}"
+
 
 DEFAULT_SITE_PROFILE = {
     "name": "Felix",
@@ -36,10 +148,15 @@ DEFAULT_SITE_PROFILE = {
     "role": "UI/UX Designer · Frontend Developer",
     "footer_text": "Aerisun · Built with care and a small stack.",
     "author": "Felix",
-    "og_image": "/images/hero_bg.jpeg",
+    "og_image": "__SEEDED_OG_IMAGE__",
+    "hero_image_url": "__SEEDED_HERO_IMAGE__",
+    "hero_poster_url": "__SEEDED_HERO_POSTER__",
     "meta_description": "Felix 的个人网站 - UI/UX 设计师与前端开发者",
     "copyright": "All rights reserved",
     "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
+    "poem_source": "custom",
+    "poem_hitokoto_types": ["d", "i"],
+    "poem_hitokoto_keywords": [],
     "hero_actions": json.dumps(
         [
             {"label": "简历", "href": "/resume", "icon_key": "resume"},
@@ -119,7 +236,10 @@ DEFAULT_PAGE_COPIES = [
         "max_width": "max-w-3xl",
         "page_size": None,
         "download_label": None,
-        "extras": {"category_all_label": "全部"},
+        "extras": {
+            "category_all_label": "全部",
+            "category_fallback_label": "未分类",
+        },
     },
     {
         "page_key": "diary",
@@ -312,61 +432,73 @@ DEFAULT_COMMENT_AVATAR_PRESETS = [
         "key": "shiro",
         "label": "Shiro",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro",
+        "note": "社区默认头像预设：Shiro（seed 初始化）",
     },
     {
         "key": "glass",
         "label": "Glass",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Glass",
+        "note": "社区默认头像预设：Glass（seed 初始化）",
     },
     {
         "key": "aurora",
         "label": "Aurora",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora",
+        "note": "社区默认头像预设：Aurora（seed 初始化）",
     },
     {
         "key": "paper",
         "label": "Paper",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Paper",
+        "note": "社区默认头像预设：Paper（seed 初始化）",
     },
     {
         "key": "dawn",
         "label": "Dawn",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn",
+        "note": "社区默认头像预设：Dawn（seed 初始化）",
     },
     {
         "key": "pebble",
         "label": "Pebble",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble",
+        "note": "社区默认头像预设：Pebble（seed 初始化）",
     },
     {
         "key": "amber",
         "label": "Amber",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Amber",
+        "note": "社区默认头像预设：Amber（seed 初始化）",
     },
     {
         "key": "mint",
         "label": "Mint",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Mint",
+        "note": "社区默认头像预设：Mint（seed 初始化）",
     },
     {
         "key": "cinder",
         "label": "Cinder",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder",
+        "note": "社区默认头像预设：Cinder（seed 初始化）",
     },
     {
         "key": "tide",
         "label": "Tide",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Tide",
+        "note": "社区默认头像预设：Tide（seed 初始化）",
     },
     {
         "key": "plum",
         "label": "Plum",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Plum",
+        "note": "社区默认头像预设：Plum（seed 初始化）",
     },
     {
         "key": "linen",
         "label": "Linen",
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Linen",
+        "note": "社区默认头像预设：Linen（seed 初始化）",
     },
 ]
 
@@ -414,10 +546,10 @@ def build_default_community_config() -> dict[str, object]:
         "emoji_presets": ["twemoji", "qq", "bilibili"],
         "enable_enjoy_search": True,
         "image_uploader": False,
-        "login_mode": "disable",
+        "login_mode": "force",
         "oauth_url": None,
         "oauth_providers": ["github", "google"],
-        "anonymous_enabled": True,
+        "anonymous_enabled": False,
         "moderation_mode": "all_pending",
         "default_sorting": "latest",
         "page_size": 20,
@@ -425,8 +557,8 @@ def build_default_community_config() -> dict[str, object]:
         "avatar_presets": [preset.copy() for preset in DEFAULT_COMMENT_AVATAR_PRESETS],
         "guest_avatar_mode": "preset",
         "draft_enabled": True,
-        "avatar_strategy": "identicon",
-        "avatar_helper_copy": "匿名评论可从头像库选择预设头像，邮箱可选。",
+        "avatar_strategy": "dicebear-notionists",
+        "avatar_helper_copy": "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
         "migration_state": "not_started",
     }
 
@@ -504,11 +636,67 @@ def _seed_community_config(session: Session) -> None:
     config.surfaces = _merge_community_surfaces(config.surfaces, list(default_config["surfaces"]))
 
 
+def _seed_site_auth_config(session: Session) -> None:
+    from aerisun.domain.site_auth.service import build_default_site_auth_config
+
+    default_config = build_default_site_auth_config(session)
+    config = session.scalars(select(SiteAuthConfig).order_by(SiteAuthConfig.created_at.asc())).first()
+    if config is None:
+        session.add(SiteAuthConfig(**default_config))
+        return
+
+    if config.visitor_oauth_providers is None:
+        config.visitor_oauth_providers = list(default_config["visitor_oauth_providers"])
+    if config.admin_auth_methods is None:
+        config.admin_auth_methods = list(default_config["admin_auth_methods"])
+    if getattr(config, "admin_email_enabled", None) is None:
+        config.admin_email_enabled = bool(default_config["admin_email_enabled"])
+    if not config.google_client_id:
+        config.google_client_id = str(default_config["google_client_id"])
+    if not config.google_client_secret:
+        config.google_client_secret = str(default_config["google_client_secret"])
+    if not config.github_client_id:
+        config.github_client_id = str(default_config["github_client_id"])
+    if not config.github_client_secret:
+        config.github_client_secret = str(default_config["github_client_secret"])
+
+
 DEFAULT_RESUME = {
     "title": "Felix",
     "subtitle": "UI/UX Designer · Frontend Developer",
-    "summary": "专注把视觉、节奏和交互组织成清晰、克制、可维护的产品体验。",
+    "summary": """## Profile
+专注把视觉、节奏和交互组织成清晰、克制、可维护的产品体验。
+
+## Experience
+### Personal Website & Design System
+**Aerisun** · 2024 - Now
+
+- 重构站点信息架构与前后台配置逻辑
+- 把展示页、后台和数据结构统一成一套可维护系统
+- 持续打磨内容型网站的版式、节奏和视觉完成度
+
+## Skills
+- React / TypeScript / Tailwind CSS
+- Design Systems / Motion / Information Architecture
+- FastAPI / SQLAlchemy / SQLite
+
+## Selected Projects
+- 个人网站与内容系统
+- 管理后台体验优化
+- 简历模板与 Markdown 渲染方案""",
     "download_label": "下载 PDF",
+    "template_key": "editorial",
+    "accent_tone": "amber",
+    "location": "上海 / Remote",
+    "availability": "可接受远程合作与品牌项目咨询",
+    "email": "felix@example.com",
+    "website": "https://aerisun.local/resume",
+    "profile_image_url": "__SEEDED_RESUME_AVATAR__",
+    "highlights": [
+        "8+ 年数字产品体验设计与前端落地经验",
+        "擅长内容型网站、品牌官网与设计系统",
+        "能独立完成视觉、交互、前端实现与交付规范",
+    ],
 }
 
 DEFAULT_SKILLS = [
@@ -526,14 +714,30 @@ DEFAULT_EXPERIENCES = [
         "title": "个人网站与设计系统",
         "company": "Aerisun",
         "period": "2024 - Now",
+        "location": "Remote",
+        "employment_type": "独立项目",
         "summary": "构建个人网站、设计令牌和可恢复的内容平台。",
+        "achievements": [
+            "重构站点信息架构，让内容展示和后台配置保持一致",
+            "统一设计 token 与组件风格，降低页面维护成本",
+            "为文章、简历、留言等页面建立可扩展模板策略",
+        ],
+        "tech_stack": ["React", "TypeScript", "Tailwind", "FastAPI"],
         "order_index": 0,
     },
     {
         "title": "前端与视觉实现",
         "company": "Independent",
         "period": "2022 - 2024",
+        "location": "上海",
+        "employment_type": "全职 / 合作",
         "summary": "负责个人项目中的页面节奏、动效和交互组织。",
+        "achievements": [
+            "为多个项目输出高保真界面方案与交互规范",
+            "推动设计到代码的映射规则，减少实现偏差",
+            "优化响应式与细节动效，提升整体完成度",
+        ],
+        "tech_stack": ["Figma", "React", "Framer Motion"],
         "order_index": 1,
     },
 ]
@@ -1471,6 +1675,49 @@ def _build_default_waline_counters() -> list[dict[str, object]]:
 
 DEFAULT_WALINE_COUNTERS = _build_default_waline_counters()
 
+DEFAULT_TRAFFIC_SNAPSHOT_SERIES = {
+    "/": [96, 108, 118, 126, 140, 152, 164, 171, 186, 201, 215, 238, 252, 276],
+    "/posts/from-zero-design-system": [34, 38, 42, 47, 51, 56, 61, 66, 72, 78, 85, 93, 101, 112],
+    "/posts/crafting-an-editorial-homepage": [18, 21, 25, 29, 33, 36, 40, 43, 47, 52, 57, 63, 68, 74],
+    "/diary/spring-equinox-and-warm-light": [9, 11, 12, 15, 16, 18, 20, 21, 24, 25, 27, 30, 32, 35],
+    "/thoughts/small-routines-build-better-systems": [7, 8, 10, 10, 12, 13, 15, 16, 16, 18, 19, 20, 22, 24],
+    "/excerpts/quiet-rhythm-and-better-interfaces": [5, 6, 7, 8, 9, 10, 11, 11, 12, 13, 14, 15, 16, 18],
+}
+
+DEFAULT_TRAFFIC_REACTION_SERIES = {
+    "/": [3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 8],
+    "/posts/from-zero-design-system": [1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 5],
+    "/posts/crafting-an-editorial-homepage": [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3],
+    "/diary/spring-equinox-and-warm-light": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2],
+    "/thoughts/small-routines-build-better-systems": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+    "/excerpts/quiet-rhythm-and-better-interfaces": [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+}
+
+
+def _build_default_traffic_snapshots() -> list[dict[str, object]]:
+    today = datetime.now(UTC).date()
+    snapshots: list[dict[str, object]] = []
+    for url, cumulative_views in DEFAULT_TRAFFIC_SNAPSHOT_SERIES.items():
+        cumulative_reactions = DEFAULT_TRAFFIC_REACTION_SERIES.get(url, [0] * len(cumulative_views))
+        previous_views = 0
+        for index, total_views in enumerate(cumulative_views):
+            snapshot_date = today - timedelta(days=len(cumulative_views) - index - 1)
+            daily_views = total_views - previous_views
+            previous_views = total_views
+            snapshots.append(
+                {
+                    "snapshot_date": snapshot_date,
+                    "url": url,
+                    "cumulative_views": total_views,
+                    "daily_views": daily_views,
+                    "cumulative_reactions": cumulative_reactions[index] if index < len(cumulative_reactions) else 0,
+                }
+            )
+    return snapshots
+
+
+DEFAULT_TRAFFIC_SNAPSHOTS = _build_default_traffic_snapshots()
+
 
 def _is_empty(session: Session, model) -> bool:  # type: ignore[no-untyped-def]
     return session.scalar(select(func.count(model.id))) == 0
@@ -1501,6 +1748,9 @@ def _clear_seed_data(session: Session) -> None:
         DiaryEntry,
         ThoughtEntry,
         ExcerptEntry,
+        Asset,
+        TrafficDailySnapshot,
+        VisitRecord,
         AdminUser,
     ]:
         count = session.query(model).delete()
@@ -1667,6 +1917,77 @@ def _seed_engagement_data(session: Session) -> None:
         session.add_all([Reaction(**item) for item in missing_reactions])
 
 
+def _seed_traffic_snapshot_data(session: Session) -> None:
+    existing = session.scalar(select(func.count(TrafficDailySnapshot.id)))
+    if existing and int(existing) > 0:
+        return
+
+    session.add_all([TrafficDailySnapshot(**item) for item in DEFAULT_TRAFFIC_SNAPSHOTS])
+
+
+def _seed_visit_record_data(session: Session) -> None:
+    existing = session.scalar(select(func.count(VisitRecord.id)))
+    if existing and int(existing) > 0:
+        return
+
+    now = datetime.now(UTC)
+    sample = []
+    ip_pool = [
+        "203.0.113.10",
+        "203.0.113.11",
+        "203.0.113.12",
+        "198.51.100.7",
+        "198.51.100.8",
+    ]
+    paths = [
+        "/",
+        "/posts/from-zero-design-system",
+        "/posts/crafting-an-editorial-homepage",
+        "/posts/liquid-glass-css-notes",
+        "/diary/spring-equinox-and-warm-light",
+        "/thoughts/small-routines-build-better-systems",
+        "/resume",
+        "/friends",
+        "/guestbook",
+    ]
+
+    # 过去 14 天：按天生成一点“像真的”的访问分布
+    for day_offset in range(14):
+        day = now - timedelta(days=13 - day_offset)
+        visits_today = 3 + (day_offset % 6)  # 3..8
+        for idx in range(visits_today):
+            path = paths[(day_offset * 3 + idx) % len(paths)]
+            ip = ip_pool[(day_offset + idx) % len(ip_pool)]
+            sample.append(
+                VisitRecord(
+                    visited_at=day.replace(hour=(9 + idx) % 24, minute=(idx * 7) % 60, second=0, microsecond=0),
+                    path=path,
+                    ip_address=ip,
+                    user_agent="Mozilla/5.0 (Seed) AppleWebKit/537.36",
+                    referer="https://example.com" if idx % 3 == 0 else None,
+                    status_code=200,
+                    duration_ms=60 + (idx * 23) % 240,
+                    is_bot=False,
+                )
+            )
+
+    # 加一条 bot（默认统计会过滤）
+    sample.append(
+        VisitRecord(
+            visited_at=now - timedelta(hours=6),
+            path="/robots.txt",
+            ip_address="192.0.2.66",
+            user_agent="Googlebot/2.1 (+http://www.google.com/bot.html)",
+            referer=None,
+            status_code=200,
+            duration_ms=20,
+            is_bot=True,
+        )
+    )
+
+    session.add_all(sample)
+
+
 def _seed_legacy_guestbook_data(session: Session) -> None:
     if not _is_empty(session, GuestbookEntry):
         return
@@ -1793,15 +2114,49 @@ def _seed_waline_counter_data() -> None:
 
 
 def seed_reference_data(*, force: bool = False) -> None:
-    get_settings().ensure_directories()
+    settings = get_settings()
+    settings.ensure_directories()
     init_db()
     session = get_session_factory()()
     try:
         if force:
             _clear_seed_data(session)
             _clear_waline_seed_data()
+
+        frontend_public_images = settings.store_dir.parent / "frontend" / "public" / "images"
+        seeded_og_image = _ensure_seed_asset(
+            session,
+            source_path=frontend_public_images / "hero_bg.jpeg",
+            category="site-og",
+            note="站点默认 OG 分享图（seed 初始化）",
+        )
+        seeded_hero_image = _ensure_seed_asset(
+            session,
+            source_path=frontend_public_images / "avatar.webp",
+            category="hero-image",
+            note="首页 Hero 默认视觉图（seed 初始化）",
+        )
+        seeded_hero_poster = _ensure_seed_asset(
+            session,
+            source_path=frontend_public_images / "hero_bg.jpeg",
+            category="hero-poster",
+            note="首页 Hero 视频默认封面图（seed 初始化）",
+        )
+        seeded_resume_avatar = _ensure_seed_asset(
+            session,
+            source_path=frontend_public_images / "avatar.webp",
+            category="resume-avatar",
+            note="简历默认头像（seed 初始化）",
+        )
+
         if _is_empty(session, SiteProfile):
-            site = SiteProfile(**DEFAULT_SITE_PROFILE)
+            site_payload = {
+                **DEFAULT_SITE_PROFILE,
+                "og_image": seeded_og_image,
+                "hero_image_url": seeded_hero_image,
+                "hero_poster_url": seeded_hero_poster,
+            }
+            site = SiteProfile(**site_payload)
             session.add(site)
             session.flush()
 
@@ -1814,7 +2169,8 @@ def seed_reference_data(*, force: bool = False) -> None:
             )
             session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
             session.add_all([PageDisplayOption(**item) for item in DEFAULT_PAGE_OPTIONS])
-            resume = ResumeBasics(**DEFAULT_RESUME)
+            resume_payload = {**DEFAULT_RESUME, "profile_image_url": seeded_resume_avatar}
+            resume = ResumeBasics(**resume_payload)
             session.add(resume)
             session.flush()
             session.add_all([ResumeSkillGroup(resume_basics_id=resume.id, **group) for group in DEFAULT_SKILLS])
@@ -1859,6 +2215,7 @@ def seed_reference_data(*, force: bool = False) -> None:
                         session.add(nav)
 
         _seed_community_config(session)
+        _seed_site_auth_config(session)
 
         _seed_content_entries(session, PostEntry, DEFAULT_POSTS)
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
@@ -1866,6 +2223,8 @@ def seed_reference_data(*, force: bool = False) -> None:
         _seed_content_entries(session, ExcerptEntry, DEFAULT_EXCERPTS)
         _seed_social_data(session)
         _seed_engagement_data(session)
+        _seed_traffic_snapshot_data(session)
+        _seed_visit_record_data(session)
         _seed_legacy_guestbook_data(session)
         _seed_legacy_comment_data(session)
         _seed_dev_admin(session)

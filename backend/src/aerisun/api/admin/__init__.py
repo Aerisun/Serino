@@ -8,6 +8,7 @@ from aerisun.domain.content.models import (
     PostEntry,
     ThoughtEntry,
 )
+from aerisun.domain.content.service import normalize_content_create_state, normalize_content_update_state
 
 from .assets import router as assets_router
 from .auth import router as auth_router
@@ -20,6 +21,7 @@ from .schemas import ContentAdminRead, ContentCreate, ContentUpdate
 from .site_config import router as site_config_router
 from .social import router as social_router
 from .system import router as system_router
+from .visitors import router as visitors_router
 
 admin_router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
@@ -33,6 +35,7 @@ for model, prefix in [
     (ThoughtEntry, "/thoughts"),
     (ExcerptEntry, "/excerpts"),
 ]:
+    content_type = prefix.strip("/")
     admin_router.include_router(
         build_crud_router(
             model,
@@ -40,7 +43,12 @@ for model, prefix in [
             update_schema=ContentUpdate,
             read_schema=ContentAdminRead,
             prefix=prefix,
-            tag=f"admin-{prefix.strip('/')}",
+            tag=f"admin-{prefix.strip('/')}" ,
+            prepare_create_data=lambda session, data, *, content_type=content_type: normalize_content_create_state(
+                session,
+                {**data, "_content_type": content_type},
+            ),
+            prepare_update_data=normalize_content_update_state,
         )
     )
 
@@ -53,5 +61,6 @@ admin_router.include_router(assets_router)
 admin_router.include_router(system_router)
 admin_router.include_router(content_meta_router)
 admin_router.include_router(import_export_router)
+admin_router.include_router(visitors_router)
 
 __all__ = ["admin_router"]

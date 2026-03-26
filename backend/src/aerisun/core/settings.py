@@ -80,6 +80,18 @@ class Settings(BaseSettings):
     seed_reference_data: bool = True
     cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())
     session_ttl_hours: int = 24
+    public_session_ttl_hours: int = 24 * 30
+    public_session_cookie_name: str = "aerisun_site_session"
+    oauth_google_client_id: str = ""
+    oauth_google_client_secret: str = ""
+    oauth_github_client_id: str = ""
+    oauth_github_client_secret: str = ""
+
+    # IP geolocation
+    ip_geo_enabled: bool = True
+    ip_geo_api_base_url: str = "https://freeipapi.com/api/json"
+    ip_geo_timeout_seconds: float = 3.0
+    ip_geo_cache_ttl_seconds: int = 24 * 60 * 60
 
     # Feed crawling
     feed_crawl_enabled: bool = True

@@ -7,6 +7,7 @@ import type {
 
 export type { CommunitySurface, CommunityCommentSort, WalineEmojiPreset, AvatarPreset };
 import { readCommunityConfigApiV1PublicCommunityConfigGet } from "@serino/api-client/public";
+import { clampPageSize } from "@/lib/page-size";
 
 /** Default max image size in bytes before compression kicks in (512 KB) */
 const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;
@@ -85,27 +86,14 @@ const DEFAULT_WALINE_EMOJI: Array<string> = [
   "https://unpkg.com/@waline/emojis@1.1.0/bmoji",
 ];
 
-const DEFAULT_AVATAR_PRESETS: AvatarPreset[] = [
-  { key: "shiro", label: "Shiro", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro" },
-  { key: "glass", label: "Glass", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Glass" },
-  { key: "aurora", label: "Aurora", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora" },
-  { key: "paper", label: "Paper", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Paper" },
-  { key: "dawn", label: "Dawn", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn" },
-  { key: "pebble", label: "Pebble", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble" },
-  { key: "amber", label: "Amber", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Amber" },
-  { key: "mint", label: "Mint", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Mint" },
-  { key: "cinder", label: "Cinder", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder" },
-  { key: "tide", label: "Tide", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Tide" },
-  { key: "plum", label: "Plum", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Plum" },
-  { key: "linen", label: "Linen", avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Linen" },
-];
+const DEFAULT_AVATAR_PRESETS: AvatarPreset[] = [];
 
 const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   provider: "waline",
   serverURL: "", // Will be resolved at runtime via normalizeServerURL
   meta: ["nick", "mail", "link"],
   requiredMeta: ["nick"],
-  loginMode: "enable",
+  loginMode: "force",
   commentSorting: "latest",
   enableEnjoySearch: true,
   imageUploader: false,
@@ -114,7 +102,7 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   enjoySearchDefaultWords: ["enjoy", "yoyo", "hehe"],
   avatarStrategy: null,
   avatarPresets: DEFAULT_AVATAR_PRESETS,
-  helperCopy: null,
+  helperCopy: "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
   pageSize: 10,
   imageMaxBytes: DEFAULT_IMAGE_MAX_BYTES,
   lang: "zh-CN",
@@ -191,20 +179,21 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
   // Ensure "link" is always present so the Website field shows
   if (!meta.includes("link")) meta.push("link");
   const requiredMeta = record.requiredMeta ?? record.required_meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.requiredMeta;
-  // "disable" hides the login button AND part of the meta input UI in Waline.
-  // We always want at least "enable" so guest nick/mail/link fields render.
   const rawLogin = record.loginMode ?? record.login_mode ?? DEFAULT_WALINE_COMMUNITY_CONFIG.loginMode;
-  const loginMode = rawLogin === "disable" ? "enable" : rawLogin;
+  const loginMode = rawLogin;
   const commentSorting = normalizeCommentSorting(
     record.commentSorting ?? record.comment_sorting ?? record.default_sorting,
   );
   const enableEnjoySearch =
     record.enableEnjoySearch ?? record.enable_enjoy_search ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enableEnjoySearch;
   const imageUploader = record.imageUploader ?? record.image_uploader ?? DEFAULT_WALINE_COMMUNITY_CONFIG.imageUploader;
+  const anonymousEnabled = record.anonymous_enabled ?? DEFAULT_WALINE_COMMUNITY_CONFIG.anonymousEnabled;
   const rawEmoji = record.emojiPresets ?? record.emoji_presets ?? DEFAULT_WALINE_COMMUNITY_CONFIG.emojiPresets;
   const emojiPresets = rawEmoji.map(normalizeEmojiPreset);
   const enjoySearchEndpoint =
-    record.enjoySearchEndpoint ?? record.enjoy_search_endpoint ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enjoySearchEndpoint;
+    enableEnjoySearch
+      ? (record.enjoySearchEndpoint ?? record.enjoy_search_endpoint ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enjoySearchEndpoint)
+      : null;
   const enjoySearchDefaultWords =
     record.enjoySearchDefaultWords ?? record.enjoy_search_default_words ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enjoySearchDefaultWords;
 
@@ -216,7 +205,7 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     loginMode,
     commentSorting,
     oauthProviders: record.oauth_providers ?? [],
-    anonymousEnabled: record.anonymous_enabled,
+    anonymousEnabled,
     moderationMode: record.moderation_mode,
     enableEnjoySearch,
     imageUploader,
@@ -230,7 +219,10 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
       ?? record.helper_copy
       ?? record.avatar_helper_copy
       ?? DEFAULT_WALINE_COMMUNITY_CONFIG.helperCopy,
-    pageSize: record.pageSize ?? record.page_size ?? DEFAULT_WALINE_COMMUNITY_CONFIG.pageSize,
+    pageSize: clampPageSize(
+      record.pageSize ?? record.page_size,
+      DEFAULT_WALINE_COMMUNITY_CONFIG.pageSize ?? 10,
+    ),
     imageMaxBytes: record.imageMaxBytes ?? record.image_max_bytes ?? DEFAULT_WALINE_COMMUNITY_CONFIG.imageMaxBytes,
     lang: record.lang ?? DEFAULT_WALINE_COMMUNITY_CONFIG.lang,
     darkSelector: record.darkSelector ?? record.dark_selector ?? DEFAULT_WALINE_COMMUNITY_CONFIG.darkSelector,

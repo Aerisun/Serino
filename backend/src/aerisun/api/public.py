@@ -7,6 +7,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from aerisun.api.admin.schemas import CommentImageUploadResponse
+from aerisun.api.public_auth import get_current_site_user_optional
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, limiter
 from aerisun.core.schemas import HealthRead
@@ -34,11 +35,13 @@ from aerisun.domain.engagement.schemas import (
 from aerisun.domain.engagement.service import (
     create_public_comment,
     create_public_guestbook_entry,
+    ensure_comment_image_upload_allowed,
     list_public_comments,
     list_public_guestbook_entries,
     read_public_reaction,
     register_public_reaction,
 )
+from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.site_config.schemas import CommunityConfigRead, PageCollectionRead, ResumeRead, SiteConfigRead
 from aerisun.domain.site_config.service import get_community_config, get_page_copy, get_resume, get_site_config
 from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead
@@ -143,8 +146,9 @@ def create_guestbook(
     request: Request,
     payload: GuestbookCreate,
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
 ) -> GuestbookCreateResponse:
-    return create_public_guestbook_entry(session, payload)
+    return create_public_guestbook_entry(session, payload, current_user=current_user)
 
 
 @router.get("/comments/{content_type}/{slug}", response_model=CommentCollectionRead, summary="获取内容评论")
@@ -164,8 +168,9 @@ def create_comment(
     slug: str,
     payload: CommentCreate,
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
 ) -> CommentCreateResponse:
-    return create_public_comment(session, content_type, slug, payload)
+    return create_public_comment(session, content_type, slug, payload, current_user=current_user)
 
 
 @router.post("/reactions", response_model=ReactionRead, summary="提交互动反应")
@@ -199,10 +204,11 @@ def upload_comment_image(
     file: UploadFile,
     session: Session = Depends(get_session),
 ) -> dict:
+    ensure_comment_image_upload_allowed(session)
     from aerisun.domain.media.service import save_comment_image
 
     content = file.file.read()
-    url = save_comment_image(content, file.filename or "img", file.content_type)
+    url = save_comment_image(session, content, file.filename or "img", file.content_type)
     return {"errno": 0, "data": {"url": url}}
 
 
