@@ -3,6 +3,7 @@ from __future__ import annotations
 from aerisun.core.db import get_session_factory
 from aerisun.core.seed import seed_reference_data
 from aerisun.core.settings import get_settings
+from aerisun.domain.ops.models import TrafficDailySnapshot
 from aerisun.domain.site_config.models import PageCopy
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -131,6 +132,26 @@ def test_seed_reference_data_provides_comment_samples_and_is_idempotent(client) 
 
     after = waline_snapshot()
     assert after == before
+
+
+def test_seed_reference_data_provides_traffic_snapshot_samples(client) -> None:
+    session_factory = get_session_factory()
+    session = session_factory()
+    try:
+        total = session.query(TrafficDailySnapshot).count()
+        latest_home = (
+            session.query(TrafficDailySnapshot)
+            .filter(TrafficDailySnapshot.url == "/")
+            .order_by(TrafficDailySnapshot.snapshot_date.desc())
+            .first()
+        )
+    finally:
+        session.close()
+
+    assert total >= 14 * 6
+    assert latest_home is not None
+    assert latest_home.cumulative_views > 0
+    assert latest_home.daily_views > 0
 
 
 def test_seed_reference_data_force_reseeds_waline_rows(client) -> None:

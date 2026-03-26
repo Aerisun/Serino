@@ -2,31 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Clock, Eye, MessageCircle, Tag } from "lucide-react";
-import {
-  PREVIEW_REQUEST_MESSAGE,
-  isPreviewDataMessage,
-} from "@serino/utils";
+import { PREVIEW_REQUEST_MESSAGE, isPreviewDataMessage } from "@serino/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import BackToTop from "@/components/BackToTop";
 import CodeHighlighter from "@/components/CodeHighlighter";
+import PageShell from "@/components/PageShell";
 import TableOfContents from "@/components/TableOfContents";
-import { useFeatureFlags } from "@/contexts/runtime-config";
+import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import EmbeddedResume from "@/components/EmbeddedResume";
 
 const STORAGE_KEY_PREFIX = "aerisun-preview-";
-
-const categoryMap: Record<string, string> = {
-  "design-system": "设计",
-  frontend: "设计",
-  css: "技术",
-  performance: "技术",
-  react: "技术",
-  animation: "技术",
-  essay: "随想",
-  career: "随想",
-};
 
 const estimateReadTime = (value: string) =>
   `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
@@ -34,38 +22,52 @@ const estimateReadTime = (value: string) =>
 const weatherIcons: Record<string, string> = {
   sunny: "☀️",
   cloudy: "☁️",
+  fog: "🌫️",
+  haze: "🌫️",
+  light_rain: "🌦️",
+  shower: "🌧️🌨️",
   rainy: "🌧️",
+  heavy_rain: "🌧️🌧️",
+  light_snow: "🌨️",
   snowy: "❄️",
+  heavy_snow: "❄️❄️",
+  sleet: "🌧️❄️",
   stormy: "⛈️",
   windy: "💨",
 };
 
 interface PreviewData {
-  type: "posts" | "diary";
-  slug: string;
+  type: "posts" | "diary" | "resume";
+  slug?: string;
   title: string;
   summary?: string;
-  body: string;
+  body?: string;
   tags?: string[];
-  status: string;
+  status?: string;
   category?: string;
   mood?: string;
   weather?: string;
   poem?: string;
   published_at?: string | null;
   created_at?: string;
+  subtitle?: string;
+  location?: string;
+  email?: string;
+  website?: string;
+  profile_image_url?: string;
 }
 
 function PostPreview({ data }: { data: PreviewData }) {
   const featureFlags = useFeatureFlags();
+  const pages = usePageConfig();
+  const postsConfig = (pages.posts ?? {}) as {
+    categories?: { fallback?: string };
+  };
+  const fallbackCategoryLabel = postsConfig.categories?.fallback ?? "未分类";
   const articleRef = useRef<HTMLElement>(null);
 
-  const category =
-    data.category ||
-    categoryMap[data.tags?.[0] ?? ""] ||
-    data.tags?.[0] ||
-    "内容";
-  const readTime = estimateReadTime(data.body);
+  const category = data.category || fallbackCategoryLabel;
+  const readTime = estimateReadTime(data.body || "");
 
   return (
     <>
@@ -121,17 +123,20 @@ function PostPreview({ data }: { data: PreviewData }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
       >
-        <MarkdownRenderer content={data.body} />
+        <MarkdownRenderer content={data.body || ""} />
       </motion.article>
 
-      <CodeHighlighter containerRef={articleRef} content={[data.body]} />
+      <CodeHighlighter containerRef={articleRef} content={[data.body || ""]} />
       {featureFlags.toc && (
-        <TableOfContents containerRef={articleRef} content={[data.body]} />
+        <TableOfContents
+          containerRef={articleRef}
+          content={[data.body || ""]}
+        />
       )}
 
       <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
         <p className="text-center text-xs font-body text-foreground/20">
-          — 完 —
+          — END —
         </p>
       </div>
     </>
@@ -186,12 +191,15 @@ function DiaryPreview({ data }: { data: PreviewData }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
       >
-        <MarkdownRenderer content={data.body} />
+        <MarkdownRenderer content={data.body || ""} />
       </motion.article>
 
-      <CodeHighlighter containerRef={articleRef} content={[data.body]} />
+      <CodeHighlighter containerRef={articleRef} content={[data.body || ""]} />
       {featureFlags.toc && (
-        <TableOfContents containerRef={articleRef} content={[data.body]} />
+        <TableOfContents
+          containerRef={articleRef}
+          content={[data.body || ""]}
+        />
       )}
 
       {data.poem && (
@@ -207,6 +215,37 @@ function DiaryPreview({ data }: { data: PreviewData }) {
         </motion.div>
       )}
     </>
+  );
+}
+
+function ResumePreview({ data }: { data: PreviewData }) {
+  return (
+    <PageShell
+      eyebrow=""
+      title="Resume"
+      description=""
+      width="wide"
+      contentClassName="mt-2"
+      compactHeader
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <EmbeddedResume
+          name={data.title || "Your Name"}
+          role=""
+          content={data.summary || ""}
+          profileImageUrl={data.profile_image_url}
+          contacts={{
+            location: data.location,
+            email: data.email,
+            website: data.website,
+          }}
+        />
+      </motion.div>
+    </PageShell>
   );
 }
 
@@ -282,6 +321,25 @@ export default function Preview() {
         </main>
         <Footer />
       </div>
+    );
+  }
+
+  if (data.type === "resume") {
+    return (
+      <>
+        <div className="pointer-events-none fixed left-4 top-4 z-[9999] sm:left-6 sm:top-6">
+          <div
+            className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-[rgba(36,28,12,0.78)] px-4 py-2 text-xs font-medium text-amber-100 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-md sm:text-sm"
+            aria-label="预览模式，此内容尚未发布"
+            title="预览模式，此内容尚未发布"
+          >
+            <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.9)]" />
+            <span>预览模式</span>
+          </div>
+        </div>
+
+        <ResumePreview data={data} />
+      </>
     );
   }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { CommunityConfigAdminRead } from "@serino/api-client/models";
 import {
   useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet,
   useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut,
@@ -9,10 +10,20 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { HintBanner } from "@/components/ui/HintBanner";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
-import { Save } from "lucide-react";
+import { AppleSwitch } from "@/components/ui/AppleSwitch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { ResourceUploadField } from "@/components/ResourceUploadField";
 import {
   createCommunityForm,
   communityFormToUpdate,
@@ -38,7 +49,8 @@ const GUEST_AVATAR_MODE_OPTIONS = ["preset", "identicon", "gravatar"] as const;
 export function CommunityTab() {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
-  const { data: resp, isLoading } = useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet();
+  const { data: resp, isLoading } =
+    useGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGet();
   const config = resp?.data;
   const [form, setForm] = useState(() => createCommunityForm());
   const [formError, setFormError] = useState("");
@@ -56,8 +68,14 @@ export function CommunityTab() {
         setFormError("");
       },
       onSuccess: (saved) => {
-        queryClient.invalidateQueries({ queryKey: getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey() });
-        setForm(createCommunityForm(saved.data));
+        queryClient.invalidateQueries({
+          queryKey:
+            getGetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetQueryKey(),
+        });
+        toast.success(t("common.operationSuccess"));
+        if (saved.data && "provider" in saved.data) {
+          setForm(createCommunityForm(saved.data as CommunityConfigAdminRead));
+        }
       },
       onError: (error) => {
         setFormError(
@@ -80,147 +98,137 @@ export function CommunityTab() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateAvatarPreset = (
+    index: number,
+    key: "key" | "label" | "avatar_url" | "note",
+    value: string,
+  ) => {
+    updateField(
+      "avatar_presets",
+      form.avatar_presets.map((item, currentIndex) =>
+        currentIndex === index ? { ...item, [key]: value } : item,
+      ),
+    );
+  };
+
+  const addAvatarPreset = () => {
+    updateField("avatar_presets", [
+      ...form.avatar_presets,
+      { key: "", label: "", avatar_url: "", note: "" },
+    ]);
+  };
+
+  const removeAvatarPreset = (index: number) => {
+    updateField(
+      "avatar_presets",
+      form.avatar_presets.filter((_, currentIndex) => currentIndex !== index),
+    );
+  };
+
   return (
     <Card className="mt-4">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">
-          {t("siteConfig.community")}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {t("siteConfig.communityDescription")}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* ── Basic Settings ── */}
-        <HintBanner>{t("siteConfig.communityBasicHint")}</HintBanner>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label>{t("siteConfig.commentProvider")}</Label>
-            <Input value={form.provider} disabled />
-          </div>
-          <div className="space-y-1">
-            <Label>{t("siteConfig.commentServerUrl")}</Label>
-            <Input
-              value={form.server_url}
-              onChange={(e) => updateField("server_url", e.target.value)}
-              placeholder="https://waline.example.com"
-            />
-          </div>
+      <CardContent className="space-y-6 pt-6">
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>{t("siteConfig.commentLoginMode")}</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            <Select
               value={form.login_mode}
-              onChange={(e) => updateField("login_mode", e.target.value)}
+              onValueChange={(value) => updateField("login_mode", value)}
             >
-              {LOGIN_MODE_OPTIONS.map((v) => (
-                <option key={v} value={v}>
-                  {optionLabel(LOGIN_MODE_LABELS, v, lang)}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder={t("siteConfig.commentLoginMode")} />
+              </SelectTrigger>
+              <SelectContent>
+                {LOGIN_MODE_OPTIONS.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {optionLabel(LOGIN_MODE_LABELS, v, lang)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.anonymous_enabled}
-              onChange={(e) =>
-                updateField("anonymous_enabled", e.target.checked)
-              }
-              className="h-4 w-4 rounded border-border"
-            />
-            <span>{t("siteConfig.commentAnonymousEnabled")}</span>
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.image_uploader}
-              onChange={(e) => updateField("image_uploader", e.target.checked)}
-              className="h-4 w-4 rounded border-border"
-            />
-            <span>{t("siteConfig.commentImageUploader")}</span>
-          </label>
-        </div>
 
-        {/* ── Display Settings ── */}
-        <div className="rounded-lg border p-4 space-y-4">
-          <h3 className="text-sm font-semibold">
-            {t("siteConfig.displaySettings")}
-          </h3>
-          <HintBanner>{t("siteConfig.communityDisplayHint")}</HintBanner>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>{t("siteConfig.commentDefaultSorting")}</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.default_sorting}
-                onChange={(e) => updateField("default_sorting", e.target.value)}
-              >
+          <div className="space-y-1">
+            <Label>{t("siteConfig.commentDefaultSorting")}</Label>
+            <Select
+              value={form.default_sorting}
+              onValueChange={(value) => updateField("default_sorting", value)}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={t("siteConfig.commentDefaultSorting")}
+                />
+              </SelectTrigger>
+              <SelectContent>
                 {DEFAULT_SORTING_OPTIONS.map((v) => (
-                  <option key={v} value={v}>
+                  <SelectItem key={v} value={v}>
                     {optionLabel(DEFAULT_SORTING_LABELS, v, lang)}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label>{t("siteConfig.commentModerationMode")}</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.moderation_mode}
-                onChange={(e) => updateField("moderation_mode", e.target.value)}
-              >
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>{t("siteConfig.commentModerationMode")}</Label>
+            <Select
+              value={form.moderation_mode}
+              onValueChange={(value) => updateField("moderation_mode", value)}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={t("siteConfig.commentModerationMode")}
+                />
+              </SelectTrigger>
+              <SelectContent>
                 {MODERATION_MODE_OPTIONS.map((v) => (
-                  <option key={v} value={v}>
+                  <SelectItem key={v} value={v}>
                     {optionLabel(MODERATION_MODE_LABELS, v, lang)}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label>{t("siteConfig.commentPageSize")}</Label>
-              <Input
-                type="number"
-                min={1}
-                value={form.page_size}
-                onChange={(e) => updateField("page_size", e.target.value)}
-                placeholder="20"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>{t("siteConfig.commentEmojiPresets")}</Label>
-              <Input
-                value={form.emoji_presets}
-                onChange={(e) => updateField("emoji_presets", e.target.value)}
-                placeholder="apple, weibo, qq, bilibili, twemoji, github"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.enable_enjoy_search}
-                onChange={(e) =>
-                  updateField("enable_enjoy_search", e.target.checked)
-                }
-                className="h-4 w-4 rounded border-border"
-              />
-              <span>{t("siteConfig.commentEnableEnjoySearch")}</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.draft_enabled}
-                onChange={(e) => updateField("draft_enabled", e.target.checked)}
-                className="h-4 w-4 rounded border-border"
-              />
-              <span>{t("siteConfig.commentDraftEnabled")}</span>
-            </label>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>{t("siteConfig.commentPageSize")}</Label>
+            <Input
+              type="number"
+              min={1}
+              value={form.page_size}
+              onChange={(e) => updateField("page_size", e.target.value)}
+              placeholder="20"
+            />
           </div>
         </div>
 
-        {/* ── Advanced Settings ── */}
+        <div className="grid gap-3">
+          <AppleSwitch
+            checked={form.anonymous_enabled}
+            onCheckedChange={(checked) =>
+              updateField("anonymous_enabled", checked)
+            }
+            label={t("siteConfig.commentAnonymousEnabled")}
+            description={t("siteConfig.commentAnonymousEnabledDesc")}
+          />
+          <AppleSwitch
+            checked={form.image_uploader}
+            onCheckedChange={(checked) =>
+              updateField("image_uploader", checked)
+            }
+            label={t("siteConfig.commentImageUploader")}
+            description={t("siteConfig.commentImageUploaderDesc")}
+          />
+          <AppleSwitch
+            checked={form.enable_enjoy_search}
+            onCheckedChange={(checked) =>
+              updateField("enable_enjoy_search", checked)
+            }
+            label={t("siteConfig.commentEnableEnjoySearch")}
+            description={t("siteConfig.commentEnableEnjoySearchDesc")}
+          />
+        </div>
+
         <CollapsibleSection
           title={t("siteConfig.advancedSettings")}
           defaultOpen={false}
@@ -230,90 +238,157 @@ export function CommunityTab() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
+                <Label>{t("siteConfig.commentProvider")}</Label>
+                <Input value={form.provider} disabled />
+              </div>
+              <div className="space-y-1">
+                <Label>{t("siteConfig.commentServerUrl")}</Label>
+                <Input
+                  value={form.server_url}
+                  onChange={(e) => updateField("server_url", e.target.value)}
+                  placeholder="http://localhost:8360"
+                />
+              </div>
+              <div className="space-y-1">
                 <Label>{t("siteConfig.commentMigrationState")}</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <Select
                   value={form.migration_state}
-                  onChange={(e) =>
-                    updateField("migration_state", e.target.value)
+                  onValueChange={(value) =>
+                    updateField("migration_state", value)
                   }
                 >
-                  {MIGRATION_STATE_OPTIONS.map((v) => (
-                    <option key={v} value={v}>
-                      {optionLabel(MIGRATION_STATE_LABELS, v, lang)}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t("siteConfig.commentMigrationState")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MIGRATION_STATE_OPTIONS.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {optionLabel(MIGRATION_STATE_LABELS, v, lang)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label>{t("siteConfig.commentAvatarStrategy")}</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <Select
                   value={form.avatar_strategy}
-                  onChange={(e) =>
-                    updateField("avatar_strategy", e.target.value)
+                  onValueChange={(value) =>
+                    updateField("avatar_strategy", value)
                   }
                 >
-                  {AVATAR_STRATEGY_OPTIONS.map((v) => (
-                    <option key={v} value={v}>
-                      {optionLabel(AVATAR_STRATEGY_LABELS, v, lang)}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t("siteConfig.commentAvatarStrategy")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVATAR_STRATEGY_OPTIONS.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {optionLabel(AVATAR_STRATEGY_LABELS, v, lang)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label>{t("siteConfig.commentGuestAvatarMode")}</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <Select
                   value={form.guest_avatar_mode}
-                  onChange={(e) =>
-                    updateField("guest_avatar_mode", e.target.value)
+                  onValueChange={(value) =>
+                    updateField("guest_avatar_mode", value)
                   }
                 >
-                  {GUEST_AVATAR_MODE_OPTIONS.map((v) => (
-                    <option key={v} value={v}>
-                      {optionLabel(GUEST_AVATAR_MODE_LABELS, v, lang)}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t("siteConfig.commentGuestAvatarMode")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GUEST_AVATAR_MODE_OPTIONS.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {optionLabel(GUEST_AVATAR_MODE_LABELS, v, lang)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label>{t("siteConfig.commentAvatarPresets")}</Label>
-              <Textarea
-                value={form.avatar_presets}
-                onChange={(e) => updateField("avatar_presets", e.target.value)}
-                rows={8}
-                placeholder='[{"key":"shiro","label":"Shiro","avatar_url":"https://..."}]'
+              <Label>{t("siteConfig.commentEmojiPresets")}</Label>
+              <Input
+                value={form.emoji_presets}
+                onChange={(e) => updateField("emoji_presets", e.target.value)}
+                placeholder="twemoji, qq, bilibili"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>
-                  {t("siteConfig.commentOauthUrl")} ({t("common.optional")})
-                </Label>
-                <Input
-                  value={form.oauth_url}
-                  onChange={(e) => updateField("oauth_url", e.target.value)}
-                  placeholder="https://accounts.google.com/..."
-                />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label>{t("siteConfig.commentAvatarPresets")}</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addAvatarPreset}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("common.add")}
+                </Button>
               </div>
-              <div className="space-y-1">
-                <Label>
-                  {t("siteConfig.commentOauthProviders")} (
-                  {t("common.optional")})
-                </Label>
-                <Input
-                  value={form.oauth_providers}
-                  onChange={(e) =>
-                    updateField("oauth_providers", e.target.value)
-                  }
-                  placeholder="github, google"
-                />
+              <div className="space-y-3">
+                {form.avatar_presets.map((preset, index) => (
+                  <Card key={`${preset.key || "preset"}-${index}`} className="border-dashed border-border/70 bg-background/40">
+                    <CardContent className="grid gap-3 p-4">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label>{t("common.name")}</Label>
+                          <Input
+                            value={preset.label}
+                            onChange={(e) => updateAvatarPreset(index, "label", e.target.value)}
+                            placeholder="Shiro"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label>{t("siteConfig.iconKey")}</Label>
+                          <Input
+                            value={preset.key}
+                            onChange={(e) => updateAvatarPreset(index, "key", e.target.value)}
+                            placeholder="shiro"
+                          />
+                        </div>
+                      </div>
+                      <ResourceUploadField
+                        label={t("friends.avatarUrl")}
+                        value={preset.avatar_url}
+                        category="community-avatar"
+                        scope="system"
+                        accept="image/*"
+                        placeholder="/media/internal/assets/..."
+                        note={preset.note ?? `${preset.label || preset.key || "社区默认头像"}（社区头像预设）`}
+                        onChange={(value) => updateAvatarPreset(index, "avatar_url", value)}
+                      />
+                      <div className="space-y-1">
+                        <Label>{t("assets.note")}</Label>
+                        <Input
+                          value={preset.note ?? ""}
+                          onChange={(e) => updateAvatarPreset(index, "note", e.target.value)}
+                          placeholder={t("assets.note")}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button type="button" variant="destructive" size="sm" onClick={() => removeAvatarPreset(index)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {t("common.delete")}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
+
+            <HintBanner>
+              Google / GitHub 访客认证已经移到“审核 &gt; 访客”页面集中管理，这里只保留评论系统自身的配置。
+            </HintBanner>
 
             <div className="space-y-1">
               <Label>{t("siteConfig.commentSurfaces")}</Label>
@@ -368,8 +443,12 @@ export function CommunityTab() {
 
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 
-        <Button onClick={() => save.mutate({ data: communityFormToUpdate(form) })} disabled={save.isPending}>
-          <Save className="h-4 w-4 mr-2" />
+        <Button
+          onClick={() => save.mutate({ data: communityFormToUpdate(form) })}
+          disabled={save.isPending}
+          className="inline-flex shadow-[0_14px_30px_-16px_rgb(var(--shiro-accent-rgb)/0.42)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-16px_rgb(var(--shiro-accent-rgb)/0.5)] active:translate-y-0 active:scale-[0.98]"
+        >
+          {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           {save.isPending ? t("common.saving") : t("common.save")}
         </Button>
       </CardContent>

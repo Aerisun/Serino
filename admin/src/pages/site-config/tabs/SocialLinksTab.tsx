@@ -17,16 +17,17 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import type { SocialLinkAdminRead } from "@serino/api-client/models";
+import { optionLabel, SOCIAL_SOFTWARE_LABELS, SOCIAL_SOFTWARE_OPTIONS } from "../constants";
 
 export function SocialLinksTab() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const queryClient = useQueryClient();
   const { data: profileRaw } = useGetProfileApiV1AdminSiteConfigProfileGet();
   const { data: raw } = useListSocialLinks();
   const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
+  const [form, setForm] = useState({ name: "", href: "", icon_key: "", placement: "both", order_index: 0 });
 
   const profileId = profileRaw?.data?.id ?? "";
 
@@ -52,7 +53,7 @@ export function SocialLinksTab() {
   });
 
   function resetForm() {
-    setForm({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
+    setForm({ name: "", href: "", icon_key: "", placement: "both", order_index: 0 });
   }
 
   function startEdit(link: SocialLinkAdminRead) {
@@ -61,11 +62,17 @@ export function SocialLinksTab() {
     setOpen(true);
   }
 
+  const updateSoftware = (iconKey: string) => {
+    setForm((prev) => ({
+      ...prev,
+      icon_key: iconKey,
+      name: optionLabel(SOCIAL_SOFTWARE_LABELS, iconKey, lang),
+    }));
+  };
+
   const fieldLabels: Record<string, string> = {
     name: t("siteConfig.name"),
     href: t("siteConfig.href"),
-    icon_key: t("siteConfig.iconKey"),
-    placement: t("siteConfig.placement"),
   };
 
   return (
@@ -76,17 +83,30 @@ export function SocialLinksTab() {
           <DialogContent>
             <DialogHeader><DialogTitle>{editingId ? t("siteConfig.editSocialLink") : t("siteConfig.newSocialLink")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              {(["name", "href", "icon_key", "placement"] as const).map((k) => (
-                <div key={k} className="space-y-1">
-                  <Label>{fieldLabels[k]}</Label>
-                  <Input value={(form as any)[k]} onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))} />
-                </div>
-              ))}
+              <div className="space-y-1">
+                <Label>{fieldLabels.name}</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.icon_key}
+                  onChange={(e) => updateSoftware(e.target.value)}
+                >
+                  <option value="">{t("siteConfig.selectSoftware")}</option>
+                  {SOCIAL_SOFTWARE_OPTIONS.map((v) => (
+                    <option key={v} value={v}>
+                      {optionLabel(SOCIAL_SOFTWARE_LABELS, v, lang)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>{fieldLabels.href}</Label>
+                <Input value={form.href} onChange={(e) => setForm((p) => ({ ...p, href: e.target.value }))} />
+              </div>
               <div className="space-y-1">
                 <Label>{t("common.order")}</Label>
                 <Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} />
               </div>
-              <Button onClick={() => editingId ? update.mutate({ itemId: editingId, data: form }) : create.mutate({ data: { ...form, site_profile_id: profileId } })} disabled={create.isPending || update.isPending}>
+              <Button onClick={() => editingId ? update.mutate({ itemId: editingId, data: { ...form, placement: form.placement || "both" } }) : create.mutate({ data: { ...form, site_profile_id: profileId, placement: form.placement || "both" } })} disabled={create.isPending || update.isPending || !form.icon_key || !form.href}>
                 {editingId ? t("common.save") : t("common.create")}
               </Button>
             </div>
@@ -96,10 +116,8 @@ export function SocialLinksTab() {
       <div className="border rounded-lg">
         <DataTable<SocialLinkAdminRead>
           columns={[
-            { header: t("siteConfig.name"), accessor: "name" },
+            { header: t("siteConfig.software"), accessor: "name" },
             { header: t("siteConfig.url"), accessor: "href" },
-            { header: t("siteConfig.icon"), accessor: "icon_key" },
-            { header: t("siteConfig.placement"), accessor: "placement" },
             { header: t("common.order"), accessor: "order_index" as any },
             { header: "", accessor: (row) => (
               <div className="flex gap-1">

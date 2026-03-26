@@ -29,7 +29,7 @@ const Index = () => {
           muted
           playsInline
           preload="auto"
-          poster="/images/hero_bg.jpeg"
+          poster={site.heroPosterUrl || site.ogImage}
         >
           <source src={videoUrl} type="video/mp4" />
         </video>

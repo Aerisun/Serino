@@ -18,6 +18,7 @@ interface PageShellProps {
   headerAside?: ReactNode;
   width?: "narrow" | "content" | "wide";
   contentClassName?: string;
+  compactHeader?: boolean;
 }
 
 const widths = {
@@ -36,6 +37,7 @@ const PageShell = ({
   headerAside,
   width = "content",
   contentClassName = "mt-10",
+  compactHeader = false,
 }: PageShellProps) => {
   const prefersReducedMotion = useReducedMotionPreference();
   const entrance = pageEntrance(prefersReducedMotion);
@@ -57,9 +59,9 @@ const PageShell = ({
           />
         </div>
 
-        <main className={`${widths[width]} relative mx-auto px-6 pt-28 pb-20 lg:px-8`}>
+        <main className={`${widths[width]} relative mx-auto px-6 ${compactHeader ? "pt-24 pb-20" : "pt-28 pb-20"} lg:px-8`}>
           <motion.header
-            className="relative pb-8"
+            className={`relative ${compactHeader ? "pb-4" : "pb-8"}`}
             {...entrance}
           >
             <div
@@ -70,26 +72,30 @@ const PageShell = ({
               }}
             />
 
-            <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className={`relative flex flex-col ${compactHeader ? "gap-2" : "gap-6"} md:flex-row md:items-end md:justify-between`}>
               <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2.5">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{
-                      backgroundColor: "rgb(var(--shiro-accent-rgb) / 0.56)",
-                      boxShadow: "0 0 16px rgb(var(--shiro-glow-rgb) / 0.16)",
-                    }}
-                  />
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-foreground/34">
-                    {eyebrow}
-                  </p>
-                </div>
-                <h1 className="mt-4 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
+                {eyebrow ? (
+                  <div className="inline-flex items-center gap-2.5">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{
+                        backgroundColor: "rgb(var(--shiro-accent-rgb) / 0.56)",
+                        boxShadow: "0 0 16px rgb(var(--shiro-glow-rgb) / 0.16)",
+                      }}
+                    />
+                    <p className="text-[11px] uppercase tracking-[0.28em] text-foreground/34">
+                      {eyebrow}
+                    </p>
+                  </div>
+                ) : null}
+                <h1 className={`${eyebrow ? "mt-4" : "mt-0"} text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl`}>
                   {title}
                 </h1>
-                <p className="mt-3 max-w-xl text-sm leading-7 text-foreground/42 sm:text-[0.95rem]">
-                  {description}
-                </p>
+                {description ? (
+                  <p className="mt-3 max-w-xl text-sm leading-7 text-foreground/42 sm:text-[0.95rem]">
+                    {description}
+                  </p>
+                ) : null}
               </div>
 
               {headerAside ? (

@@ -1,237 +1,258 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { PREVIEW_DATA_MESSAGE, isPreviewRequestMessage } from "@serino/utils";
 import {
-  useListBasics,
-  useCreateBasics,
-  useUpdateBasics,
   getListBasicsQueryKey,
-  useListSkills,
-  useCreateSkills,
-  useDeleteSkills,
-  getListSkillsQueryKey,
-  useListExperiences,
-  useCreateExperiences,
-  useDeleteExperiences,
-  getListExperiencesQueryKey,
+  useCreateBasics,
+  useListBasics,
+  useSystemInfoApiV1AdminSystemInfoGet,
+  useUpdateBasics,
 } from "@serino/api-client/admin";
+import type { ResumeBasicsCreate } from "@serino/api-client/models";
+import { ExternalLink, Save } from "lucide-react";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { PageHeader } from "@/components/PageHeader";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
-import { DataTable } from "@/components/DataTable";
+import { ResourceUploadField } from "@/components/ResourceUploadField";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Label } from "@/components/ui/Label";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
-import { Plus, Save, Trash2 } from "lucide-react";
-import { useI18n } from "@/i18n";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
-import type { ResumeSkillGroupAdminRead, ResumeExperienceAdminRead } from "@serino/api-client/models";
 
-export default function ResumePage() {
-  const { t } = useI18n();
-  return (
-    <div>
-      <PageHeader title={t("resume.title")} description={t("resume.description")} />
-      <Tabs defaultValue="basics">
-        <TabsList>
-          <TabsTrigger value="basics">{t("resume.basics")}</TabsTrigger>
-          <TabsTrigger value="skills">{t("resume.skills")}</TabsTrigger>
-          <TabsTrigger value="experience">{t("resume.experiences")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="basics"><BasicsTab /></TabsContent>
-        <TabsContent value="skills"><SkillsTab /></TabsContent>
-        <TabsContent value="experience"><ExperienceTab /></TabsContent>
-      </Tabs>
-    </div>
-  );
+type BasicsForm = ResumeBasicsCreate;
+
+type ResumePreviewPayload = BasicsForm & { type: "resume" };
+
+const STARTER_CONTENT = `## Profile
+专注把视觉、节奏和交互组织成清晰、克制、可维护的产品体验。
+
+## Experience
+### Personal Website & Design System
+**Independent** · 2024 - Now
+
+- 重构站点信息架构与视觉层级
+- 用统一组件与设计 token 降低维护成本
+- 把前台展示和后台配置统一成一套系统
+
+## Skills
+- React / TypeScript / Tailwind CSS
+- Design Systems / Motion / Information Architecture
+
+## Selected Projects
+- 内容型个人网站
+- 后台管理系统
+- 高完成度品牌页面`;
+
+const EMPTY_FORM: BasicsForm = {
+  title: "",
+  subtitle: "",
+  summary: "",
+  download_label: "",
+  template_key: "editorial",
+  accent_tone: "amber",
+  location: "",
+  availability: "",
+  email: "",
+  website: "",
+  profile_image_url: "",
+  highlights: [],
+};
+
+function mutationError(error: unknown) {
+  const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+  return detail || "操作失败";
 }
 
-function BasicsTab() {
-  const { t } = useI18n();
+export default function ResumePage() {
   const queryClient = useQueryClient();
-  const { data: raw, isLoading } = useListBasics();
-  const data = raw?.data;
-  const existing = data?.items?.[0];
-  const [form, setForm] = useState({ title: "", subtitle: "", summary: "", download_label: "" });
+  const basicsQuery = useListBasics();
+  const existing = basicsQuery.data?.data?.items?.[0];
+  const [form, setForm] = useState<BasicsForm>(EMPTY_FORM);
 
   useEffect(() => {
-    if (existing) setForm({ title: existing.title, subtitle: existing.subtitle, summary: existing.summary, download_label: existing.download_label });
+    if (!existing) return;
+    setForm({
+      title: existing.title,
+      subtitle: existing.subtitle,
+      summary: existing.summary,
+      download_label: "",
+      template_key: existing.template_key,
+      accent_tone: existing.accent_tone,
+      location: existing.location,
+      availability: existing.availability,
+      email: existing.email,
+      website: existing.website,
+      profile_image_url: existing.profile_image_url,
+      highlights: existing.highlights,
+    });
   }, [existing]);
 
   const createBasics = useCreateBasics({
     mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() });
+        toast.success("简历配置已保存");
+      },
+      onError: (error) => toast.error(mutationError(error)),
     },
   });
 
   const updateBasics = useUpdateBasics({
     mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() });
+        toast.success("简历配置已更新");
+      },
+      onError: (error) => toast.error(mutationError(error)),
     },
   });
 
-  const savePending = createBasics.isPending || updateBasics.isPending;
+  const saving = createBasics.isPending || updateBasics.isPending;
 
   function handleSave() {
+    const payload = { ...form, download_label: "" };
     if (existing) {
-      updateBasics.mutate({ itemId: existing.id, data: form });
-    } else {
-      createBasics.mutate({ data: form });
+      updateBasics.mutate({ itemId: existing.id, data: payload });
+      return;
     }
+    createBasics.mutate({ data: payload });
   }
 
-  if (isLoading) return <p className="py-4 text-muted-foreground">{t("common.loading")}</p>;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const previewWindowRef = useRef<Window | null>(null);
+  const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
+  const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(/\/+$/, "");
+  const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
+  const storageKey = "aerisun-preview-resume";
+  const previewPayload = useMemo<ResumePreviewPayload>(() => ({ type: "resume", ...form, download_label: "" }), [form]);
 
-  const fieldLabels: Record<string, string> = {
-    title: t("common.title"),
-    subtitle: t("resume.subtitle"),
-    download_label: t("resume.downloadLabel"),
+  useEffect(() => {
+    if (!previewOpen) return;
+
+    const previewWindow = previewWindowRef.current;
+    if (!previewWindow || previewWindow.closed) {
+      setPreviewOpen(false);
+      return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+    previewWindow.postMessage({ type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload }, frontendOrigin);
+  }, [frontendOrigin, previewOpen, previewPayload]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== frontendOrigin) return;
+      if (!isPreviewRequestMessage(event.data)) return;
+      if (event.data.storageKey !== storageKey) return;
+      if (!event.source) return;
+
+      localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+      (event.source as WindowProxy).postMessage(
+        { type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload },
+        event.origin
+      );
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [frontendOrigin, previewPayload]);
+
+  const openPreview = () => {
+    const existingWindow = previewWindowRef.current;
+    if (existingWindow && !existingWindow.closed) {
+      localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+      existingWindow.postMessage({ type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload }, frontendOrigin);
+      existingWindow.focus();
+      setPreviewOpen(true);
+      return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(previewPayload));
+    const previewWindow = window.open(`${frontendUrl}/preview?storageKey=${encodeURIComponent(storageKey)}`, "_blank");
+    previewWindowRef.current = previewWindow;
+    setPreviewOpen(Boolean(previewWindow));
+
+    if (previewWindow) {
+      window.setTimeout(() => {
+        if (previewWindow.closed) {
+          setPreviewOpen(false);
+          return;
+        }
+
+        previewWindow.postMessage({ type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload }, frontendOrigin);
+      }, 250);
+    }
   };
 
   return (
-    <Card className="mt-4 max-w-2xl">
-      <CardContent className="pt-6 space-y-4">
-        {(["title", "subtitle", "download_label"] as const).map((k) => (
-          <div key={k} className="space-y-2">
-            <Label>{fieldLabels[k]}</Label>
-            <Input value={form[k]} onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))} />
+    <div>
+      <PageHeader
+        title="Markdown 简历"
+      description="去掉 PDF 下载，收成一套固定版式。后台只保留必要信息和 Markdown 正文。"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="preview-glow-button" onClick={openPreview}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              真实页面预览
+            </Button>
+            <Button variant="secondary" className="bg-slate-100 text-slate-900 border-slate-200 shadow-none backdrop-blur-0 ring-0 hover:bg-slate-200 hover:text-slate-950 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" onClick={handleSave} disabled={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "保存中…" : "保存简历"}
+            </Button>
           </div>
-        ))}
-        <div className="space-y-2">
-          <Label>{t("resume.summary")}</Label>
-          <Textarea value={form.summary} onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))} rows={4} />
-        </div>
-        <Button onClick={() => handleSave()} disabled={savePending}>
-          <Save className="h-4 w-4 mr-2" /> {savePending ? t("common.saving") : t("common.save")}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+        }
+      />
 
-function SkillsTab() {
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const { data: basicsRaw } = useListBasics();
-  const { data: raw } = useListSkills();
-  const data = raw?.data;
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ category: "", items: "" as any, order_index: 0 });
-
-  const basicsId = basicsRaw?.data?.items?.[0]?.id ?? "";
-
-  const create = useCreateSkills({
-    mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSkillsQueryKey() }); setOpen(false); setForm({ category: "", items: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
-    },
-  });
-
-  const del = useDeleteSkills({
-    mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSkillsQueryKey() }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
-    },
-  });
-
-  return (
-    <div className="mt-4">
-      <div className="flex justify-end mb-4">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button disabled={!basicsId}><Plus className="h-4 w-4 mr-2" /> {t("resume.addSkillGroup")}</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{t("resume.newSkillGroup")}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1"><Label>{t("resume.category")}</Label><Input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>{t("resume.itemsCommaSeparated")}</Label><Input value={form.items} onChange={(e) => setForm((p) => ({ ...p, items: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>{t("common.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
-              <Button onClick={() => create.mutate({ data: { resume_basics_id: basicsId, category: form.category, items: form.items.split(",").map((s: string) => s.trim()).filter(Boolean), order_index: form.order_index } })} disabled={create.isPending}>{t("common.create")}</Button>
+      <div className="mt-5 space-y-6">
+        <Card className="rounded-[1.8rem] border border-white/60 bg-[rgba(255,255,255,0.72)] shadow-[0_24px_70px_rgba(15,23,42,0.07)]">
+          <CardContent className="p-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>姓名 / 页面标题</Label>
+                <Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>职业定位</Label>
+                <Input value={form.subtitle} onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>所在地</Label>
+                <Input value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>邮箱</Label>
+                <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>网站 / 作品集</Label>
+                <Input value={form.website} onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <ResourceUploadField
+                  label="头像地址"
+                  value={form.profile_image_url ?? ""}
+                  category="resume-avatar"
+                  accept="image/*"
+                  placeholder="上传或填写头像地址"
+                  note="简历默认头像"
+                  uniqueByCategory
+                  onChange={(value) => setForm((p) => ({ ...p, profile_image_url: value }))}
+                />
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-      {!basicsId && <p className="text-sm text-muted-foreground mb-2">{t("resume.saveBasicsFirst")}</p>}
-      <div className="border rounded-lg">
-        <DataTable<ResumeSkillGroupAdminRead>
-          columns={[
-            { header: t("resume.category"), accessor: "category" },
-            { header: t("common.items"), accessor: (row) => row.items.join(", ") },
-            { header: t("common.order"), accessor: "order_index" as any },
-            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => del.mutate({ itemId: row.id })}><Trash2 className="h-4 w-4" /></Button> },
-          ]}
-          data={data?.items ?? []}
-          total={data?.total ?? 0}
-        />
-      </div>
-    </div>
-  );
-}
 
-function ExperienceTab() {
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const { data: basicsRaw } = useListBasics();
-  const { data: raw } = useListExperiences();
-  const data = raw?.data;
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", company: "", period: "", summary: "", order_index: 0 });
-
-  const basicsId = basicsRaw?.data?.items?.[0]?.id ?? "";
-
-  const create = useCreateExperiences({
-    mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListExperiencesQueryKey() }); setOpen(false); setForm({ title: "", company: "", period: "", summary: "", order_index: 0 }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
-    },
-  });
-
-  const del = useDeleteExperiences({
-    mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListExperiencesQueryKey() }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
-    },
-  });
-
-  const fieldLabels: Record<string, string> = {
-    title: t("common.title"),
-    company: t("resume.company"),
-    period: t("resume.period"),
-  };
-
-  return (
-    <div className="mt-4">
-      <div className="flex justify-end mb-4">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button disabled={!basicsId}><Plus className="h-4 w-4 mr-2" /> {t("resume.addExperience")}</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{t("resume.newExperience")}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              {(["title", "company", "period"] as const).map((k) => (
-                <div key={k} className="space-y-1"><Label>{fieldLabels[k]}</Label><Input value={form[k]} onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))} /></div>
-              ))}
-              <div className="space-y-1"><Label>{t("resume.summary")}</Label><Textarea value={form.summary} onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))} rows={3} /></div>
-              <div className="space-y-1"><Label>{t("common.order")}</Label><Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} /></div>
-              <Button onClick={() => create.mutate({ data: { resume_basics_id: basicsId, ...form } })} disabled={create.isPending}>{t("common.create")}</Button>
+            <div className="mt-5 space-y-2">
+              <Label>Markdown 简历正文</Label>
+              <MarkdownEditor
+                value={form.summary}
+                onChange={(value) => setForm((p) => ({ ...p, summary: value }))}
+                minHeight="460px"
+                placeholder="使用 Markdown 编写简历正文"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-      {!basicsId && <p className="text-sm text-muted-foreground mb-2">{t("resume.saveBasicsFirstExp")}</p>}
-      <div className="border rounded-lg">
-        <DataTable<ResumeExperienceAdminRead>
-          columns={[
-            { header: t("common.title"), accessor: "title" },
-            { header: t("resume.company"), accessor: "company" },
-            { header: t("resume.period"), accessor: "period" },
-            { header: t("common.order"), accessor: "order_index" as any },
-            { header: "", accessor: (row) => <Button variant="ghost" size="icon" onClick={() => del.mutate({ itemId: row.id })}><Trash2 className="h-4 w-4" /></Button> },
-          ]}
-          data={data?.items ?? []}
-          total={data?.total ?? 0}
-        />
+
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

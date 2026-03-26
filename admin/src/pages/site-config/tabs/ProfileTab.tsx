@@ -10,16 +10,17 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
 import { Card, CardContent } from "@/components/ui/Card";
+import { ResourceUploadField } from "@/components/ResourceUploadField";
 import { Save } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import type { SiteProfileAdminRead } from "@serino/api-client/models";
 
 export function ProfileTab() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { data: raw, isLoading } = useGetProfileApiV1AdminSiteConfigProfileGet();
+  const { data: raw, isLoading } =
+    useGetProfileApiV1AdminSiteConfigProfileGet();
   const profile = raw?.data as SiteProfileAdminRead | undefined;
   const [form, setForm] = useState({
     name: "",
@@ -27,9 +28,11 @@ export function ProfileTab() {
     bio: "",
     role: "",
     footer_text: "",
+    og_image: "",
+    hero_image_url: "",
+    hero_poster_url: "",
     hero_video_url: "",
   });
-  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (profile) {
@@ -39,20 +42,25 @@ export function ProfileTab() {
         bio: profile.bio,
         role: profile.role,
         footer_text: profile.footer_text,
+        og_image: profile.og_image,
+        hero_image_url: profile.hero_image_url || "",
+        hero_poster_url: profile.hero_poster_url || "",
         hero_video_url: profile.hero_video_url || "",
       });
-      setFeatureFlags(profile.feature_flags ?? {});
     }
   }, [profile]);
 
   const save = useUpdateProfileApiV1AdminSiteConfigProfilePut({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetProfileApiV1AdminSiteConfigProfileGetQueryKey() });
+        queryClient.invalidateQueries({
+          queryKey: getGetProfileApiV1AdminSiteConfigProfileGetQueryKey(),
+        });
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
+        const msg =
+          error?.response?.data?.detail || t("common.operationFailed");
         toast.error(msg);
       },
     },
@@ -66,16 +74,13 @@ export function ProfileTab() {
     title: t("siteConfig.siteTitle"),
     role: t("siteConfig.role"),
     footer_text: t("siteConfig.footerText"),
-    hero_video_url: t("siteConfig.heroVideoUrl"),
   };
 
   return (
     <>
       <Card className="mt-4 max-w-2xl">
         <CardContent className="pt-6 space-y-4">
-          {(
-            ["name", "title", "role", "footer_text", "hero_video_url"] as const
-          ).map((key) => (
+          {(["name", "title", "role", "footer_text"] as const).map((key) => (
             <div key={key} className="space-y-2">
               <Label>{fieldLabels[key]}</Label>
               <Input
@@ -86,6 +91,52 @@ export function ProfileTab() {
               />
             </div>
           ))}
+          <ResourceUploadField
+            label="Hero 视觉图"
+            value={form.hero_image_url}
+            category="hero-image"
+            accept="image/*"
+            placeholder="上传或填写 Hero 视觉图地址"
+            note="首页 Hero 默认视觉图"
+            uniqueByCategory
+            onChange={(value) =>
+              setForm((p) => ({ ...p, hero_image_url: value }))
+            }
+          />
+          <ResourceUploadField
+            label="Hero 视频封面图"
+            value={form.hero_poster_url}
+            category="hero-poster"
+            accept="image/*"
+            placeholder="上传或填写 Hero 视频封面图地址"
+            note="首页 Hero 视频默认封面图"
+            uniqueByCategory
+            onChange={(value) =>
+              setForm((p) => ({ ...p, hero_poster_url: value }))
+            }
+          />
+          <ResourceUploadField
+            label={t("siteConfig.heroVideoUrl")}
+            value={form.hero_video_url}
+            category="hero-media"
+            accept="image/*,video/*"
+            placeholder="上传或填写 Hero 视频/封面地址"
+            note="首页 Hero 视频资源"
+            uniqueByCategory
+            onChange={(value) =>
+              setForm((p) => ({ ...p, hero_video_url: value }))
+            }
+          />
+          <ResourceUploadField
+            label="OG 图地址（视频失效的时候显示作首页背景）"
+            value={form.og_image}
+            category="og-image"
+            accept="image/*"
+            placeholder="上传或填写 OG 图地址"
+            note="站点默认 OG 分享图"
+            uniqueByCategory
+            onChange={(value) => setForm((p) => ({ ...p, og_image: value }))}
+          />
           <div className="space-y-2">
             <Label>{t("siteConfig.bio")}</Label>
             <Textarea
@@ -94,75 +145,15 @@ export function ProfileTab() {
               rows={4}
             />
           </div>
-          <Button onClick={() => save.mutate({ data: { ...form, feature_flags: featureFlags } })} disabled={save.isPending}>
+          <Button
+            onClick={() => save.mutate({ data: form })}
+            disabled={save.isPending}
+          >
             <Save className="h-4 w-4 mr-2" />{" "}
             {save.isPending ? t("common.saving") : t("common.save")}
           </Button>
         </CardContent>
       </Card>
-
-      {/* Feature Flags */}
-      <div className="rounded-lg border bg-card p-6 mt-6 max-w-2xl">
-        <h3 className="text-lg font-semibold mb-1">
-          {t("siteConfig.featureFlags")}
-        </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t("siteConfig.featureFlagsDescription")}
-        </p>
-        <div className="space-y-4">
-          {[
-            {
-              key: "toc",
-              label: t("siteConfig.featureToc"),
-              desc: t("siteConfig.featureTocDesc"),
-            },
-            {
-              key: "reading_progress",
-              label: t("siteConfig.featureReadingProgress"),
-              desc: t("siteConfig.featureReadingProgressDesc"),
-            },
-            {
-              key: "social_sharing",
-              label: t("siteConfig.featureSocialSharing"),
-              desc: t("siteConfig.featureSocialSharingDesc"),
-            },
-          ].map((flag) => (
-            <label
-              key={flag.key}
-              className="flex items-center justify-between gap-4 py-2"
-            >
-              <div>
-                <div className="text-sm font-medium">{flag.label}</div>
-                <div className="text-xs text-muted-foreground">{flag.desc}</div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={featureFlags[flag.key] ?? true}
-                onClick={() =>
-                  setFeatureFlags((prev) => ({
-                    ...prev,
-                    [flag.key]: !(prev[flag.key] ?? true),
-                  }))
-                }
-                className={cn(
-                  "relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors",
-                  (featureFlags[flag.key] ?? true) ? "bg-primary" : "bg-muted",
-                )}
-              >
-                <span
-                  className={cn(
-                    "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-sm transition-transform",
-                    (featureFlags[flag.key] ?? true)
-                      ? "translate-x-4"
-                      : "translate-x-0",
-                  )}
-                />
-              </button>
-            </label>
-          ))}
-        </div>
-      </div>
     </>
   );
 }

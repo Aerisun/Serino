@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -29,10 +29,15 @@ class SiteProfileRead(ModelBase):
     footer_text: str = Field(description="Footer text")
     author: str = Field(description="Default author name")
     og_image: str = Field(description="Open Graph image path")
+    hero_image_url: str = Field(description="Hero image path")
+    hero_poster_url: str = Field(description="Hero video poster image path")
     meta_description: str = Field(description="Meta description for SEO")
     copyright: str = Field(description="Copyright notice")
     hero_actions: list[dict[str, object]] = Field(description="Hero section action buttons")
     hero_video_url: str | None = Field(default=None, description="Hero background video URL")
+    poem_source: Literal["custom", "hitokoto"] = Field(default="custom", description="Poem source mode")
+    poem_hitokoto_types: list[str] = Field(default_factory=list, description="Hitokoto category codes")
+    poem_hitokoto_keywords: list[str] = Field(default_factory=list, description="Hitokoto preferred keywords")
     feature_flags: dict[str, object] = Field(default_factory=dict, description="Feature toggle flags")
 
 
@@ -117,7 +122,11 @@ class ResumeExperienceRead(ModelBase):
     title: str = Field(description="Job title")
     company: str = Field(description="Company name")
     period: str = Field(description="Employment period")
+    location: str = Field(default="", description="Experience location")
+    employment_type: str = Field(default="", description="Employment type")
     summary: str = Field(description="Role description")
+    achievements: list[str] = Field(default_factory=list, description="Achievement bullet points")
+    tech_stack: list[str] = Field(default_factory=list, description="Technologies used")
     order_index: int = Field(description="Display order")
 
 
@@ -126,6 +135,14 @@ class ResumeRead(ModelBase):
     subtitle: str = Field(description="Resume subtitle")
     summary: str = Field(description="Professional summary")
     download_label: str = Field(description="PDF download label")
+    template_key: str = Field(default="editorial", description="Selected resume template key")
+    accent_tone: str = Field(default="amber", description="Selected accent tone")
+    location: str = Field(default="", description="Current base location")
+    availability: str = Field(default="", description="Availability note")
+    email: str = Field(default="", description="Primary contact email")
+    website: str = Field(default="", description="Primary website")
+    profile_image_url: str = Field(default="", description="Profile image URL")
+    highlights: list[str] = Field(default_factory=list, description="Featured resume highlights")
     skill_groups: list[ResumeSkillGroupRead] = Field(description="Skill categories and items")
     experiences: list[ResumeExperienceRead] = Field(description="Work experience entries")
 
@@ -142,11 +159,16 @@ class SiteProfileCreate(BaseModel):
     role: str = Field(description="Professional role or tagline")
     footer_text: str = Field(description="Text shown in site footer")
     author: str = Field(default="", description="Default author name for meta tags")
-    og_image: str = Field(default="/images/hero_bg.jpeg", description="Default Open Graph image path")
+    og_image: str = Field(default="", description="Default Open Graph image path")
+    hero_image_url: str = Field(default="", description="Hero image path")
+    hero_poster_url: str = Field(default="", description="Hero video poster image path")
     meta_description: str = Field(default="", description="Default meta description for SEO")
     copyright: str = Field(default="All rights reserved", description="Copyright notice text")
     hero_actions: str = Field(default="[]", description="JSON string of hero section action buttons")
     hero_video_url: str | None = Field(default=None, description="URL for hero background video")
+    poem_source: Literal["custom", "hitokoto"] = Field(default="custom", description="Poem source mode")
+    poem_hitokoto_types: list[str] = Field(default_factory=list, description="Hitokoto category codes")
+    poem_hitokoto_keywords: list[str] = Field(default_factory=list, description="Hitokoto preferred keywords")
 
 
 class SiteProfileUpdate(BaseModel):
@@ -157,10 +179,15 @@ class SiteProfileUpdate(BaseModel):
     footer_text: str | None = Field(default=None, description="Footer text")
     author: str | None = Field(default=None, description="Default author name")
     og_image: str | None = Field(default=None, description="Open Graph image path")
+    hero_image_url: str | None = Field(default=None, description="Hero image path")
+    hero_poster_url: str | None = Field(default=None, description="Hero video poster image path")
     meta_description: str | None = Field(default=None, description="Meta description for SEO")
     copyright: str | None = Field(default=None, description="Copyright notice")
     hero_actions: str | None = Field(default=None, description="Hero action buttons JSON")
     hero_video_url: str | None = Field(default=None, description="Hero background video URL")
+    poem_source: Literal["custom", "hitokoto"] | None = Field(default=None, description="Poem source mode")
+    poem_hitokoto_types: list[str] | None = Field(default=None, description="Hitokoto category codes")
+    poem_hitokoto_keywords: list[str] | None = Field(default=None, description="Hitokoto preferred keywords")
     feature_flags: dict[str, object] | None = Field(default=None, description="Feature toggle flags")
 
 
@@ -173,10 +200,15 @@ class SiteProfileAdminRead(ModelBase):
     footer_text: str = Field(description="Footer text")
     author: str = Field(description="Default author name")
     og_image: str = Field(description="Open Graph image path")
+    hero_image_url: str = Field(description="Hero image path")
+    hero_poster_url: str = Field(description="Hero video poster image path")
     meta_description: str = Field(description="Meta description")
     copyright: str = Field(description="Copyright notice")
     hero_actions: str = Field(description="Hero action buttons JSON")
     hero_video_url: str | None = Field(description="Hero background video URL")
+    poem_source: Literal["custom", "hitokoto"] = Field(description="Poem source mode")
+    poem_hitokoto_types: list[str] = Field(description="Hitokoto category codes")
+    poem_hitokoto_keywords: list[str] = Field(description="Hitokoto preferred keywords")
     feature_flags: dict[str, object] = Field(description="Feature toggle flags")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
@@ -393,6 +425,14 @@ class ResumeBasicsCreate(BaseModel):
     subtitle: str = Field(description="Resume subtitle or tagline")
     summary: str = Field(description="Professional summary paragraph")
     download_label: str = Field(description="PDF download button label")
+    template_key: str = Field(default="editorial", description="Selected resume template key")
+    accent_tone: str = Field(default="amber", description="Selected accent tone")
+    location: str = Field(default="", description="Current base location")
+    availability: str = Field(default="", description="Availability note")
+    email: str = Field(default="", description="Primary contact email")
+    website: str = Field(default="", description="Primary website")
+    profile_image_url: str = Field(default="", description="Profile image URL")
+    highlights: list[str] = Field(default_factory=list, description="Featured resume highlights")
 
 
 class ResumeBasicsUpdate(BaseModel):
@@ -400,6 +440,14 @@ class ResumeBasicsUpdate(BaseModel):
     subtitle: str | None = Field(default=None, description="Resume subtitle")
     summary: str | None = Field(default=None, description="Professional summary")
     download_label: str | None = Field(default=None, description="Download button label")
+    template_key: str | None = Field(default=None, description="Selected resume template key")
+    accent_tone: str | None = Field(default=None, description="Selected accent tone")
+    location: str | None = Field(default=None, description="Current base location")
+    availability: str | None = Field(default=None, description="Availability note")
+    email: str | None = Field(default=None, description="Primary contact email")
+    website: str | None = Field(default=None, description="Primary website")
+    profile_image_url: str | None = Field(default=None, description="Profile image URL")
+    highlights: list[str] | None = Field(default=None, description="Featured resume highlights")
 
 
 class ResumeBasicsAdminRead(ModelBase):
@@ -408,6 +456,14 @@ class ResumeBasicsAdminRead(ModelBase):
     subtitle: str = Field(description="Resume subtitle")
     summary: str = Field(description="Professional summary")
     download_label: str = Field(description="Download button label")
+    template_key: str = Field(description="Selected resume template key")
+    accent_tone: str = Field(description="Selected accent tone")
+    location: str = Field(description="Current base location")
+    availability: str = Field(description="Availability note")
+    email: str = Field(description="Primary contact email")
+    website: str = Field(description="Primary website")
+    profile_image_url: str = Field(description="Profile image URL")
+    highlights: list[str] = Field(description="Featured resume highlights")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
 
@@ -440,7 +496,11 @@ class ResumeExperienceCreate(BaseModel):
     title: str = Field(description="Job title or role")
     company: str = Field(description="Company or organization name")
     period: str = Field(description="Employment period (e.g. 2020-2023)")
+    location: str = Field(default="", description="Experience location")
+    employment_type: str = Field(default="", description="Employment type")
     summary: str = Field(description="Role description and achievements")
+    achievements: list[str] = Field(default_factory=list, description="Achievement bullet points")
+    tech_stack: list[str] = Field(default_factory=list, description="Technologies used")
     order_index: int = Field(default=0, description="Display order (lower first)")
 
 
@@ -448,7 +508,11 @@ class ResumeExperienceUpdate(BaseModel):
     title: str | None = Field(default=None, description="Job title")
     company: str | None = Field(default=None, description="Company name")
     period: str | None = Field(default=None, description="Employment period")
+    location: str | None = Field(default=None, description="Experience location")
+    employment_type: str | None = Field(default=None, description="Employment type")
     summary: str | None = Field(default=None, description="Role description")
+    achievements: list[str] | None = Field(default=None, description="Achievement bullet points")
+    tech_stack: list[str] | None = Field(default=None, description="Technologies used")
     order_index: int | None = Field(default=None, description="Display order")
 
 
@@ -458,7 +522,11 @@ class ResumeExperienceAdminRead(ModelBase):
     title: str = Field(description="Job title")
     company: str = Field(description="Company name")
     period: str = Field(description="Employment period")
+    location: str = Field(description="Experience location")
+    employment_type: str = Field(description="Employment type")
     summary: str = Field(description="Role description")
+    achievements: list[str] = Field(description="Achievement bullet points")
+    tech_stack: list[str] = Field(description="Technologies used")
     order_index: int = Field(description="Display order")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")

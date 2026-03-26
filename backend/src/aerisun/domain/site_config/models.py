@@ -18,11 +18,16 @@ class SiteProfile(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(String(160), nullable=False)
     footer_text: Mapped[str] = mapped_column(Text, nullable=False)
     author: Mapped[str] = mapped_column(String(120), nullable=False, default="")
-    og_image: Mapped[str] = mapped_column(String(500), nullable=False, default="/images/hero_bg.jpeg")
+    og_image: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    hero_image_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    hero_poster_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     meta_description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     copyright: Mapped[str] = mapped_column(String(200), nullable=False, default="All rights reserved")
     hero_actions: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     hero_video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    poem_source: Mapped[str] = mapped_column(String(40), nullable=False, default="custom")
+    poem_hitokoto_types: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    poem_hitokoto_keywords: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     feature_flags: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
@@ -128,7 +133,7 @@ class CommunityConfig(Base, TimestampMixin):
     avatar_presets: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
     guest_avatar_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="preset")
     draft_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    avatar_strategy: Mapped[str] = mapped_column(String(80), nullable=False, default="identicon")
+    avatar_strategy: Mapped[str] = mapped_column(String(80), nullable=False, default="dicebear-notionists")
     avatar_helper_copy: Mapped[str] = mapped_column(Text, nullable=False, default="")
     migration_state: Mapped[str] = mapped_column(String(40), nullable=False, default="not_started")
 
@@ -141,6 +146,14 @@ class ResumeBasics(Base, TimestampMixin):
     subtitle: Mapped[str] = mapped_column(String(160), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     download_label: Mapped[str] = mapped_column(String(80), nullable=False)
+    template_key: Mapped[str] = mapped_column(String(80), nullable=False, default="editorial")
+    accent_tone: Mapped[str] = mapped_column(String(80), nullable=False, default="amber")
+    location: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    availability: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    email: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    website: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    profile_image_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    highlights: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
 
 class ResumeSkillGroup(Base, TimestampMixin):
@@ -169,5 +182,9 @@ class ResumeExperience(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     company: Mapped[str] = mapped_column(String(160), nullable=False)
     period: Mapped[str] = mapped_column(String(120), nullable=False)
+    location: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    employment_type: Mapped[str] = mapped_column(String(80), nullable=False, default="")
     summary: Mapped[str] = mapped_column(Text, nullable=False)
+    achievements: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    tech_stack: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

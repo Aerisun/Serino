@@ -41,10 +41,7 @@ export function PagesTab() {
   const [createForm, setCreateForm] = useState({
     page_key: "",
     title: "",
-    subtitle: "",
-    label: "",
     description: "",
-    search_placeholder: "",
     empty_message: "",
     page_size: "" as string,
   });
@@ -57,10 +54,7 @@ export function PagesTab() {
         setCreateForm({
           page_key: "",
           title: "",
-          subtitle: "",
-          label: "",
           description: "",
-          search_placeholder: "",
           empty_message: "",
           page_size: "",
         });
@@ -80,10 +74,7 @@ export function PagesTab() {
 
   const formFieldLabels: Record<string, string> = {
     title: t("common.title"),
-    subtitle: t("siteConfig.subtitle"),
-    label: `${t("siteConfig.label")} (${t("common.optional")})`,
     description: `${t("siteConfig.description2")} (${t("common.optional")})`,
-    search_placeholder: `${t("siteConfig.searchPlaceholder")} (${t("common.optional")})`,
     empty_message: `${t("siteConfig.emptyMessage")} (${t("common.optional")})`,
   };
 
@@ -121,10 +112,7 @@ export function PagesTab() {
               {(
                 [
                   "title",
-                  "subtitle",
-                  "label",
                   "description",
-                  "search_placeholder",
                   "empty_message",
                 ] as const
               ).map((k) => (
@@ -153,10 +141,8 @@ export function PagesTab() {
                   data: {
                     page_key: createForm.page_key,
                     title: createForm.title,
-                    subtitle: createForm.subtitle,
-                    label: createForm.label || null,
+                      subtitle: createForm.title,
                     description: createForm.description || null,
-                    search_placeholder: createForm.search_placeholder || null,
                     empty_message: createForm.empty_message || null,
                     page_size: createForm.page_size ? parseInt(createForm.page_size) : null,
                   },
@@ -197,12 +183,11 @@ function PageRow({
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     title: copy.title,
-    subtitle: copy.subtitle,
-    label: copy.label ?? "",
     description: copy.description ?? "",
-    search_placeholder: copy.search_placeholder ?? "",
     empty_message: copy.empty_message ?? "",
     page_size: copy.page_size?.toString() ?? "",
+    category_all_label: typeof copy.extras?.category_all_label === "string" ? copy.extras.category_all_label : "",
+    category_fallback_label: typeof copy.extras?.category_fallback_label === "string" ? copy.extras.category_fallback_label : "",
   });
   const [settingsJson, setSettingsJson] = useState(
     display ? JSON.stringify(display.settings, null, 2) : "{}",
@@ -276,10 +261,7 @@ function PageRow({
 
   const formFieldLabels: Record<string, string> = {
     title: t("common.title"),
-    subtitle: t("siteConfig.subtitle"),
-    label: `${t("siteConfig.label")} (${t("common.optional")})`,
     description: `${t("siteConfig.description2")} (${t("common.optional")})`,
-    search_placeholder: `${t("siteConfig.searchPlaceholder")} (${t("common.optional")})`,
     empty_message: `${t("siteConfig.emptyMessage")} (${t("common.optional")})`,
   };
 
@@ -336,34 +318,12 @@ function PageRow({
               </span>{" "}
               {copy.title}
             </div>
-            <div>
-              <span className="text-muted-foreground">
-                {t("siteConfig.subtitle")}:
-              </span>{" "}
-              {copy.subtitle}
-            </div>
-            {copy.label && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.label")}:
-                </span>{" "}
-                {copy.label}
-              </div>
-            )}
             {copy.description && (
               <div>
                 <span className="text-muted-foreground">
                   {t("siteConfig.description2")}:
                 </span>{" "}
                 {copy.description}
-              </div>
-            )}
-            {copy.search_placeholder && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.searchPlaceholder")}:
-                </span>{" "}
-                {copy.search_placeholder}
               </div>
             )}
             {copy.empty_message && (
@@ -382,6 +342,22 @@ function PageRow({
                 {copy.page_size}
               </div>
             )}
+            {copy.page_key === "posts" && typeof copy.extras?.category_all_label === "string" && (
+              <div>
+                <span className="text-muted-foreground">
+                  {t("siteConfig.categoryAllLabel")}:
+                </span>{" "}
+                {copy.extras.category_all_label}
+              </div>
+            )}
+            {copy.page_key === "posts" && typeof copy.extras?.category_fallback_label === "string" && (
+              <div>
+                <span className="text-muted-foreground">
+                  {t("siteConfig.categoryFallbackLabel")}:
+                </span>{" "}
+                {copy.extras.category_fallback_label}
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -389,10 +365,7 @@ function PageRow({
               {(
                 [
                   "title",
-                  "subtitle",
-                  "label",
                   "description",
-                  "search_placeholder",
                   "empty_message",
                 ] as const
               ).map((k) => (
@@ -414,20 +387,46 @@ function PageRow({
                   onChange={(e) =>
                     setForm((p) => ({ ...p, page_size: e.target.value }))
                   }
-                />
+                  />
               </div>
+              {copy.page_key === "posts" && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{`${t("siteConfig.categoryAllLabel")} (${t("common.optional")})`}</Label>
+                    <Input
+                      value={form.category_all_label}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, category_all_label: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{`${t("siteConfig.categoryFallbackLabel")} (${t("common.optional")})`}</Label>
+                    <Input
+                      value={form.category_fallback_label}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, category_fallback_label: e.target.value }))
+                      }
+                    />
+                  </div>
+                </>
+              )}
               <Button
                 size="sm"
                 onClick={() => saveCopy.mutate({
                   itemId: copy.id,
                   data: {
                     title: form.title,
-                    subtitle: form.subtitle,
-                    label: form.label || null,
                     description: form.description || null,
-                    search_placeholder: form.search_placeholder || null,
                     empty_message: form.empty_message || null,
                     page_size: form.page_size ? parseInt(form.page_size) : null,
+                    extras: copy.page_key === "posts"
+                      ? {
+                          ...(copy.extras ?? {}),
+                          category_all_label: form.category_all_label || null,
+                          category_fallback_label: form.category_fallback_label || null,
+                        }
+                      : copy.extras,
                   },
                 })}
                 disabled={saveCopy.isPending}

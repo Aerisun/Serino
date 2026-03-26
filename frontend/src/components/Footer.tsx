@@ -61,9 +61,6 @@ const Footer = () => {
                   </span>
                 </Link>
 
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-foreground/42">
-                  {site.metaDescription || site.bio}
-                </p>
               </div>
 
               <div className="flex items-center gap-1 sm:shrink-0">

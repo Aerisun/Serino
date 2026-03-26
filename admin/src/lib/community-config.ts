@@ -2,7 +2,7 @@ import type { CommunityConfigAdminRead } from "@serino/api-client/models";
 import type { CommunityConfigUpdate } from "@serino/api-client/models";
 import type { CommunitySurfaceUpdate } from "@serino/api-client/models";
 
-interface CommunityAvatarPreset {
+export interface CommunityAvatarPreset {
   key: string;
   label: string;
   avatar_url: string;
@@ -29,9 +29,8 @@ export interface CommunityConfigFormState {
   default_sorting: string;
   page_size: string;
   image_max_bytes: string;
-  avatar_presets: string;
+  avatar_presets: CommunityAvatarPreset[];
   guest_avatar_mode: string;
-  draft_enabled: boolean;
 }
 
 const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceUpdate[] = [
@@ -46,68 +45,7 @@ const DEFAULT_META = ["nick", "mail"];
 const DEFAULT_REQUIRED_META = ["nick"];
 const DEFAULT_EMOJI_PRESETS = ["apple", "weibo", "qq", "bilibili", "twemoji", "github"];
 const DEFAULT_OAUTH_PROVIDERS = ["github", "google"];
-const DEFAULT_AVATAR_PRESETS: CommunityAvatarPreset[] = [
-  {
-    key: "shiro",
-    label: "Shiro",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Shiro",
-  },
-  {
-    key: "glass",
-    label: "Glass",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Glass",
-  },
-  {
-    key: "aurora",
-    label: "Aurora",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Aurora",
-  },
-  {
-    key: "paper",
-    label: "Paper",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Paper",
-  },
-  {
-    key: "dawn",
-    label: "Dawn",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Dawn",
-  },
-  {
-    key: "pebble",
-    label: "Pebble",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Pebble",
-  },
-  {
-    key: "amber",
-    label: "Amber",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Amber",
-  },
-  {
-    key: "mint",
-    label: "Mint",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Mint",
-  },
-  {
-    key: "cinder",
-    label: "Cinder",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Cinder",
-  },
-  {
-    key: "tide",
-    label: "Tide",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Tide",
-  },
-  {
-    key: "plum",
-    label: "Plum",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Plum",
-  },
-  {
-    key: "linen",
-    label: "Linen",
-    avatar_url: "https://api.dicebear.com/9.x/notionists/svg?seed=Linen",
-  },
-];
+const DEFAULT_AVATAR_PRESETS: CommunityAvatarPreset[] = [];
 const DEFAULT_MODERATION_MODE = "all_pending";
 const DEFAULT_DEFAULT_SORTING = "latest";
 const DEFAULT_GUEST_AVATAR_MODE = "preset";
@@ -147,8 +85,31 @@ const parseSurfaceList = (value: string): CommunitySurfaceUpdate[] => {
   });
 };
 
-const parseAvatarPresets = (value: string): CommunityAvatarPreset[] => {
-  const raw = value.trim();
+const parseAvatarPresets = (value: unknown): CommunityAvatarPreset[] => {
+  if (Array.isArray(value)) {
+    return value.map((item, index) => {
+      if (!item || typeof item !== "object") {
+        throw new Error(`Avatar preset #${index + 1} is invalid`);
+      }
+
+      const record = item as Record<string, unknown>;
+      const key = String(record.key ?? record.id ?? "").trim();
+      const label = String(record.label ?? record.name ?? "").trim();
+      const avatarUrl = String(record.avatar_url ?? record.src ?? "").trim();
+      if (!key || !label || !avatarUrl) {
+        throw new Error(`Avatar preset #${index + 1} must include key, label and avatar_url`);
+      }
+
+      return {
+        key,
+        label,
+        avatar_url: avatarUrl,
+        note: typeof record.note === "string" ? record.note : null,
+      };
+    });
+  }
+
+  const raw = String(value ?? "").trim();
   if (!raw) {
     return DEFAULT_AVATAR_PRESETS;
   }
@@ -158,26 +119,7 @@ const parseAvatarPresets = (value: string): CommunityAvatarPreset[] => {
     throw new Error("Avatar presets must be a JSON array");
   }
 
-  return parsed.map((item, index) => {
-    if (!item || typeof item !== "object") {
-      throw new Error(`Avatar preset #${index + 1} is invalid`);
-    }
-
-    const record = item as Record<string, unknown>;
-    const key = String(record.key ?? record.id ?? "").trim();
-    const label = String(record.label ?? record.name ?? "").trim();
-    const avatarUrl = String(record.avatar_url ?? record.src ?? "").trim();
-    if (!key || !label || !avatarUrl) {
-      throw new Error(`Avatar preset #${index + 1} must include key, label and avatar_url`);
-    }
-
-    return {
-      key,
-      label,
-      avatar_url: avatarUrl,
-      note: typeof record.note === "string" ? record.note : null,
-    };
-  });
+  return parseAvatarPresets(parsed);
 };
 
 export const createCommunityForm = (config?: CommunityConfigAdminRead | null): CommunityConfigFormState => ({
@@ -200,9 +142,8 @@ export const createCommunityForm = (config?: CommunityConfigAdminRead | null): C
   default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
   page_size: String(config?.page_size ?? 20),
   image_max_bytes: String(config?.image_max_bytes ?? 524288),
-  avatar_presets: toPrettyJson(config?.avatar_presets ?? DEFAULT_AVATAR_PRESETS),
+  avatar_presets: parseAvatarPresets(config?.avatar_presets ?? DEFAULT_AVATAR_PRESETS),
   guest_avatar_mode: config?.guest_avatar_mode ?? DEFAULT_GUEST_AVATAR_MODE,
-  draft_enabled: config?.draft_enabled ?? true,
 });
 
 export const communityFormToUpdate = (form: CommunityConfigFormState): CommunityConfigUpdate => ({
@@ -225,7 +166,6 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   image_max_bytes: Math.max(0, Number.parseInt(form.image_max_bytes, 10) || 524288),
   avatar_presets: parseAvatarPresets(form.avatar_presets),
   guest_avatar_mode: form.guest_avatar_mode.trim() || DEFAULT_GUEST_AVATAR_MODE,
-  draft_enabled: form.draft_enabled,
   avatar_strategy: form.avatar_strategy.trim() || "identicon",
   avatar_helper_copy: form.helper_copy.trim() || null,
 });

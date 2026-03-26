@@ -24,6 +24,7 @@ from aerisun.domain.site_config.schemas import (
     SiteProfileRead,
     SocialLinkRead,
 )
+from aerisun.domain.waline.service import sync_admin_comment_profile
 
 
 def get_site_config(session: Session) -> SiteConfigRead:
@@ -65,10 +66,15 @@ def get_site_config(session: Session) -> SiteConfigRead:
             footer_text=site.footer_text,
             author=site.author,
             og_image=site.og_image,
+            hero_image_url=site.hero_image_url,
+            hero_poster_url=site.hero_poster_url,
             meta_description=site.meta_description,
             copyright=site.copyright,
             hero_actions=hero_actions,
             hero_video_url=site.hero_video_url,
+            poem_source=site.poem_source,
+            poem_hitokoto_types=list(site.poem_hitokoto_types or []),
+            poem_hitokoto_keywords=list(site.poem_hitokoto_keywords or []),
             feature_flags=site.feature_flags if site.feature_flags else {},
         ),
         social_links=[SocialLinkRead.model_validate(link) for link in links],
@@ -125,6 +131,14 @@ def get_resume(session: Session) -> ResumeRead:
         subtitle=basics.subtitle,
         summary=basics.summary,
         download_label=basics.download_label,
+        template_key=basics.template_key,
+        accent_tone=basics.accent_tone,
+        location=basics.location,
+        availability=basics.availability,
+        email=basics.email,
+        website=basics.website,
+        profile_image_url=basics.profile_image_url,
+        highlights=list(basics.highlights),
         skill_groups=[
             ResumeSkillGroupRead(
                 category=group.category,
@@ -133,7 +147,20 @@ def get_resume(session: Session) -> ResumeRead:
             )
             for group in skill_groups
         ],
-        experiences=[ResumeExperienceRead.model_validate(item) for item in experiences],
+        experiences=[
+            ResumeExperienceRead(
+                title=item.title,
+                company=item.company,
+                period=item.period,
+                location=item.location,
+                employment_type=item.employment_type,
+                summary=item.summary,
+                achievements=list(item.achievements),
+                tech_stack=list(item.tech_stack),
+                order_index=item.order_index,
+            )
+            for item in experiences
+        ],
     )
 
 
@@ -167,10 +194,30 @@ def get_site_profile_admin(session: Session) -> SiteProfileAdminRead:
 def update_site_profile_admin(session: Session, payload: BaseModel) -> SiteProfileAdminRead:
     """Update the primary SiteProfile fields."""
     profile = _get_site_profile_orm(session)
+    previous_title = profile.title
+    previous_name = profile.name
+    previous_hero_image_url = profile.hero_image_url
+    previous_hero_poster_url = profile.hero_poster_url
+    previous_og_image = profile.og_image
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(profile, key, value)
     session.commit()
     session.refresh(profile)
+    if (
+        profile.title != previous_title
+        or profile.name != previous_name
+        or profile.hero_image_url != previous_hero_image_url
+        or profile.hero_poster_url != previous_hero_poster_url
+        or profile.og_image != previous_og_image
+    ):
+        avatar_url = (
+            (profile.hero_image_url or "").strip()
+            or (profile.hero_poster_url or "").strip()
+            or (profile.og_image or "").strip()
+        )
+        display_name = (profile.title or "").strip() or (profile.name or "").strip() or "管理员"
+        if avatar_url:
+            sync_admin_comment_profile(nick=display_name, avatar_url=avatar_url)
     return SiteProfileAdminRead.model_validate(profile)
 
 

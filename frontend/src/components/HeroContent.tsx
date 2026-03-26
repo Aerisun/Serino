@@ -5,29 +5,111 @@ import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import { SocialIcon } from "@/components/icons/SocialIcon";
 
+const DEFAULT_HITOKOTO_TYPES = ["d", "i"];
+const EMPTY_POEMS = [""];
+const HITOKOTO_RETRY_COUNT = 8;
+
+type HitokotoPayload = {
+  hitokoto?: string;
+  from?: string;
+  from_who?: string | null;
+};
+
+const normalizeKeywords = (keywords: string[]) =>
+  keywords.map((item) => item.trim().toLowerCase()).filter(Boolean);
+
+const matchesKeywords = (payload: HitokotoPayload, keywords: string[]) => {
+  if (keywords.length === 0) return true;
+  const haystack = [payload.hitokoto, payload.from, payload.from_who].filter(Boolean).join(" ").toLowerCase();
+  return keywords.some((keyword) => haystack.includes(keyword));
+};
+
+const fetchHitokotoPoem = async (types: string[], keywords: string[]) => {
+  const query = types.map((type) => `c=${encodeURIComponent(type)}`).join("&");
+  const normalizedKeywords = normalizeKeywords(keywords);
+  let lastPayload: HitokotoPayload | null = null;
+
+  for (let attempt = 0; attempt < HITOKOTO_RETRY_COUNT; attempt += 1) {
+    const response = await fetch(`https://v1.hitokoto.cn/?${query}`);
+    if (!response.ok) {
+      throw new Error(`Hitokoto request failed: ${response.status}`);
+    }
+    const payload = (await response.json()) as HitokotoPayload;
+    lastPayload = payload;
+    const next = payload.hitokoto?.trim();
+    if (!next) continue;
+    if (matchesKeywords(payload, normalizedKeywords)) {
+      return next;
+    }
+  }
+
+  return lastPayload?.hitokoto?.trim() ?? "";
+};
+
 const HeroContent = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const site = useSiteConfig();
   const heroSocialLinks = site.socialLinks.filter((link) => link.placement === "hero" || link.placement === "both");
-  const [poem, setPoem] = useState(() => site.poems[0]);
+  const fallbackPoems = site.poems.length > 0 ? site.poems : EMPTY_POEMS;
+  const [poem, setPoem] = useState(() => fallbackPoems[0]);
   const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
-    setPoem(site.poems[Math.floor(Math.random() * site.poems.length)]);
-  }, [site.poems]);
+    if (site.poemSource !== "hitokoto") {
+      setPoem(fallbackPoems[Math.floor(Math.random() * fallbackPoems.length)]);
+      return;
+    }
+
+    let cancelled = false;
+    const types = site.poemHitokotoTypes.length > 0 ? site.poemHitokotoTypes : DEFAULT_HITOKOTO_TYPES;
+
+    const load = async () => {
+      try {
+        const next = await fetchHitokotoPoem(types, site.poemHitokotoKeywords);
+        if (!cancelled && next) {
+          setPoem(next);
+        }
+      } catch {
+        if (!cancelled) {
+          setPoem(fallbackPoems[Math.floor(Math.random() * fallbackPoems.length)]);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fallbackPoems, site.poemHitokotoKeywords, site.poemHitokotoTypes, site.poemSource]);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
 
     const timer = window.setInterval(() => {
+      if (site.poemSource === "hitokoto") {
+        const types = site.poemHitokotoTypes.length > 0 ? site.poemHitokotoTypes : DEFAULT_HITOKOTO_TYPES;
+        void fetchHitokotoPoem(types, site.poemHitokotoKeywords)
+          .then((next) => {
+            if (next) setPoem(next);
+          })
+          .catch(() => {
+            setPoem((current) => {
+              const candidates = fallbackPoems.filter((item) => item && item !== current);
+              return candidates[Math.floor(Math.random() * candidates.length)] ?? fallbackPoems[0] ?? current;
+            });
+          });
+        return;
+      }
+
       setPoem((current) => {
-        const candidates = site.poems.filter((item) => item !== current);
+        const candidates = fallbackPoems.filter((item) => item !== current);
         return candidates[Math.floor(Math.random() * candidates.length)] ?? current;
       });
     }, 8000);
 
     return () => window.clearInterval(timer);
-  }, [prefersReducedMotion, site.poems]);
+  }, [fallbackPoems, prefersReducedMotion, site.poemHitokotoKeywords, site.poemHitokotoTypes, site.poemSource]);
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
@@ -65,10 +147,7 @@ const HeroContent = () => {
 
             <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
               <div className="h-full w-full rounded-full overflow-hidden liquid-glass-coin-hero">
-                <picture>
-                  <source srcSet="/images/avatar.webp" type="image/webp" />
-                  <img src="/images/avatar.png" alt={site.name} className="h-full w-full object-cover" loading="lazy" />
-                </picture>
+                <img src={site.heroImageUrl || site.ogImage} alt={site.name} className="h-full w-full object-cover" loading="lazy" />
               </div>
             </div>
           </motion.div>
