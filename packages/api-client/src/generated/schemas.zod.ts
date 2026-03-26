@@ -9,6 +9,8 @@ import * as zod from 'zod';
 /**
  * @summary 获取站点配置
  */
+export const readSiteConfigApiV1PublicSiteGetResponseSitePoemSourceDefault = `custom`;
+
 export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
   "site": zod.object({
   "name": zod.string().describe('Site owner name'),
@@ -18,10 +20,15 @@ export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
   "footer_text": zod.string().describe('Footer text'),
   "author": zod.string().describe('Default author name'),
   "og_image": zod.string().describe('Open Graph image path'),
+  "hero_image_url": zod.string().describe('Hero image path'),
+  "hero_poster_url": zod.string().describe('Hero video poster image path'),
   "meta_description": zod.string().describe('Meta description for SEO'),
   "copyright": zod.string().describe('Copyright notice'),
   "hero_actions": zod.array(zod.record(zod.string(), zod.unknown())).describe('Hero section action buttons'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
+  "poem_source": zod.enum(['custom', 'hitokoto']).default(readSiteConfigApiV1PublicSiteGetResponseSitePoemSourceDefault).describe('Poem source mode'),
+  "poem_hitokoto_types": zod.array(zod.string()).optional().describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.array(zod.string()).optional().describe('Hitokoto preferred keywords'),
   "feature_flags": zod.record(zod.string(), zod.unknown()).optional().describe('Feature toggle flags')
 }).describe('Site profile configuration'),
   "social_links": zod.array(zod.object({
@@ -108,11 +115,29 @@ export const ReadCommunityConfigApiV1PublicCommunityConfigGetResponse = zod.obje
 /**
  * @summary 获取简历数据
  */
+export const readResumeApiV1PublicResumeGetResponseTemplateKeyDefault = `editorial`;
+export const readResumeApiV1PublicResumeGetResponseAccentToneDefault = `amber`;
+export const readResumeApiV1PublicResumeGetResponseLocationDefault = ``;
+export const readResumeApiV1PublicResumeGetResponseAvailabilityDefault = ``;
+export const readResumeApiV1PublicResumeGetResponseEmailDefault = ``;
+export const readResumeApiV1PublicResumeGetResponseWebsiteDefault = ``;
+export const readResumeApiV1PublicResumeGetResponseProfileImageUrlDefault = ``;
+export const readResumeApiV1PublicResumeGetResponseExperiencesItemLocationDefault = ``;
+export const readResumeApiV1PublicResumeGetResponseExperiencesItemEmploymentTypeDefault = ``;
+
 export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
   "title": zod.string().describe('Resume page title'),
   "subtitle": zod.string().describe('Resume subtitle'),
   "summary": zod.string().describe('Professional summary'),
   "download_label": zod.string().describe('PDF download label'),
+  "template_key": zod.string().default(readResumeApiV1PublicResumeGetResponseTemplateKeyDefault).describe('Selected resume template key'),
+  "accent_tone": zod.string().default(readResumeApiV1PublicResumeGetResponseAccentToneDefault).describe('Selected accent tone'),
+  "location": zod.string().default(readResumeApiV1PublicResumeGetResponseLocationDefault).describe('Current base location'),
+  "availability": zod.string().default(readResumeApiV1PublicResumeGetResponseAvailabilityDefault).describe('Availability note'),
+  "email": zod.string().default(readResumeApiV1PublicResumeGetResponseEmailDefault).describe('Primary contact email'),
+  "website": zod.string().default(readResumeApiV1PublicResumeGetResponseWebsiteDefault).describe('Primary website'),
+  "profile_image_url": zod.string().default(readResumeApiV1PublicResumeGetResponseProfileImageUrlDefault).describe('Profile image URL'),
+  "highlights": zod.array(zod.string()).optional().describe('Featured resume highlights'),
   "skill_groups": zod.array(zod.object({
   "category": zod.string().describe('Skill category name'),
   "items": zod.array(zod.string()).describe('Skill names in this category'),
@@ -122,7 +147,11 @@ export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
   "title": zod.string().describe('Job title'),
   "company": zod.string().describe('Company name'),
   "period": zod.string().describe('Employment period'),
+  "location": zod.string().default(readResumeApiV1PublicResumeGetResponseExperiencesItemLocationDefault).describe('Experience location'),
+  "employment_type": zod.string().default(readResumeApiV1PublicResumeGetResponseExperiencesItemEmploymentTypeDefault).describe('Employment type'),
   "summary": zod.string().describe('Role description'),
+  "achievements": zod.array(zod.string()).optional().describe('Achievement bullet points'),
+  "tech_stack": zod.array(zod.string()).optional().describe('Technologies used'),
   "order_index": zod.number().describe('Display order')
 })).describe('Work experience entries')
 })
@@ -478,7 +507,8 @@ export const CreateGuestbookApiV1PublicGuestbookPostBody = zod.object({
   "email": zod.union([zod.string(),zod.null()]).optional().describe('Guest email address'),
   "website": zod.union([zod.string(),zod.null()]).optional().describe('Guest personal website URL'),
   "body": zod.string().describe('Guestbook message body'),
-  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected guest avatar preset key')
+  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected guest avatar preset key'),
+  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
 })
 
 export const CreateGuestbookApiV1PublicGuestbookPostResponse = zod.object({
@@ -539,7 +569,8 @@ export const CreateCommentApiV1PublicCommentsContentTypeSlugPostBody = zod.objec
   "author_email": zod.union([zod.string(),zod.null()]).optional().describe('Comment author email address'),
   "body": zod.string().describe('Comment body text'),
   "parent_id": zod.union([zod.string(),zod.null()]).optional().describe('Parent comment ID for replies'),
-  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected comment avatar preset key')
+  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected comment avatar preset key'),
+  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
 })
 
 export const createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemLikeCountDefault = 0;
@@ -708,6 +739,149 @@ export const SitemapApiV1PublicSitemapXmlGetResponse = zod.unknown()
 
 
 /**
+ * @summary 获取当前站点用户状态
+ */
+export const readSiteAuthStateApiV1PublicAuthMeGetResponseUserOneIsAdminDefault = false;
+export const readSiteAuthStateApiV1PublicAuthMeGetResponseEmailLoginEnabledDefault = true;
+
+export const ReadSiteAuthStateApiV1PublicAuthMeGetResponse = zod.object({
+  "authenticated": zod.boolean().describe('Whether the current request is authenticated'),
+  "user": zod.union([zod.object({
+  "id": zod.string().describe('Public site user id'),
+  "email": zod.string().describe('Login identifier email'),
+  "display_name": zod.string().describe('Display name'),
+  "avatar_url": zod.string().describe('Public avatar URL'),
+  "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
+  "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
+  "primary_auth_provider": zod.string().describe('Primary auth provider'),
+  "is_admin": zod.boolean().default(readSiteAuthStateApiV1PublicAuthMeGetResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+}),zod.null()]).optional().describe('Current site user'),
+  "email_login_enabled": zod.boolean().default(readSiteAuthStateApiV1PublicAuthMeGetResponseEmailLoginEnabledDefault).describe('Whether email login is enabled'),
+  "oauth_providers": zod.array(zod.string()).optional().describe('Enabled oauth providers')
+})
+
+
+/**
+ * @summary 更新当前站点用户资料
+ */
+export const UpdateMyProfileApiV1PublicAuthMePatchBody = zod.object({
+  "display_name": zod.string().describe('Updated display name'),
+  "avatar_url": zod.string().describe('Updated avatar URL')
+})
+
+export const updateMyProfileApiV1PublicAuthMePatchResponseIsAdminDefault = false;
+
+export const UpdateMyProfileApiV1PublicAuthMePatchResponse = zod.object({
+  "id": zod.string().describe('Public site user id'),
+  "email": zod.string().describe('Login identifier email'),
+  "display_name": zod.string().describe('Display name'),
+  "avatar_url": zod.string().describe('Public avatar URL'),
+  "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
+  "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
+  "primary_auth_provider": zod.string().describe('Primary auth provider'),
+  "is_admin": zod.boolean().default(updateMyProfileApiV1PublicAuthMePatchResponseIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+})
+
+
+/**
+ * @summary 获取头像候选
+ */
+export const readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchDefault = 0;
+export const readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchMin = 0;
+
+
+
+export const ReadAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryParams = zod.object({
+  "identity": zod.union([zod.string(),zod.null()]).optional(),
+  "batch": zod.number().min(readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchMin).default(readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchDefault)
+})
+
+export const ReadAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetResponse = zod.object({
+  "batch": zod.number().describe('Current avatar candidate batch'),
+  "total_batches": zod.number().describe('Total number of avatar candidate batches'),
+  "avatar_candidates": zod.array(zod.object({
+  "key": zod.string().describe('Avatar option key'),
+  "label": zod.string().describe('Avatar option label'),
+  "avatar_url": zod.string().describe('Avatar option URL')
+})).optional().describe('Avatar candidates')
+})
+
+
+/**
+ * @summary 通过邮箱识别登录
+ */
+export const EmailLoginApiV1PublicAuthEmailPostBody = zod.object({
+  "email": zod.string().describe('Email identifier'),
+  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Optional display name for first login'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Optional avatar URL for first login')
+})
+
+export const emailLoginApiV1PublicAuthEmailPostResponseRequiresProfileDefault = false;
+export const emailLoginApiV1PublicAuthEmailPostResponseUserOneIsAdminDefault = false;
+export const emailLoginApiV1PublicAuthEmailPostResponseAvatarBatchDefault = 0;
+export const emailLoginApiV1PublicAuthEmailPostResponseAvatarTotalBatchesDefault = 1;
+
+export const EmailLoginApiV1PublicAuthEmailPostResponse = zod.object({
+  "authenticated": zod.boolean().describe('Whether a login session was created'),
+  "requires_profile": zod.boolean().default(emailLoginApiV1PublicAuthEmailPostResponseRequiresProfileDefault).describe('Whether first-login profile setup is required'),
+  "user": zod.union([zod.object({
+  "id": zod.string().describe('Public site user id'),
+  "email": zod.string().describe('Login identifier email'),
+  "display_name": zod.string().describe('Display name'),
+  "avatar_url": zod.string().describe('Public avatar URL'),
+  "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
+  "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
+  "primary_auth_provider": zod.string().describe('Primary auth provider'),
+  "is_admin": zod.boolean().default(emailLoginApiV1PublicAuthEmailPostResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+}),zod.null()]).optional().describe('Current site user when authenticated'),
+  "suggested_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Suggested display name for first login'),
+  "avatar_candidates": zod.array(zod.object({
+  "key": zod.string().describe('Avatar option key'),
+  "label": zod.string().describe('Avatar option label'),
+  "avatar_url": zod.string().describe('Avatar option URL')
+})).optional().describe('Avatar candidates'),
+  "avatar_batch": zod.number().default(emailLoginApiV1PublicAuthEmailPostResponseAvatarBatchDefault).describe('Current avatar candidate batch'),
+  "avatar_total_batches": zod.number().default(emailLoginApiV1PublicAuthEmailPostResponseAvatarTotalBatchesDefault).describe('Total number of avatar candidate batches')
+})
+
+
+/**
+ * @summary 获取 OAuth 跳转地址
+ */
+export const OauthStartApiV1PublicAuthOauthProviderStartGetParams = zod.object({
+  "provider": zod.string()
+})
+
+export const oauthStartApiV1PublicAuthOauthProviderStartGetQueryReturnToDefault = `/`;
+
+export const OauthStartApiV1PublicAuthOauthProviderStartGetQueryParams = zod.object({
+  "return_to": zod.string().default(oauthStartApiV1PublicAuthOauthProviderStartGetQueryReturnToDefault)
+})
+
+export const OauthStartApiV1PublicAuthOauthProviderStartGetResponse = zod.object({
+  "authorization_url": zod.string().describe('Provider authorization URL')
+})
+
+
+/**
+ * @summary 处理 OAuth 回调
+ */
+export const OauthCallbackApiV1PublicAuthOauthProviderCallbackGetParams = zod.object({
+  "provider": zod.string()
+})
+
+export const OauthCallbackApiV1PublicAuthOauthProviderCallbackGetQueryParams = zod.object({
+  "code": zod.string(),
+  "state": zod.string()
+})
+
+export const OauthCallbackApiV1PublicAuthOauthProviderCallbackGetResponse = zod.unknown()
+
+
+/**
  * @summary 管理员登录
  */
 export const LoginApiV1AdminAuthLoginPostBody = zod.object({
@@ -716,6 +890,39 @@ export const LoginApiV1AdminAuthLoginPostBody = zod.object({
 })
 
 export const LoginApiV1AdminAuthLoginPostResponse = zod.object({
+  "token": zod.string(),
+  "expires_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取管理员登录方式
+ */
+export const loginOptionsApiV1AdminAuthOptionsGetResponseEmailEnabledDefault = false;
+
+export const LoginOptionsApiV1AdminAuthOptionsGetResponse = zod.object({
+  "oauth_providers": zod.array(zod.string()).optional(),
+  "email_enabled": zod.boolean().default(loginOptionsApiV1AdminAuthOptionsGetResponseEmailEnabledDefault)
+})
+
+
+/**
+ * @summary 通过管理员邮箱登录
+ */
+export const LoginWithBoundEmailApiV1AdminAuthEmailPostBody = zod.object({
+  "email": zod.string()
+})
+
+export const LoginWithBoundEmailApiV1AdminAuthEmailPostResponse = zod.object({
+  "token": zod.string(),
+  "expires_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 将当前前台管理员身份换成后台登录
+ */
+export const ExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse = zod.object({
   "token": zod.string(),
   "expires_at": zod.string().datetime({})
 })
@@ -793,6 +1000,7 @@ export const ListPostsQueryParams = zod.object({
   "page": zod.number().min(1).default(listPostsQueryPageDefault),
   "page_size": zod.number().min(1).max(listPostsQueryPageSizeMax).default(listPostsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listPostsQuerySortByDefault),
@@ -847,8 +1055,8 @@ export const CreatePostsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.string().default(createPostsBodyStatusDefault).describe('Publication status: draft, published, or archived'),
-  "visibility": zod.string().default(createPostsBodyVisibilityDefault).describe('Visibility level: public or private'),
+  "status": zod.enum(['draft', 'published', 'archived']).default(createPostsBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
+  "visibility": zod.enum(['public', 'private']).default(createPostsBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -910,8 +1118,8 @@ export const UpdatePostsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.string(),zod.null()]).optional().describe('Publication status'),
-  "visibility": zod.union([zod.string(),zod.null()]).optional().describe('Visibility level'),
+  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
+  "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -977,7 +1185,7 @@ export const BulkDeletePostsResponse = zod.object({
  */
 export const BulkStatusPostsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusPostsResponse = zod.object({
@@ -1000,6 +1208,7 @@ export const ListDiaryQueryParams = zod.object({
   "page": zod.number().min(1).default(listDiaryQueryPageDefault),
   "page_size": zod.number().min(1).max(listDiaryQueryPageSizeMax).default(listDiaryQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listDiaryQuerySortByDefault),
@@ -1054,8 +1263,8 @@ export const CreateDiaryBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.string().default(createDiaryBodyStatusDefault).describe('Publication status: draft, published, or archived'),
-  "visibility": zod.string().default(createDiaryBodyVisibilityDefault).describe('Visibility level: public or private'),
+  "status": zod.enum(['draft', 'published', 'archived']).default(createDiaryBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
+  "visibility": zod.enum(['public', 'private']).default(createDiaryBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -1117,8 +1326,8 @@ export const UpdateDiaryBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.string(),zod.null()]).optional().describe('Publication status'),
-  "visibility": zod.union([zod.string(),zod.null()]).optional().describe('Visibility level'),
+  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
+  "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -1184,7 +1393,7 @@ export const BulkDeleteDiaryResponse = zod.object({
  */
 export const BulkStatusDiaryBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusDiaryResponse = zod.object({
@@ -1207,6 +1416,7 @@ export const ListThoughtsQueryParams = zod.object({
   "page": zod.number().min(1).default(listThoughtsQueryPageDefault),
   "page_size": zod.number().min(1).max(listThoughtsQueryPageSizeMax).default(listThoughtsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listThoughtsQuerySortByDefault),
@@ -1261,8 +1471,8 @@ export const CreateThoughtsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.string().default(createThoughtsBodyStatusDefault).describe('Publication status: draft, published, or archived'),
-  "visibility": zod.string().default(createThoughtsBodyVisibilityDefault).describe('Visibility level: public or private'),
+  "status": zod.enum(['draft', 'published', 'archived']).default(createThoughtsBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
+  "visibility": zod.enum(['public', 'private']).default(createThoughtsBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -1324,8 +1534,8 @@ export const UpdateThoughtsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.string(),zod.null()]).optional().describe('Publication status'),
-  "visibility": zod.union([zod.string(),zod.null()]).optional().describe('Visibility level'),
+  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
+  "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -1391,7 +1601,7 @@ export const BulkDeleteThoughtsResponse = zod.object({
  */
 export const BulkStatusThoughtsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusThoughtsResponse = zod.object({
@@ -1414,6 +1624,7 @@ export const ListExcerptsQueryParams = zod.object({
   "page": zod.number().min(1).default(listExcerptsQueryPageDefault),
   "page_size": zod.number().min(1).max(listExcerptsQueryPageSizeMax).default(listExcerptsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listExcerptsQuerySortByDefault),
@@ -1468,8 +1679,8 @@ export const CreateExcerptsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.string().default(createExcerptsBodyStatusDefault).describe('Publication status: draft, published, or archived'),
-  "visibility": zod.string().default(createExcerptsBodyVisibilityDefault).describe('Visibility level: public or private'),
+  "status": zod.enum(['draft', 'published', 'archived']).default(createExcerptsBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
+  "visibility": zod.enum(['public', 'private']).default(createExcerptsBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -1531,8 +1742,8 @@ export const UpdateExcerptsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.string(),zod.null()]).optional().describe('Publication status'),
-  "visibility": zod.union([zod.string(),zod.null()]).optional().describe('Visibility level'),
+  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
+  "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
   "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
@@ -1598,7 +1809,7 @@ export const BulkDeleteExcerptsResponse = zod.object({
  */
 export const BulkStatusExcerptsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusExcerptsResponse = zod.object({
@@ -1618,10 +1829,15 @@ export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
   "footer_text": zod.string().describe('Footer text'),
   "author": zod.string().describe('Default author name'),
   "og_image": zod.string().describe('Open Graph image path'),
+  "hero_image_url": zod.string().describe('Hero image path'),
+  "hero_poster_url": zod.string().describe('Hero video poster image path'),
   "meta_description": zod.string().describe('Meta description'),
   "copyright": zod.string().describe('Copyright notice'),
   "hero_actions": zod.string().describe('Hero action buttons JSON'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).describe('Hero background video URL'),
+  "poem_source": zod.enum(['custom', 'hitokoto']).describe('Poem source mode'),
+  "poem_hitokoto_types": zod.array(zod.string()).describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.array(zod.string()).describe('Hitokoto preferred keywords'),
   "feature_flags": zod.record(zod.string(), zod.unknown()).describe('Feature toggle flags'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -1639,10 +1855,15 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
   "footer_text": zod.union([zod.string(),zod.null()]).optional().describe('Footer text'),
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Default author name'),
   "og_image": zod.union([zod.string(),zod.null()]).optional().describe('Open Graph image path'),
+  "hero_image_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero image path'),
+  "hero_poster_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero video poster image path'),
   "meta_description": zod.union([zod.string(),zod.null()]).optional().describe('Meta description for SEO'),
   "copyright": zod.union([zod.string(),zod.null()]).optional().describe('Copyright notice'),
   "hero_actions": zod.union([zod.string(),zod.null()]).optional().describe('Hero action buttons JSON'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
+  "poem_source": zod.union([zod.enum(['custom', 'hitokoto']),zod.null()]).optional().describe('Poem source mode'),
+  "poem_hitokoto_types": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Hitokoto preferred keywords'),
   "feature_flags": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional().describe('Feature toggle flags')
 })
 
@@ -1655,10 +1876,15 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutResponse = zod.object({
   "footer_text": zod.string().describe('Footer text'),
   "author": zod.string().describe('Default author name'),
   "og_image": zod.string().describe('Open Graph image path'),
+  "hero_image_url": zod.string().describe('Hero image path'),
+  "hero_poster_url": zod.string().describe('Hero video poster image path'),
   "meta_description": zod.string().describe('Meta description'),
   "copyright": zod.string().describe('Copyright notice'),
   "hero_actions": zod.string().describe('Hero action buttons JSON'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).describe('Hero background video URL'),
+  "poem_source": zod.enum(['custom', 'hitokoto']).describe('Poem source mode'),
+  "poem_hitokoto_types": zod.array(zod.string()).describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.array(zod.string()).describe('Hitokoto preferred keywords'),
   "feature_flags": zod.record(zod.string(), zod.unknown()).describe('Feature toggle flags'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -1788,6 +2014,7 @@ export const ListSocialLinksQueryParams = zod.object({
   "page": zod.number().min(1).default(listSocialLinksQueryPageDefault),
   "page_size": zod.number().min(1).max(listSocialLinksQueryPageSizeMax).default(listSocialLinksQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listSocialLinksQuerySortByDefault),
@@ -1901,7 +2128,7 @@ export const BulkDeleteSocialLinksResponse = zod.object({
  */
 export const BulkStatusSocialLinksBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusSocialLinksResponse = zod.object({
@@ -1924,6 +2151,7 @@ export const ListPoemsQueryParams = zod.object({
   "page": zod.number().min(1).default(listPoemsQueryPageDefault),
   "page_size": zod.number().min(1).max(listPoemsQueryPageSizeMax).default(listPoemsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listPoemsQuerySortByDefault),
@@ -2021,7 +2249,7 @@ export const BulkDeletePoemsResponse = zod.object({
  */
 export const BulkStatusPoemsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusPoemsResponse = zod.object({
@@ -2044,6 +2272,7 @@ export const ListPageCopyQueryParams = zod.object({
   "page": zod.number().min(1).default(listPageCopyQueryPageDefault),
   "page_size": zod.number().min(1).max(listPageCopyQueryPageSizeMax).default(listPageCopyQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listPageCopyQuerySortByDefault),
@@ -2184,7 +2413,7 @@ export const BulkDeletePageCopyResponse = zod.object({
  */
 export const BulkStatusPageCopyBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusPageCopyResponse = zod.object({
@@ -2207,6 +2436,7 @@ export const ListDisplayOptionsQueryParams = zod.object({
   "page": zod.number().min(1).default(listDisplayOptionsQueryPageDefault),
   "page_size": zod.number().min(1).max(listDisplayOptionsQueryPageSizeMax).default(listDisplayOptionsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listDisplayOptionsQuerySortByDefault),
@@ -2304,7 +2534,7 @@ export const BulkDeleteDisplayOptionsResponse = zod.object({
  */
 export const BulkStatusDisplayOptionsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusDisplayOptionsResponse = zod.object({
@@ -2354,6 +2584,7 @@ export const ListNavItemsQueryParams = zod.object({
   "page": zod.number().min(1).default(listNavItemsQueryPageDefault),
   "page_size": zod.number().min(1).max(listNavItemsQueryPageSizeMax).default(listNavItemsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listNavItemsQuerySortByDefault),
@@ -2483,7 +2714,7 @@ export const BulkDeleteNavItemsResponse = zod.object({
  */
 export const BulkStatusNavItemsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusNavItemsResponse = zod.object({
@@ -2506,6 +2737,7 @@ export const ListBasicsQueryParams = zod.object({
   "page": zod.number().min(1).default(listBasicsQueryPageDefault),
   "page_size": zod.number().min(1).max(listBasicsQueryPageSizeMax).default(listBasicsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listBasicsQuerySortByDefault),
@@ -2519,6 +2751,14 @@ export const ListBasicsResponse = zod.object({
   "subtitle": zod.string().describe('Resume subtitle'),
   "summary": zod.string().describe('Professional summary'),
   "download_label": zod.string().describe('Download button label'),
+  "template_key": zod.string().describe('Selected resume template key'),
+  "accent_tone": zod.string().describe('Selected accent tone'),
+  "location": zod.string().describe('Current base location'),
+  "availability": zod.string().describe('Availability note'),
+  "email": zod.string().describe('Primary contact email'),
+  "website": zod.string().describe('Primary website'),
+  "profile_image_url": zod.string().describe('Profile image URL'),
+  "highlights": zod.array(zod.string()).describe('Featured resume highlights'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })).describe('Page of result items'),
@@ -2531,11 +2771,27 @@ export const ListBasicsResponse = zod.object({
 /**
  * @summary 创建admin-resume
  */
+export const createBasicsBodyTemplateKeyDefault = `editorial`;
+export const createBasicsBodyAccentToneDefault = `amber`;
+export const createBasicsBodyLocationDefault = ``;
+export const createBasicsBodyAvailabilityDefault = ``;
+export const createBasicsBodyEmailDefault = ``;
+export const createBasicsBodyWebsiteDefault = ``;
+export const createBasicsBodyProfileImageUrlDefault = ``;
+
 export const CreateBasicsBody = zod.object({
   "title": zod.string().describe('Resume page title'),
   "subtitle": zod.string().describe('Resume subtitle or tagline'),
   "summary": zod.string().describe('Professional summary paragraph'),
-  "download_label": zod.string().describe('PDF download button label')
+  "download_label": zod.string().describe('PDF download button label'),
+  "template_key": zod.string().default(createBasicsBodyTemplateKeyDefault).describe('Selected resume template key'),
+  "accent_tone": zod.string().default(createBasicsBodyAccentToneDefault).describe('Selected accent tone'),
+  "location": zod.string().default(createBasicsBodyLocationDefault).describe('Current base location'),
+  "availability": zod.string().default(createBasicsBodyAvailabilityDefault).describe('Availability note'),
+  "email": zod.string().default(createBasicsBodyEmailDefault).describe('Primary contact email'),
+  "website": zod.string().default(createBasicsBodyWebsiteDefault).describe('Primary website'),
+  "profile_image_url": zod.string().default(createBasicsBodyProfileImageUrlDefault).describe('Profile image URL'),
+  "highlights": zod.array(zod.string()).optional().describe('Featured resume highlights')
 })
 
 
@@ -2552,6 +2808,14 @@ export const GetBasicsResponse = zod.object({
   "subtitle": zod.string().describe('Resume subtitle'),
   "summary": zod.string().describe('Professional summary'),
   "download_label": zod.string().describe('Download button label'),
+  "template_key": zod.string().describe('Selected resume template key'),
+  "accent_tone": zod.string().describe('Selected accent tone'),
+  "location": zod.string().describe('Current base location'),
+  "availability": zod.string().describe('Availability note'),
+  "email": zod.string().describe('Primary contact email'),
+  "website": zod.string().describe('Primary website'),
+  "profile_image_url": zod.string().describe('Profile image URL'),
+  "highlights": zod.array(zod.string()).describe('Featured resume highlights'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -2568,7 +2832,15 @@ export const UpdateBasicsBody = zod.object({
   "title": zod.union([zod.string(),zod.null()]).optional().describe('Resume page title'),
   "subtitle": zod.union([zod.string(),zod.null()]).optional().describe('Resume subtitle'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Professional summary'),
-  "download_label": zod.union([zod.string(),zod.null()]).optional().describe('Download button label')
+  "download_label": zod.union([zod.string(),zod.null()]).optional().describe('Download button label'),
+  "template_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected resume template key'),
+  "accent_tone": zod.union([zod.string(),zod.null()]).optional().describe('Selected accent tone'),
+  "location": zod.union([zod.string(),zod.null()]).optional().describe('Current base location'),
+  "availability": zod.union([zod.string(),zod.null()]).optional().describe('Availability note'),
+  "email": zod.union([zod.string(),zod.null()]).optional().describe('Primary contact email'),
+  "website": zod.union([zod.string(),zod.null()]).optional().describe('Primary website'),
+  "profile_image_url": zod.union([zod.string(),zod.null()]).optional().describe('Profile image URL'),
+  "highlights": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Featured resume highlights')
 })
 
 export const UpdateBasicsResponse = zod.object({
@@ -2577,6 +2849,14 @@ export const UpdateBasicsResponse = zod.object({
   "subtitle": zod.string().describe('Resume subtitle'),
   "summary": zod.string().describe('Professional summary'),
   "download_label": zod.string().describe('Download button label'),
+  "template_key": zod.string().describe('Selected resume template key'),
+  "accent_tone": zod.string().describe('Selected accent tone'),
+  "location": zod.string().describe('Current base location'),
+  "availability": zod.string().describe('Availability note'),
+  "email": zod.string().describe('Primary contact email'),
+  "website": zod.string().describe('Primary website'),
+  "profile_image_url": zod.string().describe('Profile image URL'),
+  "highlights": zod.array(zod.string()).describe('Featured resume highlights'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -2607,7 +2887,7 @@ export const BulkDeleteBasicsResponse = zod.object({
  */
 export const BulkStatusBasicsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusBasicsResponse = zod.object({
@@ -2630,6 +2910,7 @@ export const ListSkillsQueryParams = zod.object({
   "page": zod.number().min(1).default(listSkillsQueryPageDefault),
   "page_size": zod.number().min(1).max(listSkillsQueryPageSizeMax).default(listSkillsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listSkillsQuerySortByDefault),
@@ -2732,7 +3013,7 @@ export const BulkDeleteSkillsResponse = zod.object({
  */
 export const BulkStatusSkillsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusSkillsResponse = zod.object({
@@ -2755,6 +3036,7 @@ export const ListExperiencesQueryParams = zod.object({
   "page": zod.number().min(1).default(listExperiencesQueryPageDefault),
   "page_size": zod.number().min(1).max(listExperiencesQueryPageSizeMax).default(listExperiencesQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listExperiencesQuerySortByDefault),
@@ -2768,7 +3050,11 @@ export const ListExperiencesResponse = zod.object({
   "title": zod.string().describe('Job title'),
   "company": zod.string().describe('Company name'),
   "period": zod.string().describe('Employment period'),
+  "location": zod.string().describe('Experience location'),
+  "employment_type": zod.string().describe('Employment type'),
   "summary": zod.string().describe('Role description'),
+  "achievements": zod.array(zod.string()).describe('Achievement bullet points'),
+  "tech_stack": zod.array(zod.string()).describe('Technologies used'),
   "order_index": zod.number().describe('Display order'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -2782,6 +3068,8 @@ export const ListExperiencesResponse = zod.object({
 /**
  * @summary 创建admin-resume
  */
+export const createExperiencesBodyLocationDefault = ``;
+export const createExperiencesBodyEmploymentTypeDefault = ``;
 export const createExperiencesBodyOrderIndexDefault = 0;
 
 export const CreateExperiencesBody = zod.object({
@@ -2789,7 +3077,11 @@ export const CreateExperiencesBody = zod.object({
   "title": zod.string().describe('Job title or role'),
   "company": zod.string().describe('Company or organization name'),
   "period": zod.string().describe('Employment period (e.g. 2020-2023)'),
+  "location": zod.string().default(createExperiencesBodyLocationDefault).describe('Experience location'),
+  "employment_type": zod.string().default(createExperiencesBodyEmploymentTypeDefault).describe('Employment type'),
   "summary": zod.string().describe('Role description and achievements'),
+  "achievements": zod.array(zod.string()).optional().describe('Achievement bullet points'),
+  "tech_stack": zod.array(zod.string()).optional().describe('Technologies used'),
   "order_index": zod.number().default(createExperiencesBodyOrderIndexDefault).describe('Display order (lower first)')
 })
 
@@ -2807,7 +3099,11 @@ export const GetExperiencesResponse = zod.object({
   "title": zod.string().describe('Job title'),
   "company": zod.string().describe('Company name'),
   "period": zod.string().describe('Employment period'),
+  "location": zod.string().describe('Experience location'),
+  "employment_type": zod.string().describe('Employment type'),
   "summary": zod.string().describe('Role description'),
+  "achievements": zod.array(zod.string()).describe('Achievement bullet points'),
+  "tech_stack": zod.array(zod.string()).describe('Technologies used'),
   "order_index": zod.number().describe('Display order'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -2825,7 +3121,11 @@ export const UpdateExperiencesBody = zod.object({
   "title": zod.union([zod.string(),zod.null()]).optional().describe('Job title'),
   "company": zod.union([zod.string(),zod.null()]).optional().describe('Company name'),
   "period": zod.union([zod.string(),zod.null()]).optional().describe('Employment period'),
+  "location": zod.union([zod.string(),zod.null()]).optional().describe('Experience location'),
+  "employment_type": zod.union([zod.string(),zod.null()]).optional().describe('Employment type'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Role description'),
+  "achievements": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Achievement bullet points'),
+  "tech_stack": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Technologies used'),
   "order_index": zod.union([zod.number(),zod.null()]).optional().describe('Display order')
 })
 
@@ -2835,7 +3135,11 @@ export const UpdateExperiencesResponse = zod.object({
   "title": zod.string().describe('Job title'),
   "company": zod.string().describe('Company name'),
   "period": zod.string().describe('Employment period'),
+  "location": zod.string().describe('Experience location'),
+  "employment_type": zod.string().describe('Employment type'),
   "summary": zod.string().describe('Role description'),
+  "achievements": zod.array(zod.string()).describe('Achievement bullet points'),
+  "tech_stack": zod.array(zod.string()).describe('Technologies used'),
   "order_index": zod.number().describe('Display order'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -2867,7 +3171,7 @@ export const BulkDeleteExperiencesResponse = zod.object({
  */
 export const BulkStatusExperiencesBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusExperiencesResponse = zod.object({
@@ -2890,6 +3194,7 @@ export const ListFriendsQueryParams = zod.object({
   "page": zod.number().min(1).default(listFriendsQueryPageDefault),
   "page_size": zod.number().min(1).max(listFriendsQueryPageSizeMax).default(listFriendsQueryPageSizeDefault),
   "status": zod.union([zod.string(),zod.null()]).optional(),
+  "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
   "sort_by": zod.string().default(listFriendsQuerySortByDefault),
@@ -3004,7 +3309,7 @@ export const BulkDeleteFriendsResponse = zod.object({
  */
 export const BulkStatusFriendsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
 })
 
 export const BulkStatusFriendsResponse = zod.object({
@@ -3267,18 +3572,31 @@ export const listAssetsEndpointApiV1AdminAssetsGetQueryPageDefault = 1;
 export const listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeDefault = 20;
 export const listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeMax = 100;
 
+export const listAssetsEndpointApiV1AdminAssetsGetQueryQOneMax = 200;
+
+export const listAssetsEndpointApiV1AdminAssetsGetQueryScopeDefault = `user`;
+export const listAssetsEndpointApiV1AdminAssetsGetQueryScopeRegExp = new RegExp('^(system|user)$');
 
 
 export const ListAssetsEndpointApiV1AdminAssetsGetQueryParams = zod.object({
   "page": zod.number().min(1).default(listAssetsEndpointApiV1AdminAssetsGetQueryPageDefault),
-  "page_size": zod.number().min(1).max(listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeMax).default(listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeDefault)
+  "page_size": zod.number().min(1).max(listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeMax).default(listAssetsEndpointApiV1AdminAssetsGetQueryPageSizeDefault),
+  "q": zod.union([zod.string().max(listAssetsEndpointApiV1AdminAssetsGetQueryQOneMax),zod.null()]).optional(),
+  "scope": zod.string().regex(listAssetsEndpointApiV1AdminAssetsGetQueryScopeRegExp).default(listAssetsEndpointApiV1AdminAssetsGetQueryScopeDefault)
 })
 
 export const ListAssetsEndpointApiV1AdminAssetsGetResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
   "file_name": zod.string(),
+  "resource_key": zod.string(),
+  "visibility": zod.enum(['internal', 'public']),
+  "scope": zod.enum(['system', 'user']),
+  "category": zod.string(),
+  "note": zod.union([zod.string(),zod.null()]),
   "storage_path": zod.string(),
+  "internal_url": zod.string(),
+  "public_url": zod.union([zod.string(),zod.null()]),
   "mime_type": zod.union([zod.string(),zod.null()]),
   "byte_size": zod.union([zod.number(),zod.null()]),
   "sha256": zod.union([zod.string(),zod.null()]),
@@ -3294,8 +3612,16 @@ export const ListAssetsEndpointApiV1AdminAssetsGetResponse = zod.object({
 /**
  * @summary 上传资源
  */
+export const uploadAssetEndpointApiV1AdminAssetsPostBodyVisibilityDefault = `internal`;
+export const uploadAssetEndpointApiV1AdminAssetsPostBodyScopeDefault = `user`;
+export const uploadAssetEndpointApiV1AdminAssetsPostBodyCategoryDefault = `general`;
+
 export const UploadAssetEndpointApiV1AdminAssetsPostBody = zod.object({
-  "file": zod.instanceof(File)
+  "file": zod.instanceof(File),
+  "visibility": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyVisibilityDefault),
+  "scope": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyScopeDefault),
+  "category": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyCategoryDefault),
+  "note": zod.union([zod.string(),zod.null()]).optional()
 })
 
 
@@ -3321,7 +3647,47 @@ export const GetAssetEndpointApiV1AdminAssetsAssetIdGetParams = zod.object({
 export const GetAssetEndpointApiV1AdminAssetsAssetIdGetResponse = zod.object({
   "id": zod.string(),
   "file_name": zod.string(),
+  "resource_key": zod.string(),
+  "visibility": zod.enum(['internal', 'public']),
+  "scope": zod.enum(['system', 'user']),
+  "category": zod.string(),
+  "note": zod.union([zod.string(),zod.null()]),
   "storage_path": zod.string(),
+  "internal_url": zod.string(),
+  "public_url": zod.union([zod.string(),zod.null()]),
+  "mime_type": zod.union([zod.string(),zod.null()]),
+  "byte_size": zod.union([zod.number(),zod.null()]),
+  "sha256": zod.union([zod.string(),zod.null()]),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 更新资源
+ */
+export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchParams = zod.object({
+  "asset_id": zod.string()
+})
+
+export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchBody = zod.object({
+  "visibility": zod.union([zod.enum(['internal', 'public']),zod.null()]).optional(),
+  "scope": zod.union([zod.enum(['system', 'user']),zod.null()]).optional(),
+  "category": zod.union([zod.string(),zod.null()]).optional(),
+  "note": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse = zod.object({
+  "id": zod.string(),
+  "file_name": zod.string(),
+  "resource_key": zod.string(),
+  "visibility": zod.enum(['internal', 'public']),
+  "scope": zod.enum(['system', 'user']),
+  "category": zod.string(),
+  "note": zod.union([zod.string(),zod.null()]),
+  "storage_path": zod.string(),
+  "internal_url": zod.string(),
+  "public_url": zod.union([zod.string(),zod.null()]),
   "mime_type": zod.union([zod.string(),zod.null()]),
   "byte_size": zod.union([zod.number(),zod.null()]),
   "sha256": zod.union([zod.string(),zod.null()]),
@@ -3475,6 +3841,25 @@ export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMon
 export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemDiaryDefault = 0;
 export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemThoughtsDefault = 0;
 export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemExcerptsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTotalViewsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemViewsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemShareDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemViewsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemShareDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficHistoryItemViewsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTotalVisitsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors24hDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors7dDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsAverageRequestDurationMsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemViewsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemShareDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsHistoryItemViewsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsRecentVisitsItemIsBotDefault = false;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPendingModerationDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedPostsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedDiaryEntriesDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedThoughtsDefault = 0;
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedExcerptsDefault = 0;
 
 export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.object({
   "posts": zod.number(),
@@ -3499,7 +3884,107 @@ export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.objec
   "content_type": zod.string(),
   "status": zod.string(),
   "updated_at": zod.string().datetime({})
-})).optional()
+})).optional(),
+  "traffic": zod.object({
+  "total_views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTotalViewsDefault),
+  "top_pages": zod.array(zod.object({
+  "url": zod.string(),
+  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemViewsDefault),
+  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemShareDefault)
+})).optional(),
+  "distribution": zod.array(zod.object({
+  "url": zod.string(),
+  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemViewsDefault),
+  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemShareDefault)
+})).optional(),
+  "history": zod.array(zod.object({
+  "date": zod.string().date(),
+  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficHistoryItemViewsDefault)
+})).optional(),
+  "last_snapshot_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
+}).optional(),
+  "visitors": zod.object({
+  "total_visits": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTotalVisitsDefault),
+  "unique_visitors_24h": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors24hDefault),
+  "unique_visitors_7d": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors7dDefault),
+  "average_request_duration_ms": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsAverageRequestDurationMsDefault),
+  "top_pages": zod.array(zod.object({
+  "url": zod.string(),
+  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemViewsDefault),
+  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemShareDefault)
+})).optional(),
+  "history": zod.array(zod.object({
+  "date": zod.string().date(),
+  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsHistoryItemViewsDefault)
+})).optional(),
+  "recent_visits": zod.array(zod.object({
+  "id": zod.string(),
+  "visited_at": zod.string().datetime({}),
+  "path": zod.string(),
+  "ip_address": zod.string(),
+  "location": zod.union([zod.string(),zod.null()]).optional(),
+  "isp": zod.union([zod.string(),zod.null()]).optional(),
+  "owner": zod.union([zod.string(),zod.null()]).optional(),
+  "status_text": zod.union([zod.string(),zod.null()]).optional(),
+  "user_agent": zod.union([zod.string(),zod.null()]).optional(),
+  "referer": zod.union([zod.string(),zod.null()]).optional(),
+  "status_code": zod.number(),
+  "duration_ms": zod.number(),
+  "is_bot": zod.boolean().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsRecentVisitsItemIsBotDefault)
+})).optional(),
+  "last_visit_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
+}).optional(),
+  "aux_metrics": zod.object({
+  "pending_moderation": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPendingModerationDefault),
+  "published_posts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedPostsDefault),
+  "published_diary_entries": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedDiaryEntriesDefault),
+  "published_thoughts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedThoughtsDefault),
+  "published_excerpts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedExcerptsDefault)
+}).optional()
+})
+
+
+/**
+ * @summary 获取访客访问记录
+ */
+export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageDefault = 1;
+
+export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageSizeDefault = 20;
+export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageSizeMax = 100;
+
+export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryIncludeBotsDefault = false;
+
+export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageSizeMax).default(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageSizeDefault),
+  "path": zod.union([zod.string(),zod.null()]).optional(),
+  "ip": zod.union([zod.string(),zod.null()]).optional(),
+  "date_from": zod.union([zod.string(),zod.null()]).optional(),
+  "date_to": zod.union([zod.string(),zod.null()]).optional(),
+  "include_bots": zod.boolean().default(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryIncludeBotsDefault)
+})
+
+export const visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseItemsItemIsBotDefault = false;
+
+export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "visited_at": zod.string().datetime({}),
+  "path": zod.string(),
+  "ip_address": zod.string(),
+  "location": zod.union([zod.string(),zod.null()]).optional(),
+  "isp": zod.union([zod.string(),zod.null()]).optional(),
+  "owner": zod.union([zod.string(),zod.null()]).optional(),
+  "status_text": zod.union([zod.string(),zod.null()]).optional(),
+  "user_agent": zod.union([zod.string(),zod.null()]).optional(),
+  "referer": zod.union([zod.string(),zod.null()]).optional(),
+  "status_code": zod.number(),
+  "duration_ms": zod.number(),
+  "is_bot": zod.boolean().default(visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseItemsItemIsBotDefault)
+})).describe('Page of result items'),
+  "total": zod.number().describe('Total number of items matching the query'),
+  "page": zod.number().describe('Current page number (1-based)'),
+  "page_size": zod.number().describe('Number of items per page')
 })
 
 
@@ -3530,13 +4015,78 @@ export const ListTagsApiV1AdminContentTagsGetResponse = zod.array(ListTagsApiV1A
 
 
 /**
- * @summary 聚合文章分类
+ * @summary 获取内容分类列表
  */
-export const ListCategoriesApiV1AdminContentCategoriesGetResponseItem = zod.object({
-  "name": zod.string().describe('Category name'),
-  "count": zod.number().describe('Number of entries in this category')
+export const ListContentCategoriesQueryParams = zod.object({
+  "content_type": zod.union([zod.string(),zod.null()]).optional()
 })
-export const ListCategoriesApiV1AdminContentCategoriesGetResponse = zod.array(ListCategoriesApiV1AdminContentCategoriesGetResponseItem)
+
+export const listContentCategoriesResponseUsageCountDefault = 0;
+
+export const ListContentCategoriesResponseItem = zod.object({
+  "id": zod.string().describe('Category identifier'),
+  "content_type": zod.string().describe('Content type bucket'),
+  "name": zod.string().describe('Category name'),
+  "usage_count": zod.number().default(listContentCategoriesResponseUsageCountDefault).describe('How many entries use this category')
+})
+export const ListContentCategoriesResponse = zod.array(ListContentCategoriesResponseItem)
+
+
+/**
+ * @summary 创建内容分类
+ */
+export const createContentCategoryBodyNameMax = 80;
+
+
+
+export const CreateContentCategoryBody = zod.object({
+  "content_type": zod.enum(['posts', 'thoughts', 'excerpts']).describe('Content type bucket'),
+  "name": zod.string().min(1).max(createContentCategoryBodyNameMax).describe('Category name')
+})
+
+export const createContentCategoryResponseUsageCountDefault = 0;
+
+export const CreateContentCategoryResponse = zod.object({
+  "id": zod.string().describe('Category identifier'),
+  "content_type": zod.string().describe('Content type bucket'),
+  "name": zod.string().describe('Category name'),
+  "usage_count": zod.number().default(createContentCategoryResponseUsageCountDefault).describe('How many entries use this category')
+})
+
+
+/**
+ * @summary 更新内容分类
+ */
+export const UpdateContentCategoryParams = zod.object({
+  "category_id": zod.string()
+})
+
+export const updateContentCategoryBodyNameMax = 80;
+
+
+
+export const UpdateContentCategoryBody = zod.object({
+  "name": zod.string().min(1).max(updateContentCategoryBodyNameMax).describe('Category name')
+})
+
+export const updateContentCategoryResponseUsageCountDefault = 0;
+
+export const UpdateContentCategoryResponse = zod.object({
+  "id": zod.string().describe('Category identifier'),
+  "content_type": zod.string().describe('Content type bucket'),
+  "name": zod.string().describe('Category name'),
+  "usage_count": zod.number().default(updateContentCategoryResponseUsageCountDefault).describe('How many entries use this category')
+})
+
+
+/**
+ * @summary 删除内容分类
+ */
+export const DeleteContentCategoryParams = zod.object({
+  "category_id": zod.string()
+})
+
+export const DeleteContentCategoryResponse = zod.unknown()
 
 
 /**
@@ -3570,6 +4120,163 @@ export const ImportContentApiV1AdminContentImportPostResponse = zod.object({
   "created": zod.number().default(importContentApiV1AdminContentImportPostResponseCreatedDefault).describe('Number of entries created'),
   "updated": zod.number().default(importContentApiV1AdminContentImportPostResponseUpdatedDefault).describe('Number of entries updated'),
   "errors": zod.array(zod.string()).optional().describe('Error messages')
+})
+
+
+/**
+ * @summary 获取访客认证配置
+ */
+export const GetVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = zod.object({
+  "id": zod.string().describe('Visitor auth config id'),
+  "email_login_enabled": zod.boolean().describe('Whether email login is enabled'),
+  "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
+  "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
+  "google_client_id": zod.string().describe('Google OAuth client id'),
+  "google_client_secret": zod.string().describe('Google OAuth client secret'),
+  "github_client_id": zod.string().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 更新访客认证配置
+ */
+export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutBody = zod.object({
+  "email_login_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email login remains enabled'),
+  "visitor_oauth_providers": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('OAuth providers enabled for visitor binding'),
+  "admin_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login'),
+  "google_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client id'),
+  "google_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client secret'),
+  "github_client_id": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client secret')
+})
+
+export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.object({
+  "id": zod.string().describe('Visitor auth config id'),
+  "email_login_enabled": zod.boolean().describe('Whether email login is enabled'),
+  "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
+  "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
+  "google_client_id": zod.string().describe('Google OAuth client id'),
+  "google_client_secret": zod.string().describe('Google OAuth client secret'),
+  "github_client_id": zod.string().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 获取站点访客用户列表
+ */
+export const listVisitorUsersApiV1AdminVisitorsUsersGetQueryModeDefault = `all`;
+export const listVisitorUsersApiV1AdminVisitorsUsersGetQueryPageDefault = 1;
+
+export const listVisitorUsersApiV1AdminVisitorsUsersGetQueryPageSizeDefault = 20;
+export const listVisitorUsersApiV1AdminVisitorsUsersGetQueryPageSizeMax = 100;
+
+
+
+export const ListVisitorUsersApiV1AdminVisitorsUsersGetQueryParams = zod.object({
+  "mode": zod.enum(['all', 'email', 'binding']).default(listVisitorUsersApiV1AdminVisitorsUsersGetQueryModeDefault),
+  "search": zod.union([zod.string(),zod.null()]).optional(),
+  "page": zod.number().min(1).default(listVisitorUsersApiV1AdminVisitorsUsersGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(listVisitorUsersApiV1AdminVisitorsUsersGetQueryPageSizeMax).default(listVisitorUsersApiV1AdminVisitorsUsersGetQueryPageSizeDefault)
+})
+
+export const ListVisitorUsersApiV1AdminVisitorsUsersGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().describe('Site user id'),
+  "email": zod.string().describe('Login email identifier'),
+  "display_name": zod.string().describe('Current display name'),
+  "avatar_url": zod.string().describe('Current avatar URL'),
+  "primary_auth_provider": zod.string().describe('Primary auth provider'),
+  "auth_mode": zod.enum(['email', 'binding']).describe('Whether this user is email-only or has OAuth bindings'),
+  "oauth_accounts": zod.array(zod.object({
+  "provider": zod.enum(['google', 'github']).describe('OAuth provider'),
+  "provider_email": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side email'),
+  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name'),
+  "created_at": zod.string().datetime({}).describe('Binding creation time')
+})).optional().describe('Linked OAuth accounts'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time'),
+  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+})).describe('Page of result items'),
+  "total": zod.number().describe('Total number of items matching the query'),
+  "page": zod.number().describe('Current page number (1-based)'),
+  "page_size": zod.number().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 获取管理员前台身份绑定
+ */
+export const ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponseItem = zod.object({
+  "id": zod.string().describe('Admin identity id'),
+  "site_user_id": zod.string().describe('Bound site user id'),
+  "provider": zod.enum(['email', 'google', 'github']).describe('Bound auth provider'),
+  "identifier": zod.string().describe('Provider identifier used for the binding'),
+  "email": zod.string().describe('Normalized email used by the binding'),
+  "site_user_display_name": zod.string().describe('Underlying site user display name'),
+  "site_user_avatar_url": zod.string().describe('Underlying site user avatar'),
+  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name if present'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+export const ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse = zod.array(ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponseItem)
+
+
+/**
+ * @summary 通过邮箱绑定管理员前台身份
+ */
+export const BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostBody = zod.object({
+  "email": zod.string().describe('Admin email identifier')
+})
+
+export const BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse = zod.object({
+  "id": zod.string().describe('Admin identity id'),
+  "site_user_id": zod.string().describe('Bound site user id'),
+  "provider": zod.enum(['email', 'google', 'github']).describe('Bound auth provider'),
+  "identifier": zod.string().describe('Provider identifier used for the binding'),
+  "email": zod.string().describe('Normalized email used by the binding'),
+  "site_user_display_name": zod.string().describe('Underlying site user display name'),
+  "site_user_avatar_url": zod.string().describe('Underlying site user avatar'),
+  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name if present'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 绑定当前前台登录身份为管理员
+ */
+export const BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostQueryParams = zod.object({
+  "provider": zod.enum(['email', 'google', 'github'])
+})
+
+export const BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse = zod.object({
+  "id": zod.string().describe('Admin identity id'),
+  "site_user_id": zod.string().describe('Bound site user id'),
+  "provider": zod.enum(['email', 'google', 'github']).describe('Bound auth provider'),
+  "identifier": zod.string().describe('Provider identifier used for the binding'),
+  "email": zod.string().describe('Normalized email used by the binding'),
+  "site_user_display_name": zod.string().describe('Underlying site user display name'),
+  "site_user_avatar_url": zod.string().describe('Underlying site user avatar'),
+  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name if present'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 删除管理员前台身份绑定
+ */
+export const DeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteParams = zod.object({
+  "identity_id": zod.string()
 })
 
 

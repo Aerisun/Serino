@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SiteProfileAdminReadFeatureFlags } from './siteProfileAdminReadFeatureFlags';
+import type { SiteProfileAdminReadPoemSource } from './siteProfileAdminReadPoemSource';
 
 export interface SiteProfileAdminRead {
   /** Unique profile identifier */
@@ -23,6 +24,10 @@ export interface SiteProfileAdminRead {
   author: string;
   /** Open Graph image path */
   og_image: string;
+  /** Hero image path */
+  hero_image_url: string;
+  /** Hero video poster image path */
+  hero_poster_url: string;
   /** Meta description */
   meta_description: string;
   /** Copyright notice */
@@ -31,6 +36,12 @@ export interface SiteProfileAdminRead {
   hero_actions: string;
   /** Hero background video URL */
   hero_video_url: string | null;
+  /** Poem source mode */
+  poem_source: SiteProfileAdminReadPoemSource;
+  /** Hitokoto category codes */
+  poem_hitokoto_types: string[];
+  /** Hitokoto preferred keywords */
+  poem_hitokoto_keywords: string[];
   /** Feature toggle flags */
   feature_flags: SiteProfileAdminReadFeatureFlags;
   /** Creation timestamp */

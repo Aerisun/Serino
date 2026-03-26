@@ -7,4 +7,8 @@
 
 export interface BodyUploadAssetEndpointApiV1AdminAssetsPost {
   file: Blob;
+  visibility?: string;
+  scope?: string;
+  category?: string;
+  note?: string | null;
 }

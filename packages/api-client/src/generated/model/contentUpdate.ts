@@ -17,9 +17,9 @@ export interface ContentUpdate {
   /** List of tag names */
   tags?: string[] | null;
   /** Publication status */
-  status?: string | null;
+  status?: 'draft' | 'published' | 'archived' | null;
   /** Visibility level */
-  visibility?: string | null;
+  visibility?: 'public' | 'private' | null;
   /** Publication timestamp */
   published_at?: string | null;
   /** Content category name */

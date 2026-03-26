@@ -12,8 +12,16 @@ export interface ResumeExperienceRead {
   company: string;
   /** Employment period */
   period: string;
+  /** Experience location */
+  location?: string;
+  /** Employment type */
+  employment_type?: string;
   /** Role description */
   summary: string;
+  /** Achievement bullet points */
+  achievements?: string[];
+  /** Technologies used */
+  tech_stack?: string[];
   /** Display order */
   order_index: number;
 }

@@ -4,6 +4,8 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentCreateStatus } from './contentCreateStatus';
+import type { ContentCreateVisibility } from './contentCreateVisibility';
 
 export interface ContentCreate {
   /** URL-friendly unique identifier */
@@ -16,10 +18,10 @@ export interface ContentCreate {
   body: string;
   /** List of tag names */
   tags?: string[];
-  /** Publication status: draft, published, or archived */
-  status?: string;
+  /** Publication status: draft, public publish, or private archive */
+  status?: ContentCreateStatus;
   /** Visibility level: public or private */
-  visibility?: string;
+  visibility?: ContentCreateVisibility;
   /** Publication timestamp */
   published_at?: string | null;
   /** Content category name */

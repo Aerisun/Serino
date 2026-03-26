@@ -6,6 +6,7 @@
  */
 import type { SiteProfileReadFeatureFlags } from './siteProfileReadFeatureFlags';
 import type { SiteProfileReadHeroActionsItem } from './siteProfileReadHeroActionsItem';
+import type { SiteProfileReadPoemSource } from './siteProfileReadPoemSource';
 
 export interface SiteProfileRead {
   /** Site owner name */
@@ -22,6 +23,10 @@ export interface SiteProfileRead {
   author: string;
   /** Open Graph image path */
   og_image: string;
+  /** Hero image path */
+  hero_image_url: string;
+  /** Hero video poster image path */
+  hero_poster_url: string;
   /** Meta description for SEO */
   meta_description: string;
   /** Copyright notice */
@@ -30,6 +35,12 @@ export interface SiteProfileRead {
   hero_actions: SiteProfileReadHeroActionsItem[];
   /** Hero background video URL */
   hero_video_url?: string | null;
+  /** Poem source mode */
+  poem_source?: SiteProfileReadPoemSource;
+  /** Hitokoto category codes */
+  poem_hitokoto_types?: string[];
+  /** Hitokoto preferred keywords */
+  poem_hitokoto_keywords?: string[];
   /** Feature toggle flags */
   feature_flags?: SiteProfileReadFeatureFlags;
 }

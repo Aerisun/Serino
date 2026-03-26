@@ -12,8 +12,16 @@ export interface ResumeExperienceUpdate {
   company?: string | null;
   /** Employment period */
   period?: string | null;
+  /** Experience location */
+  location?: string | null;
+  /** Employment type */
+  employment_type?: string | null;
   /** Role description */
   summary?: string | null;
+  /** Achievement bullet points */
+  achievements?: string[] | null;
+  /** Technologies used */
+  tech_stack?: string[] | null;
   /** Display order */
   order_index?: number | null;
 }

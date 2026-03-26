@@ -15,4 +15,9 @@ page?: number;
  * @maximum 100
  */
 page_size?: number;
+q?: string | null;
+/**
+ * @pattern ^(system|user)$
+ */
+scope?: string;
 };

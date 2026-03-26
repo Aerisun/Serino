@@ -28,6 +28,7 @@ function normalizeHeaders(
 export function createCustomInstance(config: ApiClientConfig) {
   const instance = Axios.create({
     baseURL: config.baseUrl ?? "",
+    withCredentials: true,
   });
 
   instance.interceptors.request.use((req) => {
@@ -85,6 +86,7 @@ export function createCustomInstance(config: ApiClientConfig) {
 export function createAxiosInstance(config: ApiClientConfig): AxiosInstance {
   const instance = Axios.create({
     baseURL: config.baseUrl ?? "",
+    withCredentials: true,
   });
 
   instance.interceptors.request.use((req) => {

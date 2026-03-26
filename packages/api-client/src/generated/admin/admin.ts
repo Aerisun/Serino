@@ -24,6 +24,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminEmailLoginRequest,
+  AdminLoginOptionsRead,
   AdminProfileUpdate,
   AdminSessionRead,
   AdminUserRead,
@@ -32,17 +34,21 @@ import type {
   ApiKeyCreateResponse,
   ApiKeyUpdate,
   AssetAdminRead,
+  AssetAdminUpdate,
   BackupSnapshotRead,
+  BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams,
   BodyImportContentApiV1AdminContentImportPost,
   BodyUploadAssetEndpointApiV1AdminAssetsPost,
   BulkActionResponse,
   BulkDeleteRequest,
   BulkStatusRequest,
-  CategoryInfo,
   CommentAdminRead,
   CommunityConfigAdminRead,
   CommunityConfigUpdate,
   ContentAdminRead,
+  ContentCategoryCreate,
+  ContentCategoryRead,
+  ContentCategoryUpdate,
   ContentCreate,
   ContentUpdate,
   EnhancedDashboardStats,
@@ -63,6 +69,7 @@ import type {
   ListAuditLogsApiV1AdminSystemAuditLogsGetParams,
   ListBasicsParams,
   ListCommentsApiV1AdminModerationCommentsGetParams,
+  ListContentCategoriesParams,
   ListDiaryParams,
   ListDisplayOptionsParams,
   ListExcerptsParams,
@@ -76,6 +83,7 @@ import type {
   ListSkillsParams,
   ListSocialLinksParams,
   ListThoughtsParams,
+  ListVisitorUsersApiV1AdminVisitorsUsersGetParams,
   LoginRequest,
   LoginResponse,
   ModerateAction,
@@ -102,7 +110,9 @@ import type {
   PaginatedResponseResumeBasicsAdminRead,
   PaginatedResponseResumeExperienceAdminRead,
   PaginatedResponseResumeSkillGroupAdminRead,
+  PaginatedResponseSiteUserAdminRead,
   PaginatedResponseSocialLinkAdminRead,
+  PaginatedResponseVisitorRecordRead,
   PasswordChangeRequest,
   PoemAdminRead,
   PoemCreate,
@@ -116,13 +126,18 @@ import type {
   ResumeSkillGroupAdminRead,
   ResumeSkillGroupCreate,
   ResumeSkillGroupUpdate,
+  SiteAdminEmailIdentityBindRequest,
+  SiteAdminIdentityAdminRead,
+  SiteAuthConfigAdminRead,
+  SiteAuthConfigAdminUpdate,
   SiteProfileAdminRead,
   SiteProfileUpdate,
   SocialLinkAdminRead,
   SocialLinkCreate,
   SocialLinkUpdate,
   SystemInfo,
-  TagInfo
+  TagInfo,
+  VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams
 } from '../model';
 
 import { customInstance } from '../../mutators/admin-instance';
@@ -225,6 +240,293 @@ export const useLoginApiV1AdminAuthLoginPost = <TError = ErrorType<HTTPValidatio
         TContext
       > => {
       return useMutation(getLoginApiV1AdminAuthLoginPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取管理员登录方式
+ */
+export type loginOptionsApiV1AdminAuthOptionsGetResponse200 = {
+  data: AdminLoginOptionsRead
+  status: 200
+}
+
+export type loginOptionsApiV1AdminAuthOptionsGetResponseSuccess = (loginOptionsApiV1AdminAuthOptionsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type loginOptionsApiV1AdminAuthOptionsGetResponse = (loginOptionsApiV1AdminAuthOptionsGetResponseSuccess)
+
+export const getLoginOptionsApiV1AdminAuthOptionsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/auth/options`
+}
+
+export const loginOptionsApiV1AdminAuthOptionsGet = async ( options?: RequestInit): Promise<loginOptionsApiV1AdminAuthOptionsGetResponse> => {
+
+  return customInstance<loginOptionsApiV1AdminAuthOptionsGetResponse>(getLoginOptionsApiV1AdminAuthOptionsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLoginOptionsApiV1AdminAuthOptionsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/auth/options`
+    ] as const;
+    }
+
+
+export const getLoginOptionsApiV1AdminAuthOptionsGetQueryOptions = <TData = Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLoginOptionsApiV1AdminAuthOptionsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>> = ({ signal }) => loginOptionsApiV1AdminAuthOptionsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LoginOptionsApiV1AdminAuthOptionsGetQueryResult = NonNullable<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>>
+export type LoginOptionsApiV1AdminAuthOptionsGetQueryError = ErrorType<unknown>
+
+
+export function useLoginOptionsApiV1AdminAuthOptionsGet<TData = Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginOptionsApiV1AdminAuthOptionsGet<TData = Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginOptionsApiV1AdminAuthOptionsGet<TData = Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取管理员登录方式
+ */
+
+export function useLoginOptionsApiV1AdminAuthOptionsGet<TData = Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginOptionsApiV1AdminAuthOptionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLoginOptionsApiV1AdminAuthOptionsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 通过管理员邮箱登录
+ */
+export type loginWithBoundEmailApiV1AdminAuthEmailPostResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type loginWithBoundEmailApiV1AdminAuthEmailPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type loginWithBoundEmailApiV1AdminAuthEmailPostResponseSuccess = (loginWithBoundEmailApiV1AdminAuthEmailPostResponse200) & {
+  headers: Headers;
+};
+export type loginWithBoundEmailApiV1AdminAuthEmailPostResponseError = (loginWithBoundEmailApiV1AdminAuthEmailPostResponse422) & {
+  headers: Headers;
+};
+
+export type loginWithBoundEmailApiV1AdminAuthEmailPostResponse = (loginWithBoundEmailApiV1AdminAuthEmailPostResponseSuccess | loginWithBoundEmailApiV1AdminAuthEmailPostResponseError)
+
+export const getLoginWithBoundEmailApiV1AdminAuthEmailPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/auth/email`
+}
+
+export const loginWithBoundEmailApiV1AdminAuthEmailPost = async (adminEmailLoginRequest: AdminEmailLoginRequest, options?: RequestInit): Promise<loginWithBoundEmailApiV1AdminAuthEmailPostResponse> => {
+
+  return customInstance<loginWithBoundEmailApiV1AdminAuthEmailPostResponse>(getLoginWithBoundEmailApiV1AdminAuthEmailPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminEmailLoginRequest,)
+  }
+);}
+
+
+
+
+export const getLoginWithBoundEmailApiV1AdminAuthEmailPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginWithBoundEmailApiV1AdminAuthEmailPost>>, TError,{data: BodyType<AdminEmailLoginRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof loginWithBoundEmailApiV1AdminAuthEmailPost>>, TError,{data: BodyType<AdminEmailLoginRequest>}, TContext> => {
+
+const mutationKey = ['loginWithBoundEmailApiV1AdminAuthEmailPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof loginWithBoundEmailApiV1AdminAuthEmailPost>>, {data: BodyType<AdminEmailLoginRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  loginWithBoundEmailApiV1AdminAuthEmailPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginWithBoundEmailApiV1AdminAuthEmailPostMutationResult = NonNullable<Awaited<ReturnType<typeof loginWithBoundEmailApiV1AdminAuthEmailPost>>>
+    export type LoginWithBoundEmailApiV1AdminAuthEmailPostMutationBody = BodyType<AdminEmailLoginRequest>
+    export type LoginWithBoundEmailApiV1AdminAuthEmailPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 通过管理员邮箱登录
+ */
+export const useLoginWithBoundEmailApiV1AdminAuthEmailPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginWithBoundEmailApiV1AdminAuthEmailPost>>, TError,{data: BodyType<AdminEmailLoginRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof loginWithBoundEmailApiV1AdminAuthEmailPost>>,
+        TError,
+        {data: BodyType<AdminEmailLoginRequest>},
+        TContext
+      > => {
+      return useMutation(getLoginWithBoundEmailApiV1AdminAuthEmailPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 将当前前台管理员身份换成后台登录
+ */
+export type exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse200 = {
+  data: LoginResponse
+  status: 200
+}
+
+export type exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponseSuccess = (exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse200) & {
+  headers: Headers;
+};
+export type exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponseError = (exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse422) & {
+  headers: Headers;
+};
+
+export type exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse = (exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponseSuccess | exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponseError)
+
+export const getExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/auth/exchange-site-user`
+}
+
+export const exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost = async ( options?: RequestInit): Promise<exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse> => {
+
+  return customInstance<exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse>(getExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost>>, TError,void, TContext> => {
+
+const mutationKey = ['exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost>>, void> = () => {
+
+
+          return  exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostMutationResult = NonNullable<Awaited<ReturnType<typeof exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost>>>
+
+    export type ExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 将当前前台管理员身份换成后台登录
+ */
+export const useExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof exchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 管理员登出
@@ -11337,6 +11639,18 @@ export const getUploadAssetEndpointApiV1AdminAssetsPostUrl = () => {
 export const uploadAssetEndpointApiV1AdminAssetsPost = async (bodyUploadAssetEndpointApiV1AdminAssetsPost: BodyUploadAssetEndpointApiV1AdminAssetsPost, options?: RequestInit): Promise<uploadAssetEndpointApiV1AdminAssetsPostResponse> => {
     const formData = new FormData();
 formData.append(`file`, bodyUploadAssetEndpointApiV1AdminAssetsPost.file);
+if(bodyUploadAssetEndpointApiV1AdminAssetsPost.visibility !== undefined) {
+ formData.append(`visibility`, bodyUploadAssetEndpointApiV1AdminAssetsPost.visibility);
+ }
+if(bodyUploadAssetEndpointApiV1AdminAssetsPost.scope !== undefined) {
+ formData.append(`scope`, bodyUploadAssetEndpointApiV1AdminAssetsPost.scope);
+ }
+if(bodyUploadAssetEndpointApiV1AdminAssetsPost.category !== undefined) {
+ formData.append(`category`, bodyUploadAssetEndpointApiV1AdminAssetsPost.category);
+ }
+if(bodyUploadAssetEndpointApiV1AdminAssetsPost.note !== undefined && bodyUploadAssetEndpointApiV1AdminAssetsPost.note !== null) {
+ formData.append(`note`, bodyUploadAssetEndpointApiV1AdminAssetsPost.note);
+ }
 
   return customInstance<uploadAssetEndpointApiV1AdminAssetsPostResponse>(getUploadAssetEndpointApiV1AdminAssetsPostUrl(),
   {
@@ -11602,6 +11916,96 @@ export function useGetAssetEndpointApiV1AdminAssetsAssetIdGet<TData = Awaited<Re
 
 
 /**
+ * @summary 更新资源
+ */
+export type updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse200 = {
+  data: AssetAdminRead
+  status: 200
+}
+
+export type updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponseSuccess = (updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse200) & {
+  headers: Headers;
+};
+export type updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponseError = (updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse = (updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponseSuccess | updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponseError)
+
+export const getUpdateAssetEndpointApiV1AdminAssetsAssetIdPatchUrl = (assetId: string,) => {
+
+
+
+
+  return `/api/v1/admin/assets/${assetId}`
+}
+
+export const updateAssetEndpointApiV1AdminAssetsAssetIdPatch = async (assetId: string,
+    assetAdminUpdate: AssetAdminUpdate, options?: RequestInit): Promise<updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse> => {
+
+  return customInstance<updateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse>(getUpdateAssetEndpointApiV1AdminAssetsAssetIdPatchUrl(assetId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assetAdminUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateAssetEndpointApiV1AdminAssetsAssetIdPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAssetEndpointApiV1AdminAssetsAssetIdPatch>>, TError,{assetId: string;data: BodyType<AssetAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAssetEndpointApiV1AdminAssetsAssetIdPatch>>, TError,{assetId: string;data: BodyType<AssetAdminUpdate>}, TContext> => {
+
+const mutationKey = ['updateAssetEndpointApiV1AdminAssetsAssetIdPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAssetEndpointApiV1AdminAssetsAssetIdPatch>>, {assetId: string;data: BodyType<AssetAdminUpdate>}> = (props) => {
+          const {assetId,data} = props ?? {};
+
+          return  updateAssetEndpointApiV1AdminAssetsAssetIdPatch(assetId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateAssetEndpointApiV1AdminAssetsAssetIdPatch>>>
+    export type UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchMutationBody = BodyType<AssetAdminUpdate>
+    export type UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新资源
+ */
+export const useUpdateAssetEndpointApiV1AdminAssetsAssetIdPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAssetEndpointApiV1AdminAssetsAssetIdPatch>>, TError,{assetId: string;data: BodyType<AssetAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateAssetEndpointApiV1AdminAssetsAssetIdPatch>>,
+        TError,
+        {assetId: string;data: BodyType<AssetAdminUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAssetEndpointApiV1AdminAssetsAssetIdPatchMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 删除资源
  */
 export type deleteAssetEndpointApiV1AdminAssetsAssetIdDeleteResponse204 = {
@@ -12580,6 +12984,130 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
 
 
 /**
+ * @summary 获取访客访问记录
+ */
+export type visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse200 = {
+  data: PaginatedResponseVisitorRecordRead
+  status: 200
+}
+
+export type visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseSuccess = (visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse200) & {
+  headers: Headers;
+};
+export type visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseError = (visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse422) & {
+  headers: Headers;
+};
+
+export type visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse = (visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseSuccess | visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseError)
+
+export const getVisitorRecordsApiV1AdminSystemVisitorRecordsGetUrl = (params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/system/visitor-records?${stringifiedParams}` : `/api/v1/admin/system/visitor-records`
+}
+
+export const visitorRecordsApiV1AdminSystemVisitorRecordsGet = async (params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams, options?: RequestInit): Promise<visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse> => {
+
+  return customInstance<visitorRecordsApiV1AdminSystemVisitorRecordsGetResponse>(getVisitorRecordsApiV1AdminSystemVisitorRecordsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryKey = (params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams,) => {
+    return [
+    `/api/v1/admin/system/visitor-records`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getVisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryOptions = <TData = Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError = ErrorType<HTTPValidationError>>(params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>> = ({ signal }) => visitorRecordsApiV1AdminSystemVisitorRecordsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type VisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryResult = NonNullable<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>>
+export type VisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useVisitorRecordsApiV1AdminSystemVisitorRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>,
+          TError,
+          Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useVisitorRecordsApiV1AdminSystemVisitorRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>,
+          TError,
+          Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useVisitorRecordsApiV1AdminSystemVisitorRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取访客访问记录
+ */
+
+export function useVisitorRecordsApiV1AdminSystemVisitorRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordsApiV1AdminSystemVisitorRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getVisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * @summary 获取系统信息
  */
 export type systemInfoApiV1AdminSystemInfoGetResponse200 = {
@@ -12800,31 +13328,45 @@ export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<t
 
 
 /**
- * @summary 聚合文章分类
+ * @summary 获取内容分类列表
  */
-export type listCategoriesApiV1AdminContentCategoriesGetResponse200 = {
-  data: CategoryInfo[]
+export type listContentCategoriesResponse200 = {
+  data: ContentCategoryRead[]
   status: 200
 }
 
-export type listCategoriesApiV1AdminContentCategoriesGetResponseSuccess = (listCategoriesApiV1AdminContentCategoriesGetResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listCategoriesApiV1AdminContentCategoriesGetResponse = (listCategoriesApiV1AdminContentCategoriesGetResponseSuccess)
-
-export const getListCategoriesApiV1AdminContentCategoriesGetUrl = () => {
-
-
-
-
-  return `/api/v1/admin/content/categories`
+export type listContentCategoriesResponse422 = {
+  data: HTTPValidationError
+  status: 422
 }
 
-export const listCategoriesApiV1AdminContentCategoriesGet = async ( options?: RequestInit): Promise<listCategoriesApiV1AdminContentCategoriesGetResponse> => {
+export type listContentCategoriesResponseSuccess = (listContentCategoriesResponse200) & {
+  headers: Headers;
+};
+export type listContentCategoriesResponseError = (listContentCategoriesResponse422) & {
+  headers: Headers;
+};
 
-  return customInstance<listCategoriesApiV1AdminContentCategoriesGetResponse>(getListCategoriesApiV1AdminContentCategoriesGetUrl(),
+export type listContentCategoriesResponse = (listContentCategoriesResponseSuccess | listContentCategoriesResponseError)
+
+export const getListContentCategoriesUrl = (params?: ListContentCategoriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/content/category-options?${stringifiedParams}` : `/api/v1/admin/content/category-options`
+}
+
+export const listContentCategories = async (params?: ListContentCategoriesParams, options?: RequestInit): Promise<listContentCategoriesResponse> => {
+
+  return customInstance<listContentCategoriesResponse>(getListContentCategoriesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -12837,69 +13379,69 @@ export const listCategoriesApiV1AdminContentCategoriesGet = async ( options?: Re
 
 
 
-export const getListCategoriesApiV1AdminContentCategoriesGetQueryKey = () => {
+export const getListContentCategoriesQueryKey = (params?: ListContentCategoriesParams,) => {
     return [
-    `/api/v1/admin/content/categories`
+    `/api/v1/admin/content/category-options`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListCategoriesApiV1AdminContentCategoriesGetQueryOptions = <TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getListContentCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof listContentCategories>>, TError = ErrorType<HTTPValidationError>>(params?: ListContentCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentCategories>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListCategoriesApiV1AdminContentCategoriesGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListContentCategoriesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>> = ({ signal }) => listCategoriesApiV1AdminContentCategoriesGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listContentCategories>>> = ({ signal }) => listContentCategories(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listContentCategories>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ListCategoriesApiV1AdminContentCategoriesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>>
-export type ListCategoriesApiV1AdminContentCategoriesGetQueryError = ErrorType<unknown>
+export type ListContentCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof listContentCategories>>>
+export type ListContentCategoriesQueryError = ErrorType<HTTPValidationError>
 
 
-export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>> & Pick<
+export function useListContentCategories<TData = Awaited<ReturnType<typeof listContentCategories>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListContentCategoriesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentCategories>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>,
+          Awaited<ReturnType<typeof listContentCategories>>,
           TError,
-          Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>
+          Awaited<ReturnType<typeof listContentCategories>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>> & Pick<
+export function useListContentCategories<TData = Awaited<ReturnType<typeof listContentCategories>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListContentCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentCategories>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>,
+          Awaited<ReturnType<typeof listContentCategories>>,
           TError,
-          Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>
+          Awaited<ReturnType<typeof listContentCategories>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useListContentCategories<TData = Awaited<ReturnType<typeof listContentCategories>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListContentCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentCategories>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary 聚合文章分类
+ * @summary 获取内容分类列表
  */
 
-export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesApiV1AdminContentCategoriesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useListContentCategories<TData = Awaited<ReturnType<typeof listContentCategories>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListContentCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentCategories>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListCategoriesApiV1AdminContentCategoriesGetQueryOptions(options)
+  const queryOptions = getListContentCategoriesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -12910,6 +13452,273 @@ export function useListCategoriesApiV1AdminContentCategoriesGet<TData = Awaited<
 
 
 /**
+ * @summary 创建内容分类
+ */
+export type createContentCategoryResponse200 = {
+  data: ContentCategoryRead
+  status: 200
+}
+
+export type createContentCategoryResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createContentCategoryResponseSuccess = (createContentCategoryResponse200) & {
+  headers: Headers;
+};
+export type createContentCategoryResponseError = (createContentCategoryResponse422) & {
+  headers: Headers;
+};
+
+export type createContentCategoryResponse = (createContentCategoryResponseSuccess | createContentCategoryResponseError)
+
+export const getCreateContentCategoryUrl = () => {
+
+
+
+
+  return `/api/v1/admin/content/category-options`
+}
+
+export const createContentCategory = async (contentCategoryCreate: ContentCategoryCreate, options?: RequestInit): Promise<createContentCategoryResponse> => {
+
+  return customInstance<createContentCategoryResponse>(getCreateContentCategoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentCategoryCreate,)
+  }
+);}
+
+
+
+
+export const getCreateContentCategoryMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createContentCategory>>, TError,{data: BodyType<ContentCategoryCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createContentCategory>>, TError,{data: BodyType<ContentCategoryCreate>}, TContext> => {
+
+const mutationKey = ['createContentCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createContentCategory>>, {data: BodyType<ContentCategoryCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createContentCategory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateContentCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof createContentCategory>>>
+    export type CreateContentCategoryMutationBody = BodyType<ContentCategoryCreate>
+    export type CreateContentCategoryMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 创建内容分类
+ */
+export const useCreateContentCategory = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createContentCategory>>, TError,{data: BodyType<ContentCategoryCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createContentCategory>>,
+        TError,
+        {data: BodyType<ContentCategoryCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateContentCategoryMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 更新内容分类
+ */
+export type updateContentCategoryResponse200 = {
+  data: ContentCategoryRead
+  status: 200
+}
+
+export type updateContentCategoryResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateContentCategoryResponseSuccess = (updateContentCategoryResponse200) & {
+  headers: Headers;
+};
+export type updateContentCategoryResponseError = (updateContentCategoryResponse422) & {
+  headers: Headers;
+};
+
+export type updateContentCategoryResponse = (updateContentCategoryResponseSuccess | updateContentCategoryResponseError)
+
+export const getUpdateContentCategoryUrl = (categoryId: string,) => {
+
+
+
+
+  return `/api/v1/admin/content/category-options/${categoryId}`
+}
+
+export const updateContentCategory = async (categoryId: string,
+    contentCategoryUpdate: ContentCategoryUpdate, options?: RequestInit): Promise<updateContentCategoryResponse> => {
+
+  return customInstance<updateContentCategoryResponse>(getUpdateContentCategoryUrl(categoryId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentCategoryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateContentCategoryMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentCategory>>, TError,{categoryId: string;data: BodyType<ContentCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateContentCategory>>, TError,{categoryId: string;data: BodyType<ContentCategoryUpdate>}, TContext> => {
+
+const mutationKey = ['updateContentCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateContentCategory>>, {categoryId: string;data: BodyType<ContentCategoryUpdate>}> = (props) => {
+          const {categoryId,data} = props ?? {};
+
+          return  updateContentCategory(categoryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateContentCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof updateContentCategory>>>
+    export type UpdateContentCategoryMutationBody = BodyType<ContentCategoryUpdate>
+    export type UpdateContentCategoryMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新内容分类
+ */
+export const useUpdateContentCategory = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentCategory>>, TError,{categoryId: string;data: BodyType<ContentCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateContentCategory>>,
+        TError,
+        {categoryId: string;data: BodyType<ContentCategoryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateContentCategoryMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除内容分类
+ */
+export type deleteContentCategoryResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type deleteContentCategoryResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteContentCategoryResponseSuccess = (deleteContentCategoryResponse200) & {
+  headers: Headers;
+};
+export type deleteContentCategoryResponseError = (deleteContentCategoryResponse422) & {
+  headers: Headers;
+};
+
+export type deleteContentCategoryResponse = (deleteContentCategoryResponseSuccess | deleteContentCategoryResponseError)
+
+export const getDeleteContentCategoryUrl = (categoryId: string,) => {
+
+
+
+
+  return `/api/v1/admin/content/category-options/${categoryId}`
+}
+
+export const deleteContentCategory = async (categoryId: string, options?: RequestInit): Promise<deleteContentCategoryResponse> => {
+
+  return customInstance<deleteContentCategoryResponse>(getDeleteContentCategoryUrl(categoryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteContentCategoryMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentCategory>>, TError,{categoryId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteContentCategory>>, TError,{categoryId: string}, TContext> => {
+
+const mutationKey = ['deleteContentCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteContentCategory>>, {categoryId: string}> = (props) => {
+          const {categoryId} = props ?? {};
+
+          return  deleteContentCategory(categoryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteContentCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteContentCategory>>>
+
+    export type DeleteContentCategoryMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除内容分类
+ */
+export const useDeleteContentCategory = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentCategory>>, TError,{categoryId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteContentCategory>>,
+        TError,
+        {categoryId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteContentCategoryMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 导出内容
  */
 export type exportContentApiV1AdminContentExportGetResponse200 = {
@@ -13131,4 +13940,709 @@ export const useImportContentApiV1AdminContentImportPost = <TError = ErrorType<H
         TContext
       > => {
       return useMutation(getImportContentApiV1AdminContentImportPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取访客认证配置
+ */
+export type getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse200 = {
+  data: SiteAuthConfigAdminRead
+  status: 200
+}
+
+export type getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponseSuccess = (getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = (getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponseSuccess)
+
+export const getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/visitors/config`
+}
+
+export const getVisitorAuthConfigApiV1AdminVisitorsConfigGet = async ( options?: RequestInit): Promise<getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse> => {
+
+  return customInstance<getVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse>(getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryKey = () => {
+    return [
+    `/api/v1/admin/visitors/config`
+    ] as const;
+    }
+
+
+export const getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>> = ({ signal }) => getVisitorAuthConfigApiV1AdminVisitorsConfigGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryResult = NonNullable<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>>
+export type GetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryError = ErrorType<unknown>
+
+
+export function useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet<TData = Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet<TData = Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet<TData = Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取访客认证配置
+ */
+
+export function useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet<TData = Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVisitorAuthConfigApiV1AdminVisitorsConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新访客认证配置
+ */
+export type updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse200 = {
+  data: SiteAuthConfigAdminRead
+  status: 200
+}
+
+export type updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponseSuccess = (updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse200) & {
+  headers: Headers;
+};
+export type updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponseError = (updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse422) & {
+  headers: Headers;
+};
+
+export type updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = (updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponseSuccess | updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponseError)
+
+export const getUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/visitors/config`
+}
+
+export const updateVisitorAuthConfigApiV1AdminVisitorsConfigPut = async (siteAuthConfigAdminUpdate: SiteAuthConfigAdminUpdate, options?: RequestInit): Promise<updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse> => {
+
+  return customInstance<updateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse>(getUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      siteAuthConfigAdminUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVisitorAuthConfigApiV1AdminVisitorsConfigPut>>, TError,{data: BodyType<SiteAuthConfigAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVisitorAuthConfigApiV1AdminVisitorsConfigPut>>, TError,{data: BodyType<SiteAuthConfigAdminUpdate>}, TContext> => {
+
+const mutationKey = ['updateVisitorAuthConfigApiV1AdminVisitorsConfigPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVisitorAuthConfigApiV1AdminVisitorsConfigPut>>, {data: BodyType<SiteAuthConfigAdminUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateVisitorAuthConfigApiV1AdminVisitorsConfigPut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateVisitorAuthConfigApiV1AdminVisitorsConfigPut>>>
+    export type UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutMutationBody = BodyType<SiteAuthConfigAdminUpdate>
+    export type UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新访客认证配置
+ */
+export const useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVisitorAuthConfigApiV1AdminVisitorsConfigPut>>, TError,{data: BodyType<SiteAuthConfigAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateVisitorAuthConfigApiV1AdminVisitorsConfigPut>>,
+        TError,
+        {data: BodyType<SiteAuthConfigAdminUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取站点访客用户列表
+ */
+export type listVisitorUsersApiV1AdminVisitorsUsersGetResponse200 = {
+  data: PaginatedResponseSiteUserAdminRead
+  status: 200
+}
+
+export type listVisitorUsersApiV1AdminVisitorsUsersGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listVisitorUsersApiV1AdminVisitorsUsersGetResponseSuccess = (listVisitorUsersApiV1AdminVisitorsUsersGetResponse200) & {
+  headers: Headers;
+};
+export type listVisitorUsersApiV1AdminVisitorsUsersGetResponseError = (listVisitorUsersApiV1AdminVisitorsUsersGetResponse422) & {
+  headers: Headers;
+};
+
+export type listVisitorUsersApiV1AdminVisitorsUsersGetResponse = (listVisitorUsersApiV1AdminVisitorsUsersGetResponseSuccess | listVisitorUsersApiV1AdminVisitorsUsersGetResponseError)
+
+export const getListVisitorUsersApiV1AdminVisitorsUsersGetUrl = (params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/visitors/users?${stringifiedParams}` : `/api/v1/admin/visitors/users`
+}
+
+export const listVisitorUsersApiV1AdminVisitorsUsersGet = async (params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams, options?: RequestInit): Promise<listVisitorUsersApiV1AdminVisitorsUsersGetResponse> => {
+
+  return customInstance<listVisitorUsersApiV1AdminVisitorsUsersGetResponse>(getListVisitorUsersApiV1AdminVisitorsUsersGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey = (params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams,) => {
+    return [
+    `/api/v1/admin/visitors/users`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListVisitorUsersApiV1AdminVisitorsUsersGetQueryOptions = <TData = Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>> = ({ signal }) => listVisitorUsersApiV1AdminVisitorsUsersGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListVisitorUsersApiV1AdminVisitorsUsersGetQueryResult = NonNullable<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>>
+export type ListVisitorUsersApiV1AdminVisitorsUsersGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListVisitorUsersApiV1AdminVisitorsUsersGet<TData = Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListVisitorUsersApiV1AdminVisitorsUsersGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>,
+          TError,
+          Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVisitorUsersApiV1AdminVisitorsUsersGet<TData = Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>,
+          TError,
+          Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVisitorUsersApiV1AdminVisitorsUsersGet<TData = Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取站点访客用户列表
+ */
+
+export function useListVisitorUsersApiV1AdminVisitorsUsersGet<TData = Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListVisitorUsersApiV1AdminVisitorsUsersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listVisitorUsersApiV1AdminVisitorsUsersGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListVisitorUsersApiV1AdminVisitorsUsersGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取管理员前台身份绑定
+ */
+export type listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse200 = {
+  data: SiteAdminIdentityAdminRead[]
+  status: 200
+}
+
+export type listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponseSuccess = (listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse = (listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponseSuccess)
+
+export const getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/visitors/admin-identities`
+}
+
+export const listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet = async ( options?: RequestInit): Promise<listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse> => {
+
+  return customInstance<listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse>(getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey = () => {
+    return [
+    `/api/v1/admin/visitors/admin-identities`
+    ] as const;
+    }
+
+
+export const getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryOptions = <TData = Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>> = ({ signal }) => listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>>
+export type ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryError = ErrorType<unknown>
+
+
+export function useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet<TData = Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet<TData = Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet<TData = Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取管理员前台身份绑定
+ */
+
+export function useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet<TData = Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 通过邮箱绑定管理员前台身份
+ */
+export type bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse200 = {
+  data: SiteAdminIdentityAdminRead
+  status: 200
+}
+
+export type bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponseSuccess = (bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse200) & {
+  headers: Headers;
+};
+export type bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponseError = (bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse422) & {
+  headers: Headers;
+};
+
+export type bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse = (bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponseSuccess | bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponseError)
+
+export const getBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/visitors/admin-identities/email`
+}
+
+export const bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost = async (siteAdminEmailIdentityBindRequest: SiteAdminEmailIdentityBindRequest, options?: RequestInit): Promise<bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse> => {
+
+  return customInstance<bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse>(getBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      siteAdminEmailIdentityBindRequest,)
+  }
+);}
+
+
+
+
+export const getBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost>>, TError,{data: BodyType<SiteAdminEmailIdentityBindRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost>>, TError,{data: BodyType<SiteAdminEmailIdentityBindRequest>}, TContext> => {
+
+const mutationKey = ['bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost>>, {data: BodyType<SiteAdminEmailIdentityBindRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostMutationResult = NonNullable<Awaited<ReturnType<typeof bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost>>>
+    export type BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostMutationBody = BodyType<SiteAdminEmailIdentityBindRequest>
+    export type BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 通过邮箱绑定管理员前台身份
+ */
+export const useBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost>>, TError,{data: BodyType<SiteAdminEmailIdentityBindRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost>>,
+        TError,
+        {data: BodyType<SiteAdminEmailIdentityBindRequest>},
+        TContext
+      > => {
+      return useMutation(getBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 绑定当前前台登录身份为管理员
+ */
+export type bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse200 = {
+  data: SiteAdminIdentityAdminRead
+  status: 200
+}
+
+export type bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponseSuccess = (bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse200) & {
+  headers: Headers;
+};
+export type bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponseError = (bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse422) & {
+  headers: Headers;
+};
+
+export type bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse = (bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponseSuccess | bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponseError)
+
+export const getBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostUrl = (params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/visitors/admin-identities/bind-current?${stringifiedParams}` : `/api/v1/admin/visitors/admin-identities/bind-current`
+}
+
+export const bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost = async (params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams, options?: RequestInit): Promise<bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse> => {
+
+  return customInstance<bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse>(getBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostUrl(params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost>>, TError,{params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost>>, TError,{params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams}, TContext> => {
+
+const mutationKey = ['bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost>>, {params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostMutationResult = NonNullable<Awaited<ReturnType<typeof bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost>>>
+
+    export type BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 绑定当前前台登录身份为管理员
+ */
+export const useBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost>>, TError,{params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost>>,
+        TError,
+        {params: BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams},
+        TContext
+      > => {
+      return useMutation(getBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除管理员前台身份绑定
+ */
+export type deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponseSuccess = (deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponseError = (deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse = (deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponseSuccess | deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponseError)
+
+export const getDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteUrl = (identityId: string,) => {
+
+
+
+
+  return `/api/v1/admin/visitors/admin-identities/${identityId}`
+}
+
+export const deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete = async (identityId: string, options?: RequestInit): Promise<deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse> => {
+
+  return customInstance<deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteResponse>(getDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteUrl(identityId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete>>, TError,{identityId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete>>, TError,{identityId: string}, TContext> => {
+
+const mutationKey = ['deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete>>, {identityId: string}> = (props) => {
+          const {identityId} = props ?? {};
+
+          return  deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete(identityId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete>>>
+
+    export type DeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除管理员前台身份绑定
+ */
+export const useDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete>>, TError,{identityId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete>>,
+        TError,
+        {identityId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDeleteMutationOptions(options), queryClient);
     }

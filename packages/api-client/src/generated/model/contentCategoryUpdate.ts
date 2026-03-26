@@ -5,9 +5,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CategoryInfo {
-  /** Category name */
+export interface ContentCategoryUpdate {
+  /**
+     * Category name
+     * @minLength 1
+     * @maxLength 80
+     */
   name: string;
-  /** Number of entries in this category */
-  count: number;
 }

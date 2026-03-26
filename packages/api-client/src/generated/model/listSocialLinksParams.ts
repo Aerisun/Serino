@@ -16,6 +16,7 @@ page?: number;
  */
 page_size?: number;
 status?: string | null;
+visibility?: string | null;
 tag?: string | null;
 search?: string | null;
 sort_by?: string;

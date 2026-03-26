@@ -19,6 +19,7 @@ export default defineConfig({
           "admin-system",
           "admin-content-meta",
           "admin-import-export",
+          "admin-visitors",
         ],
       },
     },

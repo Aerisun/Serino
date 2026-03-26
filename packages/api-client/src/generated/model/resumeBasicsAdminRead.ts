@@ -16,6 +16,22 @@ export interface ResumeBasicsAdminRead {
   summary: string;
   /** Download button label */
   download_label: string;
+  /** Selected resume template key */
+  template_key: string;
+  /** Selected accent tone */
+  accent_tone: string;
+  /** Current base location */
+  location: string;
+  /** Availability note */
+  availability: string;
+  /** Primary contact email */
+  email: string;
+  /** Primary website */
+  website: string;
+  /** Profile image URL */
+  profile_image_url: string;
+  /** Featured resume highlights */
+  highlights: string[];
   /** Creation timestamp */
   created_at: string;
   /** Last update timestamp */

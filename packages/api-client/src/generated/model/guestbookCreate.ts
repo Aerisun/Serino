@@ -16,4 +16,6 @@ export interface GuestbookCreate {
   body: string;
   /** Selected guest avatar preset key */
   avatar_key?: string | null;
+  /** Waline login token for authenticated posting */
+  auth_token?: string | null;
 }

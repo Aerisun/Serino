@@ -14,8 +14,16 @@ export interface ResumeExperienceCreate {
   company: string;
   /** Employment period (e.g. 2020-2023) */
   period: string;
+  /** Experience location */
+  location?: string;
+  /** Employment type */
+  employment_type?: string;
   /** Role description and achievements */
   summary: string;
+  /** Achievement bullet points */
+  achievements?: string[];
+  /** Technologies used */
+  tech_stack?: string[];
   /** Display order (lower first) */
   order_index?: number;
 }

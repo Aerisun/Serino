@@ -4,11 +4,20 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AssetAdminReadScope } from './assetAdminReadScope';
+import type { AssetAdminReadVisibility } from './assetAdminReadVisibility';
 
 export interface AssetAdminRead {
   id: string;
   file_name: string;
+  resource_key: string;
+  visibility: AssetAdminReadVisibility;
+  scope: AssetAdminReadScope;
+  category: string;
+  note: string | null;
   storage_path: string;
+  internal_url: string;
+  public_url: string | null;
   mime_type: string | null;
   byte_size: number | null;
   sha256: string | null;

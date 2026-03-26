@@ -21,6 +21,10 @@ export interface SiteProfileUpdate {
   author?: string | null;
   /** Open Graph image path */
   og_image?: string | null;
+  /** Hero image path */
+  hero_image_url?: string | null;
+  /** Hero video poster image path */
+  hero_poster_url?: string | null;
   /** Meta description for SEO */
   meta_description?: string | null;
   /** Copyright notice */
@@ -29,6 +33,12 @@ export interface SiteProfileUpdate {
   hero_actions?: string | null;
   /** Hero background video URL */
   hero_video_url?: string | null;
+  /** Poem source mode */
+  poem_source?: 'custom' | 'hitokoto' | null;
+  /** Hitokoto category codes */
+  poem_hitokoto_types?: string[] | null;
+  /** Hitokoto preferred keywords */
+  poem_hitokoto_keywords?: string[] | null;
   /** Feature toggle flags */
   feature_flags?: SiteProfileUpdateFeatureFlags;
 }

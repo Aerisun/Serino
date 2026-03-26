@@ -16,6 +16,22 @@ export interface ResumeRead {
   summary: string;
   /** PDF download label */
   download_label: string;
+  /** Selected resume template key */
+  template_key?: string;
+  /** Selected accent tone */
+  accent_tone?: string;
+  /** Current base location */
+  location?: string;
+  /** Availability note */
+  availability?: string;
+  /** Primary contact email */
+  email?: string;
+  /** Primary website */
+  website?: string;
+  /** Profile image URL */
+  profile_image_url?: string;
+  /** Featured resume highlights */
+  highlights?: string[];
   /** Skill categories and items */
   skill_groups: ResumeSkillGroupRead[];
   /** Work experience entries */

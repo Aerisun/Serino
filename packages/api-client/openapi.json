@@ -537,6 +537,24 @@
         ],
         "summary": "提交留言",
         "operationId": "create_guestbook_api_v1_public_guestbook_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -644,6 +662,22 @@
             "schema": {
               "type": "string",
               "title": "Slug"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
             }
           }
         ],
@@ -1034,6 +1068,397 @@
         }
       }
     },
+    "/api/v1/public/auth/me": {
+      "get": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "获取当前站点用户状态",
+        "operationId": "read_site_auth_state_api_v1_public_auth_me_get",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthStateRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "更新当前站点用户资料",
+        "operationId": "update_my_profile_api_v1_public_auth_me_patch",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteAuthProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthUserRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/auth/avatar-candidates": {
+      "get": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "获取头像候选",
+        "operationId": "read_avatar_candidates_api_v1_public_auth_avatar_candidates_get",
+        "parameters": [
+          {
+            "name": "identity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Identity"
+            }
+          },
+          {
+            "name": "batch",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Batch"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthAvatarCandidateBatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/auth/email": {
+      "post": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "通过邮箱识别登录",
+        "operationId": "email_login_api_v1_public_auth_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/auth/logout": {
+      "post": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "站点用户登出",
+        "operationId": "logout_api_v1_public_auth_logout_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/auth/oauth/{provider}/start": {
+      "get": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "获取 OAuth 跳转地址",
+        "operationId": "oauth_start_api_v1_public_auth_oauth__provider__start_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "return_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/",
+              "title": "Return To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/auth/oauth/{provider}/callback": {
+      "get": {
+        "tags": [
+          "public-auth"
+        ],
+        "summary": "处理 OAuth 回调",
+        "operationId": "oauth_callback_api_v1_public_auth_oauth__provider__callback_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "aerisun_site_oauth_state",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Oauth State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/auth/login": {
       "post": {
         "tags": [
@@ -1052,6 +1477,120 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/options": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-auth"
+        ],
+        "summary": "获取管理员登录方式",
+        "operationId": "login_options_api_v1_admin_auth_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginOptionsRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/email": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-auth"
+        ],
+        "summary": "通过管理员邮箱登录",
+        "operationId": "login_with_bound_email_api_v1_admin_auth_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminEmailLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/auth/exchange-site-user": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-auth"
+        ],
+        "summary": "将当前前台管理员身份换成后台登录",
+        "operationId": "exchange_site_user_login_api_v1_admin_auth_exchange_site_user_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1333,6 +1872,22 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
             }
           },
           {
@@ -1748,6 +2303,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -2160,6 +2731,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -2569,6 +3156,22 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
             }
           },
           {
@@ -3129,6 +3732,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -3545,6 +4164,22 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
             }
           },
           {
@@ -3967,6 +4602,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -4383,6 +5034,22 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
             }
           },
           {
@@ -4860,6 +5527,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -5276,6 +5959,22 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
             }
           },
           {
@@ -5698,6 +6397,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -6117,6 +6832,22 @@
             }
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
+            }
+          },
+          {
             "name": "tag",
             "in": "query",
             "required": false,
@@ -6533,6 +7264,22 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visibility"
             }
           },
           {
@@ -7664,6 +8411,34 @@
               "default": 20,
               "title": "Page Size"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(system|user)$",
+              "default": "user",
+              "title": "Scope"
+            }
           }
         ],
         "responses": {
@@ -7806,6 +8581,62 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "admin",
+          "admin-assets"
+        ],
+        "summary": "更新资源",
+        "operationId": "update_asset_endpoint_api_v1_admin_assets__asset_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Asset Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetAdminUpdate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8299,6 +9130,142 @@
         ]
       }
     },
+    "/api/v1/admin/system/visitor-records": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "获取访客访问记录",
+        "operationId": "visitor_records_api_v1_admin_system_visitor_records_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          },
+          {
+            "name": "ip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ip"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "include_bots",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Bots"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_VisitorRecordRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/system/info": {
       "get": {
         "tags": [
@@ -8357,35 +9324,210 @@
         ]
       }
     },
-    "/api/v1/admin/content/categories": {
+    "/api/v1/admin/content/category-options": {
       "get": {
         "tags": [
           "admin",
           "admin-content-meta"
         ],
-        "summary": "聚合文章分类",
-        "operationId": "list_categories_api_v1_admin_content_categories_get",
+        "summary": "获取内容分类列表",
+        "operationId": "list_content_categories",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "content_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Content Type"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/CategoryInfo"
-                  },
                   "type": "array",
-                  "title": "Response List Categories Api V1 Admin Content Categories Get"
+                  "items": {
+                    "$ref": "#/components/schemas/ContentCategoryRead"
+                  },
+                  "title": "Response List Content Categories"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
+        }
+      },
+      "post": {
+        "tags": [
+          "admin",
+          "admin-content-meta"
+        ],
+        "summary": "创建内容分类",
+        "operationId": "create_content_category",
         "security": [
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentCategoryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentCategoryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/content/category-options/{category_id}": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin-content-meta"
+        ],
+        "summary": "更新内容分类",
+        "operationId": "update_content_category",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentCategoryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentCategoryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-content-meta"
+        ],
+        "summary": "删除内容分类",
+        "operationId": "delete_content_category",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/content/export": {
@@ -8492,6 +9634,359 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/visitors/config": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "获取访客认证配置",
+        "operationId": "get_visitor_auth_config_api_v1_admin_visitors_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthConfigAdminRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "更新访客认证配置",
+        "operationId": "update_visitor_auth_config_api_v1_admin_visitors_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteAuthConfigAdminUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthConfigAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/visitors/users": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "获取站点访客用户列表",
+        "operationId": "list_visitor_users_api_v1_admin_visitors_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "email",
+                "binding"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_SiteUserAdminRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/visitors/admin-identities": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "获取管理员前台身份绑定",
+        "operationId": "list_admin_identities_api_v1_admin_visitors_admin_identities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SiteAdminIdentityAdminRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Admin Identities Api V1 Admin Visitors Admin Identities Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/visitors/admin-identities/email": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "通过邮箱绑定管理员前台身份",
+        "operationId": "bind_admin_identity_email_api_v1_admin_visitors_admin_identities_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteAdminEmailIdentityBindRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAdminIdentityAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/visitors/admin-identities/bind-current": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "绑定当前前台登录身份为管理员",
+        "operationId": "bind_current_admin_identity_api_v1_admin_visitors_admin_identities_bind_current_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "google",
+                "github"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAdminIdentityAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/visitors/admin-identities/{identity_id}": {
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-visitors"
+        ],
+        "summary": "删除管理员前台身份绑定",
+        "operationId": "delete_admin_identity_endpoint_api_v1_admin_visitors_admin_identities__identity_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -8691,6 +10186,37 @@
           "label"
         ],
         "title": "ActivityHeatmapWeekRead"
+      },
+      "AdminEmailLoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "AdminEmailLoginRequest"
+      },
+      "AdminLoginOptionsRead": {
+        "properties": {
+          "oauth_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Oauth Providers"
+          },
+          "email_enabled": {
+            "type": "boolean",
+            "title": "Email Enabled",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AdminLoginOptionsRead"
       },
       "AdminProfileUpdate": {
         "properties": {
@@ -8902,9 +10428,59 @@
             "type": "string",
             "title": "File Name"
           },
+          "resource_key": {
+            "type": "string",
+            "title": "Resource Key"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "internal",
+              "public"
+            ],
+            "title": "Visibility"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user"
+            ],
+            "title": "Scope"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
           "storage_path": {
             "type": "string",
             "title": "Storage Path"
+          },
+          "internal_url": {
+            "type": "string",
+            "title": "Internal Url"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Url"
           },
           "mime_type": {
             "anyOf": [
@@ -8954,7 +10530,14 @@
         "required": [
           "id",
           "file_name",
+          "resource_key",
+          "visibility",
+          "scope",
+          "category",
+          "note",
           "storage_path",
+          "internal_url",
+          "public_url",
           "mime_type",
           "byte_size",
           "sha256",
@@ -8962,6 +10545,64 @@
           "updated_at"
         ],
         "title": "AssetAdminRead"
+      },
+      "AssetAdminUpdate": {
+        "properties": {
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "internal",
+                  "public"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "AssetAdminUpdate"
       },
       "AuditLogRead": {
         "properties": {
@@ -9143,6 +10784,32 @@
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "File"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility",
+            "default": "internal"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": "user"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "general"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           }
         },
         "type": "object",
@@ -9208,6 +10875,11 @@
           },
           "status": {
             "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
             "title": "Status",
             "description": "New status value to set"
           }
@@ -9285,26 +10957,6 @@
           "events"
         ],
         "title": "CalendarRead"
-      },
-      "CategoryInfo": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "Category name"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count",
-            "description": "Number of entries in this category"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "count"
-        ],
-        "title": "CategoryInfo"
       },
       "CommentAdminRead": {
         "properties": {
@@ -9445,6 +11097,18 @@
             ],
             "title": "Avatar Key",
             "description": "Selected comment avatar preset key"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "Waline login token for authenticated posting"
           }
         },
         "type": "object",
@@ -10533,6 +12197,81 @@
         ],
         "title": "ContentAdminRead"
       },
+      "ContentCategoryCreate": {
+        "properties": {
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "posts",
+              "thoughts",
+              "excerpts"
+            ],
+            "title": "Content Type",
+            "description": "Content type bucket"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Category name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content_type",
+          "name"
+        ],
+        "title": "ContentCategoryCreate"
+      },
+      "ContentCategoryRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Category identifier"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type",
+            "description": "Content type bucket"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Category name"
+          },
+          "usage_count": {
+            "type": "integer",
+            "title": "Usage Count",
+            "description": "How many entries use this category",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "content_type",
+          "name"
+        ],
+        "title": "ContentCategoryRead"
+      },
+      "ContentCategoryUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Category name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ContentCategoryUpdate"
+      },
       "ContentCollectionRead": {
         "properties": {
           "items": {
@@ -10601,12 +12340,21 @@
           },
           "status": {
             "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
             "title": "Status",
-            "description": "Publication status: draft, published, or archived",
+            "description": "Publication status: draft, public publish, or private archive",
             "default": "draft"
           },
           "visibility": {
             "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ],
             "title": "Visibility",
             "description": "Visibility level: public or private",
             "default": "public"
@@ -11035,7 +12783,12 @@
           "status": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "published",
+                  "archived"
+                ]
               },
               {
                 "type": "null"
@@ -11047,7 +12800,11 @@
           "visibility": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "public",
+                  "private"
+                ]
               },
               {
                 "type": "null"
@@ -11181,6 +12938,241 @@
         "type": "object",
         "title": "ContentUpdate"
       },
+      "DashboardAuxMetrics": {
+        "properties": {
+          "pending_moderation": {
+            "type": "integer",
+            "title": "Pending Moderation",
+            "default": 0
+          },
+          "published_posts": {
+            "type": "integer",
+            "title": "Published Posts",
+            "default": 0
+          },
+          "published_diary_entries": {
+            "type": "integer",
+            "title": "Published Diary Entries",
+            "default": 0
+          },
+          "published_thoughts": {
+            "type": "integer",
+            "title": "Published Thoughts",
+            "default": 0
+          },
+          "published_excerpts": {
+            "type": "integer",
+            "title": "Published Excerpts",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "DashboardAuxMetrics"
+      },
+      "DashboardTrafficMetrics": {
+        "properties": {
+          "total_views": {
+            "type": "integer",
+            "title": "Total Views",
+            "default": 0
+          },
+          "top_pages": {
+            "items": {
+              "$ref": "#/components/schemas/TopPageMetric"
+            },
+            "type": "array",
+            "title": "Top Pages"
+          },
+          "distribution": {
+            "items": {
+              "$ref": "#/components/schemas/TopPageMetric"
+            },
+            "type": "array",
+            "title": "Distribution"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/TrafficTrendPoint"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "last_snapshot_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Snapshot At"
+          }
+        },
+        "type": "object",
+        "title": "DashboardTrafficMetrics"
+      },
+      "DashboardVisitorMetrics": {
+        "properties": {
+          "total_visits": {
+            "type": "integer",
+            "title": "Total Visits",
+            "default": 0
+          },
+          "unique_visitors_24h": {
+            "type": "integer",
+            "title": "Unique Visitors 24H",
+            "default": 0
+          },
+          "unique_visitors_7d": {
+            "type": "integer",
+            "title": "Unique Visitors 7D",
+            "default": 0
+          },
+          "average_request_duration_ms": {
+            "type": "integer",
+            "title": "Average Request Duration Ms",
+            "default": 0
+          },
+          "top_pages": {
+            "items": {
+              "$ref": "#/components/schemas/TopPageMetric"
+            },
+            "type": "array",
+            "title": "Top Pages"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/TrafficTrendPoint"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "recent_visits": {
+            "items": {
+              "$ref": "#/components/schemas/VisitorRecordRead"
+            },
+            "type": "array",
+            "title": "Recent Visits"
+          },
+          "last_visit_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Visit At"
+          }
+        },
+        "type": "object",
+        "title": "DashboardVisitorMetrics"
+      },
+      "EmailLoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Email identifier"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "Optional display name for first login"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url",
+            "description": "Optional avatar URL for first login"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "EmailLoginRequest"
+      },
+      "EmailLoginResponse": {
+        "properties": {
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated",
+            "description": "Whether a login session was created"
+          },
+          "requires_profile": {
+            "type": "boolean",
+            "title": "Requires Profile",
+            "description": "Whether first-login profile setup is required",
+            "default": false
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteAuthUserRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current site user when authenticated"
+          },
+          "suggested_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Display Name",
+            "description": "Suggested display name for first login"
+          },
+          "avatar_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/SiteAuthAvatarCandidate"
+            },
+            "type": "array",
+            "title": "Avatar Candidates",
+            "description": "Avatar candidates"
+          },
+          "avatar_batch": {
+            "type": "integer",
+            "title": "Avatar Batch",
+            "description": "Current avatar candidate batch",
+            "default": 0
+          },
+          "avatar_total_batches": {
+            "type": "integer",
+            "title": "Avatar Total Batches",
+            "description": "Total number of avatar candidate batches",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "authenticated"
+        ],
+        "title": "EmailLoginResponse"
+      },
       "EnhancedDashboardStats": {
         "properties": {
           "posts": {
@@ -11235,6 +13227,15 @@
             },
             "type": "array",
             "title": "Recent Content"
+          },
+          "traffic": {
+            "$ref": "#/components/schemas/DashboardTrafficMetrics"
+          },
+          "visitors": {
+            "$ref": "#/components/schemas/DashboardVisitorMetrics"
+          },
+          "aux_metrics": {
+            "$ref": "#/components/schemas/DashboardAuxMetrics"
           }
         },
         "type": "object",
@@ -11976,6 +13977,18 @@
             ],
             "title": "Avatar Key",
             "description": "Selected guest avatar preset key"
+          },
+          "auth_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Token",
+            "description": "Waline login token for authenticated posting"
           }
         },
         "type": "object",
@@ -12629,6 +14642,20 @@
           "order_index"
         ],
         "title": "NavReorderItem"
+      },
+      "OAuthStartResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url",
+            "description": "Provider authorization URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url"
+        ],
+        "title": "OAuthStartResponse"
       },
       "PageCollectionRead": {
         "properties": {
@@ -13773,6 +15800,41 @@
         ],
         "title": "PaginatedResponse[ResumeSkillGroupAdminRead]"
       },
+      "PaginatedResponse_SiteUserAdminRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SiteUserAdminRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[SiteUserAdminRead]"
+      },
       "PaginatedResponse_SocialLinkAdminRead_": {
         "properties": {
           "items": {
@@ -13807,6 +15869,41 @@
           "page_size"
         ],
         "title": "PaginatedResponse[SocialLinkAdminRead]"
+      },
+      "PaginatedResponse_VisitorRecordRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisitorRecordRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[VisitorRecordRead]"
       },
       "PasswordChangeRequest": {
         "properties": {
@@ -14160,6 +16257,49 @@
             "title": "Download Label",
             "description": "Download button label"
           },
+          "template_key": {
+            "type": "string",
+            "title": "Template Key",
+            "description": "Selected resume template key"
+          },
+          "accent_tone": {
+            "type": "string",
+            "title": "Accent Tone",
+            "description": "Selected accent tone"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Current base location"
+          },
+          "availability": {
+            "type": "string",
+            "title": "Availability",
+            "description": "Availability note"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Primary contact email"
+          },
+          "website": {
+            "type": "string",
+            "title": "Website",
+            "description": "Primary website"
+          },
+          "profile_image_url": {
+            "type": "string",
+            "title": "Profile Image Url",
+            "description": "Profile image URL"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Highlights",
+            "description": "Featured resume highlights"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -14180,6 +16320,14 @@
           "subtitle",
           "summary",
           "download_label",
+          "template_key",
+          "accent_tone",
+          "location",
+          "availability",
+          "email",
+          "website",
+          "profile_image_url",
+          "highlights",
           "created_at",
           "updated_at"
         ],
@@ -14206,6 +16354,56 @@
             "type": "string",
             "title": "Download Label",
             "description": "PDF download button label"
+          },
+          "template_key": {
+            "type": "string",
+            "title": "Template Key",
+            "description": "Selected resume template key",
+            "default": "editorial"
+          },
+          "accent_tone": {
+            "type": "string",
+            "title": "Accent Tone",
+            "description": "Selected accent tone",
+            "default": "amber"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Current base location",
+            "default": ""
+          },
+          "availability": {
+            "type": "string",
+            "title": "Availability",
+            "description": "Availability note",
+            "default": ""
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Primary contact email",
+            "default": ""
+          },
+          "website": {
+            "type": "string",
+            "title": "Website",
+            "description": "Primary website",
+            "default": ""
+          },
+          "profile_image_url": {
+            "type": "string",
+            "title": "Profile Image Url",
+            "description": "Profile image URL",
+            "default": ""
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Highlights",
+            "description": "Featured resume highlights"
           }
         },
         "type": "object",
@@ -14266,6 +16464,105 @@
             ],
             "title": "Download Label",
             "description": "Download button label"
+          },
+          "template_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Key",
+            "description": "Selected resume template key"
+          },
+          "accent_tone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accent Tone",
+            "description": "Selected accent tone"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Current base location"
+          },
+          "availability": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availability",
+            "description": "Availability note"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "Primary contact email"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website",
+            "description": "Primary website"
+          },
+          "profile_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Image Url",
+            "description": "Profile image URL"
+          },
+          "highlights": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlights",
+            "description": "Featured resume highlights"
           }
         },
         "type": "object",
@@ -14298,10 +16595,36 @@
             "title": "Period",
             "description": "Employment period"
           },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Experience location"
+          },
+          "employment_type": {
+            "type": "string",
+            "title": "Employment Type",
+            "description": "Employment type"
+          },
           "summary": {
             "type": "string",
             "title": "Summary",
             "description": "Role description"
+          },
+          "achievements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Achievements",
+            "description": "Achievement bullet points"
+          },
+          "tech_stack": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tech Stack",
+            "description": "Technologies used"
           },
           "order_index": {
             "type": "integer",
@@ -14328,7 +16651,11 @@
           "title",
           "company",
           "period",
+          "location",
+          "employment_type",
           "summary",
+          "achievements",
+          "tech_stack",
           "order_index",
           "created_at",
           "updated_at"
@@ -14364,10 +16691,38 @@
             "title": "Period",
             "description": "Employment period (e.g. 2020-2023)"
           },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Experience location",
+            "default": ""
+          },
+          "employment_type": {
+            "type": "string",
+            "title": "Employment Type",
+            "description": "Employment type",
+            "default": ""
+          },
           "summary": {
             "type": "string",
             "title": "Summary",
             "description": "Role description and achievements"
+          },
+          "achievements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Achievements",
+            "description": "Achievement bullet points"
+          },
+          "tech_stack": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tech Stack",
+            "description": "Technologies used"
           },
           "order_index": {
             "type": "integer",
@@ -14402,10 +16757,38 @@
             "title": "Period",
             "description": "Employment period"
           },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Experience location",
+            "default": ""
+          },
+          "employment_type": {
+            "type": "string",
+            "title": "Employment Type",
+            "description": "Employment type",
+            "default": ""
+          },
           "summary": {
             "type": "string",
             "title": "Summary",
             "description": "Role description"
+          },
+          "achievements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Achievements",
+            "description": "Achievement bullet points"
+          },
+          "tech_stack": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tech Stack",
+            "description": "Technologies used"
           },
           "order_index": {
             "type": "integer",
@@ -14461,6 +16844,30 @@
             "title": "Period",
             "description": "Employment period"
           },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Experience location"
+          },
+          "employment_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employment Type",
+            "description": "Employment type"
+          },
           "summary": {
             "anyOf": [
               {
@@ -14472,6 +16879,36 @@
             ],
             "title": "Summary",
             "description": "Role description"
+          },
+          "achievements": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Achievements",
+            "description": "Achievement bullet points"
+          },
+          "tech_stack": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tech Stack",
+            "description": "Technologies used"
           },
           "order_index": {
             "anyOf": [
@@ -14510,6 +16947,56 @@
             "type": "string",
             "title": "Download Label",
             "description": "PDF download label"
+          },
+          "template_key": {
+            "type": "string",
+            "title": "Template Key",
+            "description": "Selected resume template key",
+            "default": "editorial"
+          },
+          "accent_tone": {
+            "type": "string",
+            "title": "Accent Tone",
+            "description": "Selected accent tone",
+            "default": "amber"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Current base location",
+            "default": ""
+          },
+          "availability": {
+            "type": "string",
+            "title": "Availability",
+            "description": "Availability note",
+            "default": ""
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Primary contact email",
+            "default": ""
+          },
+          "website": {
+            "type": "string",
+            "title": "Website",
+            "description": "Primary website",
+            "default": ""
+          },
+          "profile_image_url": {
+            "type": "string",
+            "title": "Profile Image Url",
+            "description": "Profile image URL",
+            "default": ""
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Highlights",
+            "description": "Featured resume highlights"
           },
           "skill_groups": {
             "items": {
@@ -14776,6 +17263,471 @@
         ],
         "title": "SearchResultItem"
       },
+      "SiteAdminEmailIdentityBindRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Admin email identifier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "SiteAdminEmailIdentityBindRequest"
+      },
+      "SiteAdminIdentityAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Admin identity id"
+          },
+          "site_user_id": {
+            "type": "string",
+            "title": "Site User Id",
+            "description": "Bound site user id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "email",
+              "google",
+              "github"
+            ],
+            "title": "Provider",
+            "description": "Bound auth provider"
+          },
+          "identifier": {
+            "type": "string",
+            "title": "Identifier",
+            "description": "Provider identifier used for the binding"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Normalized email used by the binding"
+          },
+          "site_user_display_name": {
+            "type": "string",
+            "title": "Site User Display Name",
+            "description": "Underlying site user display name"
+          },
+          "site_user_avatar_url": {
+            "type": "string",
+            "title": "Site User Avatar Url",
+            "description": "Underlying site user avatar"
+          },
+          "provider_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Display Name",
+            "description": "Provider-side display name if present"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "site_user_id",
+          "provider",
+          "identifier",
+          "email",
+          "site_user_display_name",
+          "site_user_avatar_url",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SiteAdminIdentityAdminRead"
+      },
+      "SiteAuthAvatarCandidate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Avatar option key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Avatar option label"
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "description": "Avatar option URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "avatar_url"
+        ],
+        "title": "SiteAuthAvatarCandidate"
+      },
+      "SiteAuthAvatarCandidateBatchRead": {
+        "properties": {
+          "batch": {
+            "type": "integer",
+            "title": "Batch",
+            "description": "Current avatar candidate batch"
+          },
+          "total_batches": {
+            "type": "integer",
+            "title": "Total Batches",
+            "description": "Total number of avatar candidate batches"
+          },
+          "avatar_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/SiteAuthAvatarCandidate"
+            },
+            "type": "array",
+            "title": "Avatar Candidates",
+            "description": "Avatar candidates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "batch",
+          "total_batches"
+        ],
+        "title": "SiteAuthAvatarCandidateBatchRead"
+      },
+      "SiteAuthConfigAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Visitor auth config id"
+          },
+          "email_login_enabled": {
+            "type": "boolean",
+            "title": "Email Login Enabled",
+            "description": "Whether email login is enabled"
+          },
+          "visitor_oauth_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Visitor Oauth Providers",
+            "description": "OAuth providers enabled for visitor binding"
+          },
+          "admin_auth_methods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Admin Auth Methods",
+            "description": "Auth methods reserved for admin-side usage"
+          },
+          "admin_email_enabled": {
+            "type": "boolean",
+            "title": "Admin Email Enabled",
+            "description": "Whether email can be used as an admin identity"
+          },
+          "google_client_id": {
+            "type": "string",
+            "title": "Google Client Id",
+            "description": "Google OAuth client id"
+          },
+          "google_client_secret": {
+            "type": "string",
+            "title": "Google Client Secret",
+            "description": "Google OAuth client secret"
+          },
+          "github_client_id": {
+            "type": "string",
+            "title": "Github Client Id",
+            "description": "GitHub OAuth client id"
+          },
+          "github_client_secret": {
+            "type": "string",
+            "title": "Github Client Secret",
+            "description": "GitHub OAuth client secret"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email_login_enabled",
+          "admin_email_enabled",
+          "google_client_id",
+          "google_client_secret",
+          "github_client_id",
+          "github_client_secret",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SiteAuthConfigAdminRead"
+      },
+      "SiteAuthConfigAdminUpdate": {
+        "properties": {
+          "email_login_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Login Enabled",
+            "description": "Whether email login remains enabled"
+          },
+          "visitor_oauth_providers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visitor Oauth Providers",
+            "description": "OAuth providers enabled for visitor binding"
+          },
+          "admin_auth_methods": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Auth Methods",
+            "description": "Auth methods reserved for admin-side usage"
+          },
+          "admin_email_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Email Enabled",
+            "description": "Whether email can be used as admin login"
+          },
+          "google_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Client Id",
+            "description": "Google OAuth client id"
+          },
+          "google_client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Client Secret",
+            "description": "Google OAuth client secret"
+          },
+          "github_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Client Id",
+            "description": "GitHub OAuth client id"
+          },
+          "github_client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Client Secret",
+            "description": "GitHub OAuth client secret"
+          }
+        },
+        "type": "object",
+        "title": "SiteAuthConfigAdminUpdate"
+      },
+      "SiteAuthProfileUpdateRequest": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Updated display name"
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "description": "Updated avatar URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "avatar_url"
+        ],
+        "title": "SiteAuthProfileUpdateRequest"
+      },
+      "SiteAuthStateRead": {
+        "properties": {
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated",
+            "description": "Whether the current request is authenticated"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteAuthUserRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current site user"
+          },
+          "email_login_enabled": {
+            "type": "boolean",
+            "title": "Email Login Enabled",
+            "description": "Whether email login is enabled",
+            "default": true
+          },
+          "oauth_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Oauth Providers",
+            "description": "Enabled oauth providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authenticated"
+        ],
+        "title": "SiteAuthStateRead"
+      },
+      "SiteAuthUserRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Public site user id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Login identifier email"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Display name"
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "description": "Public avatar URL"
+          },
+          "effective_display_name": {
+            "type": "string",
+            "title": "Effective Display Name",
+            "description": "Display name currently used in public surfaces"
+          },
+          "effective_avatar_url": {
+            "type": "string",
+            "title": "Effective Avatar Url",
+            "description": "Avatar currently used in public surfaces"
+          },
+          "primary_auth_provider": {
+            "type": "string",
+            "title": "Primary Auth Provider",
+            "description": "Primary auth provider"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "description": "Whether the current site user is using admin identity",
+            "default": false
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At",
+            "description": "Last login time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "avatar_url",
+          "effective_display_name",
+          "effective_avatar_url",
+          "primary_auth_provider"
+        ],
+        "title": "SiteAuthUserRead"
+      },
       "SiteConfigRead": {
         "properties": {
           "site": {
@@ -14857,6 +17809,16 @@
             "title": "Og Image",
             "description": "Open Graph image path"
           },
+          "hero_image_url": {
+            "type": "string",
+            "title": "Hero Image Url",
+            "description": "Hero image path"
+          },
+          "hero_poster_url": {
+            "type": "string",
+            "title": "Hero Poster Url",
+            "description": "Hero video poster image path"
+          },
           "meta_description": {
             "type": "string",
             "title": "Meta Description",
@@ -14883,6 +17845,31 @@
             ],
             "title": "Hero Video Url",
             "description": "Hero background video URL"
+          },
+          "poem_source": {
+            "type": "string",
+            "enum": [
+              "custom",
+              "hitokoto"
+            ],
+            "title": "Poem Source",
+            "description": "Poem source mode"
+          },
+          "poem_hitokoto_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Poem Hitokoto Types",
+            "description": "Hitokoto category codes"
+          },
+          "poem_hitokoto_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Poem Hitokoto Keywords",
+            "description": "Hitokoto preferred keywords"
           },
           "feature_flags": {
             "additionalProperties": true,
@@ -14913,10 +17900,15 @@
           "footer_text",
           "author",
           "og_image",
+          "hero_image_url",
+          "hero_poster_url",
           "meta_description",
           "copyright",
           "hero_actions",
           "hero_video_url",
+          "poem_source",
+          "poem_hitokoto_types",
+          "poem_hitokoto_keywords",
           "feature_flags",
           "created_at",
           "updated_at"
@@ -14960,6 +17952,16 @@
             "title": "Og Image",
             "description": "Open Graph image path"
           },
+          "hero_image_url": {
+            "type": "string",
+            "title": "Hero Image Url",
+            "description": "Hero image path"
+          },
+          "hero_poster_url": {
+            "type": "string",
+            "title": "Hero Poster Url",
+            "description": "Hero video poster image path"
+          },
           "meta_description": {
             "type": "string",
             "title": "Meta Description",
@@ -14991,6 +17993,32 @@
             "title": "Hero Video Url",
             "description": "Hero background video URL"
           },
+          "poem_source": {
+            "type": "string",
+            "enum": [
+              "custom",
+              "hitokoto"
+            ],
+            "title": "Poem Source",
+            "description": "Poem source mode",
+            "default": "custom"
+          },
+          "poem_hitokoto_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Poem Hitokoto Types",
+            "description": "Hitokoto category codes"
+          },
+          "poem_hitokoto_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Poem Hitokoto Keywords",
+            "description": "Hitokoto preferred keywords"
+          },
           "feature_flags": {
             "additionalProperties": true,
             "type": "object",
@@ -15007,6 +18035,8 @@
           "footer_text",
           "author",
           "og_image",
+          "hero_image_url",
+          "hero_poster_url",
           "meta_description",
           "copyright",
           "hero_actions"
@@ -15099,6 +18129,30 @@
             "title": "Og Image",
             "description": "Open Graph image path"
           },
+          "hero_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Image Url",
+            "description": "Hero image path"
+          },
+          "hero_poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Poster Url",
+            "description": "Hero video poster image path"
+          },
           "meta_description": {
             "anyOf": [
               {
@@ -15147,6 +18201,52 @@
             "title": "Hero Video Url",
             "description": "Hero background video URL"
           },
+          "poem_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "custom",
+                  "hitokoto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poem Source",
+            "description": "Poem source mode"
+          },
+          "poem_hitokoto_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poem Hitokoto Types",
+            "description": "Hitokoto category codes"
+          },
+          "poem_hitokoto_keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poem Hitokoto Keywords",
+            "description": "Hitokoto preferred keywords"
+          },
           "feature_flags": {
             "anyOf": [
               {
@@ -15163,6 +18263,138 @@
         },
         "type": "object",
         "title": "SiteProfileUpdate"
+      },
+      "SiteUserAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Site user id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Login email identifier"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name",
+            "description": "Current display name"
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "description": "Current avatar URL"
+          },
+          "primary_auth_provider": {
+            "type": "string",
+            "title": "Primary Auth Provider",
+            "description": "Primary auth provider"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "email",
+              "binding"
+            ],
+            "title": "Auth Mode",
+            "description": "Whether this user is email-only or has OAuth bindings"
+          },
+          "oauth_accounts": {
+            "items": {
+              "$ref": "#/components/schemas/SiteUserOAuthAccountAdminRead"
+            },
+            "type": "array",
+            "title": "Oauth Accounts",
+            "description": "Linked OAuth accounts"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update time"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At",
+            "description": "Last login time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "avatar_url",
+          "primary_auth_provider",
+          "auth_mode",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SiteUserAdminRead"
+      },
+      "SiteUserOAuthAccountAdminRead": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "github"
+            ],
+            "title": "Provider",
+            "description": "OAuth provider"
+          },
+          "provider_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Email",
+            "description": "Provider-side email"
+          },
+          "provider_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Display Name",
+            "description": "Provider-side display name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Binding creation time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "created_at"
+        ],
+        "title": "SiteUserOAuthAccountAdminRead"
       },
       "SocialLinkAdminRead": {
         "properties": {
@@ -15445,6 +18677,48 @@
         ],
         "title": "TagInfo"
       },
+      "TopPageMetric": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "views": {
+            "type": "integer",
+            "title": "Views",
+            "default": 0
+          },
+          "share": {
+            "type": "number",
+            "title": "Share",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "TopPageMetric"
+      },
+      "TrafficTrendPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "views": {
+            "type": "integer",
+            "title": "Views",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "date"
+        ],
+        "title": "TrafficTrendPoint"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -15484,6 +18758,116 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VisitorRecordRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "visited_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Visited At"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "ip_address": {
+            "type": "string",
+            "title": "Ip Address"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "isp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isp"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "status_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Text"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          },
+          "referer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referer"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "is_bot": {
+            "type": "boolean",
+            "title": "Is Bot",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "visited_at",
+          "path",
+          "ip_address",
+          "status_code",
+          "duration_ms"
+        ],
+        "title": "VisitorRecordRead"
       }
     },
     "securitySchemes": {
