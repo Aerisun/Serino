@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
-from aerisun.domain.media.schemas import AssetAdminRead
+from aerisun.domain.media.schemas import AssetAdminRead, AssetAdminUpdate
 from aerisun.domain.media.service import (
     bulk_delete_assets,
     delete_asset,
     get_asset,
     list_assets,
     upload_asset,
+    update_asset,
 )
 
 from .deps import get_current_admin
@@ -26,20 +27,35 @@ router = APIRouter(prefix="/assets", tags=["admin-assets"])
 def list_assets_endpoint(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    q: str | None = Query(default=None, max_length=200),
+    scope: str = Query(default="user", pattern="^(system|user)$"),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    return list_assets(session, page=page, page_size=page_size)
+    return list_assets(session, page=page, page_size=page_size, q=q, scope=scope)
 
 
 @router.post("/", response_model=AssetAdminRead, status_code=status.HTTP_201_CREATED, summary="上传资源")
 def upload_asset_endpoint(
-    file: UploadFile,
+    file: Annotated[UploadFile, File(...)],
+    visibility: Annotated[str, Form()] = "internal",
+    scope: Annotated[str, Form()] = "user",
+    category: Annotated[str, Form()] = "general",
+    note: Annotated[str | None, Form()] = None,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
     content = file.file.read()
-    return upload_asset(session, file.filename or "upload", content, file.content_type)
+    return upload_asset(
+        session,
+        file.filename or "upload",
+        content,
+        file.content_type,
+        visibility=visibility,
+        scope=scope,
+        category=category,
+        note=note,
+    )
 
 
 @router.post("/bulk-delete", response_model=BulkActionResponse, summary="批量删除资源")
@@ -58,6 +74,16 @@ def get_asset_endpoint(
     session: Session = Depends(get_session),
 ) -> Any:
     return get_asset(session, asset_id)
+
+
+@router.patch("/{asset_id}", response_model=AssetAdminRead, summary="更新资源")
+def update_asset_endpoint(
+    asset_id: str,
+    payload: AssetAdminUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return update_asset(session, asset_id, payload)
 
 
 @router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除资源")
