@@ -14,7 +14,23 @@
       "download_label": null,
       "enabled": true,
       "extras": {
-        "dashboardLabel": "Dashboard"
+        "dashboardLabel": "Dashboard",
+        "friendCircleTitle": "朋友圈",
+        "friendCircleViewAllLabel": "查看全部",
+        "friendCircleErrorTitle": "友邻动态加载失败",
+        "friendCircleRetryLabel": "重试",
+        "friendCircleEmptyMessage": "还没有公开的友邻动态",
+        "recentActivityTitle": "最近动态",
+        "recentActivityErrorTitle": "最近动态加载失败",
+        "recentActivityRetryLabel": "重试",
+        "recentActivityEmptyMessage": "暂时还没有公开的最近动态",
+        "heatmapTitle": "Activity",
+        "heatmapLoadingLabel": "加载中",
+        "heatmapErrorLabel": "加载失败",
+        "heatmapTotalTemplate": "{total} contributions",
+        "heatmapThisWeekLabel": "This week",
+        "heatmapPeakWeekLabel": "Peak week",
+        "heatmapAverageWeekLabel": "Avg / week"
       }
     },
     {
@@ -56,7 +72,12 @@
         ],
         "loadingLabel": "正在加载日历",
         "retryLabel": "重试加载",
-        "todayLabel": "今日"
+        "todayLabel": "今日",
+        "errorTitle": "日历加载失败",
+        "selectedEmptyMessage": "这一天没有记录",
+        "postTypeLabel": "帖子",
+        "diaryTypeLabel": "日记",
+        "excerptTypeLabel": "文摘"
       }
     },
     {
@@ -72,7 +93,17 @@
       "page_size": null,
       "download_label": null,
       "enabled": true,
-      "extras": {}
+      "extras": {
+        "errorTitle": "日记加载失败",
+        "retryLabel": "重试",
+        "loadMoreLabel": "加载更多...",
+        "detailCtaLabel": "查看详情",
+        "detailBackLabel": "返回",
+        "detailListLabel": "返回列表",
+        "detailMissingTitle": "日记不存在",
+        "detailMissingDescription": "你访问的日记暂时不存在。",
+        "detailEndLabel": "— 今日份记录 —"
+      }
     },
     {
       "page_key": "excerpts",
@@ -88,7 +119,12 @@
       "download_label": null,
       "enabled": true,
       "extras": {
-        "modalCloseLabel": "关闭"
+        "modalCloseLabel": "关闭",
+        "commentsOpenLabel": "查看评论",
+        "commentsCloseLabel": "收起评论",
+        "errorTitle": "文摘加载失败",
+        "retryLabel": "重试",
+        "loadMoreLabel": "加载更多..."
       }
     },
     {
@@ -106,10 +142,13 @@
       "enabled": true,
       "extras": {
         "circle_title": "Friend Circle",
+        "errorTitle": "友链页面加载失败",
         "statusLabel": "状态",
         "loadingLabel": "正在加载...",
         "loadMoreLabel": "加载更多",
-        "retryLabel": "重试加载"
+        "retryLabel": "重试加载",
+        "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
+        "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态"
       }
     },
     {
@@ -126,6 +165,10 @@
       "download_label": null,
       "enabled": true,
       "extras": {
+        "promptTitle": "留言提示",
+        "nameFieldLabel": "昵称",
+        "contentFieldLabel": "正文",
+        "submitFieldLabel": "按钮",
         "namePlaceholder": "你的名字",
         "contentPlaceholder": "想说的话",
         "submitLabel": "提交留言",
@@ -149,7 +192,10 @@
       "enabled": true,
       "extras": {
         "metaTitle": "页面未找到",
-        "metaDescription": "你访问的页面不存在，或者已经被移动。"
+        "metaDescription": "你访问的页面不存在，或者已经被移动。",
+        "badgeLabel": "Shell mismatch",
+        "homeLabel": "返回首页",
+        "backLabel": "返回上页"
       }
     },
     {
@@ -166,7 +212,16 @@
       "download_label": null,
       "enabled": true,
       "extras": {
-        "category_all_label": "全部"
+        "category_all_label": "全部",
+        "category_fallback_label": "未分类",
+        "errorTitle": "文章加载失败",
+        "retryLabel": "重试",
+        "loadMoreLabel": "加载更多...",
+        "detailBackLabel": "返回",
+        "detailListLabel": "返回列表",
+        "detailMissingTitle": "文章不存在",
+        "detailMissingDescription": "你访问的文章暂时不存在。",
+        "detailEndLabel": "— 完 —"
       }
     },
     {
@@ -197,7 +252,11 @@
       "page_size": null,
       "download_label": null,
       "enabled": true,
-      "extras": {}
+      "extras": {
+        "errorTitle": "碎碎念加载失败",
+        "retryLabel": "重试",
+        "loadMoreLabel": "加载更多..."
+      }
     }
   ]
 }

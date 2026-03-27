@@ -55,6 +55,7 @@ import type {
   ExportContentApiV1AdminContentExportGetParams,
   FeedCrawlAllResultRead,
   FeedCrawlResultRead,
+  FeedLinkCollectionRead,
   FriendAdminRead,
   FriendCreate,
   FriendFeedSourceAdminRead,
@@ -12094,383 +12095,6 @@ export const useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete = <TError = Err
       return useMutation(getDeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteMutationOptions(options), queryClient);
     }
     /**
- * @summary 获取 API 密钥列表
- */
-export type listApiKeysApiV1AdminSystemApiKeysGetResponse200 = {
-  data: ApiKeyAdminRead[]
-  status: 200
-}
-
-export type listApiKeysApiV1AdminSystemApiKeysGetResponseSuccess = (listApiKeysApiV1AdminSystemApiKeysGetResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listApiKeysApiV1AdminSystemApiKeysGetResponse = (listApiKeysApiV1AdminSystemApiKeysGetResponseSuccess)
-
-export const getListApiKeysApiV1AdminSystemApiKeysGetUrl = () => {
-
-
-
-
-  return `/api/v1/admin/system/api-keys`
-}
-
-export const listApiKeysApiV1AdminSystemApiKeysGet = async ( options?: RequestInit): Promise<listApiKeysApiV1AdminSystemApiKeysGetResponse> => {
-
-  return customInstance<listApiKeysApiV1AdminSystemApiKeysGetResponse>(getListApiKeysApiV1AdminSystemApiKeysGetUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListApiKeysApiV1AdminSystemApiKeysGetQueryKey = () => {
-    return [
-    `/api/v1/admin/system/api-keys`
-    ] as const;
-    }
-
-
-export const getListApiKeysApiV1AdminSystemApiKeysGetQueryOptions = <TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListApiKeysApiV1AdminSystemApiKeysGetQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>> = ({ signal }) => listApiKeysApiV1AdminSystemApiKeysGet({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListApiKeysApiV1AdminSystemApiKeysGetQueryResult = NonNullable<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>>
-export type ListApiKeysApiV1AdminSystemApiKeysGetQueryError = ErrorType<unknown>
-
-
-export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>,
-          TError,
-          Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>,
-          TError,
-          Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary 获取 API 密钥列表
- */
-
-export function useListApiKeysApiV1AdminSystemApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminSystemApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListApiKeysApiV1AdminSystemApiKeysGetQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-/**
- * @summary 创建 API 密钥
- */
-export type createApiKeyApiV1AdminSystemApiKeysPostResponse201 = {
-  data: ApiKeyCreateResponse
-  status: 201
-}
-
-export type createApiKeyApiV1AdminSystemApiKeysPostResponse422 = {
-  data: HTTPValidationError
-  status: 422
-}
-
-export type createApiKeyApiV1AdminSystemApiKeysPostResponseSuccess = (createApiKeyApiV1AdminSystemApiKeysPostResponse201) & {
-  headers: Headers;
-};
-export type createApiKeyApiV1AdminSystemApiKeysPostResponseError = (createApiKeyApiV1AdminSystemApiKeysPostResponse422) & {
-  headers: Headers;
-};
-
-export type createApiKeyApiV1AdminSystemApiKeysPostResponse = (createApiKeyApiV1AdminSystemApiKeysPostResponseSuccess | createApiKeyApiV1AdminSystemApiKeysPostResponseError)
-
-export const getCreateApiKeyApiV1AdminSystemApiKeysPostUrl = () => {
-
-
-
-
-  return `/api/v1/admin/system/api-keys`
-}
-
-export const createApiKeyApiV1AdminSystemApiKeysPost = async (apiKeyCreate: ApiKeyCreate, options?: RequestInit): Promise<createApiKeyApiV1AdminSystemApiKeysPostResponse> => {
-
-  return customInstance<createApiKeyApiV1AdminSystemApiKeysPostResponse>(getCreateApiKeyApiV1AdminSystemApiKeysPostUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      apiKeyCreate,)
-  }
-);}
-
-
-
-
-export const getCreateApiKeyApiV1AdminSystemApiKeysPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext> => {
-
-const mutationKey = ['createApiKeyApiV1AdminSystemApiKeysPost'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, {data: BodyType<ApiKeyCreate>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createApiKeyApiV1AdminSystemApiKeysPost(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateApiKeyApiV1AdminSystemApiKeysPostMutationResult = NonNullable<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>>
-    export type CreateApiKeyApiV1AdminSystemApiKeysPostMutationBody = BodyType<ApiKeyCreate>
-    export type CreateApiKeyApiV1AdminSystemApiKeysPostMutationError = ErrorType<HTTPValidationError>
-
-    /**
- * @summary 创建 API 密钥
- */
-export const useCreateApiKeyApiV1AdminSystemApiKeysPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createApiKeyApiV1AdminSystemApiKeysPost>>,
-        TError,
-        {data: BodyType<ApiKeyCreate>},
-        TContext
-      > => {
-      return useMutation(getCreateApiKeyApiV1AdminSystemApiKeysPostMutationOptions(options), queryClient);
-    }
-    /**
- * @summary 更新 API 密钥
- */
-export type updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse200 = {
-  data: ApiKeyAdminRead
-  status: 200
-}
-
-export type updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse422 = {
-  data: HTTPValidationError
-  status: 422
-}
-
-export type updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponseSuccess = (updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse200) & {
-  headers: Headers;
-};
-export type updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponseError = (updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse422) & {
-  headers: Headers;
-};
-
-export type updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse = (updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponseSuccess | updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponseError)
-
-export const getUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutUrl = (keyId: string,) => {
-
-
-
-
-  return `/api/v1/admin/system/api-keys/${keyId}`
-}
-
-export const updateApiKeyApiV1AdminSystemApiKeysKeyIdPut = async (keyId: string,
-    apiKeyUpdate: ApiKeyUpdate, options?: RequestInit): Promise<updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse> => {
-
-  return customInstance<updateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse>(getUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutUrl(keyId),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      apiKeyUpdate,)
-  }
-);}
-
-
-
-
-export const getUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext> => {
-
-const mutationKey = ['updateApiKeyApiV1AdminSystemApiKeysKeyIdPut'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, {keyId: string;data: BodyType<ApiKeyUpdate>}> = (props) => {
-          const {keyId,data} = props ?? {};
-
-          return  updateApiKeyApiV1AdminSystemApiKeysKeyIdPut(keyId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>>
-    export type UpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationBody = BodyType<ApiKeyUpdate>
-    export type UpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationError = ErrorType<HTTPValidationError>
-
-    /**
- * @summary 更新 API 密钥
- */
-export const useUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateApiKeyApiV1AdminSystemApiKeysKeyIdPut>>,
-        TError,
-        {keyId: string;data: BodyType<ApiKeyUpdate>},
-        TContext
-      > => {
-      return useMutation(getUpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutMutationOptions(options), queryClient);
-    }
-    /**
- * @summary 删除 API 密钥
- */
-export type deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse204 = {
-  data: void
-  status: 204
-}
-
-export type deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse422 = {
-  data: HTTPValidationError
-  status: 422
-}
-
-export type deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponseSuccess = (deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse204) & {
-  headers: Headers;
-};
-export type deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponseError = (deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse422) & {
-  headers: Headers;
-};
-
-export type deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse = (deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponseSuccess | deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponseError)
-
-export const getDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteUrl = (keyId: string,) => {
-
-
-
-
-  return `/api/v1/admin/system/api-keys/${keyId}`
-}
-
-export const deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete = async (keyId: string, options?: RequestInit): Promise<deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse> => {
-
-  return customInstance<deleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteResponse>(getDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteUrl(keyId),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-export const getDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext> => {
-
-const mutationKey = ['deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, {keyId: string}> = (props) => {
-          const {keyId} = props ?? {};
-
-          return  deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete(keyId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>>
-
-    export type DeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteMutationError = ErrorType<HTTPValidationError>
-
-    /**
- * @summary 删除 API 密钥
- */
-export const useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete>>,
-        TError,
-        {keyId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteMutationOptions(options), queryClient);
-    }
-    /**
  * @summary 获取审计日志
  */
 export type listAuditLogsApiV1AdminSystemAuditLogsGetResponse200 = {
@@ -13208,6 +12832,493 @@ export function useSystemInfoApiV1AdminSystemInfoGet<TData = Awaited<ReturnType<
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSystemInfoApiV1AdminSystemInfoGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取 API 密钥列表
+ */
+export type listApiKeysApiV1AdminIntegrationsApiKeysGetResponse200 = {
+  data: ApiKeyAdminRead[]
+  status: 200
+}
+
+export type listApiKeysApiV1AdminIntegrationsApiKeysGetResponseSuccess = (listApiKeysApiV1AdminIntegrationsApiKeysGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listApiKeysApiV1AdminIntegrationsApiKeysGetResponse = (listApiKeysApiV1AdminIntegrationsApiKeysGetResponseSuccess)
+
+export const getListApiKeysApiV1AdminIntegrationsApiKeysGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/integrations/api-keys`
+}
+
+export const listApiKeysApiV1AdminIntegrationsApiKeysGet = async ( options?: RequestInit): Promise<listApiKeysApiV1AdminIntegrationsApiKeysGetResponse> => {
+
+  return customInstance<listApiKeysApiV1AdminIntegrationsApiKeysGetResponse>(getListApiKeysApiV1AdminIntegrationsApiKeysGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey = () => {
+    return [
+    `/api/v1/admin/integrations/api-keys`
+    ] as const;
+    }
+
+
+export const getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryOptions = <TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>> = ({ signal }) => listApiKeysApiV1AdminIntegrationsApiKeysGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListApiKeysApiV1AdminIntegrationsApiKeysGetQueryResult = NonNullable<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>>
+export type ListApiKeysApiV1AdminIntegrationsApiKeysGetQueryError = ErrorType<unknown>
+
+
+export function useListApiKeysApiV1AdminIntegrationsApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>,
+          TError,
+          Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListApiKeysApiV1AdminIntegrationsApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>,
+          TError,
+          Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListApiKeysApiV1AdminIntegrationsApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 API 密钥列表
+ */
+
+export function useListApiKeysApiV1AdminIntegrationsApiKeysGet<TData = Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApiKeysApiV1AdminIntegrationsApiKeysGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 创建 API 密钥
+ */
+export type createApiKeyApiV1AdminIntegrationsApiKeysPostResponse201 = {
+  data: ApiKeyCreateResponse
+  status: 201
+}
+
+export type createApiKeyApiV1AdminIntegrationsApiKeysPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type createApiKeyApiV1AdminIntegrationsApiKeysPostResponseSuccess = (createApiKeyApiV1AdminIntegrationsApiKeysPostResponse201) & {
+  headers: Headers;
+};
+export type createApiKeyApiV1AdminIntegrationsApiKeysPostResponseError = (createApiKeyApiV1AdminIntegrationsApiKeysPostResponse422) & {
+  headers: Headers;
+};
+
+export type createApiKeyApiV1AdminIntegrationsApiKeysPostResponse = (createApiKeyApiV1AdminIntegrationsApiKeysPostResponseSuccess | createApiKeyApiV1AdminIntegrationsApiKeysPostResponseError)
+
+export const getCreateApiKeyApiV1AdminIntegrationsApiKeysPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/integrations/api-keys`
+}
+
+export const createApiKeyApiV1AdminIntegrationsApiKeysPost = async (apiKeyCreate: ApiKeyCreate, options?: RequestInit): Promise<createApiKeyApiV1AdminIntegrationsApiKeysPostResponse> => {
+
+  return customInstance<createApiKeyApiV1AdminIntegrationsApiKeysPostResponse>(getCreateApiKeyApiV1AdminIntegrationsApiKeysPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      apiKeyCreate,)
+  }
+);}
+
+
+
+
+export const getCreateApiKeyApiV1AdminIntegrationsApiKeysPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminIntegrationsApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminIntegrationsApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext> => {
+
+const mutationKey = ['createApiKeyApiV1AdminIntegrationsApiKeysPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createApiKeyApiV1AdminIntegrationsApiKeysPost>>, {data: BodyType<ApiKeyCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createApiKeyApiV1AdminIntegrationsApiKeysPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateApiKeyApiV1AdminIntegrationsApiKeysPostMutationResult = NonNullable<Awaited<ReturnType<typeof createApiKeyApiV1AdminIntegrationsApiKeysPost>>>
+    export type CreateApiKeyApiV1AdminIntegrationsApiKeysPostMutationBody = BodyType<ApiKeyCreate>
+    export type CreateApiKeyApiV1AdminIntegrationsApiKeysPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 创建 API 密钥
+ */
+export const useCreateApiKeyApiV1AdminIntegrationsApiKeysPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApiKeyApiV1AdminIntegrationsApiKeysPost>>, TError,{data: BodyType<ApiKeyCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createApiKeyApiV1AdminIntegrationsApiKeysPost>>,
+        TError,
+        {data: BodyType<ApiKeyCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateApiKeyApiV1AdminIntegrationsApiKeysPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 更新 API 密钥
+ */
+export type updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse200 = {
+  data: ApiKeyAdminRead
+  status: 200
+}
+
+export type updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponseSuccess = (updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse200) & {
+  headers: Headers;
+};
+export type updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponseError = (updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse422) & {
+  headers: Headers;
+};
+
+export type updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse = (updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponseSuccess | updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponseError)
+
+export const getUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutUrl = (keyId: string,) => {
+
+
+
+
+  return `/api/v1/admin/integrations/api-keys/${keyId}`
+}
+
+export const updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut = async (keyId: string,
+    apiKeyUpdate: ApiKeyUpdate, options?: RequestInit): Promise<updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse> => {
+
+  return customInstance<updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse>(getUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutUrl(keyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      apiKeyUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext> => {
+
+const mutationKey = ['updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut>>, {keyId: string;data: BodyType<ApiKeyUpdate>}> = (props) => {
+          const {keyId,data} = props ?? {};
+
+          return  updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut(keyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut>>>
+    export type UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutMutationBody = BodyType<ApiKeyUpdate>
+    export type UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新 API 密钥
+ */
+export const useUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut>>, TError,{keyId: string;data: BodyType<ApiKeyUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut>>,
+        TError,
+        {keyId: string;data: BodyType<ApiKeyUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除 API 密钥
+ */
+export type deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponseSuccess = (deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponseError = (deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse = (deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponseSuccess | deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponseError)
+
+export const getDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteUrl = (keyId: string,) => {
+
+
+
+
+  return `/api/v1/admin/integrations/api-keys/${keyId}`
+}
+
+export const deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete = async (keyId: string, options?: RequestInit): Promise<deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse> => {
+
+  return customInstance<deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteResponse>(getDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteUrl(keyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext> => {
+
+const mutationKey = ['deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete>>, {keyId: string}> = (props) => {
+          const {keyId} = props ?? {};
+
+          return  deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete(keyId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete>>>
+
+    export type DeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除 API 密钥
+ */
+export const useDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete>>,
+        TError,
+        {keyId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取 Feed 列表
+ */
+export type listFeedsApiV1AdminIntegrationsFeedsGetResponse200 = {
+  data: FeedLinkCollectionRead
+  status: 200
+}
+
+export type listFeedsApiV1AdminIntegrationsFeedsGetResponseSuccess = (listFeedsApiV1AdminIntegrationsFeedsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listFeedsApiV1AdminIntegrationsFeedsGetResponse = (listFeedsApiV1AdminIntegrationsFeedsGetResponseSuccess)
+
+export const getListFeedsApiV1AdminIntegrationsFeedsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/integrations/feeds`
+}
+
+export const listFeedsApiV1AdminIntegrationsFeedsGet = async ( options?: RequestInit): Promise<listFeedsApiV1AdminIntegrationsFeedsGetResponse> => {
+
+  return customInstance<listFeedsApiV1AdminIntegrationsFeedsGetResponse>(getListFeedsApiV1AdminIntegrationsFeedsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFeedsApiV1AdminIntegrationsFeedsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/integrations/feeds`
+    ] as const;
+    }
+
+
+export const getListFeedsApiV1AdminIntegrationsFeedsGetQueryOptions = <TData = Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFeedsApiV1AdminIntegrationsFeedsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>> = ({ signal }) => listFeedsApiV1AdminIntegrationsFeedsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFeedsApiV1AdminIntegrationsFeedsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>>
+export type ListFeedsApiV1AdminIntegrationsFeedsGetQueryError = ErrorType<unknown>
+
+
+export function useListFeedsApiV1AdminIntegrationsFeedsGet<TData = Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFeedsApiV1AdminIntegrationsFeedsGet<TData = Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFeedsApiV1AdminIntegrationsFeedsGet<TData = Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Feed 列表
+ */
+
+export function useListFeedsApiV1AdminIntegrationsFeedsGet<TData = Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFeedsApiV1AdminIntegrationsFeedsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFeedsApiV1AdminIntegrationsFeedsGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

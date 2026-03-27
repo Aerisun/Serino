@@ -24,19 +24,19 @@ export interface CommunityConfigUpdate {
   enable_enjoy_search?: boolean | null;
   /** Allow image uploads in comments */
   image_uploader?: boolean | null;
-  /** Authentication mode */
+  /** Authentication mode, fixed to login-required */
   login_mode?: string | null;
   /** OAuth endpoint URL */
   oauth_url?: string | null;
   /** Enabled OAuth providers */
   oauth_providers?: string[] | null;
-  /** Allow anonymous commenting */
+  /** Allow email login for commenting */
   anonymous_enabled?: boolean | null;
   /** Comment moderation mode */
   moderation_mode?: string | null;
   /** Default comment sort order */
   default_sorting?: string | null;
-  /** Comments per page */
+  /** Initial comments loaded per batch */
   page_size?: number | null;
   /** Max upload image size in bytes */
   image_max_bytes?: number | null;

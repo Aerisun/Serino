@@ -6,7 +6,10 @@
     "role": "UI/UX Designer · Frontend Developer",
     "footer_text": "Aerisun · Built with care and a small stack.",
     "author": "Felix",
-    "og_image": "/images/hero_bg.jpeg",
+    "og_image": "/media/internal/assets/site-og/0667a6b47457.jpeg",
+    "site_icon_url": "/media/internal/assets/site-icon/90db1b781930.svg",
+    "hero_image_url": "/media/internal/assets/hero-image/9c5bd7ee9001.webp",
+    "hero_poster_url": "/media/internal/assets/hero-poster/0667a6b47457.jpeg",
     "meta_description": "Felix 的个人网站 - UI/UX 设计师与前端开发者",
     "copyright": "All rights reserved",
     "hero_actions": [
@@ -22,6 +25,12 @@
       }
     ],
     "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
+    "poem_source": "custom",
+    "poem_hitokoto_types": [
+      "d",
+      "i"
+    ],
+    "poem_hitokoto_keywords": [],
     "feature_flags": {
       "toc": true,
       "reading_progress": true,

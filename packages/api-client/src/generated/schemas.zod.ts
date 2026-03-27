@@ -9,9 +9,9 @@ import * as zod from 'zod';
 /**
  * @summary 获取站点配置
  */
-export const readSiteConfigApiV1PublicSiteGetResponseSitePoemSourceDefault = `custom`;
+export const readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault = `custom`;
 
-export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
+export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
   "site": zod.object({
   "name": zod.string().describe('Site owner name'),
   "title": zod.string().describe('Site title'),
@@ -20,13 +20,14 @@ export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
   "footer_text": zod.string().describe('Footer text'),
   "author": zod.string().describe('Default author name'),
   "og_image": zod.string().describe('Open Graph image path'),
+  "site_icon_url": zod.string().describe('Browser tab icon path'),
   "hero_image_url": zod.string().describe('Hero image path'),
   "hero_poster_url": zod.string().describe('Hero video poster image path'),
   "meta_description": zod.string().describe('Meta description for SEO'),
   "copyright": zod.string().describe('Copyright notice'),
   "hero_actions": zod.array(zod.record(zod.string(), zod.unknown())).describe('Hero section action buttons'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
-  "poem_source": zod.enum(['custom', 'hitokoto']).default(readSiteConfigApiV1PublicSiteGetResponseSitePoemSourceDefault).describe('Poem source mode'),
+  "poem_source": zod.enum(['custom', 'hitokoto']).default(readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault).describe('Poem source mode'),
   "poem_hitokoto_types": zod.array(zod.string()).optional().describe('Hitokoto category codes'),
   "poem_hitokoto_keywords": zod.array(zod.string()).optional().describe('Hitokoto preferred keywords'),
   "feature_flags": zod.record(zod.string(), zod.unknown()).optional().describe('Feature toggle flags')
@@ -57,7 +58,7 @@ export const ReadSiteConfigApiV1PublicSiteGetResponse = zod.object({
 /**
  * @summary 获取页面文案
  */
-export const ReadPageCopyApiV1PublicPagesGetResponse = zod.object({
+export const ReadPageCopyApiV1SitePagesGetResponse = zod.object({
   "items": zod.array(zod.object({
   "page_key": zod.string().describe('Page identifier key'),
   "label": zod.union([zod.string(),zod.null()]).describe('Sidebar label'),
@@ -79,9 +80,9 @@ export const ReadPageCopyApiV1PublicPagesGetResponse = zod.object({
 /**
  * @summary 获取社区评论配置
  */
-export const readCommunityConfigApiV1PublicCommunityConfigGetResponseImageMaxBytesDefault = 524288;
+export const readCommunityConfigApiV1SiteCommunityConfigGetResponseImageMaxBytesDefault = 524288;
 
-export const ReadCommunityConfigApiV1PublicCommunityConfigGetResponse = zod.object({
+export const ReadCommunityConfigApiV1SiteCommunityConfigGetResponse = zod.object({
   "provider": zod.string().describe('Comment provider name'),
   "server_url": zod.string().describe('Comment server URL'),
   "surfaces": zod.array(zod.object({
@@ -95,14 +96,14 @@ export const ReadCommunityConfigApiV1PublicCommunityConfigGetResponse = zod.obje
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "login_mode": zod.string().describe('Authentication mode'),
+  "login_mode": zod.string().describe('Authentication mode, fixed to login-required'),
   "oauth_url": zod.union([zod.string(),zod.null()]).describe('OAuth endpoint URL'),
   "oauth_providers": zod.array(zod.string()).describe('OAuth provider names'),
-  "anonymous_enabled": zod.boolean().describe('Anonymous commenting allowed'),
+  "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Moderation mode'),
   "default_sorting": zod.string().describe('Default sort order'),
-  "page_size": zod.number().describe('Comments per page'),
-  "image_max_bytes": zod.union([zod.number(),zod.null()]).default(readCommunityConfigApiV1PublicCommunityConfigGetResponseImageMaxBytesDefault).describe('Max image upload size in bytes'),
+  "page_size": zod.number().describe('Initial comments loaded per batch'),
+  "image_max_bytes": zod.union([zod.number(),zod.null()]).default(readCommunityConfigApiV1SiteCommunityConfigGetResponseImageMaxBytesDefault).describe('Max image upload size in bytes'),
   "avatar_presets": zod.array(zod.record(zod.string(), zod.unknown())).describe('Predefined avatar options'),
   "guest_avatar_mode": zod.string().describe('Guest avatar mode'),
   "draft_enabled": zod.boolean().describe('Draft saving enabled'),
@@ -115,28 +116,28 @@ export const ReadCommunityConfigApiV1PublicCommunityConfigGetResponse = zod.obje
 /**
  * @summary 获取简历数据
  */
-export const readResumeApiV1PublicResumeGetResponseTemplateKeyDefault = `editorial`;
-export const readResumeApiV1PublicResumeGetResponseAccentToneDefault = `amber`;
-export const readResumeApiV1PublicResumeGetResponseLocationDefault = ``;
-export const readResumeApiV1PublicResumeGetResponseAvailabilityDefault = ``;
-export const readResumeApiV1PublicResumeGetResponseEmailDefault = ``;
-export const readResumeApiV1PublicResumeGetResponseWebsiteDefault = ``;
-export const readResumeApiV1PublicResumeGetResponseProfileImageUrlDefault = ``;
-export const readResumeApiV1PublicResumeGetResponseExperiencesItemLocationDefault = ``;
-export const readResumeApiV1PublicResumeGetResponseExperiencesItemEmploymentTypeDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseTemplateKeyDefault = `editorial`;
+export const readResumeApiV1SiteResumeGetResponseAccentToneDefault = `amber`;
+export const readResumeApiV1SiteResumeGetResponseLocationDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseAvailabilityDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseEmailDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseWebsiteDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseExperiencesItemLocationDefault = ``;
+export const readResumeApiV1SiteResumeGetResponseExperiencesItemEmploymentTypeDefault = ``;
 
-export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
+export const ReadResumeApiV1SiteResumeGetResponse = zod.object({
   "title": zod.string().describe('Resume page title'),
   "subtitle": zod.string().describe('Resume subtitle'),
   "summary": zod.string().describe('Professional summary'),
   "download_label": zod.string().describe('PDF download label'),
-  "template_key": zod.string().default(readResumeApiV1PublicResumeGetResponseTemplateKeyDefault).describe('Selected resume template key'),
-  "accent_tone": zod.string().default(readResumeApiV1PublicResumeGetResponseAccentToneDefault).describe('Selected accent tone'),
-  "location": zod.string().default(readResumeApiV1PublicResumeGetResponseLocationDefault).describe('Current base location'),
-  "availability": zod.string().default(readResumeApiV1PublicResumeGetResponseAvailabilityDefault).describe('Availability note'),
-  "email": zod.string().default(readResumeApiV1PublicResumeGetResponseEmailDefault).describe('Primary contact email'),
-  "website": zod.string().default(readResumeApiV1PublicResumeGetResponseWebsiteDefault).describe('Primary website'),
-  "profile_image_url": zod.string().default(readResumeApiV1PublicResumeGetResponseProfileImageUrlDefault).describe('Profile image URL'),
+  "template_key": zod.string().default(readResumeApiV1SiteResumeGetResponseTemplateKeyDefault).describe('Selected resume template key'),
+  "accent_tone": zod.string().default(readResumeApiV1SiteResumeGetResponseAccentToneDefault).describe('Selected accent tone'),
+  "location": zod.string().default(readResumeApiV1SiteResumeGetResponseLocationDefault).describe('Current base location'),
+  "availability": zod.string().default(readResumeApiV1SiteResumeGetResponseAvailabilityDefault).describe('Availability note'),
+  "email": zod.string().default(readResumeApiV1SiteResumeGetResponseEmailDefault).describe('Primary contact email'),
+  "website": zod.string().default(readResumeApiV1SiteResumeGetResponseWebsiteDefault).describe('Primary website'),
+  "profile_image_url": zod.string().default(readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault).describe('Profile image URL'),
   "highlights": zod.array(zod.string()).optional().describe('Featured resume highlights'),
   "skill_groups": zod.array(zod.object({
   "category": zod.string().describe('Skill category name'),
@@ -147,8 +148,8 @@ export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
   "title": zod.string().describe('Job title'),
   "company": zod.string().describe('Company name'),
   "period": zod.string().describe('Employment period'),
-  "location": zod.string().default(readResumeApiV1PublicResumeGetResponseExperiencesItemLocationDefault).describe('Experience location'),
-  "employment_type": zod.string().default(readResumeApiV1PublicResumeGetResponseExperiencesItemEmploymentTypeDefault).describe('Employment type'),
+  "location": zod.string().default(readResumeApiV1SiteResumeGetResponseExperiencesItemLocationDefault).describe('Experience location'),
+  "employment_type": zod.string().default(readResumeApiV1SiteResumeGetResponseExperiencesItemEmploymentTypeDefault).describe('Employment type'),
   "summary": zod.string().describe('Role description'),
   "achievements": zod.array(zod.string()).optional().describe('Achievement bullet points'),
   "tech_stack": zod.array(zod.string()).optional().describe('Technologies used'),
@@ -158,25 +159,44 @@ export const ReadResumeApiV1PublicResumeGetResponse = zod.object({
 
 
 /**
- * @summary 获取已发布文章列表
+ * @summary 获取首页诗句预览
  */
-export const readPostsApiV1PublicPostsGetQueryLimitDefault = 20;
-export const readPostsApiV1PublicPostsGetQueryLimitMax = 100;
+export const readPoemPreviewApiV1SitePoemPreviewGetQueryStrictDefault = false;
 
-export const readPostsApiV1PublicPostsGetQueryOffsetDefault = 0;
-export const readPostsApiV1PublicPostsGetQueryOffsetMin = 0;
-
-
-
-export const ReadPostsApiV1PublicPostsGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readPostsApiV1PublicPostsGetQueryLimitMax).default(readPostsApiV1PublicPostsGetQueryLimitDefault),
-  "offset": zod.number().min(readPostsApiV1PublicPostsGetQueryOffsetMin).default(readPostsApiV1PublicPostsGetQueryOffsetDefault)
+export const ReadPoemPreviewApiV1SitePoemPreviewGetQueryParams = zod.object({
+  "mode": zod.union([zod.enum(['custom', 'hitokoto']),zod.null()]).optional(),
+  "types": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "keywords": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "strict": zod.boolean().default(readPoemPreviewApiV1SitePoemPreviewGetQueryStrictDefault)
 })
 
-export const readPostsApiV1PublicPostsGetResponseTotalDefault = 0;
-export const readPostsApiV1PublicPostsGetResponseHasMoreDefault = false;
+export const ReadPoemPreviewApiV1SitePoemPreviewGetResponse = zod.object({
+  "mode": zod.enum(['custom', 'hitokoto']).describe('Resolved poem source mode'),
+  "content": zod.string().describe('Poem content shown on the homepage'),
+  "attribution": zod.union([zod.string(),zod.null()]).optional().describe('Optional source attribution')
+})
 
-export const ReadPostsApiV1PublicPostsGetResponse = zod.object({
+
+/**
+ * @summary 获取已发布文章列表
+ */
+export const readPostsApiV1SitePostsGetQueryLimitDefault = 20;
+export const readPostsApiV1SitePostsGetQueryLimitMax = 100;
+
+export const readPostsApiV1SitePostsGetQueryOffsetDefault = 0;
+export const readPostsApiV1SitePostsGetQueryOffsetMin = 0;
+
+
+
+export const ReadPostsApiV1SitePostsGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readPostsApiV1SitePostsGetQueryLimitMax).default(readPostsApiV1SitePostsGetQueryLimitDefault),
+  "offset": zod.number().min(readPostsApiV1SitePostsGetQueryOffsetMin).default(readPostsApiV1SitePostsGetQueryOffsetDefault)
+})
+
+export const readPostsApiV1SitePostsGetResponseTotalDefault = 0;
+export const readPostsApiV1SitePostsGetResponseHasMoreDefault = false;
+
+export const ReadPostsApiV1SitePostsGetResponse = zod.object({
   "items": zod.array(zod.object({
   "slug": zod.string().describe('URL-friendly unique identifier'),
   "title": zod.string().describe('Content display title'),
@@ -202,19 +222,19 @@ export const ReadPostsApiV1PublicPostsGetResponse = zod.object({
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
 })).describe('List of content entries'),
-  "total": zod.number().default(readPostsApiV1PublicPostsGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readPostsApiV1PublicPostsGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "total": zod.number().default(readPostsApiV1SitePostsGetResponseTotalDefault).describe('Total number of matching entries'),
+  "has_more": zod.boolean().default(readPostsApiV1SitePostsGetResponseHasMoreDefault).describe('Whether more entries are available')
 })
 
 
 /**
  * @summary 获取单篇文章
  */
-export const ReadPostApiV1PublicPostsSlugGetParams = zod.object({
+export const ReadPostApiV1SitePostsSlugGetParams = zod.object({
   "slug": zod.string()
 })
 
-export const ReadPostApiV1PublicPostsSlugGetResponse = zod.object({
+export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "slug": zod.string().describe('URL-friendly unique identifier'),
   "title": zod.string().describe('Content display title'),
   "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
@@ -244,23 +264,23 @@ export const ReadPostApiV1PublicPostsSlugGetResponse = zod.object({
 /**
  * @summary 获取日记列表
  */
-export const readDiaryApiV1PublicDiaryGetQueryLimitDefault = 20;
-export const readDiaryApiV1PublicDiaryGetQueryLimitMax = 100;
+export const readDiaryApiV1SiteDiaryGetQueryLimitDefault = 20;
+export const readDiaryApiV1SiteDiaryGetQueryLimitMax = 100;
 
-export const readDiaryApiV1PublicDiaryGetQueryOffsetDefault = 0;
-export const readDiaryApiV1PublicDiaryGetQueryOffsetMin = 0;
+export const readDiaryApiV1SiteDiaryGetQueryOffsetDefault = 0;
+export const readDiaryApiV1SiteDiaryGetQueryOffsetMin = 0;
 
 
 
-export const ReadDiaryApiV1PublicDiaryGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readDiaryApiV1PublicDiaryGetQueryLimitMax).default(readDiaryApiV1PublicDiaryGetQueryLimitDefault),
-  "offset": zod.number().min(readDiaryApiV1PublicDiaryGetQueryOffsetMin).default(readDiaryApiV1PublicDiaryGetQueryOffsetDefault)
+export const ReadDiaryApiV1SiteDiaryGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readDiaryApiV1SiteDiaryGetQueryLimitMax).default(readDiaryApiV1SiteDiaryGetQueryLimitDefault),
+  "offset": zod.number().min(readDiaryApiV1SiteDiaryGetQueryOffsetMin).default(readDiaryApiV1SiteDiaryGetQueryOffsetDefault)
 })
 
-export const readDiaryApiV1PublicDiaryGetResponseTotalDefault = 0;
-export const readDiaryApiV1PublicDiaryGetResponseHasMoreDefault = false;
+export const readDiaryApiV1SiteDiaryGetResponseTotalDefault = 0;
+export const readDiaryApiV1SiteDiaryGetResponseHasMoreDefault = false;
 
-export const ReadDiaryApiV1PublicDiaryGetResponse = zod.object({
+export const ReadDiaryApiV1SiteDiaryGetResponse = zod.object({
   "items": zod.array(zod.object({
   "slug": zod.string().describe('URL-friendly unique identifier'),
   "title": zod.string().describe('Content display title'),
@@ -286,19 +306,19 @@ export const ReadDiaryApiV1PublicDiaryGetResponse = zod.object({
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
 })).describe('List of content entries'),
-  "total": zod.number().default(readDiaryApiV1PublicDiaryGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readDiaryApiV1PublicDiaryGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "total": zod.number().default(readDiaryApiV1SiteDiaryGetResponseTotalDefault).describe('Total number of matching entries'),
+  "has_more": zod.boolean().default(readDiaryApiV1SiteDiaryGetResponseHasMoreDefault).describe('Whether more entries are available')
 })
 
 
 /**
  * @summary 获取单篇日记
  */
-export const ReadDiaryEntryApiV1PublicDiarySlugGetParams = zod.object({
+export const ReadDiaryEntryApiV1SiteDiarySlugGetParams = zod.object({
   "slug": zod.string()
 })
 
-export const ReadDiaryEntryApiV1PublicDiarySlugGetResponse = zod.object({
+export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
   "slug": zod.string().describe('URL-friendly unique identifier'),
   "title": zod.string().describe('Content display title'),
   "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
@@ -328,23 +348,23 @@ export const ReadDiaryEntryApiV1PublicDiarySlugGetResponse = zod.object({
 /**
  * @summary 获取想法列表
  */
-export const readThoughtsApiV1PublicThoughtsGetQueryLimitDefault = 40;
-export const readThoughtsApiV1PublicThoughtsGetQueryLimitMax = 100;
+export const readThoughtsApiV1SiteThoughtsGetQueryLimitDefault = 40;
+export const readThoughtsApiV1SiteThoughtsGetQueryLimitMax = 100;
 
-export const readThoughtsApiV1PublicThoughtsGetQueryOffsetDefault = 0;
-export const readThoughtsApiV1PublicThoughtsGetQueryOffsetMin = 0;
+export const readThoughtsApiV1SiteThoughtsGetQueryOffsetDefault = 0;
+export const readThoughtsApiV1SiteThoughtsGetQueryOffsetMin = 0;
 
 
 
-export const ReadThoughtsApiV1PublicThoughtsGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readThoughtsApiV1PublicThoughtsGetQueryLimitMax).default(readThoughtsApiV1PublicThoughtsGetQueryLimitDefault),
-  "offset": zod.number().min(readThoughtsApiV1PublicThoughtsGetQueryOffsetMin).default(readThoughtsApiV1PublicThoughtsGetQueryOffsetDefault)
+export const ReadThoughtsApiV1SiteThoughtsGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readThoughtsApiV1SiteThoughtsGetQueryLimitMax).default(readThoughtsApiV1SiteThoughtsGetQueryLimitDefault),
+  "offset": zod.number().min(readThoughtsApiV1SiteThoughtsGetQueryOffsetMin).default(readThoughtsApiV1SiteThoughtsGetQueryOffsetDefault)
 })
 
-export const readThoughtsApiV1PublicThoughtsGetResponseTotalDefault = 0;
-export const readThoughtsApiV1PublicThoughtsGetResponseHasMoreDefault = false;
+export const readThoughtsApiV1SiteThoughtsGetResponseTotalDefault = 0;
+export const readThoughtsApiV1SiteThoughtsGetResponseHasMoreDefault = false;
 
-export const ReadThoughtsApiV1PublicThoughtsGetResponse = zod.object({
+export const ReadThoughtsApiV1SiteThoughtsGetResponse = zod.object({
   "items": zod.array(zod.object({
   "slug": zod.string().describe('URL-friendly unique identifier'),
   "title": zod.string().describe('Content display title'),
@@ -370,31 +390,31 @@ export const ReadThoughtsApiV1PublicThoughtsGetResponse = zod.object({
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
 })).describe('List of content entries'),
-  "total": zod.number().default(readThoughtsApiV1PublicThoughtsGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readThoughtsApiV1PublicThoughtsGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "total": zod.number().default(readThoughtsApiV1SiteThoughtsGetResponseTotalDefault).describe('Total number of matching entries'),
+  "has_more": zod.boolean().default(readThoughtsApiV1SiteThoughtsGetResponseHasMoreDefault).describe('Whether more entries are available')
 })
 
 
 /**
  * @summary 获取摘录列表
  */
-export const readExcerptsApiV1PublicExcerptsGetQueryLimitDefault = 40;
-export const readExcerptsApiV1PublicExcerptsGetQueryLimitMax = 100;
+export const readExcerptsApiV1SiteExcerptsGetQueryLimitDefault = 40;
+export const readExcerptsApiV1SiteExcerptsGetQueryLimitMax = 100;
 
-export const readExcerptsApiV1PublicExcerptsGetQueryOffsetDefault = 0;
-export const readExcerptsApiV1PublicExcerptsGetQueryOffsetMin = 0;
+export const readExcerptsApiV1SiteExcerptsGetQueryOffsetDefault = 0;
+export const readExcerptsApiV1SiteExcerptsGetQueryOffsetMin = 0;
 
 
 
-export const ReadExcerptsApiV1PublicExcerptsGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readExcerptsApiV1PublicExcerptsGetQueryLimitMax).default(readExcerptsApiV1PublicExcerptsGetQueryLimitDefault),
-  "offset": zod.number().min(readExcerptsApiV1PublicExcerptsGetQueryOffsetMin).default(readExcerptsApiV1PublicExcerptsGetQueryOffsetDefault)
+export const ReadExcerptsApiV1SiteExcerptsGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readExcerptsApiV1SiteExcerptsGetQueryLimitMax).default(readExcerptsApiV1SiteExcerptsGetQueryLimitDefault),
+  "offset": zod.number().min(readExcerptsApiV1SiteExcerptsGetQueryOffsetMin).default(readExcerptsApiV1SiteExcerptsGetQueryOffsetDefault)
 })
 
-export const readExcerptsApiV1PublicExcerptsGetResponseTotalDefault = 0;
-export const readExcerptsApiV1PublicExcerptsGetResponseHasMoreDefault = false;
+export const readExcerptsApiV1SiteExcerptsGetResponseTotalDefault = 0;
+export const readExcerptsApiV1SiteExcerptsGetResponseHasMoreDefault = false;
 
-export const ReadExcerptsApiV1PublicExcerptsGetResponse = zod.object({
+export const ReadExcerptsApiV1SiteExcerptsGetResponse = zod.object({
   "items": zod.array(zod.object({
   "slug": zod.string().describe('URL-friendly unique identifier'),
   "title": zod.string().describe('Content display title'),
@@ -420,24 +440,24 @@ export const ReadExcerptsApiV1PublicExcerptsGetResponse = zod.object({
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
   "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
 })).describe('List of content entries'),
-  "total": zod.number().default(readExcerptsApiV1PublicExcerptsGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readExcerptsApiV1PublicExcerptsGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "total": zod.number().default(readExcerptsApiV1SiteExcerptsGetResponseTotalDefault).describe('Total number of matching entries'),
+  "has_more": zod.boolean().default(readExcerptsApiV1SiteExcerptsGetResponseHasMoreDefault).describe('Whether more entries are available')
 })
 
 
 /**
  * @summary 获取友链列表
  */
-export const readFriendsApiV1PublicFriendsGetQueryLimitDefault = 100;
-export const readFriendsApiV1PublicFriendsGetQueryLimitMax = 200;
+export const readFriendsApiV1SiteFriendsGetQueryLimitDefault = 100;
+export const readFriendsApiV1SiteFriendsGetQueryLimitMax = 200;
 
 
 
-export const ReadFriendsApiV1PublicFriendsGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readFriendsApiV1PublicFriendsGetQueryLimitMax).default(readFriendsApiV1PublicFriendsGetQueryLimitDefault)
+export const ReadFriendsApiV1SiteFriendsGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readFriendsApiV1SiteFriendsGetQueryLimitMax).default(readFriendsApiV1SiteFriendsGetQueryLimitDefault)
 })
 
-export const ReadFriendsApiV1PublicFriendsGetResponse = zod.object({
+export const ReadFriendsApiV1SiteFriendsGetResponse = zod.object({
   "items": zod.array(zod.object({
   "name": zod.string().describe('Friend site name'),
   "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
@@ -452,16 +472,16 @@ export const ReadFriendsApiV1PublicFriendsGetResponse = zod.object({
 /**
  * @summary 获取友链动态
  */
-export const readFriendFeedApiV1PublicFriendFeedGetQueryLimitDefault = 20;
-export const readFriendFeedApiV1PublicFriendFeedGetQueryLimitMax = 200;
+export const readFriendFeedApiV1SiteFriendFeedGetQueryLimitDefault = 20;
+export const readFriendFeedApiV1SiteFriendFeedGetQueryLimitMax = 200;
 
 
 
-export const ReadFriendFeedApiV1PublicFriendFeedGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readFriendFeedApiV1PublicFriendFeedGetQueryLimitMax).default(readFriendFeedApiV1PublicFriendFeedGetQueryLimitDefault)
+export const ReadFriendFeedApiV1SiteFriendFeedGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readFriendFeedApiV1SiteFriendFeedGetQueryLimitMax).default(readFriendFeedApiV1SiteFriendFeedGetQueryLimitDefault)
 })
 
-export const ReadFriendFeedApiV1PublicFriendFeedGetResponse = zod.object({
+export const ReadFriendFeedApiV1SiteFriendFeedGetResponse = zod.object({
   "items": zod.array(zod.object({
   "title": zod.string().describe('Feed item title'),
   "summary": zod.union([zod.string(),zod.null()]).describe('Feed item summary'),
@@ -474,189 +494,14 @@ export const ReadFriendFeedApiV1PublicFriendFeedGetResponse = zod.object({
 
 
 /**
- * @summary 获取留言板
- */
-export const readGuestbookApiV1PublicGuestbookGetQueryLimitDefault = 50;
-export const readGuestbookApiV1PublicGuestbookGetQueryLimitMax = 100;
-
-
-
-export const ReadGuestbookApiV1PublicGuestbookGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readGuestbookApiV1PublicGuestbookGetQueryLimitMax).default(readGuestbookApiV1PublicGuestbookGetQueryLimitDefault)
-})
-
-export const ReadGuestbookApiV1PublicGuestbookGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique guestbook entry identifier'),
-  "name": zod.string().describe('Guest display name'),
-  "website": zod.union([zod.string(),zod.null()]).describe('Guest personal website URL'),
-  "body": zod.string().describe('Guestbook message body'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL')
-})).describe('List of guestbook entries')
-})
-
-
-/**
- * @summary 提交留言
- */
-export const CreateGuestbookApiV1PublicGuestbookPostBody = zod.object({
-  "name": zod.string().describe('Guest display name'),
-  "email": zod.union([zod.string(),zod.null()]).optional().describe('Guest email address'),
-  "website": zod.union([zod.string(),zod.null()]).optional().describe('Guest personal website URL'),
-  "body": zod.string().describe('Guestbook message body'),
-  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected guest avatar preset key'),
-  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
-})
-
-export const CreateGuestbookApiV1PublicGuestbookPostResponse = zod.object({
-  "item": zod.object({
-  "id": zod.string().describe('Unique guestbook entry identifier'),
-  "name": zod.string().describe('Guest display name'),
-  "website": zod.union([zod.string(),zod.null()]).describe('Guest personal website URL'),
-  "body": zod.string().describe('Guestbook message body'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL')
-}).describe('Created guestbook entry'),
-  "accepted": zod.boolean().describe('Whether the entry was auto-approved')
-})
-
-
-/**
- * @summary 获取内容评论
- */
-export const ReadCommentsApiV1PublicCommentsContentTypeSlugGetParams = zod.object({
-  "content_type": zod.string(),
-  "slug": zod.string()
-})
-
-export const readCommentsApiV1PublicCommentsContentTypeSlugGetResponseItemsItemLikeCountDefault = 0;
-export const readCommentsApiV1PublicCommentsContentTypeSlugGetResponseItemsItemLikedDefault = false;
-export const readCommentsApiV1PublicCommentsContentTypeSlugGetResponseItemsItemIsAuthorDefault = false;
-
-export const ReadCommentsApiV1PublicCommentsContentTypeSlugGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique comment identifier'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent comment ID for threaded replies'),
-  "author_name": zod.string().describe('Comment author display name'),
-  "body": zod.string().describe('Comment body text'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Comment creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
-  "like_count": zod.number().default(readCommentsApiV1PublicCommentsContentTypeSlugGetResponseItemsItemLikeCountDefault).describe('Number of likes on this comment'),
-  "liked": zod.boolean().default(readCommentsApiV1PublicCommentsContentTypeSlugGetResponseItemsItemLikedDefault).describe('Whether the current user liked this comment'),
-  "is_author": zod.boolean().default(readCommentsApiV1PublicCommentsContentTypeSlugGetResponseItemsItemIsAuthorDefault).describe('Whether the commenter is the content author'),
-  "replies": zod.array(zod.unknown()).optional().describe('Nested reply comments')
-}).describe('Created comment')).describe('List of comments')
-})
-
-
-/**
- * @summary 发表评论
- */
-export const CreateCommentApiV1PublicCommentsContentTypeSlugPostParams = zod.object({
-  "content_type": zod.string(),
-  "slug": zod.string()
-})
-
-export const CreateCommentApiV1PublicCommentsContentTypeSlugPostBody = zod.object({
-  "author_name": zod.string().describe('Comment author display name'),
-  "author_email": zod.union([zod.string(),zod.null()]).optional().describe('Comment author email address'),
-  "body": zod.string().describe('Comment body text'),
-  "parent_id": zod.union([zod.string(),zod.null()]).optional().describe('Parent comment ID for replies'),
-  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected comment avatar preset key'),
-  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
-})
-
-export const createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemLikeCountDefault = 0;
-export const createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemLikedDefault = false;
-export const createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemIsAuthorDefault = false;
-
-export const CreateCommentApiV1PublicCommentsContentTypeSlugPostResponse = zod.object({
-  "item": zod.object({
-  "id": zod.string().describe('Unique comment identifier'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent comment ID for threaded replies'),
-  "author_name": zod.string().describe('Comment author display name'),
-  "body": zod.string().describe('Comment body text'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Comment creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
-  "like_count": zod.number().default(createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemLikeCountDefault).describe('Number of likes on this comment'),
-  "liked": zod.boolean().default(createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemLikedDefault).describe('Whether the current user liked this comment'),
-  "is_author": zod.boolean().default(createCommentApiV1PublicCommentsContentTypeSlugPostResponseItemIsAuthorDefault).describe('Whether the commenter is the content author'),
-  "replies": zod.array(zod.unknown()).optional().describe('Nested reply comments')
-}).describe('Created comment'),
-  "accepted": zod.boolean().describe('Whether the comment was auto-approved')
-})
-
-
-/**
- * @summary 提交互动反应
- */
-export const CreateReactionApiV1PublicReactionsPostBody = zod.object({
-  "content_type": zod.string().describe('Content type: posts, diary, thoughts, or excerpts'),
-  "content_slug": zod.string().describe('Slug of the content to react to'),
-  "reaction_type": zod.string().describe('Reaction type identifier (e.g. like)'),
-  "client_token": zod.union([zod.string(),zod.null()]).optional().describe('Client-side deduplication token')
-})
-
-export const CreateReactionApiV1PublicReactionsPostResponse = zod.object({
-  "content_type": zod.string().describe('Content type'),
-  "content_slug": zod.string().describe('Content slug'),
-  "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count')
-})
-
-
-/**
- * @summary 查询反应计数
- */
-export const ReadReactionApiV1PublicReactionsContentTypeSlugReactionTypeGetParams = zod.object({
-  "content_type": zod.string(),
-  "slug": zod.string(),
-  "reaction_type": zod.string()
-})
-
-export const ReadReactionApiV1PublicReactionsContentTypeSlugReactionTypeGetResponse = zod.object({
-  "content_type": zod.string().describe('Content type'),
-  "content_slug": zod.string().describe('Content slug'),
-  "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count')
-})
-
-
-/**
- * @summary 评论图片上传
- */
-export const UploadCommentImageApiV1PublicCommentImagePostBody = zod.object({
-  "file": zod.instanceof(File)
-})
-
-export const uploadCommentImageApiV1PublicCommentImagePostResponseErrnoDefault = 0;
-
-export const UploadCommentImageApiV1PublicCommentImagePostResponse = zod.object({
-  "errno": zod.number().default(uploadCommentImageApiV1PublicCommentImagePostResponseErrnoDefault).describe('Error number, 0 for success'),
-  "data": zod.object({
-  "url": zod.string().describe('Public URL of the uploaded image')
-}).describe('Upload result data containing the image URL')
-})
-
-
-/**
  * @summary 获取日历事件
  */
-export const ReadCalendarApiV1PublicCalendarGetQueryParams = zod.object({
+export const ReadCalendarApiV1SiteCalendarGetQueryParams = zod.object({
   "from": zod.union([zod.string(),zod.null()]).optional(),
   "to": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const ReadCalendarApiV1PublicCalendarGetResponse = zod.object({
+export const ReadCalendarApiV1SiteCalendarGetResponse = zod.object({
   "range_start": zod.string().describe('Query range start date'),
   "range_end": zod.string().describe('Query range end date'),
   "events": zod.array(zod.object({
@@ -672,16 +517,16 @@ export const ReadCalendarApiV1PublicCalendarGetResponse = zod.object({
 /**
  * @summary 获取最近动态
  */
-export const readRecentActivityApiV1PublicRecentActivityGetQueryLimitDefault = 8;
-export const readRecentActivityApiV1PublicRecentActivityGetQueryLimitMax = 30;
+export const readRecentActivityApiV1SiteRecentActivityGetQueryLimitDefault = 8;
+export const readRecentActivityApiV1SiteRecentActivityGetQueryLimitMax = 30;
 
 
 
-export const ReadRecentActivityApiV1PublicRecentActivityGetQueryParams = zod.object({
-  "limit": zod.number().min(1).max(readRecentActivityApiV1PublicRecentActivityGetQueryLimitMax).default(readRecentActivityApiV1PublicRecentActivityGetQueryLimitDefault)
+export const ReadRecentActivityApiV1SiteRecentActivityGetQueryParams = zod.object({
+  "limit": zod.number().min(1).max(readRecentActivityApiV1SiteRecentActivityGetQueryLimitMax).default(readRecentActivityApiV1SiteRecentActivityGetQueryLimitDefault)
 })
 
-export const ReadRecentActivityApiV1PublicRecentActivityGetResponse = zod.object({
+export const ReadRecentActivityApiV1SiteRecentActivityGetResponse = zod.object({
   "items": zod.array(zod.object({
   "kind": zod.string().describe('Activity type: comment, guestbook, or reaction'),
   "actor_name": zod.string().describe('Name of the person who performed the action'),
@@ -697,17 +542,17 @@ export const ReadRecentActivityApiV1PublicRecentActivityGetResponse = zod.object
 /**
  * @summary 获取活动热力图
  */
-export const readActivityHeatmapApiV1PublicActivityHeatmapGetQueryWeeksDefault = 52;
-export const readActivityHeatmapApiV1PublicActivityHeatmapGetQueryWeeksMax = 104;
+export const readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksDefault = 52;
+export const readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksMax = 104;
 
 
 
-export const ReadActivityHeatmapApiV1PublicActivityHeatmapGetQueryParams = zod.object({
-  "weeks": zod.number().min(1).max(readActivityHeatmapApiV1PublicActivityHeatmapGetQueryWeeksMax).default(readActivityHeatmapApiV1PublicActivityHeatmapGetQueryWeeksDefault),
+export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetQueryParams = zod.object({
+  "weeks": zod.number().min(1).max(readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksMax).default(readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksDefault),
   "tz": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const ReadActivityHeatmapApiV1PublicActivityHeatmapGetResponse = zod.object({
+export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetResponse = zod.object({
   "stats": zod.object({
   "total_contributions": zod.number().describe('Total contributions in the period'),
   "peak_week": zod.number().describe('Highest weekly contribution count'),
@@ -726,25 +571,19 @@ export const ReadActivityHeatmapApiV1PublicActivityHeatmapGetResponse = zod.obje
 /**
  * @summary 健康检查
  */
-export const HealthzApiV1PublicHealthzGetResponse = zod.object({
+export const HealthzApiV1SiteHealthzGetResponse = zod.object({
   "status": zod.string().describe('Service health status'),
   "timestamp": zod.string().datetime({}).describe('Current server timestamp')
 })
 
 
 /**
- * @summary Sitemap
- */
-export const SitemapApiV1PublicSitemapXmlGetResponse = zod.unknown()
-
-
-/**
  * @summary 获取当前站点用户状态
  */
-export const readSiteAuthStateApiV1PublicAuthMeGetResponseUserOneIsAdminDefault = false;
-export const readSiteAuthStateApiV1PublicAuthMeGetResponseEmailLoginEnabledDefault = true;
+export const readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault = false;
+export const readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault = true;
 
-export const ReadSiteAuthStateApiV1PublicAuthMeGetResponse = zod.object({
+export const ReadSiteAuthStateApiV1SiteAuthMeGetResponse = zod.object({
   "authenticated": zod.boolean().describe('Whether the current request is authenticated'),
   "user": zod.union([zod.object({
   "id": zod.string().describe('Public site user id'),
@@ -754,10 +593,10 @@ export const ReadSiteAuthStateApiV1PublicAuthMeGetResponse = zod.object({
   "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
   "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
   "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(readSiteAuthStateApiV1PublicAuthMeGetResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "is_admin": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
   "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
 }),zod.null()]).optional().describe('Current site user'),
-  "email_login_enabled": zod.boolean().default(readSiteAuthStateApiV1PublicAuthMeGetResponseEmailLoginEnabledDefault).describe('Whether email login is enabled'),
+  "email_login_enabled": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault).describe('Whether email login is enabled'),
   "oauth_providers": zod.array(zod.string()).optional().describe('Enabled oauth providers')
 })
 
@@ -765,14 +604,14 @@ export const ReadSiteAuthStateApiV1PublicAuthMeGetResponse = zod.object({
 /**
  * @summary 更新当前站点用户资料
  */
-export const UpdateMyProfileApiV1PublicAuthMePatchBody = zod.object({
+export const UpdateMyProfileApiV1SiteAuthMePatchBody = zod.object({
   "display_name": zod.string().describe('Updated display name'),
   "avatar_url": zod.string().describe('Updated avatar URL')
 })
 
-export const updateMyProfileApiV1PublicAuthMePatchResponseIsAdminDefault = false;
+export const updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault = false;
 
-export const UpdateMyProfileApiV1PublicAuthMePatchResponse = zod.object({
+export const UpdateMyProfileApiV1SiteAuthMePatchResponse = zod.object({
   "id": zod.string().describe('Public site user id'),
   "email": zod.string().describe('Login identifier email'),
   "display_name": zod.string().describe('Display name'),
@@ -780,7 +619,7 @@ export const UpdateMyProfileApiV1PublicAuthMePatchResponse = zod.object({
   "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
   "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
   "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(updateMyProfileApiV1PublicAuthMePatchResponseIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "is_admin": zod.boolean().default(updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault).describe('Whether the current site user is using admin identity'),
   "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
 })
 
@@ -788,17 +627,17 @@ export const UpdateMyProfileApiV1PublicAuthMePatchResponse = zod.object({
 /**
  * @summary 获取头像候选
  */
-export const readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchDefault = 0;
-export const readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchMin = 0;
+export const readAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryBatchDefault = 0;
+export const readAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryBatchMin = 0;
 
 
 
-export const ReadAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryParams = zod.object({
+export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryParams = zod.object({
   "identity": zod.union([zod.string(),zod.null()]).optional(),
-  "batch": zod.number().min(readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchMin).default(readAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetQueryBatchDefault)
+  "batch": zod.number().min(readAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryBatchMin).default(readAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryBatchDefault)
 })
 
-export const ReadAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetResponse = zod.object({
+export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetResponse = zod.object({
   "batch": zod.number().describe('Current avatar candidate batch'),
   "total_batches": zod.number().describe('Total number of avatar candidate batches'),
   "avatar_candidates": zod.array(zod.object({
@@ -812,20 +651,20 @@ export const ReadAvatarCandidatesApiV1PublicAuthAvatarCandidatesGetResponse = zo
 /**
  * @summary 通过邮箱识别登录
  */
-export const EmailLoginApiV1PublicAuthEmailPostBody = zod.object({
+export const EmailLoginApiV1SiteAuthEmailPostBody = zod.object({
   "email": zod.string().describe('Email identifier'),
   "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Optional display name for first login'),
   "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Optional avatar URL for first login')
 })
 
-export const emailLoginApiV1PublicAuthEmailPostResponseRequiresProfileDefault = false;
-export const emailLoginApiV1PublicAuthEmailPostResponseUserOneIsAdminDefault = false;
-export const emailLoginApiV1PublicAuthEmailPostResponseAvatarBatchDefault = 0;
-export const emailLoginApiV1PublicAuthEmailPostResponseAvatarTotalBatchesDefault = 1;
+export const emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault = false;
+export const emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault = false;
+export const emailLoginApiV1SiteAuthEmailPostResponseAvatarBatchDefault = 0;
+export const emailLoginApiV1SiteAuthEmailPostResponseAvatarTotalBatchesDefault = 1;
 
-export const EmailLoginApiV1PublicAuthEmailPostResponse = zod.object({
+export const EmailLoginApiV1SiteAuthEmailPostResponse = zod.object({
   "authenticated": zod.boolean().describe('Whether a login session was created'),
-  "requires_profile": zod.boolean().default(emailLoginApiV1PublicAuthEmailPostResponseRequiresProfileDefault).describe('Whether first-login profile setup is required'),
+  "requires_profile": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault).describe('Whether first-login profile setup is required'),
   "user": zod.union([zod.object({
   "id": zod.string().describe('Public site user id'),
   "email": zod.string().describe('Login identifier email'),
@@ -834,7 +673,7 @@ export const EmailLoginApiV1PublicAuthEmailPostResponse = zod.object({
   "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
   "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
   "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(emailLoginApiV1PublicAuthEmailPostResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "is_admin": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
   "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
 }),zod.null()]).optional().describe('Current site user when authenticated'),
   "suggested_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Suggested display name for first login'),
@@ -843,25 +682,25 @@ export const EmailLoginApiV1PublicAuthEmailPostResponse = zod.object({
   "label": zod.string().describe('Avatar option label'),
   "avatar_url": zod.string().describe('Avatar option URL')
 })).optional().describe('Avatar candidates'),
-  "avatar_batch": zod.number().default(emailLoginApiV1PublicAuthEmailPostResponseAvatarBatchDefault).describe('Current avatar candidate batch'),
-  "avatar_total_batches": zod.number().default(emailLoginApiV1PublicAuthEmailPostResponseAvatarTotalBatchesDefault).describe('Total number of avatar candidate batches')
+  "avatar_batch": zod.number().default(emailLoginApiV1SiteAuthEmailPostResponseAvatarBatchDefault).describe('Current avatar candidate batch'),
+  "avatar_total_batches": zod.number().default(emailLoginApiV1SiteAuthEmailPostResponseAvatarTotalBatchesDefault).describe('Total number of avatar candidate batches')
 })
 
 
 /**
  * @summary 获取 OAuth 跳转地址
  */
-export const OauthStartApiV1PublicAuthOauthProviderStartGetParams = zod.object({
+export const OauthStartApiV1SiteAuthOauthProviderStartGetParams = zod.object({
   "provider": zod.string()
 })
 
-export const oauthStartApiV1PublicAuthOauthProviderStartGetQueryReturnToDefault = `/`;
+export const oauthStartApiV1SiteAuthOauthProviderStartGetQueryReturnToDefault = `/`;
 
-export const OauthStartApiV1PublicAuthOauthProviderStartGetQueryParams = zod.object({
-  "return_to": zod.string().default(oauthStartApiV1PublicAuthOauthProviderStartGetQueryReturnToDefault)
+export const OauthStartApiV1SiteAuthOauthProviderStartGetQueryParams = zod.object({
+  "return_to": zod.string().default(oauthStartApiV1SiteAuthOauthProviderStartGetQueryReturnToDefault)
 })
 
-export const OauthStartApiV1PublicAuthOauthProviderStartGetResponse = zod.object({
+export const OauthStartApiV1SiteAuthOauthProviderStartGetResponse = zod.object({
   "authorization_url": zod.string().describe('Provider authorization URL')
 })
 
@@ -869,16 +708,241 @@ export const OauthStartApiV1PublicAuthOauthProviderStartGetResponse = zod.object
 /**
  * @summary 处理 OAuth 回调
  */
-export const OauthCallbackApiV1PublicAuthOauthProviderCallbackGetParams = zod.object({
+export const OauthCallbackApiV1SiteAuthOauthProviderCallbackGetParams = zod.object({
   "provider": zod.string()
 })
 
-export const OauthCallbackApiV1PublicAuthOauthProviderCallbackGetQueryParams = zod.object({
+export const OauthCallbackApiV1SiteAuthOauthProviderCallbackGetQueryParams = zod.object({
   "code": zod.string(),
   "state": zod.string()
 })
 
-export const OauthCallbackApiV1PublicAuthOauthProviderCallbackGetResponse = zod.unknown()
+export const OauthCallbackApiV1SiteAuthOauthProviderCallbackGetResponse = zod.unknown()
+
+
+/**
+ * @summary 获取留言板
+ */
+export const readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageDefault = 1;
+
+export const readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeDefault = 20;
+export const readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeMax = 100;
+
+
+
+export const ReadGuestbookApiV1SiteInteractionsGuestbookGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeMax).default(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeDefault)
+})
+
+export const ReadGuestbookApiV1SiteInteractionsGuestbookGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().describe('Unique guestbook entry identifier'),
+  "name": zod.string().describe('Guest display name'),
+  "website": zod.union([zod.string(),zod.null()]).describe('Guest personal website URL'),
+  "body": zod.string().describe('Guestbook message body'),
+  "status": zod.string().describe('Moderation status'),
+  "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
+  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL')
+})).describe('List of guestbook entries'),
+  "total": zod.number().describe('Total number of public guestbook entries'),
+  "page": zod.number().describe('Current page number'),
+  "page_size": zod.number().describe('Number of guestbook entries per page'),
+  "has_more": zod.boolean().describe('Whether more guestbook entries can be loaded')
+})
+
+
+/**
+ * @summary 提交留言
+ */
+export const CreateGuestbookApiV1SiteInteractionsGuestbookPostBody = zod.object({
+  "name": zod.string().describe('Guest display name'),
+  "email": zod.union([zod.string(),zod.null()]).optional().describe('Guest email address'),
+  "website": zod.union([zod.string(),zod.null()]).optional().describe('Guest personal website URL'),
+  "body": zod.string().describe('Guestbook message body'),
+  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected guest avatar preset key'),
+  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
+})
+
+export const CreateGuestbookApiV1SiteInteractionsGuestbookPostResponse = zod.object({
+  "item": zod.object({
+  "id": zod.string().describe('Unique guestbook entry identifier'),
+  "name": zod.string().describe('Guest display name'),
+  "website": zod.union([zod.string(),zod.null()]).describe('Guest personal website URL'),
+  "body": zod.string().describe('Guestbook message body'),
+  "status": zod.string().describe('Moderation status'),
+  "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
+  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL')
+}).describe('Created guestbook entry'),
+  "accepted": zod.boolean().describe('Whether the entry was auto-approved')
+})
+
+
+/**
+ * @summary 获取内容评论
+ */
+export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetParams = zod.object({
+  "content_type": zod.string(),
+  "slug": zod.string()
+})
+
+export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageDefault = 1;
+
+export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageSizeDefault = 20;
+export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageSizeMax = 100;
+
+
+
+export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageSizeMax).default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageSizeDefault)
+})
+
+export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikeCountDefault = 0;
+export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikedDefault = false;
+export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemIsAuthorDefault = false;
+
+export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().describe('Unique comment identifier'),
+  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent comment ID for threaded replies'),
+  "author_name": zod.string().describe('Comment author display name'),
+  "body": zod.string().describe('Comment body text'),
+  "status": zod.string().describe('Moderation status'),
+  "created_at": zod.string().datetime({}).describe('Comment creation timestamp'),
+  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
+  "like_count": zod.number().default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikeCountDefault).describe('Number of likes on this comment'),
+  "liked": zod.boolean().default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikedDefault).describe('Whether the current user liked this comment'),
+  "is_author": zod.boolean().default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemIsAuthorDefault).describe('Whether the commenter is the content author'),
+  "replies": zod.array(zod.unknown()).optional().describe('Nested reply comments')
+}).describe('Created comment')).describe('List of comments'),
+  "total": zod.number().describe('Total number of root comment threads'),
+  "page": zod.number().describe('Current page number'),
+  "page_size": zod.number().describe('Number of root comment threads per page'),
+  "has_more": zod.boolean().describe('Whether more root comment threads can be loaded')
+})
+
+
+/**
+ * @summary 发表评论
+ */
+export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostParams = zod.object({
+  "content_type": zod.string(),
+  "slug": zod.string()
+})
+
+export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostBody = zod.object({
+  "author_name": zod.string().describe('Comment author display name'),
+  "author_email": zod.union([zod.string(),zod.null()]).optional().describe('Comment author email address'),
+  "body": zod.string().describe('Comment body text'),
+  "parent_id": zod.union([zod.string(),zod.null()]).optional().describe('Parent comment ID for replies'),
+  "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected comment avatar preset key'),
+  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
+})
+
+export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikeCountDefault = 0;
+export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikedDefault = false;
+export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemIsAuthorDefault = false;
+
+export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponse = zod.object({
+  "item": zod.object({
+  "id": zod.string().describe('Unique comment identifier'),
+  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent comment ID for threaded replies'),
+  "author_name": zod.string().describe('Comment author display name'),
+  "body": zod.string().describe('Comment body text'),
+  "status": zod.string().describe('Moderation status'),
+  "created_at": zod.string().datetime({}).describe('Comment creation timestamp'),
+  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
+  "like_count": zod.number().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikeCountDefault).describe('Number of likes on this comment'),
+  "liked": zod.boolean().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikedDefault).describe('Whether the current user liked this comment'),
+  "is_author": zod.boolean().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemIsAuthorDefault).describe('Whether the commenter is the content author'),
+  "replies": zod.array(zod.unknown()).optional().describe('Nested reply comments')
+}).describe('Created comment'),
+  "accepted": zod.boolean().describe('Whether the comment was auto-approved')
+})
+
+
+/**
+ * @summary 提交互动反应
+ */
+export const CreateReactionApiV1SiteInteractionsReactionsPostBody = zod.object({
+  "content_type": zod.string().describe('Content type: posts, diary, thoughts, or excerpts'),
+  "content_slug": zod.string().describe('Slug of the content to react to'),
+  "reaction_type": zod.string().describe('Reaction type identifier (e.g. like)'),
+  "client_token": zod.union([zod.string(),zod.null()]).optional().describe('Client-side deduplication token')
+})
+
+export const CreateReactionApiV1SiteInteractionsReactionsPostResponse = zod.object({
+  "content_type": zod.string().describe('Content type'),
+  "content_slug": zod.string().describe('Content slug'),
+  "reaction_type": zod.string().describe('Reaction type identifier'),
+  "total": zod.number().describe('Total reaction count')
+})
+
+
+/**
+ * @summary 查询反应计数
+ */
+export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams = zod.object({
+  "content_type": zod.string(),
+  "slug": zod.string(),
+  "reaction_type": zod.string()
+})
+
+export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse = zod.object({
+  "content_type": zod.string().describe('Content type'),
+  "content_slug": zod.string().describe('Content slug'),
+  "reaction_type": zod.string().describe('Reaction type identifier'),
+  "total": zod.number().describe('Total reaction count')
+})
+
+
+/**
+ * @summary 评论图片上传
+ */
+export const UploadCommentImageApiV1SiteInteractionsCommentImagePostBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const uploadCommentImageApiV1SiteInteractionsCommentImagePostResponseErrnoDefault = 0;
+
+export const UploadCommentImageApiV1SiteInteractionsCommentImagePostResponse = zod.object({
+  "errno": zod.number().default(uploadCommentImageApiV1SiteInteractionsCommentImagePostResponseErrnoDefault).describe('Error number, 0 for success'),
+  "data": zod.object({
+  "url": zod.string().describe('Public URL of the uploaded image')
+}).describe('Upload result data containing the image URL')
+})
+
+
+/**
+ * @summary Search Content
+ */
+export const searchContentApiV1SiteSearchGetQueryQMax = 200;
+
+export const searchContentApiV1SiteSearchGetQueryLimitDefault = 10;
+export const searchContentApiV1SiteSearchGetQueryLimitMax = 50;
+
+
+
+export const SearchContentApiV1SiteSearchGetQueryParams = zod.object({
+  "q": zod.string().min(1).max(searchContentApiV1SiteSearchGetQueryQMax),
+  "limit": zod.number().min(1).max(searchContentApiV1SiteSearchGetQueryLimitMax).default(searchContentApiV1SiteSearchGetQueryLimitDefault)
+})
+
+export const SearchContentApiV1SiteSearchGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "type": zod.string().describe('Content type'),
+  "slug": zod.string().describe('URL-friendly identifier'),
+  "title": zod.string().describe('Content title'),
+  "snippet": zod.string().describe('Matched text snippet'),
+  "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp')
+})).describe('Search result items'),
+  "total": zod.number().describe('Total matching results')
+})
 
 
 /**
@@ -1185,7 +1249,7 @@ export const BulkDeletePostsResponse = zod.object({
  */
 export const BulkStatusPostsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusPostsResponse = zod.object({
@@ -1393,7 +1457,7 @@ export const BulkDeleteDiaryResponse = zod.object({
  */
 export const BulkStatusDiaryBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusDiaryResponse = zod.object({
@@ -1601,7 +1665,7 @@ export const BulkDeleteThoughtsResponse = zod.object({
  */
 export const BulkStatusThoughtsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusThoughtsResponse = zod.object({
@@ -1809,7 +1873,7 @@ export const BulkDeleteExcerptsResponse = zod.object({
  */
 export const BulkStatusExcerptsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusExcerptsResponse = zod.object({
@@ -1829,6 +1893,7 @@ export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
   "footer_text": zod.string().describe('Footer text'),
   "author": zod.string().describe('Default author name'),
   "og_image": zod.string().describe('Open Graph image path'),
+  "site_icon_url": zod.string().describe('Browser tab icon path'),
   "hero_image_url": zod.string().describe('Hero image path'),
   "hero_poster_url": zod.string().describe('Hero video poster image path'),
   "meta_description": zod.string().describe('Meta description'),
@@ -1855,6 +1920,7 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
   "footer_text": zod.union([zod.string(),zod.null()]).optional().describe('Footer text'),
   "author": zod.union([zod.string(),zod.null()]).optional().describe('Default author name'),
   "og_image": zod.union([zod.string(),zod.null()]).optional().describe('Open Graph image path'),
+  "site_icon_url": zod.union([zod.string(),zod.null()]).optional().describe('Browser tab icon path'),
   "hero_image_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero image path'),
   "hero_poster_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero video poster image path'),
   "meta_description": zod.union([zod.string(),zod.null()]).optional().describe('Meta description for SEO'),
@@ -1876,6 +1942,7 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutResponse = zod.object({
   "footer_text": zod.string().describe('Footer text'),
   "author": zod.string().describe('Default author name'),
   "og_image": zod.string().describe('Open Graph image path'),
+  "site_icon_url": zod.string().describe('Browser tab icon path'),
   "hero_image_url": zod.string().describe('Hero image path'),
   "hero_poster_url": zod.string().describe('Hero video poster image path'),
   "meta_description": zod.string().describe('Meta description'),
@@ -1911,13 +1978,13 @@ export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = 
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "login_mode": zod.string().describe('Authentication mode'),
+  "login_mode": zod.string().describe('Authentication mode, fixed to login-required'),
   "oauth_url": zod.union([zod.string(),zod.null()]).describe('OAuth endpoint URL'),
   "oauth_providers": zod.array(zod.string()).describe('Enabled OAuth providers'),
-  "anonymous_enabled": zod.boolean().describe('Anonymous commenting allowed'),
+  "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Comment moderation mode'),
   "default_sorting": zod.string().describe('Default sort order'),
-  "page_size": zod.number().describe('Comments per page'),
+  "page_size": zod.number().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).default(getCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponseImageMaxBytesDefault).describe('Max upload image size in bytes'),
   "avatar_presets": zod.array(zod.record(zod.string(), zod.unknown())).describe('Predefined avatar options'),
   "guest_avatar_mode": zod.string().describe('Guest avatar mode'),
@@ -1947,13 +2014,13 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = z
   "emoji_presets": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.union([zod.boolean(),zod.null()]).optional().describe('Enable emoji search'),
   "image_uploader": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow image uploads in comments'),
-  "login_mode": zod.union([zod.string(),zod.null()]).optional().describe('Authentication mode'),
+  "login_mode": zod.union([zod.string(),zod.null()]).optional().describe('Authentication mode, fixed to login-required'),
   "oauth_url": zod.union([zod.string(),zod.null()]).optional().describe('OAuth endpoint URL'),
   "oauth_providers": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Enabled OAuth providers'),
-  "anonymous_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow anonymous commenting'),
+  "anonymous_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow email login for commenting'),
   "moderation_mode": zod.union([zod.string(),zod.null()]).optional().describe('Comment moderation mode'),
   "default_sorting": zod.union([zod.string(),zod.null()]).optional().describe('Default comment sort order'),
-  "page_size": zod.union([zod.number(),zod.null()]).optional().describe('Comments per page'),
+  "page_size": zod.union([zod.number(),zod.null()]).optional().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).optional().describe('Max upload image size in bytes'),
   "avatar_presets": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.null()]).optional().describe('Predefined avatar options'),
   "guest_avatar_mode": zod.union([zod.string(),zod.null()]).optional().describe('Guest avatar display mode'),
@@ -1980,13 +2047,13 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "login_mode": zod.string().describe('Authentication mode'),
+  "login_mode": zod.string().describe('Authentication mode, fixed to login-required'),
   "oauth_url": zod.union([zod.string(),zod.null()]).describe('OAuth endpoint URL'),
   "oauth_providers": zod.array(zod.string()).describe('Enabled OAuth providers'),
-  "anonymous_enabled": zod.boolean().describe('Anonymous commenting allowed'),
+  "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Comment moderation mode'),
   "default_sorting": zod.string().describe('Default sort order'),
-  "page_size": zod.number().describe('Comments per page'),
+  "page_size": zod.number().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).default(updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponseImageMaxBytesDefault).describe('Max upload image size in bytes'),
   "avatar_presets": zod.array(zod.record(zod.string(), zod.unknown())).describe('Predefined avatar options'),
   "guest_avatar_mode": zod.string().describe('Guest avatar mode'),
@@ -2128,7 +2195,7 @@ export const BulkDeleteSocialLinksResponse = zod.object({
  */
 export const BulkStatusSocialLinksBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusSocialLinksResponse = zod.object({
@@ -2249,7 +2316,7 @@ export const BulkDeletePoemsResponse = zod.object({
  */
 export const BulkStatusPoemsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusPoemsResponse = zod.object({
@@ -2413,7 +2480,7 @@ export const BulkDeletePageCopyResponse = zod.object({
  */
 export const BulkStatusPageCopyBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusPageCopyResponse = zod.object({
@@ -2534,7 +2601,7 @@ export const BulkDeleteDisplayOptionsResponse = zod.object({
  */
 export const BulkStatusDisplayOptionsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusDisplayOptionsResponse = zod.object({
@@ -2714,7 +2781,7 @@ export const BulkDeleteNavItemsResponse = zod.object({
  */
 export const BulkStatusNavItemsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusNavItemsResponse = zod.object({
@@ -2887,7 +2954,7 @@ export const BulkDeleteBasicsResponse = zod.object({
  */
 export const BulkStatusBasicsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusBasicsResponse = zod.object({
@@ -3013,7 +3080,7 @@ export const BulkDeleteSkillsResponse = zod.object({
  */
 export const BulkStatusSkillsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusSkillsResponse = zod.object({
@@ -3171,7 +3238,7 @@ export const BulkDeleteExperiencesResponse = zod.object({
  */
 export const BulkStatusExperiencesBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusExperiencesResponse = zod.object({
@@ -3309,7 +3376,7 @@ export const BulkDeleteFriendsResponse = zod.object({
  */
 export const BulkStatusFriendsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.enum(['draft', 'published', 'archived']).describe('New status value to set')
+  "status": zod.string().describe('New status value to set')
 })
 
 export const BulkStatusFriendsResponse = zod.object({
@@ -3465,6 +3532,7 @@ export const ListCommentsApiV1AdminModerationCommentsGetResponse = zod.object({
   "parent_id": zod.union([zod.string(),zod.null()]),
   "author_name": zod.string(),
   "author_email": zod.union([zod.string(),zod.null()]),
+  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
   "body": zod.string(),
   "status": zod.string(),
   "created_at": zod.string().datetime({}),
@@ -3495,6 +3563,7 @@ export const ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModerat
   "parent_id": zod.union([zod.string(),zod.null()]),
   "author_name": zod.string(),
   "author_email": zod.union([zod.string(),zod.null()]),
+  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
   "body": zod.string(),
   "status": zod.string(),
   "created_at": zod.string().datetime({}),
@@ -3528,6 +3597,7 @@ export const ListGuestbookApiV1AdminModerationGuestbookGetResponse = zod.object(
   "id": zod.string(),
   "name": zod.string(),
   "email": zod.union([zod.string(),zod.null()]),
+  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
   "website": zod.union([zod.string(),zod.null()]),
   "body": zod.string(),
   "status": zod.string(),
@@ -3556,6 +3626,7 @@ export const ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModera
   "id": zod.string(),
   "name": zod.string(),
   "email": zod.union([zod.string(),zod.null()]),
+  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
   "website": zod.union([zod.string(),zod.null()]),
   "body": zod.string(),
   "status": zod.string(),
@@ -3701,61 +3772,6 @@ export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse = zod.objec
  */
 export const DeleteAssetEndpointApiV1AdminAssetsAssetIdDeleteParams = zod.object({
   "asset_id": zod.string()
-})
-
-
-/**
- * @summary 获取 API 密钥列表
- */
-export const ListApiKeysApiV1AdminSystemApiKeysGetResponseItem = zod.object({
-  "id": zod.string(),
-  "key_name": zod.string(),
-  "key_prefix": zod.string(),
-  "scopes": zod.array(zod.string()),
-  "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})
-export const ListApiKeysApiV1AdminSystemApiKeysGetResponse = zod.array(ListApiKeysApiV1AdminSystemApiKeysGetResponseItem)
-
-
-/**
- * @summary 创建 API 密钥
- */
-export const CreateApiKeyApiV1AdminSystemApiKeysPostBody = zod.object({
-  "key_name": zod.string(),
-  "scopes": zod.array(zod.string()).optional()
-})
-
-
-/**
- * @summary 更新 API 密钥
- */
-export const UpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutParams = zod.object({
-  "key_id": zod.string()
-})
-
-export const UpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutBody = zod.object({
-  "key_name": zod.union([zod.string(),zod.null()]).optional(),
-  "scopes": zod.union([zod.array(zod.string()),zod.null()]).optional()
-})
-
-export const UpdateApiKeyApiV1AdminSystemApiKeysKeyIdPutResponse = zod.object({
-  "id": zod.string(),
-  "key_name": zod.string(),
-  "key_prefix": zod.string(),
-  "scopes": zod.array(zod.string()),
-  "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})
-
-
-/**
- * @summary 删除 API 密钥
- */
-export const DeleteApiKeyApiV1AdminSystemApiKeysKeyIdDeleteParams = zod.object({
-  "key_id": zod.string()
 })
 
 
@@ -4001,6 +4017,78 @@ export const SystemInfoApiV1AdminSystemInfoGetResponse = zod.object({
   "uptime_seconds": zod.number(),
   "environment": zod.string(),
   "site_url": zod.string()
+})
+
+
+/**
+ * @summary 获取 API 密钥列表
+ */
+export const ListApiKeysApiV1AdminIntegrationsApiKeysGetResponseItem = zod.object({
+  "id": zod.string(),
+  "key_name": zod.string(),
+  "key_prefix": zod.string(),
+  "scopes": zod.array(zod.string()),
+  "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const ListApiKeysApiV1AdminIntegrationsApiKeysGetResponse = zod.array(ListApiKeysApiV1AdminIntegrationsApiKeysGetResponseItem)
+
+
+/**
+ * @summary 创建 API 密钥
+ */
+export const CreateApiKeyApiV1AdminIntegrationsApiKeysPostBody = zod.object({
+  "key_name": zod.string(),
+  "scopes": zod.array(zod.string()).optional()
+})
+
+
+/**
+ * @summary 更新 API 密钥
+ */
+export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutParams = zod.object({
+  "key_id": zod.string()
+})
+
+export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutBody = zod.object({
+  "key_name": zod.union([zod.string(),zod.null()]).optional(),
+  "scopes": zod.union([zod.array(zod.string()),zod.null()]).optional()
+})
+
+export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse = zod.object({
+  "id": zod.string(),
+  "key_name": zod.string(),
+  "key_prefix": zod.string(),
+  "scopes": zod.array(zod.string()),
+  "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 删除 API 密钥
+ */
+export const DeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDeleteParams = zod.object({
+  "key_id": zod.string()
+})
+
+
+/**
+ * @summary 获取 Feed 列表
+ */
+export const listFeedsApiV1AdminIntegrationsFeedsGetResponseItemsItemEnabledDefault = true;
+export const listFeedsApiV1AdminIntegrationsFeedsGetResponseItemsItemFormatDefault = `rss`;
+
+export const ListFeedsApiV1AdminIntegrationsFeedsGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "url": zod.string(),
+  "enabled": zod.boolean().default(listFeedsApiV1AdminIntegrationsFeedsGetResponseItemsItemEnabledDefault),
+  "format": zod.string().default(listFeedsApiV1AdminIntegrationsFeedsGetResponseItemsItemFormatDefault)
+}))
 })
 
 
@@ -4281,33 +4369,6 @@ export const DeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentit
 
 
 /**
- * @summary Search Content
- */
-export const searchContentApiV1PublicSearchGetQueryQMax = 200;
-
-export const searchContentApiV1PublicSearchGetQueryLimitDefault = 10;
-export const searchContentApiV1PublicSearchGetQueryLimitMax = 50;
-
-
-
-export const SearchContentApiV1PublicSearchGetQueryParams = zod.object({
-  "q": zod.string().min(1).max(searchContentApiV1PublicSearchGetQueryQMax),
-  "limit": zod.number().min(1).max(searchContentApiV1PublicSearchGetQueryLimitMax).default(searchContentApiV1PublicSearchGetQueryLimitDefault)
-})
-
-export const SearchContentApiV1PublicSearchGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "type": zod.string().describe('Content type'),
-  "slug": zod.string().describe('URL-friendly identifier'),
-  "title": zod.string().describe('Content title'),
-  "snippet": zod.string().describe('Matched text snippet'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp')
-})).describe('Search result items'),
-  "total": zod.number().describe('Total matching results')
-})
-
-
-/**
  * @summary Sitemap
  */
 export const SitemapSitemapXmlGetResponse = zod.unknown()
@@ -4317,3 +4378,39 @@ export const SitemapSitemapXmlGetResponse = zod.unknown()
  * @summary Robots Txt
  */
 export const RobotsTxtRobotsTxtGetResponse = zod.unknown()
+
+
+/**
+ * @summary Posts Feed
+ */
+export const PostsFeedFeedsPostsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Rss Alias
+ */
+export const RssAliasRssXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Sitemap
+ */
+export const SitemapApiV1SiteSitemapXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Robots Txt
+ */
+export const RobotsTxtApiV1SiteRobotsTxtGetResponse = zod.unknown()
+
+
+/**
+ * @summary Posts Feed
+ */
+export const PostsFeedApiV1SiteFeedsPostsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Rss Alias
+ */
+export const RssAliasApiV1SiteRssXmlGetResponse = zod.unknown()

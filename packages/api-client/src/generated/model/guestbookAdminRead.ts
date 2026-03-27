@@ -9,6 +9,8 @@ export interface GuestbookAdminRead {
   id: string;
   name: string;
   email: string | null;
+  /** Normalized auth provider */
+  auth_provider?: string | null;
   website: string | null;
   body: string;
   status: string;

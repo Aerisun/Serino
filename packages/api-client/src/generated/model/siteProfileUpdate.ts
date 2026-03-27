@@ -21,6 +21,8 @@ export interface SiteProfileUpdate {
   author?: string | null;
   /** Open Graph image path */
   og_image?: string | null;
+  /** Browser tab icon path */
+  site_icon_url?: string | null;
   /** Hero image path */
   hero_image_url?: string | null;
   /** Hero video poster image path */

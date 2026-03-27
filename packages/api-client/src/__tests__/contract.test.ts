@@ -4,10 +4,10 @@ import { resolve, basename } from "path";
 
 // Import generated Zod schemas
 import {
-  ReadSiteConfigApiV1PublicSiteGetResponse,
-  ReadPageCopyApiV1PublicPagesGetResponse,
-  ReadPostsApiV1PublicPostsGetResponse,
-  HealthzApiV1PublicHealthzGetResponse,
+  ReadSiteConfigApiV1SiteSiteGetResponse,
+  ReadPageCopyApiV1SitePagesGetResponse,
+  ReadPostsApiV1SitePostsGetResponse,
+  HealthzApiV1SiteHealthzGetResponse,
   MeApiV1AdminAuthMeGetResponse,
   ListPostsResponse,
   ListSessionsEndpointApiV1AdminAuthSessionsGetResponse,
@@ -18,20 +18,20 @@ const FIXTURES_DIR = resolve(__dirname, "fixtures");
 // Map fixture file names to their corresponding Zod schemas
 const fixtureSchemaMap: Record<string, { schema: unknown; name: string }> = {
   "public_site_config.json": {
-    schema: ReadSiteConfigApiV1PublicSiteGetResponse,
-    name: "ReadSiteConfigApiV1PublicSiteGetResponse",
+    schema: ReadSiteConfigApiV1SiteSiteGetResponse,
+    name: "ReadSiteConfigApiV1SiteSiteGetResponse",
   },
   "public_pages.json": {
-    schema: ReadPageCopyApiV1PublicPagesGetResponse,
-    name: "ReadPageCopyApiV1PublicPagesGetResponse",
+    schema: ReadPageCopyApiV1SitePagesGetResponse,
+    name: "ReadPageCopyApiV1SitePagesGetResponse",
   },
   "public_posts_list.json": {
-    schema: ReadPostsApiV1PublicPostsGetResponse,
-    name: "ReadPostsApiV1PublicPostsGetResponse",
+    schema: ReadPostsApiV1SitePostsGetResponse,
+    name: "ReadPostsApiV1SitePostsGetResponse",
   },
   "public_healthz.json": {
-    schema: HealthzApiV1PublicHealthzGetResponse,
-    name: "HealthzApiV1PublicHealthzGetResponse",
+    schema: HealthzApiV1SiteHealthzGetResponse,
+    name: "HealthzApiV1SiteHealthzGetResponse",
   },
   "admin_me.json": {
     schema: MeApiV1AdminAuthMeGetResponse,

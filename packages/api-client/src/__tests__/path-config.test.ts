@@ -88,10 +88,17 @@ describe("path config", () => {
       const apiModule = await import("../../../../frontend/src/lib/api/index.ts");
       expect(apiModule.API_BASE_PATH).toBe("/service");
 
-      vi.doMock("@serino/api-client/public", () => ({
-        readCommunityConfigApiV1PublicCommunityConfigGet: vi.fn(async () => {
+      vi.doMock("@serino/api-client/site", () => ({
+        readCommunityConfigApiV1SiteCommunityConfigGet: vi.fn(async () => {
           throw new Error("offline");
         }),
+      }));
+
+      vi.doMock("@/lib/page-size", () => ({
+        clampPageSize: (value: number | null | undefined, fallback: number) => {
+          const candidate = Number(value ?? fallback);
+          return Number.isFinite(candidate) ? Math.min(Math.max(Math.floor(candidate), 1), 50) : fallback;
+        },
       }));
 
       const communityModule = await import("../../../../frontend/src/lib/community-config.ts");

@@ -4,11 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { BulkStatusRequestStatus } from './bulkStatusRequestStatus';
 
 export interface BulkStatusRequest {
   /** List of item IDs to update */
   ids: string[];
   /** New status value to set */
-  status: BulkStatusRequestStatus;
+  status: string;
 }

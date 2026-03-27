@@ -17,6 +17,7 @@ export default defineConfig({
           "admin-moderation",
           "admin-assets",
           "admin-system",
+          "admin-integrations",
           "admin-content-meta",
           "admin-import-export",
           "admin-visitors",
@@ -44,7 +45,7 @@ export default defineConfig({
     input: {
       target: "./openapi.json",
       filters: {
-        tags: ["public", "search", "seo"],
+        tags: ["site", "site-auth", "site-interactions", "seo"],
       },
     },
     output: {

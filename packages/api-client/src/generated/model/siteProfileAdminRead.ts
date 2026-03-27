@@ -24,6 +24,8 @@ export interface SiteProfileAdminRead {
   author: string;
   /** Open Graph image path */
   og_image: string;
+  /** Browser tab icon path */
+  site_icon_url: string;
   /** Hero image path */
   hero_image_url: string;
   /** Hero video poster image path */

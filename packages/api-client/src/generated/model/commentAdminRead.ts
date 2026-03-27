@@ -12,6 +12,8 @@ export interface CommentAdminRead {
   parent_id: string | null;
   author_name: string;
   author_email: string | null;
+  /** Normalized auth provider */
+  auth_provider?: string | null;
   body: string;
   status: string;
   created_at: string;

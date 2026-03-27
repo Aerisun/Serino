@@ -5,13 +5,13 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/v1/public/site": {
+    "/api/v1/site/site": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取站点配置",
-        "operationId": "read_site_config_api_v1_public_site_get",
+        "operationId": "read_site_config_api_v1_site_site_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -26,13 +26,13 @@
         }
       }
     },
-    "/api/v1/public/pages": {
+    "/api/v1/site/pages": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取页面文案",
-        "operationId": "read_page_copy_api_v1_public_pages_get",
+        "operationId": "read_page_copy_api_v1_site_pages_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -47,13 +47,13 @@
         }
       }
     },
-    "/api/v1/public/community-config": {
+    "/api/v1/site/community-config": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取社区评论配置",
-        "operationId": "read_community_config_api_v1_public_community_config_get",
+        "operationId": "read_community_config_api_v1_site_community_config_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -68,13 +68,13 @@
         }
       }
     },
-    "/api/v1/public/resume": {
+    "/api/v1/site/resume": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取简历数据",
-        "operationId": "read_resume_api_v1_public_resume_get",
+        "operationId": "read_resume_api_v1_site_resume_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -89,13 +89,114 @@
         }
       }
     },
-    "/api/v1/public/posts": {
+    "/api/v1/site/poem-preview": {
       "get": {
         "tags": [
-          "public"
+          "site"
+        ],
+        "summary": "获取首页诗句预览",
+        "operationId": "read_poem_preview_api_v1_site_poem_preview_get",
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "custom",
+                    "hitokoto"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Types"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Keywords"
+            }
+          },
+          {
+            "name": "strict",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Strict"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePoemPreviewRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/posts": {
+      "get": {
+        "tags": [
+          "site"
         ],
         "summary": "获取已发布文章列表",
-        "operationId": "read_posts_api_v1_public_posts_get",
+        "operationId": "read_posts_api_v1_site_posts_get",
         "parameters": [
           {
             "name": "limit",
@@ -145,13 +246,13 @@
         }
       }
     },
-    "/api/v1/public/posts/{slug}": {
+    "/api/v1/site/posts/{slug}": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取单篇文章",
-        "operationId": "read_post_api_v1_public_posts__slug__get",
+        "operationId": "read_post_api_v1_site_posts__slug__get",
         "parameters": [
           {
             "name": "slug",
@@ -187,13 +288,13 @@
         }
       }
     },
-    "/api/v1/public/diary": {
+    "/api/v1/site/diary": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取日记列表",
-        "operationId": "read_diary_api_v1_public_diary_get",
+        "operationId": "read_diary_api_v1_site_diary_get",
         "parameters": [
           {
             "name": "limit",
@@ -243,13 +344,13 @@
         }
       }
     },
-    "/api/v1/public/diary/{slug}": {
+    "/api/v1/site/diary/{slug}": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取单篇日记",
-        "operationId": "read_diary_entry_api_v1_public_diary__slug__get",
+        "operationId": "read_diary_entry_api_v1_site_diary__slug__get",
         "parameters": [
           {
             "name": "slug",
@@ -285,13 +386,13 @@
         }
       }
     },
-    "/api/v1/public/thoughts": {
+    "/api/v1/site/thoughts": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取想法列表",
-        "operationId": "read_thoughts_api_v1_public_thoughts_get",
+        "operationId": "read_thoughts_api_v1_site_thoughts_get",
         "parameters": [
           {
             "name": "limit",
@@ -341,13 +442,13 @@
         }
       }
     },
-    "/api/v1/public/excerpts": {
+    "/api/v1/site/excerpts": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取摘录列表",
-        "operationId": "read_excerpts_api_v1_public_excerpts_get",
+        "operationId": "read_excerpts_api_v1_site_excerpts_get",
         "parameters": [
           {
             "name": "limit",
@@ -397,13 +498,13 @@
         }
       }
     },
-    "/api/v1/public/friends": {
+    "/api/v1/site/friends": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取友链列表",
-        "operationId": "read_friends_api_v1_public_friends_get",
+        "operationId": "read_friends_api_v1_site_friends_get",
         "parameters": [
           {
             "name": "limit",
@@ -442,13 +543,13 @@
         }
       }
     },
-    "/api/v1/public/friend-feed": {
+    "/api/v1/site/friend-feed": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
         "summary": "获取友链动态",
-        "operationId": "read_friend_feed_api_v1_public_friend_feed_get",
+        "operationId": "read_friend_feed_api_v1_site_friend_feed_get",
         "parameters": [
           {
             "name": "limit",
@@ -487,13 +588,78 @@
         }
       }
     },
-    "/api/v1/public/guestbook": {
+    "/api/v1/site/calendar": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
-        "summary": "获取留言板",
-        "operationId": "read_guestbook_api_v1_public_guestbook_get",
+        "summary": "获取日历事件",
+        "operationId": "read_calendar_api_v1_site_calendar_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/recent-activity": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取最近动态",
+        "operationId": "read_recent_activity_api_v1_site_recent_activity_get",
         "parameters": [
           {
             "name": "limit",
@@ -501,10 +667,539 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentActivityRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/activity-heatmap": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取活动热力图",
+        "operationId": "read_activity_heatmap_api_v1_site_activity_heatmap_get",
+        "parameters": [
+          {
+            "name": "weeks",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 104,
+              "minimum": 1,
+              "default": 52,
+              "title": "Weeks"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityHeatmapRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/healthz": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "健康检查",
+        "operationId": "healthz_api_v1_site_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-auth/me": {
+      "get": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "获取当前站点用户状态",
+        "operationId": "read_site_auth_state_api_v1_site_auth_me_get",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthStateRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "更新当前站点用户资料",
+        "operationId": "update_my_profile_api_v1_site_auth_me_patch",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteAuthProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthUserRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-auth/avatar-candidates": {
+      "get": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "获取头像候选",
+        "operationId": "read_avatar_candidates_api_v1_site_auth_avatar_candidates_get",
+        "parameters": [
+          {
+            "name": "identity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Identity"
+            }
+          },
+          {
+            "name": "batch",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Batch"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAuthAvatarCandidateBatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-auth/email": {
+      "post": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "通过邮箱识别登录",
+        "operationId": "email_login_api_v1_site_auth_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-auth/logout": {
+      "post": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "站点用户登出",
+        "operationId": "logout_api_v1_site_auth_logout_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-auth/oauth/{provider}/start": {
+      "get": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "获取 OAuth 跳转地址",
+        "operationId": "oauth_start_api_v1_site_auth_oauth__provider__start_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "return_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/",
+              "title": "Return To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-auth/oauth/{provider}/callback": {
+      "get": {
+        "tags": [
+          "site-auth"
+        ],
+        "summary": "处理 OAuth 回调",
+        "operationId": "oauth_callback_api_v1_site_auth_oauth__provider__callback_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "aerisun_site_oauth_state",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Oauth State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-interactions/guestbook": {
+      "get": {
+        "tags": [
+          "site-interactions"
+        ],
+        "summary": "获取留言板",
+        "operationId": "read_guestbook_api_v1_site_interactions_guestbook_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "default": 50,
-              "title": "Limit"
+              "default": 20,
+              "title": "Page Size"
             }
           }
         ],
@@ -533,10 +1228,10 @@
       },
       "post": {
         "tags": [
-          "public"
+          "site-interactions"
         ],
         "summary": "提交留言",
-        "operationId": "create_guestbook_api_v1_public_guestbook_post",
+        "operationId": "create_guestbook_api_v1_site_interactions_guestbook_post",
         "parameters": [
           {
             "name": "aerisun_site_session",
@@ -589,13 +1284,13 @@
         }
       }
     },
-    "/api/v1/public/comments/{content_type}/{slug}": {
+    "/api/v1/site-interactions/comments/{content_type}/{slug}": {
       "get": {
         "tags": [
-          "public"
+          "site-interactions"
         ],
         "summary": "获取内容评论",
-        "operationId": "read_comments_api_v1_public_comments__content_type___slug__get",
+        "operationId": "read_comments_api_v1_site_interactions_comments__content_type___slug__get",
         "parameters": [
           {
             "name": "content_type",
@@ -613,6 +1308,29 @@
             "schema": {
               "type": "string",
               "title": "Slug"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
             }
           }
         ],
@@ -641,10 +1359,10 @@
       },
       "post": {
         "tags": [
-          "public"
+          "site-interactions"
         ],
         "summary": "发表评论",
-        "operationId": "create_comment_api_v1_public_comments__content_type___slug__post",
+        "operationId": "create_comment_api_v1_site_interactions_comments__content_type___slug__post",
         "parameters": [
           {
             "name": "content_type",
@@ -715,13 +1433,13 @@
         }
       }
     },
-    "/api/v1/public/reactions": {
+    "/api/v1/site-interactions/reactions": {
       "post": {
         "tags": [
-          "public"
+          "site-interactions"
         ],
         "summary": "提交互动反应",
-        "operationId": "create_reaction_api_v1_public_reactions_post",
+        "operationId": "create_reaction_api_v1_site_interactions_reactions_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -756,13 +1474,13 @@
         }
       }
     },
-    "/api/v1/public/reactions/{content_type}/{slug}/{reaction_type}": {
+    "/api/v1/site-interactions/reactions/{content_type}/{slug}/{reaction_type}": {
       "get": {
         "tags": [
-          "public"
+          "site-interactions"
         ],
         "summary": "查询反应计数",
-        "operationId": "read_reaction_api_v1_public_reactions__content_type___slug___reaction_type__get",
+        "operationId": "read_reaction_api_v1_site_interactions_reactions__content_type___slug___reaction_type__get",
         "parameters": [
           {
             "name": "content_type",
@@ -816,18 +1534,18 @@
         }
       }
     },
-    "/api/v1/public/comment-image": {
+    "/api/v1/site-interactions/comment-image": {
       "post": {
         "tags": [
-          "public"
+          "site-interactions"
         ],
         "summary": "评论图片上传",
-        "operationId": "upload_comment_image_api_v1_public_comment_image_post",
+        "operationId": "upload_comment_image_api_v1_site_interactions_comment_image_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_upload_comment_image_api_v1_public_comment_image_post"
+                "$ref": "#/components/schemas/Body_upload_comment_image_api_v1_site_interactions_comment_image_post"
               }
             }
           },
@@ -857,88 +1575,34 @@
         }
       }
     },
-    "/api/v1/public/calendar": {
+    "/api/v1/site/search": {
       "get": {
         "tags": [
-          "public"
+          "site"
         ],
-        "summary": "获取日历事件",
-        "operationId": "read_calendar_api_v1_public_calendar_get",
+        "summary": "Search Content",
+        "operationId": "search_content_api_v1_site_search_get",
         "parameters": [
           {
-            "name": "from",
+            "name": "q",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "From"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Q"
             }
           },
-          {
-            "name": "to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "To"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalendarRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/recent-activity": {
-      "get": {
-        "tags": [
-          "public"
-        ],
-        "summary": "获取最近动态",
-        "operationId": "read_recent_activity_api_v1_public_recent_activity_get",
-        "parameters": [
           {
             "name": "limit",
             "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 30,
+              "maximum": 50,
               "minimum": 1,
-              "default": 8,
+              "default": 10,
               "title": "Limit"
             }
           }
@@ -949,500 +1613,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RecentActivityRead"
+                  "$ref": "#/components/schemas/SearchResponse"
                 }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/activity-heatmap": {
-      "get": {
-        "tags": [
-          "public"
-        ],
-        "summary": "获取活动热力图",
-        "operationId": "read_activity_heatmap_api_v1_public_activity_heatmap_get",
-        "parameters": [
-          {
-            "name": "weeks",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 104,
-              "minimum": 1,
-              "default": 52,
-              "title": "Weeks"
-            }
-          },
-          {
-            "name": "tz",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tz"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ActivityHeatmapRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/healthz": {
-      "get": {
-        "tags": [
-          "public"
-        ],
-        "summary": "健康检查",
-        "operationId": "healthz_api_v1_public_healthz_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthRead"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/sitemap.xml": {
-      "get": {
-        "tags": [
-          "public"
-        ],
-        "summary": "Sitemap",
-        "operationId": "sitemap_api_v1_public_sitemap_xml_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/auth/me": {
-      "get": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "获取当前站点用户状态",
-        "operationId": "read_site_auth_state_api_v1_public_auth_me_get",
-        "parameters": [
-          {
-            "name": "aerisun_site_session",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Aerisun Site Session"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SiteAuthStateRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "更新当前站点用户资料",
-        "operationId": "update_my_profile_api_v1_public_auth_me_patch",
-        "parameters": [
-          {
-            "name": "aerisun_site_session",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Aerisun Site Session"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SiteAuthProfileUpdateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SiteAuthUserRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/auth/avatar-candidates": {
-      "get": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "获取头像候选",
-        "operationId": "read_avatar_candidates_api_v1_public_auth_avatar_candidates_get",
-        "parameters": [
-          {
-            "name": "identity",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Identity"
-            }
-          },
-          {
-            "name": "batch",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Batch"
-            }
-          },
-          {
-            "name": "aerisun_site_session",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Aerisun Site Session"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SiteAuthAvatarCandidateBatchRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/auth/email": {
-      "post": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "通过邮箱识别登录",
-        "operationId": "email_login_api_v1_public_auth_email_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EmailLoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmailLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/auth/logout": {
-      "post": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "站点用户登出",
-        "operationId": "logout_api_v1_public_auth_logout_post",
-        "parameters": [
-          {
-            "name": "aerisun_site_session",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Aerisun Site Session"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/auth/oauth/{provider}/start": {
-      "get": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "获取 OAuth 跳转地址",
-        "operationId": "oauth_start_api_v1_public_auth_oauth__provider__start_get",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Provider"
-            }
-          },
-          {
-            "name": "return_to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/",
-              "title": "Return To"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OAuthStartResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/public/auth/oauth/{provider}/callback": {
-      "get": {
-        "tags": [
-          "public-auth"
-        ],
-        "summary": "处理 OAuth 回调",
-        "operationId": "oauth_callback_api_v1_public_auth_oauth__provider__callback_get",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Provider"
-            }
-          },
-          {
-            "name": "code",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Code"
-            }
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "State"
-            }
-          },
-          {
-            "name": "aerisun_site_oauth_state",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Aerisun Site Oauth State"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
               }
             }
           },
@@ -8700,179 +8872,6 @@
         }
       }
     },
-    "/api/v1/admin/system/api-keys": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-system"
-        ],
-        "summary": "获取 API 密钥列表",
-        "operationId": "list_api_keys_api_v1_admin_system_api_keys_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ApiKeyAdminRead"
-                  },
-                  "type": "array",
-                  "title": "Response List Api Keys Api V1 Admin System Api Keys Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "admin",
-          "admin-system"
-        ],
-        "summary": "创建 API 密钥",
-        "operationId": "create_api_key_api_v1_admin_system_api_keys_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApiKeyCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiKeyCreateResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/admin/system/api-keys/{key_id}": {
-      "put": {
-        "tags": [
-          "admin",
-          "admin-system"
-        ],
-        "summary": "更新 API 密钥",
-        "operationId": "update_api_key_api_v1_admin_system_api_keys__key_id__put",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "key_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Key Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApiKeyUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiKeyAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "admin",
-          "admin-system"
-        ],
-        "summary": "删除 API 密钥",
-        "operationId": "delete_api_key_api_v1_admin_system_api_keys__key_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "key_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Key Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/system/audit-logs": {
       "get": {
         "tags": [
@@ -9281,6 +9280,206 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SystemInfo"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/integrations/api-keys": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "获取 API 密钥列表",
+        "operationId": "list_api_keys_api_v1_admin_integrations_api_keys_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyAdminRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Api Keys Api V1 Admin Integrations Api Keys Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "创建 API 密钥",
+        "operationId": "create_api_key_api_v1_admin_integrations_api_keys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/integrations/api-keys/{key_id}": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "更新 API 密钥",
+        "operationId": "update_api_key_api_v1_admin_integrations_api_keys__key_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "删除 API 密钥",
+        "operationId": "delete_api_key_api_v1_admin_integrations_api_keys__key_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/integrations/feeds": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "获取 Feed 列表",
+        "operationId": "list_feeds_api_v1_admin_integrations_feeds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedLinkCollectionRead"
                 }
               }
             }
@@ -10001,62 +10200,6 @@
         }
       }
     },
-    "/api/v1/public/search": {
-      "get": {
-        "tags": [
-          "search"
-        ],
-        "summary": "Search Content",
-        "operationId": "search_content_api_v1_public_search_get",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200,
-              "title": "Q"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 50,
-              "minimum": 1,
-              "default": 10,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SearchResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/sitemap.xml": {
       "get": {
         "tags": [
@@ -10083,6 +10226,120 @@
         ],
         "summary": "Robots Txt",
         "operationId": "robots_txt_robots_txt_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feeds/posts.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Posts Feed",
+        "operationId": "posts_feed_feeds_posts_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rss.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Rss Alias",
+        "operationId": "rss_alias_rss_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/sitemap.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Sitemap",
+        "operationId": "sitemap_api_v1_site_sitemap_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/robots.txt": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Robots Txt",
+        "operationId": "robots_txt_api_v1_site_robots_txt_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/feeds/posts.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Posts Feed",
+        "operationId": "posts_feed_api_v1_site_feeds_posts_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/rss.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Rss Alias",
+        "operationId": "rss_alias_api_v1_site_rss_xml_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10818,7 +11075,7 @@
         ],
         "title": "Body_upload_asset_endpoint_api_v1_admin_assets__post"
       },
-      "Body_upload_comment_image_api_v1_public_comment_image_post": {
+      "Body_upload_comment_image_api_v1_site_interactions_comment_image_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -10830,7 +11087,7 @@
         "required": [
           "file"
         ],
-        "title": "Body_upload_comment_image_api_v1_public_comment_image_post"
+        "title": "Body_upload_comment_image_api_v1_site_interactions_comment_image_post"
       },
       "BulkActionResponse": {
         "properties": {
@@ -10875,11 +11132,6 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "published",
-              "archived"
-            ],
             "title": "Status",
             "description": "New status value to set"
           }
@@ -10998,6 +11250,18 @@
             ],
             "title": "Author Email"
           },
+          "auth_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Provider",
+            "description": "Normalized auth provider"
+          },
           "body": {
             "type": "string",
             "title": "Body"
@@ -11042,11 +11306,35 @@
             "type": "array",
             "title": "Items",
             "description": "List of comments"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of root comment threads"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of root comment threads per page"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "Whether more root comment threads can be loaded"
           }
         },
         "type": "object",
         "required": [
-          "items"
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "has_more"
         ],
         "title": "CommentCollectionRead"
       },
@@ -11334,7 +11622,7 @@
           "login_mode": {
             "type": "string",
             "title": "Login Mode",
-            "description": "Authentication mode"
+            "description": "Authentication mode, fixed to login-required"
           },
           "oauth_url": {
             "anyOf": [
@@ -11359,7 +11647,7 @@
           "anonymous_enabled": {
             "type": "boolean",
             "title": "Anonymous Enabled",
-            "description": "Anonymous commenting allowed"
+            "description": "Whether email login is allowed for commenting"
           },
           "moderation_mode": {
             "type": "string",
@@ -11374,7 +11662,7 @@
           "page_size": {
             "type": "integer",
             "title": "Page Size",
-            "description": "Comments per page"
+            "description": "Initial comments loaded per batch"
           },
           "image_max_bytes": {
             "anyOf": [
@@ -11522,7 +11810,7 @@
           "login_mode": {
             "type": "string",
             "title": "Login Mode",
-            "description": "Authentication mode"
+            "description": "Authentication mode, fixed to login-required"
           },
           "oauth_url": {
             "anyOf": [
@@ -11547,7 +11835,7 @@
           "anonymous_enabled": {
             "type": "boolean",
             "title": "Anonymous Enabled",
-            "description": "Anonymous commenting allowed"
+            "description": "Whether email login is allowed for commenting"
           },
           "moderation_mode": {
             "type": "string",
@@ -11562,7 +11850,7 @@
           "page_size": {
             "type": "integer",
             "title": "Page Size",
-            "description": "Comments per page"
+            "description": "Initial comments loaded per batch"
           },
           "image_max_bytes": {
             "anyOf": [
@@ -11758,7 +12046,7 @@
               }
             ],
             "title": "Login Mode",
-            "description": "Authentication mode"
+            "description": "Authentication mode, fixed to login-required"
           },
           "oauth_url": {
             "anyOf": [
@@ -11797,7 +12085,7 @@
               }
             ],
             "title": "Anonymous Enabled",
-            "description": "Allow anonymous commenting"
+            "description": "Allow email login for commenting"
           },
           "moderation_mode": {
             "anyOf": [
@@ -11833,7 +12121,7 @@
               }
             ],
             "title": "Page Size",
-            "description": "Comments per page"
+            "description": "Initial comments loaded per batch"
           },
           "image_max_bytes": {
             "anyOf": [
@@ -13339,6 +13627,55 @@
         ],
         "title": "FeedCrawlResultRead"
       },
+      "FeedLinkCollectionRead": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FeedLinkRead"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "FeedLinkCollectionRead"
+      },
+      "FeedLinkRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": "rss"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "url"
+        ],
+        "title": "FeedLinkRead"
+      },
       "FriendAdminRead": {
         "properties": {
           "id": {
@@ -13870,6 +14207,18 @@
             ],
             "title": "Email"
           },
+          "auth_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Provider",
+            "description": "Normalized auth provider"
+          },
           "website": {
             "anyOf": [
               {
@@ -13922,11 +14271,35 @@
             "type": "array",
             "title": "Items",
             "description": "List of guestbook entries"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of public guestbook entries"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of guestbook entries per page"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "Whether more guestbook entries can be loaded"
           }
         },
         "type": "object",
         "required": [
-          "items"
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "has_more"
         ],
         "title": "GuestbookCollectionRead"
       },
@@ -17767,6 +18140,42 @@
         ],
         "title": "SiteConfigRead"
       },
+      "SitePoemPreviewRead": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "custom",
+              "hitokoto"
+            ],
+            "title": "Mode",
+            "description": "Resolved poem source mode"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Poem content shown on the homepage"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution",
+            "description": "Optional source attribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "content"
+        ],
+        "title": "SitePoemPreviewRead"
+      },
       "SiteProfileAdminRead": {
         "properties": {
           "id": {
@@ -17808,6 +18217,11 @@
             "type": "string",
             "title": "Og Image",
             "description": "Open Graph image path"
+          },
+          "site_icon_url": {
+            "type": "string",
+            "title": "Site Icon Url",
+            "description": "Browser tab icon path"
           },
           "hero_image_url": {
             "type": "string",
@@ -17900,6 +18314,7 @@
           "footer_text",
           "author",
           "og_image",
+          "site_icon_url",
           "hero_image_url",
           "hero_poster_url",
           "meta_description",
@@ -17951,6 +18366,11 @@
             "type": "string",
             "title": "Og Image",
             "description": "Open Graph image path"
+          },
+          "site_icon_url": {
+            "type": "string",
+            "title": "Site Icon Url",
+            "description": "Browser tab icon path"
           },
           "hero_image_url": {
             "type": "string",
@@ -18035,6 +18455,7 @@
           "footer_text",
           "author",
           "og_image",
+          "site_icon_url",
           "hero_image_url",
           "hero_poster_url",
           "meta_description",
@@ -18128,6 +18549,18 @@
             ],
             "title": "Og Image",
             "description": "Open Graph image path"
+          },
+          "site_icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Icon Url",
+            "description": "Browser tab icon path"
           },
           "hero_image_url": {
             "anyOf": [

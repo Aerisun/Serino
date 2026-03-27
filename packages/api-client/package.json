@@ -8,8 +8,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./admin": "./src/generated/admin/admin.ts",
-    "./public": "./src/generated/public/public.ts",
-    "./search": "./src/generated/search/search.ts",
+    "./site": "./src/generated/site/site.ts",
+    "./site-auth": "./src/generated/site-auth/site-auth.ts",
+    "./site-interactions": "./src/generated/site-interactions/site-interactions.ts",
     "./seo": "./src/generated/seo/seo.ts",
     "./models": "./src/generated/model/index.ts",
     "./schemas": "./src/generated/schemas.zod.ts"

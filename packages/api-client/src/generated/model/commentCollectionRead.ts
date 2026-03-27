@@ -9,4 +9,12 @@ import type { CommentRead } from './commentRead';
 export interface CommentCollectionRead {
   /** List of comments */
   items: CommentRead[];
+  /** Total number of root comment threads */
+  total: number;
+  /** Current page number */
+  page: number;
+  /** Number of root comment threads per page */
+  page_size: number;
+  /** Whether more root comment threads can be loaded */
+  has_more: boolean;
 }

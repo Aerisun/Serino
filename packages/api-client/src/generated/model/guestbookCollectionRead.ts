@@ -9,4 +9,12 @@ import type { GuestbookEntryRead } from './guestbookEntryRead';
 export interface GuestbookCollectionRead {
   /** List of guestbook entries */
   items: GuestbookEntryRead[];
+  /** Total number of public guestbook entries */
+  total: number;
+  /** Current page number */
+  page: number;
+  /** Number of guestbook entries per page */
+  page_size: number;
+  /** Whether more guestbook entries can be loaded */
+  has_more: boolean;
 }
