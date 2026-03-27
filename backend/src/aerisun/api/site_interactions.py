@@ -1,0 +1,118 @@
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, Query, Request, UploadFile
+from sqlalchemy.orm import Session
+
+from aerisun.api.deps.site_auth import get_current_site_user_optional
+from aerisun.api.public_schemas import CommentImageUploadResponse
+from aerisun.core.db import get_session
+from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, limiter
+from aerisun.domain.engagement.schemas import (
+    CommentCollectionRead,
+    CommentCreate,
+    CommentCreateResponse,
+    GuestbookCollectionRead,
+    GuestbookCreate,
+    GuestbookCreateResponse,
+    ReactionCreate,
+    ReactionRead,
+)
+from aerisun.domain.engagement.service import (
+    create_public_comment,
+    create_public_guestbook_entry,
+    ensure_comment_image_upload_allowed,
+    list_public_comments,
+    list_public_guestbook_entries,
+    read_public_reaction,
+    register_public_reaction,
+)
+from aerisun.domain.site_auth.models import SiteUser
+
+base_router = APIRouter()
+router = APIRouter(prefix="/api/v1/site-interactions", tags=["site-interactions"])
+
+
+@base_router.get("/guestbook", response_model=GuestbookCollectionRead, summary="获取留言板")
+def read_guestbook(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    session: Session = Depends(get_session),
+) -> GuestbookCollectionRead:
+    return list_public_guestbook_entries(session, page=page, page_size=page_size)
+
+
+@base_router.post("/guestbook", response_model=GuestbookCreateResponse, summary="提交留言")
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def create_guestbook(
+    request: Request,
+    payload: GuestbookCreate,
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+) -> GuestbookCreateResponse:
+    return create_public_guestbook_entry(session, payload, current_user=current_user)
+
+
+@base_router.get("/comments/{content_type}/{slug}", response_model=CommentCollectionRead, summary="获取内容评论")
+def read_comments(
+    content_type: str,
+    slug: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    session: Session = Depends(get_session),
+) -> CommentCollectionRead:
+    return list_public_comments(session, content_type, slug, page=page, page_size=page_size)
+
+
+@base_router.post("/comments/{content_type}/{slug}", response_model=CommentCreateResponse, summary="发表评论")
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def create_comment(
+    request: Request,
+    content_type: str,
+    slug: str,
+    payload: CommentCreate,
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+) -> CommentCreateResponse:
+    return create_public_comment(session, content_type, slug, payload, current_user=current_user)
+
+
+@base_router.post("/reactions", response_model=ReactionRead, summary="提交互动反应")
+@limiter.limit(RATE_WRITE_REACTION)
+def create_reaction(
+    request: Request,
+    payload: ReactionCreate,
+    session: Session = Depends(get_session),
+) -> ReactionRead:
+    return register_public_reaction(session, payload)
+
+
+@base_router.get(
+    "/reactions/{content_type}/{slug}/{reaction_type}",
+    response_model=ReactionRead,
+    summary="查询反应计数",
+)
+def read_reaction(
+    content_type: str,
+    slug: str,
+    reaction_type: str,
+    session: Session = Depends(get_session),
+) -> ReactionRead:
+    return read_public_reaction(session, content_type, slug, reaction_type)
+
+
+@base_router.post("/comment-image", response_model=CommentImageUploadResponse, summary="评论图片上传")
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def upload_comment_image(
+    request: Request,
+    file: UploadFile,
+    session: Session = Depends(get_session),
+) -> dict:
+    ensure_comment_image_upload_allowed(session)
+    from aerisun.domain.media.service import save_comment_image
+
+    content = file.file.read()
+    url = save_comment_image(session, content, file.filename or "img", file.content_type)
+    return {"errno": 0, "data": {"url": url}}
+
+
+router.include_router(base_router)

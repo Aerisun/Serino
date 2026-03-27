@@ -29,7 +29,7 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
     finally:
         session.close()
 
-    response = client.get("/api/v1/public/community-config")
+    response = client.get("/api/v1/site/community-config")
     assert response.status_code == 200
 
     payload = response.json()

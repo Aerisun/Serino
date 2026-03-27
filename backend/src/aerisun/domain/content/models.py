@@ -8,9 +8,7 @@ from aerisun.core.base import Base, ContentMixin, TimestampMixin
 
 class ContentCategory(Base, TimestampMixin):
     __tablename__ = "content_categories"
-    __table_args__ = (
-        UniqueConstraint("content_type", "name", name="uq_content_categories_type_name"),
-    )
+    __table_args__ = (UniqueConstraint("content_type", "name", name="uq_content_categories_type_name"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     content_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)

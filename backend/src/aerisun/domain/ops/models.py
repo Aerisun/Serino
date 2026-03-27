@@ -67,9 +67,7 @@ class SyncRun(Base, TimestampMixin):
 
 class TrafficDailySnapshot(Base, TimestampMixin):
     __tablename__ = "traffic_daily_snapshots"
-    __table_args__ = (
-        UniqueConstraint("snapshot_date", "url", name="uq_traffic_daily_snapshots_date_url"),
-    )
+    __table_args__ = (UniqueConstraint("snapshot_date", "url", name="uq_traffic_daily_snapshots_date_url"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     snapshot_date: Mapped[date] = mapped_column(Date(), nullable=False)

@@ -36,9 +36,7 @@ class SiteUser(Base, TimestampMixin):
 
 class SiteUserOAuthAccount(Base, TimestampMixin):
     __tablename__ = "site_user_oauth_accounts"
-    __table_args__ = (
-        UniqueConstraint("provider", "provider_subject", name="uq_site_user_oauth_provider_subject"),
-    )
+    __table_args__ = (UniqueConstraint("provider", "provider_subject", name="uq_site_user_oauth_provider_subject"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     site_user_id: Mapped[str] = mapped_column(
@@ -55,9 +53,7 @@ class SiteUserOAuthAccount(Base, TimestampMixin):
 
 class SiteAdminIdentity(Base, TimestampMixin):
     __tablename__ = "site_admin_identities"
-    __table_args__ = (
-        UniqueConstraint("provider", "identifier", name="uq_site_admin_identity_provider_identifier"),
-    )
+    __table_args__ = (UniqueConstraint("provider", "identifier", name="uq_site_admin_identity_provider_identifier"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     site_user_id: Mapped[str] = mapped_column(

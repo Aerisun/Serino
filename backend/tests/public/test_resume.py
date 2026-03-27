@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_read_resume_returns_seeded_resume_bundle(client) -> None:
-    response = client.get("/api/v1/public/resume")
+    response = client.get("/api/v1/site/resume")
 
     assert response.status_code == 200
 

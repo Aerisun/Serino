@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_read_diary_returns_seeded_collection(client) -> None:
-    response = client.get("/api/v1/public/diary")
+    response = client.get("/api/v1/site/diary")
 
     assert response.status_code == 200
 
@@ -12,7 +12,7 @@ def test_read_diary_returns_seeded_collection(client) -> None:
 
 
 def test_read_diary_detail_returns_seeded_entry(client) -> None:
-    response = client.get("/api/v1/public/diary/spring-equinox-and-warm-light")
+    response = client.get("/api/v1/site/diary/spring-equinox-and-warm-light")
 
     assert response.status_code == 200
 
@@ -22,6 +22,6 @@ def test_read_diary_detail_returns_seeded_entry(client) -> None:
 
 
 def test_read_diary_detail_returns_404_for_unknown_slug(client) -> None:
-    response = client.get("/api/v1/public/diary/missing-entry")
+    response = client.get("/api/v1/site/diary/missing-entry")
 
     assert response.status_code == 404

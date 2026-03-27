@@ -71,7 +71,7 @@ def _collect_avatar_keys(items: list[dict]) -> set[str]:
 
 
 def _first_free_avatar_key(client) -> str:
-    response = client.get("/api/v1/public/comments/posts/from-zero-design-system")
+    response = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
     assert response.status_code == 200
     used = _collect_avatar_keys(response.json()["items"])
     for key in AVATAR_PRESET_KEYS:
@@ -93,23 +93,108 @@ def _update_community_config(**changes) -> None:
         session.commit()
 
 
+def _login_site_user(client, *, email: str, display_name: str) -> None:
+    response = client.post(
+        "/api/v1/site-auth/email",
+        json={
+            "email": email,
+            "display_name": display_name,
+            "avatar_url": f"https://api.dicebear.com/9.x/notionists/svg?seed={display_name}",
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["authenticated"] is True
+    assert payload["requires_profile"] is False
+
+
+def _bind_admin_identity_by_email(*, email: str) -> None:
+    import bcrypt
+
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.iam.models import AdminUser
+    from aerisun.domain.site_auth.admin_binding import bind_site_admin_identity_by_email
+    from aerisun.domain.site_auth.models import SiteAuthConfig
+    from aerisun.domain.site_auth.schemas import SiteAdminEmailIdentityBindRequest
+
+    factory = get_session_factory()
+    with factory() as session:
+        admin_user = session.query(AdminUser).filter(AdminUser.username == "comment-admin").first()
+        if admin_user is None:
+            admin_user = AdminUser(
+                username="comment-admin",
+                password_hash=bcrypt.hashpw(b"comment-password", bcrypt.gensalt()).decode(),
+            )
+            session.add(admin_user)
+            session.flush()
+
+        config = session.query(SiteAuthConfig).first()
+        assert config is not None
+        config.admin_email_enabled = True
+        session.commit()
+
+        bind_site_admin_identity_by_email(
+            session,
+            SiteAdminEmailIdentityBindRequest(email=email),
+            admin_user_id=admin_user.id,
+        )
+
+
+def _seed_public_comment(
+    *,
+    nick: str,
+    mail: str | None,
+    body: str,
+    avatar_key: str | None = None,
+    avatar_url: str | None = None,
+) -> None:
+    from aerisun.domain.waline.service import build_comment_path, create_waline_record
+
+    create_waline_record(
+        comment=body,
+        nick=nick,
+        mail=mail,
+        link=None,
+        status="approved",
+        url=build_comment_path("posts", "from-zero-design-system"),
+        avatar_key=avatar_key or f"{nick}-avatar",
+        avatar_url=avatar_url or f"https://api.dicebear.com/9.x/notionists/svg?seed={nick}",
+    )
+
+
+def _flatten_comments(items: list[dict]) -> list[dict]:
+    flattened: list[dict] = []
+    for item in items:
+        flattened.append(item)
+        replies = item.get("replies")
+        if isinstance(replies, list):
+            flattened.extend(_flatten_comments(replies))
+    return flattened
+
+
 def test_read_guestbook_returns_seeded_entries(client) -> None:
-    response = client.get("/api/v1/public/guestbook")
+    response = client.get("/api/v1/site-interactions/guestbook")
 
     assert response.status_code == 200
     payload = response.json()
     assert len(payload["items"]) == 1
+    assert payload["total"] == 1
+    assert payload["page"] == 1
+    assert payload["page_size"] == 20
+    assert payload["has_more"] is False
     assert payload["items"][0]["name"] == "Elena Torres"
     assert payload["items"][0]["status"] == "approved"
     assert payload["items"][0]["avatar_url"].startswith("https://api.dicebear.com/")
 
 
 def test_create_guestbook_accepts_pending_entry(client) -> None:
+    _login_site_user(client, email="guest@example.com", display_name="Test Guest")
+
     response = client.post(
-        "/api/v1/public/guestbook",
+        "/api/v1/site-interactions/guestbook",
         json={
-            "name": "Test Guest",
-            "email": "guest@example.com",
+            "name": "Ignored Name",
+            "email": "ignored@example.com",
             "website": "https://guest.example.com",
             "body": "Hello from pytest.",
         },
@@ -119,207 +204,13 @@ def test_create_guestbook_accepts_pending_entry(client) -> None:
     payload = response.json()
     assert payload["accepted"] is True
     assert payload["item"]["status"] == "pending"
+    assert payload["item"]["name"] == "Test Guest"
+    assert payload["item"]["website"] == "https://guest.example.com"
 
 
-def test_read_comments_returns_nested_items(client) -> None:
-    response = client.get("/api/v1/public/comments/posts/from-zero-design-system")
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert len(payload["items"]) == 1
-    assert payload["items"][0]["author_name"] == "林小北"
-    assert payload["items"][0]["status"] == "approved"
-    assert payload["items"][0]["avatar_url"]
-    assert len(payload["items"][0]["replies"]) == 1
-    assert payload["items"][0]["replies"][0]["author_name"] == "Felix"
-    assert payload["items"][0]["replies"][0]["parent_id"] == payload["items"][0]["id"]
-    assert payload["items"][0]["avatar_url"] != payload["items"][0]["replies"][0]["avatar_url"]
-
-
-def test_create_comment_accepts_pending_item(client) -> None:
-    avatar_key = _first_free_avatar_key(client)
+def test_create_guestbook_requires_login(client) -> None:
     response = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Pytest Reader",
-            "author_email": "reader@example.com",
-            "body": "很喜欢这篇。",
-            "avatar_key": avatar_key,
-        },
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["accepted"] is True
-    assert payload["item"]["status"] == "pending"
-    assert payload["item"]["avatar_url"].startswith("https://api.dicebear.com/")
-
-
-def test_create_comment_requires_email_for_nickname_binding(client) -> None:
-    avatar_key = _first_free_avatar_key(client)
-    response = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Email Required",
-            "body": "没有邮箱就不该通过。",
-            "avatar_key": avatar_key,
-        },
-    )
-
-    assert response.status_code == 422
-    assert "邮箱" in response.json()["detail"]
-
-
-def test_create_comment_binds_nickname_to_email(client) -> None:
-    avatar_key = _first_free_avatar_key(client)
-    first = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Bound Reader",
-            "author_email": "bound@example.com",
-            "body": "第一次占用昵称。",
-            "avatar_key": avatar_key,
-        },
-    )
-    assert first.status_code == 200
-
-    second = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Bound Reader",
-            "author_email": "other@example.com",
-            "body": "尝试冒用昵称。",
-            "avatar_key": avatar_key,
-        },
-    )
-
-    assert second.status_code == 409
-    assert "昵称" in second.json()["detail"]
-
-
-def test_create_comment_prevents_duplicate_avatar_for_different_names(client) -> None:
-    avatar_key = _first_free_avatar_key(client)
-    first = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Avatar One",
-            "author_email": "one@example.com",
-            "body": "先占用一个头像。",
-            "avatar_key": avatar_key,
-        },
-    )
-    assert first.status_code == 200
-
-    second = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Avatar Two",
-            "author_email": "two@example.com",
-            "body": "换个名字继续抢同一个头像。",
-            "avatar_key": avatar_key,
-        },
-    )
-
-    assert second.status_code == 409
-    assert "头像" in second.json()["detail"]
-
-
-def test_create_comment_allows_same_name_and_email_to_reuse_avatar(client) -> None:
-    avatar_key = _first_free_avatar_key(client)
-    first = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Repeat Reader",
-            "author_email": "repeat@example.com",
-            "body": "第一条评论。",
-            "avatar_key": avatar_key,
-        },
-    )
-    assert first.status_code == 200
-
-    second = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Repeat Reader",
-            "author_email": "repeat@example.com",
-            "body": "第二条评论。",
-            "avatar_key": avatar_key,
-        },
-    )
-
-    assert second.status_code == 200
-    assert second.json()["item"]["avatar_url"] == first.json()["item"]["avatar_url"]
-
-
-def test_create_comment_binds_avatar_to_email_seed(client) -> None:
-    first_email = "binding-one@example.com"
-    second_email = "binding-two@example.com"
-    first_candidates = _avatar_keys_for_email(first_email)
-    second_candidates = _avatar_keys_for_email(second_email)
-
-    assert len(first_candidates) == AVATAR_PICKER_COUNT
-    assert len(set(first_candidates)) == AVATAR_PICKER_COUNT
-    assert len(second_candidates) == AVATAR_PICKER_COUNT
-    assert len(set(second_candidates)) == AVATAR_PICKER_COUNT
-    assert first_candidates != second_candidates
-
-    first = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Seed Reader One",
-            "author_email": first_email,
-            "body": "第一条绑定评论。",
-            "avatar_key": first_candidates[0],
-        },
-    )
-    assert first.status_code == 200
-
-    first_repeat = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Seed Reader One",
-            "author_email": first_email,
-            "body": "同邮箱再次评论。",
-            "avatar_key": first_candidates[0],
-        },
-    )
-    assert first_repeat.status_code == 200
-    assert first_repeat.json()["item"]["avatar_url"] == first.json()["item"]["avatar_url"]
-
-    second = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Seed Reader Two",
-            "author_email": second_email,
-            "body": "第二个邮箱。",
-            "avatar_key": second_candidates[0],
-        },
-    )
-    assert second.status_code == 200
-    assert second.json()["item"]["avatar_url"] != first.json()["item"]["avatar_url"]
-
-
-def test_create_comment_rejects_when_anonymous_is_disabled(client) -> None:
-    _update_community_config(anonymous_enabled=False)
-
-    response = client.post(
-        "/api/v1/public/comments/posts/from-zero-design-system",
-        json={
-            "author_name": "Visitor",
-            "author_email": "visitor@example.com",
-            "body": "我想留言。",
-        },
-    )
-
-    assert response.status_code == 422
-    assert "匿名评论" in response.json()["detail"]
-
-
-def test_create_guestbook_rejects_when_anonymous_is_disabled(client) -> None:
-    _update_community_config(anonymous_enabled=False)
-
-    response = client.post(
-        "/api/v1/public/guestbook",
+        "/api/v1/site-interactions/guestbook",
         json={
             "name": "Visitor",
             "email": "visitor@example.com",
@@ -328,14 +219,169 @@ def test_create_guestbook_rejects_when_anonymous_is_disabled(client) -> None:
     )
 
     assert response.status_code == 422
-    assert "匿名留言" in response.json()["detail"]
+    assert "登录后才能留言" in response.json()["detail"]
+
+
+def test_read_comments_returns_nested_items(client) -> None:
+    response = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["items"]) == 1
+    assert payload["total"] == 1
+    assert payload["page"] == 1
+    assert payload["page_size"] == 20
+    assert payload["has_more"] is False
+    assert payload["items"][0]["author_name"] == "林小北"
+    assert payload["items"][0]["status"] == "approved"
+    assert payload["items"][0]["avatar_url"]
+    assert len(payload["items"][0]["replies"]) == 1
+    assert payload["items"][0]["replies"][0]["author_name"] == "Felix"
+    assert payload["items"][0]["replies"][0]["parent_id"] == payload["items"][0]["id"]
+    assert payload["items"][0]["replies"][0]["is_author"] is False
+    assert payload["items"][0]["avatar_url"] != payload["items"][0]["replies"][0]["avatar_url"]
+
+
+def test_read_comments_supports_pagination(client) -> None:
+    _seed_public_comment(nick="Page One", mail="page-one@example.com", body="第一页测试评论")
+    _seed_public_comment(nick="Page Two", mail="page-two@example.com", body="第二页测试评论")
+
+    first = client.get(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        params={"page": 1, "page_size": 2},
+    )
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["page"] == 1
+    assert first_payload["page_size"] == 2
+    assert first_payload["total"] >= 3
+    assert len(first_payload["items"]) == 2
+    assert first_payload["has_more"] is True
+
+    second = client.get(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        params={"page": 2, "page_size": 2},
+    )
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["page"] == 2
+    assert second_payload["page_size"] == 2
+    assert second_payload["total"] == first_payload["total"]
+    assert len(second_payload["items"]) >= 1
+    assert {item["id"] for item in first_payload["items"]}.isdisjoint({item["id"] for item in second_payload["items"]})
+
+
+def test_create_comment_accepts_pending_item(client) -> None:
+    _login_site_user(client, email="reader@example.com", display_name="Pytest Reader")
+
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "很喜欢这篇。",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["item"]["status"] == "pending"
+    assert payload["item"]["author_name"] == "Pytest Reader"
+    assert payload["item"]["avatar_url"].startswith("https://api.dicebear.com/")
+
+
+def test_read_comments_marks_email_bound_admin_identity(client) -> None:
+    _bind_admin_identity_by_email(email="owner@example.com")
+    _seed_public_comment(
+        nick="并不是站点标题",
+        mail="owner@example.com",
+        body="邮箱绑定管理员评论",
+    )
+
+    response = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+
+    assert response.status_code == 200
+    payload = response.json()
+    comment = next(item for item in _flatten_comments(payload["items"]) if item["body"] == "邮箱绑定管理员评论")
+    assert comment["author_name"] == "并不是站点标题"
+    assert comment["is_author"] is True
+
+
+def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
+    _bind_admin_identity_by_email(email="admin-comment@example.com")
+    _login_site_user(client, email="admin-comment@example.com", display_name="Comment Admin")
+
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "管理员实际发出的评论。",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["item"]["author_name"] == "Felix"
+    assert payload["item"]["is_author"] is True
+    assert payload["item"]["avatar"] == "site-admin"
+    assert "/media/internal/assets/hero-image/" in payload["item"]["avatar_url"]
+
+
+def test_create_comment_requires_login(client) -> None:
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Visitor",
+            "author_email": "visitor@example.com",
+            "body": "没有登录就不该通过。",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "登录后才能发表评论" in response.json()["detail"]
+
+
+def test_create_comment_rejects_email_login_when_disabled_for_comments(client) -> None:
+    _login_site_user(client, email="email-reader@example.com", display_name="Email Reader")
+    _update_community_config(anonymous_enabled=False)
+
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "邮箱登录不该继续评论。",
+        },
+    )
+    assert response.status_code == 422
+    assert "邮箱登录评论" in response.json()["detail"]
+
+
+def test_create_guestbook_rejects_email_login_when_disabled_for_comments(client) -> None:
+    _login_site_user(client, email="guest-reader@example.com", display_name="Guest Reader")
+    _update_community_config(anonymous_enabled=False)
+
+    response = client.post(
+        "/api/v1/site-interactions/guestbook",
+        json={
+            "name": "Ignored Name",
+            "email": "ignored@example.com",
+            "body": "邮箱登录不该继续留言。",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "邮箱登录留言" in response.json()["detail"]
 
 
 def test_comment_image_upload_rejects_when_disabled(client) -> None:
     _update_community_config(image_uploader=False)
 
     response = client.post(
-        "/api/v1/public/comment-image",
+        "/api/v1/site-interactions/comment-image",
         files={"file": ("image.png", b"image-bytes", "image/png")},
     )
 
@@ -347,7 +393,7 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
     _update_community_config(image_uploader=True)
 
     response = client.post(
-        "/api/v1/public/comment-image",
+        "/api/v1/site-interactions/comment-image",
         files={"file": ("image.png", b"image-bytes", "image/png")},
     )
 
@@ -356,9 +402,10 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
     url = payload["data"]["url"]
     assert url.startswith("/media/internal/assets/comment/")
 
+    from pathlib import Path
+
     from aerisun.core.db import get_session_factory
     from aerisun.domain.media.models import Asset
-    from pathlib import Path
 
     resource_key = url.removeprefix("/media/")
     factory = get_session_factory()
@@ -374,7 +421,7 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
 
 def test_create_reaction_returns_total(client) -> None:
     response = client.post(
-        "/api/v1/public/reactions",
+        "/api/v1/site-interactions/reactions",
         json={
             "content_type": "posts",
             "content_slug": "from-zero-design-system",

@@ -107,7 +107,7 @@ admin_pid=
 project_dir=${PROJECT_DIR}
 EOF
 
-backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
+backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
 # 后端检查到位后才启动前台和管理后台
 wait_for_backend_ready "${backend_health_url}" "${backend_pid}"
 

@@ -5,8 +5,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.domain.iam.models import AdminUser, ApiKey
-from aerisun.domain.iam.service import validate_api_key, validate_session_token
+from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.iam.service import validate_session_token
 
 _bearer = HTTPBearer()
 
@@ -16,13 +16,3 @@ def get_current_admin(
     session: Session = Depends(get_session),
 ) -> AdminUser:
     return validate_session_token(session, credentials.credentials)
-
-
-def require_api_key_scopes(*required_scopes: str):
-    def dependency(
-        credentials: HTTPAuthorizationCredentials = Depends(_bearer),
-        session: Session = Depends(get_session),
-    ) -> ApiKey:
-        return validate_api_key(session, credentials.credentials, required_scopes)
-
-    return dependency

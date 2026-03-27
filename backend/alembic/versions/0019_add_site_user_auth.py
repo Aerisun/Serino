@@ -58,7 +58,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("session_token"),
     )
-    op.execute("UPDATE community_config SET login_mode = 'force', anonymous_enabled = 0")
+    op.execute("UPDATE community_config SET login_mode = 'force'")
 
 
 def downgrade() -> None:

@@ -128,18 +128,20 @@ def list_site_users(
         pattern = f"%{normalized_search}%"
         filters.append(or_(SiteUser.display_name.ilike(pattern), SiteUser.email.ilike(pattern)))
 
-    oauth_exists = exists(
-        select(SiteUserOAuthAccount.id).where(SiteUserOAuthAccount.site_user_id == SiteUser.id)
-    )
+    oauth_exists = exists(select(SiteUserOAuthAccount.id).where(SiteUserOAuthAccount.site_user_id == SiteUser.id))
     if auth_mode == "email":
         filters.append(~oauth_exists)
     elif auth_mode == "binding":
         filters.append(oauth_exists)
 
-    stmt = select(SiteUser).where(*filters).order_by(
-        SiteUser.last_login_at.is_(None),
-        SiteUser.last_login_at.desc(),
-        SiteUser.created_at.desc(),
+    stmt = (
+        select(SiteUser)
+        .where(*filters)
+        .order_by(
+            SiteUser.last_login_at.is_(None),
+            SiteUser.last_login_at.desc(),
+            SiteUser.created_at.desc(),
+        )
     )
     total = int(session.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
     items = list(session.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all())

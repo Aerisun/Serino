@@ -59,6 +59,16 @@ class TestContentCRUDLifecycle:
         assert data["status"] == "archived"
         assert data["visibility"] == "private"
 
+    def test_create_private_draft_persists_as_draft(self, client, admin_headers, content_type):
+        payload = _make_payload(content_type, "-private-draft")
+        payload["status"] = "draft"
+        payload["visibility"] = "private"
+        resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["status"] == "draft"
+        assert data["visibility"] == "private"
+
     def test_read(self, client, admin_headers, content_type):
         # Create first
         payload = _make_payload(content_type, "-read")
@@ -101,6 +111,22 @@ class TestContentCRUDLifecycle:
         assert resp.status_code == 200
         assert resp.json()["status"] == "draft"
         assert resp.json()["visibility"] == "public"
+
+    def test_update_archived_private_to_private_draft_stays_draft(self, client, admin_headers, content_type):
+        payload = _make_payload(content_type, "-private-draft-restore")
+        payload["status"] = "published"
+        payload["visibility"] = "private"
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        item_id = create_resp.json()["id"]
+
+        resp = client.put(
+            f"{BASE}/{content_type}/{item_id}",
+            json={"status": "draft"},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "draft"
+        assert resp.json()["visibility"] == "private"
 
     def test_list(self, client, admin_headers, content_type):
         # Ensure at least one item exists

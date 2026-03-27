@@ -12,7 +12,7 @@ from aerisun.api.admin.schemas import (
     SiteProfileUpdate,
     SocialLinkCreate,
 )
-from aerisun.api.public import read_page_copy, read_post, read_posts, read_resume, read_site_config
+from aerisun.api.site import read_page_copy, read_post, read_posts, read_resume, read_site_config
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.site_config.models import PageCopy, ResumeBasics, ResumeSkillGroup, SiteProfile
 
@@ -40,6 +40,7 @@ def test_admin_profile_update_flows_to_public_site(seeded_session, admin_user) -
         title="Updated Through Admin",
         bio="Profile changes should be visible to the public site.",
         footer_text="Round-trip footer",
+        site_icon_url="/media/internal/assets/site-icon/flow-icon.svg",
     )
 
     update_profile(update_payload, _admin=admin_user, session=seeded_session)
@@ -51,6 +52,7 @@ def test_admin_profile_update_flows_to_public_site(seeded_session, admin_user) -
     assert payload.site.title == update_payload.title
     assert payload.site.bio == update_payload.bio
     assert payload.site.footer_text == update_payload.footer_text
+    assert payload.site.site_icon_url == update_payload.site_icon_url
     assert profile.title == update_payload.title
     assert profile.bio == update_payload.bio
 

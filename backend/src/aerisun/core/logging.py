@@ -13,8 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 
-from aerisun.core.db import get_session_factory
-from aerisun.domain.ops.repository import create_visit_record
+from aerisun.domain.ops.service import VisitRecordPayload, enqueue_visit_record
 
 # ---------------------------------------------------------------------------
 # Context variable that holds the current request ID
@@ -195,21 +194,20 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             )
             if should_track_visit:
                 try:
-                    with get_session_factory()() as session:
-                        create_visit_record(
-                            session,
-                            visited_at=visited_at,
-                            path=request.url.path,
-                            ip_address=client_ip,
-                            user_agent=user_agent,
-                            referer=referer,
-                            status_code=response.status_code,
-                            duration_ms=int(duration_ms),
-                            is_bot=is_bot,
-                        )
-                        session.commit()
+                    payload = VisitRecordPayload(
+                        visited_at=visited_at,
+                        path=request.url.path,
+                        ip_address=client_ip,
+                        user_agent=user_agent,
+                        referer=referer,
+                        status_code=response.status_code,
+                        duration_ms=int(duration_ms),
+                        is_bot=is_bot,
+                    )
+                    enqueue_visit_record(payload)
                 except Exception:
-                    log.exception("visit_record_failed", path=request.url.path)
+                    # Never fail the request due to visit tracking.
+                    log.exception("visit_record_enqueue_failed", path=request.url.path)
             if duration_ms > self.SLOW_REQUEST_THRESHOLD_MS:
                 log.warning(
                     "slow_request",

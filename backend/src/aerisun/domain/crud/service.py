@@ -10,6 +10,7 @@ from sqlalchemy.orm import Query as SAQuery
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
+from aerisun.domain.content.service import resolve_content_bulk_state
 from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
@@ -132,16 +133,14 @@ def bulk_update_status_items(
     if not hasattr(model, "status"):
         raise ValidationError("Model does not support status")
     visibility: str | None = None
+    normalized_status = status
     if hasattr(model, "visibility"):
-        if status == "archived":
-            visibility = "private"
-        elif status in {"draft", "published"}:
-            visibility = "public"
+        normalized_status, visibility = resolve_content_bulk_state(status)
     affected = repo.bulk_update_status(
         session,
         model,
         ids,
-        status,
+        normalized_status,
         visibility=visibility,
         base_query_factory=base_query_factory,
     )

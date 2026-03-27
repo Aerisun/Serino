@@ -11,6 +11,7 @@ from starlette.staticfiles import StaticFiles
 
 from aerisun.api import api_router
 from aerisun.api.exception_handlers import register_exception_handlers
+from aerisun.api.mcp import mcp_app
 from aerisun.api.seo import router as seo_router
 from aerisun.core.bootstrap import lifespan
 from aerisun.core.middleware import register_middleware
@@ -41,6 +42,10 @@ def create_app() -> FastAPI:
     # Routers
     app.include_router(api_router)
     app.include_router(seo_router)
+    app.include_router(seo_router, prefix="/api/v1/site")
+
+    # MCP Streamable HTTP app (mounted)
+    app.mount("/api/mcp", mcp_app)
 
     # Static media
     media_dir = Path(settings.media_dir).expanduser().resolve()

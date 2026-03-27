@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from aerisun.api.public_auth import get_current_site_user
+from aerisun.api.deps.site_auth import get_current_site_user
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.site_auth.models import SiteUser
@@ -27,7 +27,7 @@ from aerisun.domain.site_auth.service import (
 )
 
 from .deps import get_current_admin
-from .schemas import PaginatedResponse
+from .schemas import PaginatedResponse, build_paginated_response
 
 router = APIRouter(prefix="/visitors", tags=["admin-visitors"])
 
@@ -65,12 +65,7 @@ def list_visitor_users(
         page=page,
         page_size=page_size,
     )
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
+    return build_paginated_response(items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/admin-identities", response_model=list[SiteAdminIdentityAdminRead], summary="获取管理员前台身份绑定")

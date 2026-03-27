@@ -23,8 +23,9 @@ class TaskManager:
     async def start(self) -> None:
         self._async_tasks.append(asyncio.create_task(cleanup_expired_sessions()))
 
-        from aerisun.core.db import get_session_factory
         from apscheduler.schedulers.background import BackgroundScheduler
+
+        from aerisun.core.db import get_session_factory
 
         with get_session_factory()() as session:
             record_daily_traffic_snapshot(session)

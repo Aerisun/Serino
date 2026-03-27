@@ -34,9 +34,10 @@ def list_comments(
     email_filter: str | None = Query(default=None, alias="email"),
     sort: str | None = Query(default=None),
     _admin: AdminUser = Depends(get_current_admin),
-    _session: Session = Depends(get_session),
+    session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return list_admin_comments(
+        session=session,
         page=page,
         page_size=page_size,
         status=status_filter,
@@ -77,9 +78,10 @@ def list_guestbook(
     email_filter: str | None = Query(default=None, alias="email"),
     sort: str | None = Query(default=None),
     _admin: AdminUser = Depends(get_current_admin),
-    _session: Session = Depends(get_session),
+    session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     return list_admin_guestbook(
+        session=session,
         page=page,
         page_size=page_size,
         status=status_filter,

@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+import secrets
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy.orm import Session
+
+from aerisun.core.settings import get_settings
+from aerisun.domain.exceptions import AuthenticationFailed, PermissionDenied
+from aerisun.domain.site_auth import repository as repo
+from aerisun.domain.site_auth.models import SiteUser
+
+SESSION_TTL_HOURS = 24 * 30
+
+
+def create_site_session(session: Session, site_user_id: str, ttl_hours: int | None = None) -> str:
+    settings = get_settings()
+    ttl = ttl_hours or getattr(settings, "public_session_ttl_hours", SESSION_TTL_HOURS)
+    token = secrets.token_urlsafe(64)
+    expires_at = datetime.now(UTC) + timedelta(hours=ttl)
+    repo.create_session(session, site_user_id=site_user_id, token=token, expires_at=expires_at)
+    session.commit()
+    return token
+
+
+def validate_site_session_token(session: Session, token: str) -> SiteUser:
+    site_session = repo.find_session_by_token(session, token)
+    if site_session is None:
+        raise AuthenticationFailed("Invalid or expired session token")
+    now_utc = datetime.now(UTC)
+    now = now_utc.replace(tzinfo=None) if site_session.expires_at.tzinfo is None else now_utc
+    if site_session.expires_at < now:
+        session.delete(site_session)
+        session.commit()
+        raise AuthenticationFailed("Session expired")
+    user = repo.find_user_by_id(session, site_session.site_user_id)
+    if user is None or not user.is_active:
+        raise PermissionDenied("User not found or inactive")
+    return user
+
+
+def destroy_site_session(session: Session, token: str) -> None:
+    existing = repo.find_session_by_token(session, token)
+    if existing is None:
+        return
+    repo.delete_session(session, existing)
+    session.commit()

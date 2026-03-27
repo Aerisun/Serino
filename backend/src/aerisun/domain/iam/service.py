@@ -148,6 +148,28 @@ def list_api_keys(session: Session) -> list[ApiKeyAdminRead]:
     return [ApiKeyAdminRead.model_validate(k) for k in keys]
 
 
+def _normalize_api_key_scopes(scopes: list[str]) -> list[str]:
+    from aerisun.api.admin.scopes import ALL_SCOPES
+
+    aliases = {
+        "read": "system:read",
+        "write": "system:write",
+    }
+
+    normalized: list[str] = []
+    for scope in scopes:
+        value = (scope or "").strip()
+        if not value:
+            continue
+        normalized.append(aliases.get(value, value))
+
+    unknown = sorted({s for s in normalized if s not in ALL_SCOPES})
+    if unknown:
+        raise ValidationError(f"Unknown scopes: {', '.join(unknown)}")
+
+    return sorted(set(normalized))
+
+
 def create_api_key(session: Session, key_name: str, scopes: list[str]) -> ApiKeyCreateResponse:
     raw_secret = secrets.token_urlsafe(48)
     prefix = raw_secret[:8]
@@ -157,7 +179,7 @@ def create_api_key(session: Session, key_name: str, scopes: list[str]) -> ApiKey
         key_name=key_name,
         key_prefix=prefix,
         hashed_secret=hashed,
-        scopes=scopes,
+        scopes=_normalize_api_key_scopes(scopes),
     )
     session.commit()
     session.refresh(key)
@@ -171,7 +193,10 @@ def update_api_key(session: Session, key_id: str, payload: ApiKeyUpdate) -> ApiK
     key = repo.find_api_key_by_id(session, key_id)
     if key is None:
         raise ResourceNotFound("API key not found")
-    repo.update_api_key(session, key, payload.model_dump(exclude_unset=True))
+    updates = payload.model_dump(exclude_unset=True)
+    if "scopes" in updates and updates["scopes"] is not None:
+        updates["scopes"] = _normalize_api_key_scopes(updates["scopes"])
+    repo.update_api_key(session, key, updates)
     session.commit()
     session.refresh(key)
     return ApiKeyAdminRead.model_validate(key)

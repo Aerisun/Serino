@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.core.settings import get_settings
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
 from aerisun.domain.iam.service import (
@@ -50,12 +51,14 @@ from aerisun.domain.ops.service import (
 )
 
 from .deps import get_current_admin
+from .integrations_schemas import FeedLinkCollectionRead, FeedLinkRead
 from .schemas import PaginatedResponse
 
 router = APIRouter(prefix="/system", tags=["admin-system"])
+integrations_router = APIRouter(prefix="/integrations", tags=["admin-integrations"])
 
 
-@router.get("/api-keys", response_model=list[ApiKeyAdminRead], summary="获取 API 密钥列表")
+@integrations_router.get("/api-keys", response_model=list[ApiKeyAdminRead], summary="获取 API 密钥列表")
 def list_api_keys(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
@@ -63,7 +66,7 @@ def list_api_keys(
     return _list_api_keys(session)
 
 
-@router.post(
+@integrations_router.post(
     "/api-keys", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED, summary="创建 API 密钥"
 )
 def create_api_key(
@@ -74,7 +77,7 @@ def create_api_key(
     return _create_api_key(session, payload.key_name, payload.scopes)
 
 
-@router.put("/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥")
+@integrations_router.put("/api-keys/{key_id}", response_model=ApiKeyAdminRead, summary="更新 API 密钥")
 def update_api_key(
     key_id: str,
     payload: ApiKeyUpdate,
@@ -84,8 +87,62 @@ def update_api_key(
     return _update_api_key(session, key_id, payload)
 
 
-@router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除 API 密钥")
+@integrations_router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除 API 密钥")
 def delete_api_key(
+    key_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    _delete_api_key(session, key_id)
+
+
+@integrations_router.get("/feeds", response_model=FeedLinkCollectionRead, summary="获取 Feed 列表")
+def list_feeds(
+    _admin: AdminUser = Depends(get_current_admin),
+) -> FeedLinkCollectionRead:
+    site_url = (get_settings().site_url or "https://example.com").rstrip("/")
+    return FeedLinkCollectionRead(
+        items=[
+            FeedLinkRead(key="posts", title="Posts RSS", url=f"{site_url}/feeds/posts.xml"),
+            FeedLinkRead(key="rss", title="RSS Alias", url=f"{site_url}/rss.xml"),
+        ]
+    )
+
+
+@router.get("/api-keys", response_model=list[ApiKeyAdminRead], include_in_schema=False)
+def list_api_keys_legacy(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return _list_api_keys(session)
+
+
+@router.post(
+    "/api-keys",
+    response_model=ApiKeyCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
+def create_api_key_legacy(
+    payload: ApiKeyCreate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return _create_api_key(session, payload.key_name, payload.scopes)
+
+
+@router.put("/api-keys/{key_id}", include_in_schema=False)
+def update_api_key_legacy(
+    key_id: str,
+    payload: ApiKeyUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return _update_api_key(session, key_id, payload)
+
+
+@router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, include_in_schema=False)
+def delete_api_key_legacy(
     key_id: str,
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),

@@ -31,9 +31,7 @@ def find_assets_paginated(
         )
 
     total = query.order_by(None).with_entities(func.count(Asset.id)).scalar() or 0
-    items = list(
-        query.order_by(Asset.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    )
+    items = list(query.order_by(Asset.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all())
     return items, total
 
 

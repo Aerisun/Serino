@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_read_posts_returns_seeded_collection(client) -> None:
-    response = client.get("/api/v1/public/posts")
+    response = client.get("/api/v1/site/posts")
 
     assert response.status_code == 200
 
@@ -13,7 +13,7 @@ def test_read_posts_returns_seeded_collection(client) -> None:
 
 
 def test_read_post_returns_seeded_detail(client) -> None:
-    response = client.get("/api/v1/public/posts/from-zero-design-system")
+    response = client.get("/api/v1/site/posts/from-zero-design-system")
 
     assert response.status_code == 200
 
@@ -25,6 +25,6 @@ def test_read_post_returns_seeded_detail(client) -> None:
 
 
 def test_read_post_returns_404_for_unknown_slug(client) -> None:
-    response = client.get("/api/v1/public/posts/does-not-exist")
+    response = client.get("/api/v1/site/posts/does-not-exist")
 
     assert response.status_code == 404

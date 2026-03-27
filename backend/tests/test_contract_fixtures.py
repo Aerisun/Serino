@@ -31,22 +31,22 @@ def _write_fixture(name: str, data: dict | list) -> None:
 
 class TestPublicFixtures:
     def test_site_config(self, client):
-        resp = client.get("/api/v1/public/site")
+        resp = client.get("/api/v1/site/site")
         assert resp.status_code == 200
         _write_fixture("public_site_config", resp.json())
 
     def test_pages(self, client):
-        resp = client.get("/api/v1/public/pages")
+        resp = client.get("/api/v1/site/pages")
         assert resp.status_code == 200
         _write_fixture("public_pages", resp.json())
 
     def test_posts_list(self, client):
-        resp = client.get("/api/v1/public/posts")
+        resp = client.get("/api/v1/site/posts")
         assert resp.status_code == 200
         _write_fixture("public_posts_list", resp.json())
 
     def test_healthz(self, client):
-        resp = client.get("/api/v1/public/healthz")
+        resp = client.get("/api/v1/site/healthz")
         assert resp.status_code == 200
         _write_fixture("public_healthz", resp.json())
 

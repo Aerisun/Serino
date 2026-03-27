@@ -2,12 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from aerisun.domain.content.models import (
-    DiaryEntry,
-    ExcerptEntry,
-    PostEntry,
-    ThoughtEntry,
-)
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.content.service import normalize_content_create_state, normalize_content_update_state
 
 from .assets import router as assets_router
@@ -20,6 +15,7 @@ from .resume import router as resume_router
 from .schemas import ContentAdminRead, ContentCreate, ContentUpdate
 from .site_config import router as site_config_router
 from .social import router as social_router
+from .system import integrations_router
 from .system import router as system_router
 from .visitors import router as visitors_router
 
@@ -43,7 +39,7 @@ for model, prefix in [
             update_schema=ContentUpdate,
             read_schema=ContentAdminRead,
             prefix=prefix,
-            tag=f"admin-{prefix.strip('/')}" ,
+            tag=f"admin-{prefix.strip('/')}",
             prepare_create_data=lambda session, data, *, content_type=content_type: normalize_content_create_state(
                 session,
                 {**data, "_content_type": content_type},
@@ -59,6 +55,7 @@ admin_router.include_router(social_router)
 admin_router.include_router(moderation_router)
 admin_router.include_router(assets_router)
 admin_router.include_router(system_router)
+admin_router.include_router(integrations_router)
 admin_router.include_router(content_meta_router)
 admin_router.include_router(import_export_router)
 admin_router.include_router(visitors_router)

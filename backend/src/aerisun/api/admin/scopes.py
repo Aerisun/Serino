@@ -11,6 +11,9 @@ ASSETS_READ = "assets:read"
 ASSETS_WRITE = "assets:write"
 CONFIG_READ = "config:read"
 CONFIG_WRITE = "config:write"
+MCP_CONNECT = "mcp:connect"
+MCP_CONTENT_READ = "mcp:content:read"
+MCP_CONFIG_READ = "mcp:config:read"
 
 ALL_SCOPES = [
     CONTENT_READ,
@@ -21,4 +24,7 @@ ALL_SCOPES = [
     ASSETS_WRITE,
     CONFIG_READ,
     CONFIG_WRITE,
+    MCP_CONNECT,
+    MCP_CONTENT_READ,
+    MCP_CONFIG_READ,
 ]

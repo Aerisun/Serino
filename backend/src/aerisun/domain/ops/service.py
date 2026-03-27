@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import sys
 import time
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
+import structlog
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
@@ -12,6 +16,7 @@ from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, T
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops import repository as repo
+from aerisun.domain.ops.ip_geo import lookup_ip_geolocation
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     BackupSnapshotRead,
@@ -26,7 +31,6 @@ from aerisun.domain.ops.schemas import (
     TrafficTrendPoint,
     VisitorRecordRead,
 )
-from aerisun.domain.ops.ip_geo import lookup_ip_geolocation
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records, list_counter_history_by_date, list_counter_stats
 
@@ -34,6 +38,119 @@ _STARTUP_TIME = time.time()
 _TRAFFIC_HISTORY_DAYS = 14
 _TOP_PAGES_LIMIT = 10
 _DISTRIBUTION_LIMIT = 5
+_VISIT_RECORD_QUEUE_MAXSIZE = 1000
+_VISIT_RECORD_QUEUE_DRAIN_TIMEOUT_SECONDS = 5.0
+
+logger = structlog.get_logger("aerisun.ops")
+_visit_logger = structlog.stdlib.get_logger("aerisun.ops.visit")
+
+
+@dataclass(slots=True)
+class VisitRecordPayload:
+    visited_at: datetime
+    path: str
+    ip_address: str
+    user_agent: str | None
+    referer: str | None
+    status_code: int
+    duration_ms: int
+    is_bot: bool
+
+
+class VisitRecordQueue:
+    def __init__(self, *, maxsize: int = _VISIT_RECORD_QUEUE_MAXSIZE) -> None:
+        self._maxsize = maxsize
+        self._queue: asyncio.Queue[VisitRecordPayload | None] | None = None
+        self._worker: asyncio.Task[None] | None = None
+
+    async def start(self) -> None:
+        if self._worker is not None and not self._worker.done():
+            return
+        self._queue = asyncio.Queue(maxsize=self._maxsize)
+        self._worker = asyncio.create_task(self._run(), name="visit-record-worker")
+        _visit_logger.info("visit_record_worker_started", maxsize=self._maxsize)
+
+    async def stop(self) -> None:
+        worker = self._worker
+        queue = self._queue
+        self._worker = None
+        self._queue = None
+
+        if worker is None:
+            return
+
+        if queue is not None:
+            try:
+                await asyncio.wait_for(queue.put(None), timeout=_VISIT_RECORD_QUEUE_DRAIN_TIMEOUT_SECONDS)
+            except TimeoutError:
+                _visit_logger.warning("visit_record_worker_stop_timeout")
+
+        try:
+            await asyncio.wait_for(worker, timeout=_VISIT_RECORD_QUEUE_DRAIN_TIMEOUT_SECONDS)
+        except TimeoutError:
+            _visit_logger.warning("visit_record_worker_cancelled")
+            worker.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await worker
+
+    def enqueue(self, payload: VisitRecordPayload) -> bool:
+        queue = self._queue
+        if queue is None:
+            _visit_logger.warning("visit_record_worker_not_started", path=payload.path)
+            return False
+        try:
+            queue.put_nowait(payload)
+            return True
+        except asyncio.QueueFull:
+            _visit_logger.warning("visit_record_queue_full", path=payload.path, maxsize=self._maxsize)
+            return False
+
+    async def _run(self) -> None:
+        queue = self._queue
+        if queue is None:
+            return
+
+        from aerisun.core.db import get_session_factory
+
+        session_factory = get_session_factory()
+        while True:
+            payload = await queue.get()
+            if payload is None:
+                queue.task_done()
+                break
+            try:
+                with session_factory() as session:
+                    repo.create_visit_record(
+                        session,
+                        visited_at=payload.visited_at,
+                        path=payload.path,
+                        ip_address=payload.ip_address,
+                        user_agent=payload.user_agent,
+                        referer=payload.referer,
+                        status_code=payload.status_code,
+                        duration_ms=payload.duration_ms,
+                        is_bot=payload.is_bot,
+                    )
+                    session.commit()
+            except Exception:
+                _visit_logger.exception("visit_record_persist_failed", path=payload.path)
+            finally:
+                queue.task_done()
+
+
+_visit_record_queue = VisitRecordQueue()
+
+
+def enqueue_visit_record(payload: VisitRecordPayload) -> bool:
+    return _visit_record_queue.enqueue(payload)
+
+
+async def start_visit_record_worker() -> None:
+    await _visit_record_queue.start()
+
+
+async def stop_visit_record_worker() -> None:
+    await _visit_record_queue.stop()
 
 
 def list_audit_logs(
@@ -167,16 +284,11 @@ def _build_traffic_metrics(session: Session) -> DashboardTrafficMetrics:
     start_date = end_date - timedelta(days=_TRAFFIC_HISTORY_DAYS - 1)
     snapshots = repo.list_traffic_snapshots_between(session, start_date=start_date, end_date=end_date)
 
-    daily_totals: dict[date, int] = {
-        start_date + timedelta(days=index): 0 for index in range(_TRAFFIC_HISTORY_DAYS)
-    }
+    daily_totals: dict[date, int] = {start_date + timedelta(days=index): 0 for index in range(_TRAFFIC_HISTORY_DAYS)}
     for snapshot in snapshots:
         daily_totals[snapshot.snapshot_date] = daily_totals.get(snapshot.snapshot_date, 0) + snapshot.daily_views
 
-    history = [
-        TrafficTrendPoint(date=day, views=daily_totals.get(day, 0))
-        for day in sorted(daily_totals)
-    ]
+    history = [TrafficTrendPoint(date=day, views=daily_totals.get(day, 0)) for day in sorted(daily_totals)]
 
     latest_snapshots = repo.list_latest_traffic_snapshots(session, as_of_date=end_date)
     total_views = sum(item.cumulative_views for item in latest_snapshots)
@@ -256,10 +368,15 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
     start_date = now.date() - timedelta(days=history_days - 1)
     history_rows = repo.list_visit_history_by_day(session, start_date=start_date, end_date=now.date())
     history_map = {day: views for day, views in history_rows}
-    history = [
-        TrafficTrendPoint(date=start_date + timedelta(days=index), views=history_map.get(str(start_date + timedelta(days=index)), 0))
-        for index in range(history_days)
-    ]
+    history = []
+    for index in range(history_days):
+        current_date = start_date + timedelta(days=index)
+        history.append(
+            TrafficTrendPoint(
+                date=current_date,
+                views=history_map.get(str(current_date), 0),
+            )
+        )
 
     recent_records, _ = repo.find_visit_records_paginated(session, page=1, page_size=10)
     total_visits = repo.count_visit_records_since(session, since=datetime.fromtimestamp(0, UTC))

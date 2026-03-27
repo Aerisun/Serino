@@ -12,7 +12,7 @@ PID_FILE="${DEV_DIR}/dev.pid"
 backend_port="${BACKEND_PORT:-${AERISUN_PORT:-8000}}"
 frontend_port="${FRONTEND_PORT:-${AERISUN_FRONTEND_PORT:-5173}}"
 admin_port="${ADMIN_PORT:-${AERISUN_ADMIN_PORT:-5174}}"
-healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
+healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
 admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"
 
 source_env_file() {
@@ -43,7 +43,7 @@ load_env_ports() {
   backend_port="${BACKEND_PORT:-${AERISUN_PORT:-8000}}"
   frontend_port="${FRONTEND_PORT:-${AERISUN_FRONTEND_PORT:-5173}}"
   admin_port="${ADMIN_PORT:-${AERISUN_ADMIN_PORT:-5174}}"
-  healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
+  healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
   admin_base_path="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"
 }
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_read_thoughts_returns_seeded_collection(client) -> None:
-    response = client.get("/api/v1/public/thoughts")
+    response = client.get("/api/v1/site/thoughts")
 
     assert response.status_code == 200
 
@@ -12,7 +12,7 @@ def test_read_thoughts_returns_seeded_collection(client) -> None:
 
 
 def test_read_excerpts_returns_seeded_collection(client) -> None:
-    response = client.get("/api/v1/public/excerpts")
+    response = client.get("/api/v1/site/excerpts")
 
     assert response.status_code == 200
 

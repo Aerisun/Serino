@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 
 
 def find_active_friends(session: Session, *, limit: int = 100) -> list[Friend]:
-    """Query active friends in random order."""
+    """Query active friends in deterministic display order."""
     return list(
         session.scalars(
             select(Friend)
             .where(Friend.status == "active")
-            .order_by(func.random())
+            .order_by(Friend.order_index.asc(), Friend.created_at.asc(), Friend.id.asc())
             .limit(limit)
         ).all()
     )

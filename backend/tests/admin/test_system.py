@@ -6,8 +6,8 @@ and backup endpoints exposed under ``/api/v1/admin/system/``.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 import sqlite3
+from datetime import UTC, datetime, timedelta
 
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
@@ -280,14 +280,14 @@ class TestApiKeys:
     def test_api_key_lifecycle(self, client, admin_headers):
         resp = client.post(
             f"{BASE}/api-keys",
-            json={"key_name": "test-key", "scopes": ["read"]},
+            json={"key_name": "test-key", "scopes": ["content:read"]},
             headers=admin_headers,
         )
         assert resp.status_code == 201
         data = resp.json()
         assert "raw_key" in data
         assert data["item"]["key_name"] == "test-key"
-        assert data["item"]["scopes"] == ["read"]
+        assert data["item"]["scopes"] == ["content:read"]
         key_id = data["item"]["id"]
 
         resp = client.get(f"{BASE}/api-keys", headers=admin_headers)

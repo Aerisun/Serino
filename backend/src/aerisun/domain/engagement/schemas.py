@@ -29,6 +29,10 @@ class GuestbookCreate(ModelBase):
 
 class GuestbookCollectionRead(ModelBase):
     items: list[GuestbookEntryRead] = Field(description="List of guestbook entries")
+    total: int = Field(description="Total number of public guestbook entries")
+    page: int = Field(description="Current page number")
+    page_size: int = Field(description="Number of guestbook entries per page")
+    has_more: bool = Field(description="Whether more guestbook entries can be loaded")
 
 
 class GuestbookCreateResponse(ModelBase):
@@ -53,6 +57,10 @@ class CommentRead(ModelBase):
 
 class CommentCollectionRead(ModelBase):
     items: list[CommentRead] = Field(description="List of comments")
+    total: int = Field(description="Total number of root comment threads")
+    page: int = Field(description="Current page number")
+    page_size: int = Field(description="Number of root comment threads per page")
+    has_more: bool = Field(description="Whether more root comment threads can be loaded")
 
 
 class CommentCreate(ModelBase):

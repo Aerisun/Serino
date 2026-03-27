@@ -66,7 +66,14 @@ def _build_resource_key_from_digest(
     return f"{visibility}/assets/{category}/{digest[:12]}.{ext}"
 
 
-def _build_resource_key(*, file_name: str, content: bytes, mime_type: str | None, category: str, visibility: str) -> str:
+def _build_resource_key(
+    *,
+    file_name: str,
+    content: bytes,
+    mime_type: str | None,
+    category: str,
+    visibility: str,
+) -> str:
     digest = hashlib.sha256(content).hexdigest()
     return _build_resource_key_from_digest(
         file_name=file_name,
@@ -104,7 +111,13 @@ def _asset_to_read(asset: Asset) -> AssetAdminRead:
     )
 
 
-def list_assets(session: Session, page: int = 1, page_size: int = 20, q: str | None = None, scope: str | None = None) -> dict:
+def list_assets(
+    session: Session,
+    page: int = 1,
+    page_size: int = 20,
+    q: str | None = None,
+    scope: str | None = None,
+) -> dict:
     items, total = repo.find_assets_paginated(session, page=page, page_size=page_size, q=q, scope=scope)
     return {
         "items": [_asset_to_read(a) for a in items],

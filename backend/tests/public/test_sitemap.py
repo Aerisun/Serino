@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 
 def test_sitemap_returns_xml(client):
-    resp = client.get("/api/v1/public/sitemap.xml")
+    resp = client.get("/api/v1/site/sitemap.xml")
     assert resp.status_code == 200
     assert "xml" in resp.headers.get("content-type", "")
     # 验证 XML 有效
@@ -13,7 +13,7 @@ def test_sitemap_returns_xml(client):
 
 
 def test_sitemap_contains_static_pages(client):
-    resp = client.get("/api/v1/public/sitemap.xml")
+    resp = client.get("/api/v1/site/sitemap.xml")
     root = ET.fromstring(resp.text)
     ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     urls = [url.find("sm:loc", ns).text for url in root.findall("sm:url", ns)]
@@ -25,7 +25,7 @@ def test_sitemap_contains_static_pages(client):
 
 
 def test_sitemap_contains_published_posts(client):
-    resp = client.get("/api/v1/public/sitemap.xml")
+    resp = client.get("/api/v1/site/sitemap.xml")
     root = ET.fromstring(resp.text)
     ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     urls = [url.find("sm:loc", ns).text for url in root.findall("sm:url", ns)]

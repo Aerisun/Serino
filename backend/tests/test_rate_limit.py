@@ -49,13 +49,13 @@ def test_guestbook_rate_limited(rate_limited_client):
     """Guestbook POST should be rate limited to 5/minute."""
     for i in range(5):
         resp = rate_limited_client.post(
-            "/api/v1/public/guestbook",
+            "/api/v1/site-interactions/guestbook",
             json={"name": f"user{i}", "body": f"msg {i}"},
         )
         assert resp.status_code != 429, f"Request {i + 1} should not be rate limited"
 
     resp = rate_limited_client.post(
-        "/api/v1/public/guestbook",
+        "/api/v1/site-interactions/guestbook",
         json={"name": "user6", "body": "msg 6"},
     )
     assert resp.status_code == 429
@@ -65,7 +65,7 @@ def test_reactions_rate_limited(rate_limited_client):
     """Reactions POST should be rate limited to 10/minute."""
     for i in range(10):
         resp = rate_limited_client.post(
-            "/api/v1/public/reactions",
+            "/api/v1/site-interactions/reactions",
             json={
                 "content_type": "posts",
                 "content_slug": "nonexistent",
@@ -77,7 +77,7 @@ def test_reactions_rate_limited(rate_limited_client):
         assert resp.status_code != 429, f"Request {i + 1} should not be rate limited"
 
     resp = rate_limited_client.post(
-        "/api/v1/public/reactions",
+        "/api/v1/site-interactions/reactions",
         json={
             "content_type": "posts",
             "content_slug": "nonexistent",

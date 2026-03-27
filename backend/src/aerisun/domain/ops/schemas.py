@@ -19,6 +19,7 @@ class CommentAdminRead(ModelBase):
     parent_id: str | None
     author_name: str
     author_email: str | None
+    auth_provider: str | None = Field(default=None, description="Normalized auth provider")
     body: str
     status: str
     created_at: datetime
@@ -29,6 +30,7 @@ class GuestbookAdminRead(ModelBase):
     id: str
     name: str
     email: str | None
+    auth_provider: str | None = Field(default=None, description="Normalized auth provider")
     website: str | None
     body: str
     status: str

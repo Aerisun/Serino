@@ -51,8 +51,14 @@ class ContentCreate(BaseModel):
     summary: str | None = Field(default=None, description="Brief summary or excerpt")
     body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(default_factory=list, description="List of tag names")
-    status: Literal["draft", "published", "archived"] = Field(default="draft", description="Publication status: draft, public publish, or private archive")
-    visibility: Literal["public", "private"] = Field(default="public", description="Visibility level: public or private")
+    status: Literal["draft", "published", "archived"] = Field(
+        default="draft",
+        description="Publication status: draft, public publish, or private archive",
+    )
+    visibility: Literal["public", "private"] = Field(
+        default="public",
+        description="Visibility level: public or private",
+    )
     published_at: datetime | None = Field(default=None, description="Publication timestamp")
     category: str | None = Field(default=None, description="Content category name")
     mood: str | None = Field(default=None, description="Author mood (diary-specific)")

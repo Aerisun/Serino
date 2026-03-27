@@ -115,7 +115,7 @@ WALINE_PORT="${WALINE_PORT:-18360}"
 SITE_HOST="${AERISUN_SMOKE_HOST:-127.0.0.1}"
 SITE_URL="http://${SITE_HOST}:${HTTP_PORT}"
 PUBLIC_ORIGIN="${AERISUN_SMOKE_PUBLIC_ORIGIN:-https://smoke.aerisun.test}"
-HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/public/healthz}"
+HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
 ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"
 WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"
 

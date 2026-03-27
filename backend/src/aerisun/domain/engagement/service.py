@@ -24,6 +24,7 @@ from aerisun.domain.engagement.schemas import (
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
+from aerisun.domain.site_auth import repository as site_auth_repo
 from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.site_auth.service import get_admin_comment_identity, is_site_user_admin
 from aerisun.domain.site_config import repository as site_config_repo
@@ -32,7 +33,7 @@ from aerisun.domain.waline.service import (
     create_waline_record,
     get_waline_nick_identity,
     get_waline_record_by_id,
-    list_guestbook_records,
+    list_all_waline_records,
     list_records_for_url,
     normalize_comment_mail,
     normalize_comment_nick,
@@ -139,20 +140,39 @@ def _default_avatar_candidate(identity: str) -> tuple[str, str]:
     return candidate["key"], candidate["avatar_url"]
 
 
-def _is_author_name(session: Session, name: str) -> bool:
-    normalized = _clean_display_name(name).lower()
-    if not normalized:
+def _normalize_comment_avatar_key(value: str | None) -> str:
+    return " ".join((value or "").strip().split())
+
+
+def _site_user_id_from_avatar_key(avatar_key: str | None) -> str | None:
+    normalized_avatar_key = _normalize_comment_avatar_key(avatar_key)
+    if not normalized_avatar_key.startswith("site-user-"):
+        return None
+    site_user_id = normalized_avatar_key.removeprefix("site-user-").strip()
+    return site_user_id or None
+
+
+def _is_bound_admin_comment(
+    session: Session,
+    *,
+    email: str | None,
+    avatar_key: str | None,
+) -> bool:
+    site_user_id = _site_user_id_from_avatar_key(avatar_key)
+    if site_user_id and site_auth_repo.find_admin_identity_for_user(session, site_user_id=site_user_id) is not None:
+        return True
+
+    normalized_email = _email_key(email)
+    if not normalized_email:
         return False
-    site = site_config_repo.find_site_profile(session)
-    candidates = {
-        _clean_display_name(site.title if site else "").lower(),
-        _clean_display_name(site.author if site else "").lower(),
-        _clean_display_name(site.name if site else "").lower(),
-        "博主",
-        "felix",
-        "aerisun",
-    }
-    return normalized in {item for item in candidates if item}
+
+    site_user = site_auth_repo.find_user_by_email(session, normalized_email)
+    if site_user is not None and (
+        site_auth_repo.find_admin_identity_for_user(session, site_user_id=site_user.id) is not None
+    ):
+        return True
+
+    return site_auth_repo.find_admin_email_identity(session, email=normalized_email) is not None
 
 
 def _build_authenticated_site_user_profile(
@@ -241,8 +261,8 @@ def _load_authenticated_profile(session: Session, token: str) -> AuthenticatedCo
     object_id = str(raw_profile.get("objectId") or "").strip()
     mail = _email_key(raw_profile.get("email"))
     if not mail:
-                digest = sha256(clean_token.encode("utf-8")).hexdigest()[:12]
-                mail = f"oauth-{object_id or digest}@waline.local"
+        digest = sha256(clean_token.encode("utf-8")).hexdigest()[:12]
+        mail = f"oauth-{object_id or digest}@waline.local"
 
     avatar_url = str(raw_profile.get("avatar") or "").strip() or _avatar_for_name(display_name)
     avatar_key = f"oauth-{object_id}" if object_id else f"oauth-{sha256(clean_token.encode('utf-8')).hexdigest()[:12]}"
@@ -375,15 +395,43 @@ def _validate_identity(name: str, email: str | None) -> tuple[str, str]:
     return author_name, author_email
 
 
-def _ensure_anonymous_comments_allowed(session: Session, *, surface: str, authenticated: bool = False) -> None:
+def _raise_login_required(surface: str) -> None:
+    if surface == "guestbook":
+        raise DomainValidationError("当前站点要求登录后才能留言。")
+
+    raise DomainValidationError("当前站点要求登录后才能发表评论。")
+
+
+def _email_login_enabled_for_comments(session: Session) -> bool:
     config = site_config_repo.find_community_config(session)
-    if authenticated or config is None or config.anonymous_enabled:
+    if config is None:
+        return True
+    return bool(config.anonymous_enabled)
+
+
+def _ensure_authenticated_comment_allowed(
+    session: Session,
+    *,
+    surface: str,
+    authenticated: bool = False,
+    current_user: SiteUser | None = None,
+) -> None:
+    if not authenticated:
+        _raise_login_required(surface)
+
+    if current_user is None:
+        return
+    if is_site_user_admin(session, current_user):
+        return
+    if current_user.primary_auth_provider != "email":
+        return
+    if _email_login_enabled_for_comments(session):
         return
 
     if surface == "guestbook":
-        raise DomainValidationError("当前站点已关闭匿名留言，请先登录后再留言。")
+        raise DomainValidationError("当前站点未启用邮箱登录留言，请改用其他登录方式。")
 
-    raise DomainValidationError("当前站点已关闭匿名评论，请先登录后再发表评论。")
+    raise DomainValidationError("当前站点未启用邮箱登录评论，请改用其他登录方式。")
 
 
 def ensure_comment_image_upload_allowed(session: Session) -> None:
@@ -432,11 +480,46 @@ def _resolve_avatar_selection(
     return _default_avatar_candidate(author_identity_key)
 
 
-def list_public_guestbook_entries(session: Session, limit: int = 50) -> GuestbookCollectionRead:
+def _resolve_comment_sorting(session: Session) -> str:
+    config = site_config_repo.find_community_config(session)
+    sorting = (config.default_sorting if config else "").strip().lower()
+    return sorting or "latest"
+
+
+def _sort_guestbook_entries(
+    items: list[GuestbookEntryRead],
+    sorting: str,
+) -> list[GuestbookEntryRead]:
+    reverse = sorting != "oldest"
+    return sorted(items, key=lambda item: item.created_at, reverse=reverse)
+
+
+def _sort_comment_threads(
+    items: list[CommentRead],
+    sorting: str,
+) -> list[CommentRead]:
+    reverse = sorting != "oldest"
+    return sorted(items, key=lambda item: item.created_at, reverse=reverse)
+
+
+def _paginate_items(items: list, page: int, page_size: int) -> tuple[list, int, bool]:
+    total = len(items)
+    start = max(page - 1, 0) * page_size
+    end = start + page_size
+    return items[start:end], total, end < total
+
+
+def list_public_guestbook_entries(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+) -> GuestbookCollectionRead:
     _ensure_comment_avatar_assignments(session, build_comment_path("guestbook", "guestbook"))
-    items, _total = list_guestbook_records(page=1, page_size=limit, status="approved")
-    return GuestbookCollectionRead(
-        items=[
+    sorting = _resolve_comment_sorting(session)
+    items = list_all_waline_records(status="approved", guestbook_only=True)
+    mapped = _sort_guestbook_entries(
+        [
             GuestbookEntryRead(
                 id=str(item.id),
                 name=item.nick or "访客",
@@ -448,7 +531,16 @@ def list_public_guestbook_entries(session: Session, limit: int = 50) -> Guestboo
                 avatar_url=item.avatar_url or _avatar_for_name(item.nick or "访客"),
             )
             for item in items
-        ]
+        ],
+        sorting,
+    )
+    paged_items, total, has_more = _paginate_items(mapped, page, page_size)
+    return GuestbookCollectionRead(
+        items=paged_items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        has_more=has_more,
     )
 
 
@@ -466,12 +558,17 @@ def create_public_guestbook_entry(
         auth_profile = _build_authenticated_site_user_profile(session, current_user)
     elif payload.auth_token:
         auth_profile = _load_authenticated_profile(session, payload.auth_token)
-    _ensure_anonymous_comments_allowed(session, surface="guestbook", authenticated=auth_profile is not None)
+    _ensure_authenticated_comment_allowed(
+        session,
+        surface="guestbook",
+        authenticated=auth_profile is not None,
+        current_user=current_user,
+    )
 
     if auth_profile is not None:
         author_name = auth_profile.nick
         author_email = auth_profile.mail
-        website = auth_profile.link
+        website = payload.website.strip() if payload.website else auth_profile.link
         avatar_key = auth_profile.avatar_key
         avatar_url = auth_profile.avatar_url
     else:
@@ -529,7 +626,11 @@ def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
             avatar_url=avatar,
             like_count=node.like,
             liked=False,
-            is_author=_is_author_name(session, author_name),
+            is_author=_is_bound_admin_comment(
+                session,
+                email=node.mail,
+                avatar_key=node.avatar_key,
+            ),
             replies=[convert(child) for child in by_parent.get(node.id, [])],
         )
 
@@ -537,7 +638,14 @@ def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
     return [convert(root) for root in roots]
 
 
-def list_public_comments(session: Session, content_type: str, content_slug: str) -> CommentCollectionRead:
+def list_public_comments(
+    session: Session,
+    content_type: str,
+    content_slug: str,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+) -> CommentCollectionRead:
     if not repo.content_exists(session, content_type, content_slug):
         raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
 
@@ -548,7 +656,15 @@ def list_public_comments(session: Session, content_type: str, content_slug: str)
         status="approved",
         order="asc",
     )
-    return CommentCollectionRead(items=_build_waline_comment_tree(session, items))
+    threads = _sort_comment_threads(_build_waline_comment_tree(session, items), _resolve_comment_sorting(session))
+    paged_items, total, has_more = _paginate_items(threads, page, page_size)
+    return CommentCollectionRead(
+        items=paged_items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        has_more=has_more,
+    )
 
 
 def create_public_comment(
@@ -569,7 +685,12 @@ def create_public_comment(
         auth_profile = _build_authenticated_site_user_profile(session, current_user)
     elif payload.auth_token:
         auth_profile = _load_authenticated_profile(session, payload.auth_token)
-    _ensure_anonymous_comments_allowed(session, surface="comment", authenticated=auth_profile is not None)
+    _ensure_authenticated_comment_allowed(
+        session,
+        surface="comment",
+        authenticated=auth_profile is not None,
+        current_user=current_user,
+    )
 
     if auth_profile is not None:
         author_name = auth_profile.nick
@@ -621,7 +742,11 @@ def create_public_comment(
             avatar_url=item.avatar_url or _avatar_for_name(item.nick or "访客"),
             like_count=item.like,
             liked=False,
-            is_author=_is_author_name(session, item.nick or "访客"),
+            is_author=_is_bound_admin_comment(
+                session,
+                email=item.mail,
+                avatar_key=item.avatar_key,
+            ),
             replies=[],
         ),
         accepted=True,
@@ -703,7 +828,66 @@ def read_public_reaction(
 # ---------------------------------------------------------------------------
 
 
-def _comment_admin_read_from_waline(record):
+def _normalize_moderation_auth_provider(provider: str | None) -> str | None:
+    candidate = " ".join((provider or "").strip().lower().split())
+    if candidate in {"email", "google", "github"}:
+        return candidate
+    return None
+
+
+def _resolve_moderation_auth_provider(
+    session: Session,
+    *,
+    email: str | None,
+    avatar_key: str | None,
+) -> str | None:
+    from aerisun.domain.site_auth.shared import ALLOWED_OAUTH_PROVIDERS
+
+    normalized_email = normalize_comment_mail(email)
+    normalized_avatar_key = _normalize_comment_avatar_key(avatar_key)
+
+    site_user_id = _site_user_id_from_avatar_key(normalized_avatar_key)
+    if site_user_id:
+        site_user = site_auth_repo.find_user_by_id(session, site_user_id)
+        provider = _normalize_moderation_auth_provider(
+            site_user.primary_auth_provider if site_user else None,
+        )
+        if provider:
+            return provider
+
+    if normalized_email:
+        site_user = site_auth_repo.find_user_by_email(session, normalized_email)
+        provider = _normalize_moderation_auth_provider(
+            site_user.primary_auth_provider if site_user else None,
+        )
+        if provider:
+            return provider
+
+    if normalized_email:
+        admin_identity = site_auth_repo.find_admin_email_identity(session, email=normalized_email)
+        provider = _normalize_moderation_auth_provider(
+            admin_identity.provider if admin_identity else None,
+        )
+        if provider:
+            return provider
+
+        for provider_name in ALLOWED_OAUTH_PROVIDERS:
+            account = site_auth_repo.find_oauth_account_by_email(
+                session,
+                provider=provider_name,
+                email=normalized_email,
+            )
+            if account is not None:
+                return provider_name
+
+        if normalized_email.endswith("@waline.local") and normalized_avatar_key.startswith("oauth-"):
+            return None
+        return "email"
+
+    return None
+
+
+def _comment_admin_read_from_waline(session: Session, record):
     """Map a Waline record to CommentAdminRead schema."""
     from aerisun.domain.ops.schemas import CommentAdminRead
     from aerisun.domain.waline.service import parse_comment_path
@@ -716,6 +900,11 @@ def _comment_admin_read_from_waline(record):
         parent_id=str(record.pid) if record.pid is not None else None,
         author_name=record.nick or "访客",
         author_email=record.mail,
+        auth_provider=_resolve_moderation_auth_provider(
+            session,
+            email=record.mail,
+            avatar_key=record.avatar_key,
+        ),
         body=record.comment,
         status=record.status,
         created_at=record.inserted_at,
@@ -723,7 +912,7 @@ def _comment_admin_read_from_waline(record):
     )
 
 
-def _guestbook_admin_read_from_waline(record):
+def _guestbook_admin_read_from_waline(session: Session, record):
     """Map a Waline record to GuestbookAdminRead schema."""
     from aerisun.domain.ops.schemas import GuestbookAdminRead
 
@@ -731,6 +920,11 @@ def _guestbook_admin_read_from_waline(record):
         id=str(record.id),
         name=record.nick or "访客",
         email=record.mail,
+        auth_provider=_resolve_moderation_auth_provider(
+            session,
+            email=record.mail,
+            avatar_key=record.avatar_key,
+        ),
         website=record.link,
         body=record.comment,
         status=record.status,
@@ -740,6 +934,7 @@ def _guestbook_admin_read_from_waline(record):
 
 
 def list_admin_comments(
+    session: Session,
     page: int = 1,
     page_size: int = 20,
     status: str | None = None,
@@ -764,7 +959,7 @@ def list_admin_comments(
         sort=sort,
     )
     return {
-        "items": [_comment_admin_read_from_waline(item) for item in items],
+        "items": [_comment_admin_read_from_waline(session, item) for item in items],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -772,6 +967,7 @@ def list_admin_comments(
 
 
 def list_admin_guestbook(
+    session: Session,
     page: int = 1,
     page_size: int = 20,
     status: str | None = None,
@@ -794,7 +990,7 @@ def list_admin_guestbook(
         sort=sort,
     )
     return {
-        "items": [_guestbook_admin_read_from_waline(item) for item in items],
+        "items": [_guestbook_admin_read_from_waline(session, item) for item in items],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -825,7 +1021,7 @@ def moderate_comment(session: Session, comment_id: int, action: str, reason: str
 
     if action == "delete":
         return None
-    return _comment_admin_read_from_waline(result)
+    return _comment_admin_read_from_waline(session, result)
 
 
 def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reason: str | None = None):
@@ -852,4 +1048,4 @@ def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reaso
 
     if action == "delete":
         return None
-    return _guestbook_admin_read_from_waline(result)
+    return _guestbook_admin_read_from_waline(session, result)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_read_friends_returns_seeded_collection(client) -> None:
-    response = client.get("/api/v1/public/friends")
+    response = client.get("/api/v1/site/friends")
 
     assert response.status_code == 200
 
@@ -28,7 +28,7 @@ def test_read_friends_returns_seeded_collection(client) -> None:
 
 
 def test_read_friend_feed_returns_only_active_enabled_sources(client) -> None:
-    response = client.get("/api/v1/public/friend-feed")
+    response = client.get("/api/v1/site/friend-feed")
 
     assert response.status_code == 200
 
@@ -56,7 +56,7 @@ def test_read_friend_feed_returns_only_active_enabled_sources(client) -> None:
 
 
 def test_read_friend_feed_respects_limit(client) -> None:
-    response = client.get("/api/v1/public/friend-feed?limit=2")
+    response = client.get("/api/v1/site/friend-feed?limit=2")
 
     assert response.status_code == 200
 

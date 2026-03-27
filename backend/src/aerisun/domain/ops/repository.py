@@ -217,9 +217,7 @@ def get_latest_traffic_snapshot_timestamp(session: Session) -> datetime | None:
 
 def has_traffic_snapshot_for_date(session: Session, *, snapshot_date: date) -> bool:
     return (
-        session.query(TrafficDailySnapshot.id)
-        .filter(TrafficDailySnapshot.snapshot_date == snapshot_date)
-        .first()
+        session.query(TrafficDailySnapshot.id).filter(TrafficDailySnapshot.snapshot_date == snapshot_date).first()
         is not None
     )
 
@@ -274,12 +272,7 @@ def find_visit_records_paginated(
         include_bots=include_bots,
     )
     total = query.count()
-    items = list(
-        query.order_by(VisitRecord.visited_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    items = list(query.order_by(VisitRecord.visited_at.desc()).offset((page - 1) * page_size).limit(page_size).all())
     return items, total
 
 
@@ -302,14 +295,29 @@ def average_visit_duration_since(session: Session, *, since: datetime, include_b
     if not include_bots:
         query = query.filter(VisitRecord.is_bot.is_(False))
     value = query.scalar()
-    return int(round(value)) if value is not None else 0
+    return round(value) if value is not None else 0
 
 
-def list_visit_top_pages(session: Session, *, since: datetime, limit: int, include_bots: bool = False) -> list[tuple[str, int]]:
-    query = session.query(VisitRecord.path, func.count(VisitRecord.id).label("views")).filter(VisitRecord.visited_at >= since)
+def list_visit_top_pages(
+    session: Session,
+    *,
+    since: datetime,
+    limit: int,
+    include_bots: bool = False,
+) -> list[tuple[str, int]]:
+    query = session.query(VisitRecord.path, func.count(VisitRecord.id).label("views")).filter(
+        VisitRecord.visited_at >= since
+    )
     if not include_bots:
         query = query.filter(VisitRecord.is_bot.is_(False))
-    query = query.group_by(VisitRecord.path).order_by(func.count(VisitRecord.id).desc(), VisitRecord.path.asc()).limit(limit)
+    query = (
+        query.group_by(VisitRecord.path)
+        .order_by(
+            func.count(VisitRecord.id).desc(),
+            VisitRecord.path.asc(),
+        )
+        .limit(limit)
+    )
     return list(query.all())
 
 

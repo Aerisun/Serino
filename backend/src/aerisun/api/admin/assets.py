@@ -13,8 +13,8 @@ from aerisun.domain.media.service import (
     delete_asset,
     get_asset,
     list_assets,
-    upload_asset,
     update_asset,
+    upload_asset,
 )
 
 from .deps import get_current_admin

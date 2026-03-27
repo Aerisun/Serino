@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
 from aerisun.core.schemas import ModelBase
-
-# Re-export domain schemas for backward compatibility
 from aerisun.domain.content.schemas import (  # noqa: F401
     ContentAdminRead,
     ContentCreate,
@@ -94,7 +92,7 @@ class BulkDeleteRequest(BaseModel):
 
 class BulkStatusRequest(BaseModel):
     ids: list[str] = Field(description="List of item IDs to update")
-    status: Literal["draft", "published", "archived"] = Field(description="New status value to set")
+    status: str = Field(description="New status value to set")
 
 
 class BulkActionResponse(BaseModel):
@@ -106,11 +104,18 @@ class BulkActionResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+ItemT = TypeVar("ItemT")
+
+
 class PaginatedResponse[ItemT](ModelBase):
     items: list[ItemT] = Field(description="Page of result items")
     total: int = Field(description="Total number of items matching the query")
     page: int = Field(description="Current page number (1-based)")
     page_size: int = Field(description="Number of items per page")
+
+
+def build_paginated_response(items: list[ItemT], total: int, page: int, page_size: int) -> PaginatedResponse[ItemT]:
+    return PaginatedResponse[ItemT](items=items, total=total, page=page, page_size=page_size)
 
 
 # ---------------------------------------------------------------------------
@@ -133,17 +138,3 @@ class FeedCrawlAllResultRead(BaseModel):
     items_inserted: int = Field(default=0, description="Total new items inserted across all sources")
     errors: int = Field(default=0, description="Number of sources that failed")
     details: list[FeedCrawlResultRead] = Field(default_factory=list, description="Per-source crawl results")
-
-
-# ---------------------------------------------------------------------------
-# Comment image upload response
-# ---------------------------------------------------------------------------
-
-
-class CommentImageUploadData(BaseModel):
-    url: str = Field(description="Public URL of the uploaded image")
-
-
-class CommentImageUploadResponse(BaseModel):
-    errno: int = Field(default=0, description="Error number, 0 for success")
-    data: CommentImageUploadData = Field(description="Upload result data containing the image URL")

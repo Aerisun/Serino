@@ -265,6 +265,7 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
     traffic_snapshot_columns = _get_columns(str(db_path), "traffic_daily_snapshots")
 
     assert "hero_video_url" in site_profile_columns
+    assert "site_icon_url" in site_profile_columns
     assert {"category", "view_count"} <= posts_columns
     assert {"mood", "weather", "poem", "view_count"} <= diary_columns
     assert {"mood", "view_count"} <= thoughts_columns

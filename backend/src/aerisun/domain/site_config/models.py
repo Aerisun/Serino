@@ -19,6 +19,7 @@ class SiteProfile(Base, TimestampMixin):
     footer_text: Mapped[str] = mapped_column(Text, nullable=False)
     author: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     og_image: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    site_icon_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     hero_image_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     hero_poster_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     meta_description: Mapped[str] = mapped_column(Text, nullable=False, default="")

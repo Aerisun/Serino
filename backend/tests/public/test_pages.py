@@ -7,7 +7,7 @@ from aerisun.domain.waline.service import connect_waline_db
 
 
 def test_read_pages_returns_seeded_page_copy(client) -> None:
-    response = client.get("/api/v1/public/pages")
+    response = client.get("/api/v1/site/pages")
 
     assert response.status_code == 200
 
@@ -36,10 +36,10 @@ def test_read_pages_returns_seeded_page_copy(client) -> None:
 
 
 def test_public_content_includes_presentation_fields(client) -> None:
-    posts = client.get("/api/v1/public/posts").json()["items"]
-    diary = client.get("/api/v1/public/diary").json()["items"]
-    thoughts = client.get("/api/v1/public/thoughts").json()["items"]
-    excerpts = client.get("/api/v1/public/excerpts").json()["items"]
+    posts = client.get("/api/v1/site/posts").json()["items"]
+    diary = client.get("/api/v1/site/diary").json()["items"]
+    thoughts = client.get("/api/v1/site/thoughts").json()["items"]
+    excerpts = client.get("/api/v1/site/excerpts").json()["items"]
 
     posts_by_slug = {item["slug"]: item for item in posts}
     diary_by_slug = {item["slug"]: item for item in diary}
@@ -95,8 +95,8 @@ def test_public_content_stats_prefer_waline_counters(client) -> None:
         )
         connection.commit()
 
-    collection = client.get("/api/v1/public/posts").json()["items"]
-    detail = client.get("/api/v1/public/posts/from-zero-design-system").json()
+    collection = client.get("/api/v1/site/posts").json()["items"]
+    detail = client.get("/api/v1/site/posts/from-zero-design-system").json()
     post = next(item for item in collection if item["slug"] == "from-zero-design-system")
 
     assert post["view_count"] == 4321

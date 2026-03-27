@@ -4,7 +4,7 @@ import json
 import logging
 import mimetypes
 from collections import Counter
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import bcrypt
@@ -12,12 +12,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session_factory, init_db
-from aerisun.core.settings import get_settings
+from aerisun.core.settings import BACKEND_ROOT, get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.models import TrafficDailySnapshot, VisitRecord
+from aerisun.domain.site_auth.models import SiteAuthConfig
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -30,9 +31,9 @@ from aerisun.domain.site_config.models import (
     SiteProfile,
     SocialLink,
 )
-from aerisun.domain.site_auth.models import SiteAuthConfig
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import build_comment_path, connect_waline_db, make_waline_comment_row
+
 
 def _ensure_seed_content_asset(
     session: Session,
@@ -47,7 +48,8 @@ def _ensure_seed_content_asset(
     settings = get_settings()
     media_dir = settings.media_dir.expanduser().resolve()
     digest = __import__("hashlib").sha256(content).hexdigest()[:12]
-    ext = Path(file_name).suffix.lower().lstrip(".") or (mimetypes.guess_extension(mime_type or "") or ".bin").lstrip(".")
+    guessed_ext = mimetypes.guess_extension(mime_type or "") or ".bin"
+    ext = Path(file_name).suffix.lower().lstrip(".") or guessed_ext.lstrip(".")
     resource_key = f"{visibility}/assets/{category}/{digest}.{ext}"
     existing = session.query(Asset).filter(Asset.resource_key == resource_key).first()
     if existing is not None:
@@ -84,12 +86,13 @@ def _build_seed_avatar_svg(label: str) -> bytes:
     initials = (label.strip()[:2] or "A").upper()
     color_seed = __import__("hashlib").sha256(label.encode("utf-8")).hexdigest()[:6]
     bg = f"#{color_seed}"
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="{label}">
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"
+viewBox="0 0 256 256" role="img" aria-label="{label}">
 <rect width="256" height="256" rx="56" fill="{bg}"/>
-<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="Inter, Arial, sans-serif" font-size="88" font-weight="700" fill="white">{initials}</text>
+<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
+font-family="Inter, Arial, sans-serif" font-size="88" font-weight="700" fill="white">{initials}</text>
 </svg>'''
     return svg.encode("utf-8")
-
 
 
 def _ensure_seed_asset(
@@ -149,6 +152,7 @@ DEFAULT_SITE_PROFILE = {
     "footer_text": "Aerisun · Built with care and a small stack.",
     "author": "Felix",
     "og_image": "__SEEDED_OG_IMAGE__",
+    "site_icon_url": "__SEEDED_SITE_ICON__",
     "hero_image_url": "__SEEDED_HERO_IMAGE__",
     "hero_poster_url": "__SEEDED_HERO_POSTER__",
     "meta_description": "Felix 的个人网站 - UI/UX 设计师与前端开发者",
@@ -208,7 +212,25 @@ DEFAULT_PAGE_COPIES = [
         "max_width": "max-w-4xl",
         "page_size": None,
         "download_label": None,
-        "extras": {"dashboardLabel": "Dashboard"},
+        "extras": {
+            "dashboardLabel": "Dashboard",
+            "friendCircleTitle": "朋友圈",
+            "friendCircleViewAllLabel": "查看全部",
+            "friendCircleErrorTitle": "友邻动态加载失败",
+            "friendCircleRetryLabel": "重试",
+            "friendCircleEmptyMessage": "还没有公开的友邻动态",
+            "recentActivityTitle": "最近动态",
+            "recentActivityErrorTitle": "最近动态加载失败",
+            "recentActivityRetryLabel": "重试",
+            "recentActivityEmptyMessage": "暂时还没有公开的最近动态",
+            "heatmapTitle": "Activity",
+            "heatmapLoadingLabel": "加载中",
+            "heatmapErrorLabel": "加载失败",
+            "heatmapTotalTemplate": "{total} contributions",
+            "heatmapThisWeekLabel": "This week",
+            "heatmapPeakWeekLabel": "Peak week",
+            "heatmapAverageWeekLabel": "Avg / week",
+        },
     },
     {
         "page_key": "notFound",
@@ -222,7 +244,13 @@ DEFAULT_PAGE_COPIES = [
         "max_width": "max-w-2xl",
         "page_size": None,
         "download_label": None,
-        "extras": {"metaTitle": "页面未找到", "metaDescription": "你访问的页面不存在，或者已经被移动。"},
+        "extras": {
+            "metaTitle": "页面未找到",
+            "metaDescription": "你访问的页面不存在，或者已经被移动。",
+            "badgeLabel": "Shell mismatch",
+            "homeLabel": "返回首页",
+            "backLabel": "返回上页",
+        },
     },
     {
         "page_key": "posts",
@@ -239,6 +267,14 @@ DEFAULT_PAGE_COPIES = [
         "extras": {
             "category_all_label": "全部",
             "category_fallback_label": "未分类",
+            "errorTitle": "文章加载失败",
+            "retryLabel": "重试",
+            "loadMoreLabel": "加载更多...",
+            "detailBackLabel": "返回",
+            "detailListLabel": "返回列表",
+            "detailMissingTitle": "文章不存在",
+            "detailMissingDescription": "你访问的文章暂时不存在。",
+            "detailEndLabel": "— 完 —",
         },
     },
     {
@@ -253,7 +289,17 @@ DEFAULT_PAGE_COPIES = [
         "max_width": "max-w-2xl",
         "page_size": None,
         "download_label": None,
-        "extras": {},
+        "extras": {
+            "errorTitle": "日记加载失败",
+            "retryLabel": "重试",
+            "loadMoreLabel": "加载更多...",
+            "detailCtaLabel": "查看详情",
+            "detailBackLabel": "返回",
+            "detailListLabel": "返回列表",
+            "detailMissingTitle": "日记不存在",
+            "detailMissingDescription": "你访问的日记暂时不存在。",
+            "detailEndLabel": "— 今日份记录 —",
+        },
     },
     {
         "page_key": "friends",
@@ -269,10 +315,13 @@ DEFAULT_PAGE_COPIES = [
         "download_label": None,
         "extras": {
             "circle_title": "Friend Circle",
+            "errorTitle": "友链页面加载失败",
             "statusLabel": "状态",
             "loadingLabel": "正在加载...",
             "loadMoreLabel": "加载更多",
             "retryLabel": "重试加载",
+            "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
+            "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
         },
     },
     {
@@ -287,7 +336,14 @@ DEFAULT_PAGE_COPIES = [
         "max_width": "max-w-3xl",
         "page_size": None,
         "download_label": None,
-        "extras": {"modalCloseLabel": "关闭"},
+        "extras": {
+            "modalCloseLabel": "关闭",
+            "commentsOpenLabel": "查看评论",
+            "commentsCloseLabel": "收起评论",
+            "errorTitle": "文摘加载失败",
+            "retryLabel": "重试",
+            "loadMoreLabel": "加载更多...",
+        },
     },
     {
         "page_key": "thoughts",
@@ -301,7 +357,11 @@ DEFAULT_PAGE_COPIES = [
         "max_width": "max-w-2xl",
         "page_size": None,
         "download_label": None,
-        "extras": {},
+        "extras": {
+            "errorTitle": "碎碎念加载失败",
+            "retryLabel": "重试",
+            "loadMoreLabel": "加载更多...",
+        },
     },
     {
         "page_key": "guestbook",
@@ -316,6 +376,10 @@ DEFAULT_PAGE_COPIES = [
         "page_size": None,
         "download_label": None,
         "extras": {
+            "promptTitle": "留言提示",
+            "nameFieldLabel": "昵称",
+            "contentFieldLabel": "正文",
+            "submitFieldLabel": "按钮",
             "namePlaceholder": "你的名字",
             "contentPlaceholder": "想说的话",
             "submitLabel": "提交留言",
@@ -356,6 +420,11 @@ DEFAULT_PAGE_COPIES = [
             "loadingLabel": "正在加载日历",
             "retryLabel": "重试加载",
             "todayLabel": "今日",
+            "errorTitle": "日历加载失败",
+            "selectedEmptyMessage": "这一天没有记录",
+            "postTypeLabel": "帖子",
+            "diaryTypeLabel": "日记",
+            "excerptTypeLabel": "文摘",
         },
     },
 ]
@@ -549,7 +618,7 @@ def build_default_community_config() -> dict[str, object]:
         "login_mode": "force",
         "oauth_url": None,
         "oauth_providers": ["github", "google"],
-        "anonymous_enabled": False,
+        "anonymous_enabled": True,
         "moderation_mode": "all_pending",
         "default_sorting": "latest",
         "page_size": 20,
@@ -2123,12 +2192,19 @@ def seed_reference_data(*, force: bool = False) -> None:
             _clear_seed_data(session)
             _clear_waline_seed_data()
 
-        frontend_public_images = settings.store_dir.parent / "frontend" / "public" / "images"
+        frontend_public_dir = BACKEND_ROOT.parent / "frontend" / "public"
+        frontend_public_images = frontend_public_dir / "images"
         seeded_og_image = _ensure_seed_asset(
             session,
             source_path=frontend_public_images / "hero_bg.jpeg",
             category="site-og",
             note="站点默认 OG 分享图（seed 初始化）",
+        )
+        seeded_site_icon = _ensure_seed_asset(
+            session,
+            source_path=frontend_public_dir / "favicon.svg",
+            category="site-icon",
+            note="站点默认标签页图标（seed 初始化）",
         )
         seeded_hero_image = _ensure_seed_asset(
             session,
@@ -2153,6 +2229,7 @@ def seed_reference_data(*, force: bool = False) -> None:
             site_payload = {
                 **DEFAULT_SITE_PROFILE,
                 "og_image": seeded_og_image,
+                "site_icon_url": seeded_site_icon,
                 "hero_image_url": seeded_hero_image,
                 "hero_poster_url": seeded_hero_poster,
             }

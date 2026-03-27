@@ -33,24 +33,65 @@ MANAGED_MODEL_CONTENT_TYPES = {
 }
 
 
+def _normalize_content_state_values(
+    *,
+    status: str | None,
+    visibility: str | None,
+    fallback_status: str = "draft",
+    fallback_visibility: str = "public",
+) -> tuple[str, str]:
+    normalized_status = status if status in CONTENT_STATUS_VALUES else fallback_status
+    normalized_visibility = visibility if visibility in CONTENT_VISIBILITY_VALUES else fallback_visibility
+    return normalized_status, normalized_visibility
+
+
+def resolve_content_state(
+    *,
+    current_status: str = "draft",
+    current_visibility: str = "public",
+    target_status: str | None = None,
+    target_visibility: str | None = None,
+) -> tuple[str, str]:
+    current_status, current_visibility = _normalize_content_state_values(
+        status=current_status,
+        visibility=current_visibility,
+    )
+    target_status, target_visibility = _normalize_content_state_values(
+        status=target_status,
+        visibility=target_visibility,
+        fallback_status=current_status,
+        fallback_visibility=current_visibility,
+    )
+
+    if target_status == "draft":
+        return "draft", target_visibility
+
+    if target_visibility == "private":
+        return "archived", "private"
+
+    if current_visibility == "private" and current_status == "archived" and target_visibility == "public":
+        return "draft", "public"
+
+    return target_status, "public"
+
+
+def resolve_content_bulk_state(status: str) -> tuple[str, str | None]:
+    normalized_status, normalized_visibility = resolve_content_state(
+        target_status=status,
+        target_visibility="private" if status == "archived" else "public",
+    )
+    return normalized_status, normalized_visibility
+
+
 def normalize_content_create_state(session: Session, data: dict) -> dict:
     normalized = dict(data)
     _normalize_and_sync_category(session, normalized, content_type=normalized.pop("_content_type", None))
-    status = normalized.get("status", "draft")
-    visibility = normalized.get("visibility", "public")
-
-    if status not in CONTENT_STATUS_VALUES:
-        status = "draft"
-    if visibility not in CONTENT_VISIBILITY_VALUES:
-        visibility = "public"
-
-    if visibility == "private":
-        normalized["visibility"] = "private"
-        normalized["status"] = "archived"
-        return normalized
-
-    normalized["visibility"] = "public"
-    normalized["status"] = status
+    resolved_status, resolved_visibility = resolve_content_state(
+        target_status=normalized.get("status", "draft"),
+        target_visibility=normalized.get("visibility", "public"),
+    )
+    normalized["status"] = resolved_status
+    normalized["visibility"] = resolved_visibility
     return normalized
 
 
@@ -61,29 +102,14 @@ def normalize_content_update_state(session: Session, existing: ContentModel, pat
         normalized,
         content_type=MANAGED_MODEL_CONTENT_TYPES.get(type(existing)),
     )
-    current_status = getattr(existing, "status", "draft") or "draft"
-    current_visibility = getattr(existing, "visibility", "public") or "public"
-
-    target_status = normalized.get("status", current_status)
-    target_visibility = normalized.get("visibility", current_visibility)
-
-    if target_status not in CONTENT_STATUS_VALUES:
-        target_status = current_status if current_status in CONTENT_STATUS_VALUES else "draft"
-    if target_visibility not in CONTENT_VISIBILITY_VALUES:
-        target_visibility = current_visibility if current_visibility in CONTENT_VISIBILITY_VALUES else "public"
-
-    if target_visibility == "private":
-        normalized["visibility"] = "private"
-        normalized["status"] = "archived"
-        return normalized
-
-    if current_visibility == "private" and current_status == "archived" and target_visibility == "public":
-        normalized["visibility"] = "public"
-        normalized["status"] = "draft"
-        return normalized
-
-    normalized["visibility"] = "public"
-    normalized["status"] = target_status
+    resolved_status, resolved_visibility = resolve_content_state(
+        current_status=getattr(existing, "status", "draft") or "draft",
+        current_visibility=getattr(existing, "visibility", "public") or "public",
+        target_status=normalized.get("status"),
+        target_visibility=normalized.get("visibility"),
+    )
+    normalized["status"] = resolved_status
+    normalized["visibility"] = resolved_visibility
     return normalized
 
 
@@ -292,12 +318,7 @@ def ensure_content_type(content_type: str) -> str:
 
 def _category_usage_count(session: Session, *, content_type: str, name: str) -> int:
     model = repo.CONTENT_MODELS[content_type]
-    return (
-        session.query(func.count(model.id))
-        .filter(model.category == name)
-        .scalar()
-        or 0
-    )
+    return session.query(func.count(model.id)).filter(model.category == name).scalar() or 0
 
 
 def _to_category_read(session: Session, category: ContentCategory) -> ContentCategoryRead:
@@ -317,10 +338,7 @@ def sync_managed_categories_from_content(session: Session, *, content_type: str 
     target_types = [content_type] if content_type else sorted(CONTENT_CATEGORY_TYPES)
     for current_type in target_types:
         ensure_content_type(current_type)
-        existing_names = {
-            category.name
-            for category in repo.list_categories(session, content_type=current_type)
-        }
+        existing_names = {category.name for category in repo.list_categories(session, content_type=current_type)}
         discovered_names = repo.list_distinct_content_categories(session, content_type=current_type)
         for name in discovered_names:
             normalized_name = normalize_category_name(name)

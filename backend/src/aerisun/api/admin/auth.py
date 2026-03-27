@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from aerisun.api.public_auth import get_current_site_user
+from aerisun.api.deps.site_auth import get_current_site_user
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_AUTH_LOGIN, limiter
 from aerisun.domain.iam.models import AdminUser

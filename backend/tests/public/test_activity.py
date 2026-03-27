@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_read_calendar_returns_content_events(client) -> None:
-    response = client.get("/api/v1/public/calendar")
+    response = client.get("/api/v1/site/calendar")
 
     assert response.status_code == 200
     payload = response.json()
@@ -11,7 +11,7 @@ def test_read_calendar_returns_content_events(client) -> None:
 
 
 def test_read_recent_activity_returns_items(client) -> None:
-    response = client.get("/api/v1/public/recent-activity")
+    response = client.get("/api/v1/site/recent-activity")
 
     assert response.status_code == 200
     payload = response.json()
@@ -20,7 +20,7 @@ def test_read_recent_activity_returns_items(client) -> None:
 
 
 def test_read_activity_heatmap_returns_weeks(client) -> None:
-    response = client.get("/api/v1/public/activity-heatmap?weeks=12")
+    response = client.get("/api/v1/site/activity-heatmap?weeks=12")
 
     assert response.status_code == 200
     payload = response.json()

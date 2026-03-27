@@ -65,7 +65,7 @@ def test_admin_community_config_round_trip(client) -> None:
         "emoji_presets": current["emoji_presets"],
         "enable_enjoy_search": current["enable_enjoy_search"],
         "image_uploader": current["image_uploader"],
-        "login_mode": "oauth",
+        "login_mode": "force",
         "oauth_url": "https://auth.example.com/community",
         "oauth_providers": ["github"],
         "anonymous_enabled": False,

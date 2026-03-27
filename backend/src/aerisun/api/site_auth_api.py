@@ -4,6 +4,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, R
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from aerisun.api.deps.site_auth import get_current_site_user, get_current_site_user_optional
 from aerisun.core.db import get_session
 from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.site_auth.schemas import (
@@ -23,10 +24,10 @@ from aerisun.domain.site_auth.service import (
     get_auth_state,
     login_with_email,
     update_site_user_profile,
-    validate_site_session_token,
 )
 
-router = APIRouter(prefix="/api/v1/public/auth", tags=["public-auth"])
+base_router = APIRouter()
+router = APIRouter(prefix="/api/v1/site-auth", tags=["site-auth"])
 
 
 def _cookie_name() -> str:
@@ -35,7 +36,14 @@ def _cookie_name() -> str:
     return get_settings().public_session_cookie_name
 
 
-def _set_session_cookie(response: Response, token: str) -> None:
+def _request_is_secure(request: Request) -> bool:
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    if forwarded_proto:
+        return forwarded_proto.split(",", 1)[0].strip().lower() == "https"
+    return request.url.scheme == "https"
+
+
+def _set_session_cookie(response: Response, token: str, *, secure: bool) -> None:
     from aerisun.core.settings import get_settings
 
     settings = get_settings()
@@ -44,7 +52,7 @@ def _set_session_cookie(response: Response, token: str) -> None:
         value=token,
         httponly=True,
         samesite="lax",
-        secure=settings.site_url.startswith("https://"),
+        secure=secure,
         max_age=settings.public_session_ttl_hours * 3600,
         path="/",
     )
@@ -54,27 +62,7 @@ def _clear_session_cookie(response: Response) -> None:
     response.delete_cookie(_cookie_name(), path="/")
 
 
-def get_current_site_user_optional(
-    session: Session = Depends(get_session),
-    site_session: str | None = Cookie(default=None, alias="aerisun_site_session"),
-) -> SiteUser | None:
-    if not site_session:
-        return None
-    try:
-        return validate_site_session_token(session, site_session)
-    except Exception:
-        return None
-
-
-def get_current_site_user(
-    current_user: SiteUser | None = Depends(get_current_site_user_optional),
-) -> SiteUser:
-    if current_user is None:
-        raise HTTPException(status_code=401, detail="请先登录。")
-    return current_user
-
-
-@router.get("/me", response_model=SiteAuthStateRead, summary="获取当前站点用户状态")
+@base_router.get("/me", response_model=SiteAuthStateRead, summary="获取当前站点用户状态")
 def read_site_auth_state(
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
@@ -82,7 +70,7 @@ def read_site_auth_state(
     return get_auth_state(session, current_user)
 
 
-@router.get("/avatar-candidates", response_model=SiteAuthAvatarCandidateBatchRead, summary="获取头像候选")
+@base_router.get("/avatar-candidates", response_model=SiteAuthAvatarCandidateBatchRead, summary="获取头像候选")
 def read_avatar_candidates(
     identity: str | None = Query(default=None),
     batch: int = Query(default=0, ge=0),
@@ -94,19 +82,20 @@ def read_avatar_candidates(
     return build_avatar_candidate_batch(resolved_identity, batch=batch)
 
 
-@router.post("/email", response_model=EmailLoginResponse, summary="通过邮箱识别登录")
+@base_router.post("/email", response_model=EmailLoginResponse, summary="通过邮箱识别登录")
 def email_login(
+    request: Request,
     payload: EmailLoginRequest,
     response: Response,
     session: Session = Depends(get_session),
 ) -> EmailLoginResponse:
     result, token = login_with_email(session, payload)
     if token:
-        _set_session_cookie(response, token)
+        _set_session_cookie(response, token, secure=_request_is_secure(request))
     return result
 
 
-@router.patch("/me", response_model=SiteAuthUserRead, summary="更新当前站点用户资料")
+@base_router.patch("/me", response_model=SiteAuthUserRead, summary="更新当前站点用户资料")
 def update_my_profile(
     payload: SiteAuthProfileUpdateRequest,
     session: Session = Depends(get_session),
@@ -115,18 +104,18 @@ def update_my_profile(
     return update_site_user_profile(session, current_user, payload)
 
 
-@router.post("/logout", status_code=204, summary="站点用户登出")
+@base_router.post("/logout", status_code=204, summary="站点用户登出")
 def logout(
     response: Response,
     session: Session = Depends(get_session),
-    site_session: str | None = Cookie(default=None, alias="aerisun_site_session"),
+    site_session: str | None = Cookie(default=None, alias=_cookie_name()),
 ) -> None:
     if site_session:
         destroy_site_session(session, site_session)
     _clear_session_cookie(response)
 
 
-@router.get("/oauth/{provider}/start", response_model=OAuthStartResponse, summary="获取 OAuth 跳转地址")
+@base_router.get("/oauth/{provider}/start", response_model=OAuthStartResponse, summary="获取 OAuth 跳转地址")
 def oauth_start(
     request: Request,
     provider: str,
@@ -146,14 +135,14 @@ def oauth_start(
         value=state_cookie,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=_request_is_secure(request),
         max_age=600,
         path="/",
     )
     return OAuthStartResponse(authorization_url=authorization_url)
 
 
-@router.get("/oauth/{provider}/callback", summary="处理 OAuth 回调")
+@base_router.get("/oauth/{provider}/callback", summary="处理 OAuth 回调")
 def oauth_callback(
     request: Request,
     provider: str,
@@ -174,5 +163,8 @@ def oauth_callback(
     redirect_to = return_to if "?" in return_to else f"{return_to}?auth=success"
     response = RedirectResponse(url=redirect_to, status_code=302)
     response.delete_cookie("aerisun_site_oauth_state", path="/")
-    _set_session_cookie(response, token)
+    _set_session_cookie(response, token, secure=_request_is_secure(request))
     return response
+
+
+router.include_router(base_router)
