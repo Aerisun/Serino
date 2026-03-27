@@ -32,8 +32,11 @@ const ResumePage = lazy(() => import("@/pages/resume/ResumePage"));
 const FriendsPage = lazy(() => import("@/pages/friends/FriendsPage"));
 const ModerationPage = lazy(() => import("@/pages/moderation/ModerationPage"));
 const VisitorsPage = lazy(() => import("@/pages/visitors/VisitorsPage"));
+const VisitorsUsersPage = lazy(() => import("@/pages/visitors/VisitorsUsersPage"));
 const AssetsPage = lazy(() => import("@/pages/assets/AssetsPage"));
 const ApiKeysPage = lazy(() => import("@/pages/system/ApiKeysPage"));
+const McpPage = lazy(() => import("@/pages/integrations/McpPage"));
+const FeedsPage = lazy(() => import("@/pages/integrations/FeedsPage"));
 const AuditLogPage = lazy(() => import("@/pages/system/AuditLogPage"));
 const BackupsPage = lazy(() => import("@/pages/system/BackupsPage"));
 const SystemInfoPage = lazy(() => import("@/pages/system/SystemInfoPage"));
@@ -77,8 +80,14 @@ function ProtectedRoutes() {
           <Route path="friends" element={<FriendsPage />} />
           <Route path="moderation" element={<ModerationPage />} />
           <Route path="visitors" element={<VisitorsPage />} />
+          <Route path="visitors/users" element={<VisitorsUsersPage />} />
           <Route path="assets" element={<AssetsPage />} />
-          <Route path="system/api-keys" element={<ApiKeysPage />} />
+          <Route path="integrations/api-keys" element={<ApiKeysPage />} />
+          <Route path="integrations/feeds" element={<FeedsPage />} />
+          <Route path="integrations/mcp" element={<McpPage />} />
+          <Route path="system/api-keys" element={<Navigate to="/integrations/api-keys" replace />} />
+          <Route path="system/feeds" element={<Navigate to="/integrations/feeds" replace />} />
+          <Route path="system/mcp" element={<Navigate to="/integrations/mcp" replace />} />
           <Route path="system/audit-log" element={<AuditLogPage />} />
           <Route path="system/backups" element={<BackupsPage />} />
           <Route path="system/info" element={<SystemInfoPage />} />

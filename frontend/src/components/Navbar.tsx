@@ -5,7 +5,7 @@ import { ChevronDown, LogOut, Menu, PencilLine, Search, Sparkles, X } from "luci
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { transition } from "@/config";
-import { useSiteAuth } from "@/contexts/site-auth";
+import { useSiteAuth } from "@/contexts/use-site-auth";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import type { NavItem } from "@/lib/runtime-config";
@@ -531,12 +531,11 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 className={[
                   "group relative inline-flex h-9 items-center gap-2 overflow-hidden rounded-full px-3.5 text-sm font-medium transition-all active:scale-[0.98]",
                   glassVariant === "hero"
-                    ? "text-white"
-                    : "text-[rgb(var(--shiro-accent-rgb)/0.92)]",
+                    ? "liquid-glass-hero text-white"
+                    : "liquid-glass text-[rgb(var(--shiro-accent-rgb)/0.92)]",
                 ].join(" ")}
               >
-                <span className="absolute inset-0 rounded-full border border-white/10 bg-[linear-gradient(135deg,rgb(66_133_244/0.22),rgb(234_67_53/0.12),rgb(251_188_5/0.12),rgb(52_168_83/0.22))]" />
-                <span className="absolute inset-[1px] rounded-full bg-background/[0.88] dark:bg-card/[0.88]" />
+                <span className="absolute inset-0 rounded-full border border-white/10 bg-[linear-gradient(135deg,rgb(66_133_244/0.22),rgb(234_67_53/0.12),rgb(251_188_5/0.12),rgb(52_168_83/0.22))] opacity-80" />
                 <span className="absolute -inset-x-2 top-1/2 h-6 -translate-y-1/2 bg-[radial-gradient(circle,_rgb(255_255_255/0.28),_transparent_58%)] opacity-0 blur-md transition-opacity group-hover:opacity-100" />
                 <Sparkles className="relative h-4 w-4" />
                 <span className="relative hidden sm:inline">登录</span>

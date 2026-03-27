@@ -10,9 +10,9 @@ import {
 import WalineSurface from "@/components/WalineSurface";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
-  createReactionApiV1PublicReactionsPost,
-  readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGet,
-} from "@serino/api-client/public";
+  createReactionApiV1SiteInteractionsReactionsPost,
+  readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet,
+} from "@serino/api-client/site-interactions";
 
 type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
 
@@ -78,7 +78,7 @@ const useLike = (ctx: CommentContext | null) => {
     const storageKey = `${LIKE_STORAGE_PREFIX}${reactionKey}`;
     setLiked(localStorage.getItem(storageKey) === "1");
 
-    readReactionApiV1PublicReactionsContentTypeSlugReactionTypeGet(ctx.contentType, ctx.slug, "like")
+    readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet(ctx.contentType, ctx.slug, "like")
       .then((response) => {
         setCount(response.data.total ?? 0);
       })
@@ -96,7 +96,7 @@ const useLike = (ctx: CommentContext | null) => {
         localStorage.setItem(tokenStorageKey, clientToken);
       }
 
-      const response = await createReactionApiV1PublicReactionsPost({
+      const response = await createReactionApiV1SiteInteractionsReactionsPost({
         content_type: ctx.contentType,
         content_slug: ctx.slug,
         reaction_type: "like",

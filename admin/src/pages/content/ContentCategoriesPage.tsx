@@ -9,10 +9,10 @@ import {
 } from "@serino/api-client/admin";
 import type { ContentCategoryRead } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
+import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Badge } from "@/components/ui/Badge";
 import {
   Dialog,
   DialogContent,
@@ -183,49 +183,34 @@ export default function ContentCategoriesPage() {
       <PageHeader
         title={t("contentCategories.title")}
         description={t("contentCategories.description")}
-        actions={
+      />
+
+      <AdminSegmentedFilter
+        value={activeType}
+        onValueChange={(next) => setActiveType(next as any)}
+        items={CONTENT_CATEGORY_TYPES.map((type) => ({
+          value: type,
+          label: t(CONTENT_CATEGORY_LABEL_KEYS[type]),
+        }))}
+        placement="below-header"
+      />
+
+      <section className="rounded-3xl border border-border/50 bg-background/70 p-6 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.55)] backdrop-blur">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">{t(CONTENT_CATEGORY_LABEL_KEYS[activeType])}</h2>
+            <p className="text-sm text-muted-foreground">{t("contentCategories.sectionHint")}</p>
+          </div>
           <Button
             onClick={() => {
               setDraftName("");
               setCreateOpen(true);
             }}
+            className="shrink-0 gap-2"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             {t("contentCategories.createAction")}
           </Button>
-        }
-      />
-
-      <div className="flex flex-wrap gap-2">
-        {CONTENT_CATEGORY_TYPES.map((type) => {
-          const active = type === activeType;
-          return (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setActiveType(type)}
-              className={cn(
-                "inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition-all",
-                active
-                  ? "border-sky-400/60 bg-sky-500/15 text-sky-200 shadow-[0_0_0_1px_rgba(56,189,248,0.28),0_12px_32px_-20px_rgba(56,189,248,0.95)]"
-                  : "border-border/55 bg-background/70 text-muted-foreground hover:border-border hover:text-foreground",
-              )}
-            >
-              {t(CONTENT_CATEGORY_LABEL_KEYS[type])}
-            </button>
-          );
-        })}
-      </div>
-
-      <section className="rounded-3xl border border-border/50 bg-background/70 p-6 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.55)] backdrop-blur">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">{t(CONTENT_CATEGORY_LABEL_KEYS[activeType])}</h2>
-            <p className="text-sm text-muted-foreground">{t("contentCategories.sectionHint")}</p>
-          </div>
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
-            {categories.length} {t("contentCategories.countSuffix")}
-          </Badge>
         </div>
 
         {isLoading ? (

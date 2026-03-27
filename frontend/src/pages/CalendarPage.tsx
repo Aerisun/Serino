@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
-import { useReadCalendarApiV1PublicCalendarGet } from "@serino/api-client/public";
+import { useReadCalendarApiV1SiteCalendarGet } from "@serino/api-client/site";
 import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
@@ -21,24 +21,25 @@ interface CalendarPageConfig extends BaseViewPageConfig {
   weekdayLabels?: unknown;
   monthLabels?: unknown;
   todayLabel?: string;
+  selectedEmptyMessage?: string;
+  postTypeLabel?: string;
+  diaryTypeLabel?: string;
+  excerptTypeLabel?: string;
 }
 
-const typeConfig = {
+const typeConfigBase = {
   post: {
     icon: FileText,
-    label: "帖子",
     chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.88)]",
     dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.72)]",
   },
   diary: {
     icon: BookOpen,
-    label: "日记",
     chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.1)] text-[rgb(var(--shiro-accent-rgb)/0.78)]",
     dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.5)]",
   },
   excerpt: {
     icon: Feather,
-    label: "文摘",
     chipClass: "bg-[rgb(var(--shiro-accent-rgb)/0.08)] text-[rgb(var(--shiro-accent-rgb)/0.7)]",
     dotClass: "bg-[rgb(var(--shiro-accent-rgb)/0.38)]",
   },
@@ -113,6 +114,24 @@ const CalendarPage = () => {
   const config = usePageConfig().calendar as unknown as CalendarPageConfig;
   const weekdayLabels = getWeekdayLabels(config.weekdayLabels);
   const monthLabels = getMonthLabels(config.monthLabels);
+  const loadingLabel = config.loadingLabel ?? "正在加载日历";
+  const retryLabel = config.retryLabel ?? "重试加载";
+  const errorTitle = config.errorTitle ?? "日历加载失败";
+  const selectedEmptyMessage = config.selectedEmptyMessage ?? "这一天没有记录";
+  const typeConfig = {
+    post: {
+      ...typeConfigBase.post,
+      label: config.postTypeLabel ?? "帖子",
+    },
+    diary: {
+      ...typeConfigBase.diary,
+      label: config.diaryTypeLabel ?? "日记",
+    },
+    excerpt: {
+      ...typeConfigBase.excerpt,
+      label: config.excerptTypeLabel ?? "文摘",
+    },
+  } as const;
   const today = new Date();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotionPreference();
@@ -130,7 +149,7 @@ const CalendarPage = () => {
   const rangeStart = formatDateKey(new Date(year, month, 1));
   const rangeEnd = formatDateKey(new Date(year, month + 1, 0));
 
-  const { data: response, isLoading, isError, error, refetch } = useReadCalendarApiV1PublicCalendarGet({ from: rangeStart, to: rangeEnd });
+  const { data: response, isLoading, isError, error, refetch } = useReadCalendarApiV1SiteCalendarGet({ from: rangeStart, to: rangeEnd });
   const calendarEvents = useMemo(
     () =>
       (response?.data?.events ?? [])
@@ -145,7 +164,7 @@ const CalendarPage = () => {
       : calendarEvents.length > 0
         ? "ready"
         : "empty";
-  const errorMessage = isError ? (error instanceof Error ? error.message : "日历加载失败") : "";
+  const errorMessage = isError ? (error instanceof Error ? error.message : errorTitle) : "";
 
   const eventMap = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -325,18 +344,23 @@ const CalendarPage = () => {
               <div className="h-14 animate-pulse rounded-xl bg-foreground/[0.03]" />
               <div className="h-14 animate-pulse rounded-xl bg-foreground/[0.03]" />
               <p className="pt-1 text-center text-xs font-body text-foreground/20">
-                {String(config.loadingLabel ?? "")}
+                {loadingLabel}
               </p>
             </div>
           ) : status === "error" ? (
             <div className="py-8 text-center">
-              <p className="text-sm font-body text-foreground/20">{errorMessage || String(config.emptyMessage ?? "")}</p>
+              <p className="text-sm font-body text-foreground/20">
+                {errorTitle}
+              </p>
+              <p className="mt-2 text-xs font-body text-foreground/20">
+                {errorMessage || String(config.emptyMessage ?? "")}
+              </p>
               <button
                 type="button"
                 onClick={() => void refetch()}
                 className="mt-4 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70"
               >
-                {String(config.retryLabel ?? "")}
+                {retryLabel}
               </button>
             </div>
           ) : !hasMonthData ? (
@@ -381,7 +405,7 @@ const CalendarPage = () => {
             </div>
           ) : (
             <p className="py-8 text-center text-sm font-body text-foreground/20">
-              {selectedDate ? "这一天没有记录" : String(config.emptyMessage ?? "")}
+              {selectedDate ? selectedEmptyMessage : String(config.emptyMessage ?? "")}
             </p>
           )}
         </motion.div>

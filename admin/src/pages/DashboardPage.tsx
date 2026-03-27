@@ -1,6 +1,7 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  BarChart3,
   BookOpen,
   ChevronRight,
   Clock3,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { useDashboardStatsApiV1AdminSystemDashboardStatsGet } from "@serino/api-client/admin";
 import type { EnhancedDashboardStats, RecentContentItem } from "@serino/api-client/models";
+import { AdminSurface } from "@/components/AdminSurface";
 import { DataTable } from "@/components/DataTable";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -23,7 +25,8 @@ import {
 } from "@/components/dashboard/DashboardStates";
 import { DashboardSurface } from "@/components/dashboard/DashboardSurface";
 import { SummaryMetricCard } from "@/components/dashboard/SummaryMetricCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
+import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
@@ -59,6 +62,8 @@ type VisitorRecord = {
   duration_ms: number;
   is_bot?: boolean;
 };
+
+type DashboardSection = "metrics" | "charts" | "recent" | "visitors";
 
 function buildTrafficPath(points: TrafficPoint[], width: number, height: number) {
   if (points.length === 0) return "";
@@ -128,7 +133,7 @@ function formatPageLabel(url: string, t: (key: string) => string) {
   }
 
   const segments = url.split("/").filter(Boolean);
-  const lastSegment = segments.at(-1);
+  const lastSegment = segments[segments.length - 1];
   if (!lastSegment) {
     return url;
   }
@@ -148,11 +153,6 @@ function contentTypeLabel(type: string, t: (key: string) => string) {
 function DashboardLoading() {
   return (
     <div className="space-y-6">
-      <div className="flex gap-2">
-        {Array.from({ length: 3 }, (_, index) => (
-          <DashboardSkeleton key={index} className="h-10 w-28 rounded-2xl" />
-        ))}
-      </div>
       <DashboardSkeleton className="h-[152px] rounded-[26px]" />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
@@ -210,6 +210,7 @@ function DashboardListRow({
 export default function DashboardPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<DashboardSection>("metrics");
 
   const { data: raw, isLoading } =
     useDashboardStatsApiV1AdminSystemDashboardStatsGet();
@@ -219,7 +220,7 @@ export default function DashboardPage() {
     () =>
       (stats?.traffic?.history ?? []).map((point) => ({
         date: String(point.date),
-        views: point.views,
+        views: point.views ?? 0,
       })),
     [stats],
   );
@@ -230,7 +231,7 @@ export default function DashboardPage() {
     () =>
       (stats?.visitors?.history ?? []).map((point) => ({
         date: String(point.date),
-        views: point.views,
+        views: point.views ?? 0,
       })),
     [stats],
   );
@@ -240,11 +241,9 @@ export default function DashboardPage() {
     [stats],
   );
 
-  const trafficPath = buildTrafficPath(trafficSeries, 100, 100);
   const visitorPath = buildTrafficPath(visitorSeries, 100, 100);
   const visitorMax = Math.max(...visitorSeries.map((point) => point.views), 1);
   const trafficChartWidth = Math.max(760, Math.max(trafficSeries.length, visitorSeries.length) * 72);
-  const distributionChartWidth = Math.max(760, Math.max(distribution.length, visitorTopPages.length) * 88);
   const totalPublished =
     (stats?.aux_metrics?.published_posts ?? 0) +
     (stats?.aux_metrics?.published_diary_entries ?? 0) +
@@ -262,6 +261,28 @@ export default function DashboardPage() {
     ...topPages.map((item) => item.url),
   ]).size;
   const featuredPage = topPages[0];
+  const sectionItems = [
+    {
+      value: "metrics",
+      label: t("dashboard.sectionMetrics"),
+      icon: TrendingUp,
+    },
+    {
+      value: "charts",
+      label: t("dashboard.sectionCharts"),
+      icon: BarChart3,
+    },
+    {
+      value: "recent",
+      label: t("dashboard.sectionRecent"),
+      icon: FileText,
+    },
+    {
+      value: "visitors",
+      label: t("dashboard.sectionVisitors"),
+      icon: Users,
+    },
+  ] as const;
 
   const summaryCards = [
     {
@@ -299,80 +320,65 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("dashboard.title")} description={t("dashboard.description")} />
+      <PageHeader
+        title={t("dashboard.title")}
+        description={t("dashboard.description")}
+        secondary={
+          <AdminSectionTabs
+            items={sectionItems}
+            value={activeSection}
+            onValueChange={(value) => setActiveSection(value as DashboardSection)}
+          />
+        }
+      />
 
-      <section className="space-y-6 rounded-[30px] border border-black/5 bg-white/42 px-4 py-4 shadow-[0_12px_36px_rgba(15,23,42,0.04)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none md:px-6 md:py-5">
+      <section className="admin-glass space-y-6 rounded-[var(--admin-radius-xl)] px-4 py-4 shadow-[var(--admin-shadow-sm)] md:px-6 md:py-5">
         {isLoading || !stats ? (
           <DashboardLoading />
         ) : (
-          <Tabs defaultValue="metrics" className="space-y-6">
-            <TabsList className="h-11 rounded-2xl border border-black/5 bg-white/64 p-1 text-muted-foreground shadow-none dark:border-white/10 dark:bg-white/[0.04]">
-              <TabsTrigger
-                value="metrics"
-                className="h-8 rounded-xl px-4 text-sm font-medium tracking-[0.01em] data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:bg-white/[0.08]"
-              >
-                {t("dashboard.sectionMetrics")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="charts"
-                className="h-8 rounded-xl px-4 text-sm font-medium tracking-[0.01em] data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:bg-white/[0.08]"
-              >
-                {t("dashboard.sectionCharts")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="recent"
-                className="h-8 rounded-xl px-4 text-sm font-medium tracking-[0.01em] data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:bg-white/[0.08]"
-              >
-                {t("dashboard.sectionRecent")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="visitors"
-                className="h-8 rounded-xl px-4 text-sm font-medium tracking-[0.01em] data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:bg-white/[0.08]"
-              >
-                {t("dashboard.sectionVisitors")}
-              </TabsTrigger>
-            </TabsList>
-
+          <Tabs
+            value={activeSection}
+            onValueChange={(value) => setActiveSection(value as DashboardSection)}
+            className="space-y-6"
+          >
             <TabsContent value="metrics" className="mt-0 space-y-6">
               <div className="grid gap-3 xl:grid-cols-[1.35fr_0.85fr]">
-                <div className="rounded-[26px] border border-black/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.44))] px-5 py-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))]">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.78)]">
-                      {t("dashboard.heroEyebrow")}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{latestSnapshotAt}</span>
-                  </div>
-                  <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                    {[
-                      { label: t("dashboard.heroTraffic"), value: formatCompactNumber(totalViews) },
-                      { label: t("dashboard.heroPages"), value: trackedPages },
-                      { label: t("dashboard.heroModeration"), value: pendingModeration },
-                    ].map((item) => (
-                      <div key={item.label} className="space-y-1.5 border-l border-black/6 pl-4 first:border-l-0 first:pl-0 dark:border-white/10">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                          {item.label}
-                        </div>
-                        <div className="text-3xl font-semibold tracking-tight text-foreground/95">
-                          {item.value}
-                        </div>
+                <AdminSurface
+                  eyebrow={t("dashboard.heroEyebrow")}
+                  actions={<span className="text-xs text-muted-foreground">{latestSnapshotAt}</span>}
+                  className="bg-[linear-gradient(180deg,rgb(var(--admin-surface-strong)/0.78),rgb(var(--admin-surface-1)/0.52))]"
+                  contentClassName="grid gap-4 pt-0 sm:grid-cols-3"
+                >
+                  {[
+                    { label: t("dashboard.heroTraffic"), value: formatCompactNumber(totalViews) },
+                    { label: t("dashboard.heroPages"), value: trackedPages },
+                    { label: t("dashboard.heroModeration"), value: pendingModeration },
+                  ].map((item) => (
+                    <div key={item.label} className="space-y-1.5 border-l border-black/6 pl-4 first:border-l-0 first:pl-0 dark:border-white/10">
+                      <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                        {item.label}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div className="text-3xl font-semibold tracking-tight text-foreground/95">
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </AdminSurface>
 
-                <div className="rounded-[26px] border border-black/5 bg-white/54 px-5 py-5 dark:border-white/10 dark:bg-white/[0.035]">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                      {t("dashboard.heroTopPage")}
-                    </span>
-                    {featuredPage ? (
-                      <span className="text-xs font-medium text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.85)]">
+                <AdminSurface
+                  eyebrow={t("dashboard.heroTopPage")}
+                  actions={
+                    featuredPage ? (
+                      <span className="text-xs font-medium text-[rgb(var(--admin-accent-rgb)/0.85)]">
                         {formatShare(featuredPage.share)}
                       </span>
-                    ) : null}
-                  </div>
+                    ) : null
+                  }
+                  className="bg-[rgb(var(--admin-surface-1)/0.62)]"
+                  contentClassName="pt-0"
+                >
                   {featuredPage ? (
-                    <div className="mt-5 space-y-2">
+                    <div className="space-y-2">
                       <div className="truncate text-xl font-semibold tracking-tight text-foreground/95">
                         {formatPageLabel(featuredPage.url, t)}
                       </div>
@@ -386,7 +392,7 @@ export default function DashboardPage() {
                       {t("dashboard.heroTopPageEmpty")}
                     </div>
                   )}
-                </div>
+                </AdminSurface>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -410,7 +416,7 @@ export default function DashboardPage() {
                         {[
                           {
                             label: t("dashboard.trafficCurrent"),
-                            value: formatCompactNumber(visitorSeries.at(-1)?.views ?? 0),
+                            value: formatCompactNumber(visitorSeries[visitorSeries.length - 1]?.views ?? 0),
                           },
                           {
                             label: t("dashboard.trafficPeak"),
@@ -461,11 +467,11 @@ export default function DashboardPage() {
                                 >
                                   <stop
                                     offset="0%"
-                                    stopColor="rgb(var(--shiro-accent-rgb,60 100 200) / 0.18)"
+                                    stopColor="rgb(var(--admin-accent-rgb) / 0.18)"
                                   />
                                   <stop
                                     offset="100%"
-                                    stopColor="rgb(var(--shiro-accent-rgb,60 100 200) / 0)"
+                                    stopColor="rgb(var(--admin-accent-rgb) / 0)"
                                   />
                                 </linearGradient>
                               </defs>
@@ -478,7 +484,7 @@ export default function DashboardPage() {
                                   <path
                                     d={visitorPath}
                                     fill="none"
-                                    stroke="rgb(var(--shiro-accent-rgb,60 100 200) / 0.88)"
+                                    stroke="rgb(var(--admin-accent-rgb) / 0.88)"
                                     strokeWidth="2.1"
                                     strokeLinecap="round"
                                   />
@@ -494,7 +500,7 @@ export default function DashboardPage() {
                                         cx={x}
                                         cy={y}
                                         r="1.65"
-                                        fill="rgb(var(--shiro-accent-rgb,60 100 200) / 0.95)"
+                                        fill="rgb(var(--admin-accent-rgb) / 0.95)"
                                       />
                                     );
                                   })}
@@ -555,7 +561,7 @@ export default function DashboardPage() {
                           />
                           <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/[0.05] dark:bg-white/[0.08]">
                             <div
-                              className="h-full rounded-full bg-[rgb(var(--shiro-accent-rgb,60_100_200)/0.78)] transition-[width] duration-500"
+                              className="h-full rounded-full bg-[rgb(var(--admin-accent-rgb)/0.78)] transition-[width] duration-500"
                               style={{ width: `${percentage}%` }}
                             />
                           </div>
@@ -596,7 +602,7 @@ export default function DashboardPage() {
                           trailing={
                             <>
                               <div className="hidden items-center gap-2 sm:flex">
-                                <span className="rounded-full border border-black/5 bg-white/70 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.8)] dark:border-white/10 dark:bg-white/[0.04]">
+                                <span className="rounded-full border border-black/5 bg-white/70 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[rgb(var(--admin-accent-rgb)/0.8)] dark:border-white/10 dark:bg-white/[0.04]">
                                   {contentTypeLabel(item.content_type, t)}
                                 </span>
                                 <StatusBadge status={item.status} />
@@ -648,7 +654,7 @@ export default function DashboardPage() {
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                               <div className="rounded-full border border-black/5 bg-white/70 p-2 dark:border-white/10 dark:bg-white/[0.04]">
-                                <Icon className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.8)]" />
+                                <Icon className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.8)]" />
                               </div>
                               <span className="text-sm font-medium text-foreground/92">{item.label}</span>
                             </div>
@@ -658,7 +664,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="h-2 overflow-hidden rounded-full bg-black/[0.05] dark:bg-white/[0.08]">
                             <div
-                              className="h-full rounded-full bg-[rgb(var(--shiro-accent-rgb,60_100_200)/0.76)]"
+                              className="h-full rounded-full bg-[rgb(var(--admin-accent-rgb)/0.76)]"
                               style={{ width: `${share}%` }}
                             />
                           </div>

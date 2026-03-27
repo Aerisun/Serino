@@ -7,6 +7,9 @@ import { usePageConfig } from "@/contexts/runtime-config";
 const NotFound = () => {
   const location = useLocation();
   const config = (usePageConfig().notFound as Record<string, unknown> | undefined) ?? {};
+  const badgeLabel = String(config.badgeLabel ?? "Shell mismatch");
+  const homeLabel = String(config.homeLabel ?? "返回首页");
+  const backLabel = String(config.backLabel ?? "返回上页");
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 text-foreground">
@@ -33,7 +36,7 @@ const NotFound = () => {
       >
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-foreground/25">
           <Sparkles className="h-3.5 w-3.5" />
-          <span>Shell mismatch</span>
+          <span>{badgeLabel}</span>
         </div>
 
         <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -58,7 +61,7 @@ const NotFound = () => {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform active:scale-[0.98]"
           >
             <Home className="h-4 w-4" />
-            返回首页
+            {homeLabel}
           </Link>
           <button
             type="button"
@@ -73,7 +76,7 @@ const NotFound = () => {
             className="inline-flex items-center justify-center gap-2 rounded-full liquid-glass px-5 py-2.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            返回上页
+            {backLabel}
           </button>
         </div>
       </motion.div>

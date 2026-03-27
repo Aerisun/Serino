@@ -11,7 +11,7 @@ import {
   formatPublishedDate,
   splitContentParagraphs,
 } from "@/lib/api/utils";
-import { readThoughtsApiV1PublicThoughtsGet } from "@serino/api-client/public";
+import { readThoughtsApiV1SiteThoughtsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
@@ -43,12 +43,15 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
 
 const Thoughts = () => {
   const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
+  const errorTitle = config.errorTitle ?? "碎碎念加载失败";
+  const retryLabel = config.retryLabel ?? "重试";
+  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
   const pageSize = clampPageSize(config.pageSize, 30);
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
-    queryKey: ["public", "thoughts"],
-    queryFn: (p) => readThoughtsApiV1PublicThoughtsGet(p).then(r => r.data),
+    queryKey: ["site", "thoughts"],
+    queryFn: (p) => readThoughtsApiV1SiteThoughtsGet(p).then(r => r.data),
     pageSize,
     mapItem: mapRemoteThought,
   });
@@ -85,7 +88,7 @@ const Thoughts = () => {
             <div className="flex items-center gap-2 text-xs text-foreground/25">
               <span>刚刚</span>
             </div>
-            <p className="mt-2 text-[0.935rem] leading-7 text-foreground/45">碎碎念加载失败</p>
+            <p className="mt-2 text-[0.935rem] leading-7 text-foreground/45">{errorTitle}</p>
             <p className="mt-2 text-sm leading-7 text-foreground/30">{errorMessage}</p>
             <div className="mt-3">
               <button
@@ -93,7 +96,7 @@ const Thoughts = () => {
                 onClick={() => reload()}
                 className="text-xs text-foreground/25 transition-colors hover:text-foreground/45"
               >
-                重试
+                {retryLabel}
               </button>
             </div>
           </div>
@@ -175,7 +178,7 @@ const Thoughts = () => {
 
       {status === "ready" && hasMore && (
         <div ref={sentinelRef} className="py-8 text-center">
-          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+          {isLoadingMore && <span className="text-xs text-foreground/25">{loadMoreLabel}</span>}
         </div>
       )}
     </PageShell>

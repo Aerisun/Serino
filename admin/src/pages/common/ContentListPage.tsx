@@ -102,7 +102,6 @@ export default function ContentListPage({ config }: ContentListPageProps) {
     let nextVisibility = "";
     if (v === "draft") {
       nextStatus = "draft";
-      nextVisibility = "public";
     } else if (v === "public_publish") {
       nextStatus = "published";
       nextVisibility = "public";

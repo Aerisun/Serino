@@ -15,12 +15,12 @@ import {
   X,
 } from "lucide-react";
 import {
-  createCommentApiV1PublicCommentsContentTypeSlugPost,
-  createGuestbookApiV1PublicGuestbookPost,
-  readCommentsApiV1PublicCommentsContentTypeSlugGet,
-  readGuestbookApiV1PublicGuestbookGet,
-  uploadCommentImageApiV1PublicCommentImagePost,
-} from "@serino/api-client/public";
+  createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost,
+  createGuestbookApiV1SiteInteractionsGuestbookPost,
+  readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGet,
+  readGuestbookApiV1SiteInteractionsGuestbookGet,
+  uploadCommentImageApiV1SiteInteractionsCommentImagePost,
+} from "@serino/api-client/site-interactions";
 import { ApiError } from "@serino/api-client";
 import { AnimatePresence, motion } from "motion/react";
 import { transition } from "@/config";
@@ -31,7 +31,8 @@ import {
   type CommunityConfig,
   type CommunitySurface,
 } from "@/lib/community-config";
-import { useSiteAuth } from "@/contexts/site-auth";
+import { useSiteAuth } from "@/contexts/use-site-auth";
+import { usePageConfig } from "@/contexts/runtime-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { compressImageFile } from "@/lib/image-upload";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -453,17 +454,37 @@ const WalineSurface = ({
 }: WalineSurfaceProps) => {
   const prefersReducedMotion = useReducedMotionPreference();
   const isGuestbook = surface === "guestbook";
+  const pageConfig = usePageConfig();
+  const guestbookPageConfig = (pageConfig.guestbook as Record<string, unknown> | undefined) ?? {};
+  const guestbookBodyPlaceholder = String(
+    guestbookPageConfig.contentPlaceholder ?? "写下一句问候、反馈或交换友链时想说的话",
+  );
+  const guestbookSubmitLabel = String(guestbookPageConfig.submitLabel ?? "发表留言");
+  const guestbookSubmittingLabel = String(guestbookPageConfig.submittingLabel ?? "提交中...");
+  const guestbookLoadingLabel = String(guestbookPageConfig.loadingLabel ?? "留言板正在更新...");
+  const guestbookRetryLabel = String(guestbookPageConfig.retryLabel ?? "重试加载");
+  const guestbookEmptyMessage = String(guestbookPageConfig.emptyMessage ?? "还没有公开留言，第一条就写在这里。");
   const storageKey = `${PROFILE_STORAGE_PREFIX}${surface}:${slug ?? "guestbook"}`;
   const storedDraft = readStoredDraft(storageKey);
-  const { user: siteUser, loading: authLoading, openLogin, logout } = useSiteAuth();
+  const {
+    user: siteUser,
+    loading: authLoading,
+    emailLoginEnabled: siteAuthEmailLoginEnabled,
+    oauthProviders: siteAuthOauthProviders,
+    openLogin,
+    logout,
+  } = useSiteAuth();
   const [config, setConfig] = useState<CommunityConfig | null>(communityConfig ?? null);
   const [loadingConfig, setLoadingConfig] = useState(!communityConfig);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  const [loadingMoreEntries, setLoadingMoreEntries] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [refreshSeed, setRefreshSeed] = useState(0);
   const [authError, setAuthError] = useState<string | null>(null);
   const [comments, setComments] = useState<CommunityCommentItem[]>([]);
   const [guestbookEntries, setGuestbookEntries] = useState<CommunityGuestbookItem[]>([]);
+  const [loadedPageCount, setLoadedPageCount] = useState(1);
+  const [hasMoreEntries, setHasMoreEntries] = useState(false);
   const [pendingComments, setPendingComments] = useState<CommunityCommentItem[]>([]);
   const [pendingGuestbookEntries, setPendingGuestbookEntries] = useState<CommunityGuestbookItem[]>([]);
   const [draft, setDraft] = useState<DraftState>({
@@ -518,22 +539,35 @@ const WalineSurface = ({
   const resolvedConfig = config ?? DEFAULT_COMMUNITY_CONFIG;
   const emojiSelectionEnabled = resolvedConfig.enableEnjoySearch !== false;
   const imageUploadsEnabled = resolvedConfig.imageUploader;
-  const loginMode = resolvedConfig.loginMode ?? "enable";
-  const requiresAuthentication = loginMode === "force" || resolvedConfig.anonymousEnabled === false;
+  const loginMode: CommunityConfig["loginMode"] = "force";
+  const requiresAuthentication = true;
+  const commentEmailLoginEnabled = (resolvedConfig.emailLoginEnabled ?? true) && siteAuthEmailLoginEnabled;
   const oauthProviderLabels = useMemo(
-    () => (resolvedConfig.oauthProviders ?? []).map(providerLabel),
-    [resolvedConfig.oauthProviders],
+    () => siteAuthOauthProviders.map(providerLabel),
+    [siteAuthOauthProviders],
   );
-  const authSession = siteUser
-    ? {
-        objectId: siteUser.id,
-        display_name: siteUser.effective_display_name,
-        email: siteUser.email,
-        url: "",
-        avatar: siteUser.effective_avatar_url,
-        is_admin: siteUser.is_admin ?? false,
-      }
-    : null;
+  const loginMethodLabels = useMemo(
+    () => [
+      ...(commentEmailLoginEnabled ? ["邮箱"] : []),
+      ...oauthProviderLabels,
+    ],
+    [commentEmailLoginEnabled, oauthProviderLabels],
+  );
+  const hasLoginMethod = loginMethodLabels.length > 0;
+  const authSession = useMemo(
+    () =>
+      siteUser
+        ? {
+            objectId: siteUser.id,
+            display_name: siteUser.effective_display_name,
+            email: siteUser.email,
+            url: "",
+            avatar: siteUser.effective_avatar_url,
+            is_admin: siteUser.is_admin ?? false,
+          }
+        : null,
+    [siteUser],
+  );
   const [avatarPresets, setAvatarPresets] = useState<AvatarPreset[]>([]);
   const defaultAvatarPreset = useMemo(
     () => buildDefaultAvatarPreset(draft.email || draft.name),
@@ -573,35 +607,98 @@ const WalineSurface = ({
     }
   }, [draft.avatarKey, draft.email, draft.name, draft.website, storageKey]);
 
-  const loadEntries = useCallback(async () => {
+  const initialPageSize = Math.max(1, resolvedConfig.pageSize ?? 10);
+
+  const loadEntries = useCallback(async (requestedPageCount = 1) => {
     if (!isGuestbook && !slug) {
       setLoadError("当前内容缺少评论路径，暂时无法加载评论。");
       setLoadingEntries(false);
+      setLoadingMoreEntries(false);
       return;
     }
 
-    setLoadingEntries(true);
+    const nextPageCount = Math.max(1, requestedPageCount);
+    const loadMoreRequest = nextPageCount > 1;
+    if (loadMoreRequest) {
+      setLoadingMoreEntries(true);
+    } else {
+      setLoadingEntries(true);
+    }
     setLoadError(null);
 
     try {
       if (isGuestbook) {
-        const response = await readGuestbookApiV1PublicGuestbookGet();
-        setGuestbookEntries(sortGuestbookEntries(response.data.items as CommunityGuestbookItem[], resolvedConfig.commentSorting));
+        const collected: CommunityGuestbookItem[] = [];
+        let hasMore = false;
+        let loadedPages = 0;
+        for (let page = 1; page <= nextPageCount; page += 1) {
+          const response = await readGuestbookApiV1SiteInteractionsGuestbookGet({
+            page,
+            page_size: initialPageSize,
+          });
+          collected.push(
+            ...sortGuestbookEntries(
+              response.data.items as CommunityGuestbookItem[],
+              resolvedConfig.commentSorting,
+            ),
+          );
+          hasMore = Boolean(response.data.has_more);
+          loadedPages = page;
+          if (!hasMore) {
+            break;
+          }
+        }
+        setGuestbookEntries(collected);
+        setLoadedPageCount(loadedPages || 1);
+        setHasMoreEntries(hasMore);
         return;
       }
 
-      const response = await readCommentsApiV1PublicCommentsContentTypeSlugGet(surface, slug ?? "");
-      setComments(sortComments(response.data.items as CommunityCommentItem[], resolvedConfig.commentSorting));
+      const collected: CommunityCommentItem[] = [];
+      let hasMore = false;
+      let loadedPages = 0;
+      for (let page = 1; page <= nextPageCount; page += 1) {
+        const response = await readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGet(
+          surface,
+          slug ?? "",
+          {
+            page,
+            page_size: initialPageSize,
+          },
+        );
+        collected.push(
+          ...sortComments(
+            response.data.items as CommunityCommentItem[],
+            resolvedConfig.commentSorting,
+          ),
+        );
+        hasMore = Boolean(response.data.has_more);
+        loadedPages = page;
+        if (!hasMore) {
+          break;
+        }
+      }
+      setComments(collected);
+      setLoadedPageCount(loadedPages || 1);
+      setHasMoreEntries(hasMore);
     } catch (error) {
       setLoadError(resolveApiError(error));
     } finally {
       setLoadingEntries(false);
+      setLoadingMoreEntries(false);
     }
-  }, [isGuestbook, resolvedConfig.commentSorting, slug, surface]);
+  }, [initialPageSize, isGuestbook, resolvedConfig.commentSorting, slug, surface]);
 
   useEffect(() => {
-    void loadEntries();
+    void loadEntries(1);
   }, [loadEntries]);
+
+  const loadMoreEntries = useCallback(() => {
+    if (loadingEntries || loadingMoreEntries || !hasMoreEntries) {
+      return;
+    }
+    void loadEntries(loadedPageCount + 1);
+  }, [hasMoreEntries, loadEntries, loadedPageCount, loadingEntries, loadingMoreEntries]);
 
   useEffect(() => {
     if (!avatarPickerOpen && !emojiPickerOpen) {
@@ -742,7 +839,7 @@ const WalineSurface = ({
         quality: 0.82,
         minBytesToCompress: config?.imageMaxBytes ?? 512 * 1024,
       });
-      const response = await uploadCommentImageApiV1PublicCommentImagePost({ file: compressedFile } as never);
+      const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost({ file: compressedFile } as never);
       const imageUrl = response.data.data?.url;
       if (!imageUrl) {
         throw new Error("图片上传成功，但没有返回可用地址。");
@@ -767,7 +864,7 @@ const WalineSurface = ({
 
   const handleSubmit = useCallback(async () => {
     if (requiresAuthentication && !authSession) {
-      setSubmitError(isGuestbook ? "当前站点已关闭匿名留言，请先登录后再留言。" : "当前站点已关闭匿名评论，请先登录后再发表评论。");
+      setSubmitError(isGuestbook ? "当前站点要求登录后才能留言。" : "当前站点要求登录后才能发表评论。");
       return;
     }
 
@@ -806,7 +903,7 @@ const WalineSurface = ({
           body: draft.body.trim(),
           avatar_key: avatarKey,
         };
-        const response = await createGuestbookApiV1PublicGuestbookPost(payload as never);
+        const response = await createGuestbookApiV1SiteInteractionsGuestbookPost(payload as never);
         const created = response.data.item as CommunityGuestbookItem;
         setPendingGuestbookEntries((current) => [created, ...current]);
       } else {
@@ -817,7 +914,7 @@ const WalineSurface = ({
           parent_id: replyTarget?.id ?? null,
           avatar_key: avatarKey,
         };
-        const response = await createCommentApiV1PublicCommentsContentTypeSlugPost(surface, slug ?? "", payload as never);
+        const response = await createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost(surface, slug ?? "", payload as never);
         const created = response.data.item as CommunityCommentItem;
         setPendingComments((current) => [created, ...current]);
       }
@@ -827,14 +924,14 @@ const WalineSurface = ({
       setComposerOpen(false);
       setSubmitNotice("已经收到，审核通过后会出现在当前页面。");
       startTransition(() => {
-        void loadEntries();
+        void loadEntries(loadedPageCount);
       });
     } catch (error) {
       setSubmitError(resolveApiError(error));
     } finally {
       setSubmitting(false);
     }
-  }, [authSession, draft, isGuestbook, loadEntries, requiresAuthentication, replyTarget, slug, surface]);
+  }, [authSession, draft, isGuestbook, loadEntries, loadedPageCount, requiresAuthentication, replyTarget, slug, surface]);
 
   const selectedPreset = avatarPresets.find((preset) => preset.key === draft.avatarKey) ?? avatarPresets[0] ?? null;
   const toggleAvatarPicker = useCallback(() => {
@@ -903,7 +1000,7 @@ const WalineSurface = ({
                           </div>
                           <p className="mt-1 text-xs text-foreground/45">
                             {authSession.is_admin
-                              ? `将使用 ${authSession.display_name} 和站点 Hero 图以管理员身份提交评论。`
+                              ? `将使用主页显示名“${authSession.display_name}”作为名字，并使用 Hero 翻转视觉图作为头像提交评论。`
                               : `将使用 ${authSession.display_name} 的昵称、邮箱和头像提交评论。`}
                           </p>
                         </div>
@@ -920,13 +1017,13 @@ const WalineSurface = ({
                   ) : loginMode !== "disable" || requiresAuthentication ? (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] px-4 py-3 dark:bg-card/[0.82]">
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-foreground">登录后自动使用 Google / GitHub 资料</p>
+                        <p className="text-sm font-medium text-foreground">登录后才能发布内容</p>
                         <p className="text-xs text-foreground/45">
-                          登录后昵称、邮箱和头像会由 OAuth 资料固定，手动输入项会隐藏。
+                          登录后会固定使用你的站点身份发表评论或留言，手动输入昵称、邮箱和访客头像的入口已关闭。
                         </p>
-                        {oauthProviderLabels.length ? (
+                        {loginMethodLabels.length ? (
                           <div className="flex flex-wrap gap-2 pt-1">
-                            {oauthProviderLabels.map((label) => (
+                            {loginMethodLabels.map((label) => (
                               <span
                                 key={label}
                                 className="inline-flex items-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.14)] bg-background/[0.8] px-2.5 py-1 text-[0.7rem] text-foreground/58 dark:bg-card/[0.88]"
@@ -935,11 +1032,16 @@ const WalineSurface = ({
                               </span>
                             ))}
                           </div>
-                        ) : null}
+                        ) : (
+                          <p className="pt-1 text-xs text-amber-700 dark:text-amber-300">
+                            当前还没有配置可用的评论登录方式。
+                          </p>
+                        )}
                       </div>
                       <button
                         type="button"
-                        onClick={openLogin}
+                        onClick={() => openLogin({ allowEmailLogin: commentEmailLoginEnabled })}
+                        disabled={!hasLoginMethod}
                         className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.1)] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.88)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.14)] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <LockKeyhole className="h-4 w-4" />
@@ -1053,34 +1155,7 @@ const WalineSurface = ({
                     </div>
                   ) : null}
 
-                  {!authSession && isGuestbook ? (
-                    <label className="block space-y-2">
-                      <span className="text-xs font-medium uppercase tracking-[0.22em] text-foreground/40">网站</span>
-                      <input
-                        value={draft.website}
-                        onChange={(event) => handleFieldChange("website", event.target.value)}
-                        placeholder="https://example.com"
-                        className={communityInputClass}
-                      />
-                    </label>
-                  ) : null}
-
-                  {replyTarget ? (
-                    <div className="shiro-accent-panel flex flex-wrap items-center gap-2 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] px-4 py-3 text-sm text-foreground/62">
-                      <CornerDownRight className="h-4 w-4" />
-                      正在回复 <span className="font-semibold text-foreground">{replyTarget.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setReplyTarget(null)}
-                        className={`${communityActionClass} px-2 text-xs`}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        取消回复
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {!authSession && isGuestbook ? (
+                  {isGuestbook ? (
                     <label className="block space-y-2">
                       <span className="text-xs font-medium uppercase tracking-[0.22em] text-foreground/40">网站</span>
                       <input
@@ -1238,7 +1313,7 @@ const WalineSurface = ({
                         ref={textareaRef}
                         value={draft.body}
                         onChange={(event) => handleFieldChange("body", event.target.value)}
-                        placeholder={isGuestbook ? "写下一句问候、反馈或交换友链时想说的话" : "写下你的看法、补充或追问"}
+                        placeholder={isGuestbook ? guestbookBodyPlaceholder : "写下你的看法、补充或追问"}
                         className={communityTextareaClass}
                       />
                     )}
@@ -1258,8 +1333,8 @@ const WalineSurface = ({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs leading-6 text-foreground/42">
                       {authSession
-                        ? "提交后会先进入审核队列；当前内容将固定使用你的 OAuth 昵称和头像。"
-                        : "提交后会先进入审核队列；昵称和邮箱一旦绑定，后续只有相同邮箱才能继续使用这个昵称。"}
+                        ? "提交后会先进入审核队列；当前内容会固定使用你的站点昵称和头像。"
+                        : "当前站点要求先登录后再发表评论或留言。"}
                     </p>
                     <button
                       type="button"
@@ -1268,7 +1343,13 @@ const WalineSurface = ({
                       className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.1)] px-5 py-2.5 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.88)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.14)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      {submitting ? "提交中..." : isGuestbook ? "发表留言" : replyTarget ? "提交回复" : "提交评论"}
+                      {submitting
+                        ? (isGuestbook ? guestbookSubmittingLabel : "提交中...")
+                        : isGuestbook
+                          ? guestbookSubmitLabel
+                          : replyTarget
+                            ? "提交回复"
+                            : "提交评论"}
                     </button>
                   </div>
                 </div>
@@ -1281,18 +1362,18 @@ const WalineSurface = ({
       {loadingConfig || loadingEntries ? (
         <div className="aerisun-waline-loading">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>{isGuestbook ? "留言板正在更新..." : "正在载入评论..."}</span>
+          <span>{isGuestbook ? guestbookLoadingLabel : "正在载入评论..."}</span>
         </div>
       ) : loadError ? (
         <div className="aerisun-waline-empty">
           <p>{loadError}</p>
           <button
             type="button"
-            onClick={() => void loadEntries()}
+            onClick={() => void loadEntries(loadedPageCount)}
             className="mt-3 inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.7] px-4 py-2 text-sm transition hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.8]"
           >
             <RefreshCw className="h-4 w-4" />
-            重试加载
+            {isGuestbook ? guestbookRetryLabel : "重试加载"}
           </button>
         </div>
       ) : (
@@ -1372,7 +1453,7 @@ const WalineSurface = ({
                 ))
               ) : (
                 <div className="aerisun-waline-empty">
-                  还没有公开留言，第一条就写在这里。
+                  {guestbookEmptyMessage}
                 </div>
               )}
             </>
@@ -1427,6 +1508,20 @@ const WalineSurface = ({
               当前还没有评论，第一条会在审核后显示在这里。
             </div>
           )}
+
+          {hasMoreEntries ? (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={loadMoreEntries}
+                disabled={loadingMoreEntries}
+                className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.76] px-4 py-2 text-sm font-medium text-foreground/62 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card/[0.82]"
+              >
+                {loadingMoreEntries ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {loadingMoreEntries ? "加载中..." : "显示更多"}
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
     </section>

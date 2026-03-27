@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useReadFriendFeedApiV1PublicFriendFeedGet } from "@serino/api-client/public";
+import { useReadFriendFeedApiV1SiteFriendFeedGet } from "@serino/api-client/site";
 import { formatFriendFeedDate } from "@/lib/api/utils";
 import type { FriendFeedItemRead } from "@serino/api-client/models";
+import { usePageConfig } from "@/contexts/runtime-config";
 
 interface FriendPost {
   avatar: string;
@@ -23,8 +24,14 @@ const normalizeFriendPost = (value: FriendFeedItemRead): FriendPost => ({
 
 const FriendCircle = () => {
   const navigate = useNavigate();
+  const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
+  const title = String(config.friendCircleTitle ?? "朋友圈");
+  const viewAllLabel = String(config.friendCircleViewAllLabel ?? "查看全部");
+  const errorTitle = String(config.friendCircleErrorTitle ?? "友邻动态加载失败");
+  const retryLabel = String(config.friendCircleRetryLabel ?? "重试");
+  const emptyMessage = String(config.friendCircleEmptyMessage ?? "还没有公开的友邻动态");
 
-  const { data: response, isLoading, isError, error, refetch } = useReadFriendFeedApiV1PublicFriendFeedGet({ limit: 12 });
+  const { data: response, isLoading, isError, error, refetch } = useReadFriendFeedApiV1SiteFriendFeedGet({ limit: 12 });
   const friendPosts = useMemo(
     () => response?.data?.items?.map(normalizeFriendPost) ?? [],
     [response],
@@ -42,13 +49,13 @@ const FriendCircle = () => {
     <div className="flex h-full flex-col">
       <div className="mb-5 flex items-baseline justify-between">
         <h3 className="text-sm font-body font-medium uppercase tracking-widest text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.74)]">
-          朋友圈
+          {title}
         </h3>
         <button
           onClick={() => navigate("/friends")}
           className="flex items-center gap-1 text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)]"
         >
-          查看全部 <ArrowUpRight className="h-3 w-3" />
+          {viewAllLabel} <ArrowUpRight className="h-3 w-3" />
         </button>
       </div>
 
@@ -75,7 +82,7 @@ const FriendCircle = () => {
             <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[rgb(var(--shiro-accent-rgb,60_100_200)/0.06)]" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-body font-medium leading-snug text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.68)]">
-                友邻动态加载失败
+                {errorTitle}
               </p>
               <p className="mt-1 text-[10px] font-body text-foreground/20">
                 {errorMessage || "请稍后重试"}
@@ -85,7 +92,7 @@ const FriendCircle = () => {
                 onClick={() => void refetch()}
                 className="mt-1.5 text-[10px] font-body text-foreground/28 transition-colors hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.7)]"
               >
-                重试
+                {retryLabel}
               </button>
             </div>
           </div>
@@ -96,7 +103,7 @@ const FriendCircle = () => {
             <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[rgb(var(--shiro-accent-rgb,60_100_200)/0.06)]" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-body font-medium leading-snug text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.58)]">
-                还没有公开的友邻动态
+                {emptyMessage}
               </p>
             </div>
           </div>

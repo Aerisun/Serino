@@ -316,12 +316,14 @@
 @layer components {
   /* Dark mode liquid glass — white tints */
   .dark .liquid-glass {
-    background: rgba(255, 255, 255, 0.01);
+    background: rgba(255, 255, 255, 0.06);
     background-blend-mode: luminosity;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: none;
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.12),
+      inset 0 1px 1px rgba(255, 255, 255, 0.14);
     position: relative;
     overflow: hidden;
   }
@@ -347,14 +349,16 @@
     pointer-events: none;
   }
 
-  /* Light mode liquid glass — dark tints */
+  /* Light mode liquid glass — align with dark-mode glass for stable Hero/Navbar rendering */
   .liquid-glass {
-    background: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.06);
     background-blend-mode: luminosity;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.12),
+      inset 0 1px 1px rgba(255, 255, 255, 0.14);
     position: relative;
     overflow: hidden;
   }
@@ -367,12 +371,12 @@
     padding: 1.4px;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.7) 0%,
-      rgba(255, 255, 255, 0.3) 20%,
+      rgba(255, 255, 255, 0.25) 0%,
+      rgba(255, 255, 255, 0.08) 20%,
       rgba(255, 255, 255, 0) 40%,
       rgba(255, 255, 255, 0) 60%,
-      rgba(255, 255, 255, 0.3) 80%,
-      rgba(255, 255, 255, 0.7) 100%
+      rgba(255, 255, 255, 0.08) 80%,
+      rgba(255, 255, 255, 0.25) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -382,13 +386,13 @@
 
   /* Dark mode strong glass */
   .dark .liquid-glass-strong {
-    background: rgba(255, 255, 255, 0.01);
+    background: rgba(255, 255, 255, 0.08);
     background-blend-mode: luminosity;
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
     border: none;
-    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.05),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.08),
+      inset 0 1px 1px rgba(255, 255, 255, 0.18);
     position: relative;
     overflow: hidden;
   }
@@ -414,15 +418,15 @@
     pointer-events: none;
   }
 
-  /* Light mode strong glass */
+  /* Light mode strong glass — align with dark-mode strong glass for stable Hero/Navbar rendering */
   .liquid-glass-strong {
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.08);
     background-blend-mode: luminosity;
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
     border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06),
-      inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.08),
+      inset 0 1px 1px rgba(255, 255, 255, 0.18);
     position: relative;
     overflow: hidden;
   }
@@ -435,12 +439,12 @@
     padding: 1.4px;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.8) 0%,
-      rgba(255, 255, 255, 0.3) 20%,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0.1) 20%,
       rgba(255, 255, 255, 0) 40%,
       rgba(255, 255, 255, 0) 60%,
-      rgba(255, 255, 255, 0.3) 80%,
-      rgba(255, 255, 255, 0.8) 100%
+      rgba(255, 255, 255, 0.1) 80%,
+      rgba(255, 255, 255, 0.3) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -499,6 +503,22 @@
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .liquid-glass {
+      background: rgba(32, 38, 56, 0.78);
+    }
+
+    .dark .liquid-glass {
+      background: rgba(32, 38, 56, 0.78);
+    }
+
+    .liquid-glass-strong {
+      background: rgba(36, 42, 62, 0.84);
+    }
+
+    .dark .liquid-glass-strong {
+      background: rgba(36, 42, 62, 0.84);
+    }
+
     .liquid-glass-hero {
       background: rgba(255, 255, 255, 0.2);
     }

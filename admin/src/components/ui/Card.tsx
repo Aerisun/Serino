@@ -1,9 +1,23 @@
 import { type HTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("rounded-lg admin-glass text-card-foreground", className)} {...props} />
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  surface?: "default" | "strong" | "soft";
+}
+
+export const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className, surface = "default", ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-[var(--admin-radius-lg)] text-card-foreground",
+        surface === "default" && "admin-glass",
+        surface === "strong" && "admin-glass-strong",
+        surface === "soft" && "border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.44)] shadow-[var(--admin-shadow-sm)] backdrop-blur-[var(--admin-blur-sm)]",
+        className
+      )}
+      {...props}
+    />
   )
 );
 Card.displayName = "Card";

@@ -7,7 +7,7 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPostCount } from "@/lib/format";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { readPostsApiV1PublicPostsGet } from "@serino/api-client/public";
+import { readPostsApiV1SitePostsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
@@ -46,6 +46,10 @@ const Posts = () => {
   const config = usePageConfig().posts as unknown as PostsPageConfig;
   const allCategoryLabel = config.categories?.all ?? "全部";
   const fallbackCategoryLabel = config.categories?.fallback ?? "未分类";
+  const searchPlaceholder = config.searchPlaceholder ?? "搜索文章...";
+  const errorTitle = config.errorTitle ?? "文章加载失败";
+  const retryLabel = config.retryLabel ?? "重试";
+  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,8 +58,8 @@ const Posts = () => {
   const navigate = useNavigate();
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
-    queryKey: ["public", "posts"],
-    queryFn: (p) => readPostsApiV1PublicPostsGet(p).then(r => r.data),
+    queryKey: ["site", "posts"],
+    queryFn: (p) => readPostsApiV1SitePostsGet(p).then(r => r.data),
     pageSize,
     mapItem: (entry) => ({
       ...mapRemotePost(entry),
@@ -106,7 +110,7 @@ const Posts = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
           <input
             type="text"
-            placeholder="搜索文章..."
+            placeholder={searchPlaceholder}
             value={rawSearch}
             onChange={(event) => {
               const val = event.target.value;
@@ -115,7 +119,7 @@ const Posts = () => {
               debounceRef.current = setTimeout(() => setSearch(val), 300);
             }}
             maxLength={100}
-            aria-label="搜索文章"
+            aria-label={searchPlaceholder}
             className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
           />
         </div>
@@ -159,14 +163,14 @@ const Posts = () => {
 
         {status === "error" && (
           <div className="border-t border-foreground/6 py-16 text-center">
-            <p className="text-sm text-foreground/35">文章加载失败</p>
+            <p className="text-sm text-foreground/35">{errorTitle}</p>
             <p className="mt-2 text-xs text-foreground/25">{errorMessage}</p>
             <button
               type="button"
               onClick={() => reload()}
               className="mt-4 text-xs text-foreground/30 transition-colors hover:text-foreground/55"
             >
-              重试
+              {retryLabel}
             </button>
           </div>
         )}
@@ -218,7 +222,7 @@ const Posts = () => {
 
       {status === "ready" && hasMore && (
         <div ref={sentinelRef} className="py-8 text-center">
-          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+          {isLoadingMore && <span className="text-xs text-foreground/25">{loadMoreLabel}</span>}
         </div>
       )}
     </PageShell>

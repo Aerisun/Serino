@@ -6,7 +6,7 @@ import type {
 } from "@serino/types";
 
 export type { CommunitySurface, CommunityCommentSort, WalineEmojiPreset, AvatarPreset };
-import { readCommunityConfigApiV1PublicCommunityConfigGet } from "@serino/api-client/public";
+import { readCommunityConfigApiV1SiteCommunityConfigGet } from "@serino/api-client/site";
 import { clampPageSize } from "@/lib/page-size";
 
 /** Default max image size in bytes before compression kicks in (512 KB) */
@@ -20,7 +20,7 @@ export interface CommunityConfig {
   loginMode: "disable" | "enable" | "force";
   commentSorting: CommunityCommentSort;
   oauthProviders?: string[];
-  anonymousEnabled?: boolean;
+  emailLoginEnabled?: boolean;
   moderationMode?: string;
   enableEnjoySearch: boolean;
   imageUploader: boolean;
@@ -95,6 +95,7 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   requiredMeta: ["nick"],
   loginMode: "force",
   commentSorting: "latest",
+  emailLoginEnabled: true,
   enableEnjoySearch: true,
   imageUploader: false,
   emojiPresets: DEFAULT_WALINE_EMOJI,
@@ -179,15 +180,14 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
   // Ensure "link" is always present so the Website field shows
   if (!meta.includes("link")) meta.push("link");
   const requiredMeta = record.requiredMeta ?? record.required_meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.requiredMeta;
-  const rawLogin = record.loginMode ?? record.login_mode ?? DEFAULT_WALINE_COMMUNITY_CONFIG.loginMode;
-  const loginMode = rawLogin;
+  const loginMode: CommunityConfig["loginMode"] = "force";
   const commentSorting = normalizeCommentSorting(
     record.commentSorting ?? record.comment_sorting ?? record.default_sorting,
   );
   const enableEnjoySearch =
     record.enableEnjoySearch ?? record.enable_enjoy_search ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enableEnjoySearch;
   const imageUploader = record.imageUploader ?? record.image_uploader ?? DEFAULT_WALINE_COMMUNITY_CONFIG.imageUploader;
-  const anonymousEnabled = record.anonymous_enabled ?? DEFAULT_WALINE_COMMUNITY_CONFIG.anonymousEnabled;
+  const emailLoginEnabled = record.anonymous_enabled ?? DEFAULT_WALINE_COMMUNITY_CONFIG.emailLoginEnabled;
   const rawEmoji = record.emojiPresets ?? record.emoji_presets ?? DEFAULT_WALINE_COMMUNITY_CONFIG.emojiPresets;
   const emojiPresets = rawEmoji.map(normalizeEmojiPreset);
   const enjoySearchEndpoint =
@@ -205,7 +205,7 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     loginMode,
     commentSorting,
     oauthProviders: record.oauth_providers ?? [],
-    anonymousEnabled,
+    emailLoginEnabled,
     moderationMode: record.moderation_mode,
     enableEnjoySearch,
     imageUploader,
@@ -231,7 +231,7 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
 
 export async function loadCommunityConfig(init?: RequestInit): Promise<CommunityConfig> {
   try {
-    const response = await readCommunityConfigApiV1PublicCommunityConfigGet(init);
+    const response = await readCommunityConfigApiV1SiteCommunityConfigGet(init);
     return normalizeCommunityConfig(response.data);
   } catch {
     return {

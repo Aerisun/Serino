@@ -157,7 +157,9 @@ export default function AssetsPage() {
       });
       setEditOpen(false);
       setEditingAsset(null);
-    } catch {}
+    } catch {
+      // ignore
+    }
   };
 
   const handleUpload = async () => {

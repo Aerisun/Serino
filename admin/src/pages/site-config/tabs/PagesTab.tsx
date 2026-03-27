@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListPageCopy,
@@ -14,8 +14,9 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { Label } from "@/components/ui/Label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Label } from "@/components/ui/Label";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import {
   Dialog,
   DialogContent,
@@ -23,41 +24,1336 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import { Plus, Save, Trash2, Pencil, X } from "lucide-react";
+import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { PAGE_KEYS, PAGE_KEY_LABELS, optionLabel } from "../constants";
-import type { PageCopyAdminRead, PageDisplayOptionAdminRead } from "@serino/api-client/models";
+import type {
+  PageCopyAdminRead,
+  PageDisplayOptionAdminRead,
+} from "@serino/api-client/models";
+
+type FieldInputKind = "text" | "textarea" | "number" | "select" | "list";
+type FieldSource = "base" | "extra";
+
+interface PageFieldDefinition {
+  key: string;
+  source: FieldSource;
+  input: FieldInputKind;
+  label: string;
+  helpTitle: string;
+  helpDescription: string;
+  usageItems: string[];
+  optional?: boolean;
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>;
+}
+
+type PageFormState = Record<string, string> & { page_key: string };
+
+const WIDTH_OPTIONS = [
+  { value: "", label: "自动跟随默认宽度" },
+  { value: "max-w-2xl", label: "窄版内容宽度" },
+  { value: "max-w-3xl", label: "标准内容宽度" },
+  { value: "max-w-4xl", label: "宽版内容宽度" },
+];
+
+const SHARED_FIELDS: PageFieldDefinition[] = [
+  {
+    key: "title",
+    source: "base",
+    input: "text",
+    label: "页面主标题",
+    helpTitle: "页面最醒目的标题",
+    helpDescription: "用于页面头部的大号标题，是访客进入这个页面时最先看到的名称。",
+    usageItems: [
+      "页面头部的大标题",
+      "部分详情页或预览场景的标题兜底",
+    ],
+  },
+  {
+    key: "subtitle",
+    source: "base",
+    input: "textarea",
+    label: "页面导语",
+    helpTitle: "页面标题下方的主要说明文案",
+    helpDescription: "这是一段直接展示给访客的介绍文字。当前前台会优先把它作为页面描述来渲染。",
+    usageItems: [
+      "页面头部标题下方的介绍文字",
+      "访客理解页面内容和语气的第一段说明",
+    ],
+  },
+  {
+    key: "eyebrow",
+    source: "extra",
+    input: "text",
+    label: "标题上方小标签",
+    helpTitle: "标题上方的小号提示标签",
+    helpDescription: "适合放分类名、栏目名或气氛说明。留空时页面头部不会显示这一行。",
+    usageItems: [
+      "页面标题上方的小号英文/短标签",
+    ],
+    optional: true,
+  },
+  {
+    key: "metaTitle",
+    source: "extra",
+    input: "text",
+    label: "SEO / 分享标题",
+    helpTitle: "浏览器标题和分享标题",
+    helpDescription: "如果填写这里，会优先用于页面浏览器标题、分享卡片标题和部分 SEO 标题。",
+    usageItems: [
+      "浏览器标签页标题",
+      "页面分享卡片标题",
+      "页面 SEO 标题",
+    ],
+    optional: true,
+  },
+  {
+    key: "metaDescription",
+    source: "extra",
+    input: "textarea",
+    label: "SEO / 分享描述",
+    helpTitle: "页面在分享或搜索结果里的简介",
+    helpDescription: "不会直接出现在页面正文里，主要用于分享卡片和搜索引擎描述。",
+    usageItems: [
+      "Open Graph / Twitter 描述",
+      "页面 SEO 描述",
+    ],
+    optional: true,
+  },
+  {
+    key: "description",
+    source: "base",
+    input: "textarea",
+    label: "内部备注",
+    helpTitle: "给管理端看的补充说明",
+    helpDescription: "这个字段现在主要作为配置备注使用，不再优先作为访客可见的页面简介。只有在页面导语为空时，前台才会拿它兜底。",
+    usageItems: [
+      "管理端说明和后续维护备注",
+      "页面导语为空时的描述兜底",
+    ],
+    optional: true,
+  },
+  {
+    key: "empty_message",
+    source: "base",
+    input: "textarea",
+    label: "空状态文案",
+    helpTitle: "页面没有内容时显示的提示",
+    helpDescription: "当列表为空、当前日期没有记录，或筛选后没有结果时，会显示这段文案。",
+    usageItems: [
+      "页面列表为空时的提示",
+      "部分页面筛选无结果时的提示",
+    ],
+    optional: true,
+  },
+  {
+    key: "search_placeholder",
+    source: "base",
+    input: "text",
+    label: "搜索框提示词",
+    helpTitle: "搜索输入框里的占位提示",
+    helpDescription: "适用于有搜索框的页面，目前主要会影响文章列表页。",
+    usageItems: [
+      "搜索输入框 placeholder",
+      "搜索框辅助 aria 文案兜底",
+    ],
+    optional: true,
+  },
+  {
+    key: "max_width",
+    source: "base",
+    input: "select",
+    label: "页面内容宽度",
+    helpTitle: "页面主体容器的最大宽度",
+    helpDescription: "控制这一页整体的排版宽窄。窄版更适合阅读，宽版更适合网格和数据块。",
+    usageItems: [
+      "页面主内容区域的横向宽度",
+    ],
+    optional: true,
+    options: WIDTH_OPTIONS,
+  },
+  {
+    key: "page_size",
+    source: "base",
+    input: "number",
+    label: "每次加载条数",
+    helpTitle: "分页或无限滚动每次请求的条目数",
+    helpDescription: "适用于文章、日记、碎碎念、文摘等列表页。数值越大，单次请求内容越多。",
+    usageItems: [
+      "列表页的分页大小",
+      "无限滚动一次追加的内容数量",
+    ],
+    optional: true,
+  },
+  {
+    key: "download_label",
+    source: "base",
+    input: "text",
+    label: "下载按钮文案",
+    helpTitle: "页面里的下载按钮文字",
+    helpDescription: "主要用于简历页下载按钮，其他页面如果未来接入下载动作也可复用。",
+    usageItems: [
+      "简历页下载按钮",
+    ],
+    optional: true,
+  },
+];
+
+const PAGE_SPECIFIC_FIELDS: Record<string, PageFieldDefinition[]> = {
+  activity: [
+    {
+      key: "dashboardLabel",
+      source: "extra",
+      input: "text",
+      label: "首页活动区眉标题",
+      helpTitle: "首页活动区标题上方的小标签",
+      helpDescription: "用于首页活动区左上角的小号栏目名。",
+      usageItems: [
+        "首页 Activity Section 顶部小标签",
+      ],
+      optional: true,
+    },
+    {
+      key: "friendCircleTitle",
+      source: "extra",
+      input: "text",
+      label: "首页友邻区标题",
+      helpTitle: "首页活动区左侧卡片的标题",
+      helpDescription: "控制首页友邻动态卡片顶部标题。",
+      usageItems: [
+        "首页 Friend Circle 卡片标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "friendCircleViewAllLabel",
+      source: "extra",
+      input: "text",
+      label: "首页友邻区“查看全部”按钮",
+      helpTitle: "首页友邻卡片跳转按钮文案",
+      helpDescription: "点击后会进入完整友链页。",
+      usageItems: [
+        "首页 Friend Circle 卡片右上角按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "friendCircleErrorTitle",
+      source: "extra",
+      input: "text",
+      label: "首页友邻区加载失败标题",
+      helpTitle: "首页友邻动态接口失败时的标题",
+      helpDescription: "当首页友邻动态请求失败时显示。",
+      usageItems: [
+        "首页 Friend Circle 错误状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "friendCircleRetryLabel",
+      source: "extra",
+      input: "text",
+      label: "首页友邻区重试按钮",
+      helpTitle: "首页友邻动态重试按钮文案",
+      helpDescription: "用于首页友邻卡片错误状态下的重试按钮。",
+      usageItems: [
+        "首页 Friend Circle 错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "friendCircleEmptyMessage",
+      source: "extra",
+      input: "textarea",
+      label: "首页友邻区空状态文案",
+      helpTitle: "首页友邻动态为空时的提示",
+      helpDescription: "当没有公开友邻动态时显示。",
+      usageItems: [
+        "首页 Friend Circle 空状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "recentActivityTitle",
+      source: "extra",
+      input: "text",
+      label: "首页最近动态标题",
+      helpTitle: "首页活动区右侧卡片标题",
+      helpDescription: "控制最近动态卡片的标题。",
+      usageItems: [
+        "首页 Recent Activity 卡片标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "recentActivityErrorTitle",
+      source: "extra",
+      input: "text",
+      label: "首页最近动态加载失败标题",
+      helpTitle: "最近动态接口失败时的标题",
+      helpDescription: "用于首页最近动态卡片错误状态。",
+      usageItems: [
+        "首页 Recent Activity 错误状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "recentActivityRetryLabel",
+      source: "extra",
+      input: "text",
+      label: "首页最近动态重试按钮",
+      helpTitle: "最近动态错误状态下的按钮文案",
+      helpDescription: "用于首页最近动态卡片的重试操作。",
+      usageItems: [
+        "首页 Recent Activity 错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "recentActivityEmptyMessage",
+      source: "extra",
+      input: "textarea",
+      label: "首页最近动态空状态文案",
+      helpTitle: "最近动态为空时的提示",
+      helpDescription: "当首页没有可展示的最近动态时显示。",
+      usageItems: [
+        "首页 Recent Activity 空状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "heatmapTitle",
+      source: "extra",
+      input: "text",
+      label: "热力图标题",
+      helpTitle: "首页底部热力图主标题",
+      helpDescription: "控制热力图模块左上角标题。",
+      usageItems: [
+        "首页 Activity Heatmap 标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "heatmapLoadingLabel",
+      source: "extra",
+      input: "text",
+      label: "热力图加载中文案",
+      helpTitle: "热力图请求中时的状态文案",
+      helpDescription: "在热力图尚未返回数据时显示。",
+      usageItems: [
+        "首页 Activity Heatmap 状态栏",
+      ],
+      optional: true,
+    },
+    {
+      key: "heatmapErrorLabel",
+      source: "extra",
+      input: "text",
+      label: "热力图加载失败文案",
+      helpTitle: "热力图请求失败时的状态文案",
+      helpDescription: "用于热力图模块顶部状态区。",
+      usageItems: [
+        "首页 Activity Heatmap 状态栏",
+      ],
+      optional: true,
+    },
+    {
+      key: "heatmapTotalTemplate",
+      source: "extra",
+      input: "text",
+      label: "热力图总量模板",
+      helpTitle: "热力图顶部总量统计文案模板",
+      helpDescription: "支持 `{total}` 占位符，例如：`共 {total} 次记录`。",
+      usageItems: [
+        "首页 Activity Heatmap 顶部总量数字说明",
+      ],
+      optional: true,
+      placeholder: "共 {total} 次记录",
+    },
+    {
+      key: "heatmapThisWeekLabel",
+      source: "extra",
+      input: "text",
+      label: "热力图“本周”标签",
+      helpTitle: "热力图统计项一的标签文字",
+      helpDescription: "用于第一项统计指标的名称。",
+      usageItems: [
+        "首页 Activity Heatmap 统计指标",
+      ],
+      optional: true,
+    },
+    {
+      key: "heatmapPeakWeekLabel",
+      source: "extra",
+      input: "text",
+      label: "热力图“峰值周”标签",
+      helpTitle: "热力图统计项二的标签文字",
+      helpDescription: "用于第二项统计指标的名称。",
+      usageItems: [
+        "首页 Activity Heatmap 统计指标",
+      ],
+      optional: true,
+    },
+    {
+      key: "heatmapAverageWeekLabel",
+      source: "extra",
+      input: "text",
+      label: "热力图“周平均”标签",
+      helpTitle: "热力图统计项三的标签文字",
+      helpDescription: "用于第三项统计指标的名称。",
+      usageItems: [
+        "首页 Activity Heatmap 统计指标",
+      ],
+      optional: true,
+    },
+  ],
+  notFound: [
+    {
+      key: "badgeLabel",
+      source: "extra",
+      input: "text",
+      label: "404 徽标文字",
+      helpTitle: "404 页面卡片顶部的小标签",
+      helpDescription: "默认是偏技术感的小标识，建议写成短词组。",
+      usageItems: [
+        "404 页面顶部徽标",
+      ],
+      optional: true,
+    },
+    {
+      key: "homeLabel",
+      source: "extra",
+      input: "text",
+      label: "404“返回首页”按钮",
+      helpTitle: "404 页面主按钮文案",
+      helpDescription: "控制 404 页面主操作按钮的文字。",
+      usageItems: [
+        "404 页面主按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "backLabel",
+      source: "extra",
+      input: "text",
+      label: "404“返回上页”按钮",
+      helpTitle: "404 页面次按钮文案",
+      helpDescription: "控制 404 页面返回上一级的按钮文字。",
+      usageItems: [
+        "404 页面次按钮",
+      ],
+      optional: true,
+    },
+  ],
+  posts: [
+    {
+      key: "errorTitle",
+      source: "extra",
+      input: "text",
+      label: "文章页加载失败标题",
+      helpTitle: "文章列表接口失败时的标题",
+      helpDescription: "用于文章列表页的错误状态主标题。",
+      usageItems: [
+        "文章列表错误状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "文章页重试按钮",
+      helpTitle: "文章列表页重试按钮文案",
+      helpDescription: "用于文章列表页错误状态和文章详情错误状态。",
+      usageItems: [
+        "文章列表错误状态按钮",
+        "文章详情错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadMoreLabel",
+      source: "extra",
+      input: "text",
+      label: "文章页加载更多文案",
+      helpTitle: "文章列表滚动加载时的提示",
+      helpDescription: "当文章列表还有更多内容时使用。",
+      usageItems: [
+        "文章列表底部的加载更多提示",
+      ],
+      optional: true,
+    },
+    {
+      key: "category_all_label",
+      source: "extra",
+      input: "text",
+      label: "文章分类“全部”标签",
+      helpTitle: "文章分类筛选里的“全部”名称",
+      helpDescription: "用于文章列表分类切换按钮的第一个选项。",
+      usageItems: [
+        "文章列表分类筛选",
+      ],
+      optional: true,
+    },
+    {
+      key: "category_fallback_label",
+      source: "extra",
+      input: "text",
+      label: "文章分类缺省标签",
+      helpTitle: "文章没有分类时的兜底名称",
+      helpDescription: "当文章本身没有分类字段时显示。",
+      usageItems: [
+        "文章卡片分类兜底",
+        "文章详情分类兜底",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailBackLabel",
+      source: "extra",
+      input: "text",
+      label: "文章详情返回按钮",
+      helpTitle: "文章详情页左上角返回按钮文案",
+      helpDescription: "控制文章详情页返回上一页按钮的文字。",
+      usageItems: [
+        "文章详情页顶部返回按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailListLabel",
+      source: "extra",
+      input: "text",
+      label: "文章详情“返回列表”按钮",
+      helpTitle: "文章不存在时返回列表的按钮文案",
+      helpDescription: "当文章不存在时显示在错误区块底部。",
+      usageItems: [
+        "文章详情空状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailMissingTitle",
+      source: "extra",
+      input: "text",
+      label: "文章详情不存在标题",
+      helpTitle: "文章不存在时的标题",
+      helpDescription: "用于文章详情 404 或内容不存在的场景。",
+      usageItems: [
+        "文章详情空状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailMissingDescription",
+      source: "extra",
+      input: "textarea",
+      label: "文章详情不存在说明",
+      helpTitle: "文章不存在时的补充说明",
+      helpDescription: "用于文章详情页找不到内容时的解释文字。",
+      usageItems: [
+        "文章详情空状态说明",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailEndLabel",
+      source: "extra",
+      input: "text",
+      label: "文章详情结尾文案",
+      helpTitle: "文章正文结束后的短句",
+      helpDescription: "用于文章阅读结束后的收尾文案。",
+      usageItems: [
+        "文章详情正文结尾",
+      ],
+      optional: true,
+    },
+  ],
+  diary: [
+    {
+      key: "errorTitle",
+      source: "extra",
+      input: "text",
+      label: "日记页加载失败标题",
+      helpTitle: "日记列表接口失败时的标题",
+      helpDescription: "用于日记列表页错误状态的主标题。",
+      usageItems: [
+        "日记列表错误状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "日记页重试按钮",
+      helpTitle: "日记列表与详情页的重试按钮文案",
+      helpDescription: "会同时影响日记列表错误状态和日记详情错误状态。",
+      usageItems: [
+        "日记列表错误状态按钮",
+        "日记详情错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadMoreLabel",
+      source: "extra",
+      input: "text",
+      label: "日记页加载更多文案",
+      helpTitle: "日记列表底部滚动加载文案",
+      helpDescription: "当还有更多日记未加载时显示。",
+      usageItems: [
+        "日记列表底部加载提示",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailCtaLabel",
+      source: "extra",
+      input: "text",
+      label: "日记卡片“查看详情”按钮",
+      helpTitle: "展开后的日记卡片跳转按钮文案",
+      helpDescription: "用于日记列表中展开内容后的跳转按钮。",
+      usageItems: [
+        "日记列表卡片底部按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailBackLabel",
+      source: "extra",
+      input: "text",
+      label: "日记详情返回按钮",
+      helpTitle: "日记详情页顶部返回按钮文案",
+      helpDescription: "控制详情页左上角返回按钮文字。",
+      usageItems: [
+        "日记详情页顶部返回按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailListLabel",
+      source: "extra",
+      input: "text",
+      label: "日记详情“返回列表”按钮",
+      helpTitle: "日记不存在时的返回列表按钮文案",
+      helpDescription: "用于日记详情空状态底部按钮。",
+      usageItems: [
+        "日记详情空状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailMissingTitle",
+      source: "extra",
+      input: "text",
+      label: "日记详情不存在标题",
+      helpTitle: "日记不存在时的标题",
+      helpDescription: "用于日记详情找不到内容的场景。",
+      usageItems: [
+        "日记详情空状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailMissingDescription",
+      source: "extra",
+      input: "textarea",
+      label: "日记详情不存在说明",
+      helpTitle: "日记不存在时的说明文字",
+      helpDescription: "用于日记详情空状态的解释说明。",
+      usageItems: [
+        "日记详情空状态说明",
+      ],
+      optional: true,
+    },
+    {
+      key: "detailEndLabel",
+      source: "extra",
+      input: "text",
+      label: "日记详情结尾文案",
+      helpTitle: "日记正文底部的收尾短句",
+      helpDescription: "用于日记阅读结束时的短文案。",
+      usageItems: [
+        "日记详情正文结尾",
+      ],
+      optional: true,
+    },
+  ],
+  friends: [
+    {
+      key: "errorTitle",
+      source: "extra",
+      input: "text",
+      label: "友链页加载失败标题",
+      helpTitle: "友链页接口失败时的主标题",
+      helpDescription: "用于友链列表区域的错误状态标题。",
+      usageItems: [
+        "友链页错误状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "circle_title",
+      source: "extra",
+      input: "text",
+      label: "友链动态区标题",
+      helpTitle: "友链页第二部分的大标题",
+      helpDescription: "控制 Friend Circle 区域的标题。",
+      usageItems: [
+        "友链页动态区标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "statusLabel",
+      source: "extra",
+      input: "text",
+      label: "友链动态区状态标签",
+      helpTitle: "友链动态区标题右侧的小标签",
+      helpDescription: "一般用于说明这里展示的是动态区或状态区。",
+      usageItems: [
+        "友链页动态区右上角标签",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadingLabel",
+      source: "extra",
+      input: "text",
+      label: "友链页加载中文案",
+      helpTitle: "友链页加载更多或加载中状态文案",
+      helpDescription: "会用于友链页底部按钮加载态。",
+      usageItems: [
+        "友链页“加载更多”按钮的加载态",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadMoreLabel",
+      source: "extra",
+      input: "text",
+      label: "友链页加载更多按钮",
+      helpTitle: "友链页继续加载动态的按钮文案",
+      helpDescription: "当友邻动态未全部显示时使用。",
+      usageItems: [
+        "友链页底部按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "友链页重试按钮",
+      helpTitle: "友链页错误状态的重试按钮文案",
+      helpDescription: "用于友链卡片错误状态与动态区错误状态。",
+      usageItems: [
+        "友链页错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "summaryTemplate",
+      source: "extra",
+      input: "text",
+      label: "友链动态区摘要模板",
+      helpTitle: "友链动态标题下方的统计模板",
+      helpDescription: "支持 `{sites}` 和 `{articles}` 占位符，例如：`{sites} 个站点 · 共 {articles} 条动态`。",
+      usageItems: [
+        "友链页动态区标题下方统计行",
+      ],
+      optional: true,
+      placeholder: "{sites} 个站点 · 共 {articles} 条动态",
+    },
+    {
+      key: "footerSummaryTemplate",
+      source: "extra",
+      input: "text",
+      label: "友链页底部摘要模板",
+      helpTitle: "友链页最底部的总结文案模板",
+      helpDescription: "支持 `{sites}` 和 `{articles}` 占位符，例如：`已连接 {sites} 个站点，最近抓取 {articles} 条公开动态`。",
+      usageItems: [
+        "友链页底部总结文案",
+      ],
+      optional: true,
+      placeholder: "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
+    },
+  ],
+  excerpts: [
+    {
+      key: "errorTitle",
+      source: "extra",
+      input: "text",
+      label: "文摘页加载失败标题",
+      helpTitle: "文摘列表接口失败时的标题",
+      helpDescription: "用于文摘页错误状态卡片。",
+      usageItems: [
+        "文摘页错误状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "文摘页重试按钮",
+      helpTitle: "文摘页错误状态重试按钮文案",
+      helpDescription: "用于文摘页错误状态按钮。",
+      usageItems: [
+        "文摘页错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadMoreLabel",
+      source: "extra",
+      input: "text",
+      label: "文摘页加载更多文案",
+      helpTitle: "文摘列表底部加载更多提示",
+      helpDescription: "当文摘列表还有更多内容时显示。",
+      usageItems: [
+        "文摘页底部加载提示",
+      ],
+      optional: true,
+    },
+    {
+      key: "modalCloseLabel",
+      source: "extra",
+      input: "text",
+      label: "文摘弹窗关闭提示",
+      helpTitle: "文摘弹窗关闭按钮的辅助文案",
+      helpDescription: "用于关闭按钮的 aria-label，影响可访问性和读屏提示。",
+      usageItems: [
+        "文摘详情弹窗关闭按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "commentsOpenLabel",
+      source: "extra",
+      input: "text",
+      label: "文摘弹窗“查看评论”按钮",
+      helpTitle: "文摘弹窗展开评论时的按钮前缀",
+      helpDescription: "会自动在后面追加评论数量。",
+      usageItems: [
+        "文摘详情弹窗评论切换按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "commentsCloseLabel",
+      source: "extra",
+      input: "text",
+      label: "文摘弹窗“收起评论”按钮",
+      helpTitle: "文摘弹窗评论展开后的按钮文案",
+      helpDescription: "用于切换评论区关闭状态。",
+      usageItems: [
+        "文摘详情弹窗评论切换按钮",
+      ],
+      optional: true,
+    },
+  ],
+  thoughts: [
+    {
+      key: "errorTitle",
+      source: "extra",
+      input: "text",
+      label: "碎碎念页加载失败标题",
+      helpTitle: "碎碎念列表接口失败时的标题",
+      helpDescription: "用于碎碎念页错误状态。",
+      usageItems: [
+        "碎碎念页错误状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "碎碎念页重试按钮",
+      helpTitle: "碎碎念页错误状态按钮文案",
+      helpDescription: "用于碎碎念页的重试按钮。",
+      usageItems: [
+        "碎碎念页错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadMoreLabel",
+      source: "extra",
+      input: "text",
+      label: "碎碎念页加载更多文案",
+      helpTitle: "碎碎念列表底部加载提示",
+      helpDescription: "当碎碎念还有更多内容时显示。",
+      usageItems: [
+        "碎碎念页底部加载提示",
+      ],
+      optional: true,
+    },
+  ],
+  guestbook: [
+    {
+      key: "promptTitle",
+      source: "extra",
+      input: "text",
+      label: "留言板提示区标题",
+      helpTitle: "留言板顶部说明卡片的标题",
+      helpDescription: "位于留言板评论组件上方的提示区标题。",
+      usageItems: [
+        "留言板页顶部提示卡片",
+      ],
+      optional: true,
+    },
+    {
+      key: "nameFieldLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板“昵称”标签",
+      helpTitle: "留言提示区的昵称字段名",
+      helpDescription: "用于提示区中介绍昵称输入框的前缀名称。",
+      usageItems: [
+        "留言板页提示卡片",
+      ],
+      optional: true,
+    },
+    {
+      key: "contentFieldLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板“正文”标签",
+      helpTitle: "留言提示区的正文字段名",
+      helpDescription: "用于提示区中介绍正文输入框的前缀名称。",
+      usageItems: [
+        "留言板页提示卡片",
+      ],
+      optional: true,
+    },
+    {
+      key: "submitFieldLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板“按钮”标签",
+      helpTitle: "留言提示区的按钮字段名",
+      helpDescription: "用于提示区中介绍提交按钮的前缀名称。",
+      usageItems: [
+        "留言板页提示卡片",
+      ],
+      optional: true,
+    },
+    {
+      key: "namePlaceholder",
+      source: "extra",
+      input: "text",
+      label: "留言板昵称占位词",
+      helpTitle: "留言板昵称输入框 placeholder",
+      helpDescription: "直接影响留言组件里的昵称输入提示。",
+      usageItems: [
+        "留言组件昵称输入框",
+      ],
+      optional: true,
+    },
+    {
+      key: "contentPlaceholder",
+      source: "extra",
+      input: "text",
+      label: "留言板正文占位词",
+      helpTitle: "留言板正文输入框 placeholder",
+      helpDescription: "直接影响留言组件里的正文输入提示。",
+      usageItems: [
+        "留言组件正文输入框",
+      ],
+      optional: true,
+    },
+    {
+      key: "submitLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板提交按钮",
+      helpTitle: "留言板提交动作按钮文案",
+      helpDescription: "直接影响留言组件里的提交按钮文本。",
+      usageItems: [
+        "留言组件提交按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "submittingLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板提交中按钮文案",
+      helpTitle: "留言正在提交时的按钮文案",
+      helpDescription: "用于留言组件提交中的状态文字。",
+      usageItems: [
+        "留言组件提交中状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "loadingLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板加载中文案",
+      helpTitle: "留言组件加载中状态文案",
+      helpDescription: "用于留言板评论列表尚未加载完成时。",
+      usageItems: [
+        "留言组件加载中状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "留言板重试按钮",
+      helpTitle: "留言板错误状态重试按钮文案",
+      helpDescription: "用于留言板评论组件的错误状态按钮。",
+      usageItems: [
+        "留言组件错误状态按钮",
+      ],
+      optional: true,
+    },
+  ],
+  resume: [],
+  calendar: [
+    {
+      key: "loadingLabel",
+      source: "extra",
+      input: "text",
+      label: "日历加载中文案",
+      helpTitle: "日历页加载中的提示",
+      helpDescription: "用于日历右侧详情区域的加载提示。",
+      usageItems: [
+        "日历页侧栏加载态",
+      ],
+      optional: true,
+    },
+    {
+      key: "retryLabel",
+      source: "extra",
+      input: "text",
+      label: "日历重试按钮",
+      helpTitle: "日历页错误状态按钮文案",
+      helpDescription: "用于日历接口失败时的重试按钮。",
+      usageItems: [
+        "日历页错误状态按钮",
+      ],
+      optional: true,
+    },
+    {
+      key: "todayLabel",
+      source: "extra",
+      input: "text",
+      label: "日历“今日”标签",
+      helpTitle: "右侧详情区默认标题",
+      helpDescription: "在未选中具体日期时，侧栏标题会使用这段文字。",
+      usageItems: [
+        "日历页侧栏标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "errorTitle",
+      source: "extra",
+      input: "text",
+      label: "日历加载失败标题",
+      helpTitle: "日历页接口失败时的主提示",
+      helpDescription: "用于日历右侧详情区的错误标题。",
+      usageItems: [
+        "日历页错误状态标题",
+      ],
+      optional: true,
+    },
+    {
+      key: "selectedEmptyMessage",
+      source: "extra",
+      input: "textarea",
+      label: "日历日期无记录文案",
+      helpTitle: "选中某一天但没有内容时的提示",
+      helpDescription: "区别于整个月没有数据时的空状态文案。",
+      usageItems: [
+        "日历页侧栏空状态",
+      ],
+      optional: true,
+    },
+    {
+      key: "postTypeLabel",
+      source: "extra",
+      input: "text",
+      label: "日历“帖子”类型标签",
+      helpTitle: "日历事件类型标签之一",
+      helpDescription: "用于图例和事件卡片中的帖子类型名称。",
+      usageItems: [
+        "日历页图例",
+        "日历页事件卡片类型标签",
+      ],
+      optional: true,
+    },
+    {
+      key: "diaryTypeLabel",
+      source: "extra",
+      input: "text",
+      label: "日历“日记”类型标签",
+      helpTitle: "日历事件类型标签之一",
+      helpDescription: "用于图例和事件卡片中的日记类型名称。",
+      usageItems: [
+        "日历页图例",
+        "日历页事件卡片类型标签",
+      ],
+      optional: true,
+    },
+    {
+      key: "excerptTypeLabel",
+      source: "extra",
+      input: "text",
+      label: "日历“文摘”类型标签",
+      helpTitle: "日历事件类型标签之一",
+      helpDescription: "用于图例和事件卡片中的文摘类型名称。",
+      usageItems: [
+        "日历页图例",
+        "日历页事件卡片类型标签",
+      ],
+      optional: true,
+    },
+    {
+      key: "weekdayLabels",
+      source: "extra",
+      input: "list",
+      label: "星期标签列表",
+      helpTitle: "日历顶栏的 7 个星期标题",
+      helpDescription: "用换行或英文逗号分隔，一共 7 项，顺序为周一到周日。",
+      usageItems: [
+        "日历页星期表头",
+      ],
+      optional: true,
+      placeholder: "周一\n周二\n周三\n周四\n周五\n周六\n周日",
+    },
+    {
+      key: "monthLabels",
+      source: "extra",
+      input: "list",
+      label: "月份标签列表",
+      helpTitle: "日历页的 12 个月份标题",
+      helpDescription: "用换行或英文逗号分隔，一共 12 项，顺序为 1 月到 12 月。",
+      usageItems: [
+        "日历页月份切换标题",
+      ],
+      optional: true,
+      placeholder: "1月\n2月\n3月\n4月\n5月\n6月\n7月\n8月\n9月\n10月\n11月\n12月",
+    },
+  ],
+};
+
+const emptyCreateForm = (): PageFormState => ({ page_key: "" });
+
+const getFieldsForPage = (pageKey: string): PageFieldDefinition[] => [
+  ...SHARED_FIELDS,
+  ...(PAGE_SPECIFIC_FIELDS[pageKey] ?? []),
+];
+
+const readFieldValue = (
+  copy: Pick<PageCopyAdminRead, "extras"> & Record<string, unknown>,
+  field: PageFieldDefinition,
+) => {
+  if (field.source === "base") {
+    const raw = copy[field.key];
+    return raw == null ? "" : String(raw);
+  }
+
+  const raw = copy.extras?.[field.key];
+  if (Array.isArray(raw)) {
+    return raw.map(String).join("\n");
+  }
+  if (raw == null) {
+    return "";
+  }
+  return String(raw);
+};
+
+const buildFormState = (pageKey: string, copy?: PageCopyAdminRead): PageFormState => {
+  const state: PageFormState = { page_key: pageKey };
+  for (const field of getFieldsForPage(pageKey)) {
+    state[field.key] = copy ? readFieldValue(copy as PageCopyAdminRead & Record<string, unknown>, field) : "";
+  }
+  return state;
+};
+
+const normalizeOptionalText = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const parseOptionalNumber = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseListValue = (value: string) =>
+  value
+    .split(/\n|,/g)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const assignExtraValue = (
+  target: Record<string, unknown>,
+  field: PageFieldDefinition,
+  rawValue: string,
+) => {
+  if (field.input === "list") {
+    const items = parseListValue(rawValue);
+    if (items.length > 0) {
+      target[field.key] = items;
+    } else {
+      delete target[field.key];
+    }
+    return;
+  }
+
+  if (field.input === "number") {
+    const parsed = parseOptionalNumber(rawValue);
+    if (parsed != null) {
+      target[field.key] = parsed;
+    } else {
+      delete target[field.key];
+    }
+    return;
+  }
+
+  const normalized = normalizeOptionalText(rawValue);
+  if (normalized != null) {
+    target[field.key] = normalized;
+  } else {
+    delete target[field.key];
+  }
+};
+
+const buildCopyPayload = (
+  pageKey: string,
+  form: PageFormState,
+  existingExtras?: Record<string, unknown>,
+  includePageKey = false,
+) => {
+  const extras = { ...(existingExtras ?? {}) };
+
+  for (const field of getFieldsForPage(pageKey)) {
+    if (field.source === "extra") {
+      assignExtraValue(extras, field, form[field.key] ?? "");
+    }
+  }
+
+  return {
+    ...(includePageKey ? { page_key: pageKey } : {}),
+    title: (form.title ?? "").trim(),
+    subtitle: (form.subtitle ?? "").trim(),
+    description: normalizeOptionalText(form.description ?? ""),
+    search_placeholder: normalizeOptionalText(form.search_placeholder ?? ""),
+    empty_message: normalizeOptionalText(form.empty_message ?? ""),
+    max_width: normalizeOptionalText(form.max_width ?? ""),
+    page_size: parseOptionalNumber(form.page_size ?? ""),
+    download_label: normalizeOptionalText(form.download_label ?? ""),
+    extras,
+  };
+};
+
+const renderFieldValue = (copy: PageCopyAdminRead, field: PageFieldDefinition) => {
+  if (field.source === "base") {
+    const raw = copy[field.key as keyof PageCopyAdminRead];
+    if (raw == null || raw === "") {
+      return null;
+    }
+    if (field.key === "max_width") {
+      const match = WIDTH_OPTIONS.find((option) => option.value === raw);
+      return match?.label ?? String(raw);
+    }
+    return String(raw);
+  }
+
+  const raw = copy.extras?.[field.key];
+  if (raw == null || raw === "") {
+    return null;
+  }
+  if (Array.isArray(raw)) {
+    return raw.join(" / ");
+  }
+  return String(raw);
+};
+
+const renderFieldInput = (
+  field: PageFieldDefinition,
+  value: string,
+  onChange: (nextValue: string) => void,
+) => {
+  if (field.input === "textarea" || field.input === "list") {
+    return (
+      <Textarea
+        value={value}
+        rows={field.input === "list" ? 4 : 3}
+        placeholder={field.placeholder}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    );
+  }
+
+  if (field.input === "select") {
+    return (
+      <select
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {(field.options ?? []).map((option) => (
+          <option key={option.value || "empty"} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <Input
+      type={field.input === "number" ? "number" : "text"}
+      value={value}
+      placeholder={field.placeholder}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+};
 
 export function PagesTab() {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
   const { data: copyRaw } = useListPageCopy();
   const { data: displayRaw } = useListDisplayOptions();
-  const copyData = copyRaw?.data;
-  const displayData = displayRaw?.data;
+  const copies = useMemo(() => copyRaw?.data?.items ?? [], [copyRaw]);
+  const displays = useMemo(() => displayRaw?.data?.items ?? [], [displayRaw]);
+  const displayByKey = Object.fromEntries(displays.map((item) => [item.page_key, item]));
+  const orderedCopies = useMemo(
+    () =>
+      [...copies].sort(
+        (left, right) => PAGE_KEYS.indexOf(left.page_key) - PAGE_KEYS.indexOf(right.page_key),
+      ),
+    [copies],
+  );
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    page_key: "",
-    title: "",
-    description: "",
-    empty_message: "",
-    page_size: "" as string,
-  });
+  const [createForm, setCreateForm] = useState<PageFormState>(emptyCreateForm());
+  const createFields = createForm.page_key ? getFieldsForPage(createForm.page_key) : [];
+
+  const resetCreateForm = () => setCreateForm(emptyCreateForm());
 
   const createCopy = useCreatePageCopy({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListPageCopyQueryKey() });
         setCreateOpen(false);
-        setCreateForm({
-          page_key: "",
-          title: "",
-          description: "",
-          empty_message: "",
-          page_size: "",
-        });
+        resetCreateForm();
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
@@ -67,87 +1363,79 @@ export function PagesTab() {
     },
   });
 
-  // Merge copy + display by page_key
-  const copies = copyData?.items ?? [];
-  const displays = displayData?.items ?? [];
-  const displayByKey = Object.fromEntries(displays.map((d) => [d.page_key, d]));
-
-  const formFieldLabels: Record<string, string> = {
-    title: t("common.title"),
-    description: `${t("siteConfig.description2")} (${t("common.optional")})`,
-    empty_message: `${t("siteConfig.emptyMessage")} (${t("common.optional")})`,
-  };
-
   return (
     <div className="mt-4 space-y-4">
       <div className="flex justify-end">
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <Dialog
+          open={createOpen}
+          onOpenChange={(nextOpen) => {
+            setCreateOpen(nextOpen);
+            if (!nextOpen) {
+              resetCreateForm();
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" /> {t("siteConfig.addPage")}
+              <Plus className="mr-2 h-4 w-4" />
+              {t("siteConfig.addPage")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>{t("siteConfig.newPageCopy")}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="space-y-1">
-                <Label>{t("siteConfig.pageKey")}</Label>
+                <Label>选择页面</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={createForm.page_key}
-                  onChange={(e) =>
-                    setCreateForm((p) => ({ ...p, page_key: e.target.value }))
-                  }
+                  onChange={(event) => {
+                    const pageKey = event.target.value;
+                    setCreateForm(pageKey ? buildFormState(pageKey) : emptyCreateForm());
+                  }}
                 >
                   <option value="">{t("siteConfig.selectPage")}</option>
-                  {PAGE_KEYS.map((k) => (
-                    <option key={k} value={k}>
-                      {optionLabel(PAGE_KEY_LABELS, k, lang)}
+                  {PAGE_KEYS.map((pageKey) => (
+                    <option key={pageKey} value={pageKey}>
+                      {optionLabel(PAGE_KEY_LABELS, pageKey, lang)}
                     </option>
                   ))}
                 </select>
               </div>
-              {(
-                [
-                  "title",
-                  "description",
-                  "empty_message",
-                ] as const
-              ).map((k) => (
-                <div key={k} className="space-y-1">
-                  <Label>{formFieldLabels[k]}</Label>
-                  <Input
-                    value={createForm[k]}
-                    onChange={(e) =>
-                      setCreateForm((p) => ({ ...p, [k]: e.target.value }))
-                    }
-                  />
+
+              {createFields.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {createFields.map((field) => (
+                    <div key={field.key} className={field.input === "textarea" || field.input === "list" ? "md:col-span-2 space-y-1" : "space-y-1"}>
+                      <LabelWithHelp
+                        label={field.optional ? `${field.label}（可选）` : field.label}
+                        title={field.helpTitle}
+                        description={field.helpDescription}
+                        usageTitle="会影响这些位置"
+                        usageItems={field.usageItems}
+                      />
+                      {renderFieldInput(field, createForm[field.key] ?? "", (nextValue) =>
+                        setCreateForm((current) => ({ ...current, [field.key]: nextValue })),
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-              <div className="space-y-1">
-                <Label>{`${t("siteConfig.pageSize")} (${t("common.optional")})`}</Label>
-                <Input
-                  type="number"
-                  value={createForm.page_size}
-                  onChange={(e) =>
-                    setCreateForm((p) => ({ ...p, page_size: e.target.value }))
-                  }
-                />
-              </div>
+              ) : null}
+
               <Button
-                onClick={() => createCopy.mutate({
-                  data: {
-                    page_key: createForm.page_key,
-                    title: createForm.title,
-                      subtitle: createForm.title,
-                    description: createForm.description || null,
-                    empty_message: createForm.empty_message || null,
-                    page_size: createForm.page_size ? parseInt(createForm.page_size) : null,
-                  },
-                })}
-                disabled={createCopy.isPending || !createForm.page_key}
+                onClick={() =>
+                  createCopy.mutate({
+                    data: buildCopyPayload(createForm.page_key, createForm, undefined, true),
+                  })
+                }
+                disabled={
+                  createCopy.isPending ||
+                  !createForm.page_key ||
+                  !(createForm.title ?? "").trim() ||
+                  !(createForm.subtitle ?? "").trim()
+                }
               >
                 {t("common.create")}
               </Button>
@@ -156,11 +1444,11 @@ export function PagesTab() {
         </Dialog>
       </div>
 
-      {copies.length === 0 && displays.length === 0 && (
-        <p className="text-muted-foreground py-4">{t("siteConfig.noPages")}</p>
-      )}
+      {orderedCopies.length === 0 && displays.length === 0 ? (
+        <p className="py-4 text-muted-foreground">{t("siteConfig.noPages")}</p>
+      ) : null}
 
-      {copies.map((copy) => (
+      {orderedCopies.map((copy) => (
         <PageRow
           key={copy.id}
           copy={copy}
@@ -181,17 +1469,11 @@ function PageRow({
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    title: copy.title,
-    description: copy.description ?? "",
-    empty_message: copy.empty_message ?? "",
-    page_size: copy.page_size?.toString() ?? "",
-    category_all_label: typeof copy.extras?.category_all_label === "string" ? copy.extras.category_all_label : "",
-    category_fallback_label: typeof copy.extras?.category_fallback_label === "string" ? copy.extras.category_fallback_label : "",
-  });
+  const [form, setForm] = useState<PageFormState>(() => buildFormState(copy.page_key, copy));
   const [settingsJson, setSettingsJson] = useState(
     display ? JSON.stringify(display.settings, null, 2) : "{}",
   );
+  const fields = getFieldsForPage(copy.page_key);
 
   const saveCopy = useUpdatePageCopy({
     mutation: {
@@ -259,15 +1541,16 @@ function PageRow({
     },
   });
 
-  const formFieldLabels: Record<string, string> = {
-    title: t("common.title"),
-    description: `${t("siteConfig.description2")} (${t("common.optional")})`,
-    empty_message: `${t("siteConfig.emptyMessage")} (${t("common.optional")})`,
-  };
+  const summaryItems = fields
+    .map((field) => ({
+      field,
+      value: renderFieldValue(copy, field),
+    }))
+    .filter((item): item is { field: PageFieldDefinition; value: string } => Boolean(item.value));
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
         <CardTitle className="text-base font-semibold">
           {optionLabel(PAGE_KEY_LABELS, copy.page_key, lang)}
         </CardTitle>
@@ -277,188 +1560,138 @@ function PageRow({
             size="sm"
             onClick={() => {
               if (display) {
-                toggleEnabled.mutate({ itemId: display.id, data: { is_enabled: !display.is_enabled } });
+                toggleEnabled.mutate({
+                  itemId: display.id,
+                  data: { is_enabled: !display.is_enabled },
+                });
               } else {
-                createDisplayOpt.mutate({ data: { page_key: copy.page_key, is_enabled: true } });
+                createDisplayOpt.mutate({
+                  data: { page_key: copy.page_key, is_enabled: true },
+                });
               }
             }}
           >
-            {display?.is_enabled !== false
-              ? t("siteConfig.enabled")
-              : t("siteConfig.disabled")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setEditing(!editing)}
-          >
-            {editing ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <Pencil className="h-4 w-4" />
-            )}
+            {display?.is_enabled !== false ? t("siteConfig.enabled") : t("siteConfig.disabled")}
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
-              if (confirm(t("siteConfig.deletePageConfirm"))) delCopy.mutate({ itemId: copy.id });
+              if (editing) {
+                setForm(buildFormState(copy.page_key, copy));
+                setSettingsJson(display ? JSON.stringify(display.settings, null, 2) : "{}");
+              }
+              setEditing((current) => !current);
+            }}
+          >
+            {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (confirm(t("siteConfig.deletePageConfirm"))) {
+                delCopy.mutate({ itemId: copy.id });
+              }
             }}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
+
       <CardContent>
         {!editing ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">
-                {t("common.title")}:
-              </span>{" "}
-              {copy.title}
-            </div>
-            {copy.description && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.description2")}:
-                </span>{" "}
-                {copy.description}
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+            {summaryItems.map(({ field, value }) => (
+              <div key={field.key}>
+                <span className="text-muted-foreground">{field.label}:</span>{" "}
+                {value}
               </div>
-            )}
-            {copy.empty_message && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.emptyMessage")}:
-                </span>{" "}
-                {copy.empty_message}
-              </div>
-            )}
-            {copy.page_size != null && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.pageSize")}:
-                </span>{" "}
-                {copy.page_size}
-              </div>
-            )}
-            {copy.page_key === "posts" && typeof copy.extras?.category_all_label === "string" && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.categoryAllLabel")}:
-                </span>{" "}
-                {copy.extras.category_all_label}
-              </div>
-            )}
-            {copy.page_key === "posts" && typeof copy.extras?.category_fallback_label === "string" && (
-              <div>
-                <span className="text-muted-foreground">
-                  {t("siteConfig.categoryFallbackLabel")}:
-                </span>{" "}
-                {copy.extras.category_fallback_label}
-              </div>
-            )}
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              {(
-                [
-                  "title",
-                  "description",
-                  "empty_message",
-                ] as const
-              ).map((k) => (
-                <div key={k} className="space-y-1">
-                  <Label className="text-xs">{formFieldLabels[k]}</Label>
-                  <Input
-                    value={form[k]}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, [k]: e.target.value }))
-                    }
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {fields.map((field) => (
+                <div
+                  key={field.key}
+                  className={field.input === "textarea" || field.input === "list" ? "space-y-1 md:col-span-2" : "space-y-1"}
+                >
+                  <LabelWithHelp
+                    label={field.optional ? `${field.label}（可选）` : field.label}
+                    title={field.helpTitle}
+                    description={field.helpDescription}
+                    usageTitle="会影响这些位置"
+                    usageItems={field.usageItems}
                   />
+                  {renderFieldInput(field, form[field.key] ?? "", (nextValue) =>
+                    setForm((current) => ({ ...current, [field.key]: nextValue })),
+                  )}
                 </div>
               ))}
-              <div className="space-y-1">
-                <Label className="text-xs">{`${t("siteConfig.pageSize")} (${t("common.optional")})`}</Label>
-                <Input
-                  type="number"
-                  value={form.page_size}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, page_size: e.target.value }))
+
+              <div className="space-y-1 md:col-span-2">
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    saveCopy.mutate({
+                      itemId: copy.id,
+                      data: buildCopyPayload(copy.page_key, form, copy.extras ?? {}),
+                    })
                   }
-                  />
+                  disabled={
+                    saveCopy.isPending ||
+                    !(form.title ?? "").trim() ||
+                    !(form.subtitle ?? "").trim()
+                  }
+                >
+                  <Save className="mr-1 h-3 w-3" />
+                  {t("siteConfig.saveCopy")}
+                </Button>
               </div>
-              {copy.page_key === "posts" && (
-                <>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{`${t("siteConfig.categoryAllLabel")} (${t("common.optional")})`}</Label>
-                    <Input
-                      value={form.category_all_label}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, category_all_label: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{`${t("siteConfig.categoryFallbackLabel")} (${t("common.optional")})`}</Label>
-                    <Input
-                      value={form.category_fallback_label}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, category_fallback_label: e.target.value }))
-                      }
-                    />
-                  </div>
-                </>
-              )}
-              <Button
-                size="sm"
-                onClick={() => saveCopy.mutate({
-                  itemId: copy.id,
-                  data: {
-                    title: form.title,
-                    description: form.description || null,
-                    empty_message: form.empty_message || null,
-                    page_size: form.page_size ? parseInt(form.page_size) : null,
-                    extras: copy.page_key === "posts"
-                      ? {
-                          ...(copy.extras ?? {}),
-                          category_all_label: form.category_all_label || null,
-                          category_fallback_label: form.category_fallback_label || null,
-                        }
-                      : copy.extras,
-                  },
-                })}
-                disabled={saveCopy.isPending}
-              >
-                <Save className="h-3 w-3 mr-1" /> {t("siteConfig.saveCopy")}
-              </Button>
             </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs">
-                  {t("siteConfig.settingsJson")}
-                </Label>
-                <Textarea
-                  value={settingsJson}
-                  onChange={(e) => setSettingsJson(e.target.value)}
-                  rows={8}
-                  className="font-mono text-xs"
-                />
-              </div>
+
+            <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+              <LabelWithHelp
+                label="高级显示设置 JSON"
+                title="页面开关之外的高级显示选项"
+                description="这里保留原始显示设置 JSON，适合维护当前还没有拆成单独表单字段的高级配置。当前常见用途包括列表页搜索开关、简历下载开关等。"
+                usageTitle="会影响这些位置"
+                usageItems={[
+                  "页面显示开关和高级布局选项",
+                  "尚未拆成独立字段的显示设置",
+                ]}
+              />
+              <Textarea
+                value={settingsJson}
+                onChange={(event) => setSettingsJson(event.target.value)}
+                rows={12}
+                className="font-mono text-xs"
+              />
               <Button
                 size="sm"
                 onClick={() => {
-                  const parsed = JSON.parse(settingsJson);
-                  if (display) {
-                    saveSettings.mutate({ itemId: display.id, data: { settings: parsed } });
-                  } else {
-                    createDisplayOpt.mutate({ data: { page_key: copy.page_key, settings: parsed } });
+                  try {
+                    const parsed = JSON.parse(settingsJson);
+                    if (display) {
+                      saveSettings.mutate({
+                        itemId: display.id,
+                        data: { settings: parsed },
+                      });
+                    } else {
+                      createDisplayOpt.mutate({
+                        data: { page_key: copy.page_key, settings: parsed },
+                      });
+                    }
+                  } catch {
+                    toast.error("显示设置 JSON 格式不正确");
                   }
                 }}
-                disabled={saveSettings.isPending}
+                disabled={saveSettings.isPending || createDisplayOpt.isPending}
               >
-                <Save className="h-3 w-3 mr-1" /> {t("siteConfig.saveSettings")}
+                <Save className="mr-1 h-3 w-3" />
+                {t("siteConfig.saveSettings")}
               </Button>
             </div>
           </div>

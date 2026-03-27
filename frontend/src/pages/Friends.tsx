@@ -4,13 +4,13 @@ import { ChevronDown, RefreshCw } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
-import { formatSiteCount, formatFriendCircleSubtitle } from "@/lib/format";
+import { formatSiteCount } from "@/lib/format";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { clampPageSize } from "@/lib/page-size";
 import {
-  useReadFriendFeedApiV1PublicFriendFeedGet,
-  useReadFriendsApiV1PublicFriendsGet,
-} from "@serino/api-client/public";
+  useReadFriendFeedApiV1SiteFriendFeedGet,
+  useReadFriendsApiV1SiteFriendsGet,
+} from "@serino/api-client/site";
 import { formatFriendFeedDate } from "@/lib/api/utils";
 import type { FriendRead, FriendFeedItemRead } from "@serino/api-client/models";
 
@@ -34,7 +34,17 @@ interface FriendsPageConfig extends BaseViewPageConfig {
   circleTitle?: string;
   statusLabel?: string;
   loadMoreLabel?: string;
+  summaryTemplate?: string;
+  footerSummaryTemplate?: string;
 }
+
+const interpolateSummary = (
+  template: string,
+  values: Record<string, number>,
+) =>
+  template.replace(/\{(sites|articles)\}/g, (_, key: "sites" | "articles") =>
+    String(values[key]),
+  );
 
 const toFriend = (value: FriendRead): Friend => ({
   name: value.name,
@@ -53,6 +63,15 @@ const toCirclePost = (value: FriendFeedItemRead): CirclePost => ({
 
 const Friends = () => {
   const config = usePageConfig().friends as unknown as FriendsPageConfig;
+  const circleTitle = config.circleTitle ?? "Friend Circle";
+  const statusLabel = config.statusLabel ?? "状态";
+  const loadingLabel = config.loadingLabel ?? "正在加载...";
+  const loadMoreLabel = config.loadMoreLabel ?? "加载更多";
+  const retryLabel = config.retryLabel ?? "重试";
+  const errorTitle = config.errorTitle ?? "友链页面加载失败";
+  const summaryTemplate = config.summaryTemplate ?? "{sites} 个站点 · 共 {articles} 条动态";
+  const footerSummaryTemplate =
+    config.footerSummaryTemplate ?? "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态";
   const pageSize = clampPageSize(config.pageSize, 10);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -64,14 +83,14 @@ const Friends = () => {
     isError: friendsError,
     error: friendsErr,
     refetch: refetchFriends,
-  } = useReadFriendsApiV1PublicFriendsGet();
+  } = useReadFriendsApiV1SiteFriendsGet();
   const {
     data: feedResponse,
     isLoading: feedLoading,
     isError: feedError,
     error: feedErr,
     refetch: refetchFeed,
-  } = useReadFriendFeedApiV1PublicFriendFeedGet();
+  } = useReadFriendFeedApiV1SiteFriendFeedGet();
 
   const friends = useMemo(
     () => (friendsResponse?.data?.items ?? []).map(toFriend).filter((item) => Boolean(item.name)),
@@ -202,15 +221,18 @@ const Friends = () => {
             : (
               <div className="col-span-full rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-8 text-center">
                 <p className="text-sm text-foreground/35">
-                  {status === "error" ? errorMessage || String(config.emptyMessage ?? "") : String(config.emptyMessage ?? "")}
+                  {status === "error" ? errorTitle : String(config.emptyMessage ?? "")}
                 </p>
+                {status === "error" ? (
+                  <p className="mt-2 text-xs text-foreground/25">{errorMessage}</p>
+                ) : null}
                 {status === "error" && (
                   <button
                     type="button"
                     onClick={() => refetchAll()}
                     className="mt-3 rounded-full liquid-glass px-4 py-2 text-xs font-medium text-foreground/70 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
                   >
-                    {String(config.retryLabel ?? "")}
+                    {retryLabel}
                   </button>
                 )}
               </div>
@@ -226,15 +248,18 @@ const Friends = () => {
       >
         <div className="mb-2 flex items-baseline justify-between">
           <h2 className="text-2xl font-heading italic tracking-tight text-foreground transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-3xl">
-            {String(config.circleTitle ?? "")}
+            {circleTitle}
           </h2>
           <div className="flex items-center gap-1.5 text-xs font-body text-foreground/25">
             <RefreshCw className={`h-3 w-3 ${status === "loading" ? "animate-spin" : ""}`} />
-            {String(config.statusLabel ?? "")}
+            {statusLabel}
           </div>
         </div>
         <p className="mb-8 text-xs font-body text-foreground/20">
-          {formatFriendCircleSubtitle(friends.length, allCirclePosts.length)}
+          {interpolateSummary(summaryTemplate, {
+            sites: friends.length,
+            articles: allCirclePosts.length,
+          })}
         </p>
       </motion.div>
 
@@ -307,7 +332,7 @@ const Friends = () => {
             <div className="mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-body text-foreground/25">
-                {status === "error" ? String(config.retryLabel ?? "") : String(config.emptyMessage ?? "")}
+                {status === "error" ? retryLabel : String(config.emptyMessage ?? "")}
               </p>
               <p className="mt-0.5 line-clamp-2 text-[15px] font-body font-medium leading-snug text-foreground/35">
                 {status === "error"
@@ -318,10 +343,10 @@ const Friends = () => {
             {status === "error" ? (
             <button
               type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
+              onClick={() => refetchAll()}
               className="mt-1 shrink-0 rounded-full liquid-glass px-3 py-1.5 text-[11px] font-medium text-foreground/55 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
             >
-              {String(config.retryLabel ?? "")}
+              {retryLabel}
             </button>
             ) : (
               <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20">
@@ -343,12 +368,12 @@ const Friends = () => {
             {loadingMore ? (
               <>
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                {String(config.loadingLabel ?? "")}
+                {loadingLabel}
               </>
             ) : (
               <>
                 <ChevronDown className="h-3.5 w-3.5" />
-                {String(config.loadMoreLabel ?? "")}
+                {loadMoreLabel}
               </>
             )}
           </button>
@@ -357,7 +382,10 @@ const Friends = () => {
 
       {!hasMore && status === "ready" && (
         <p className="mt-8 text-center text-xs font-body text-foreground/15">
-          {friends.length} links with {friends.length} active · {allCirclePosts.length} articles in total
+          {interpolateSummary(footerSummaryTemplate, {
+            sites: friends.length,
+            articles: allCirclePosts.length,
+          })}
         </p>
       )}
     </PageShell>

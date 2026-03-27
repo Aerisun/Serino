@@ -17,35 +17,38 @@ import {
   listExcerpts,
 } from "@serino/api-client/admin";
 import type {
-  ListCommentsApiV1AdminModerationCommentsGetParams,
-  ListGuestbookApiV1AdminModerationGuestbookGetParams,
   CommentAdminRead,
+  ContentAdminRead,
   GuestbookAdminRead,
   ModerateAction,
 } from "@serino/api-client/models";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
+import type { ListCommentsApiV1AdminModerationCommentsGetParams } from "../../../../packages/api-client/src/generated/model/listCommentsApiV1AdminModerationCommentsGetParams";
+import type { ListGuestbookApiV1AdminModerationGuestbookGetParams } from "../../../../packages/api-client/src/generated/model/listGuestbookApiV1AdminModerationGuestbookGetParams";
+import { cn, formatDate } from "@/lib/utils";
+import { Tabs, TabsContent } from "@/components/ui/Tabs";
+import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { DataTable } from "@/components/DataTable";
-import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
+import { DataTable } from "@/components/DataTable";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
-import { cn, formatDate } from "@/lib/utils";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import {
   Check,
   History,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -57,6 +60,7 @@ import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 type ModerationRecord = CommentAdminRead | GuestbookAdminRead;
 type ModerationKind = "comments" | "guestbook";
 type ModerationListParams = ListCommentsApiV1AdminModerationCommentsGetParams & ListGuestbookApiV1AdminModerationGuestbookGetParams;
+type ModerationAuthProvider = "email" | "google" | "github";
 
 const envApiBaseUrl =
   (typeof __AERISUN_API_BASE_URL__ === "string" ? __AERISUN_API_BASE_URL__ : "").replace(
@@ -67,12 +71,76 @@ const envApiBaseUrl =
 /* slug → title cache, populated by useContentTitles */
 type TitleMap = Map<string, string>;
 
+type ContentLookupType = "posts" | "diary" | "thoughts" | "excerpts";
+
+const MODERATION_CONTENT_TYPE_MAP: Record<string, ContentLookupType> = {
+  post: "posts",
+  posts: "posts",
+  diary: "diary",
+  thought: "thoughts",
+  thoughts: "thoughts",
+  excerpt: "excerpts",
+  excerpts: "excerpts",
+};
+
+function safeDecodePathSegment(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeModerationSlugForMatch(slug: string) {
+  return safeDecodePathSegment(slug).trim().replace(/\s+/g, "-").toLowerCase();
+}
+
+function getModerationSlugSearchTerms(slug: string) {
+  const decoded = safeDecodePathSegment(slug).trim();
+  const hyphenated = decoded.replace(/\s+/g, "-");
+  const spaced = decoded.replace(/[-_]+/g, " ");
+
+  return Array.from(
+    new Set([slug.trim(), decoded, hyphenated, spaced].filter(Boolean)),
+  );
+}
+
+function formatModerationSlugFallback(slug: string) {
+  const formatted = safeDecodePathSegment(slug).trim().replace(/[-_]+/g, " ");
+  return formatted || slug;
+}
+
+function getModerationContentType(contentType: string | undefined) {
+  if (!contentType) return null;
+  return MODERATION_CONTENT_TYPE_MAP[contentType] ?? null;
+}
+
+function getTitleCacheKey(contentType: ContentLookupType, slug: string) {
+  return `${contentType}/${normalizeModerationSlugForMatch(slug)}`;
+}
+
+function getModerationContentTarget(item: ModerationRecord) {
+  if (!("content_type" in item) || !item.content_type || !item.content_slug) {
+    return null;
+  }
+
+  const contentType = getModerationContentType(item.content_type);
+  if (!contentType) {
+    return null;
+  }
+
+  return {
+    contentType,
+    slug: item.content_slug,
+  };
+}
+
 const contentListFns: Record<
-  string,
+  ContentLookupType,
   (p: {
     search: string;
     page_size: number;
-  }) => Promise<any>
+  }) => Promise<{ data?: { items?: ContentAdminRead[] } }>
 > = {
   posts: (p) => listPosts(p) as any,
   diary: (p) => listDiary(p) as any,
@@ -86,29 +154,43 @@ function useContentTitles(items: ModerationRecord[]): TitleMap {
   const cacheRef = useRef<TitleMap>(new Map());
 
   useEffect(() => {
-    const pairs = new Map<string, Set<string>>();
+    const targetsByType = new Map<ContentLookupType, Map<string, string>>();
+
     for (const item of items) {
-      const type = "content_type" in item ? item.content_type : null;
-      const slug = "content_slug" in item ? item.content_slug : null;
-      if (!type || !slug || cacheRef.current.has(`${type}/${slug}`)) continue;
-      const set = pairs.get(type) ?? new Set();
-      set.add(slug);
-      pairs.set(type, set);
+      const target = getModerationContentTarget(item);
+      if (!target) continue;
+
+      const cacheKey = getTitleCacheKey(target.contentType, target.slug);
+      if (cacheRef.current.has(cacheKey)) continue;
+
+      const bucket = targetsByType.get(target.contentType) ?? new Map<string, string>();
+      bucket.set(cacheKey, target.slug);
+      targetsByType.set(target.contentType, bucket);
     }
-    if (pairs.size === 0) return;
+
+    if (targetsByType.size === 0) return;
 
     let cancelled = false;
     (async () => {
-      for (const [type, slugs] of pairs) {
+      for (const [type, targets] of targetsByType) {
         const listFn = contentListFns[type];
-        if (!listFn) continue;
-        for (const slug of slugs) {
-          try {
-            const res = await listFn({ search: slug, page_size: 5 });
-            const match = res.items.find((c) => c.slug === slug);
-            if (match) cacheRef.current.set(`${type}/${slug}`, match.title);
-          } catch {
-            /* ignore */
+        for (const [cacheKey, slug] of targets) {
+          const searchTerms = getModerationSlugSearchTerms(slug);
+
+          for (const term of searchTerms) {
+            try {
+              const response = await listFn({ search: term, page_size: 10 });
+              const entries = response.data?.items ?? [];
+              const match = entries.find(
+                (entry) => getTitleCacheKey(type, entry.slug) === cacheKey,
+              );
+              if (match?.title) {
+                cacheRef.current.set(cacheKey, match.title);
+                break;
+              }
+            } catch {
+              /* ignore */
+            }
           }
         }
       }
@@ -159,7 +241,7 @@ const COMMENT_SURFACE_OPTIONS = [
 ] as const;
 const GUESTBOOK_SURFACE_OPTIONS = ["", "guestbook"] as const;
 const STATUS_OPTIONS = ["", "pending", "approved", "rejected"] as const;
-const SORT_OPTIONS = ["created_desc", "created_asc", "status", "path"] as const;
+const SORT_OPTIONS = ["created_desc", "created_asc"] as const;
 
 function resolveModerationMediaSrc(src?: string) {
   if (!src) return src;
@@ -272,8 +354,9 @@ function getModerationBody(item: ModerationRecord) {
 
 function getModerationSource(item: ModerationRecord, lang: "zh" | "en" = "zh") {
   if ("source" in item && item.source) return item.source;
-  if ("content_type" in item && item.content_type) {
-    return optionLabel(PAGE_KEY_LABELS, item.content_type, lang);
+  const target = getModerationContentTarget(item);
+  if (target) {
+    return optionLabel(PAGE_KEY_LABELS, target.contentType, lang);
   }
   if ("website" in item) return optionLabel(PAGE_KEY_LABELS, "guestbook", lang);
   return "-";
@@ -284,32 +367,18 @@ function getModerationPath(
   lang: "zh" | "en" = "zh",
   titleMap?: TitleMap,
 ) {
-  let raw = "";
-  let type = "";
-  let slug = "";
-  if ("content_type" in item && item.content_type && item.content_slug) {
-    type = item.content_type;
-    slug = item.content_slug;
-    raw = `/${type}/${slug}`;
-  } else if ("path" in item && item.path) {
-    raw = item.path;
-    const m = raw.match(/^\/?([^/]+)\/(.+)$/);
-    if (m) {
-      type = m[1];
-      slug = m[2];
-    }
-  } else if ("website" in item) {
-    raw = "/guestbook";
+  const target = getModerationContentTarget(item);
+  if (target) {
+    const category = optionLabel(PAGE_KEY_LABELS, target.contentType, lang);
+    const title = titleMap?.get(getTitleCacheKey(target.contentType, target.slug));
+    return `${category} / ${title ?? formatModerationSlugFallback(target.slug)}`;
   }
-  if (!raw) return "-";
 
-  if (type && slug) {
-    const category = optionLabel(PAGE_KEY_LABELS, type, lang);
-    const title = titleMap?.get(`${type}/${slug}`);
-    return `${category} / ${title ?? slug.replace(/-/g, " ")}`;
+  if ("website" in item) {
+    return optionLabel(PAGE_KEY_LABELS, "guestbook", lang);
   }
-  const single = raw.replace(/^\//, "");
-  return optionLabel(PAGE_KEY_LABELS, single, lang);
+
+  return "-";
 }
 
 function getModerationEmail(item: ModerationRecord) {
@@ -319,9 +388,45 @@ function getModerationEmail(item: ModerationRecord) {
   return "-";
 }
 
+function getModerationAuthProvider(item: ModerationRecord): ModerationAuthProvider | null {
+  const provider = "auth_provider" in item ? item.auth_provider : null;
+  if (provider === "email" || provider === "google" || provider === "github") {
+    return provider;
+  }
+  return getModerationEmail(item) === "-" ? null : "email";
+}
+
+function getModerationAuthFieldLabel(lang: "zh" | "en" = "zh") {
+  return lang === "en" ? "Authentication" : "认证方式";
+}
+
+function getModerationAuthProviderLabel(
+  provider: ModerationAuthProvider | null,
+  lang: "zh" | "en" = "zh",
+) {
+  if (provider === "google") return "Google";
+  if (provider === "github") return "GitHub";
+  if (provider === "email") return lang === "en" ? "Email" : "邮箱";
+  return "-";
+}
+
+function getModerationAuthDisplay(
+  item: ModerationRecord,
+  lang: "zh" | "en" = "zh",
+) {
+  const email = getModerationEmail(item);
+  const provider = getModerationAuthProvider(item);
+  if (!provider && email === "-") return "-";
+
+  const providerLabel = getModerationAuthProviderLabel(provider, lang);
+  if (email === "-") return providerLabel;
+  return `${providerLabel} · ${email}`;
+}
+
 function getModerationSurface(item: ModerationRecord) {
   if ("page_key" in item && item.page_key) return item.page_key;
-  if ("content_type" in item && item.content_type) return item.content_type;
+  const target = getModerationContentTarget(item);
+  if (target) return target.contentType;
   if ("website" in item) return "guestbook";
   return "-";
 }
@@ -416,8 +521,10 @@ function ModerationHistory({
           <dd>{getModerationAuthor(item, t("moderation.guest"))}</dd>
         </div>
         <div className="space-y-1">
-          <dt className="text-muted-foreground">{t("common.email")}</dt>
-          <dd>{getModerationEmail(item)}</dd>
+          <dt className="text-muted-foreground">
+            {getModerationAuthFieldLabel(lang)}
+          </dt>
+          <dd>{getModerationAuthDisplay(item, lang)}</dd>
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground">{t("moderation.updated")}</dt>
@@ -518,51 +625,38 @@ function ModerationStats({
     {
       label: t("moderation.statTotal"),
       value: total,
-      tone: "default" as const,
+      className: "border-border/35 bg-background/70 text-foreground",
     },
     {
       label: t("moderation.statPending"),
       value: counts.pending,
-      tone: "warning" as const,
+      className: "border-amber-500/18 bg-amber-500/[0.08] text-amber-700 dark:text-amber-200",
     },
     {
       label: t("moderation.statApproved"),
       value: counts.approved,
-      tone: "success" as const,
+      className: "border-emerald-500/18 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-200",
     },
     {
       label: t("moderation.statRejected"),
       value: counts.rejected,
-      tone: "destructive" as const,
+      className: "border-rose-500/18 bg-rose-500/[0.08] text-rose-700 dark:text-rose-200",
     },
   ];
 
   return (
-    <div className="grid gap-2.5 grid-cols-2 xl:grid-cols-4">
+    <div className="flex flex-wrap items-center gap-2">
       {cards.map((card) => (
-        <div
+        <span
           key={card.label}
           className={cn(
-            "rounded-2xl border border-border/45 bg-background/45 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-sm",
-            card.tone === "success" && "border-emerald-500/20 bg-emerald-500/[0.05]",
-            card.tone === "warning" && "border-amber-500/20 bg-amber-500/[0.05]",
-            card.tone === "destructive" && "border-rose-500/20 bg-rose-500/[0.05]",
+            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+            card.className,
           )}
         >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground/85">
-                {card.label}
-              </p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight">
-                {card.value}
-              </p>
-            </div>
-            <Badge variant={card.tone} className="shrink-0">
-              {card.label}
-            </Badge>
-          </div>
-        </div>
+          <span className="text-muted-foreground/80">{card.label}</span>
+          <span className="font-semibold tabular-nums">{card.value}</span>
+        </span>
       ))}
     </div>
   );
@@ -571,8 +665,6 @@ function ModerationStats({
 const SORT_LABELS: Record<string, string> = {
   created_desc: "最新优先",
   created_asc: "最早优先",
-  status: "按状态",
-  path: "按路径",
 };
 
 function FiltersBar({
@@ -588,9 +680,10 @@ function FiltersBar({
   onApply: () => void;
   onReset: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const surfaceOptions =
     kind === "comments" ? COMMENT_SURFACE_OPTIONS : GUESTBOOK_SURFACE_OPTIONS;
+  const [open, setOpen] = useState(false);
 
   const activeCount = [
     filters.keyword,
@@ -604,6 +697,33 @@ function FiltersBar({
   const update = (key: keyof ModerationFilters, value: string) => {
     setFilters({ ...filters, [key]: value });
   };
+
+  const summaryItems = [
+    filters.keyword
+      ? { label: t("moderation.searchKeyword"), value: filters.keyword }
+      : null,
+    filters.author
+      ? { label: t("moderation.searchAuthor"), value: filters.author }
+      : null,
+    filters.email
+      ? { label: t("moderation.searchEmail"), value: filters.email }
+      : null,
+    filters.path
+      ? { label: t("moderation.searchPath"), value: filters.path }
+      : null,
+    filters.surface
+      ? {
+          label: t("moderation.searchSurface"),
+          value: optionLabel(PAGE_KEY_LABELS, filters.surface, lang),
+        }
+      : null,
+    filters.status
+      ? {
+          label: t("moderation.searchStatus"),
+          value: t(`status.${filters.status}`),
+        }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   const renderSelect = (
     label: string,
@@ -630,121 +750,193 @@ function FiltersBar({
   );
 
   return (
-    <CollapsibleSection
-      title={t("moderation.searchTitle")}
-      defaultOpen={false}
-      badge={activeCount > 0 ? `${activeCount}` : undefined}
-      className="rounded-2xl border border-border/40 bg-muted/[0.16] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-    >
-      <div className="space-y-4">
-        <p className="text-xs text-muted-foreground">
-          只保留真正需要的筛选条件，避免审核页过重。
-        </p>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onApply();
-          }}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setOpen(true)}
+          className="h-9 rounded-full border-border/45 bg-background/70 px-3.5 shadow-none"
         >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-1.5">
-              <Label>{t("moderation.searchKeyword")}</Label>
-              <Input
-                value={filters.keyword}
-                onChange={(e) => update("keyword", e.target.value)}
-                placeholder={t("common.search")}
-                className="border-border/45 bg-background/70"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("moderation.searchAuthor")}</Label>
-              <Input
-                value={filters.author}
-                onChange={(e) => update("author", e.target.value)}
-                placeholder={t("common.author")}
-                className="border-border/45 bg-background/70"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("moderation.searchEmail")}</Label>
-              <Input
-                value={filters.email}
-                onChange={(e) => update("email", e.target.value)}
-                placeholder="mail@example.com"
-                className="border-border/45 bg-background/70"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("moderation.searchPath")}</Label>
-              <Input
-                value={filters.path}
-                onChange={(e) => update("path", e.target.value)}
-                placeholder="/posts/slug"
-                className="border-border/45 bg-background/70"
-              />
-            </div>
-            {renderSelect(
-              t("moderation.searchSurface"),
-              filters.surface,
-              (nextValue) => update("surface", nextValue),
-              surfaceOptions.filter(Boolean).map((option) => ({
-                value: option,
-                label: option || t("common.all"),
-              })),
-            )}
-            {renderSelect(
-              t("moderation.searchStatus"),
-              filters.status,
-              (nextValue) => update("status", nextValue),
-              STATUS_OPTIONS.filter(Boolean).map((option) => ({
-                value: option,
-                label: option || t("common.all"),
-              })),
-            )}
-            {renderSelect(
-              t("moderation.searchSort"),
-              filters.sort,
-              (nextValue) => update("sort", nextValue),
-              SORT_OPTIONS.map((option) => ({
-                value: option,
-                label: SORT_LABELS[option] ?? option,
-              })),
-            )}
-          </div>
+          <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+          {t("moderation.searchTitle")}
+          {activeCount > 0 ? (
+            <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/12 px-1.5 text-[11px] font-semibold text-primary">
+              {activeCount}
+            </span>
+          ) : null}
+        </Button>
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" size="sm" className="rounded-xl">
-              <Search className="mr-1.5 h-3.5 w-3.5" />
-              {t("moderation.searchApply")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-border/45 bg-background/50"
-              onClick={onReset}
+        {summaryItems.length > 0 ? (
+          summaryItems.map((item) => (
+            <span
+              key={`${item.label}-${item.value}`}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/35 bg-background/70 px-3 py-1.5 text-xs text-foreground/88"
             >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-              {t("moderation.searchReset")}
-            </Button>
-          </div>
-        </form>
+              <span className="text-muted-foreground/75">{item.label}</span>
+              <span className="truncate font-medium">{item.value}</span>
+            </span>
+          ))
+        ) : (
+          <span className="inline-flex items-center rounded-full border border-dashed border-border/45 bg-background/56 px-3 py-1.5 text-xs text-muted-foreground">
+            当前显示全部项目
+          </span>
+        )}
+
+        <span className="inline-flex items-center rounded-full border border-border/35 bg-background/56 px-3 py-1.5 text-xs text-muted-foreground">
+          排序 · {SORT_LABELS[filters.sort] ?? filters.sort}
+        </span>
+
+        {activeCount > 0 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 rounded-full px-3 text-xs"
+            onClick={onReset}
+          >
+            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+            {t("moderation.searchReset")}
+          </Button>
+        ) : null}
       </div>
-    </CollapsibleSection>
+
+      <DialogContent className="max-w-4xl rounded-[28px] border border-border/35 p-0">
+        <div className="border-b border-border/25 px-6 py-5">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-xl font-semibold tracking-tight">
+              {t("moderation.searchTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6">
+              只保留关键词、作者、邮箱、路径、评论面、状态和排序。
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        <div className="overflow-hidden">
+          <form
+            className="space-y-6 px-6 py-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onApply();
+              setOpen(false);
+            }}
+          >
+            <div className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>{t("moderation.searchKeyword")}</Label>
+                  <Input
+                    value={filters.keyword}
+                    onChange={(e) => update("keyword", e.target.value)}
+                    placeholder={t("common.search")}
+                    className="border-border/45 bg-background/70"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("moderation.searchAuthor")}</Label>
+                  <Input
+                    value={filters.author}
+                    onChange={(e) => update("author", e.target.value)}
+                    placeholder={t("common.author")}
+                    className="border-border/45 bg-background/70"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("moderation.searchEmail")}</Label>
+                  <Input
+                    value={filters.email}
+                    onChange={(e) => update("email", e.target.value)}
+                    placeholder="mail@example.com"
+                    className="border-border/45 bg-background/70"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("moderation.searchPath")}</Label>
+                  <Input
+                    value={filters.path}
+                    onChange={(e) => update("path", e.target.value)}
+                    placeholder="/posts/slug"
+                    className="border-border/45 bg-background/70"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {renderSelect(
+                  t("moderation.searchSurface"),
+                  filters.surface,
+                  (nextValue) => update("surface", nextValue),
+                  surfaceOptions.filter(Boolean).map((option) => ({
+                    value: option,
+                    label: optionLabel(PAGE_KEY_LABELS, option, lang),
+                  })),
+                )}
+                {renderSelect(
+                  t("moderation.searchStatus"),
+                  filters.status,
+                  (nextValue) => update("status", nextValue),
+                  STATUS_OPTIONS.filter(Boolean).map((option) => ({
+                    value: option,
+                    label: t(`status.${option}`),
+                  })),
+                )}
+                {renderSelect(
+                  t("moderation.searchSort"),
+                  filters.sort,
+                  (nextValue) => update("sort", nextValue),
+                  SORT_OPTIONS.map((option) => ({
+                    value: option,
+                    label: SORT_LABELS[option] ?? option,
+                  })),
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-border/25 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                当前排序:
+                <span className="ml-1 font-medium text-foreground">
+                  {SORT_LABELS[filters.sort] ?? filters.sort}
+                </span>
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-border/45 bg-background/50 px-4"
+                  onClick={() => {
+                    onReset();
+                    setOpen(false);
+                  }}
+                >
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                  {t("moderation.searchReset")}
+                </Button>
+                <Button type="submit" size="sm" className="rounded-full px-4">
+                  <Search className="mr-1.5 h-3.5 w-3.5" />
+                  {t("moderation.searchApply")}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function ModerationQueue({
   kind,
-  title,
   description,
   loadItems,
   moderateItem,
   queryKeyFn,
 }: {
   kind: ModerationKind;
-  title: string;
   loadItems: (
     params: ModerationListParams,
   ) => Promise<any>;
@@ -872,27 +1064,22 @@ function ModerationQueue({
   return (
     <div className="mt-4 space-y-5">
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold tracking-[0.01em]">{title}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("moderation.currentPage")} {page}
-            </p>
+        <div className="rounded-2xl border border-border/30 bg-background/55 px-3 py-3 backdrop-blur-sm">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <FiltersBar
+              kind={kind}
+              filters={draft}
+              setFilters={setDraft}
+              onApply={applyFilters}
+              onReset={resetFilters}
+            />
+            <ModerationStats total={total} items={items} />
           </div>
         </div>
-        <ModerationStats total={total} items={items} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
         <div className="space-y-4">
-          <FiltersBar
-            kind={kind}
-            filters={draft}
-            setFilters={setDraft}
-            onApply={applyFilters}
-            onReset={resetFilters}
-          />
-
           <ConfirmDialog
             open={deleteTargetId !== null}
             onConfirm={() => {
@@ -951,16 +1138,6 @@ function ModerationQueue({
                 >
                   <X className="mr-1 h-3.5 w-3.5" />
                   {t("moderation.bulkReject")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => void runBulkAction("delete")}
-                  disabled={moderate.isPending || bulkPending || !selectedIds.length}
-                >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />
-                  {t("moderation.bulkDelete")}
                 </Button>
               </div>
             </div>
@@ -1067,7 +1244,7 @@ function ModerationQueue({
         </div>
 
         <div className="xl:sticky xl:top-6">
-          <Card className="rounded-3xl border border-border/35 bg-gradient-to-b from-background via-background to-muted/20 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.6)] backdrop-blur-sm">
+          <Card className="overflow-hidden rounded-3xl border border-border/35 bg-gradient-to-b from-background via-background to-muted/20 shadow-[0_22px_54px_-40px_rgba(15,23,42,0.6)] backdrop-blur-sm">
             <CardContent className="space-y-4 pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -1101,35 +1278,46 @@ function ModerationQueue({
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                    <div className="rounded-2xl border border-border/30 bg-background/65 px-3 py-3">
-                      <dt className="text-muted-foreground">
-                        {t("moderation.path")}
-                      </dt>
-                      <dd className="mt-1 break-all text-foreground/90">
-                        {getModerationPath(selectedItem, lang, titleMap)}
-                      </dd>
-                    </div>
-                    <div className="rounded-2xl border border-border/30 bg-background/65 px-3 py-3">
-                      <dt className="text-muted-foreground">{t("common.email")}</dt>
-                      <dd className="mt-1 text-foreground/90">
-                        {getModerationEmail(selectedItem)}
-                      </dd>
-                    </div>
-                    <div className="rounded-2xl border border-border/30 bg-background/65 px-3 py-3 sm:col-span-2">
-                      <dt className="text-muted-foreground">
-                        {t("moderation.updated")}
-                      </dt>
-                      <dd className="mt-1 text-foreground/90">
-                        {formatDate(selectedItem.updated_at)}
-                      </dd>
+                  <div className="rounded-2xl border border-border/30 bg-background/65 p-4 text-sm">
+                    <dl className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <dt className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
+                          {t("moderation.path")}
+                        </dt>
+                        <dd className="break-all text-foreground/90">
+                          {getModerationPath(selectedItem, lang, titleMap)}
+                        </dd>
+                      </div>
+                      <div className="space-y-1">
+                        <dt className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
+                          {getModerationAuthFieldLabel(lang)}
+                        </dt>
+                        <dd className="text-foreground/90">
+                          {getModerationAuthDisplay(selectedItem, lang)}
+                        </dd>
+                      </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <dt className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
+                          {t("moderation.updated")}
+                        </dt>
+                        <dd className="text-foreground/90">
+                          {formatDate(selectedItem.updated_at)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/30 bg-background/65 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                      真实页面预览
+                    </p>
+                    <div className="mt-3">
+                      <ModerationBodyPreview content={getModerationBody(selectedItem)} />
                     </div>
                   </div>
 
-                  <ModerationBodyPreview content={getModerationBody(selectedItem)} />
-
                   {activeThread.length > 0 && (
-                    <div className="space-y-2 pt-1">
+                    <div className="space-y-2 rounded-2xl border border-border/30 bg-background/65 p-4">
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <History className="h-4 w-4" />
                         {t("moderation.thread")}
@@ -1169,44 +1357,35 @@ export default function ModerationPage() {
       className="space-y-0"
     >
       <div className="mb-6 rounded-3xl border border-border/35 bg-gradient-to-br from-muted/25 via-background to-background px-5 py-5 shadow-[0_22px_60px_-46px_rgba(15,23,42,0.55)]">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground/70">
-              {t("moderation.title")}
-            </p>
-            <h1 className="text-[2.15rem] font-semibold tracking-tight">
-              {t("moderation.title")}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {t("moderation.description")}
-            </p>
-          </div>
-          <TabsList className="inline-flex h-12 items-center self-start rounded-2xl border border-border/45 bg-background/75 p-1.5 text-muted-foreground shadow-[0_16px_40px_-26px_rgba(15,23,42,0.55)] backdrop-blur-sm md:self-auto">
-            <TabsTrigger
-              value="comments"
-              className="group h-9 rounded-xl border border-transparent px-4 text-sm font-medium tracking-[0.01em] transition-all data-[state=active]:border-transparent data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-[0_10px_24px_rgba(15,23,42,0.18),0_0_0_1px_rgba(56,189,248,0.38),0_0_0_3px_rgba(45,212,191,0.18)]"
-            >
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-current/70 opacity-70 group-data-[state=active]:opacity-100" />
-                {t("moderation.comments")}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="guestbook"
-              className="group h-9 rounded-xl border border-transparent px-4 text-sm font-medium tracking-[0.01em] transition-all data-[state=active]:border-transparent data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-[0_10px_24px_rgba(15,23,42,0.18),0_0_0_1px_rgba(56,189,248,0.38),0_0_0_3px_rgba(45,212,191,0.18)]"
-            >
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-current/70 opacity-70 group-data-[state=active]:opacity-100" />
-                {t("moderation.guestbook")}
-              </span>
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground/70">
+            {t("moderation.title")}
+          </p>
+          <h1 className="text-[2.15rem] font-semibold tracking-tight">
+            {t("moderation.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {t("moderation.description")}
+          </p>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <AdminSegmentedFilter
+          value={activeTab}
+          onValueChange={(value) =>
+            setActiveTab(value === "guestbook" ? "guestbook" : "comments")
+          }
+          items={[
+            { value: "comments", label: t("moderation.comments") },
+            { value: "guestbook", label: t("moderation.guestbook") },
+          ]}
+          placement="below-header"
+        />
       </div>
       <TabsContent value="comments">
         <ModerationQueue
           kind="comments"
-          title={t("moderation.comments")}
           loadItems={(params) =>
             listCommentsApiV1AdminModerationCommentsGet(params) as Promise<any>
           }
@@ -1219,7 +1398,6 @@ export default function ModerationPage() {
       <TabsContent value="guestbook">
         <ModerationQueue
           kind="guestbook"
-          title={t("moderation.guestbook")}
           loadItems={(params) =>
             listGuestbookApiV1AdminModerationGuestbookGet(params) as Promise<any>
           }

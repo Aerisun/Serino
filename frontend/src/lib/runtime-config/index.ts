@@ -1,8 +1,8 @@
 import {
-  readSiteConfigApiV1PublicSiteGet,
-  readPageCopyApiV1PublicPagesGet,
-  readResumeApiV1PublicResumeGet,
-} from "@serino/api-client/public";
+  readSiteConfigApiV1SiteSiteGet,
+  readPageCopyApiV1SitePagesGet,
+  readResumeApiV1SiteResumeGet,
+} from "@serino/api-client/site";
 import { clampPageSize } from "@/lib/page-size";
 
 // ---------------------------------------------------------------------------
@@ -27,6 +27,7 @@ type BackendSiteResponse = {
     role: string;
     author: string;
     og_image: string;
+    site_icon_url?: string;
     hero_image_url: string;
     hero_poster_url: string;
     meta_description: string;
@@ -66,7 +67,9 @@ type BackendSiteResponse = {
 type BackendPageCopyItem = {
   page_key: string;
   title: string;
+  subtitle: string;
   description?: string | null;
+  search_placeholder?: string | null;
   empty_message?: string | null;
   max_width?: string | null;
   page_size?: number | null;
@@ -165,6 +168,7 @@ export interface RuntimeConfigSnapshot {
     role: string;
     author: string;
     ogImage: string;
+    siteIconUrl: string;
     heroImageUrl: string;
     heroPosterUrl: string;
     metaDescription: string;
@@ -262,6 +266,7 @@ const normalizeSiteConfig = (
     role: payload.site.role,
     author: payload.site.author,
     ogImage: payload.site.og_image,
+    siteIconUrl: payload.site.site_icon_url ?? "",
     heroImageUrl: payload.site.hero_image_url,
     heroPosterUrl: payload.site.hero_poster_url,
     metaDescription: payload.site.meta_description,
@@ -306,7 +311,12 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
 
     const page: PageConfig = {
       title: item.title,
-      description: item.description ?? undefined,
+      description: item.subtitle ?? item.description ?? undefined,
+      metaDescription:
+        typeof item.extras?.metaDescription === "string" ? item.extras.metaDescription : undefined,
+      metaTitle:
+        typeof item.extras?.metaTitle === "string" ? item.extras.metaTitle : undefined,
+      searchPlaceholder: item.search_placeholder ?? undefined,
       emptyMessage: item.empty_message ?? undefined,
       width: widthFromApi ?? defaults?.width,
       pageSize: clampPageSize(item.page_size, defaults?.pageSize ?? 20),
@@ -341,7 +351,9 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
           key !== "category_all_label" &&
           key !== "category_fallback_label" &&
           key !== "circle_title" &&
-          key !== "eyebrow"
+          key !== "eyebrow" &&
+          key !== "metaTitle" &&
+          key !== "metaDescription"
         ) {
           page[key] = value;
         }
@@ -400,9 +412,9 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
 // ---------------------------------------------------------------------------
 export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
   const [siteResponse, pagesResponse, resumeResponse] = await Promise.all([
-    readSiteConfigApiV1PublicSiteGet(),
-    readPageCopyApiV1PublicPagesGet(),
-    readResumeApiV1PublicResumeGet(),
+    readSiteConfigApiV1SiteSiteGet(),
+    readPageCopyApiV1SitePagesGet(),
+    readResumeApiV1SiteResumeGet(),
   ]);
 
   const site = siteResponse.data as unknown as BackendSiteResponse;

@@ -12,9 +12,9 @@ interface SummaryMetricCardProps {
 
 const toneClasses: Record<NonNullable<SummaryMetricCardProps["tone"]>, string> = {
   default:
-    "border-black/5 bg-white/46 text-foreground/90 shadow-none dark:border-white/10 dark:bg-white/[0.028]",
+    "border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.46)] text-foreground/90 shadow-none dark:bg-white/[0.03]",
   accent:
-    "border-[rgb(var(--shiro-border-rgb,185_194_211)/0.42)] bg-[rgb(var(--shiro-panel-rgb,239_248_249)/0.46)] text-foreground/90 shadow-none dark:border-[rgb(var(--shiro-border-rgb,109_69_79)/0.38)] dark:bg-[rgb(var(--shiro-panel-rgb,52_40_49)/0.24)]",
+    "border-[rgb(var(--admin-accent-rgb)/0.22)] bg-[linear-gradient(135deg,rgb(var(--admin-accent-rgb)/0.12),rgb(var(--admin-glow-rgb)/0.08))] text-foreground/92 shadow-[0_18px_46px_-28px_rgb(var(--admin-accent-rgb)/0.55)]",
   warning:
     "border-amber-200/70 bg-amber-50/68 text-amber-950 shadow-none dark:border-amber-400/20 dark:bg-amber-500/8 dark:text-amber-100",
 };
@@ -32,8 +32,9 @@ export function SummaryMetricCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-[22px] border p-4 transition-colors duration-200",
+        "admin-transition-fast group relative overflow-hidden rounded-[var(--admin-radius-lg)] border p-4 transition-[background-color,border-color,color,box-shadow,transform]",
         toneClasses[tone],
+        "hover:bg-[rgb(var(--admin-surface-1)/0.66)] dark:hover:bg-white/[0.05]",
         className,
       )}
     >
@@ -44,7 +45,7 @@ export function SummaryMetricCard({
           {hint ? <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{hint}</p> : null}
         </div>
         <div className="rounded-full border border-black/5 bg-white/70 p-2 dark:border-white/10 dark:bg-white/[0.04]">
-          <Icon className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.82)]" />
+          <Icon className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
         </div>
       </div>
     </div>

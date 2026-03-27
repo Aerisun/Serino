@@ -7,7 +7,7 @@ import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
-import { readExcerptsApiV1PublicExcerptsGet } from "@serino/api-client/public";
+import { readExcerptsApiV1SiteExcerptsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
@@ -25,6 +25,8 @@ interface Excerpt {
 
 interface ExcerptsPageConfig extends BaseViewPageConfig {
   modalCloseLabel?: string;
+  commentsOpenLabel?: string;
+  commentsCloseLabel?: string;
 }
 
 const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
@@ -42,13 +44,19 @@ const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
 
 const Excerpts = () => {
   const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
+  const errorTitle = config.errorTitle ?? "文摘加载失败";
+  const retryLabel = config.retryLabel ?? "重试";
+  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
+  const closeLabel = config.modalCloseLabel ?? "关闭";
+  const commentsOpenLabel = config.commentsOpenLabel ?? "查看评论";
+  const commentsCloseLabel = config.commentsCloseLabel ?? "收起评论";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const pageSize = clampPageSize(config.pageSize, 40);
   const [showModalComments, setShowModalComments] = useState(false);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
-    queryKey: ["public", "excerpts"],
-    queryFn: (p) => readExcerptsApiV1PublicExcerptsGet(p).then(r => r.data),
+    queryKey: ["site", "excerpts"],
+    queryFn: (p) => readExcerptsApiV1SiteExcerptsGet(p).then(r => r.data),
     pageSize,
     mapItem: mapRemoteExcerpt,
   });
@@ -98,7 +106,7 @@ const Excerpts = () => {
               </span>
             </div>
             <h3 className="text-base font-body font-medium leading-snug text-foreground/70 transition-colors">
-              文摘加载失败
+              {errorTitle}
             </h3>
             <p className="mt-2 text-[12px] font-body leading-relaxed text-foreground/30">
               {errorMessage}
@@ -109,7 +117,7 @@ const Excerpts = () => {
                 onClick={() => reload()}
                 className="rounded-full border border-foreground/[0.08] px-3 py-1 text-[11px] text-foreground/25 transition-colors hover:border-[rgb(var(--shiro-divider-rgb)/0.26)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
               >
-                重试
+                {retryLabel}
               </button>
             </div>
           </div>
@@ -173,7 +181,7 @@ const Excerpts = () => {
 
       {status === "ready" && hasMore && (
         <div ref={sentinelRef} className="py-8 text-center">
-          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+          {isLoadingMore && <span className="text-xs text-foreground/25">{loadMoreLabel}</span>}
         </div>
       )}
 
@@ -201,7 +209,7 @@ const Excerpts = () => {
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
-                aria-label={String(config.modalCloseLabel ?? "")}
+                aria-label={closeLabel}
                 className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-foreground/30 transition-colors hover:bg-[rgb(var(--shiro-panel-rgb)/0.2)] hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
               >
                 <X className="h-4 w-4" />
@@ -250,7 +258,7 @@ const Excerpts = () => {
                   }`}
                 >
                   <MessageCircle className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
-                  {showModalComments ? "收起评论" : `查看评论 · ${selected.comments}`}
+                  {showModalComments ? commentsCloseLabel : `${commentsOpenLabel} · ${selected.comments}`}
                 </button>
 
                 <AnimatePresence>

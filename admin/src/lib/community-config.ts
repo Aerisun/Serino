@@ -24,7 +24,7 @@ export interface CommunityConfigFormState {
   avatar_strategy: string;
   helper_copy: string;
   oauth_providers: string;
-  anonymous_enabled: boolean;
+  email_login_enabled: boolean;
   moderation_mode: string;
   default_sorting: string;
   page_size: string;
@@ -132,12 +132,12 @@ export const createCommunityForm = (config?: CommunityConfigAdminRead | null): C
   emoji_presets: joinList(config?.emoji_presets ?? DEFAULT_EMOJI_PRESETS),
   enable_enjoy_search: config?.enable_enjoy_search ?? true,
   image_uploader: config?.image_uploader ?? false,
-  login_mode: config?.login_mode ?? "disable",
+  login_mode: "force",
   oauth_url: config?.oauth_url ?? "",
   avatar_strategy: config?.avatar_strategy ?? "identicon",
   helper_copy: config?.avatar_helper_copy ?? "",
   oauth_providers: joinList(config?.oauth_providers ?? DEFAULT_OAUTH_PROVIDERS),
-  anonymous_enabled: config?.anonymous_enabled ?? true,
+  email_login_enabled: config?.anonymous_enabled ?? true,
   moderation_mode: config?.moderation_mode ?? DEFAULT_MODERATION_MODE,
   default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
   page_size: String(config?.page_size ?? 20),
@@ -156,10 +156,10 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   emoji_presets: splitList(form.emoji_presets),
   enable_enjoy_search: form.enable_enjoy_search,
   image_uploader: form.image_uploader,
-  login_mode: form.login_mode.trim() || "disable",
+  login_mode: "force",
   oauth_url: form.oauth_url.trim() || null,
   oauth_providers: splitList(form.oauth_providers),
-  anonymous_enabled: form.anonymous_enabled,
+  anonymous_enabled: form.email_login_enabled,
   moderation_mode: form.moderation_mode.trim() || DEFAULT_MODERATION_MODE,
   default_sorting: form.default_sorting.trim() || DEFAULT_DEFAULT_SORTING,
   page_size: Math.max(1, Number.parseInt(form.page_size, 10) || 20),

@@ -93,7 +93,7 @@ export function DataTable<T extends { id: string }>({
   const colSpan = columns.length + (selectable ? 1 : 0) + (hasExpandedRow ? 1 : 0);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-[var(--admin-radius-xl)] admin-glass-strong">
       <Table>
         <TableHeader>
           <TableRow>
@@ -200,7 +200,7 @@ export function DataTable<T extends { id: string }>({
         </TableBody>
       </Table>
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))]">
           <span className="text-sm text-muted-foreground">
             {t("common.itemsTotal").replace("{count}", String(total))}
           </span>

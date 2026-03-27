@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -21,21 +19,9 @@ import {
   type SiteAuthAvatarCandidate,
   type SiteAuthAvatarCandidateBatch,
   type SiteAuthState,
-  type SiteAuthUser,
   updateSiteAuthProfile,
 } from "@/lib/site-auth";
-
-interface SiteAuthContextValue {
-  user: SiteAuthUser | null;
-  loading: boolean;
-  openLogin: () => void;
-  openProfileEditor: () => void;
-  closeLogin: () => void;
-  logout: () => Promise<void>;
-  refresh: () => Promise<void>;
-}
-
-const SiteAuthContext = createContext<SiteAuthContextValue | null>(null);
+import { SiteAuthContext, type SiteAuthContextValue } from "@/contexts/site-auth-context";
 type AuthDialogMode = "login" | "profile";
 
 function providerLabel(provider: string) {
@@ -56,6 +42,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const [submitting, setSubmitting] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allowEmailLoginInDialog, setAllowEmailLoginInDialog] = useState(true);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarCandidates, setAvatarCandidates] = useState<SiteAuthAvatarCandidate[]>([]);
@@ -80,6 +67,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
 
   const resetForm = useCallback(() => {
     setError(null);
+    setAllowEmailLoginInDialog(true);
     setEmail("");
     setNeedsProfile(false);
     setDisplayName("");
@@ -94,6 +82,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handler = () => {
       resetForm();
+      setAllowEmailLoginInDialog(true);
       setMode("login");
       setOpen(true);
     };
@@ -106,8 +95,9 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     resetForm();
   }, [resetForm]);
 
-  const openLogin = useCallback(() => {
+  const openLogin = useCallback((options?: { allowEmailLogin?: boolean }) => {
     resetForm();
+    setAllowEmailLoginInDialog(options?.allowEmailLogin !== false);
     setMode("login");
     setOpen(true);
   }, [resetForm]);
@@ -281,17 +271,31 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const dialogEmailLoginEnabled = Boolean(authState?.email_login_enabled) && allowEmailLoginInDialog;
+
   const value = useMemo<SiteAuthContextValue>(
     () => ({
       user: authState?.user ?? null,
       loading,
+      emailLoginEnabled: Boolean(authState?.email_login_enabled),
+      oauthProviders: authState?.oauth_providers ?? [],
       openLogin,
       openProfileEditor,
       closeLogin,
       logout,
       refresh,
     }),
-    [authState?.user, closeLogin, loading, logout, openLogin, openProfileEditor, refresh],
+    [
+      authState?.email_login_enabled,
+      authState?.oauth_providers,
+      authState?.user,
+      closeLogin,
+      loading,
+      logout,
+      openLogin,
+      openProfileEditor,
+      refresh,
+    ],
   );
 
   const showProfileForm = mode === "profile" || needsProfile;
@@ -401,7 +405,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                     <p className="mt-2 max-w-[28rem] text-sm leading-6 text-foreground/52">
                       {mode === "profile"
                         ? authState?.user?.is_admin
-                          ? "管理员模式下评论会固定使用站点标题和 Hero 图。这里修改的是绑定在邮箱或 OAuth 账号上的基础资料。"
+                          ? "管理员模式下，前端评论会固定使用主页显示名作为名字、Hero 翻转视觉图作为头像。这里修改的是绑定在邮箱或 OAuth 账号上的基础资料。"
                           : "你可以随时修改评论时显示的昵称和头像，邮箱仍只作为后台识别标识。"
                         : "登录后评论会使用你的固定昵称和头像。邮箱只作为后台识别标识，不会公开显示。"}
                     </p>
@@ -436,7 +440,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
 
                     {mode === "profile" ? (
                       profileEditor
-                    ) : authState?.email_login_enabled ? (
+                    ) : dialogEmailLoginEnabled ? (
                       <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
                         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                           <Mail className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
@@ -486,12 +490,4 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       {modal}
     </SiteAuthContext.Provider>
   );
-}
-
-export function useSiteAuth() {
-  const context = useContext(SiteAuthContext);
-  if (!context) {
-    throw new Error("useSiteAuth must be used within SiteAuthProvider");
-  }
-  return context;
 }

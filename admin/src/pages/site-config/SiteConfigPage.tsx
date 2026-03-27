@@ -1,6 +1,8 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
+import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
+import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
+import { Blocks, FileText, MessageSquareMore, Quote, ScrollText, UserRound } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { SocialLinksTab } from "./tabs/SocialLinksTab";
@@ -22,33 +24,60 @@ export default function SiteConfigPage() {
     navigate(value === "profile" ? "/site-config" : `/site-config/${value}`);
   };
 
+  const items = [
+    {
+      value: "profile",
+      to: "/site-config",
+      end: true,
+      label: t("siteConfig.tabs.profile"),
+      description: t("siteConfig.sectionDescriptions.profile"),
+      icon: UserRound,
+    },
+    {
+      value: "social",
+      to: "/site-config/social",
+      label: t("siteConfig.tabs.social"),
+      description: t("siteConfig.sectionDescriptions.social"),
+      icon: Blocks,
+    },
+    {
+      value: "poems",
+      to: "/site-config/poems",
+      label: t("siteConfig.tabs.poems"),
+      description: t("siteConfig.sectionDescriptions.poems"),
+      icon: Quote,
+    },
+    {
+      value: "pages",
+      to: "/site-config/pages",
+      label: t("siteConfig.tabs.pages"),
+      description: t("siteConfig.sectionDescriptions.pages"),
+      icon: FileText,
+    },
+    {
+      value: "nav",
+      to: "/site-config/nav",
+      label: t("siteConfig.tabs.nav"),
+      description: t("siteConfig.sectionDescriptions.nav"),
+      icon: ScrollText,
+    },
+    {
+      value: "community",
+      to: "/site-config/community",
+      label: t("siteConfig.tabs.community"),
+      description: t("siteConfig.sectionDescriptions.community"),
+      icon: MessageSquareMore,
+    },
+  ] as const;
+
   return (
     <div>
       <PageHeader
         title={t("siteConfig.title")}
         description={t("siteConfig.description")}
+        secondary={<AdminSectionTabs items={items} />}
       />
       <Tabs value={tab} onValueChange={goToTab}>
-        <div className="overflow-x-auto -mx-1 px-1 pb-1">
-          <TabsList className="inline-flex min-w-max">
-            <TabsTrigger value="profile">
-              {t("siteConfig.tabs.profile")}
-            </TabsTrigger>
-            <TabsTrigger value="social">
-              {t("siteConfig.tabs.social")}
-            </TabsTrigger>
-            <TabsTrigger value="poems">
-              {t("siteConfig.tabs.poems")}
-            </TabsTrigger>
-            <TabsTrigger value="pages">
-              {t("siteConfig.tabs.pages")}
-            </TabsTrigger>
-            <TabsTrigger value="nav">{t("siteConfig.tabs.nav")}</TabsTrigger>
-            <TabsTrigger value="community">
-              {t("siteConfig.tabs.community")}
-            </TabsTrigger>
-          </TabsList>
-        </div>
         <TabsContent value="profile">
           <ProfileTab />
         </TabsContent>

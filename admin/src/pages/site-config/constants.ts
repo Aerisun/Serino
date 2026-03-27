@@ -1,4 +1,6 @@
 export const PAGE_KEYS = [
+  "activity",
+  "notFound",
   "posts",
   "diary",
   "friends",
@@ -114,6 +116,8 @@ export const SOCIAL_SOFTWARE_LABELS: LangLabels = {
 };
 
 export const PAGE_KEY_LABELS: LangLabels = {
+  activity: { zh: "首页活动区", en: "Homepage Activity" },
+  notFound: { zh: "404 页面", en: "404 Page" },
   posts: { zh: "文章", en: "Posts" },
   diary: { zh: "日记", en: "Diary" },
   friends: { zh: "友链", en: "Friends" },

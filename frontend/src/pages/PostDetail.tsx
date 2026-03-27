@@ -15,9 +15,10 @@ import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { useReadPostApiV1PublicPostsSlugGet } from "@serino/api-client/public";
+import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 interface PostData {
   slug: string;
@@ -30,6 +31,17 @@ interface PostData {
   comments: number;
   readTime: string;
   content: string;
+}
+
+interface PostDetailPageConfig extends BaseViewPageConfig {
+  categories?: {
+    fallback?: string;
+  };
+  detailBackLabel?: string;
+  detailListLabel?: string;
+  detailMissingTitle?: string;
+  detailMissingDescription?: string;
+  detailEndLabel?: string;
 }
 
 const estimateReadTime = (value: string) => `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
@@ -52,12 +64,20 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const pages = usePageConfig();
-  const postsConfig = (pages.posts ?? {}) as { categories?: { fallback?: string } };
+  const postsConfig = (pages.posts ?? {}) as PostDetailPageConfig;
   const fallbackCategoryLabel = postsConfig.categories?.fallback ?? "未分类";
+  const detailBackLabel = postsConfig.detailBackLabel ?? "返回";
+  const detailListLabel = postsConfig.detailListLabel ?? "返回列表";
+  const detailMissingTitle = postsConfig.detailMissingTitle ?? "文章不存在";
+  const detailMissingDescription =
+    postsConfig.detailMissingDescription ?? "你访问的文章暂时不存在。";
+  const detailEndLabel = postsConfig.detailEndLabel ?? "— 完 —";
+  const errorTitle = postsConfig.errorTitle ?? "文章加载失败";
+  const retryLabel = postsConfig.retryLabel ?? "重试";
   const articleRef = useRef<HTMLElement>(null);
 
   const slug = id ? decodeURIComponent(id) : "";
-  const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1PublicPostsSlugGet(slug, { query: { enabled: !!id } });
+  const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, { query: { enabled: !!id } });
 
   const post = response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null;
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
@@ -68,15 +88,15 @@ const PostDetail = () => {
       : post ? "ready" : "empty";
   const errorMessage = isError
     ? is404
-      ? "文章不存在或已被移除"
-      : error instanceof Error ? error.message : "文章加载失败"
+      ? detailMissingDescription
+      : error instanceof Error ? error.message : errorTitle
     : !id ? "缺少文章标识" : "";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
-        title={post?.title ?? (status === "error" ? "文章加载失败" : "文章不存在")}
-        description={post?.content.slice(0, 150) ?? (errorMessage || "你访问的文章暂时不存在。")}
+        title={post?.title ?? (status === "error" ? errorTitle : detailMissingTitle)}
+        description={post?.content.slice(0, 150) ?? (errorMessage || detailMissingDescription)}
       />
       {post && (
         <JsonLd
@@ -101,7 +121,7 @@ const PostDetail = () => {
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
           <ArrowLeft className="h-4 w-4" />
-          返回
+          {detailBackLabel}
         </motion.button>
 
         {status === "loading" ? (
@@ -196,7 +216,7 @@ const PostDetail = () => {
             {featureFlags.toc && <TableOfContents containerRef={articleRef} content={[post.content]} />}
 
             <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
-              <p className="text-center text-xs font-body text-foreground/20">— 完 —</p>
+              <p className="text-center text-xs font-body text-foreground/20">{detailEndLabel}</p>
             </div>
 
             <CommentSection
@@ -212,17 +232,17 @@ const PostDetail = () => {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <p className="text-sm font-body text-foreground/40">
-              {status === "error" ? "文章加载失败" : "文章不存在"}
+              {status === "error" ? errorTitle : detailMissingTitle}
             </p>
             <p className="mt-2 text-xs font-body text-foreground/25">
-              {errorMessage || "你访问的文章暂时不存在。"}
+              {errorMessage || detailMissingDescription}
             </p>
             <button
               type="button"
               onClick={status === "error" ? () => refetch() : () => navigate("/posts")}
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
-              {status === "error" ? "重试" : "返回列表"}
+              {status === "error" ? retryLabel : detailListLabel}
             </button>
           </motion.div>
         )}

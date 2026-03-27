@@ -54,8 +54,8 @@ export function ContentCategoryField({
     { content_type: contentType },
     { query: { staleTime: 60_000 } },
   );
-  const options = data?.data ?? [];
   const effectiveOptions = useMemo(() => {
+    const options = data?.data ?? [];
     if (!value || options.some((item) => item.name === value)) {
       return options;
     }
@@ -68,7 +68,7 @@ export function ContentCategoryField({
       },
       ...options,
     ];
-  }, [contentType, options, value]);
+  }, [contentType, data?.data, value]);
 
   const normalizedValue = useMemo(() => {
     if (!value) {

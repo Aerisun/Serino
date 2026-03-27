@@ -8,10 +8,13 @@ export interface BaseViewPageConfig {
   description: string;
   metaDescription?: string;
   metaTitle?: string;
+  searchPlaceholder?: string;
   width?: RuntimePageWidth;
   motion: PageMotionConfig;
   pageSize?: number;
   emptyMessage?: string;
   loadingLabel?: string;
+  loadMoreLabel?: string;
   retryLabel?: string;
+  errorTitle?: string;
 }

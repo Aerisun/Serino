@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Heart, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useReadRecentActivityApiV1PublicRecentActivityGet } from "@serino/api-client/public";
+import { useReadRecentActivityApiV1SiteRecentActivityGet } from "@serino/api-client/site";
 import type { RecentActivityItemRead } from "@serino/api-client/models";
+import { usePageConfig } from "@/contexts/runtime-config";
 
 interface ActivityItem {
   type: "comment" | "like" | "reply" | "guestbook";
@@ -84,8 +85,13 @@ const normalizeActivity = (value: RecentActivityItemRead): ActivityItem => ({
 
 const RecentActivity = () => {
   const navigate = useNavigate();
+  const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
+  const title = String(config.recentActivityTitle ?? "最近动态");
+  const errorTitle = String(config.recentActivityErrorTitle ?? "最近动态加载失败");
+  const retryLabel = String(config.recentActivityRetryLabel ?? "重试");
+  const emptyMessage = String(config.recentActivityEmptyMessage ?? "暂时还没有公开的最近动态");
 
-  const { data: response, isLoading, isError, error, refetch } = useReadRecentActivityApiV1PublicRecentActivityGet({ limit: 8 });
+  const { data: response, isLoading, isError, error, refetch } = useReadRecentActivityApiV1SiteRecentActivityGet({ limit: 8 });
   const activities = useMemo(
     () => response?.data?.items?.map(normalizeActivity) ?? [],
     [response],
@@ -103,7 +109,7 @@ const RecentActivity = () => {
     <div className="flex h-full flex-col">
       <div className="mb-5 flex items-baseline justify-between">
         <h3 className="text-sm font-body font-medium uppercase tracking-widest text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.74)]">
-          最近动态
+          {title}
         </h3>
       </div>
 
@@ -134,7 +140,7 @@ const RecentActivity = () => {
                 <div className="flex items-center gap-1.5">
                   <MessageCircle className="h-3 w-3 shrink-0 text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.28)]" />
                   <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.5)]">
-                    最近动态加载失败
+                    {errorTitle}
                   </span>
                   <span className="ml-auto shrink-0 text-[10px] font-body text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.2)]">
                     —
@@ -148,7 +154,7 @@ const RecentActivity = () => {
                   onClick={() => void refetch()}
                   className="mt-1.5 pl-[18px] text-[10px] font-body text-foreground/25 transition-colors hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.62)]"
                 >
-                  重试
+                  {retryLabel}
                 </button>
               </div>
             </div>
@@ -163,7 +169,7 @@ const RecentActivity = () => {
                 <div className="flex items-center gap-1.5">
                   <MessageCircle className="h-3 w-3 shrink-0 text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.28)]" />
                   <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.5)]">
-                    暂时还没有公开的最近动态
+                    {emptyMessage}
                   </span>
                 </div>
               </div>

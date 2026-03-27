@@ -22,6 +22,41 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    --admin-radius-sm: 0.85rem;
+    --admin-radius-md: 1.05rem;
+    --admin-radius-lg: 1.45rem;
+    --admin-radius-xl: 1.85rem;
+    --admin-surface-1: 255 255 255;
+    --admin-surface-2: 248 250 252;
+    --admin-surface-strong: 255 255 255;
+    --admin-surface-elevated: 255 255 255;
+    --admin-surface-alpha: 0.68;
+    --admin-surface-alpha-strong: 0.82;
+    --admin-surface-alpha-soft: 0.52;
+    --admin-border-subtle: 255 255 255;
+    --admin-border-strong: 15 23 42;
+    --admin-border-subtle-alpha: 0.58;
+    --admin-border-strong-alpha: 0.08;
+    --admin-highlight-top: 255 255 255;
+    --admin-highlight-top-alpha: 0.82;
+    --admin-highlight-bottom: 255 255 255;
+    --admin-highlight-bottom-alpha: 0.18;
+    --admin-shadow-rgb: 15 23 42;
+    --admin-shadow-sm: 0 10px 30px rgba(var(--admin-shadow-rgb) / 0.05);
+    --admin-shadow-md: 0 18px 48px rgba(var(--admin-shadow-rgb) / 0.08);
+    --admin-shadow-lg: 0 28px 72px rgba(var(--admin-shadow-rgb) / 0.12);
+    --admin-blur-sm: 10px;
+    --admin-blur-md: 18px;
+    --admin-blur-lg: 32px;
+    --admin-saturate: 165%;
+    --admin-accent-rgb: 60 100 200;
+    --admin-glow-rgb: 92 132 255;
+    --admin-duration-fast: 160ms;
+    --admin-duration-normal: 220ms;
+    --admin-duration-slow: 320ms;
+    --admin-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --admin-ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --admin-focus-ring: 0 0 0 3px hsl(var(--ring) / 0.18);
   }
   .dark {
     --background: 222.2 84% 4.9%;
@@ -41,6 +76,28 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    --admin-surface-1: 18 24 39;
+    --admin-surface-2: 15 23 42;
+    --admin-surface-strong: 30 41 59;
+    --admin-surface-elevated: 51 65 85;
+    --admin-surface-alpha: 0.2;
+    --admin-surface-alpha-strong: 0.32;
+    --admin-surface-alpha-soft: 0.12;
+    --admin-border-subtle: 255 255 255;
+    --admin-border-strong: 255 255 255;
+    --admin-border-subtle-alpha: 0.14;
+    --admin-border-strong-alpha: 0.08;
+    --admin-highlight-top: 255 255 255;
+    --admin-highlight-top-alpha: 0.22;
+    --admin-highlight-bottom: 255 255 255;
+    --admin-highlight-bottom-alpha: 0.04;
+    --admin-shadow-rgb: 2 6 23;
+    --admin-shadow-sm: 0 14px 36px rgba(var(--admin-shadow-rgb) / 0.18);
+    --admin-shadow-md: 0 24px 60px rgba(var(--admin-shadow-rgb) / 0.24);
+    --admin-shadow-lg: 0 36px 90px rgba(var(--admin-shadow-rgb) / 0.3);
+    --admin-accent-rgb: 129 169 255;
+    --admin-glow-rgb: 76 144 255;
+    --admin-focus-ring: 0 0 0 3px hsl(var(--ring) / 0.2);
   }
 }
 
@@ -441,12 +498,20 @@ body {
 
 /* ===== Admin Liquid Glass Utilities ===== */
 
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
 .admin-glass {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.5);
-  border: none;
+  background: rgb(var(--admin-surface-1) / var(--admin-surface-alpha));
+  backdrop-filter: blur(var(--admin-blur-sm)) saturate(var(--admin-saturate));
+  -webkit-backdrop-filter: blur(var(--admin-blur-sm)) saturate(var(--admin-saturate));
+  box-shadow: var(--admin-shadow-sm), inset 0 1px 1px rgba(var(--admin-highlight-top) / 0.28);
+  border: 1px solid rgba(var(--admin-border-strong) / var(--admin-border-strong-alpha));
   position: relative;
   overflow: hidden;
 }
@@ -459,43 +524,12 @@ body {
   padding: 1.4px;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.7) 0%,
-    rgba(255, 255, 255, 0.3) 20%,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0) 60%,
-    rgba(255, 255, 255, 0.3) 80%,
-    rgba(255, 255, 255, 0.7) 100%
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.dark .admin-glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
-  border: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.dark .admin-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.4px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0.06) 20%,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0) 60%,
-    rgba(255, 255, 255, 0.06) 80%,
-    rgba(255, 255, 255, 0.2) 100%
+    rgba(var(--admin-highlight-top) / var(--admin-highlight-top-alpha)) 0%,
+    rgba(var(--admin-highlight-top) / 0.28) 20%,
+    rgba(var(--admin-highlight-top) / 0) 40%,
+    rgba(var(--admin-highlight-bottom) / 0) 60%,
+    rgba(var(--admin-highlight-bottom) / var(--admin-highlight-bottom-alpha)) 80%,
+    rgba(var(--admin-highlight-top) / var(--admin-highlight-top-alpha)) 100%
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -505,11 +539,11 @@ body {
 
 /* Strong glass – for dialogs and prominent surfaces */
 .admin-glass-strong {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(40px) saturate(150%);
-  -webkit-backdrop-filter: blur(40px) saturate(150%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 1px rgba(255, 255, 255, 0.6);
-  border: none;
+  background: rgb(var(--admin-surface-strong) / var(--admin-surface-alpha-strong));
+  backdrop-filter: blur(var(--admin-blur-lg)) saturate(var(--admin-saturate));
+  -webkit-backdrop-filter: blur(var(--admin-blur-lg)) saturate(var(--admin-saturate));
+  box-shadow: var(--admin-shadow-md), inset 0 1px 1px rgba(var(--admin-highlight-top) / 0.34);
+  border: 1px solid rgba(var(--admin-border-subtle) / var(--admin-border-subtle-alpha));
   position: relative;
   overflow: hidden;
 }
@@ -522,43 +556,12 @@ body {
   padding: 1.4px;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.8) 0%,
-    rgba(255, 255, 255, 0.3) 20%,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0) 60%,
-    rgba(255, 255, 255, 0.3) 80%,
-    rgba(255, 255, 255, 0.8) 100%
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.dark .admin-glass-strong {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(40px) saturate(150%);
-  -webkit-backdrop-filter: blur(40px) saturate(150%);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
-  border: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.dark .admin-glass-strong::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.4px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.25) 0%,
-    rgba(255, 255, 255, 0.08) 20%,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0) 60%,
-    rgba(255, 255, 255, 0.08) 80%,
-    rgba(255, 255, 255, 0.25) 100%
+    rgba(var(--admin-highlight-top) / calc(var(--admin-highlight-top-alpha) + 0.06)) 0%,
+    rgba(var(--admin-highlight-top) / 0.3) 20%,
+    rgba(var(--admin-highlight-top) / 0) 40%,
+    rgba(var(--admin-highlight-bottom) / 0) 60%,
+    rgba(var(--admin-highlight-bottom) / 0.24) 80%,
+    rgba(var(--admin-highlight-top) / calc(var(--admin-highlight-top-alpha) + 0.06)) 100%
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -568,70 +571,72 @@ body {
 
 /* Sidebar glass */
 .admin-glass-sidebar {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
-  border: none;
-}
-
-.dark .admin-glass-sidebar {
-  background: rgba(10, 15, 30, 0.7);
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
-  border: none;
+  background: rgb(var(--admin-surface-2) / var(--admin-surface-alpha-soft));
+  backdrop-filter: blur(var(--admin-blur-md)) saturate(var(--admin-saturate));
+  -webkit-backdrop-filter: blur(var(--admin-blur-md)) saturate(var(--admin-saturate));
+  border: 1px solid rgba(var(--admin-border-subtle) / calc(var(--admin-border-subtle-alpha) - 0.03));
 }
 
 /* Topbar glass */
 .admin-glass-topbar {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.dark .admin-glass-topbar {
-  background: rgba(10, 15, 30, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgb(var(--admin-surface-2) / var(--admin-surface-alpha));
+  backdrop-filter: blur(var(--admin-blur-sm)) saturate(var(--admin-saturate));
+  -webkit-backdrop-filter: blur(var(--admin-blur-sm)) saturate(var(--admin-saturate));
+  border-bottom: 1px solid rgba(var(--admin-border-strong) / var(--admin-border-strong-alpha));
 }
 
 /* Input glass – subtle for form controls */
 .admin-glass-input {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background: rgb(var(--admin-surface-elevated) / var(--admin-surface-alpha-soft));
+  backdrop-filter: blur(4px) saturate(var(--admin-saturate));
+  -webkit-backdrop-filter: blur(4px) saturate(var(--admin-saturate));
+  border: 1px solid rgba(var(--admin-border-strong) / var(--admin-border-strong-alpha));
+  box-shadow: inset 0 1px 0 rgba(var(--admin-highlight-top) / 0.12);
+  transition:
+    border-color var(--admin-duration-fast) var(--admin-ease-standard),
+    box-shadow var(--admin-duration-fast) var(--admin-ease-standard),
+    background-color var(--admin-duration-fast) var(--admin-ease-standard);
 }
 
 .admin-glass-input:focus {
   border-color: hsl(var(--ring));
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+  box-shadow: var(--admin-focus-ring);
 }
 
-.dark .admin-glass-input {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Motion utilities */
+.admin-transition {
+  transition-timing-function: var(--admin-ease-standard);
+  transition-duration: var(--admin-duration-normal);
 }
 
-.dark .admin-glass-input:focus {
-  border-color: hsl(var(--ring));
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.15);
+.admin-transition-fast {
+  transition-timing-function: var(--admin-ease-standard);
+  transition-duration: var(--admin-duration-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-transition,
+  .admin-transition-fast {
+    transition-duration: 1ms !important;
+  }
+
+  .login-blob,
+  .preview-glow-button::before,
+  .login-brand-text {
+    animation: none !important;
+  }
 }
 
 /* Fallback for browsers without backdrop-filter */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .admin-glass,
-  .admin-glass-strong { background: rgba(255, 255, 255, 0.85); }
-  .dark .admin-glass,
-  .dark .admin-glass-strong { background: rgba(20, 25, 45, 0.9); }
-  .admin-glass-sidebar { background: rgba(255, 255, 255, 0.9); }
-  .dark .admin-glass-sidebar { background: rgba(10, 15, 30, 0.9); }
+  .admin-glass-strong {
+    background: rgb(var(--admin-surface-1) / 0.92);
+  }
+
+  .admin-glass-sidebar {
+    background: rgb(var(--admin-surface-2) / 0.92);
+  }
 }
 
 .admin-glass > *,

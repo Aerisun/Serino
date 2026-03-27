@@ -4,13 +4,17 @@ import ActivitySection from "@/components/ActivitySection";
 import PageMeta from "@/components/PageMeta";
 import { useTheme } from "@serino/theme";
 import { useSiteConfig } from "@/contexts/runtime-config";
+import { useState } from "react";
 
 const Index = () => {
   const { resolvedTheme } = useTheme();
   const site = useSiteConfig();
   const videoUrl = site.heroVideoUrl;
+  const [videoFailed, setVideoFailed] = useState(false);
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
-  const heroOverlayClass = resolvedTheme === "dark" ? "bg-black/12" : "bg-black/18";
+  const heroOverlayClass = "bg-black/12";
+  const showVideo = Boolean(videoUrl) && !videoFailed;
+  const showImageFallback = Boolean(site.ogImage) && !showVideo;
 
   return (
     <div
@@ -20,8 +24,17 @@ const Index = () => {
       <PageMeta description={site.metaDescription} />
       <Navbar glassVariant="hero" />
       <div className="relative min-h-screen flex flex-col overflow-hidden">
+        {showImageFallback && (
+          <img
+            src={site.ogImage}
+            alt={site.title || site.name}
+            className="absolute inset-0 h-full w-full object-cover z-0"
+            loading="eager"
+          />
+        )}
+
         {/* Background Video */}
-        {videoUrl && (
+        {showVideo && (
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
           autoPlay
@@ -30,6 +43,7 @@ const Index = () => {
           playsInline
           preload="auto"
           poster={site.heroPosterUrl || site.ogImage}
+          onError={() => setVideoFailed(true)}
         >
           <source src={videoUrl} type="video/mp4" />
         </video>

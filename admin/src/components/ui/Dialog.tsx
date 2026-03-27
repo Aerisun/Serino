@@ -16,11 +16,11 @@ export const DialogContent = forwardRef<
   DialogContentProps
 >(({ className, children, style, hideCloseButton = false, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm admin-transition data-[state=open]:opacity-100 data-[state=closed]:opacity-0" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 admin-glass-strong p-6 shadow-lg sm:rounded-xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 admin-glass-strong p-6 shadow-[var(--admin-shadow-lg)] sm:rounded-[var(--admin-radius-xl)] admin-transition data-[state=open]:opacity-100 data-[state=open]:translate-y-[-50%] data-[state=closed]:opacity-0 data-[state=closed]:translate-y-[-48%]",
         className
       )}
       style={{ ...style, position: "fixed" }}

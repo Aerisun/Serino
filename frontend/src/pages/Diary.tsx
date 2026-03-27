@@ -23,7 +23,7 @@ import { usePageConfig } from "@/contexts/runtime-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
-import { readDiaryApiV1PublicDiaryGet } from "@serino/api-client/public";
+import { readDiaryApiV1SiteDiaryGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
@@ -41,7 +41,9 @@ interface DiaryEntry {
 
 type WeatherIconComponent = typeof Sun;
 
-type DiaryPageConfig = BaseViewPageConfig;
+interface DiaryPageConfig extends BaseViewPageConfig {
+  detailCtaLabel?: string;
+}
 
 const weatherIcons: Record<string, WeatherIconComponent> = {
   sunny: Sun,
@@ -109,13 +111,17 @@ const mapRemoteDiaryEntry = (entry: ContentEntryRead, index: number): DiaryEntry
 
 const Diary = () => {
   const config = usePageConfig().diary as unknown as DiaryPageConfig;
+  const errorTitle = config.errorTitle ?? "日记加载失败";
+  const retryLabel = config.retryLabel ?? "重试";
+  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
+  const detailCtaLabel = config.detailCtaLabel ?? "查看详情";
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const pageSize = clampPageSize(config.pageSize, 20);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
-    queryKey: ["public", "diary"],
-    queryFn: (p) => readDiaryApiV1PublicDiaryGet(p).then(r => r.data),
+    queryKey: ["site", "diary"],
+    queryFn: (p) => readDiaryApiV1SiteDiaryGet(p).then(r => r.data),
     pageSize,
     mapItem: mapRemoteDiaryEntry,
   });
@@ -152,14 +158,14 @@ const Diary = () => {
 
         {status === "error" && (
           <div className="liquid-glass rounded-2xl px-5 py-4">
-            <p className="text-sm font-body leading-relaxed text-foreground/45">日记加载失败</p>
+            <p className="text-sm font-body leading-relaxed text-foreground/45">{errorTitle}</p>
             <p className="mt-2 text-sm font-body leading-relaxed text-foreground/30">{errorMessage}</p>
             <button
               type="button"
               onClick={() => reload()}
               className="mt-3 text-[11px] font-body text-foreground/30 transition-colors hover:text-foreground/60"
             >
-              重试
+              {retryLabel}
             </button>
           </div>
         )}
@@ -257,7 +263,7 @@ const Diary = () => {
                               }}
                               className="text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
                             >
-                              查看详情 →
+                              {detailCtaLabel} →
                             </button>
                           </div>
                         </motion.div>
@@ -272,7 +278,7 @@ const Diary = () => {
 
       {status === "ready" && hasMore && (
         <div ref={sentinelRef} className="py-8 text-center">
-          {isLoadingMore && <span className="text-xs text-foreground/25">加载更多...</span>}
+          {isLoadingMore && <span className="text-xs text-foreground/25">{loadMoreLabel}</span>}
         </div>
       )}
     </PageShell>

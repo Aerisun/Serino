@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   deleteAssetEndpointApiV1AdminAssetsAssetIdDelete,
   listAssetsEndpointApiV1AdminAssetsGet,
@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
 interface ResourceUploadFieldProps {
-  label: string;
+  label: ReactNode;
   value: string;
   category: string;
   scope?: "system" | "user";
@@ -153,7 +153,7 @@ export function ResourceUploadField({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      {typeof label === "string" ? <Label>{label}</Label> : label}
       <div className="flex items-center gap-3">
         <Button
           type="button"

@@ -4,52 +4,36 @@ import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import { SocialIcon } from "@/components/icons/SocialIcon";
+import { API_BASE_PATH } from "@/lib/api";
 
-const DEFAULT_HITOKOTO_TYPES = ["d", "i"];
 const EMPTY_POEMS = [""];
-const HITOKOTO_RETRY_COUNT = 8;
+const POEM_PREVIEW_ENDPOINT = `${API_BASE_PATH}/v1/site/poem-preview`;
+const POEM_ROTATION_INTERVAL_MS = 8_000;
 
-type HitokotoPayload = {
-  hitokoto?: string;
-  from?: string;
-  from_who?: string | null;
+type PoemPreviewPayload = {
+  mode: "custom" | "hitokoto";
+  content: string;
 };
 
-const normalizeKeywords = (keywords: string[]) =>
-  keywords.map((item) => item.trim().toLowerCase()).filter(Boolean);
-
-const matchesKeywords = (payload: HitokotoPayload, keywords: string[]) => {
-  if (keywords.length === 0) return true;
-  const haystack = [payload.hitokoto, payload.from, payload.from_who].filter(Boolean).join(" ").toLowerCase();
-  return keywords.some((keyword) => haystack.includes(keyword));
-};
-
-const fetchHitokotoPoem = async (types: string[], keywords: string[]) => {
-  const query = types.map((type) => `c=${encodeURIComponent(type)}`).join("&");
-  const normalizedKeywords = normalizeKeywords(keywords);
-  let lastPayload: HitokotoPayload | null = null;
-
-  for (let attempt = 0; attempt < HITOKOTO_RETRY_COUNT; attempt += 1) {
-    const response = await fetch(`https://v1.hitokoto.cn/?${query}`);
-    if (!response.ok) {
-      throw new Error(`Hitokoto request failed: ${response.status}`);
-    }
-    const payload = (await response.json()) as HitokotoPayload;
-    lastPayload = payload;
-    const next = payload.hitokoto?.trim();
-    if (!next) continue;
-    if (matchesKeywords(payload, normalizedKeywords)) {
-      return next;
-    }
+const fetchPoemPreview = async () => {
+  const requestUrl = `${POEM_PREVIEW_ENDPOINT}?_ts=${Date.now()}`;
+  const response = await fetch(requestUrl, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`Poem preview request failed: ${response.status}`);
   }
-
-  return lastPayload?.hitokoto?.trim() ?? "";
+  const payload = (await response.json()) as PoemPreviewPayload;
+  return payload.content.trim();
 };
 
 const HeroContent = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const site = useSiteConfig();
-  const heroSocialLinks = site.socialLinks.filter((link) => link.placement === "hero" || link.placement === "both");
+  const heroSocialLinks = site.socialLinks.filter(
+    (link) => link.placement === "hero" || link.placement === "both",
+  );
   const fallbackPoems = site.poems.length > 0 ? site.poems : EMPTY_POEMS;
   const [poem, setPoem] = useState(() => fallbackPoems[0]);
   const [flipped, setFlipped] = useState(false);
@@ -61,17 +45,18 @@ const HeroContent = () => {
     }
 
     let cancelled = false;
-    const types = site.poemHitokotoTypes.length > 0 ? site.poemHitokotoTypes : DEFAULT_HITOKOTO_TYPES;
 
     const load = async () => {
       try {
-        const next = await fetchHitokotoPoem(types, site.poemHitokotoKeywords);
+        const next = await fetchPoemPreview();
         if (!cancelled && next) {
           setPoem(next);
         }
       } catch {
         if (!cancelled) {
-          setPoem(fallbackPoems[Math.floor(Math.random() * fallbackPoems.length)]);
+          setPoem(
+            fallbackPoems[Math.floor(Math.random() * fallbackPoems.length)],
+          );
         }
       }
     };
@@ -81,22 +66,27 @@ const HeroContent = () => {
     return () => {
       cancelled = true;
     };
-  }, [fallbackPoems, site.poemHitokotoKeywords, site.poemHitokotoTypes, site.poemSource]);
+  }, [fallbackPoems, site.poemSource]);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
 
     const timer = window.setInterval(() => {
       if (site.poemSource === "hitokoto") {
-        const types = site.poemHitokotoTypes.length > 0 ? site.poemHitokotoTypes : DEFAULT_HITOKOTO_TYPES;
-        void fetchHitokotoPoem(types, site.poemHitokotoKeywords)
+        void fetchPoemPreview()
           .then((next) => {
             if (next) setPoem(next);
           })
           .catch(() => {
             setPoem((current) => {
-              const candidates = fallbackPoems.filter((item) => item && item !== current);
-              return candidates[Math.floor(Math.random() * candidates.length)] ?? fallbackPoems[0] ?? current;
+              const candidates = fallbackPoems.filter(
+                (item) => item && item !== current,
+              );
+              return (
+                candidates[Math.floor(Math.random() * candidates.length)] ??
+                fallbackPoems[0] ??
+                current
+              );
             });
           });
         return;
@@ -104,12 +94,14 @@ const HeroContent = () => {
 
       setPoem((current) => {
         const candidates = fallbackPoems.filter((item) => item !== current);
-        return candidates[Math.floor(Math.random() * candidates.length)] ?? current;
+        return (
+          candidates[Math.floor(Math.random() * candidates.length)] ?? current
+        );
       });
-    }, 8000);
+    }, POEM_ROTATION_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [fallbackPoems, prefersReducedMotion, site.poemHitokotoKeywords, site.poemHitokotoTypes, site.poemSource]);
+  }, [fallbackPoems, prefersReducedMotion, site.poemSource]);
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
@@ -118,7 +110,10 @@ const HeroContent = () => {
           className="text-center text-[10px] uppercase tracking-[0.32em] text-white/32 sm:text-[11px]"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={transition({ duration: 0.45, reducedMotion: prefersReducedMotion })}
+          transition={transition({
+            duration: 0.45,
+            reducedMotion: prefersReducedMotion,
+          })}
         >
           {site.role}
         </motion.p>
@@ -129,25 +124,48 @@ const HeroContent = () => {
           onClick={() => setFlipped((f) => !f)}
           initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={transition({ duration: 0.55, reducedMotion: prefersReducedMotion })}
+          transition={transition({
+            duration: 0.55,
+            reducedMotion: prefersReducedMotion,
+          })}
         >
           <motion.div
             className="relative h-48 w-48 sm:h-56 sm:w-56"
             animate={{ rotateY: flipped ? 180 : 0 }}
-            transition={transition({ duration: 0.7, reducedMotion: prefersReducedMotion })}
+            transition={transition({
+              duration: 0.7,
+              reducedMotion: prefersReducedMotion,
+            })}
             style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden" }}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{ backfaceVisibility: "hidden" }}
+            >
               <div className="h-full w-full rounded-full liquid-glass-coin-hero flex items-center justify-center">
-                <span className="select-none text-5xl text-foreground sm:text-6xl" style={{ fontFamily: "'Pinyon Script', cursive" }}>
+                <span
+                  className="select-none text-5xl text-foreground sm:text-6xl"
+                  style={{ fontFamily: "'Pinyon Script', cursive" }}
+                >
                   {site.name}
                 </span>
               </div>
             </div>
 
-            <div className="absolute inset-0 rounded-full" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                backfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+              }}
+            >
               <div className="h-full w-full rounded-full overflow-hidden liquid-glass-coin-hero">
-                <img src={site.heroImageUrl || site.ogImage} alt={site.name} className="h-full w-full object-cover" loading="lazy" />
+                <img
+                  src={site.heroImageUrl || site.ogImage}
+                  alt={site.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
               </div>
             </div>
           </motion.div>
@@ -186,7 +204,10 @@ const HeroContent = () => {
               title={link.name}
               className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-colors duration-200 hover:text-white focus-visible:text-white active:scale-95"
             >
-              <SocialIcon iconKey={link.iconKey} className="h-[18px] w-[18px]" />
+              <SocialIcon
+                iconKey={link.iconKey}
+                className="h-[18px] w-[18px]"
+              />
             </a>
           ))}
         </motion.div>
@@ -208,7 +229,10 @@ const HeroContent = () => {
               className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full liquid-glass-hero text-white/72 transition-[width,color] duration-300 ease-out hover:w-[7rem] hover:text-white focus-visible:w-[7rem] focus-visible:text-white active:scale-[0.97]"
             >
               <span className="absolute inset-y-0 left-0 flex w-11 items-center justify-center">
-                <SocialIcon iconKey={cta.iconKey} className="h-[18px] w-[18px] shrink-0" />
+                <SocialIcon
+                  iconKey={cta.iconKey}
+                  className="h-[18px] w-[18px] shrink-0"
+                />
               </span>
               <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 pr-0 text-sm font-body font-medium opacity-0 transition-all duration-300 ease-out group-hover:max-w-[4.5rem] group-hover:pl-11 group-hover:pr-4 group-hover:opacity-100 group-focus-visible:max-w-[4.5rem] group-focus-visible:pl-11 group-focus-visible:pr-4 group-focus-visible:opacity-100">
                 {cta.label}

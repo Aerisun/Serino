@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Search, X, FileText, BookOpen, MessageSquare, Quote } from "lucide-react"
-import { searchContentApiV1PublicSearchGet } from "@serino/api-client/search"
+import { searchContentApiV1SiteSearchGet } from "@serino/api-client/site"
 
 interface SearchResult {
   type: string
@@ -50,7 +50,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
     }
     setLoading(true)
     try {
-      const response = await searchContentApiV1PublicSearchGet({ q: q.trim(), limit: 10 })
+      const response = await searchContentApiV1SiteSearchGet({ q: q.trim(), limit: 10 })
       setResults(response.data.items as unknown as SearchResult[])
       setSearched(true)
     } catch {

@@ -1,0 +1,258 @@
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
+import { CircleHelp } from "lucide-react";
+import { Label } from "@/components/ui/Label";
+import { cn } from "@/lib/utils";
+
+interface LabelWithHelpProps {
+  label: ReactNode;
+  htmlFor?: string;
+  title?: ReactNode;
+  description: ReactNode;
+  usageTitle?: ReactNode;
+  usageItems?: ReactNode[];
+  className?: string;
+}
+
+const PANEL_MARGIN = 16;
+const PANEL_OFFSET = 4;
+const PANEL_MAX_WIDTH = 352;
+const AUTO_CLOSE_DELAY_MS = 1500;
+
+export function LabelWithHelp({
+  label,
+  htmlFor,
+  title,
+  description,
+  usageTitle,
+  usageItems = [],
+  className,
+}: LabelWithHelpProps) {
+  const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const panelId = useId();
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleClose = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      return;
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+    }, AUTO_CLOSE_DELAY_MS);
+  }, []);
+
+  const isWithinInteractiveArea = useCallback((target: EventTarget | null) => {
+    const node = target as Node | null;
+    if (!node) {
+      return false;
+    }
+    return Boolean(
+      panelRef.current?.contains(node) || triggerRef.current?.contains(node),
+    );
+  }, []);
+
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) {
+      return;
+    }
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const width = Math.min(
+      PANEL_MAX_WIDTH,
+      Math.max(240, window.innerWidth - PANEL_MARGIN * 2),
+    );
+    const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 0;
+    const nextLeft = Math.min(
+      triggerRect.left + 8,
+      window.innerWidth - width - PANEL_MARGIN,
+    );
+    const preferredTop = triggerRect.bottom + PANEL_OFFSET;
+    const nextTop = panelHeight
+      ? Math.min(preferredTop, window.innerHeight - panelHeight - PANEL_MARGIN)
+      : preferredTop;
+
+    setPanelStyle({
+      left: Math.max(PANEL_MARGIN, nextLeft),
+      top: Math.max(PANEL_MARGIN, nextTop),
+      width,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      clearCloseTimer();
+      setPanelStyle(null);
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        panelRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    const handleWindowChange = () => {
+      updatePosition();
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (isWithinInteractiveArea(event.target)) {
+        clearCloseTimer();
+        return;
+      }
+      scheduleClose();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("resize", handleWindowChange);
+    window.addEventListener("scroll", handleWindowChange, true);
+    updatePosition();
+    const rafId = window.requestAnimationFrame(() => {
+      updatePosition();
+      const hoveredElement = document.querySelector(":hover");
+      if (!isWithinInteractiveArea(hoveredElement)) {
+        scheduleClose();
+      }
+    });
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("resize", handleWindowChange);
+      window.removeEventListener("scroll", handleWindowChange, true);
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [
+    clearCloseTimer,
+    isWithinInteractiveArea,
+    open,
+    scheduleClose,
+    updatePosition,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      clearCloseTimer();
+    };
+  }, [clearCloseTimer]);
+
+  return (
+    <div className={cn("flex items-center gap-2", className)}>
+      <Label htmlFor={htmlFor}>{label}</Label>
+      <div className="relative">
+        <button
+          ref={triggerRef}
+          type="button"
+          className={cn(
+            "inline-flex h-5 w-5 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors",
+            "hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          )}
+          aria-label="查看字段说明"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => {
+            clearCloseTimer();
+            setOpen((current) => !current);
+          }}
+          onMouseEnter={clearCloseTimer}
+          onMouseLeave={() => {
+            if (open) {
+              scheduleClose();
+            }
+          }}
+        >
+          <CircleHelp className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={panelRef}
+              id={panelId}
+              role="dialog"
+              aria-live="polite"
+              onMouseEnter={clearCloseTimer}
+              onMouseLeave={scheduleClose}
+              style={
+                panelStyle
+                  ? {
+                      top: panelStyle.top,
+                      left: panelStyle.left,
+                      width: panelStyle.width,
+                    }
+                  : undefined
+              }
+              className={cn(
+                "fixed z-[160] origin-top-left rounded-2xl border border-border bg-background p-4 shadow-[0_22px_56px_rgba(15,23,42,0.16)]",
+                "transition-[opacity,transform] duration-150 ease-out",
+                panelStyle ? "opacity-100 scale-100" : "opacity-0 scale-95",
+              )}
+            >
+              <div className="pointer-events-none absolute left-4 top-0 h-2 w-2 -translate-y-1/2 rounded-full border border-border bg-background shadow-sm" />
+              <div className="space-y-3 text-left">
+                {title ? (
+                  <p className="pr-4 text-sm font-semibold text-foreground">{title}</p>
+                ) : null}
+                <p className="text-xs leading-5 text-foreground/80">{description}</p>
+                {usageItems.length ? (
+                  <div className="space-y-2">
+                    {usageTitle ? (
+                      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/72">
+                        {usageTitle}
+                      </p>
+                    ) : null}
+                    <ul className="space-y-1 text-xs leading-5 text-foreground/74">
+                      {usageItems.map((item, index) => (
+                        <li key={index} className="flex gap-2">
+                          <span className="mt-[0.4rem] h-1 w-1 rounded-full bg-foreground/50" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}

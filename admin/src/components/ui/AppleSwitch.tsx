@@ -20,7 +20,7 @@ export function AppleSwitch({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 rounded-2xl border border-white/45 bg-white/65 px-4 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.05)] backdrop-blur-xl transition-colors hover:bg-white/75 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]",
+        "admin-transition-fast flex items-center justify-between gap-4 rounded-[var(--admin-radius-lg)] admin-glass px-4 py-3 shadow-[var(--admin-shadow-sm)] transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:bg-[rgb(var(--admin-surface-1)/0.78)] dark:hover:bg-white/[0.05]",
         disabled && "cursor-not-allowed opacity-60",
         className,
       )}

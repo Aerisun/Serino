@@ -26,11 +26,12 @@ import PageMeta from "@/components/PageMeta";
 import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
 import TableOfContents from "@/components/TableOfContents";
-import { useFeatureFlags } from "@/contexts/runtime-config";
+import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { useReadDiaryEntryApiV1PublicDiarySlugGet } from "@serino/api-client/public";
+import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import type { BaseViewPageConfig } from "@/lib/page-config";
 
 type Weather =
   | "sunny"
@@ -95,6 +96,14 @@ interface DiaryData {
   comments: number | null;
 }
 
+interface DiaryDetailPageConfig extends BaseViewPageConfig {
+  detailBackLabel?: string;
+  detailListLabel?: string;
+  detailMissingTitle?: string;
+  detailMissingDescription?: string;
+  detailEndLabel?: string;
+}
+
 const formatWeekday = (value: string | null) => {
   if (!value) return "";
   const parsed = new Date(value);
@@ -119,10 +128,19 @@ const DiaryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
+  const diaryConfig = (usePageConfig().diary ?? {}) as DiaryDetailPageConfig;
+  const detailBackLabel = diaryConfig.detailBackLabel ?? "返回";
+  const detailListLabel = diaryConfig.detailListLabel ?? "返回列表";
+  const detailMissingTitle = diaryConfig.detailMissingTitle ?? "日记不存在";
+  const detailMissingDescription =
+    diaryConfig.detailMissingDescription ?? "你访问的日记暂时不存在。";
+  const detailEndLabel = diaryConfig.detailEndLabel ?? "— 今日份记录 —";
+  const errorTitle = diaryConfig.errorTitle ?? "日记加载失败";
+  const retryLabel = diaryConfig.retryLabel ?? "重试";
   const articleRef = useRef<HTMLDivElement>(null);
 
   const slug = id ? decodeURIComponent(id) : "";
-  const { data: response, isLoading, isError, error, refetch } = useReadDiaryEntryApiV1PublicDiarySlugGet(slug, { query: { enabled: !!id } });
+  const { data: response, isLoading, isError, error, refetch } = useReadDiaryEntryApiV1SiteDiarySlugGet(slug, { query: { enabled: !!id } });
 
   const entry = response?.data ? buildRemoteDiaryEntry(response.data) : null;
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
@@ -133,8 +151,8 @@ const DiaryDetail = () => {
       : entry ? "ready" : "empty";
   const errorMessage = isError
     ? is404
-      ? "日记不存在或已被移除"
-      : error instanceof Error ? error.message : "日记加载失败"
+      ? detailMissingDescription
+      : error instanceof Error ? error.message : errorTitle
     : !id ? "缺少日记标识" : "";
 
   const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
@@ -143,8 +161,8 @@ const DiaryDetail = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
-        title={entry?.title ?? (status === "error" ? "日记加载失败" : "日记不存在")}
-        description={entry?.body.slice(0, 150) ?? (errorMessage || "你访问的日记暂时不存在。")}
+        title={entry?.title ?? (status === "error" ? errorTitle : detailMissingTitle)}
+        description={entry?.body.slice(0, 150) ?? (errorMessage || detailMissingDescription)}
       />
       {entry && (
         <JsonLd
@@ -167,7 +185,7 @@ const DiaryDetail = () => {
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
           <ArrowLeft className="h-4 w-4" />
-          返回
+          {detailBackLabel}
         </motion.button>
 
         {status === "loading" ? (
@@ -257,7 +275,7 @@ const DiaryDetail = () => {
             )}
 
             <div className="mt-10 text-center">
-              <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">— 今日份记录 —</p>
+              <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">{detailEndLabel}</p>
             </div>
 
             <CommentSection
@@ -273,17 +291,17 @@ const DiaryDetail = () => {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <p className="text-sm font-body text-foreground/40">
-              {status === "error" ? "日记加载失败" : "日记不存在"}
+              {status === "error" ? errorTitle : detailMissingTitle}
             </p>
             <p className="mt-2 text-xs font-body text-foreground/25">
-              {errorMessage || "你访问的日记暂时不存在。"}
+              {errorMessage || detailMissingDescription}
             </p>
             <button
               type="button"
               onClick={status === "error" ? () => refetch() : () => navigate("/diary")}
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
-              {status === "error" ? "重试" : "返回列表"}
+              {status === "error" ? retryLabel : detailListLabel}
             </button>
           </motion.div>
         )}

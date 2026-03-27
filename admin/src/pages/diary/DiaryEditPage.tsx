@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHeaderActions";
 import { Label } from "@/components/ui/Label";
 import {
   Select,
@@ -28,10 +29,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { StatusVisibilityPills } from "@/components/StatusVisibilityPills";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import { Trash2, LogOut, ExternalLink, Eye, Check } from "lucide-react";
+import { Trash2, ExternalLink, Eye } from "lucide-react";
 
 const WEATHER_OPTIONS = [
   { value: "sunny", label: "晴" },
@@ -321,37 +321,42 @@ export default function DiaryEditPage() {
       <PageHeader
         title={isNew ? t("diary.newEntry") : t("diary.editEntry")}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusVisibilityPills visibility={form.visibility} onToggleVisibility={() => setField("visibility", form.visibility === "public" ? "private" : "public")} />
-            {form.status === "published" && form.visibility === "public" && !isNew && form.slug ? (
-              <Button
-                variant="outline"
-                className="preview-glow-button"
-                onClick={() =>
-                  window.open(`${frontendUrl}/diary/${form.slug}`, "_blank")
-                }
-              >
-                <ExternalLink className="h-4 w-4 mr-2" /> {t("common.preview")}
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="preview-glow-button"
-                onClick={openPreview}
-                disabled={!form.body}
-              >
-                <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}
-              </Button>
-            )}
-            <Button variant="secondary" className="bg-slate-100 text-slate-900 border-slate-200 shadow-none backdrop-blur-0 ring-0 hover:bg-slate-200 hover:text-slate-950 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" onClick={() => void saveDiary("draft")} disabled={isSaving}>
-              <LogOut className="h-4 w-4 mr-2" /> {" "}
-              {isSaving ? t("common.saving") : t("common.saveDraft")}
-            </Button>
-            <Button variant="secondary" className="bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:text-white dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400" onClick={() => void saveDiary("confirm")} disabled={isSaving}>
-              <Check className="h-4 w-4 mr-2" /> {" "}
-              {isSaving ? t("common.saving") : t("common.confirm")}
-            </Button>
-          </div>
+          <ContentEditorHeaderActions
+            visibility={form.visibility}
+            isSaving={isSaving}
+            onToggleVisibility={() =>
+              setField(
+                "visibility",
+                form.visibility === "public" ? "private" : "public",
+              )
+            }
+            onSaveDraft={() => void saveDiary("draft")}
+            onConfirm={() => void saveDiary("confirm")}
+            extraActions={
+              form.status === "published" && form.visibility === "public" && !isNew && form.slug ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="preview-glow-button"
+                  onClick={() =>
+                    window.open(`${frontendUrl}/diary/${form.slug}`, "_blank")
+                  }
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" /> {t("common.preview")}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="preview-glow-button"
+                  onClick={openPreview}
+                  disabled={!form.body}
+                >
+                  <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}
+                </Button>
+              )
+            }
+          />
         }
       />
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">

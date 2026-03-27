@@ -6,10 +6,8 @@ import {
   useUpdateProfileApiV1AdminSiteConfigProfilePut,
 } from "@serino/api-client/admin";
 import type { SiteProfileAdminRead } from "@serino/api-client/models";
-import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +59,37 @@ export function MoreTab() {
     },
   ] as const;
 
+  const resolvedFeatureFlags = flags.reduce<Record<string, boolean>>((acc, flag) => {
+    acc[flag.key] = featureFlags[flag.key] ?? true;
+    return acc;
+  }, {});
+
+  const buildSaveData = (nextFeatureFlags: Record<string, boolean>) => ({
+    name: profile?.name ?? "",
+    title: profile?.title ?? "",
+    bio: profile?.bio ?? "",
+    role: profile?.role ?? "",
+    footer_text: profile?.footer_text ?? "",
+    hero_video_url: profile?.hero_video_url ?? "",
+    feature_flags: nextFeatureFlags,
+  });
+
+  const handleToggle = async (flagKey: string) => {
+    const previousFlags = resolvedFeatureFlags;
+    const nextFeatureFlags = {
+      ...resolvedFeatureFlags,
+      [flagKey]: !resolvedFeatureFlags[flagKey],
+    };
+
+    setFeatureFlags(nextFeatureFlags);
+
+    try {
+      await save.mutateAsync({ data: buildSaveData(nextFeatureFlags) });
+    } catch {
+      setFeatureFlags(previousFlags);
+    }
+  };
+
   return (
     <Card className="mt-4 max-w-2xl">
       <CardContent className="pt-6 space-y-4">
@@ -73,7 +102,7 @@ export function MoreTab() {
 
         <div className="space-y-4">
           {flags.map((flag) => {
-            const enabled = featureFlags[flag.key] ?? true;
+            const enabled = resolvedFeatureFlags[flag.key];
             return (
               <label
                 key={flag.key}
@@ -87,12 +116,8 @@ export function MoreTab() {
                   type="button"
                   role="switch"
                   aria-checked={enabled}
-                  onClick={() =>
-                    setFeatureFlags((prev) => ({
-                      ...prev,
-                      [flag.key]: !enabled,
-                    }))
-                  }
+                  onClick={() => void handleToggle(flag.key)}
+                  disabled={save.isPending}
                   className={cn(
                     "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-all",
                     enabled
@@ -111,26 +136,6 @@ export function MoreTab() {
             );
           })}
         </div>
-
-        <Button
-          onClick={() =>
-            save.mutate({
-              data: {
-                name: profile?.name ?? "",
-                title: profile?.title ?? "",
-                bio: profile?.bio ?? "",
-                role: profile?.role ?? "",
-                footer_text: profile?.footer_text ?? "",
-                hero_video_url: profile?.hero_video_url ?? "",
-                feature_flags: featureFlags,
-              },
-            })
-          }
-          disabled={save.isPending}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {save.isPending ? t("common.saving") : t("common.save")}
-        </Button>
       </CardContent>
     </Card>
   );

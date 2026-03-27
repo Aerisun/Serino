@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useListApiKeysApiV1AdminSystemApiKeysGet,
-  useCreateApiKeyApiV1AdminSystemApiKeysPost,
-  useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete,
-  getListApiKeysApiV1AdminSystemApiKeysGetQueryKey,
+  useListApiKeysApiV1AdminIntegrationsApiKeysGet,
+  useCreateApiKeyApiV1AdminIntegrationsApiKeysPost,
+  useDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete,
+  getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey,
 } from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
@@ -25,23 +25,23 @@ export default function ApiKeysPage() {
   const [rawKey, setRawKey] = useState<string | null>(null);
   const [form, setForm] = useState({ key_name: "", scopes: "" });
 
-  const { data: raw, isLoading } = useListApiKeysApiV1AdminSystemApiKeysGet();
+  const { data: raw, isLoading } = useListApiKeysApiV1AdminIntegrationsApiKeysGet();
   const data = raw?.data as ApiKeyAdminRead[] | undefined;
 
-  const create = useCreateApiKeyApiV1AdminSystemApiKeysPost({
+  const create = useCreateApiKeyApiV1AdminIntegrationsApiKeysPost({
     mutation: {
       onSuccess: (res) => {
         setRawKey(res.data.raw_key);
-        queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminSystemApiKeysGetQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey() });
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
     },
   });
 
-  const del = useDeleteApiKeyApiV1AdminSystemApiKeysKeyIdDelete({
+  const del = useDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete({
     mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminSystemApiKeysGetQueryKey() }); toast.success(t("common.operationSuccess")); },
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey() }); toast.success(t("common.operationSuccess")); },
       onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
     },
   });

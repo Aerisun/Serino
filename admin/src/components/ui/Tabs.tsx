@@ -10,7 +10,10 @@ export const TabsList = forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("inline-flex h-10 items-center justify-center rounded-md admin-glass p-1 text-muted-foreground", className)}
+    className={cn(
+      "inline-flex min-h-11 items-center justify-center rounded-[var(--admin-radius-lg)] admin-glass p-1 text-muted-foreground shadow-none",
+      className
+    )}
     {...props}
   />
 ));
@@ -23,7 +26,7 @@ export const TabsTrigger = forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white/70 dark:data-[state=active]:bg-white/10 data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+      "admin-transition-fast inline-flex items-center justify-center whitespace-nowrap rounded-[var(--admin-radius-sm)] px-3 py-2 text-sm font-medium ring-offset-background transition-[background-color,color,box-shadow,transform,opacity] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-[rgb(var(--admin-surface-1)/0.8)] dark:data-[state=active]:bg-white/[0.08] data-[state=active]:text-foreground data-[state=active]:shadow-none",
       className
     )}
     {...props}

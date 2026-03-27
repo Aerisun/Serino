@@ -3,7 +3,10 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import { useI18n } from "@/i18n";
-import { listCommentsApiV1AdminModerationCommentsGet, listGuestbookApiV1AdminModerationGuestbookGet } from "@serino/api-client/admin";
+import {
+  listCommentsApiV1AdminModerationCommentsGet,
+  listGuestbookApiV1AdminModerationGuestbookGet,
+} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import {
   LayoutDashboard,
@@ -29,6 +32,7 @@ import {
   User,
   UserCog,
   Info,
+  Rss,
 } from "lucide-react";
 import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
@@ -45,7 +49,11 @@ const navGroups = [
       { to: "/diary", icon: BookOpen, labelKey: "nav.diary" },
       { to: "/thoughts", icon: MessageSquare, labelKey: "nav.thoughts" },
       { to: "/excerpts", icon: Quote, labelKey: "nav.excerpts" },
-      { to: "/content/categories", icon: FolderTree, labelKey: "nav.contentCategories" },
+      {
+        to: "/content/categories",
+        icon: FolderTree,
+        labelKey: "nav.contentCategories",
+      },
       { to: "/resume", icon: Briefcase, labelKey: "nav.resume" },
     ],
   },
@@ -66,9 +74,16 @@ const navGroups = [
     ],
   },
   {
+    labelKey: "nav.integrations",
+    items: [
+      { to: "/integrations/api-keys", icon: Key, labelKey: "nav.apiKeys" },
+      { to: "/integrations/feeds", icon: Rss, labelKey: "nav.feeds" },
+      { to: "/integrations/mcp", icon: Globe, labelKey: "nav.mcp" },
+    ],
+  },
+  {
     labelKey: "nav.system",
     items: [
-      { to: "/system/api-keys", icon: Key, labelKey: "nav.apiKeys" },
       {
         to: "/system/audit-log",
         icon: ClipboardList,
@@ -90,12 +105,22 @@ export default function AdminLayout() {
 
   const { data: pendingComments } = useQuery({
     queryKey: ["comments", "pending-count"],
-    queryFn: () => listCommentsApiV1AdminModerationCommentsGet({ page: 1, page_size: 1, status: "pending" }),
+    queryFn: () =>
+      listCommentsApiV1AdminModerationCommentsGet({
+        page: 1,
+        page_size: 1,
+        status: "pending",
+      }),
     refetchInterval: 30000,
   });
   const { data: pendingGuestbook } = useQuery({
     queryKey: ["guestbook", "pending-count"],
-    queryFn: () => listGuestbookApiV1AdminModerationGuestbookGet({ page: 1, page_size: 1, status: "pending" }),
+    queryFn: () =>
+      listGuestbookApiV1AdminModerationGuestbookGet({
+        page: 1,
+        page_size: 1,
+        status: "pending",
+      }),
     refetchInterval: 30000,
   });
   const pendingCount =
@@ -121,8 +146,9 @@ export default function AdminLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/10 dark:hover:bg-white/5",
-                    isActive && "bg-white/15 dark:bg-white/8 text-accent-foreground font-medium",
+                    "admin-transition-fast flex items-center gap-3 px-4 py-2 text-sm transition-[background-color,color,box-shadow] hover:bg-[rgb(var(--admin-surface-1)/0.6)] dark:hover:bg-white/[0.05]",
+                    isActive &&
+                      "bg-[rgb(var(--admin-surface-1)/0.82)] dark:bg-white/[0.08] text-accent-foreground font-medium shadow-[0_12px_30px_-18px_rgb(var(--admin-accent-rgb)/0.46)]",
                     collapsed && "justify-center px-2",
                   )
                 }

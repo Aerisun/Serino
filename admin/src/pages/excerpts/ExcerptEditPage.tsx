@@ -11,16 +11,16 @@ import {
 } from "@serino/api-client/admin";
 import type { ContentCreate, ContentUpdate } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
+import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHeaderActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { Label } from "@/components/ui/Label";
-import { StatusVisibilityPills } from "@/components/StatusVisibilityPills";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
-import { Trash2, LogOut, Check } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export default function ExcerptEditPage() {
   const { id } = useParams();
@@ -114,11 +114,18 @@ export default function ExcerptEditPage() {
       <PageHeader
         title={isNew ? t("excerpts.newExcerpt") : t("excerpts.editExcerpt")}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusVisibilityPills visibility={form.visibility} onToggleVisibility={() => setField("visibility", form.visibility === "public" ? "private" : "public")} />
-            <Button variant="secondary" className="border-white/70 bg-white/70 text-slate-900 shadow-[0_10px_30px_-12px_rgba(255,255,255,0.85)] backdrop-blur-md ring-1 ring-white/50 hover:bg-white/85 hover:shadow-[0_16px_40px_-14px_rgba(255,255,255,0.9)] dark:border-white/20 dark:bg-white/15 dark:text-white dark:ring-white/15 dark:hover:bg-white/20" onClick={() => void saveExcerpt("draft")} disabled={isSaving}><LogOut className="h-4 w-4 mr-2" /> {isSaving ? t("common.saving") : t("common.saveDraft")}</Button>
-            <Button variant="secondary" className="border-emerald-300/70 bg-emerald-500/85 text-white shadow-[0_10px_30px_-12px_rgba(34,197,94,0.75)] backdrop-blur-md ring-1 ring-emerald-200/50 hover:bg-emerald-500 hover:shadow-[0_16px_40px_-14px_rgba(34,197,94,0.85)] dark:border-emerald-400/30 dark:bg-emerald-500/75 dark:text-white dark:ring-emerald-300/20 dark:hover:bg-emerald-400/80" onClick={() => void saveExcerpt("confirm")} disabled={isSaving}><Check className="h-4 w-4 mr-2" /> {isSaving ? t("common.saving") : t("common.confirm")}</Button>
-          </div>
+          <ContentEditorHeaderActions
+            visibility={form.visibility}
+            isSaving={isSaving}
+            onToggleVisibility={() =>
+              setField(
+                "visibility",
+                form.visibility === "public" ? "private" : "public",
+              )
+            }
+            onSaveDraft={() => void saveExcerpt("draft")}
+            onConfirm={() => void saveExcerpt("confirm")}
+          />
         }
       />
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
