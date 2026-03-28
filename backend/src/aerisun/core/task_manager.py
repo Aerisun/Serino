@@ -59,18 +59,6 @@ class TaskManager:
                 coalesce=True,
             )
 
-        from aerisun.domain.subscription.service import dispatch_content_subscription_notifications
-
-        self._scheduler.add_job(
-            dispatch_content_subscription_notifications,
-            trigger="interval",
-            minutes=self._settings.subscription_dispatch_interval_minutes,
-            id="content_subscription_dispatch",
-            name="Content subscription dispatch",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-        )
         self._scheduler.add_job(
             self._dispatch_workflow_runs,
             trigger="interval",

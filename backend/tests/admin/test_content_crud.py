@@ -9,6 +9,7 @@ operations, search, pagination, and authentication guards.
 from __future__ import annotations
 
 import pytest
+from aerisun.domain.crud import service as crud_service
 
 # Base URL for all admin content endpoints.
 BASE = "/api/v1/admin"
@@ -95,6 +96,43 @@ class TestContentCRUDLifecycle:
         assert resp.json()["title"] == "Updated Title"
         # slug should remain unchanged
         assert resp.json()["slug"] == payload["slug"]
+
+    def test_create_published_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
+        calls: list[bool] = []
+        monkeypatch.setattr(
+            crud_service,
+            "_dispatch_content_subscriptions_if_needed",
+            lambda *args, **kwargs: calls.append(True),
+        )
+
+        payload = _make_payload(content_type, "-publish-create")
+        payload["status"] = "published"
+        payload["visibility"] = "public"
+        resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+
+        assert resp.status_code == 201
+        assert calls == [True]
+
+    def test_update_to_published_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
+        calls: list[bool] = []
+        monkeypatch.setattr(
+            crud_service,
+            "_dispatch_content_subscriptions_if_needed",
+            lambda *args, **kwargs: calls.append(True),
+        )
+
+        payload = _make_payload(content_type, "-publish-update")
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        item_id = create_resp.json()["id"]
+
+        resp = client.put(
+            f"{BASE}/{content_type}/{item_id}",
+            json={"status": "published", "visibility": "public"},
+            headers=admin_headers,
+        )
+
+        assert resp.status_code == 200
+        assert calls[-1:] == [True]
 
     def test_update_archived_private_to_public_becomes_draft(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-restore")
@@ -226,6 +264,30 @@ class TestContentBulkOperations:
         resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.json()["status"] == "published"
         assert resp.json()["visibility"] == "public"
+
+    def test_bulk_status_publish_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
+        calls: list[bool] = []
+        monkeypatch.setattr(
+            crud_service,
+            "_dispatch_content_subscriptions_if_needed",
+            lambda *args, **kwargs: calls.append(True),
+        )
+
+        resp = client.post(
+            f"{BASE}/{content_type}/",
+            json=_make_payload(content_type, "-bs-dispatch"),
+            headers=admin_headers,
+        )
+        item_id = resp.json()["id"]
+
+        resp = client.post(
+            f"{BASE}/{content_type}/bulk-status",
+            json={"ids": [item_id], "status": "published"},
+            headers=admin_headers,
+        )
+
+        assert resp.status_code == 200
+        assert calls[-1:] == [True]
 
     def test_bulk_archive_sets_private_visibility(self, client, admin_headers, content_type):
         resp = client.post(

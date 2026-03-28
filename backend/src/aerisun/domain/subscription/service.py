@@ -244,6 +244,8 @@ def subscription_enabled(session: Session) -> bool:
 def create_or_update_public_subscription(
     session: Session,
     payload: ContentSubscriptionPublicCreate,
+    *,
+    current_user: SiteUser | None = None,
 ) -> ContentSubscriptionPublicRead:
     config = get_subscription_config_orm(session)
     if not (config.enabled and config.smtp_test_passed):
@@ -262,11 +264,14 @@ def create_or_update_public_subscription(
     if subscriber is None:
         subscriber = ContentSubscriber(
             email=email,
+            initiator_site_user_id=current_user.id if current_user is not None else None,
             content_types=content_types,
             is_active=True,
         )
         session.add(subscriber)
     else:
+        if current_user is not None:
+            subscriber.initiator_site_user_id = current_user.id
         subscriber.content_types = content_types
         subscriber.is_active = True
 
@@ -594,20 +599,20 @@ def list_admin_subscribers(
     filters = [ContentSubscriber.is_active.is_(True)]
 
     normalized_search = " ".join((search or "").strip().split())
-    if normalized_search:
-        pattern = f"%{normalized_search}%"
-        filters.append(ContentSubscriber.email.ilike(pattern))
-
-    binding_exists = exists(
-        select(SiteUserOAuthAccount.id)
-        .join(SiteUser, SiteUser.id == SiteUserOAuthAccount.site_user_id)
-        .where(SiteUser.email == ContentSubscriber.email)
+    initiator_binding_exists = exists(
+        select(SiteUserOAuthAccount.id).where(
+            SiteUserOAuthAccount.site_user_id == ContentSubscriber.initiator_site_user_id
+        )
     )
+    initiator_exists = ContentSubscriber.initiator_site_user_id.is_not(None)
     if mode == "email":
-        filters.append(~binding_exists)
+        filters.append(initiator_exists)
+        filters.append(~initiator_binding_exists)
     elif mode == "binding":
-        filters.append(binding_exists)
-    elif mode not in {"all", "subscriber"}:
+        filters.append(initiator_binding_exists)
+    elif mode == "subscriber":
+        filters.append(initiator_exists)
+    elif mode != "all":
         raise ValidationError("不支持的订阅者筛选方式")
 
     stmt = (
@@ -615,15 +620,15 @@ def list_admin_subscribers(
         .where(*filters)
         .order_by(ContentSubscriber.updated_at.desc(), ContentSubscriber.created_at.desc())
     )
-    total = int(session.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
-    subscribers = list(session.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all())
+    subscribers = list(session.scalars(stmt).all())
 
-    emails = [item.email for item in subscribers]
-    if not emails:
-        return [], total
-
-    users = list(session.scalars(select(SiteUser).where(SiteUser.email.in_(emails))).all())
-    user_by_email = {user.email: user for user in users}
+    initiator_ids = [item.initiator_site_user_id for item in subscribers if item.initiator_site_user_id]
+    users = (
+        list(session.scalars(select(SiteUser).where(SiteUser.id.in_(initiator_ids))).all())
+        if initiator_ids
+        else []
+    )
+    user_by_id = {user.id: user for user in users}
     user_ids = [user.id for user in users]
     oauth_rows = (
         list(session.scalars(select(SiteUserOAuthAccount).where(SiteUserOAuthAccount.site_user_id.in_(user_ids))).all())
@@ -634,6 +639,7 @@ def list_admin_subscribers(
     for row in oauth_rows:
         oauth_map.setdefault(row.site_user_id, []).append(row.provider)
 
+    emails = [item.email for item in subscribers]
     stats_rows = session.execute(
         select(
             ContentNotificationDelivery.subscriber_email,
@@ -656,7 +662,11 @@ def list_admin_subscribers(
 
     items: list[ContentSubscriberAdminRead] = []
     for subscriber in subscribers:
-        matched_user = user_by_email.get(subscriber.email)
+        matched_user = (
+            user_by_id.get(subscriber.initiator_site_user_id)
+            if subscriber.initiator_site_user_id
+            else None
+        )
         providers = sorted(set(oauth_map.get(matched_user.id, []))) if matched_user else []
         auth_mode = "unknown"
         if matched_user is not None:
@@ -668,6 +678,7 @@ def list_admin_subscribers(
                 is_active=bool(subscriber.is_active),
                 content_types=list(subscriber.content_types or []),
                 auth_mode=auth_mode,
+                initiator_email=matched_user.email if matched_user else None,
                 display_name=matched_user.display_name if matched_user else None,
                 avatar_url=matched_user.avatar_url if matched_user else None,
                 primary_auth_provider=matched_user.primary_auth_provider if matched_user else None,
@@ -678,7 +689,20 @@ def list_admin_subscribers(
                 updated_at=subscriber.updated_at,
             )
         )
-    return items, total
+    if normalized_search:
+        pattern = normalized_search.casefold()
+        items = [
+            item
+            for item in items
+            if pattern in item.email.casefold()
+            or pattern in (item.initiator_email or "").casefold()
+            or pattern in (item.display_name or "").casefold()
+        ]
+
+    total = len(items)
+    start = max(0, (page - 1) * page_size)
+    end = start + page_size
+    return items[start:end], total
 
 
 def list_subscriber_delivery_history(

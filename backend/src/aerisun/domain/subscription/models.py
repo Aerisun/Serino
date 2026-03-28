@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, uuid_str
@@ -53,6 +53,12 @@ class ContentSubscriber(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    initiator_site_user_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("site_users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     content_types: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

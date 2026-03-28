@@ -19,6 +19,10 @@ class ContentSubscriptionPublicRead(BaseModel):
     subscribed: bool = Field(default=True, description="Whether the subscription is active")
 
 
+class ContentSubscriptionPublicEmailRequest(BaseModel):
+    email: str = Field(description="Subscriber email address")
+
+
 class ContentSubscriptionPublicStatusRead(BaseModel):
     email: str = Field(description="Subscriber email address")
     content_types: list[str] = Field(description="Subscribed content types")
@@ -89,12 +93,13 @@ class ContentSubscriberAdminRead(ModelBase):
     is_active: bool = Field(description="Whether subscription is active")
     content_types: list[str] = Field(default_factory=list, description="Subscribed content types")
     auth_mode: Literal["email", "binding", "unknown"] = Field(
-        description="Whether the subscriber email maps to email-only user, bound account user, or unknown user"
+        description="Whether the initiating visitor is email-only, bound account user, or unknown"
     )
-    display_name: str | None = Field(default=None, description="Matched site user display name")
-    avatar_url: str | None = Field(default=None, description="Matched site user avatar")
-    primary_auth_provider: str | None = Field(default=None, description="Matched site user primary auth provider")
-    oauth_providers: list[str] = Field(default_factory=list, description="Matched OAuth providers")
+    initiator_email: str | None = Field(default=None, description="Initiating visitor email")
+    display_name: str | None = Field(default=None, description="Initiating visitor display name")
+    avatar_url: str | None = Field(default=None, description="Initiating visitor avatar")
+    primary_auth_provider: str | None = Field(default=None, description="Initiating visitor primary auth provider")
+    oauth_providers: list[str] = Field(default_factory=list, description="Initiating visitor OAuth providers")
     sent_count: int = Field(default=0, description="Number of successful deliveries")
     last_sent_at: datetime | None = Field(default=None, description="Last successful delivery time")
     created_at: datetime = Field(description="Creation time")

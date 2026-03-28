@@ -3,6 +3,7 @@ from __future__ import annotations
 from aerisun.core.db import get_session_factory
 from aerisun.domain.subscription.models import ContentSubscriber
 from aerisun.domain.subscription.service import get_subscription_config_orm
+from aerisun.domain.site_auth.models import SiteUser
 
 PUBLIC_BASE = "/api/v1/site"
 
@@ -141,6 +142,49 @@ def test_public_subscription_me_requires_login(client) -> None:
     assert response.json()["detail"] == "请先登录。"
 
 
+def test_public_subscription_status_and_unsubscribe_by_email(client, monkeypatch) -> None:
+    _enable_subscriptions()
+    monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
+
+    create_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "reader@example.com", "content_types": ["posts", "thoughts"]},
+    )
+    assert create_response.status_code == 201
+
+    status_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/status",
+        json={"email": "Reader@Example.com"},
+    )
+    assert status_response.status_code == 200
+    assert status_response.json() == {
+        "email": "reader@example.com",
+        "content_types": ["posts", "thoughts"],
+        "subscribed": True,
+    }
+
+    unsubscribe_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/unsubscribe",
+        json={"email": "Reader@Example.com"},
+    )
+    assert unsubscribe_response.status_code == 200
+    assert unsubscribe_response.json() == {
+        "email": "reader@example.com",
+        "unsubscribed": True,
+    }
+
+    status_after_response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/status",
+        json={"email": "reader@example.com"},
+    )
+    assert status_after_response.status_code == 200
+    assert status_after_response.json() == {
+        "email": "reader@example.com",
+        "content_types": ["posts", "thoughts"],
+        "subscribed": False,
+    }
+
+
 def test_public_subscription_me_status_and_unsubscribe(client, monkeypatch) -> None:
     _enable_subscriptions()
     monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
@@ -174,3 +218,24 @@ def test_public_subscription_me_status_and_unsubscribe(client, monkeypatch) -> N
         "content_types": ["posts", "thoughts"],
         "subscribed": False,
     }
+
+
+def test_public_subscription_stores_initiating_visitor_independently_from_subscription_email(client, monkeypatch) -> None:
+    _enable_subscriptions()
+    monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
+    _login_site_user(client, email="visitor@example.com")
+
+    response = client.post(
+        f"{PUBLIC_BASE}/subscriptions/",
+        json={"email": "delivery@example.com", "content_types": ["posts"]},
+    )
+
+    assert response.status_code == 201
+
+    with get_session_factory()() as session:
+        subscriber = session.query(ContentSubscriber).filter(ContentSubscriber.email == "delivery@example.com").first()
+        visitor = session.query(SiteUser).filter(SiteUser.email == "visitor@example.com").first()
+
+    assert subscriber is not None
+    assert visitor is not None
+    assert subscriber.initiator_site_user_id == visitor.id

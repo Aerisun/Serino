@@ -17,6 +17,7 @@ from aerisun.domain.subscription.service import (
     dispatch_content_subscription_notifications,
     get_subscription_config_orm,
 )
+from aerisun.domain.site_auth.models import SiteUser
 
 ADMIN_BASE = "/api/v1/admin/subscriptions"
 
@@ -407,9 +408,19 @@ def test_admin_subscription_config_test_email_requires_microsoft_oauth2_fields(c
 
 def test_admin_subscription_lists_subscribers(client, admin_headers) -> None:
     with get_session_factory()() as session:
+        visitor = SiteUser(
+            email="visitor@example.com",
+            display_name="订阅访客",
+            avatar_url="https://example.com/avatar.png",
+            primary_auth_provider="email",
+            is_active=True,
+        )
+        session.add(visitor)
+        session.flush()
         session.add(
             ContentSubscriber(
                 email="reader@example.com",
+                initiator_site_user_id=visitor.id,
                 content_types=["posts", "diary"],
                 is_active=True,
             )
@@ -436,6 +447,8 @@ def test_admin_subscription_lists_subscribers(client, admin_headers) -> None:
     row = next((item for item in payload["items"] if item["email"] == "reader@example.com"), None)
     assert row is not None
     assert row["content_types"] == ["posts", "diary"]
+    assert row["display_name"] == "订阅访客"
+    assert row["initiator_email"] == "visitor@example.com"
     assert row["sent_count"] >= 1
 
 

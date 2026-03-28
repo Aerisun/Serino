@@ -11,8 +11,36 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
 from aerisun.domain.content.service import resolve_content_bulk_state
+from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
+
+CONTENT_PUBLICATION_MODELS = (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
+
+
+def _is_published_public(obj: Any) -> bool:
+    return (
+        getattr(obj, "status", None) == "published"
+        and getattr(obj, "visibility", None) == "public"
+    )
+
+
+def _dispatch_content_subscriptions_if_needed(model: type[Base], *, obj: Any | None = None, status: str | None = None, visibility: str | None = None) -> None:
+    if model not in CONTENT_PUBLICATION_MODELS:
+        return
+
+    should_dispatch = False
+    if obj is not None:
+        should_dispatch = _is_published_public(obj)
+    elif status is not None:
+        should_dispatch = status == "published" and visibility == "public"
+
+    if not should_dispatch:
+        return
+
+    from aerisun.domain.subscription.service import dispatch_content_subscription_notifications
+
+    dispatch_content_subscription_notifications()
 
 
 def list_items(
@@ -75,6 +103,7 @@ def create_item(
 ) -> BaseModel:
     data = payload.model_dump()
     obj = repo.create_one(session, model, data, prepare_data=prepare_data)
+    _dispatch_content_subscriptions_if_needed(model, obj=obj)
     return read_schema.model_validate(obj)
 
 
@@ -95,6 +124,7 @@ def update_item(
     if prepare_data is not None:
         data = prepare_data(session, obj, data)
     obj = repo.update_one(session, obj, data)
+    _dispatch_content_subscriptions_if_needed(model, obj=obj)
     return read_schema.model_validate(obj)
 
 
@@ -143,5 +173,10 @@ def bulk_update_status_items(
         normalized_status,
         visibility=visibility,
         base_query_factory=base_query_factory,
+    )
+    _dispatch_content_subscriptions_if_needed(
+        model,
+        status=normalized_status,
+        visibility=visibility or "public",
     )
     return {"affected": affected}
