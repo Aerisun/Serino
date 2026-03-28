@@ -208,7 +208,7 @@ export function VisitorsSubscribersPanel({
                 {row.display_name || "未匹配访客身份"}
               </div>
               <div className="truncate text-xs text-muted-foreground">
-                {row.primary_auth_provider || "email"}
+                {row.initiator_email || row.primary_auth_provider || "未记录访客邮箱"}
               </div>
             </div>
           </div>

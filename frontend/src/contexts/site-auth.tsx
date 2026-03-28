@@ -7,24 +7,42 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { BellOff, Github, Loader2, Mail, RefreshCcw, Sparkles, UserRoundPen } from "lucide-react";
+import {
+  Check,
+  BellOff,
+  Github,
+  Loader2,
+  Mail,
+  RefreshCcw,
+  Sparkles,
+  UserRoundPen,
+} from "lucide-react";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
   getOAuthAuthorizationUrl,
   loginWithEmail,
   logoutSiteAuth,
-  readMyContentSubscription,
+  readContentSubscriptionByEmail,
   readAvatarCandidates,
   readSiteAuthState,
   type SiteContentSubscriptionStatus,
   type SiteAuthAvatarCandidate,
   type SiteAuthAvatarCandidateBatch,
   type SiteAuthState,
-  unsubscribeMyContentSubscription,
+  unsubscribeContentSubscriptionByEmail,
   updateSiteAuthProfile,
 } from "@/lib/site-auth";
-import { SiteAuthContext, type SiteAuthContextValue } from "@/contexts/site-auth-context";
+import {
+  getTrackedSubscriptionEmails,
+  replaceTrackedSubscriptionEmails,
+  trackSubscriptionEmail,
+  untrackSubscriptionEmail,
+} from "@/lib/subscription-tracker";
+import {
+  SiteAuthContext,
+  type SiteAuthContextValue,
+} from "@/contexts/site-auth-context";
 type AuthDialogMode = "login" | "profile";
 
 const CONTENT_TYPE_LABELS: Record<string, string> = {
@@ -34,8 +52,24 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   excerpts: "摘录",
 };
 
+interface SubscriptionChangedDetail {
+  email: string;
+  content_types: string[];
+  subscribed: boolean;
+}
+
+const PROFILE_AVATAR_PICKER_COUNT = 12;
+
+function normalizeEmail(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
 function providerLabel(provider: string) {
-  return provider === "google" ? "Google" : provider === "github" ? "GitHub" : provider;
+  return provider === "google"
+    ? "Google"
+    : provider === "github"
+      ? "GitHub"
+      : provider;
 }
 
 function providerIcon(provider: string) {
@@ -55,14 +89,20 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const [allowEmailLoginInDialog, setAllowEmailLoginInDialog] = useState(true);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [avatarCandidates, setAvatarCandidates] = useState<SiteAuthAvatarCandidate[]>([]);
+  const [avatarCandidates, setAvatarCandidates] = useState<
+    SiteAuthAvatarCandidate[]
+  >([]);
   const [selectedAvatar, setSelectedAvatar] = useState("");
   const [avatarBatch, setAvatarBatch] = useState(0);
   const [avatarTotalBatches, setAvatarTotalBatches] = useState(1);
   const [needsProfile, setNeedsProfile] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SiteContentSubscriptionStatus | null>(null);
+  const [subscriptionStatuses, setSubscriptionStatuses] = useState<
+    SiteContentSubscriptionStatus[]
+  >([]);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [subscriptionPending, setSubscriptionPending] = useState(false);
+  const [subscriptionPendingEmail, setSubscriptionPendingEmail] = useState<
+    string | null
+  >(null);
   const [subscriptionFeedback, setSubscriptionFeedback] = useState<{
     kind: "success" | "error";
     message: string;
@@ -93,9 +133,9 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     setAvatarBatch(0);
     setAvatarTotalBatches(1);
     setAvatarLoading(false);
-    setSubscriptionStatus(null);
+    setSubscriptionStatuses([]);
     setSubscriptionLoading(false);
-    setSubscriptionPending(false);
+    setSubscriptionPendingEmail(null);
     setSubscriptionFeedback(null);
     setMode("login");
   }, []);
@@ -116,17 +156,23 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     resetForm();
   }, [resetForm]);
 
-  const openLogin = useCallback((options?: { allowEmailLogin?: boolean }) => {
-    resetForm();
-    setAllowEmailLoginInDialog(options?.allowEmailLogin !== false);
-    setMode("login");
-    setOpen(true);
-  }, [resetForm]);
+  const openLogin = useCallback(
+    (options?: { allowEmailLogin?: boolean }) => {
+      resetForm();
+      setAllowEmailLoginInDialog(options?.allowEmailLogin !== false);
+      setMode("login");
+      setOpen(true);
+    },
+    [resetForm],
+  );
 
   const applyAvatarBatch = useCallback(
     (result: SiteAuthAvatarCandidateBatch, preferredAvatar?: string) => {
       const nextCandidates =
-        preferredAvatar && !result.avatar_candidates.some((candidate) => candidate.avatar_url === preferredAvatar)
+        preferredAvatar &&
+        !result.avatar_candidates.some(
+          (candidate) => candidate.avatar_url === preferredAvatar,
+        )
           ? [
               {
                 key: `current:${preferredAvatar}`,
@@ -136,18 +182,27 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
               ...result.avatar_candidates,
             ]
           : result.avatar_candidates;
+      const visibleCandidates = nextCandidates.slice(
+        0,
+        PROFILE_AVATAR_PICKER_COUNT,
+      );
 
-      setAvatarCandidates(nextCandidates);
+      setAvatarCandidates(visibleCandidates);
       setAvatarBatch(result.batch);
       setAvatarTotalBatches(result.total_batches);
       setSelectedAvatar((current) => {
         if (preferredAvatar) {
           return preferredAvatar;
         }
-        if (current && nextCandidates.some((candidate) => candidate.avatar_url === current)) {
+        if (
+          current &&
+          visibleCandidates.some(
+            (candidate) => candidate.avatar_url === current,
+          )
+        ) {
           return current;
         }
-        return nextCandidates[0]?.avatar_url || "";
+        return visibleCandidates[0]?.avatar_url || "";
       });
     },
     [],
@@ -158,7 +213,10 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       setAvatarLoading(true);
       setError(null);
       try {
-        const result = await readAvatarCandidates({ identity, batch: nextBatch });
+        const result = await readAvatarCandidates({
+          identity,
+          batch: nextBatch,
+        });
         applyAvatarBatch(result, preferredAvatar);
       } catch (err) {
         setError(err instanceof Error ? err.message : "头像加载失败");
@@ -192,14 +250,26 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     void loadAvatarBatch(authState.user.email, 0, authState.user.avatar_url);
   }, [authState?.user, loadAvatarBatch, mode, open]);
 
-  const loadSubscriptionStatus = useCallback(async () => {
-    if (!authState?.user) {
-      return;
-    }
+  const loadSubscriptionStatuses = useCallback(async () => {
     setSubscriptionLoading(true);
+    setSubscriptionFeedback(null);
     try {
-      const nextStatus = await readMyContentSubscription();
-      setSubscriptionStatus(nextStatus);
+      const trackedEmails = getTrackedSubscriptionEmails();
+      if (trackedEmails.length === 0) {
+        setSubscriptionStatuses([]);
+        return;
+      }
+
+      const nextStatuses = await Promise.all(
+        trackedEmails.map((trackedEmail) =>
+          readContentSubscriptionByEmail(trackedEmail),
+        ),
+      );
+      const activeStatuses = nextStatuses.filter((item) => item.subscribed);
+      replaceTrackedSubscriptionEmails(
+        activeStatuses.map((item) => item.email),
+      );
+      setSubscriptionStatuses(activeStatuses);
     } catch (err) {
       setSubscriptionFeedback({
         kind: "error",
@@ -208,14 +278,65 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setSubscriptionLoading(false);
     }
-  }, [authState?.user]);
+  }, []);
 
   useEffect(() => {
-    if (!open || mode !== "profile" || !authState?.user) {
+    if (!open || mode !== "profile") {
       return;
     }
-    void loadSubscriptionStatus();
-  }, [authState?.user, loadSubscriptionStatus, mode, open]);
+    void loadSubscriptionStatuses();
+  }, [loadSubscriptionStatuses, mode, open]);
+
+  useEffect(() => {
+    const handleSubscriptionChanged = (event: Event) => {
+      const detail = (event as CustomEvent<SubscriptionChangedDetail>).detail;
+      if (!detail) {
+        return;
+      }
+
+      if (detail.subscribed) {
+        trackSubscriptionEmail(detail.email);
+      } else {
+        untrackSubscriptionEmail(detail.email);
+      }
+
+      setSubscriptionStatuses((current) => {
+        const normalized = normalizeEmail(detail.email);
+        const remaining = current.filter(
+          (item) => normalizeEmail(item.email) !== normalized,
+        );
+        if (!detail.subscribed) {
+          return remaining;
+        }
+        return [
+          {
+            email: detail.email,
+            content_types: detail.content_types,
+            subscribed: detail.subscribed,
+          },
+          ...remaining,
+        ];
+      });
+      setSubscriptionLoading(false);
+      setSubscriptionFeedback({
+        kind: detail.subscribed ? "success" : "error",
+        message: detail.subscribed
+          ? `订阅列表已加入 ${detail.email}。`
+          : `${detail.email} 已从订阅列表移除。`,
+      });
+    };
+
+    window.addEventListener(
+      "aerisun:subscription-changed",
+      handleSubscriptionChanged,
+    );
+    return () => {
+      window.removeEventListener(
+        "aerisun:subscription-changed",
+        handleSubscriptionChanged,
+      );
+    };
+  }, []);
 
   const handleEmailLogin = useCallback(async () => {
     setSubmitting(true);
@@ -237,13 +358,11 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         setNeedsProfile(true);
         setMode("login");
         setDisplayName(result.suggested_display_name || "");
-        applyAvatarBatch(
-          {
-            batch: result.avatar_batch,
-            total_batches: result.avatar_total_batches,
-            avatar_candidates: result.avatar_candidates,
-          },
-        );
+        applyAvatarBatch({
+          batch: result.avatar_batch,
+          total_batches: result.avatar_total_batches,
+          avatar_candidates: result.avatar_candidates,
+        });
         return;
       }
 
@@ -259,7 +378,14 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setSubmitting(false);
     }
-  }, [applyAvatarBatch, closeLogin, displayName, email, needsProfile, selectedAvatar]);
+  }, [
+    applyAvatarBatch,
+    closeLogin,
+    displayName,
+    email,
+    needsProfile,
+    selectedAvatar,
+  ]);
 
   const handleProfileUpdate = useCallback(async () => {
     if (!displayName.trim() || !selectedAvatar) {
@@ -287,7 +413,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   }, [closeLogin, displayName, selectedAvatar]);
 
   const handleRefreshAvatars = useCallback(async () => {
-    const identity = mode === "profile" ? authState?.user?.email ?? "" : email;
+    const identity =
+      mode === "profile" ? (authState?.user?.email ?? "") : email;
     if (!identity.trim()) {
       setError("请先输入邮箱。");
       return;
@@ -299,7 +426,10 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     setSubmitting(true);
     setError(null);
     try {
-      const url = await getOAuthAuthorizationUrl(provider, `${window.location.pathname}${window.location.search}`);
+      const url = await getOAuthAuthorizationUrl(
+        provider,
+        `${window.location.pathname}${window.location.search}`,
+      );
       window.location.assign(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");
@@ -307,26 +437,30 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const handleUnsubscribe = useCallback(async () => {
-    if (!authState?.user) {
-      return;
-    }
-    setSubscriptionPending(true);
+  const handleUnsubscribe = useCallback(async (targetEmail: string) => {
+    setSubscriptionPendingEmail(targetEmail);
     setSubscriptionFeedback(null);
     try {
-      await unsubscribeMyContentSubscription();
-      const nextStatus = await readMyContentSubscription();
-      setSubscriptionStatus(nextStatus);
-      setSubscriptionFeedback({ kind: "success", message: "取消订阅成功。" });
+      await unsubscribeContentSubscriptionByEmail(targetEmail);
+      untrackSubscriptionEmail(targetEmail);
+      setSubscriptionStatuses((current) =>
+        current.filter(
+          (item) => normalizeEmail(item.email) !== normalizeEmail(targetEmail),
+        ),
+      );
+      setSubscriptionFeedback({
+        kind: "success",
+        message: `${targetEmail} 取消订阅成功。`,
+      });
     } catch (err) {
       setSubscriptionFeedback({
         kind: "error",
         message: err instanceof Error ? err.message : "取消订阅失败",
       });
     } finally {
-      setSubscriptionPending(false);
+      setSubscriptionPendingEmail(null);
     }
-  }, [authState?.user]);
+  }, []);
 
   const logout = useCallback(async () => {
     await logoutSiteAuth();
@@ -338,7 +472,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const dialogEmailLoginEnabled = Boolean(authState?.email_login_enabled) && allowEmailLoginInDialog;
+  const dialogEmailLoginEnabled =
+    Boolean(authState?.email_login_enabled) && allowEmailLoginInDialog;
 
   const value = useMemo<SiteAuthContextValue>(
     () => ({
@@ -366,6 +501,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   );
 
   const showProfileForm = mode === "profile" || needsProfile;
+  const hasScrollableSubscriptionList = subscriptionStatuses.length > 2;
   const currentProviderLabel = authState?.user
     ? `${providerLabel(authState.user.primary_auth_provider)}${authState.user.is_admin ? " · 管理员模式" : ""}`
     : "邮箱";
@@ -376,12 +512,16 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <UserRoundPen className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
-              {authState?.user?.is_admin ? "修改基础资料" : "修改评论身份"}
+              {authState?.user?.is_admin ? "修改基础资料" : "登录身份"}
             </div>
-            <div className="mt-1 text-xs text-foreground/46">当前登录方式：{currentProviderLabel}</div>
+            <div className="mt-1 text-xs text-foreground/46">
+              当前登录方式：{currentProviderLabel}
+            </div>
           </div>
           <span className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.84] px-3 py-1 text-[0.72rem] text-foreground/50">
-            {authState?.user?.is_admin ? "管理员评论将固定使用站点身份" : "邮箱仅用于后台识别"}
+            {authState?.user?.is_admin
+              ? "管理员评论将固定使用站点身份"
+              : "邮箱仅用于后台识别"}
           </span>
         </div>
       ) : null}
@@ -390,41 +530,80 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         <div className="mt-4 rounded-[1.2rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-foreground">订阅列表</div>
-              <div className="mt-1 text-xs text-foreground/48">显示当前登录邮箱的订阅信息，可直接取消订阅。</div>
+              <div className="text-sm font-semibold text-foreground">
+                订阅列表
+              </div>
             </div>
-            {subscriptionLoading ? <Loader2 className="h-4 w-4 animate-spin text-foreground/52" /> : null}
+            {subscriptionLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-foreground/52" />
+            ) : null}
           </div>
 
-          {subscriptionStatus?.subscribed ? (
-            <div className="mt-3 rounded-[1rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.92] p-3">
-              <div className="text-[0.7rem] uppercase tracking-[0.12em] text-foreground/42">订阅邮箱</div>
-              <div className="mt-1 break-all text-sm font-medium text-foreground">{subscriptionStatus.email}</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {subscriptionStatus.content_types.map((contentType) => (
-                  <span
-                    key={contentType}
-                    className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] px-2.5 py-1 text-xs text-foreground/64"
+          {subscriptionStatuses.length ? (
+            <div
+              className={`mt-3 space-y-3 ${
+                hasScrollableSubscriptionList
+                  ? "max-h-[15rem] overflow-y-auto pr-1 snap-y snap-mandatory"
+                  : ""
+              }`}
+            >
+              {subscriptionStatuses.map((subscriptionStatus) => {
+                const pending =
+                  normalizeEmail(subscriptionPendingEmail) ===
+                  normalizeEmail(subscriptionStatus.email);
+                return (
+                  <div
+                    key={subscriptionStatus.email}
+                    className={`rounded-[1rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.92] p-3 ${
+                      hasScrollableSubscriptionList ? "snap-start" : ""
+                    }`}
                   >
-                    {CONTENT_TYPE_LABELS[contentType] ?? contentType}
-                  </span>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleUnsubscribe()}
-                disabled={subscriptionPending}
-                className="mt-3 inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/8 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-500/14 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-300"
-              >
-                {subscriptionPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellOff className="h-3.5 w-3.5" />}
-                {subscriptionPending ? "取消中..." : "取消订阅"}
-              </button>
+                    <div className="text-[0.7rem] uppercase tracking-[0.12em] text-foreground/42">
+                      订阅邮箱
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                      <div className="min-w-0 break-all text-sm font-medium text-foreground">
+                        {subscriptionStatus.email}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleUnsubscribe(subscriptionStatus.email)
+                        }
+                        disabled={pending}
+                        className="inline-flex shrink-0 items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/8 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-500/14 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-300"
+                      >
+                        {pending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <BellOff className="h-3.5 w-3.5" />
+                        )}
+                        {pending ? "取消中..." : "取消订阅"}
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {subscriptionStatus.content_types.map((contentType) => (
+                        <span
+                          key={`${subscriptionStatus.email}-${contentType}`}
+                          className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] px-2.5 py-1 text-xs text-foreground/64"
+                        >
+                          {CONTENT_TYPE_LABELS[contentType] ?? contentType}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="mt-3 rounded-[1rem] border border-dashed border-[rgb(var(--shiro-border-rgb)/0.2)] bg-background/[0.76] px-3 py-2 text-xs text-foreground/56">
               当前没有活跃订阅。可在站点右上角的“订阅”按钮中添加。
             </div>
           )}
+
+          {hasScrollableSubscriptionList ? (
+            <div className="mt-2 text-xs text-foreground/42">最多显示两个邮箱，可上下滚动查看更多。</div>
+          ) : null}
 
           {subscriptionFeedback ? (
             <div
@@ -441,12 +620,19 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       ) : null}
 
       <div className="mt-4 space-y-3">
-        <input
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value)}
-          placeholder={mode === "profile" ? "修改显示昵称" : "首次登录时设置一个显示昵称"}
-          className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
-        />
+        <label className="block space-y-2">
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-foreground/46">
+            用户名
+          </span>
+          <input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder={
+              mode === "profile" ? "修改显示昵称" : "首次登录时设置一个显示昵称"
+            }
+            className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
+          />
+        </label>
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-foreground/74">选择头像</div>
           <button
@@ -455,34 +641,60 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
             disabled={avatarLoading || submitting}
             className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.84] px-3 py-1.5 text-xs font-medium text-foreground/58 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] disabled:opacity-60"
           >
-            {avatarLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="h-3.5 w-3.5" />}
+            {avatarLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-3.5 w-3.5" />
+            )}
             换一批
           </button>
         </div>
         <div className="grid grid-cols-6 gap-2">
-          {avatarCandidates.map((candidate) => (
-            <button
-              key={candidate.key}
-              type="button"
-              onClick={() => setSelectedAvatar(candidate.avatar_url)}
-              className={`rounded-full border p-1 transition ${
-                selectedAvatar === candidate.avatar_url
-                  ? "border-[rgb(var(--shiro-accent-rgb)/0.34)] bg-[rgb(var(--shiro-accent-rgb)/0.08)]"
-                  : "border-[rgb(var(--shiro-border-rgb)/0.16)]"
-              }`}
-            >
-              <img src={candidate.avatar_url} alt={candidate.label} className="h-11 w-11 rounded-full object-cover" />
-            </button>
-          ))}
+          {avatarCandidates.map((candidate) => {
+            const selected = selectedAvatar === candidate.avatar_url;
+            return (
+              <button
+                key={candidate.key}
+                type="button"
+                onClick={() => setSelectedAvatar(candidate.avatar_url)}
+                aria-pressed={selected}
+                className={`relative inline-flex h-14 w-14 items-center justify-center rounded-full border transition ${
+                  selected
+                    ? "border-[rgb(var(--shiro-accent-rgb)/0.38)] bg-[rgb(var(--shiro-accent-rgb)/0.1)] ring-2 ring-[rgb(var(--shiro-accent-rgb)/0.42)] ring-offset-1 ring-offset-background"
+                    : "border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] hover:border-[rgb(var(--shiro-accent-rgb)/0.24)]"
+                }`}
+              >
+                <img
+                  src={candidate.avatar_url}
+                  alt={candidate.label}
+                  className="h-11 w-11 rounded-full object-cover"
+                />
+                {selected ? (
+                  <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.92)] text-white shadow-sm">
+                    <Check className="h-3 w-3" />
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
-        <div className="text-xs text-foreground/42">第 {avatarBatch + 1} 批，共 {avatarTotalBatches} 批。</div>
         <button
           type="button"
-          onClick={() => void (mode === "profile" ? handleProfileUpdate() : handleEmailLogin())}
+          onClick={() =>
+            void (mode === "profile"
+              ? handleProfileUpdate()
+              : handleEmailLogin())
+          }
           disabled={submitting || !displayName.trim() || !selectedAvatar}
           className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.2)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.16)] disabled:opacity-60"
         >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "profile" ? <UserRoundPen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+          {submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : mode === "profile" ? (
+            <UserRoundPen className="h-4 w-4" />
+          ) : (
+            <Mail className="h-4 w-4" />
+          )}
           {mode === "profile" ? "保存资料" : "完成首次登录"}
         </button>
       </div>
@@ -501,14 +713,20 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
+                  transition={transition({
+                    duration: 0.2,
+                    reducedMotion: prefersReducedMotion,
+                  })}
                   onClick={closeLogin}
                 />
                 <motion.div
                   initial={{ opacity: 0, y: 16, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 12, scale: 0.96 }}
-                  transition={transition({ duration: 0.24, reducedMotion: prefersReducedMotion })}
+                  transition={transition({
+                    duration: 0.24,
+                    reducedMotion: prefersReducedMotion,
+                  })}
                   className="relative w-full max-w-[34rem] overflow-hidden rounded-[2rem] border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-background/[0.88] p-6 shadow-[0_30px_90px_rgb(15_23_42/0.18)] backdrop-blur-2xl dark:bg-card/[0.92]"
                 >
                   <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--shiro-glow-rgb)/0.7)] to-transparent" />
@@ -516,20 +734,32 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                   <div className="absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,_rgb(66_133_244/0.18),_transparent_66%)]" />
 
                   <div className="relative">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1 text-[0.68rem] uppercase tracking-[0.24em] text-foreground/46">
-                      {mode === "profile" ? <UserRoundPen className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
-                      {mode === "profile" ? "Profile" : "Sign In"}
+                    <div
+                      className={`inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1 text-foreground/46 ${
+                        mode === "profile"
+                          ? "font-heading text-[0.9rem] italic tracking-[0.08em] text-[rgb(var(--shiro-accent-rgb)/0.84)]"
+                          : "text-[0.68rem] uppercase tracking-[0.24em]"
+                      }`}
+                    >
+                      {mode === "profile" ? (
+                        <UserRoundPen className="h-3.5 w-3.5" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {mode === "profile" ? "PROFILE" : "Sign In"}
                     </div>
                     <h2 className="mt-4 font-display text-3xl text-foreground">
-                      {mode === "profile" ? (authState?.user?.is_admin ? "更新基础资料" : "更新评论身份") : "进入评论身份"}
-                    </h2>
-                    <p className="mt-2 max-w-[28rem] text-sm leading-6 text-foreground/52">
                       {mode === "profile"
                         ? authState?.user?.is_admin
-                          ? "管理员模式下，前端评论会固定使用主页显示名作为名字、Hero 翻转视觉图作为头像。这里修改的是绑定在邮箱或 OAuth 账号上的基础资料。"
-                          : "你可以随时修改评论时显示的昵称和头像，邮箱仍只作为后台识别标识。"
-                        : "登录后评论会使用你的固定昵称和头像。邮箱只作为后台识别标识，不会公开显示。"}
-                    </p>
+                          ? "更新基础资料"
+                          : "访客资料"
+                        : "进入评论身份"}
+                    </h2>
+                    {mode === "profile" ? null : (
+                      <p className="mt-2 max-w-[28rem] text-sm leading-6 text-foreground/52">
+                        登录后评论会使用你的固定昵称和头像。邮箱只作为后台识别标识，不会公开显示。
+                      </p>
+                    )}
 
                     {mode === "profile" ? null : (
                       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -543,14 +773,24 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                               disabled={submitting}
                               className="group relative overflow-hidden rounded-[1.35rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.8] px-4 py-4 text-left transition hover:border-[rgb(var(--shiro-accent-rgb)/0.26)] hover:bg-background/[0.9] disabled:opacity-60"
                             >
-                              <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100" style={{ background: "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))" }} />
+                              <div
+                                className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))",
+                                }}
+                              />
                               <div className="relative flex items-center gap-3">
                                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-white/80 text-foreground/78">
                                   <Icon className="h-4 w-4" />
                                 </span>
                                 <div>
-                                  <div className="text-sm font-semibold text-foreground">{providerLabel(provider)}</div>
-                                  <div className="text-xs text-foreground/46">使用第三方资料直接进入</div>
+                                  <div className="text-sm font-semibold text-foreground">
+                                    {providerLabel(provider)}
+                                  </div>
+                                  <div className="text-xs text-foreground/46">
+                                    使用第三方资料直接进入
+                                  </div>
                                 </div>
                               </div>
                             </button>
@@ -582,7 +822,11 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                               disabled={submitting || !email.trim()}
                               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.2)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.16)] disabled:opacity-60"
                             >
-                              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                              {submitting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
                               继续使用邮箱
                             </button>
                           ) : null}

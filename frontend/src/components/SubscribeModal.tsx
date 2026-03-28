@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { BellRing, Check, Copy, Mail, Rss, X } from "lucide-react";
 import { subscribeToContentApiV1SiteSubscriptionsPost } from "@serino/api-client/site";
+import { trackSubscriptionEmail } from "@/lib/subscription-tracker";
 
 const CONTENT_OPTIONS = [
   { key: "posts", label: "文章", feedPath: "/feeds/posts.xml" },
@@ -17,6 +19,37 @@ interface SubscribeModalProps {
   onClose: () => void;
   enabled: boolean;
 }
+
+interface SubscriptionChangedDetail {
+  email: string;
+  content_types: string[];
+  subscribed: boolean;
+}
+
+interface SubscriptionSuccessPayload {
+  email: string;
+  content_types: string[];
+  subscribed?: boolean;
+}
+
+const isSubscriptionSuccessPayload = (
+  value: unknown,
+): value is SubscriptionSuccessPayload => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const payload = value as {
+    email?: unknown;
+    content_types?: unknown;
+    subscribed?: unknown;
+  };
+  return (
+    typeof payload.email === "string" &&
+    Array.isArray(payload.content_types) &&
+    payload.content_types.every((item) => typeof item === "string") &&
+    (payload.subscribed === undefined || typeof payload.subscribed === "boolean")
+  );
+};
 
 const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
   const [email, setEmail] = useState("");
@@ -133,13 +166,27 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
     setSubmitting(true);
     setFeedback(null);
     try {
-      await subscribeToContentApiV1SiteSubscriptionsPost({
+      const response = await subscribeToContentApiV1SiteSubscriptionsPost({
         email: email.trim(),
         content_types: selectedTypes,
       });
-      const message = "订阅成功。";
+      const subscribed = response.data;
+      if (!isSubscriptionSuccessPayload(subscribed)) {
+        throw new Error("订阅请求返回异常，请稍后重试。");
+      }
+      trackSubscriptionEmail(subscribed.email);
+      const message = `确认邮件发送成功，订阅已生效。已记录你填写的邮箱 ${subscribed.email}。`;
       setFeedback({ kind: "success", message });
       pushToast("success", message);
+      window.dispatchEvent(
+        new CustomEvent<SubscriptionChangedDetail>("aerisun:subscription-changed", {
+          detail: {
+            email: subscribed.email,
+            content_types: subscribed.content_types,
+            subscribed: Boolean(subscribed.subscribed),
+          },
+        }),
+      );
     } catch (error) {
       const detail =
         typeof error === "object" &&
@@ -162,22 +209,9 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
     }
   };
 
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-start justify-center px-4 py-[17vh]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-        >
-          <button
-            type="button"
-            className="fixed inset-0 bg-background/70 backdrop-blur-sm"
-            onClick={onClose}
-            aria-label="关闭订阅弹窗"
-          />
+  const toastNode =
+    typeof document !== "undefined"
+      ? createPortal(
           <AnimatePresence>
             {toast ? (
               <motion.div
@@ -185,7 +219,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.96 }}
                 transition={{ duration: 0.2 }}
-                className={`fixed right-4 top-4 z-[60] w-[min(92vw,360px)] rounded-2xl border px-4 py-3 text-sm shadow-[0_16px_44px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
+                className={`pointer-events-none fixed right-4 top-4 z-[1300] w-[min(92vw,360px)] rounded-2xl border px-4 py-3 text-sm shadow-[0_16px_44px_rgba(15,23,42,0.18)] backdrop-blur-xl ${
                   toast.kind === "success"
                     ? "border-emerald-500/28 bg-emerald-500/14 text-emerald-900 dark:text-emerald-200"
                     : "border-rose-500/30 bg-rose-500/16 text-rose-900 dark:text-rose-200"
@@ -196,14 +230,36 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                 {toast.message}
               </motion.div>
             ) : null}
-          </AnimatePresence>
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      {toastNode}
+      <AnimatePresence>
+        {open && (
           <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.96 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 mx-auto w-full max-w-4xl overflow-hidden rounded-[30px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
+            className="fixed inset-0 z-50 flex items-start justify-center px-4 py-[17vh]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
           >
+            <button
+              type="button"
+              className="fixed inset-0 bg-background/70 backdrop-blur-sm"
+              onClick={onClose}
+              aria-label="关闭订阅弹窗"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.96 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 mx-auto w-full max-w-4xl overflow-hidden rounded-[30px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
+            >
             <div
               aria-hidden="true"
               className="pointer-events-none absolute -left-12 top-6 h-28 w-28 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.12)] blur-3xl"
@@ -393,10 +449,11 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
             >
               <X className="h-4 w-4" />
             </button>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

@@ -115,6 +115,20 @@ export function unsubscribeMyContentSubscription() {
   });
 }
 
+export function readContentSubscriptionByEmail(email: string) {
+  return requestSiteAuthJson<SiteContentSubscriptionStatus>("/api/v1/site/subscriptions/status", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function unsubscribeContentSubscriptionByEmail(email: string) {
+  return requestSiteAuthJson<SiteContentUnsubscribeResult>("/api/v1/site/subscriptions/unsubscribe", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
 export async function getOAuthAuthorizationUrl(provider: string, returnTo: string) {
   const payload = await withApiError(
     oauthStartApiV1SiteAuthOauthProviderStartGet(provider, { return_to: returnTo }),

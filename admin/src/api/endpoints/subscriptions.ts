@@ -17,6 +17,7 @@ export interface SubscriptionSubscriberItem {
   is_active: boolean;
   content_types: string[];
   auth_mode: "email" | "binding" | "unknown";
+  initiator_email: string | null;
   display_name: string | null;
   avatar_url: string | null;
   primary_auth_provider: string | null;
