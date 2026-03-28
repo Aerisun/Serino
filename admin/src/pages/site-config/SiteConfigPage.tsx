@@ -2,9 +2,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
-import { Blocks, FileText, MessageSquareMore, Quote, ScrollText, UserRound } from "lucide-react";
+import { Blocks, FileText, MessageSquareMore, Quote, ScrollText, UserRound, Globe } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ProfileTab } from "./tabs/ProfileTab";
+import { RuntimeTab } from "./tabs/RuntimeTab";
 import { SocialLinksTab } from "./tabs/SocialLinksTab";
 import { PoemsTab } from "./tabs/PoemsTab";
 import { PagesTab } from "./tabs/PagesTab";
@@ -16,7 +17,7 @@ export default function SiteConfigPage() {
   const navigate = useNavigate();
   const { section } = useParams();
   const tab =
-    section && ["profile", "social", "poems", "pages", "nav", "community"].includes(section)
+    section && ["profile", "runtime", "social", "poems", "pages", "nav", "community"].includes(section)
       ? section
       : "profile";
 
@@ -32,6 +33,13 @@ export default function SiteConfigPage() {
       label: t("siteConfig.tabs.profile"),
       description: t("siteConfig.sectionDescriptions.profile"),
       icon: UserRound,
+    },
+    {
+      value: "runtime",
+      to: "/site-config/runtime",
+      label: t("siteConfig.tabs.runtime"),
+      description: t("siteConfig.sectionDescriptions.runtime"),
+      icon: Globe,
     },
     {
       value: "social",
@@ -80,6 +88,9 @@ export default function SiteConfigPage() {
       <Tabs value={tab} onValueChange={goToTab}>
         <TabsContent value="profile">
           <ProfileTab />
+        </TabsContent>
+        <TabsContent value="runtime">
+          <RuntimeTab />
         </TabsContent>
         <TabsContent value="social">
           <SocialLinksTab />

@@ -21,11 +21,10 @@ import type {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/PageHeader";
-import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
+import { DirtySaveButton } from "@/components/ui/DirtySaveButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
 import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
 import { cn, formatDate } from "@/lib/utils";
 import { VisitorsSectionSwitch } from "@/pages/visitors/VisitorsSectionSwitch";
 import {
@@ -69,10 +68,6 @@ interface VisitorAuthFormState {
   visitor_oauth_providers: VisitorOAuthProvider[];
   admin_auth_methods: AdminAuthMethod[];
   admin_email_enabled: boolean;
-  google_client_id: string;
-  google_client_secret: string;
-  github_client_id: string;
-  github_client_secret: string;
 }
 
 function createForm(config?: SiteAuthConfigAdminRead | null): VisitorAuthFormState {
@@ -81,10 +76,6 @@ function createForm(config?: SiteAuthConfigAdminRead | null): VisitorAuthFormSta
     visitor_oauth_providers: (config?.visitor_oauth_providers ?? []) as VisitorOAuthProvider[],
     admin_auth_methods: (config?.admin_auth_methods ?? ["google", "github"]) as AdminAuthMethod[],
     admin_email_enabled: config?.admin_email_enabled ?? false,
-    google_client_id: config?.google_client_id ?? "",
-    google_client_secret: config?.google_client_secret ?? "",
-    github_client_id: config?.github_client_id ?? "",
-    github_client_secret: config?.github_client_secret ?? "",
   };
 }
 
@@ -152,14 +143,12 @@ function buildOAuthCallbackUrl(origin: string, provider: VisitorOAuthProvider) {
   return `${origin.replace(/\/+$/, "")}/api/v1/public/auth/oauth/${provider}/callback`;
 }
 
-function getOAuthCredentialFields(provider: VisitorOAuthProvider) {
-  return provider === "google"
-    ? { idField: "google_client_id" as const, secretField: "google_client_secret" as const }
-    : { idField: "github_client_id" as const, secretField: "github_client_secret" as const };
-}
-
 function formatProviderLabel(provider: VisitorOAuthProvider | BindableAdminProvider) {
   return provider === "google" ? "Google" : provider === "github" ? "GitHub" : "邮箱";
+}
+
+function getProviderConfig(config: SiteAuthConfigAdminRead | null, provider: VisitorOAuthProvider) {
+  return provider === "google" ? config?.google : config?.github;
 }
 
 function buildEmptyExpandedProviders() {
@@ -239,12 +228,6 @@ export default function VisitorsPage() {
   const saveVisitorEmailConfig = useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
   const saveAdminConfig = useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
 
-  const updateField = <K extends keyof VisitorAuthFormState>(key: K, value: VisitorAuthFormState[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
-  };
-
-  const getBaseSavedForm = () => savedForm ?? createForm(config);
-
   const invalidateConfigQueries = () => {
     void queryClient.invalidateQueries({
       queryKey: getGetVisitorAuthConfigApiV1AdminVisitorsConfigGetQueryKey(),
@@ -285,22 +268,17 @@ export default function VisitorsPage() {
 
   const syncSavedOAuthProvider = (provider: VisitorOAuthProvider, nextConfig: SiteAuthConfigAdminRead) => {
     const nextForm = createForm(nextConfig);
-    const { idField, secretField } = getOAuthCredentialFields(provider);
     const nextEnabled = nextForm.visitor_oauth_providers.includes(provider);
     setSavedForm((current) => {
       const base = current ?? nextForm;
       return {
         ...base,
         visitor_oauth_providers: toggleListValue(base.visitor_oauth_providers, provider, nextEnabled),
-        [idField]: nextForm[idField],
-        [secretField]: nextForm[secretField],
       };
     });
     setForm((current) => ({
       ...current,
       visitor_oauth_providers: toggleListValue(current.visitor_oauth_providers, provider, nextEnabled),
-      [idField]: nextForm[idField],
-      [secretField]: nextForm[secretField],
     }));
   };
 
@@ -319,16 +297,14 @@ export default function VisitorsPage() {
       visitor_oauth_providers: toggleListValue(current.visitor_oauth_providers, provider, nextEnabled),
     }));
   };
+  const getBaseSavedForm = () => savedForm ?? createForm(config);
 
   const buildOAuthProviderSavePayload = (provider: VisitorOAuthProvider): VisitorAuthFormState => {
     const base = getBaseSavedForm();
-    const { idField, secretField } = getOAuthCredentialFields(provider);
     const enabled = form.visitor_oauth_providers.includes(provider);
     return {
       ...base,
       visitor_oauth_providers: toggleListValue(base.visitor_oauth_providers, provider, enabled),
-      [idField]: form[idField],
-      [secretField]: form[secretField],
     };
   };
 
@@ -352,9 +328,9 @@ export default function VisitorsPage() {
     options?: { silent?: boolean; requireCredentials?: boolean },
   ) => {
     const enabled = form.visitor_oauth_providers.includes(provider);
-    const { idField, secretField } = getOAuthCredentialFields(provider);
-    if (options?.requireCredentials !== false && enabled && (!form[idField].trim() || !form[secretField].trim())) {
-      setVisitorSaveError("先把 Client ID 和 Client Secret 填完整");
+    const providerConfig = getProviderConfig(config, provider);
+    if (options?.requireCredentials !== false && enabled && !providerConfig?.ready) {
+      setVisitorSaveError(`先在 .store/secrets 中配置${provider === "google" ? " Google " : " GitHub "}凭据文件`);
       return false;
     }
 
@@ -437,7 +413,7 @@ export default function VisitorsPage() {
 
   const handleEmailLoginToggle = async (checked: boolean) => {
     const previous = form.email_login_enabled;
-    updateField("email_login_enabled", checked);
+    setForm((current) => ({ ...current, email_login_enabled: checked }));
     setVisitorSaveError("");
     setSavingEmailLogin(true);
     try {
@@ -453,7 +429,7 @@ export default function VisitorsPage() {
       invalidateConfigQueries();
       toast.success("保存成功");
     } catch (error) {
-      updateField("email_login_enabled", previous);
+      setForm((current) => ({ ...current, email_login_enabled: previous }));
       setVisitorSaveError(error instanceof Error ? error.message : "保存失败");
     } finally {
       setSavingEmailLogin(false);
@@ -606,14 +582,13 @@ export default function VisitorsPage() {
   };
 
   const startOAuthTest = async (provider: VisitorOAuthProvider) => {
-    const idField = provider === "google" ? "google_client_id" : "github_client_id";
-    const secretField = provider === "google" ? "google_client_secret" : "github_client_secret";
+    const providerConfig = getProviderConfig(config, provider);
     if (!form.visitor_oauth_providers.includes(provider)) {
       toast.error("先开启这个登录方式再测试");
       return;
     }
-    if (!form[idField].trim() || !form[secretField].trim()) {
-      toast.error("先把 Client ID 和 Client Secret 填完整");
+    if (!providerConfig?.ready) {
+      toast.error("先把 .store/secrets 中的凭据文件准备完整");
       return;
     }
     setTestingProvider(provider);
@@ -640,8 +615,6 @@ export default function VisitorsPage() {
   if (configQuery.isLoading && !config) {
     return <p className="py-6 text-muted-foreground">加载中...</p>;
   }
-
-  const effectiveSavedForm = savedForm ?? (config ? createForm(config) : null);
 
   return (
     <div className="space-y-6">
@@ -670,16 +643,13 @@ export default function VisitorsPage() {
 
             {VISITOR_OAUTH_OPTIONS.map((provider) => {
               const enabled = form.visitor_oauth_providers.includes(provider.key);
-              const { idField, secretField } = getOAuthCredentialFields(provider.key);
+              const providerConfig = getProviderConfig(config, provider.key);
               const publicCallbackUrl = buildOAuthCallbackUrl(frontendOrigin, provider.key);
               const adminCallbackUrl = buildOAuthCallbackUrl(adminOrigin, provider.key);
               const isTesting = testingProvider === provider.key;
               const isSaving = savingProvider === provider.key;
               const expanded = expandedProviders[provider.key];
-              const hasCredentialDirty =
-                (effectiveSavedForm?.[idField] ?? "") !== form[idField] ||
-                (effectiveSavedForm?.[secretField] ?? "") !== form[secretField];
-              const showSaveButton = enabled || hasCredentialDirty || isSaving;
+              const showSaveButton = enabled || isSaving;
               const githubNeedsSeparateLocalApp =
                 provider.key === "github" && publicCallbackUrl !== adminCallbackUrl;
               return (
@@ -690,7 +660,6 @@ export default function VisitorsPage() {
                     expanded
                       ? "border-[rgb(var(--admin-accent-rgb)/0.22)] bg-[linear-gradient(180deg,rgb(var(--admin-surface-strong)/0.78),rgb(var(--admin-surface-1)/0.56))]"
                       : "admin-glass border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))]",
-                    hasCredentialDirty && "shadow-[0_22px_48px_-36px_rgb(var(--admin-accent-rgb)/0.48)]",
                   )}
                 >
                   <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
@@ -707,7 +676,6 @@ export default function VisitorsPage() {
                         >
                           {enabled ? "已开启" : "已关闭"}
                         </span>
-                        {hasCredentialDirty ? <PendingSaveBadge /> : null}
                       </div>
                       <p className="text-sm text-muted-foreground">{provider.description}</p>
                     </div>
@@ -715,7 +683,7 @@ export default function VisitorsPage() {
                     <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
                       {showSaveButton ? (
                         <DirtySaveButton
-                          dirty={hasCredentialDirty}
+                          dirty={false}
                           saving={isSaving}
                           onClick={() => void saveOAuthProvider(provider.key)}
                         />
@@ -746,23 +714,24 @@ export default function VisitorsPage() {
                   {expanded ? (
                     <div className="border-t border-border/60 px-4 pb-4 pt-4">
                       <div className={cn("grid gap-4 md:grid-cols-2", !enabled && "opacity-75")}>
-                        <div className="space-y-1">
-                          <Label>Client ID</Label>
-                          <Input
-                            value={form[idField]}
-                            onChange={(event) => updateField(idField, event.target.value)}
-                            placeholder={`${provider.label} client id`}
-                          />
+                        <div className="rounded-2xl border border-border/60 bg-background/55 px-4 py-3 text-sm">
+                          <div className="font-medium text-foreground">Client ID 文件</div>
+                          <div className="mt-1 font-mono text-xs text-muted-foreground">{providerConfig?.client_id.filename}</div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            状态：{providerConfig?.client_id.configured ? "已配置" : "未配置"} · 来源：{providerConfig?.client_id.source}
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label>Client Secret</Label>
-                          <Input
-                            type="password"
-                            value={form[secretField]}
-                            onChange={(event) => updateField(secretField, event.target.value)}
-                            placeholder={`${provider.label} client secret`}
-                          />
+                        <div className="rounded-2xl border border-border/60 bg-background/55 px-4 py-3 text-sm">
+                          <div className="font-medium text-foreground">Client Secret 文件</div>
+                          <div className="mt-1 font-mono text-xs text-muted-foreground">{providerConfig?.client_secret.filename}</div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            状态：{providerConfig?.client_secret.configured ? "已配置" : "未配置"} · 来源：{providerConfig?.client_secret.source}
+                          </div>
                         </div>
+                      </div>
+
+                      <div className="mt-3 rounded-xl border border-border/60 bg-background/55 px-4 py-3 text-xs leading-5 text-muted-foreground">
+                        OAuth 凭据已改为从 <span className="font-mono">{systemInfo?.secrets_dir || ".store/secrets"}</span> 读取，后台只负责显示状态，不再保存明文。
                       </div>
 
                       <div className="mt-4 rounded-2xl border border-border/60 bg-background/70 p-4">
@@ -770,7 +739,7 @@ export default function VisitorsPage() {
                           <div>
                             <div className="text-sm font-semibold text-foreground">回调地址与测试</div>
                             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                              填完后点保存即可生效，不需要重启。下面的回调地址直接贴到 OAuth 平台。
+                              开启后会立即生效，不需要重启。下面的回调地址直接贴到 OAuth 平台；凭据文件请放到 secrets 目录。
                             </p>
                           </div>
                           <Button
