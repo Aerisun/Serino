@@ -404,7 +404,7 @@ export function FeatureTogglesSection() {
                           className={SUBSCRIPTION_TEMPLATE_FIELD_CLASS}
                           placeholder={DEFAULT_SUBSCRIPTION_BODY_TEMPLATE}
                         />
-                        <div className="flex justify-end pt-1">
+                        <div className="flex justify-start pt-1">
                           <LabelWithHelp
                             className="gap-1.5"
                             label={

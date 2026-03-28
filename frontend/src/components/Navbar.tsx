@@ -496,11 +496,6 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                     >
                       <div className="px-3 py-2">
                         <div className="text-sm font-semibold text-foreground">{user.effective_display_name}</div>
-                        <div className="mt-1 text-xs text-foreground/46">
-                          {user.is_admin
-                            ? `当前是管理员模式 · 来源：${authProviderLabel(user.primary_auth_provider)}`
-                            : `当前身份来源：${authProviderLabel(user.primary_auth_provider)}`}
-                        </div>
                       </div>
                       <button
                         type="button"

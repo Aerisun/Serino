@@ -43,6 +43,7 @@ export function LabelWithHelp({
     left: number;
     width: number;
     maxHeight: number;
+    placement: "above" | "below";
   } | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -76,31 +77,32 @@ export function LabelWithHelp({
     }
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
-    const width = Math.min(
-      PANEL_MAX_WIDTH,
-      Math.max(240, window.innerWidth - PANEL_MARGIN * 2),
+    const availableRight = Math.max(
+      120,
+      window.innerWidth - triggerRect.right - PANEL_MARGIN - PANEL_OFFSET,
     );
+    const width = Math.min(PANEL_MAX_WIDTH, availableRight);
     const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 0;
-    const maxHeight = Math.min(
-      PANEL_MAX_HEIGHT,
-      Math.max(200, window.innerHeight - PANEL_MARGIN * 2),
-    );
-    const nextLeft = Math.min(
-      triggerRect.left + 8,
-      window.innerWidth - width - PANEL_MARGIN,
-    );
-    const preferredTop = triggerRect.bottom + PANEL_OFFSET;
-    const effectiveHeight = Math.min(panelHeight || maxHeight, maxHeight);
-    const nextTop = Math.min(
-      Math.max(PANEL_MARGIN, preferredTop),
-      window.innerHeight - effectiveHeight - PANEL_MARGIN,
-    );
+    const desiredHeight = panelHeight || PANEL_MAX_HEIGHT;
+    const availableBelow = window.innerHeight - triggerRect.bottom - PANEL_MARGIN;
+    const availableAbove = triggerRect.top - PANEL_MARGIN;
+    const openAbove = availableBelow < desiredHeight && availableAbove > PANEL_MARGIN;
+    const availableHeight = Math.max(160, openAbove ? availableAbove : availableBelow);
+    const maxHeight = Math.min(PANEL_MAX_HEIGHT, availableHeight);
+    const effectiveHeight = Math.min(desiredHeight, maxHeight);
+    const nextTop = openAbove
+      ? Math.max(PANEL_MARGIN, triggerRect.top - PANEL_OFFSET - effectiveHeight)
+      : Math.min(
+          triggerRect.bottom + PANEL_OFFSET,
+          window.innerHeight - effectiveHeight - PANEL_MARGIN,
+        );
 
     setPanelStyle({
-      left: Math.max(PANEL_MARGIN, nextLeft),
+      left: triggerRect.right + PANEL_OFFSET,
       top: Math.max(PANEL_MARGIN, nextTop),
       width,
       maxHeight,
+      placement: openAbove ? "above" : "below",
     });
   }, []);
 
@@ -206,11 +208,19 @@ export function LabelWithHelp({
               }
               className={cn(
                 "fixed z-[160] origin-top-left overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-[0_22px_56px_rgba(15,23,42,0.16)]",
+                panelStyle?.placement === "above" && "origin-bottom-left",
                 "transition-[opacity,transform] duration-150 ease-out",
                 panelStyle ? "opacity-100 scale-100" : "opacity-0 scale-95",
               )}
             >
-              <div className="pointer-events-none absolute left-4 top-0 h-2 w-2 -translate-y-1/2 rounded-full border border-border bg-background shadow-sm" />
+              <div
+                className={cn(
+                  "pointer-events-none absolute left-4 h-2 w-2 rounded-full border border-border bg-background shadow-sm",
+                  panelStyle?.placement === "above"
+                    ? "bottom-0 translate-y-1/2"
+                    : "top-0 -translate-y-1/2",
+                )}
+              />
               <div
                 className="space-y-3 overflow-y-auto overscroll-contain pr-1 text-left"
                 style={{ maxHeight: contentMaxHeight }}
