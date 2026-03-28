@@ -30,7 +30,10 @@ import type {
   ContentCollectionRead,
   ContentEntryRead,
   ContentSubscriptionPublicCreate,
+  ContentSubscriptionPublicEmailRequest,
   ContentSubscriptionPublicRead,
+  ContentSubscriptionPublicStatusRead,
+  ContentSubscriptionPublicUnsubscribeResult,
   FriendCollectionRead,
   FriendFeedCollectionRead,
   HTTPValidationError,
@@ -2302,4 +2305,387 @@ export const useSubscribeToContentApiV1SiteSubscriptionsPost = <TError = ErrorTy
         TContext
       > => {
       return useMutation(getSubscribeToContentApiV1SiteSubscriptionsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 按邮箱读取订阅状态
+ */
+export type getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse200 = {
+  data: ContentSubscriptionPublicStatusRead
+  status: 200
+}
+
+export type getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponseSuccess = (getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse200) & {
+  headers: Headers;
+};
+export type getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponseError = (getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse422) & {
+  headers: Headers;
+};
+
+export type getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse = (getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponseSuccess | getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponseError)
+
+export const getGetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/status`
+}
+
+export const getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost = async (contentSubscriptionPublicEmailRequest: ContentSubscriptionPublicEmailRequest, options?: RequestInit): Promise<getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse> => {
+
+  return customInstance<getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse>(getGetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentSubscriptionPublicEmailRequest,)
+  }
+);}
+
+
+
+
+export const getGetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext> => {
+
+const mutationKey = ['getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost>>, {data: BodyType<ContentSubscriptionPublicEmailRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostMutationResult = NonNullable<Awaited<ReturnType<typeof getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost>>>
+    export type GetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostMutationBody = BodyType<ContentSubscriptionPublicEmailRequest>
+    export type GetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 按邮箱读取订阅状态
+ */
+export const useGetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof getSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPost>>,
+        TError,
+        {data: BodyType<ContentSubscriptionPublicEmailRequest>},
+        TContext
+      > => {
+      return useMutation(getGetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 按邮箱取消订阅
+ */
+export type unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse200 = {
+  data: ContentSubscriptionPublicUnsubscribeResult
+  status: 200
+}
+
+export type unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponseSuccess = (unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse200) & {
+  headers: Headers;
+};
+export type unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponseError = (unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse422) & {
+  headers: Headers;
+};
+
+export type unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse = (unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponseSuccess | unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponseError)
+
+export const getUnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/unsubscribe`
+}
+
+export const unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost = async (contentSubscriptionPublicEmailRequest: ContentSubscriptionPublicEmailRequest, options?: RequestInit): Promise<unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse> => {
+
+  return customInstance<unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse>(getUnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentSubscriptionPublicEmailRequest,)
+  }
+);}
+
+
+
+
+export const getUnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext> => {
+
+const mutationKey = ['unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost>>, {data: BodyType<ContentSubscriptionPublicEmailRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostMutationResult = NonNullable<Awaited<ReturnType<typeof unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost>>>
+    export type UnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostMutationBody = BodyType<ContentSubscriptionPublicEmailRequest>
+    export type UnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 按邮箱取消订阅
+ */
+export const useUnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost>>, TError,{data: BodyType<ContentSubscriptionPublicEmailRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePost>>,
+        TError,
+        {data: BodyType<ContentSubscriptionPublicEmailRequest>},
+        TContext
+      > => {
+      return useMutation(getUnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 读取当前登录用户订阅状态
+ */
+export type getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse200 = {
+  data: ContentSubscriptionPublicStatusRead
+  status: 200
+}
+
+export type getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponseSuccess = (getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse200) & {
+  headers: Headers;
+};
+export type getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponseError = (getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse422) & {
+  headers: Headers;
+};
+
+export type getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse = (getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponseSuccess | getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponseError)
+
+export const getGetMySubscriptionStatusApiV1SiteSubscriptionsMeGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/me`
+}
+
+export const getMySubscriptionStatusApiV1SiteSubscriptionsMeGet = async ( options?: RequestInit): Promise<getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse> => {
+
+  return customInstance<getMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse>(getGetMySubscriptionStatusApiV1SiteSubscriptionsMeGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMySubscriptionStatusApiV1SiteSubscriptionsMeGetQueryKey = () => {
+    return [
+    `/api/v1/site/subscriptions/me`
+    ] as const;
+    }
+
+
+export const getGetMySubscriptionStatusApiV1SiteSubscriptionsMeGetQueryOptions = <TData = Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError = ErrorType<HTTPValidationError>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMySubscriptionStatusApiV1SiteSubscriptionsMeGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>> = ({ signal }) => getMySubscriptionStatusApiV1SiteSubscriptionsMeGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMySubscriptionStatusApiV1SiteSubscriptionsMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>>
+export type GetMySubscriptionStatusApiV1SiteSubscriptionsMeGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetMySubscriptionStatusApiV1SiteSubscriptionsMeGet<TData = Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMySubscriptionStatusApiV1SiteSubscriptionsMeGet<TData = Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMySubscriptionStatusApiV1SiteSubscriptionsMeGet<TData = Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 读取当前登录用户订阅状态
+ */
+
+export function useGetMySubscriptionStatusApiV1SiteSubscriptionsMeGet<TData = Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError = ErrorType<HTTPValidationError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMySubscriptionStatusApiV1SiteSubscriptionsMeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMySubscriptionStatusApiV1SiteSubscriptionsMeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 取消当前登录用户订阅
+ */
+export type unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse200 = {
+  data: ContentSubscriptionPublicUnsubscribeResult
+  status: 200
+}
+
+export type unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponseSuccess = (unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse200) & {
+  headers: Headers;
+};
+export type unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponseError = (unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse = (unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponseSuccess | unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponseError)
+
+export const getUnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/me`
+}
+
+export const unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete = async ( options?: RequestInit): Promise<unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse> => {
+
+  return customInstance<unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse>(getUnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete>>, TError,void, TContext> => {
+
+const mutationKey = ['unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete>>, void> = () => {
+
+
+          return  unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete>>>
+
+    export type UnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 取消当前登录用户订阅
+ */
+export const useUnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unsubscribeMySubscriptionApiV1SiteSubscriptionsMeDelete>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getUnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteMutationOptions(options), queryClient);
     }

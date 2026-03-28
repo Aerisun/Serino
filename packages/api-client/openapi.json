@@ -1632,15 +1632,33 @@
         ],
         "summary": "Subscribe To Content",
         "operationId": "subscribe_to_content_api_v1_site_subscriptions__post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ContentSubscriptionPublicCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -1649,6 +1667,184 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContentSubscriptionPublicRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/subscriptions/status": {
+      "post": {
+        "tags": [
+          "site"
+        ],
+        "summary": "按邮箱读取订阅状态",
+        "operationId": "get_subscription_status_by_email_api_v1_site_subscriptions_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentSubscriptionPublicEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionPublicStatusRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/subscriptions/unsubscribe": {
+      "post": {
+        "tags": [
+          "site"
+        ],
+        "summary": "按邮箱取消订阅",
+        "operationId": "unsubscribe_subscription_by_email_api_v1_site_subscriptions_unsubscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentSubscriptionPublicEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionPublicUnsubscribeResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/subscriptions/me": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "读取当前登录用户订阅状态",
+        "operationId": "get_my_subscription_status_api_v1_site_subscriptions_me_get",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionPublicStatusRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "site"
+        ],
+        "summary": "取消当前登录用户订阅",
+        "operationId": "unsubscribe_my_subscription_api_v1_site_subscriptions_me_delete",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionPublicUnsubscribeResult"
                 }
               }
             }
@@ -16515,7 +16711,19 @@
               "unknown"
             ],
             "title": "Auth Mode",
-            "description": "Whether the subscriber email maps to email-only user, bound account user, or unknown user"
+            "description": "Whether the initiating visitor is email-only, bound account user, or unknown"
+          },
+          "initiator_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiator Email",
+            "description": "Initiating visitor email"
           },
           "display_name": {
             "anyOf": [
@@ -16527,7 +16735,7 @@
               }
             ],
             "title": "Display Name",
-            "description": "Matched site user display name"
+            "description": "Initiating visitor display name"
           },
           "avatar_url": {
             "anyOf": [
@@ -16539,7 +16747,7 @@
               }
             ],
             "title": "Avatar Url",
-            "description": "Matched site user avatar"
+            "description": "Initiating visitor avatar"
           },
           "primary_auth_provider": {
             "anyOf": [
@@ -16551,7 +16759,7 @@
               }
             ],
             "title": "Primary Auth Provider",
-            "description": "Matched site user primary auth provider"
+            "description": "Initiating visitor primary auth provider"
           },
           "oauth_providers": {
             "items": {
@@ -16559,7 +16767,7 @@
             },
             "type": "array",
             "title": "Oauth Providers",
-            "description": "Matched OAuth providers"
+            "description": "Initiating visitor OAuth providers"
           },
           "sent_count": {
             "type": "integer",
@@ -17024,6 +17232,20 @@
         ],
         "title": "ContentSubscriptionPublicCreate"
       },
+      "ContentSubscriptionPublicEmailRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Subscriber email address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ContentSubscriptionPublicEmailRequest"
+      },
       "ContentSubscriptionPublicRead": {
         "properties": {
           "email": {
@@ -17052,6 +17274,55 @@
           "content_types"
         ],
         "title": "ContentSubscriptionPublicRead"
+      },
+      "ContentSubscriptionPublicStatusRead": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Subscriber email address"
+          },
+          "content_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Content Types",
+            "description": "Subscribed content types"
+          },
+          "subscribed": {
+            "type": "boolean",
+            "title": "Subscribed",
+            "description": "Whether the subscription is active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "content_types",
+          "subscribed"
+        ],
+        "title": "ContentSubscriptionPublicStatusRead"
+      },
+      "ContentSubscriptionPublicUnsubscribeResult": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Subscriber email address"
+          },
+          "unsubscribed": {
+            "type": "boolean",
+            "title": "Unsubscribed",
+            "description": "Whether unsubscribe succeeded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "unsubscribed"
+        ],
+        "title": "ContentSubscriptionPublicUnsubscribeResult"
       },
       "ContentSubscriptionTestResult": {
         "properties": {

@@ -926,6 +926,52 @@ export const SubscribeToContentApiV1SiteSubscriptionsPostBody = zod.object({
 
 
 /**
+ * @summary 按邮箱读取订阅状态
+ */
+export const GetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostBody = zod.object({
+  "email": zod.string().describe('Subscriber email address')
+})
+
+export const GetSubscriptionStatusByEmailApiV1SiteSubscriptionsStatusPostResponse = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "content_types": zod.array(zod.string()).describe('Subscribed content types'),
+  "subscribed": zod.boolean().describe('Whether the subscription is active')
+})
+
+
+/**
+ * @summary 按邮箱取消订阅
+ */
+export const UnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostBody = zod.object({
+  "email": zod.string().describe('Subscriber email address')
+})
+
+export const UnsubscribeSubscriptionByEmailApiV1SiteSubscriptionsUnsubscribePostResponse = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "unsubscribed": zod.boolean().describe('Whether unsubscribe succeeded')
+})
+
+
+/**
+ * @summary 读取当前登录用户订阅状态
+ */
+export const GetMySubscriptionStatusApiV1SiteSubscriptionsMeGetResponse = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "content_types": zod.array(zod.string()).describe('Subscribed content types'),
+  "subscribed": zod.boolean().describe('Whether the subscription is active')
+})
+
+
+/**
+ * @summary 取消当前登录用户订阅
+ */
+export const UnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "unsubscribed": zod.boolean().describe('Whether unsubscribe succeeded')
+})
+
+
+/**
  * Capability discovery endpoint for external agents.
  * @summary Agent Usage
  */
@@ -3019,11 +3065,12 @@ export const ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse
   "email": zod.string().describe('Subscriber email'),
   "is_active": zod.boolean().describe('Whether subscription is active'),
   "content_types": zod.array(zod.string()).optional().describe('Subscribed content types'),
-  "auth_mode": zod.enum(['email', 'binding', 'unknown']).describe('Whether the subscriber email maps to email-only user, bound account user, or unknown user'),
-  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Matched site user display name'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Matched site user avatar'),
-  "primary_auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Matched site user primary auth provider'),
-  "oauth_providers": zod.array(zod.string()).optional().describe('Matched OAuth providers'),
+  "auth_mode": zod.enum(['email', 'binding', 'unknown']).describe('Whether the initiating visitor is email-only, bound account user, or unknown'),
+  "initiator_email": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor email'),
+  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor display name'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor avatar'),
+  "primary_auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor primary auth provider'),
+  "oauth_providers": zod.array(zod.string()).optional().describe('Initiating visitor OAuth providers'),
   "sent_count": zod.number().default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseItemsItemSentCountDefault).describe('Number of successful deliveries'),
   "last_sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last successful delivery time'),
   "created_at": zod.string().datetime({}).describe('Creation time'),

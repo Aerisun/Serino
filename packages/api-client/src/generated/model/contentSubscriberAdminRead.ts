@@ -13,15 +13,17 @@ export interface ContentSubscriberAdminRead {
   is_active: boolean;
   /** Subscribed content types */
   content_types?: string[];
-  /** Whether the subscriber email maps to email-only user, bound account user, or unknown user */
+  /** Whether the initiating visitor is email-only, bound account user, or unknown */
   auth_mode: ContentSubscriberAdminReadAuthMode;
-  /** Matched site user display name */
+  /** Initiating visitor email */
+  initiator_email?: string | null;
+  /** Initiating visitor display name */
   display_name?: string | null;
-  /** Matched site user avatar */
+  /** Initiating visitor avatar */
   avatar_url?: string | null;
-  /** Matched site user primary auth provider */
+  /** Initiating visitor primary auth provider */
   primary_auth_provider?: string | null;
-  /** Matched OAuth providers */
+  /** Initiating visitor OAuth providers */
   oauth_providers?: string[];
   /** Number of successful deliveries */
   sent_count?: number;

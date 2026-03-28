@@ -6,7 +6,7 @@
  */
 
 /**
- * Whether the subscriber email maps to email-only user, bound account user, or unknown user
+ * Whether the initiating visitor is email-only, bound account user, or unknown
  */
 export type ContentSubscriberAdminReadAuthMode = typeof ContentSubscriberAdminReadAuthMode[keyof typeof ContentSubscriberAdminReadAuthMode];
 
