@@ -4,6 +4,7 @@ import { AdminSurface } from "@/components/AdminSurface";
 import { Badge } from "@/components/ui/Badge";
 import { useParams } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import { AgentSectionSwitch } from "./AgentSectionSwitch";
 
 export default function AgentRunDetailPage() {
   const { t } = useI18n();
@@ -17,7 +18,7 @@ export default function AgentRunDetailPage() {
 
   return (
     <div>
-      <PageHeader title={t("automation.runDetail")} description={runId} />
+      <PageHeader title={t("automation.runDetail")} description={runId} secondary={<AgentSectionSwitch />} />
       <div className="grid gap-4">
         <AdminSurface eyebrow="Run" title={run?.workflow_key || t("automation.runDetail")} description={run?.trigger_event || run?.trigger_kind}>
           {runLoading ? (

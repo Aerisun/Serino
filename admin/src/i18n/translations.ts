@@ -84,7 +84,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.apiKeys": "API 密钥",
     "nav.mcp": "MCP",
     "nav.agentUsage": "Agent 使用说明",
-    "nav.feeds": "Feeds",
+    "nav.agent": "Agent",
     "nav.auditLog": "审计日志",
     "nav.backups": "备份",
     "nav.content": "内容",
@@ -251,7 +251,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.poemSourceCustom": "自定义诗句",
     "siteConfig.poemSourceCustomDesc": "使用站内维护的诗句列表。",
     "siteConfig.poemSourceHitokoto": "在线拉取",
-    "siteConfig.poemSourceHitokotoDesc": "由服务端从 hitokoto 获取文案，前端只展示结果。",
+    "siteConfig.poemSourceHitokotoDesc":
+      "由服务端从 hitokoto 获取文案，前端只展示结果。",
     "siteConfig.poemHitokotoTypes": "在线分类",
     "siteConfig.poemHitokotoTypesHint": "至少选择一个分类。",
     "siteConfig.poemHitokotoTypesRequired": "至少保留一个在线分类。",
@@ -317,7 +318,8 @@ export const translations: Record<Lang, Record<string, string>> = {
       "这些字段已经接入后端社区配置，会直接影响评论排序、审核和匿名头像库行为。",
     "siteConfig.commentOauthProviders": "第三方登录方式",
     "siteConfig.commentAnonymousEnabled": "允许使用邮箱登录进行评论",
-    "siteConfig.commentAnonymousEnabledDesc": "开启后，访客可通过邮箱身份登录后发表评论或留言",
+    "siteConfig.commentAnonymousEnabledDesc":
+      "开启后，访客可通过邮箱身份登录后发表评论或留言",
     "siteConfig.commentModerationMode": "评论审核方式",
     "siteConfig.commentDefaultSorting": "默认排序",
     "siteConfig.commentPageSize": "首次默认加载评论数",
@@ -463,37 +465,135 @@ export const translations: Record<Lang, Record<string, string>> = {
     // integrations
     "integrations.mcp": "MCP",
     "integrations.agentUsage": "Agent 使用说明",
-    "integrations.agentUsageDescription": "查看给 AI/Agent 的 usage URL、可见 MCP 能力，以及本地 skill maps。",
+    "integrations.agentUsageDescription":
+      "查看给 AI/Agent 的 usage URL、可见 MCP 能力，以及本地 skill maps。",
+    "integrations.mcpSettings": "MCP 设置",
+    "integrations.mcpSettingsDescription":
+      "管理 MCP 接入入口、连接方式与访问开关。",
+    "integrations.mcpPermissions": "MCP 权限配置",
+    "integrations.tabs.settings": "MCP 设置",
+    "integrations.tabs.permissions": "MCP 权限配置",
+    "integrations.sectionDescriptions.mcpSettings": "入口、鉴权与开关",
+    "integrations.sectionDescriptions.mcpPermissions":
+      "API Key scopes 与档位切换",
     "integrations.usageUrl": "Usage URL",
-    "integrations.usageUrlHint": "让外部 AI 先访问这个地址获取按权限裁剪后的调用说明。",
+    "integrations.usageUrlHint":
+      "让外部 AI 先访问这个地址获取按权限裁剪后的调用说明。",
     "integrations.mcpEndpoint": "MCP Endpoint",
-    "integrations.capabilities": "能力",
+    "integrations.transport": "传输方式",
+    "integrations.capabilities": "权限范围",
+    "integrations.capabilityCatalog": "能力目录",
+    "integrations.capabilityCatalogDescription":
+      "把 MCP 的权限说明和动态发现内容收拢到同一个页面里查看。",
+    "integrations.capabilitySource": "动态发现来源",
+    "integrations.capabilitySourceHint":
+      "下面的 tools/resources 直接来自服务端 MCP 注册元数据，不再手工维护固定列表。",
     "integrations.visibleTools": "当前可见能力",
-    "integrations.visibleToolsHint": "这里展示 usage 文档里当前可见的 MCP tools 与 resources。",
+    "integrations.visibleToolsHint":
+      "这里展示 usage 文档里当前可见的 MCP tools 与 resources。",
     "integrations.noVisibleTools": "当前没有可见的 MCP tools。",
+    "integrations.visibleResources": "当前可见资源",
+    "integrations.visibleResourcesHint":
+      "这里展示运行时注册的 MCP resources 及其访问 scope。",
+    "integrations.noVisibleResources": "当前没有可见的 MCP resources。",
     "integrations.skillMaps": "Skill Maps",
-    "integrations.skillMapsHint": "本地 skill maps 只负责描述何时调用、去哪里调、以及工作流场景。",
+    "integrations.skillMapsHint":
+      "本地 skill maps 只负责描述何时调用、去哪里调、以及工作流场景。",
     "integrations.noSkillMaps": "还没有 skill maps。",
-    "integrations.mcpDescription": "查看未来 MCP 接入所需的 endpoint、鉴权方式与推荐 scopes。",
+    "integrations.mcpDescription": "统一管理 MCP 接入设置与权限能力目录。",
+    "integrations.mcpKeys": "MCP 访问密钥",
+    "integrations.mcpKeysDescription":
+      "给远端模型创建和管理可访问 MCP 的 API 密钥。",
+    "integrations.mcpKeysHint":
+      "远端 Agent 需要拿着这里生成的 API 密钥，才能访问 /api/mcp 和 /api/agent/usage。",
+    "integrations.mcpKeyDialogDescription":
+      "直接选一个访问档位即可，系统会自动填好对应的 MCP scopes。",
+    "integrations.mcpEditKey": "编辑 MCP 密钥",
+    "integrations.mcpKeyValue": "密钥",
+    "integrations.copyMcpKey": "复制密钥",
+    "integrations.mcpKeyCopiedFull": "已复制完整密钥",
+    "integrations.mcpKeyCopiedMasked": "已复制脱敏密钥（完整值仅创建时可见）",
+    "integrations.mcpKeyLevel": "访问档位",
+    "integrations.mcpKeyReadonly": "只读档次",
+    "integrations.mcpKeyReadonlyHint":
+      "开放这个 API Key 当前可用的读取类 MCP 能力。",
+    "integrations.mcpKeyBasic": "初级管理档次",
+    "integrations.mcpKeyBasicHint":
+      "在只读基础上开放当前 API Key 可用的编辑、发布、可见性调整，以及评论和留言审核。",
+    "integrations.mcpKeyFull": "全面管理档次",
+    "integrations.mcpKeyFullHint": "开放这个 API Key 允许的全部 MCP 管理能力。",
+    "integrations.mcpKeyCustom": "自定义",
+    "integrations.unavailable": "不可用",
     "integrations.endpoint": "Endpoint",
     "integrations.authMethod": "认证方式",
+    "integrations.requiredScopes": "连接必需 scopes",
     "integrations.recommendedScopes": "推荐 scopes",
-    "integrations.mcpEndpointHint": "后续建议将 MCP server 挂载在该路径，并复用 API Key + Bearer 鉴权。",
-    "integrations.mcpAuthHint": "客户端通过 Authorization: Bearer <API_KEY> 访问，并由服务端按 scope 校验能力。",
-    "integrations.mcpScopesHint": "先保留最小只读能力，后续再按具体工具暴露更多细粒度 scope。",
+    "integrations.permissionPresetTitle": "推荐配置档位",
+    "integrations.permissionPresetDescription":
+      "先选 API Key，再点一个推荐档位，不够再展开下面做精细化。",
+    "integrations.configureApiPermissions": "配置 API 权限",
+    "integrations.currentPresetLabel": "当前配置",
+    "integrations.customPreset": "自定义配置",
+    "integrations.customizedPreset": "个性化修改",
+    "integrations.capabilityToggleTitle": "具体开关限权",
+    "integrations.capabilityToggleDescription":
+      "按需开启具体 scopes，小白也可以直接使用上面的推荐档位。",
+    "integrations.scopeConnectHint":
+      "控制这个 API Key 是否允许建立 MCP 连接；关闭后会一并关闭其它 MCP scopes。",
+    "integrations.scopeRelatedCapabilities":
+      "关联 {count} 个 MCP 能力；开启后可访问需要这个 scope 的 tools / resources。",
+    "integrations.scopeUnused": "当前还没有 MCP 能力使用这个 scope。",
+    "integrations.scopeCount": "{count} 个 scopes",
+    "integrations.targetApiKey": "目标 API Key",
+    "integrations.selectApiKey": "选择一个 API Key",
+    "integrations.enabledCapabilityCount": "当前开放权限",
+    "integrations.noMcpKeys":
+      "还没有可用于 MCP 的 API Key，先去 MCP 设置里创建一个。",
+    "integrations.mcpEndpointHint":
+      "外部 Agent 通过这个 endpoint 建立 MCP 连接。",
+    "integrations.mcpAuthHint":
+      "客户端通过 Authorization: Bearer <API_KEY> 访问，并由服务端按 scope 校验能力。",
+    "integrations.mcpScopesHint":
+      "先保留最小只读能力，后续再按具体工具暴露更多细粒度 scope。",
     "integrations.mcpAccess": "MCP 授权开关",
-    "integrations.mcpAccessDescription": "关闭后，即使 API Key 带有 MCP scope，也无法访问 /api/mcp。",
+    "integrations.mcpAccessDescription":
+      "关闭后，即使 API Key 带有 MCP scope，也无法访问 /api/mcp 和 /api/agent/usage。",
     "integrations.mcpEnabled": "已开启",
     "integrations.mcpDisabled": "已关闭",
-    "integrations.feeds": "Feeds",
-    "integrations.feedsDescription": "管理站点对外输出的 RSS/Feed 地址（只读展示）。",
-    "integrations.feedList": "Feed 列表",
-    "integrations.feedListHint": "这些 URL 可直接给 RSS 阅读器/聚合器订阅。",
-    "integrations.copyUrl": "复制链接",
-    "integrations.open": "打开",
     "integrations.enabled": "启用",
     "integrations.disabled": "停用",
-    "integrations.feedCopied": "已复制",
+
+    // agent
+    "nav.automation": "自动化",
+    "nav.agentRuns": "运行记录",
+    "nav.approvals": "审批",
+    "nav.webhooks": "Webhooks",
+    "nav.deliveries": "投递记录",
+    "nav.deadLetters": "死信队列",
+    "agent.description": "集中管理 Agent。",
+    "automation.runs": "运行记录",
+    "automation.runsDescription": "查看工作流运行状态、触发来源和目标对象。",
+    "automation.approvals": "审批",
+    "automation.approvalsDescription": "处理需要人工确认的 Agent 检查点。",
+    "automation.webhooks": "Webhooks",
+    "automation.webhooksDescription": "管理站点对外发送的 Webhook 订阅。",
+    "automation.deliveries": "投递记录",
+    "automation.deliveriesDescription":
+      "查看 Webhook 投递历史、成功、重试状态和失败原因。",
+    "automation.workflow": "工作流",
+    "automation.status": "状态",
+    "automation.trigger": "触发方式",
+    "automation.target": "目标",
+    "automation.runId": "运行 ID",
+    "automation.approvalType": "审批类型",
+    "automation.node": "节点",
+    "automation.runDetail": "运行详情",
+    "automation.steps": "步骤",
+    "automation.stepsDescription": "按时间查看工作流执行过程。",
+    "automation.resultPayload": "结果载荷",
+    "automation.resultPayloadDescription": "查看工作流最终输出和检查点信息。",
+    "automation.deadLetters": "死信队列",
+    "automation.deadLettersDescription": "失败投递已合并到投递记录中。",
 
     // status badges
     "status.draft": "草稿",
@@ -507,6 +607,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "status.queued": "排队中",
     "status.completed": "已完成",
     "status.failed": "失败",
+    "status.cancelled": "已跳过",
     "status.restoring": "恢复中",
     "status.public": "公开",
     "status.private": "私密",
@@ -721,6 +822,43 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.contentSubscriptionSubscribers": "当前订阅人数",
     "siteConfig.contentSubscriptionConfigHint":
       "下面填写实际发信配置。建议先保存 SMTP 后再对外开启订阅入口。",
+    "siteConfig.contentSubscriptionSetupGuide":
+      "请在上面\"外界配置\"中的配置好邮箱并测试，以开启邮箱订阅服务",
+    "siteConfig.contentSubscriptionAdvancedTitle": "订阅配置",
+    "siteConfig.contentSubscriptionAdvancedDesc":
+      "SMTP 试发通过后可配置允许订阅的内容范围和邮件模板。",
+    "siteConfig.contentSubscriptionAllowedTypes": "允许订阅的内容类型",
+    "siteConfig.contentSubscriptionAdvancedAtLeastOneType":
+      "至少保留一种可订阅内容",
+    "siteConfig.contentSubscriptionSubjectTemplate": "邮件标题模板",
+    "siteConfig.contentSubscriptionBodyTemplate": "邮件正文模板",
+    "siteConfig.contentSubscriptionTemplateHint":
+      "可用占位符：{site_name} {content_type} {content_type_label} {content_title} {content_summary} {content_url} {feed_url}",
+    "siteConfig.contentSubscriptionPlaceholderHelpLabel": "可用占位符说明",
+    "siteConfig.contentSubscriptionPlaceholderHelpTitle": "邮件模板占位符说明",
+    "siteConfig.contentSubscriptionPlaceholderHelpDescription":
+      "在邮件标题模板和邮件正文模板中可使用以下占位符，发送时系统会自动替换为对应内容。",
+    "siteConfig.contentSubscriptionPlaceholderHelpUsageTitle": "占位符列表",
+    "siteConfig.contentSubscriptionPlaceholderHelpSiteName":
+      "{site_name}：站点名称",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentType":
+      "{content_type}：内容类型标识（posts / diary / thoughts / excerpts）",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentTypeLabel":
+      "{content_type_label}：内容类型中文名称（文章 / 日记 / 想法 / 摘录）",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentTitle":
+      "{content_title}：内容标题",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentSummary":
+      "{content_summary}：内容摘要",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentUrl":
+      "{content_url}：内容详情链接",
+    "siteConfig.contentSubscriptionPlaceholderHelpFeedUrl":
+      "{feed_url}：站点 RSS 链接",
+    "siteConfig.contentSubscriptionAdvancedSave": "保存订阅配置",
+    "siteConfig.contentSubscriptionAvailable": "邮箱订阅可用",
+    "siteConfig.contentSubscriptionUnavailable":
+      "邮箱订阅不可用（请先完成试发）",
+    "siteConfig.contentSubscriptionServiceNotConfigured":
+      "邮箱订阅服务未配置",
     "siteConfig.contentSubscriptionPaused":
       "订阅入口当前关闭。重新开启后，前台才会显示订阅按钮，下面的 SMTP 配置也会参与邮件发送。",
     "siteConfig.contentSubscriptionSave": "保存订阅设置",
@@ -744,7 +882,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.smtpUseSsl": "启用 SSL",
 
     // more
-    "more.description": "把运行期开关和外界服务配置拆开管理，后续邮箱、API 等都统一放在这里。",
+    "more.description":
+      "把运行期开关和外界服务配置拆开管理，后续邮箱、API 等都统一放在这里。",
     "more.tabs.featureFlags": "功能开关",
     "more.tabs.externalConfig": "外界配置",
     "more.sectionDescriptions.featureFlags": "前台能力与订阅入口",
@@ -753,58 +892,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "more.mailSettingsDescription":
       "配置订阅通知使用的 SMTP 发件账号。后续大模型 API 等外界配置也会继续收口到这里。",
 
-    "siteConfig.runtimeSettings": "运行时站点设置",
-    "siteConfig.runtimeSettingsDescription": "管理 canonical URL、生产 CORS、SEO 默认值以及 sitemap / robots / RSS 行为。",
-    "siteConfig.runtimeSettingsHint": "这些设置会影响 sitemap.xml、robots.txt 与 RSS 中生成的 URL，以及生产环境的跨域策略。",
-    "siteConfig.runtimeSettingsHintSecondary": "修改后无需改代码；刷新页面即可生效。建议先在本地/预发布验证，再应用到生产。",
-    "siteConfig.runtimeExamples": "示例",
-    "siteConfig.runtimePublicSiteUrl": "Canonical 站点 URL",
-    "siteConfig.runtimePublicSiteUrlHelp": "对外公开访问的站点根 URL（不带尾部 /）。用于生成 sitemap/robots/RSS 中的绝对链接。",
-    "siteConfig.runtimeProductionCorsOrigins": "生产 CORS 白名单",
-    "siteConfig.runtimeProductionCorsOriginsHelp": "仅在非 development 环境生效。每行一个 origin，建议填写前台域名与后台域名。",
-    "siteConfig.runtimeProductionCorsOriginsPlaceholder": "https://example.com\nhttps://admin.example.com",
-    "siteConfig.runtimeSeoDefaultTitle": "SEO 默认标题",
-    "siteConfig.runtimeSeoDefaultTitleHelp": "当页面没有单独设置 meta title 时使用。",
-    "siteConfig.runtimeSeoDefaultDescription": "SEO 默认描述",
-    "siteConfig.runtimeSeoDefaultDescriptionHelp": "当页面没有单独设置 meta description 时使用。",
-    "siteConfig.runtimeRssTitle": "RSS 标题",
-    "siteConfig.runtimeRssTitleHelp": "RSS channel title 的内容。",
-    "siteConfig.runtimeRssDescription": "RSS 描述",
-    "siteConfig.runtimeRssDescriptionHelp": "RSS channel 的描述文字。",
-    "siteConfig.runtimeRobotsIndexingEnabled": "允许 robots 索引站点",
-    "siteConfig.runtimeRobotsIndexingEnabledHelp": "关闭后 robots.txt 将 Disallow: /（适合私有部署或预发布环境）。",
-    "siteConfig.runtimePreviewSitemap": "Sitemap",
-    "siteConfig.runtimePreviewRobots": "Robots",
-    "siteConfig.runtimePreviewFeed": "RSS",
-    "siteConfig.runtimePreviewPending": "填写 canonical URL 后显示预览",
-    "siteConfig.runtimeSectionGeneral": "基础入口与跨域",
-    "siteConfig.runtimeSectionGeneralBadge": "canonical / cors",
-    "siteConfig.runtimeSectionPreview": "生成结果预览",
-    "siteConfig.runtimeSectionPreviewBadge": "sitemap / robots / rss",
-    "siteConfig.runtimeSectionSeo": "SEO 与 Feed 默认值",
-    "siteConfig.runtimeSectionSeoBadge": "fallback copy",
-    "siteConfig.runtimeSectionIndexing": "索引控制",
-    "siteConfig.runtimeSectionIndexingBadge": "robots",
-    "siteConfig.runtimeSectionSitemap": "Sitemap 静态页面",
-    "siteConfig.runtimeSectionSitemapBadge": "static urls",
-    "siteConfig.runtimeSectionsHint": "按“入口 / 预览 / SEO / 索引 / Sitemap”分组，便于逐段检查生产配置。",
-    "siteConfig.runtimeSitemapStaticPages": "Sitemap 静态页面",
-    "siteConfig.runtimeSitemapStaticPagesHelp": "配置一些固定 URL（列表页、关于页等）进入 sitemap。",
-    "siteConfig.runtimeSitemapStaticPagesSecondary": "path 必须以 / 开头；priority 为 0.0-1.0；changefreq 采用 sitemap 标准值。",
-    "siteConfig.runtimeAddStaticPage": "添加静态页面",
-    "siteConfig.runtimeRemoveStaticPage": "移除此项",
-    "siteConfig.runtimePath": "Path",
-    "siteConfig.runtimeChangefreq": "Changefreq",
-    "siteConfig.runtimePriority": "Priority",
-    "siteConfig.runtimeSettingsInvalidUrl": "Canonical URL 格式无效",
-    "siteConfig.runtimeSettingsInvalidPath": "Sitemap path 必须以 / 开头",
-    "siteConfig.runtimeSettingsInvalidPriority": "Sitemap priority 需要是 0.0 到 1.0 之间的数字",
-    "siteConfig.runtimeSettingsInvalidJson": "Sitemap 静态页面 JSON 格式无效",
-
     // siteConfig tabs
     "siteConfig.tabs.profile": "个人资料",
     "siteConfig.tabs.more": "更多",
-    "siteConfig.tabs.runtime": "运行时设置",
     "siteConfig.tabs.social": "社交链接",
     "siteConfig.tabs.software": "软件",
     "siteConfig.tabs.poems": "一言",
@@ -812,7 +902,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.tabs.nav": "导航菜单",
     "siteConfig.tabs.community": "评论系统",
     "siteConfig.sectionDescriptions.profile": "站点头像、简介与基础展示信息",
-    "siteConfig.sectionDescriptions.runtime": "Canonical URL、CORS、SEO 默认值与 sitemap / robots 行为",
     "siteConfig.sectionDescriptions.social": "外链、友链与社交入口配置",
     "siteConfig.sectionDescriptions.poems": "一言来源、关键词与展示策略",
     "siteConfig.sectionDescriptions.pages": "页面模块、显示范围与顺序",
@@ -915,7 +1004,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.apiKeys": "API Keys",
     "nav.mcp": "MCP",
     "nav.agentUsage": "Agent Usage",
-    "nav.feeds": "Feeds",
     "nav.auditLog": "Audit Log",
     "nav.backups": "Backups",
     "nav.content": "Content",
@@ -1088,7 +1176,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.poemSourceCustom": "Custom Poems",
     "siteConfig.poemSourceCustomDesc": "Use the poems maintained in this site.",
     "siteConfig.poemSourceHitokoto": "Fetch Online",
-    "siteConfig.poemSourceHitokotoDesc": "Fetch copy from Hitokoto on the server and only render the result in the client.",
+    "siteConfig.poemSourceHitokotoDesc":
+      "Fetch copy from Hitokoto on the server and only render the result in the client.",
     "siteConfig.poemHitokotoTypes": "Online Categories",
     "siteConfig.poemHitokotoTypesHint": "Select at least one category.",
     "siteConfig.poemHitokotoTypesRequired":
@@ -1153,7 +1242,8 @@ export const translations: Record<Lang, Record<string, string>> = {
       "This copy is shown in the comment area, for example email optional, avatar hint, login hint.",
     "siteConfig.commentSaveError":
       "Failed to save comment system settings. Check the form content.",
-    "siteConfig.commentAutoSaveHint": "Changes are saved automatically, so no separate save button is needed.",
+    "siteConfig.commentAutoSaveHint":
+      "Changes are saved automatically, so no separate save button is needed.",
     "siteConfig.commentReservedTitle": "Advanced Comment Settings",
     "siteConfig.commentReservedHint":
       "These fields are now persisted to the backend community config and directly affect sorting, moderation, and anonymous avatar behavior.",
@@ -1308,53 +1398,130 @@ export const translations: Record<Lang, Record<string, string>> = {
     // integrations
     "integrations.mcp": "MCP",
     "integrations.agentUsage": "Agent Usage",
-    "integrations.agentUsageDescription": "Review the AI usage URL, visible MCP capabilities, and local skill maps.",
+    "integrations.agentUsageDescription":
+      "Review the AI usage URL, visible MCP capabilities, and local skill maps.",
+    "integrations.mcpSettings": "MCP Settings",
+    "integrations.mcpSettingsDescription":
+      "Manage the MCP entrypoint, connection method, and access toggle.",
+    "integrations.mcpPermissions": "MCP Permissions",
+    "integrations.tabs.settings": "MCP Settings",
+    "integrations.tabs.permissions": "MCP Permissions",
+    "integrations.sectionDescriptions.mcpSettings":
+      "Entrypoint, auth, and toggle",
+    "integrations.sectionDescriptions.mcpPermissions":
+      "API key scopes and preset switches",
     "integrations.usageUrl": "Usage URL",
-    "integrations.usageUrlHint": "External agents should visit this URL first to read scope-filtered usage instructions.",
+    "integrations.usageUrlHint":
+      "External agents should visit this URL first to read scope-filtered usage instructions.",
     "integrations.mcpEndpoint": "MCP Endpoint",
-    "integrations.capabilities": "Capabilities",
+    "integrations.transport": "Transport",
+    "integrations.capabilities": "Scopes",
+    "integrations.capabilityCatalog": "Capability Catalog",
+    "integrations.capabilityCatalogDescription":
+      "Keep MCP settings and dynamic discovery details in one place.",
+    "integrations.capabilitySource": "Dynamic Source",
+    "integrations.capabilitySourceHint":
+      "The tools and resources below come directly from runtime MCP registration metadata instead of a hand-maintained list.",
     "integrations.visibleTools": "Visible capabilities",
-    "integrations.visibleToolsHint": "This lists the MCP tools and resources currently visible in the usage document.",
+    "integrations.visibleToolsHint":
+      "This lists the MCP tools and resources currently visible in the usage document.",
     "integrations.noVisibleTools": "No MCP tools are currently visible.",
+    "integrations.visibleResources": "Visible resources",
+    "integrations.visibleResourcesHint":
+      "This lists registered MCP resources together with their required scopes.",
+    "integrations.noVisibleResources":
+      "No MCP resources are currently visible.",
     "integrations.skillMaps": "Skill Maps",
-    "integrations.skillMapsHint": "Local skill maps describe when to call, where to call, and the workflow scenario.",
+    "integrations.skillMapsHint":
+      "Local skill maps describe when to call, where to call, and the workflow scenario.",
     "integrations.noSkillMaps": "No skill maps yet.",
-    "integrations.mcpDescription": "Review the planned MCP endpoint, auth method, and recommended scopes.",
+    "integrations.mcpDescription":
+      "Manage MCP connection settings and the capability catalog in one place.",
+    "integrations.mcpKeys": "MCP Access Keys",
+    "integrations.mcpKeysDescription":
+      "Create and manage the API keys that remote models use to access MCP.",
+    "integrations.mcpKeysHint":
+      "Remote agents need an API key created here before they can use /api/mcp or /api/agent/usage.",
+    "integrations.mcpKeyDialogDescription":
+      "Pick an access level and the matching MCP scopes will be filled automatically.",
+    "integrations.mcpEditKey": "Edit MCP Key",
+    "integrations.mcpKeyValue": "Key",
+    "integrations.copyMcpKey": "Copy key",
+    "integrations.mcpKeyCopiedFull": "Full key copied",
+    "integrations.mcpKeyCopiedMasked": "Masked key copied (full value is only visible when created)",
+    "integrations.mcpKeyLevel": "Access Level",
+    "integrations.mcpKeyReadonly": "Read Only",
+    "integrations.mcpKeyReadonlyHint":
+      "Allow the read-only MCP capabilities available to this API key.",
+    "integrations.mcpKeyBasic": "Basic Management",
+    "integrations.mcpKeyBasicHint":
+      "Expand on read-only access with editing, publishing, visibility changes, and comment/guestbook moderation for this API key.",
+    "integrations.mcpKeyFull": "Full Management",
+    "integrations.mcpKeyFullHint":
+      "Allow all MCP management capabilities permitted for this API key.",
+    "integrations.mcpKeyCustom": "Custom",
+    "integrations.unavailable": "Unavailable",
     "integrations.endpoint": "Endpoint",
     "integrations.authMethod": "Auth Method",
+    "integrations.requiredScopes": "Required connect scopes",
     "integrations.recommendedScopes": "Recommended Scopes",
-    "integrations.mcpEndpointHint": "Mount the future MCP server at this path and reuse Bearer API key authentication.",
-    "integrations.mcpAuthHint": "Clients should send Authorization: Bearer <API_KEY>, and the server should enforce scopes per capability.",
-    "integrations.mcpScopesHint": "Start with minimum read-only access and expand to finer-grained scopes when MCP tools are added.",
+    "integrations.permissionPresetTitle": "Recommended Presets",
+    "integrations.permissionPresetDescription":
+      "Pick an API key first, choose a preset, then expand the detailed switches only when needed.",
+    "integrations.configureApiPermissions": "Configure API Permissions",
+    "integrations.currentPresetLabel": "Current setup",
+    "integrations.customPreset": "Custom",
+    "integrations.customizedPreset": "Customized",
+    "integrations.capabilityToggleTitle": "Permission Switches",
+    "integrations.capabilityToggleDescription":
+      "Enable specific scopes only when needed, or keep the recommended preset for a simpler setup.",
+    "integrations.scopeConnectHint":
+      "Controls whether this API key can establish an MCP connection. Turning it off also disables the other MCP scopes.",
+    "integrations.scopeRelatedCapabilities":
+      "Used by {count} MCP capabilities. Enable it to access the tools and resources that require this scope.",
+    "integrations.scopeUnused":
+      "No MCP capabilities are currently using this scope.",
+    "integrations.scopeCount": "{count} scopes",
+    "integrations.targetApiKey": "Target API Key",
+    "integrations.selectApiKey": "Select an API key",
+    "integrations.enabledCapabilityCount": "Enabled capabilities",
+    "integrations.noMcpKeys":
+      "Create an MCP-enabled API key in MCP Settings first.",
+    "integrations.mcpEndpointHint":
+      "External agents use this endpoint to establish the MCP connection.",
+    "integrations.mcpAuthHint":
+      "Clients should send Authorization: Bearer <API_KEY>, and the server should enforce scopes per capability.",
+    "integrations.mcpScopesHint":
+      "Start with minimum read-only access and expand to finer-grained scopes when MCP tools are added.",
     "integrations.mcpAccess": "MCP access",
-    "integrations.mcpAccessDescription": "When disabled, /api/mcp is blocked even if an API key has MCP scopes.",
+    "integrations.mcpAccessDescription":
+      "When disabled, both /api/mcp and /api/agent/usage are blocked even if an API key has MCP scopes.",
     "integrations.mcpEnabled": "Enabled",
     "integrations.mcpDisabled": "Disabled",
-    "integrations.feeds": "Feeds",
-    "integrations.feedsDescription": "Manage RSS/feed URLs exposed by the site (read-only display).",
-    "integrations.feedList": "Feed list",
-    "integrations.feedListHint": "These URLs can be subscribed to directly by RSS readers.",
-    "integrations.copyUrl": "Copy URL",
-    "integrations.open": "Open",
     "integrations.enabled": "Enabled",
     "integrations.disabled": "Disabled",
-    "integrations.feedCopied": "Copied",
 
     // automation
     "nav.automation": "Automation",
+    "nav.agent": "Agent",
     "nav.agentRuns": "Agent Runs",
     "nav.approvals": "Approvals",
     "nav.webhooks": "Webhooks",
     "nav.deliveries": "Deliveries",
+    "nav.deadLetters": "Dead Letters",
+    "agent.description": "Manage Agent in one place.",
     "automation.runs": "Agent Runs",
-    "automation.runsDescription": "Inspect workflow runs, statuses, and targets.",
+    "automation.runsDescription":
+      "Inspect workflow runs, statuses, and targets.",
     "automation.approvals": "Approvals",
-    "automation.approvalsDescription": "Review and resolve human approval checkpoints.",
+    "automation.approvalsDescription":
+      "Review and resolve human approval checkpoints.",
     "automation.webhooks": "Webhooks",
     "automation.webhooksDescription": "Manage outbound webhook subscriptions.",
     "automation.webhooksEmpty": "Webhook management UI is coming next.",
     "automation.deliveries": "Deliveries",
-    "automation.deliveriesDescription": "Inspect webhook delivery history and DLQ state.",
+    "automation.deliveriesDescription":
+      "Inspect webhook delivery history, success, retries, and failure reasons.",
     "automation.deliveriesEmpty": "Delivery and DLQ UI is coming next.",
     "automation.workflow": "Workflow",
     "automation.status": "Status",
@@ -1367,10 +1534,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     "automation.steps": "Steps",
     "automation.stepsDescription": "Human-readable workflow execution history.",
     "automation.resultPayload": "Result Payload",
-    "automation.resultPayloadDescription": "Final workflow output and checkpoint metadata.",
-    "nav.deadLetters": "Dead Letters",
+    "automation.resultPayloadDescription":
+      "Final workflow output and checkpoint metadata.",
     "automation.deadLetters": "Dead Letters",
-    "automation.deadLettersDescription": "Replay failed webhook deliveries from the dead-letter queue.",
+    "automation.deadLettersDescription":
+      "Failed deliveries are merged into the delivery history.",
 
     // status badges
     "status.draft": "Draft",
@@ -1384,6 +1552,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "status.queued": "Queued",
     "status.completed": "Completed",
     "status.failed": "Failed",
+    "status.cancelled": "Cancelled",
     "status.restoring": "Restoring",
     "status.public": "Public",
     "status.private": "Private",
@@ -1574,6 +1743,44 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.contentSubscriptionSubscribers": "Active Subscribers",
     "siteConfig.contentSubscriptionConfigHint":
       "Fill in the actual outbound mail settings below. Saving SMTP before exposing the entry is recommended.",
+    "siteConfig.contentSubscriptionSetupGuide":
+      "Please configure and test email in \"External Config\" above to enable the email subscription service.",
+    "siteConfig.contentSubscriptionAdvancedTitle": "Subscription Settings",
+    "siteConfig.contentSubscriptionAdvancedDesc":
+      "After SMTP test passes, configure allowed subscription content and email templates here.",
+    "siteConfig.contentSubscriptionAllowedTypes": "Allowed subscription content types",
+    "siteConfig.contentSubscriptionAdvancedAtLeastOneType":
+      "Keep at least one subscribable content type",
+    "siteConfig.contentSubscriptionSubjectTemplate": "Email subject template",
+    "siteConfig.contentSubscriptionBodyTemplate": "Email body template",
+    "siteConfig.contentSubscriptionTemplateHint":
+      "Available placeholders: {site_name} {content_type} {content_type_label} {content_title} {content_summary} {content_url} {feed_url}",
+    "siteConfig.contentSubscriptionPlaceholderHelpLabel": "Placeholder Guide",
+    "siteConfig.contentSubscriptionPlaceholderHelpTitle":
+      "Email template placeholders",
+    "siteConfig.contentSubscriptionPlaceholderHelpDescription":
+      "Use the following placeholders in subject and body templates. They are replaced with real values when sending emails.",
+    "siteConfig.contentSubscriptionPlaceholderHelpUsageTitle": "Placeholder list",
+    "siteConfig.contentSubscriptionPlaceholderHelpSiteName":
+      "{site_name}: Site name",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentType":
+      "{content_type}: Content type key (posts / diary / thoughts / excerpts)",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentTypeLabel":
+      "{content_type_label}: Human-readable content type label",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentTitle":
+      "{content_title}: Content title",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentSummary":
+      "{content_summary}: Content summary",
+    "siteConfig.contentSubscriptionPlaceholderHelpContentUrl":
+      "{content_url}: Content detail URL",
+    "siteConfig.contentSubscriptionPlaceholderHelpFeedUrl":
+      "{feed_url}: Site RSS feed URL",
+    "siteConfig.contentSubscriptionAdvancedSave": "Save subscription settings",
+    "siteConfig.contentSubscriptionAvailable": "Email Subscription Available",
+    "siteConfig.contentSubscriptionUnavailable":
+      "Email Subscription Unavailable (run SMTP test first)",
+    "siteConfig.contentSubscriptionServiceNotConfigured":
+      "Email subscription service is not configured",
     "siteConfig.contentSubscriptionPaused":
       "The subscribe entry is currently hidden. Re-enable it to show the navbar button and resume email delivery with the saved SMTP settings.",
     "siteConfig.contentSubscriptionSave": "Save Subscription Settings",
@@ -1601,78 +1808,35 @@ export const translations: Record<Lang, Record<string, string>> = {
       "Separate runtime toggles from external service configuration so mail and future API settings live in one place.",
     "more.tabs.featureFlags": "Feature Toggles",
     "more.tabs.externalConfig": "External Config",
-    "more.sectionDescriptions.featureFlags": "Frontend capabilities and subscribe entry",
-    "more.sectionDescriptions.externalConfig": "Mail, API, and other external services",
+    "more.sectionDescriptions.featureFlags":
+      "Frontend capabilities and subscribe entry",
+    "more.sectionDescriptions.externalConfig":
+      "Mail, API, and other external services",
     "more.mailSettings": "Mail Delivery",
     "more.mailSettingsDescription":
       "Configure the SMTP sender used for subscription notifications. Future model API settings can also live here.",
 
-    "siteConfig.runtimeSettings": "Runtime Site Settings",
-    "siteConfig.runtimeSettingsDescription":
-      "Manage the canonical URL, production CORS, SEO defaults, and sitemap / robots / RSS behavior.",
-    "siteConfig.runtimeSettingsHint": "These settings affect absolute URLs in sitemap.xml / robots.txt / RSS and the production CORS allowlist.",
-    "siteConfig.runtimeSettingsHintSecondary": "Changes take effect after refresh; no code changes required. Validate in staging before applying to production.",
-    "siteConfig.runtimeExamples": "Examples",
-    "siteConfig.runtimePublicSiteUrl": "Canonical Site URL",
-    "siteConfig.runtimePublicSiteUrlHelp": "Public site base URL without a trailing slash. Used to generate absolute URLs in SEO endpoints.",
-    "siteConfig.runtimeProductionCorsOrigins": "Production CORS allowlist",
-    "siteConfig.runtimeProductionCorsOriginsHelp": "Only effective in non-development environments. One origin per line.",
-    "siteConfig.runtimeProductionCorsOriginsPlaceholder": "https://example.com\nhttps://admin.example.com",
-    "siteConfig.runtimeSeoDefaultTitle": "SEO Default Title",
-    "siteConfig.runtimeSeoDefaultTitleHelp": "Fallback meta title when a page does not specify one.",
-    "siteConfig.runtimeSeoDefaultDescription": "SEO Default Description",
-    "siteConfig.runtimeSeoDefaultDescriptionHelp": "Fallback meta description when a page does not specify one.",
-    "siteConfig.runtimeRssTitle": "RSS Title",
-    "siteConfig.runtimeRssTitleHelp": "RSS channel title.",
-    "siteConfig.runtimeRssDescription": "RSS Description",
-    "siteConfig.runtimeRssDescriptionHelp": "RSS channel description.",
-    "siteConfig.runtimeRobotsIndexingEnabled": "Allow robots indexing",
-    "siteConfig.runtimeRobotsIndexingEnabledHelp": "When disabled, robots.txt will serve Disallow: /.",
-    "siteConfig.runtimePreviewSitemap": "Sitemap",
-    "siteConfig.runtimePreviewRobots": "Robots",
-    "siteConfig.runtimePreviewFeed": "RSS",
-    "siteConfig.runtimePreviewPending": "Fill the canonical URL to preview",
-    "siteConfig.runtimeSectionGeneral": "Entry URL & CORS",
-    "siteConfig.runtimeSectionGeneralBadge": "canonical / cors",
-    "siteConfig.runtimeSectionPreview": "Generated endpoint preview",
-    "siteConfig.runtimeSectionPreviewBadge": "sitemap / robots / rss",
-    "siteConfig.runtimeSectionSeo": "SEO & feed defaults",
-    "siteConfig.runtimeSectionSeoBadge": "fallback copy",
-    "siteConfig.runtimeSectionIndexing": "Indexing control",
-    "siteConfig.runtimeSectionIndexingBadge": "robots",
-    "siteConfig.runtimeSectionSitemap": "Sitemap static pages",
-    "siteConfig.runtimeSectionSitemapBadge": "static urls",
-    "siteConfig.runtimeSectionsHint": "Grouped into entry, preview, SEO, indexing, and sitemap so production settings are easier to review.",
-    "siteConfig.runtimeSitemapStaticPages": "Sitemap static pages",
-    "siteConfig.runtimeSitemapStaticPagesHelp": "Add fixed URLs (list pages, about pages, etc.) into the sitemap.",
-    "siteConfig.runtimeSitemapStaticPagesSecondary": "Path must start with /. Priority must be between 0.0 and 1.0.",
-    "siteConfig.runtimeAddStaticPage": "Add static page",
-    "siteConfig.runtimeRemoveStaticPage": "Remove item",
-    "siteConfig.runtimePath": "Path",
-    "siteConfig.runtimeChangefreq": "Changefreq",
-    "siteConfig.runtimePriority": "Priority",
-    "siteConfig.runtimeSettingsInvalidUrl": "Invalid canonical URL",
-    "siteConfig.runtimeSettingsInvalidPath": "Sitemap path must start with /",
-    "siteConfig.runtimeSettingsInvalidPriority": "Sitemap priority must be between 0.0 and 1.0",
-    "siteConfig.runtimeSettingsInvalidJson": "Invalid sitemap static pages JSON",
-
     // siteConfig tabs
     "siteConfig.tabs.profile": "Profile",
     "siteConfig.tabs.more": "More",
-    "siteConfig.tabs.runtime": "Runtime",
     "siteConfig.tabs.social": "Social Links",
     "siteConfig.tabs.software": "Software",
     "siteConfig.tabs.poems": "Hitokoto",
     "siteConfig.tabs.pages": "Pages",
     "siteConfig.tabs.nav": "Navigation",
     "siteConfig.tabs.community": "Comments",
-    "siteConfig.sectionDescriptions.profile": "Avatar, intro, and core presentation details.",
-    "siteConfig.sectionDescriptions.runtime": "Canonical URL, CORS, SEO defaults, and sitemap / robots behavior.",
-    "siteConfig.sectionDescriptions.social": "External links, social profiles, and friend-facing entry points.",
-    "siteConfig.sectionDescriptions.poems": "Hitokoto source, keyword preferences, and display strategy.",
-    "siteConfig.sectionDescriptions.pages": "Page modules, visibility rules, and ordering.",
-    "siteConfig.sectionDescriptions.nav": "Navigation items, grouping, and route structure.",
-    "siteConfig.sectionDescriptions.community": "Comments, visitor identity, and interaction settings.",
+    "siteConfig.sectionDescriptions.profile":
+      "Avatar, intro, and core presentation details.",
+    "siteConfig.sectionDescriptions.social":
+      "External links, social profiles, and friend-facing entry points.",
+    "siteConfig.sectionDescriptions.poems":
+      "Hitokoto source, keyword preferences, and display strategy.",
+    "siteConfig.sectionDescriptions.pages":
+      "Page modules, visibility rules, and ordering.",
+    "siteConfig.sectionDescriptions.nav":
+      "Navigation items, grouping, and route structure.",
+    "siteConfig.sectionDescriptions.community":
+      "Comments, visitor identity, and interaction settings.",
 
     // siteConfig sections
     "siteConfig.heroVideoUrl": "Hero Video URL",

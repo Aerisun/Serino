@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from aerisun.core.base import Base, TimestampMixin, uuid_str
 
-
 AutomationStatus = Literal[
     "queued",
     "running",
@@ -120,6 +119,9 @@ class WebhookSubscription(Base, TimestampMixin):
     headers: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     last_delivery_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_test_status: Mapped[str | None] = mapped_column(String(32))
+    last_test_error: Mapped[str | None] = mapped_column(Text)
+    last_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class WebhookDelivery(Base, TimestampMixin):

@@ -9,6 +9,7 @@ const badgeVariants: Record<string, string> = {
   success:
     "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
   info: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
+  warning: "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-200/70 dark:border-amber-700/50",
 };
 
 interface BadgeProps extends HTMLAttributes<HTMLDivElement> {

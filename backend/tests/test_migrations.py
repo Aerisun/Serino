@@ -401,6 +401,20 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
         )
         connection.execute(
             """
+            CREATE TABLE api_keys (
+                id TEXT PRIMARY KEY,
+                key_name TEXT NOT NULL,
+                key_prefix TEXT NOT NULL UNIQUE,
+                hashed_secret TEXT NOT NULL,
+                scopes JSON NOT NULL,
+                last_used_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
             CREATE TABLE assets (
                 id TEXT PRIMARY KEY,
                 file_name TEXT NOT NULL,

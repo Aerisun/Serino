@@ -20,8 +20,8 @@ import {
   Users,
   Shield,
   Image,
-  Key,
   ClipboardList,
+  Bot,
   Database,
   LogOut,
   Menu,
@@ -32,7 +32,6 @@ import {
   User,
   UserCog,
   Info,
-  Rss,
 } from "lucide-react";
 import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
@@ -76,20 +75,8 @@ const navGroups = [
   {
     labelKey: "nav.integrations",
     items: [
-      { to: "/integrations/api-keys", icon: Key, labelKey: "nav.apiKeys" },
-      { to: "/integrations/feeds", icon: Rss, labelKey: "nav.feeds" },
       { to: "/integrations/mcp", icon: Globe, labelKey: "nav.mcp" },
-      { to: "/integrations/agent-usage", icon: ClipboardList, labelKey: "nav.agentUsage" },
-    ],
-  },
-  {
-    labelKey: "nav.automation",
-    items: [
-      { to: "/automation/runs", icon: ClipboardList, labelKey: "nav.agentRuns" },
-      { to: "/automation/approvals", icon: Shield, labelKey: "nav.approvals" },
-      { to: "/automation/webhooks", icon: Globe, labelKey: "nav.webhooks" },
-      { to: "/automation/deliveries", icon: Rss, labelKey: "nav.deliveries" },
-      { to: "/automation/dead-letters", icon: ClipboardList, labelKey: "nav.deadLetters" },
+      { to: "/agent", icon: Bot, labelKey: "nav.agent" },
     ],
   },
   {
@@ -144,7 +131,7 @@ export default function AdminLayout() {
       <nav className="flex-1 overflow-y-auto py-2">
         {navGroups.map((group) => (
           <div key={group.labelKey} className="mb-2">
-            {!collapsed && (
+            {!collapsed && !group.hideLabel && (
               <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {t(group.labelKey)}
               </div>

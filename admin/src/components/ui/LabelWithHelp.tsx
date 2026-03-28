@@ -24,6 +24,8 @@ interface LabelWithHelpProps {
 const PANEL_MARGIN = 16;
 const PANEL_OFFSET = 4;
 const PANEL_MAX_WIDTH = 352;
+const PANEL_MAX_HEIGHT = 520;
+const PANEL_VERTICAL_PADDING = 32;
 const AUTO_CLOSE_DELAY_MS = 1500;
 
 export function LabelWithHelp({
@@ -40,11 +42,16 @@ export function LabelWithHelp({
     top: number;
     left: number;
     width: number;
+    maxHeight: number;
   } | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<number | null>(null);
   const panelId = useId();
+  const contentMaxHeight = Math.max(
+    160,
+    (panelStyle?.maxHeight ?? PANEL_MAX_HEIGHT) - PANEL_VERTICAL_PADDING,
+  );
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current !== null) {
@@ -63,16 +70,6 @@ export function LabelWithHelp({
     }, AUTO_CLOSE_DELAY_MS);
   }, []);
 
-  const isWithinInteractiveArea = useCallback((target: EventTarget | null) => {
-    const node = target as Node | null;
-    if (!node) {
-      return false;
-    }
-    return Boolean(
-      panelRef.current?.contains(node) || triggerRef.current?.contains(node),
-    );
-  }, []);
-
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) {
       return;
@@ -84,19 +81,26 @@ export function LabelWithHelp({
       Math.max(240, window.innerWidth - PANEL_MARGIN * 2),
     );
     const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 0;
+    const maxHeight = Math.min(
+      PANEL_MAX_HEIGHT,
+      Math.max(200, window.innerHeight - PANEL_MARGIN * 2),
+    );
     const nextLeft = Math.min(
       triggerRect.left + 8,
       window.innerWidth - width - PANEL_MARGIN,
     );
     const preferredTop = triggerRect.bottom + PANEL_OFFSET;
-    const nextTop = panelHeight
-      ? Math.min(preferredTop, window.innerHeight - panelHeight - PANEL_MARGIN)
-      : preferredTop;
+    const effectiveHeight = Math.min(panelHeight || maxHeight, maxHeight);
+    const nextTop = Math.min(
+      Math.max(PANEL_MARGIN, preferredTop),
+      window.innerHeight - effectiveHeight - PANEL_MARGIN,
+    );
 
     setPanelStyle({
       left: Math.max(PANEL_MARGIN, nextLeft),
       top: Math.max(PANEL_MARGIN, nextTop),
       width,
+      maxHeight,
     });
   }, []);
 
@@ -128,43 +132,23 @@ export function LabelWithHelp({
       updatePosition();
     };
 
-    const handleMouseMove = (event: MouseEvent) => {
-      if (isWithinInteractiveArea(event.target)) {
-        clearCloseTimer();
-        return;
-      }
-      scheduleClose();
-    };
-
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("keydown", handleEscape);
-    document.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("resize", handleWindowChange);
     window.addEventListener("scroll", handleWindowChange, true);
     updatePosition();
     const rafId = window.requestAnimationFrame(() => {
       updatePosition();
-      const hoveredElement = document.querySelector(":hover");
-      if (!isWithinInteractiveArea(hoveredElement)) {
-        scheduleClose();
-      }
     });
 
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
-      document.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleWindowChange);
       window.removeEventListener("scroll", handleWindowChange, true);
       window.cancelAnimationFrame(rafId);
     };
-  }, [
-    clearCloseTimer,
-    isWithinInteractiveArea,
-    open,
-    scheduleClose,
-    updatePosition,
-  ]);
+  }, [clearCloseTimer, open, scheduleClose, updatePosition]);
 
   useEffect(() => {
     return () => {
@@ -216,17 +200,21 @@ export function LabelWithHelp({
                       top: panelStyle.top,
                       left: panelStyle.left,
                       width: panelStyle.width,
+                      maxHeight: panelStyle.maxHeight,
                     }
                   : undefined
               }
               className={cn(
-                "fixed z-[160] origin-top-left rounded-2xl border border-border bg-background p-4 shadow-[0_22px_56px_rgba(15,23,42,0.16)]",
+                "fixed z-[160] origin-top-left overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-[0_22px_56px_rgba(15,23,42,0.16)]",
                 "transition-[opacity,transform] duration-150 ease-out",
                 panelStyle ? "opacity-100 scale-100" : "opacity-0 scale-95",
               )}
             >
               <div className="pointer-events-none absolute left-4 top-0 h-2 w-2 -translate-y-1/2 rounded-full border border-border bg-background shadow-sm" />
-              <div className="space-y-3 text-left">
+              <div
+                className="space-y-3 overflow-y-auto overscroll-contain pr-1 text-left"
+                style={{ maxHeight: contentMaxHeight }}
+              >
                 {title ? (
                   <p className="pr-4 text-sm font-semibold text-foreground">{title}</p>
                 ) : null}

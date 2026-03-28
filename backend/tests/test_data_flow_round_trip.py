@@ -8,13 +8,12 @@ from aerisun.api.admin.schemas import (
     NavItemCreate,
     PageCopyUpdate,
     ResumeBasicsUpdate,
-    ResumeSkillGroupCreate,
     SiteProfileUpdate,
     SocialLinkCreate,
 )
 from aerisun.api.site import read_page_copy, read_post, read_posts, read_resume, read_site_config
 from aerisun.domain.content.models import PostEntry
-from aerisun.domain.site_config.models import PageCopy, ResumeBasics, ResumeSkillGroup, SiteProfile
+from aerisun.domain.site_config.models import PageCopy, ResumeBasics, SiteProfile
 
 
 def _endpoint(path: str, method: str):
@@ -28,7 +27,6 @@ CREATE_NAV = _endpoint("/api/v1/admin/site-config/nav-items/", "POST")
 CREATE_SOCIAL = _endpoint("/api/v1/admin/site-config/social-links/", "POST")
 UPDATE_PAGE_COPY = _endpoint("/api/v1/admin/site-config/page-copy/{item_id}", "PUT")
 UPDATE_RESUME_BASICS = _endpoint("/api/v1/admin/resume/basics/{item_id}", "PUT")
-CREATE_RESUME_SKILL = _endpoint("/api/v1/admin/resume/skills/", "POST")
 CREATE_POST = _endpoint("/api/v1/admin/posts/", "POST")
 
 
@@ -106,34 +104,22 @@ def test_admin_resume_updates_flow_to_public_resume(seeded_session, admin_user) 
         item_id=basics.id,
         payload=ResumeBasicsUpdate(
             title="Round Trip Resume",
-            subtitle="Admin -> API -> DB -> Public",
             summary="This summary was updated through the admin API.",
-            download_label="下载最新 PDF",
-        ),
-        _admin=admin_user,
-        session=seeded_session,
-    )
-
-    created_skill = CREATE_RESUME_SKILL(
-        payload=ResumeSkillGroupCreate(
-            category="Flow Skills",
-            items=["FastAPI", "SQLite"],
-            order_index=99,
+            location="Flow City",
+            email="flow@example.com",
+            profile_image_url="/media/public/assets/resume-avatar/flow.webp",
         ),
         _admin=admin_user,
         session=seeded_session,
     )
 
     payload = read_resume(session=seeded_session)
-    skill = seeded_session.query(ResumeSkillGroup).filter(ResumeSkillGroup.id == created_skill.id).first()
-    assert skill is not None
     assert updated.title == "Round Trip Resume"
     assert payload.title == "Round Trip Resume"
-    assert payload.subtitle == "Admin -> API -> DB -> Public"
     assert payload.summary == "This summary was updated through the admin API."
-    assert payload.download_label == "下载最新 PDF"
-    assert created_skill.resume_basics_id
-    assert any(group.category == "Flow Skills" for group in payload.skill_groups)
+    assert payload.location == "Flow City"
+    assert payload.email == "flow@example.com"
+    assert payload.profile_image_url == "/media/public/assets/resume-avatar/flow.webp"
 
 
 def test_admin_private_archive_does_not_flow_to_public_reads(seeded_session, admin_user) -> None:

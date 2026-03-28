@@ -25,4 +25,4 @@ def agent_usage(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="MCP access is disabled")
 
     settings = get_settings()
-    return build_agent_usage(settings.site_url, list(api_key.scopes or []))
+    return build_agent_usage(session, settings.site_url, list(api_key.scopes or []), api_key=api_key)

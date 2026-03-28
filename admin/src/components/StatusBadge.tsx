@@ -13,6 +13,7 @@ const statusVariantMap: Record<string, string> = {
   queued: "warning",
   completed: "success",
   failed: "destructive",
+  cancelled: "secondary",
   restoring: "warning",
   public: "success",
   private: "info",

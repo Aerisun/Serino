@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from aerisun.domain.automation.models import AutomationEvent
-from aerisun.domain.automation.service import emit_event, enqueue_workflow_run
+from aerisun.domain.automation.service import emit_event
 
 
 def emit_comment_pending(
@@ -29,16 +29,6 @@ def emit_comment_pending(
         },
     )
     emit_event(session, event)
-    enqueue_workflow_run(
-        session,
-        workflow_key="comment_moderation_v1",
-        trigger_kind="event",
-        trigger_event=event.event_type,
-        target_type=event.target_type,
-        target_id=event.target_id,
-        input_payload={"event_id": event.event_id},
-        context_payload=event.payload,
-    )
 
 
 def emit_guestbook_pending(
@@ -60,16 +50,6 @@ def emit_guestbook_pending(
         },
     )
     emit_event(session, event)
-    enqueue_workflow_run(
-        session,
-        workflow_key="guestbook_moderation_v1",
-        trigger_kind="event",
-        trigger_event=event.event_type,
-        target_type=event.target_type,
-        target_id=event.target_id,
-        input_payload={"event_id": event.event_id},
-        context_payload=event.payload,
-    )
 
 
 def emit_comment_moderated(session, *, comment_id: str, action: str, reason: str | None = None) -> None:

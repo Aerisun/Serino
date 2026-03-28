@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/Toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/AuthProvider";
@@ -33,17 +33,11 @@ const FriendsPage = lazy(() => import("@/pages/friends/FriendsPage"));
 const ModerationPage = lazy(() => import("@/pages/moderation/ModerationPage"));
 const VisitorsPage = lazy(() => import("@/pages/visitors/VisitorsPage"));
 const VisitorsUsersPage = lazy(() => import("@/pages/visitors/VisitorsUsersPage"));
+const VisitorsSubscribersPage = lazy(() => import("@/pages/visitors/VisitorsSubscribersPage"));
 const AssetsPage = lazy(() => import("@/pages/assets/AssetsPage"));
-const ApiKeysPage = lazy(() => import("@/pages/system/ApiKeysPage"));
 const McpPage = lazy(() => import("@/pages/integrations/McpPage"));
-const FeedsPage = lazy(() => import("@/pages/integrations/FeedsPage"));
-const AgentUsagePage = lazy(() => import("@/pages/integrations/AgentUsagePage"));
-const AgentRunsPage = lazy(() => import("@/pages/automation/AgentRunsPage"));
+const AgentPage = lazy(() => import("@/pages/automation/AgentPage"));
 const AgentRunDetailPage = lazy(() => import("@/pages/automation/AgentRunDetailPage"));
-const ApprovalsPage = lazy(() => import("@/pages/automation/ApprovalsPage"));
-const WebhooksPage = lazy(() => import("@/pages/automation/WebhooksPage"));
-const DeliveriesPage = lazy(() => import("@/pages/automation/DeliveriesPage"));
-const DeadLettersPage = lazy(() => import("@/pages/automation/DeadLettersPage"));
 const AuditLogPage = lazy(() => import("@/pages/system/AuditLogPage"));
 const BackupsPage = lazy(() => import("@/pages/system/BackupsPage"));
 const SystemInfoPage = lazy(() => import("@/pages/system/SystemInfoPage"));
@@ -89,20 +83,31 @@ function ProtectedRoutes() {
           <Route path="moderation" element={<ModerationPage />} />
           <Route path="visitors" element={<VisitorsPage />} />
           <Route path="visitors/users" element={<VisitorsUsersPage />} />
+          <Route path="visitors/subscribers" element={<VisitorsSubscribersPage />} />
           <Route path="assets" element={<AssetsPage />} />
-          <Route path="integrations/api-keys" element={<ApiKeysPage />} />
-          <Route path="integrations/feeds" element={<FeedsPage />} />
-          <Route path="integrations/mcp" element={<McpPage />} />
-          <Route path="integrations/agent-usage" element={<AgentUsagePage />} />
-          <Route path="automation/runs" element={<AgentRunsPage />} />
-          <Route path="automation/runs/:runId" element={<AgentRunDetailPage />} />
-          <Route path="automation/approvals" element={<ApprovalsPage />} />
-          <Route path="automation/webhooks" element={<WebhooksPage />} />
-          <Route path="automation/deliveries" element={<DeliveriesPage />} />
-          <Route path="automation/dead-letters" element={<DeadLettersPage />} />
+          <Route path="integrations/api-keys" element={<Navigate to="/integrations/mcp/settings" replace />} />
+          <Route path="integrations/feeds" element={<Navigate to="/integrations/mcp/settings" replace />} />
+          <Route path="integrations/mcp" element={<Navigate to="/integrations/mcp/settings" replace />} />
+          <Route path="integrations/mcp/:section" element={<McpPage />} />
+          <Route path="integrations/agent-usage" element={<Navigate to="/integrations/mcp/permissions" replace />} />
+          <Route path="agent" element={<Navigate to="/agent/workflows" replace />} />
+          <Route path="agent/runs" element={<Navigate to="/agent/activity" replace />} />
+          <Route path="agent/approvals" element={<Navigate to="/agent/activity" replace />} />
+          <Route path="agent/deliveries" element={<Navigate to="/agent/webhooks" replace />} />
+          <Route path="agent/dead-letters" element={<Navigate to="/agent/webhooks" replace />} />
+          <Route path="agent/runs/:runId" element={<LegacyAgentRunRedirect />} />
+          <Route path="agent/activity/runs/:runId" element={<AgentRunDetailPage />} />
+          <Route path="agent/:section" element={<AgentPage />} />
+          <Route path="automation" element={<Navigate to="/agent/workflows" replace />} />
+          <Route path="automation/runs" element={<Navigate to="/agent/activity" replace />} />
+          <Route path="automation/runs/:runId" element={<LegacyAutomationRunRedirect />} />
+          <Route path="automation/approvals" element={<Navigate to="/agent/activity" replace />} />
+          <Route path="automation/webhooks" element={<Navigate to="/agent/webhooks" replace />} />
+          <Route path="automation/deliveries" element={<Navigate to="/agent/webhooks" replace />} />
+          <Route path="automation/dead-letters" element={<Navigate to="/agent/webhooks" replace />} />
           <Route path="system/api-keys" element={<Navigate to="/integrations/api-keys" replace />} />
-          <Route path="system/feeds" element={<Navigate to="/integrations/feeds" replace />} />
-          <Route path="system/mcp" element={<Navigate to="/integrations/mcp" replace />} />
+          <Route path="system/feeds" element={<Navigate to="/integrations/mcp/settings" replace />} />
+          <Route path="system/mcp" element={<Navigate to="/integrations/mcp/settings" replace />} />
           <Route path="system/audit-log" element={<AuditLogPage />} />
           <Route path="system/backups" element={<BackupsPage />} />
           <Route path="system/info" element={<SystemInfoPage />} />
@@ -119,7 +124,13 @@ export default function App() {
       <ThemeProvider storageKey={ADMIN_THEME_STORAGE_KEY}>
         <LanguageProvider>
           <AuthProvider>
-            <BrowserRouter basename={routerBasename}>
+            <BrowserRouter
+              basename={routerBasename}
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
               <Toaster richColors position="top-right" />
               <Routes>
                 <Route path="/login" element={<LoginRoute />} />
@@ -138,4 +149,14 @@ function LoginRoute() {
   if (isLoading) return null;
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <LoginPage />;
+}
+
+function LegacyAutomationRunRedirect() {
+  const { runId = "" } = useParams();
+  return <Navigate to={`/agent/activity/runs/${runId}`} replace />;
+}
+
+function LegacyAgentRunRedirect() {
+  const { runId = "" } = useParams();
+  return <Navigate to={`/agent/activity/runs/${runId}`} replace />;
 }

@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from functools import lru_cache
+import inspect
+import json
+import re
+from typing import Any
 
-from mcp.server.fastmcp import Context
-from pydantic import AnyHttpUrl
+from fastapi.encoders import jsonable_encoder
+from pydantic import AnyHttpUrl, BaseModel
 
-from aerisun.api.admin.scopes import MCP_CONFIG_READ, MCP_CONNECT, MCP_CONTENT_READ
+from aerisun.api.admin.scopes import MCP_CONNECT
 from aerisun.core.db import get_session_factory
-from aerisun.domain.content.feed_service import build_posts_rss_xml
-from aerisun.domain.content.search_service import search_public_content
-from aerisun.domain.content.service import get_public_post, list_public_posts
-from aerisun.domain.site_config.service import get_site_config
+from aerisun.domain.agent.capabilities.registry import (
+    AgentCapabilityDefinition,
+    list_capability_definitions,
+    list_capability_models,
+)
+from aerisun.domain.agent.mcp_settings import mcp_capability_error_payload, resolve_mcp_config
+from aerisun.domain.iam.models import ApiKey
 from aerisun.mcp_auth import AerisunMcpTokenVerifier
 
 
@@ -35,13 +41,39 @@ def _request_scopes(ctx) -> list[str]:
     return []
 
 
+def _request_api_key_id(ctx) -> str | None:
+    try:
+        from mcp.server.auth.middleware.auth_context import get_access_token
+
+        token = get_access_token()
+        client_id = getattr(token, "client_id", None) if token is not None else None
+        if isinstance(client_id, str) and client_id:
+            return client_id
+    except Exception:
+        pass
+
+    try:
+        meta = getattr(getattr(ctx, "request_context", None), "meta", None)
+        client_id = getattr(meta, "client_id", None)
+        if isinstance(client_id, str) and client_id:
+            return client_id
+    except Exception:
+        pass
+
+    return None
+
+
 def _has_scope(ctx, required: list[str]) -> bool:
     scopes = set(_request_scopes(ctx))
-    return all(s in scopes for s in required)
+    return all(scope in scopes for scope in required)
 
 
 def _scope_error(required: list[str]) -> str:
-    return '{"error":"missing_scopes","required":' + __import__("json").dumps(required) + "}"
+    return '{"error":"missing_scopes","required":' + json.dumps(required) + "}"
+
+
+def _capability_error(kind: str, name: str) -> str:
+    return json.dumps(mcp_capability_error_payload(kind, name), ensure_ascii=False)
 
 
 def _require_scopes(ctx, required: list[str]) -> None:
@@ -49,40 +81,140 @@ def _require_scopes(ctx, required: list[str]) -> None:
         raise PermissionError(f"Missing required scopes: {', '.join(required)}")
 
 
-@lru_cache(maxsize=1)
-def build_mcp():
-    """Build a singleton FastMCP server.
+def _capability_enabled(session, capability: AgentCapabilityDefinition, ctx) -> bool:
+    api_key_id = _request_api_key_id(ctx)
+    api_key = session.get(ApiKey, api_key_id) if api_key_id else None
+    enabled_ids = set(
+        resolve_mcp_config(
+            session,
+            list_capability_models(),
+            api_key=api_key,
+            available_scopes=_request_scopes(ctx),
+        ).enabled_capability_ids
+    )
+    return capability.id in enabled_ids
 
-    We also attach a normalized Aerisun-owned capability registry onto the FastMCP
-    instance (mcp._aerisun_capabilities) so /api/mcp-meta and /api/agent/usage can
-    stay consistent without hand-maintained lists.
-    """
+
+def _resource_guard(session, capability: AgentCapabilityDefinition, ctx) -> str | None:
+    if not _capability_enabled(session, capability, ctx):
+        return _capability_error("resource", capability.name)
+    if not _has_scope(ctx, list(capability.required_scopes)):
+        return _scope_error(list(capability.required_scopes))
+    return None
+
+
+def _tool_guard(session, capability: AgentCapabilityDefinition, ctx) -> dict[str, Any] | None:
+    if not _capability_enabled(session, capability, ctx):
+        return mcp_capability_error_payload("tool", capability.name)
+    _require_scopes(ctx, list(capability.required_scopes))
+    return None
+
+
+def _serialize_resource_result(result: Any, capability: AgentCapabilityDefinition) -> str:
+    if capability.response_kind == "text":
+        return result if isinstance(result, str) else str(result)
+    if isinstance(result, BaseModel):
+        return result.model_dump_json()
+    return json.dumps(jsonable_encoder(result), ensure_ascii=False)
+
+
+def _serialize_tool_result(result: Any) -> Any:
+    if isinstance(result, BaseModel):
+        return result.model_dump()
+    return jsonable_encoder(result)
+
+
+def _build_wrapper_signature(capability: AgentCapabilityDefinition, *, include_ctx: bool) -> inspect.Signature:
+    handler_signature = inspect.signature(capability.handler)
+    parameters = [
+        parameter.replace(annotation=Any if parameter.annotation is not inspect._empty else Any)
+        for parameter in handler_signature.parameters.values()
+    ]
+    if parameters and parameters[0].name == "session":
+        parameters = parameters[1:]
+    if include_ctx:
+        ctx_param = inspect.Parameter(
+            "ctx",
+            kind=inspect.Parameter.KEYWORD_ONLY,
+            default=None,
+            annotation=Any,
+        )
+        insert_at = len(parameters)
+        for index, parameter in enumerate(parameters):
+            if parameter.kind == inspect.Parameter.VAR_KEYWORD:
+                insert_at = index
+                break
+        parameters = [*parameters[:insert_at], ctx_param, *parameters[insert_at:]]
+    return_annotation: Any = str if capability.kind == "resource" else dict[str, Any]
+    return handler_signature.replace(parameters=parameters, return_annotation=return_annotation)
+
+
+def _wrapper_name(capability: AgentCapabilityDefinition) -> str:
+    return re.sub(r"[^a-zA-Z0-9_]+", "_", f"{capability.kind}_{capability.name}").strip("_") or "capability"
+
+
+def _build_wrapper_annotations(signature: inspect.Signature) -> dict[str, Any]:
+    annotations: dict[str, Any] = {}
+    for name, parameter in signature.parameters.items():
+        annotations[name] = Any if parameter.annotation is inspect._empty else parameter.annotation
+    annotations["return"] = Any if signature.return_annotation is inspect._empty else signature.return_annotation
+    return annotations
+
+
+def _build_resource_wrapper(capability: AgentCapabilityDefinition, session_factory):
+    def resource_wrapper(*args, **kwargs):
+        ctx = kwargs.pop("ctx", None)
+        session = session_factory()
+        try:
+            blocked = _resource_guard(session, capability, ctx)
+            if blocked is not None:
+                return blocked
+            result = capability.handler(session, *args, **kwargs)
+            return _serialize_resource_result(result, capability)
+        finally:
+            session.close()
+
+    resource_wrapper.__name__ = _wrapper_name(capability)
+    resource_wrapper.__doc__ = capability.description
+    resource_signature = _build_wrapper_signature(capability, include_ctx=False)
+    resource_wrapper.__annotations__ = _build_wrapper_annotations(resource_signature)
+    # FastMCP validates resource function params strictly against URI template params.
+    # Keep context access out of the public signature to avoid mismatch errors.
+    resource_wrapper.__signature__ = resource_signature
+    return resource_wrapper
+
+
+def _build_tool_wrapper(capability: AgentCapabilityDefinition, session_factory):
+    def tool_wrapper(*args, **kwargs):
+        ctx = kwargs.pop("ctx", None)
+        session = session_factory()
+        try:
+            blocked = _tool_guard(session, capability, ctx)
+            if blocked is not None:
+                return blocked
+            result = capability.handler(session, *args, **kwargs)
+            return _serialize_tool_result(result)
+        finally:
+            session.close()
+
+    tool_wrapper.__name__ = _wrapper_name(capability)
+    tool_wrapper.__doc__ = capability.description
+    # Keep tool signatures free of framework-injected context params,
+    # and rely on auth middleware context lookup from request-local state.
+    tool_signature = _build_wrapper_signature(capability, include_ctx=False)
+    tool_wrapper.__annotations__ = _build_wrapper_annotations(tool_signature)
+    tool_wrapper.__signature__ = tool_signature
+    return tool_wrapper
+
+
+def build_mcp():
+    """Build an MCP server instance and register Aerisun-managed capabilities."""
+
     from mcp.server.auth.settings import AuthSettings
     from mcp.server.fastmcp import FastMCP
 
     session_factory = get_session_factory()
-
-    capabilities: list[dict] = []
-
-    def _register_capability(
-        *,
-        kind: str,
-        name: str,
-        description: str,
-        required_scopes: list[str],
-        invocation: dict,
-        examples: list[dict] | None = None,
-    ) -> None:
-        capabilities.append(
-            {
-                "name": name,
-                "kind": kind,
-                "description": description,
-                "required_scopes": required_scopes,
-                "invocation": invocation,
-                "examples": examples or [],
-            }
-        )
+    capabilities = list_capability_definitions()
 
     mcp = FastMCP(
         "Aerisun",
@@ -96,157 +228,11 @@ def build_mcp():
         ),
     )
 
-    @mcp.resource("aerisun://site-config")
-    def site_config_resource(ctx: Context) -> str:
-        """Return site config as JSON."""
-        session = session_factory()
-        try:
-            if not _has_scope(ctx, [MCP_CONFIG_READ]):
-                return _scope_error([MCP_CONFIG_READ])
-            return get_site_config(session).model_dump_json()
-        finally:
-            session.close()
+    for capability in capabilities:
+        if capability.kind == "resource":
+            mcp.resource(capability.name)(_build_resource_wrapper(capability, session_factory))
+        else:
+            mcp.tool(name=capability.name)(_build_tool_wrapper(capability, session_factory))
 
-    _register_capability(
-        kind="resource",
-        name="aerisun://site-config",
-        description="Return site config as JSON.",
-        required_scopes=[MCP_CONFIG_READ],
-        invocation={"transport": "mcp", "resource": "aerisun://site-config"},
-    )
-
-    @mcp.resource("aerisun://posts")
-    def posts_resource(ctx: Context) -> str:
-        """Return latest posts list as JSON."""
-        session = session_factory()
-        try:
-            if not _has_scope(ctx, [MCP_CONTENT_READ]):
-                return _scope_error([MCP_CONTENT_READ])
-            return list_public_posts(session, limit=20, offset=0).model_dump_json()
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="resource",
-        name="aerisun://posts",
-        description="Return latest posts list as JSON.",
-        required_scopes=[MCP_CONTENT_READ],
-        invocation={"transport": "mcp", "resource": "aerisun://posts"},
-    )
-
-    @mcp.resource("aerisun://posts/{slug}")
-    def post_resource(slug: str, ctx: Context) -> str:
-        """Return a single post by slug as JSON."""
-        session = session_factory()
-        try:
-            if not _has_scope(ctx, [MCP_CONTENT_READ]):
-                return _scope_error([MCP_CONTENT_READ])
-            return get_public_post(session, slug).model_dump_json()
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="resource",
-        name="aerisun://posts/{slug}",
-        description="Return a single post by slug as JSON.",
-        required_scopes=[MCP_CONTENT_READ],
-        invocation={"transport": "mcp", "resource": "aerisun://posts/{slug}"},
-    )
-
-    @mcp.resource("aerisun://feeds/posts")
-    def posts_feed_resource(ctx: Context) -> str:
-        """Return the posts RSS XML."""
-        session = session_factory()
-        try:
-            if not _has_scope(ctx, [MCP_CONTENT_READ]):
-                return _scope_error([MCP_CONTENT_READ])
-            return build_posts_rss_xml(session, "http://localhost")
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="resource",
-        name="aerisun://feeds/posts",
-        description="Return the posts RSS XML.",
-        required_scopes=[MCP_CONTENT_READ],
-        invocation={"transport": "mcp", "resource": "aerisun://feeds/posts"},
-    )
-
-    @mcp.tool(name="get_site_config")
-    def get_site_config_tool(ctx: Context) -> dict:
-        """Get current site config."""
-        session = session_factory()
-        try:
-            _require_scopes(ctx, [MCP_CONFIG_READ])
-            return get_site_config(session).model_dump()
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="tool",
-        name="get_site_config",
-        description="Get current site config.",
-        required_scopes=[MCP_CONFIG_READ],
-        invocation={"transport": "mcp", "tool": "get_site_config"},
-        examples=[{"arguments": {}, "scenario": "读取站点基础配置用于判断功能入口。"}],
-    )
-
-    @mcp.tool(name="list_posts")
-    def list_posts_tool(limit: int = 20, offset: int = 0, ctx: Context | None = None) -> dict:
-        """List published posts."""
-        session = session_factory()
-        try:
-            _require_scopes(ctx, [MCP_CONTENT_READ])
-            return list_public_posts(session, limit=limit, offset=offset).model_dump()
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="tool",
-        name="list_posts",
-        description="List published posts.",
-        required_scopes=[MCP_CONTENT_READ],
-        invocation={"transport": "mcp", "tool": "list_posts"},
-        examples=[{"arguments": {"limit": 10, "offset": 0}, "scenario": "列出最近文章。"}],
-    )
-
-    @mcp.tool(name="get_post")
-    def get_post_tool(slug: str, ctx: Context) -> dict:
-        """Get a published post by slug."""
-        session = session_factory()
-        try:
-            _require_scopes(ctx, [MCP_CONTENT_READ])
-            return get_public_post(session, slug).model_dump()
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="tool",
-        name="get_post",
-        description="Get a published post by slug.",
-        required_scopes=[MCP_CONTENT_READ],
-        invocation={"transport": "mcp", "tool": "get_post"},
-        examples=[{"arguments": {"slug": "hello-world"}, "scenario": "读取单篇文章正文。"}],
-    )
-
-    @mcp.tool(name="search_content")
-    def search_content_tool(query: str, limit: int = 10, ctx: Context | None = None) -> dict:
-        """Search public content."""
-        session = session_factory()
-        try:
-            _require_scopes(ctx, [MCP_CONTENT_READ])
-            return search_public_content(session, query, limit).model_dump()
-        finally:
-            session.close()
-
-    _register_capability(
-        kind="tool",
-        name="search_content",
-        description="Search public content.",
-        required_scopes=[MCP_CONTENT_READ],
-        invocation={"transport": "mcp", "tool": "search_content"},
-        examples=[{"arguments": {"query": "诗", "limit": 5}, "scenario": "按关键词搜索公开内容。"}],
-    )
-
-    setattr(mcp, "_aerisun_capabilities", tuple(capabilities))
+    mcp._aerisun_capabilities = tuple(item.model_dump() for item in list_capability_models())
     return mcp
