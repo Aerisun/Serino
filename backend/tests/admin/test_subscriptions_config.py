@@ -6,7 +6,12 @@ import httpx
 import respx
 
 from aerisun.core.base import utcnow
-from aerisun.domain.subscription.models import ContentNotification, ContentSubscriber
+from aerisun.core.db import get_session_factory
+from aerisun.domain.subscription.models import (
+    ContentNotification,
+    ContentNotificationDelivery,
+    ContentSubscriber,
+)
 from aerisun.domain.subscription.service import (
     MICROSOFT_SMTP_SCOPE,
     dispatch_content_subscription_notifications,
@@ -21,7 +26,14 @@ def test_admin_subscription_config_roundtrip(client, admin_headers) -> None:
 
     assert response.status_code == 200
     assert response.json()["enabled"] is False
+    assert response.json()["smtp_test_passed"] is False
     assert response.json()["subscriber_count"] == 0
+    assert response.json()["allowed_content_types"] == [
+        "posts",
+        "diary",
+        "thoughts",
+        "excerpts",
+    ]
 
     update_response = client.put(
         f"{ADMIN_BASE}/config",
@@ -42,6 +54,9 @@ def test_admin_subscription_config_roundtrip(client, admin_headers) -> None:
             "smtp_reply_to": "hello@example.com",
             "smtp_use_tls": True,
             "smtp_use_ssl": False,
+            "allowed_content_types": ["posts", "diary"],
+            "mail_subject_template": "[{site_name}] {content_title}",
+            "mail_body_template": "{site_name} -> {content_title} ({content_url})",
         },
     )
 
@@ -53,11 +68,54 @@ def test_admin_subscription_config_roundtrip(client, admin_headers) -> None:
     assert payload["smtp_from_email"] == "no-reply@example.com"
     assert payload["smtp_use_tls"] is True
     assert payload["smtp_use_ssl"] is False
+    assert payload["smtp_test_passed"] is False
+    assert payload["allowed_content_types"] == ["diary", "posts"]
+    assert payload["mail_subject_template"] == "[{site_name}] {content_title}"
+    assert payload["mail_body_template"] == "{site_name} -> {content_title} ({content_url})"
+
+
+def test_updating_smtp_config_resets_smtp_test_status(client, admin_headers) -> None:
+    with get_session_factory()() as session:
+        config = get_subscription_config_orm(session)
+        config.enabled = True
+        config.smtp_test_passed = True
+        config.smtp_tested_at = utcnow()
+        session.commit()
+
+    response = client.put(
+        f"{ADMIN_BASE}/config",
+        headers=admin_headers,
+        json={
+            "smtp_host": "smtp.changed.example.com",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["smtp_host"] == "smtp.changed.example.com"
+    assert payload["smtp_test_passed"] is False
+    assert payload["smtp_tested_at"] is None
+    assert payload["enabled"] is True
+
+
+def test_enabling_subscription_without_smtp_test_passed_is_allowed_for_admin_toggle(client, admin_headers) -> None:
+    response = client.put(
+        f"{ADMIN_BASE}/config",
+        headers=admin_headers,
+        json={
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["enabled"] is True
+    assert response.json()["smtp_test_passed"] is False
 
 
 def test_dispatch_content_subscription_notifications_sends_matching_emails(seeded_session, monkeypatch) -> None:
     config = get_subscription_config_orm(seeded_session)
     config.enabled = True
+    config.smtp_test_passed = True
     config.smtp_host = "smtp.example.com"
     config.smtp_port = 587
     config.smtp_username = "mailer"
@@ -182,6 +240,14 @@ def test_admin_subscription_config_test_email_uses_payload_settings(client, admi
     assert message["To"] == "do-not-reply@course.pku.edu.cn"
     assert message["From"] == "Aerisun Bot <no-reply@example.com>"
     assert message["Subject"] == "[Aerisun] SMTP Test"
+
+    config_response = client.get(f"{ADMIN_BASE}/config", headers=admin_headers)
+    assert config_response.status_code == 200
+    config_payload = config_response.json()
+    assert config_payload["smtp_host"] == "smtp.example.com"
+    assert config_payload["smtp_from_email"] == "no-reply@example.com"
+    assert config_payload["smtp_test_passed"] is True
+    assert config_payload["smtp_tested_at"] is not None
 
 
 @respx.mock
@@ -337,3 +403,64 @@ def test_admin_subscription_config_test_email_requires_microsoft_oauth2_fields(c
         response.json()["detail"]
         == "请先填写 SMTP 主机、端口、发件邮箱，以及 Microsoft OAuth2 的租户、Client ID、Client Secret 和 Refresh Token"
     )
+
+
+def test_admin_subscription_lists_subscribers(client, admin_headers) -> None:
+    with get_session_factory()() as session:
+        session.add(
+            ContentSubscriber(
+                email="reader@example.com",
+                content_types=["posts", "diary"],
+                is_active=True,
+            )
+        )
+        session.add(
+            ContentNotificationDelivery(
+                notification_id="notification-1",
+                subscriber_email="reader@example.com",
+                content_type="posts",
+                content_slug="hello-world",
+                content_title="Hello World",
+                content_url="https://example.com/posts/hello-world",
+                status="sent",
+                sent_at=utcnow(),
+            )
+        )
+        session.commit()
+
+    response = client.get(f"{ADMIN_BASE}/subscribers", headers=admin_headers)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 1
+    row = next((item for item in payload["items"] if item["email"] == "reader@example.com"), None)
+    assert row is not None
+    assert row["content_types"] == ["posts", "diary"]
+    assert row["sent_count"] >= 1
+
+
+def test_admin_subscription_lists_subscriber_messages(client, admin_headers) -> None:
+    with get_session_factory()() as session:
+        session.add(
+            ContentNotificationDelivery(
+                notification_id="notification-2",
+                subscriber_email="detail@example.com",
+                content_type="thoughts",
+                content_slug="daily-note",
+                content_title="Daily Note",
+                content_url="https://example.com/thoughts#daily-note",
+                status="sent",
+                sent_at=utcnow(),
+            )
+        )
+        session.commit()
+
+    response = client.get(
+        f"{ADMIN_BASE}/subscribers/detail@example.com/messages",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 1
+    assert any(item["content_title"] == "Daily Note" for item in payload["items"])

@@ -3,9 +3,20 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from aerisun.api.deps.site_auth import get_current_site_user
 from aerisun.core.db import get_session
-from aerisun.domain.subscription.schemas import ContentSubscriptionPublicCreate, ContentSubscriptionPublicRead
-from aerisun.domain.subscription.service import create_or_update_public_subscription
+from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.subscription.schemas import (
+    ContentSubscriptionPublicCreate,
+    ContentSubscriptionPublicRead,
+    ContentSubscriptionPublicStatusRead,
+    ContentSubscriptionPublicUnsubscribeResult,
+)
+from aerisun.domain.subscription.service import (
+    create_or_update_public_subscription,
+    get_public_subscription_for_email,
+    unsubscribe_public_subscription,
+)
 
 router = APIRouter(prefix="/api/v1/site/subscriptions", tags=["site"])
 
@@ -16,3 +27,25 @@ def subscribe_to_content(
     session: Session = Depends(get_session),
 ) -> ContentSubscriptionPublicRead:
     return create_or_update_public_subscription(session, payload)
+
+
+@router.get("/me", response_model=ContentSubscriptionPublicStatusRead, summary="读取当前登录用户订阅状态")
+def get_my_subscription_status(
+    current_user: SiteUser = Depends(get_current_site_user),
+    session: Session = Depends(get_session),
+) -> ContentSubscriptionPublicStatusRead:
+    return get_public_subscription_for_email(
+        session,
+        email=current_user.email,
+    )
+
+
+@router.delete("/me", response_model=ContentSubscriptionPublicUnsubscribeResult, summary="取消当前登录用户订阅")
+def unsubscribe_my_subscription(
+    current_user: SiteUser = Depends(get_current_site_user),
+    session: Session = Depends(get_session),
+) -> ContentSubscriptionPublicUnsubscribeResult:
+    return unsubscribe_public_subscription(
+        session,
+        email=current_user.email,
+    )

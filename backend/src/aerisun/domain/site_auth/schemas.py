@@ -51,27 +51,13 @@ class EmailLoginResponse(BaseModel):
 
 class SiteAuthAvatarCandidateBatchRead(BaseModel):
     batch: int = Field(description="Current avatar candidate batch")
-    total_batches: int = Field(description="Total avatar candidate batches")
+    total_batches: int = Field(description="Total number of avatar candidate batches")
     avatar_candidates: list[SiteAuthAvatarCandidate] = Field(default_factory=list, description="Avatar candidates")
 
 
 class SiteAuthProfileUpdateRequest(BaseModel):
     display_name: str = Field(description="Updated display name")
     avatar_url: str = Field(description="Updated avatar URL")
-
-
-class OAuthProviderSecretStatusRead(BaseModel):
-    configured: bool = Field(description="Whether this secret file is configured")
-    filename: str = Field(description="Expected secret filename under .store/secrets")
-    source: Literal["file", "env", "missing"] = Field(description="Active source for this value")
-
-
-class OAuthProviderStatusRead(BaseModel):
-    enabled_for_visitors: bool = Field(description="Whether visitor login currently enables this provider")
-    enabled_for_admin: bool = Field(description="Whether admin auth currently enables this provider")
-    ready: bool = Field(description="Whether all required secret files are available")
-    client_id: OAuthProviderSecretStatusRead = Field(description="Client id configuration status")
-    client_secret: OAuthProviderSecretStatusRead = Field(description="Client secret configuration status")
 
 
 class SiteAuthConfigAdminRead(ModelBase):
@@ -86,8 +72,10 @@ class SiteAuthConfigAdminRead(ModelBase):
         description="Auth methods reserved for admin-side usage",
     )
     admin_email_enabled: bool = Field(description="Whether email can be used as an admin identity")
-    google: OAuthProviderStatusRead = Field(description="Google OAuth secret readiness and enablement")
-    github: OAuthProviderStatusRead = Field(description="GitHub OAuth secret readiness and enablement")
+    google_client_id: str = Field(description="Google OAuth client id")
+    google_client_secret: str = Field(description="Google OAuth client secret")
+    github_client_id: str = Field(description="GitHub OAuth client id")
+    github_client_secret: str = Field(description="GitHub OAuth client secret")
     created_at: datetime = Field(description="Creation time")
     updated_at: datetime = Field(description="Last update time")
 
@@ -103,6 +91,10 @@ class SiteAuthConfigAdminUpdate(BaseModel):
         description="Auth methods reserved for admin-side usage",
     )
     admin_email_enabled: bool | None = Field(default=None, description="Whether email can be used as admin login")
+    google_client_id: str | None = Field(default=None, description="Google OAuth client id")
+    google_client_secret: str | None = Field(default=None, description="Google OAuth client secret")
+    github_client_id: str | None = Field(default=None, description="GitHub OAuth client id")
+    github_client_secret: str | None = Field(default=None, description="GitHub OAuth client secret")
 
 
 class SiteUserOAuthAccountAdminRead(ModelBase):

@@ -8,16 +8,17 @@ def test_read_resume_returns_seeded_resume_bundle(client) -> None:
 
     payload = response.json()
     assert payload["title"] == "Felix"
-    assert payload["subtitle"] == "UI/UX Designer · Frontend Developer"
     assert payload["summary"]
-    assert payload["download_label"] == "下载 PDF"
-    assert payload["template_key"] == "editorial"
-    assert payload["accent_tone"] == "amber"
     assert payload["location"] == "上海 / Remote"
-    assert payload["highlights"]
-    assert payload["skill_groups"]
-    assert payload["experiences"]
-    assert payload["skill_groups"][0]["category"] == "Frontend"
-    assert payload["experiences"][0]["title"] == "个人网站与设计系统"
-    assert payload["experiences"][0]["achievements"]
-    assert payload["experiences"][0]["tech_stack"]
+    assert payload["email"] == "felix@example.com"
+    assert payload["profile_image_url"]
+
+    assert "subtitle" not in payload
+    assert "download_label" not in payload
+    assert "template_key" not in payload
+    assert "accent_tone" not in payload
+    assert "availability" not in payload
+    assert "website" not in payload
+    assert "highlights" not in payload
+    assert "skill_groups" not in payload
+    assert "experiences" not in payload

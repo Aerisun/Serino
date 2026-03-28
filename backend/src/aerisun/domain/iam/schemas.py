@@ -72,6 +72,7 @@ class ApiKeyAdminRead(ModelBase):
     id: str
     key_name: str
     key_prefix: str
+    key_suffix: str
     scopes: list[str]
     last_used_at: datetime | None
     created_at: datetime

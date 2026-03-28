@@ -26,6 +26,8 @@ from aerisun.domain.iam.schemas import (
 )
 
 SESSION_TTL_HOURS = 24
+API_KEY_PREFIX_LEN = 4
+API_KEY_SUFFIX_LEN = 3
 
 
 def get_admin_profile(admin: AdminUser) -> AdminUserRead:
@@ -124,12 +126,16 @@ def validate_session_token(session: Session, token: str) -> AdminUser:
 
 def validate_api_key(session: Session, token: str, required_scopes: tuple[str, ...]) -> ApiKey:
     """Validate an API key and check scopes. Raises PermissionError."""
-    prefix = token[:8]
-    key = repo.find_api_key_by_prefix(session, prefix)
-    if key is None:
+    if len(token) < API_KEY_PREFIX_LEN + API_KEY_SUFFIX_LEN:
         raise AuthenticationFailed("Invalid API key")
-    if not bcrypt.checkpw(token.encode(), key.hashed_secret.encode()):
+
+    prefix = token[:API_KEY_PREFIX_LEN]
+    suffix = token[-API_KEY_SUFFIX_LEN:]
+
+    key = repo.find_api_key_by_prefix_and_suffix(session, prefix, suffix)
+    if key is None or not bcrypt.checkpw(token.encode(), key.hashed_secret.encode()):
         raise AuthenticationFailed("Invalid API key")
+
     missing = [s for s in required_scopes if s not in key.scopes]
     if missing:
         raise PermissionDenied(f"Missing required scopes: {', '.join(missing)}")
@@ -172,14 +178,25 @@ def _normalize_api_key_scopes(scopes: list[str]) -> list[str]:
 
 def create_api_key(session: Session, key_name: str, scopes: list[str]) -> ApiKeyCreateResponse:
     raw_secret = secrets.token_urlsafe(48)
-    prefix = raw_secret[:8]
+    prefix = raw_secret[:API_KEY_PREFIX_LEN]
+    suffix = raw_secret[-API_KEY_SUFFIX_LEN:]
     hashed = bcrypt.hashpw(raw_secret.encode(), bcrypt.gensalt()).decode()
+
+    # key_prefix is currently unique at DB level; regenerate on rare collisions.
+    while repo.find_api_key_by_prefix(session, prefix) is not None:
+        raw_secret = secrets.token_urlsafe(48)
+        prefix = raw_secret[:API_KEY_PREFIX_LEN]
+        suffix = raw_secret[-API_KEY_SUFFIX_LEN:]
+        hashed = bcrypt.hashpw(raw_secret.encode(), bcrypt.gensalt()).decode()
+
+    normalized_scopes = _normalize_api_key_scopes(scopes)
     key = repo.create_api_key(
         session,
         key_name=key_name,
         key_prefix=prefix,
+        key_suffix=suffix,
         hashed_secret=hashed,
-        scopes=_normalize_api_key_scopes(scopes),
+        scopes=normalized_scopes,
     )
     session.commit()
     session.refresh(key)

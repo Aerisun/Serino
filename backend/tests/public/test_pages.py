@@ -31,7 +31,7 @@ def test_read_pages_returns_seeded_page_copy(client) -> None:
     assert items["calendar"]["extras"]["weekdayLabels"][0] == "周一"
     assert items["calendar"]["extras"]["loadingLabel"] == "正在加载日历"
     assert items["excerpts"]["extras"]["modalCloseLabel"] == "关闭"
-    assert items["resume"]["download_label"] == "下载 PDF"
+    assert items["resume"]["download_label"] is None
     assert "enabled" in items["posts"]
 
 

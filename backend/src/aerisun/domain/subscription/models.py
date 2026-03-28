@@ -27,6 +27,25 @@ class ContentSubscriptionConfig(Base, TimestampMixin):
     smtp_reply_to: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     smtp_use_tls: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     smtp_use_ssl: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    smtp_test_passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    smtp_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    allowed_content_types: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    mail_subject_template: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="[{site_name}] {content_title}",
+    )
+    mail_body_template: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default=(
+            "{site_name} 有新的{content_type_label}内容发布。\n\n"
+            "{content_title}\n"
+            "{content_summary}\n\n"
+            "阅读链接：{content_url}\n"
+            "RSS：{feed_url}"
+        ),
+    )
 
 
 class ContentSubscriber(Base, TimestampMixin):
@@ -50,3 +69,18 @@ class ContentNotification(Base, TimestampMixin):
     content_url: Mapped[str] = mapped_column(String(500), nullable=False)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ContentNotificationDelivery(Base, TimestampMixin):
+    __tablename__ = "content_notification_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    notification_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    subscriber_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    content_slug: Mapped[str] = mapped_column(String(160), nullable=False)
+    content_title: Mapped[str] = mapped_column(String(240), nullable=False)
+    content_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="sent")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

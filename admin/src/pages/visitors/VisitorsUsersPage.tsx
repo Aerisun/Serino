@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { cn, formatDate } from "@/lib/utils";
 import { Search } from "lucide-react";
+import { VisitorsSubscribersPanel } from "@/pages/visitors/VisitorsSubscribersPage";
 import { VisitorsSectionSwitch } from "@/pages/visitors/VisitorsSectionSwitch";
 
 const USER_MODE_OPTIONS = [
   { key: "all", label: "全部" },
   { key: "email", label: "邮箱" },
   { key: "binding", label: "绑定" },
+  { key: "subscriber", label: "订阅者" },
 ] as const;
 
 type VisitorUserMode = (typeof USER_MODE_OPTIONS)[number]["key"];
@@ -30,11 +32,13 @@ function providerBadgeTone(provider: string) {
 export function VisitorsUsersPanel() {
   const [userMode, setUserMode] = useState<VisitorUserMode>("all");
   const [search, setSearch] = useState("");
+  const [subscriberSearch, setSubscriberSearch] = useState("");
   const [page, setPage] = useState(1);
+  const isSubscriberMode = userMode === "subscriber";
 
   const userParams = useMemo<ListVisitorUsersApiV1AdminVisitorsUsersGetParams>(
     () => ({
-      mode: userMode,
+      mode: userMode === "subscriber" ? "all" : userMode,
       search: search.trim() || undefined,
       page,
       page_size: 20,
@@ -130,50 +134,63 @@ export function VisitorsUsersPanel() {
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={search}
+            value={isSubscriberMode ? subscriberSearch : search}
             onChange={(event) => {
+              if (isSubscriberMode) {
+                setSubscriberSearch(event.target.value);
+                return;
+              }
               setSearch(event.target.value);
               setPage(1);
             }}
             className="pl-9"
-            placeholder="搜索邮箱、昵称"
+            placeholder={isSubscriberMode ? "搜索订阅邮箱" : "搜索邮箱、昵称"}
           />
         </div>
       </div>
 
-      <DataTable<SiteUserAdminRead>
-        columns={columns}
-        data={users}
-        total={total}
-        page={page}
-        pageSize={20}
-        onPageChange={setPage}
-        isLoading={usersQuery.isLoading}
-        renderExpandedRow={(row) => (
-          <div className="grid gap-3 py-4">
-            <div className="text-sm font-medium text-foreground">绑定详情</div>
-            {(row.oauth_accounts ?? []).length ? (
-              (row.oauth_accounts ?? []).map((account) => (
-                <div
-                  key={`${row.id}-${account.provider}`}
-                  className="grid gap-2 rounded-[var(--admin-radius-md)] border border-border/60 bg-background/55 px-4 py-3 text-sm md:grid-cols-[120px_1fr_1fr_180px]"
-                >
-                  <div className="font-medium text-foreground">
-                    {account.provider === "google" ? "Google" : "GitHub"}
+      {userMode === "subscriber" ? (
+        <VisitorsSubscribersPanel
+          initialMode="subscriber"
+          showModeFilter={false}
+          showSearch={false}
+          searchKeyword={subscriberSearch}
+        />
+      ) : (
+        <DataTable<SiteUserAdminRead>
+          columns={columns}
+          data={users}
+          total={total}
+          page={page}
+          pageSize={20}
+          onPageChange={setPage}
+          isLoading={usersQuery.isLoading}
+          renderExpandedRow={(row) => (
+            <div className="grid gap-3 py-4">
+              <div className="text-sm font-medium text-foreground">绑定详情</div>
+              {(row.oauth_accounts ?? []).length ? (
+                (row.oauth_accounts ?? []).map((account) => (
+                  <div
+                    key={`${row.id}-${account.provider}`}
+                    className="grid gap-2 rounded-[var(--admin-radius-md)] border border-border/60 bg-background/55 px-4 py-3 text-sm md:grid-cols-[120px_1fr_1fr_180px]"
+                  >
+                    <div className="font-medium text-foreground">
+                      {account.provider === "google" ? "Google" : "GitHub"}
+                    </div>
+                    <div className="text-muted-foreground">{account.provider_email || "未返回邮箱"}</div>
+                    <div className="text-muted-foreground">{account.provider_display_name || "未返回昵称"}</div>
+                    <div className="text-muted-foreground">{formatDate(account.created_at)}</div>
                   </div>
-                  <div className="text-muted-foreground">{account.provider_email || "未返回邮箱"}</div>
-                  <div className="text-muted-foreground">{account.provider_display_name || "未返回昵称"}</div>
-                  <div className="text-muted-foreground">{formatDate(account.created_at)}</div>
+                ))
+              ) : (
+                <div className="rounded-[var(--admin-radius-md)] border border-dashed border-border/60 bg-background/40 px-4 py-4 text-sm text-muted-foreground">
+                  当前用户只有邮箱身份，没有绑定第三方账号。
                 </div>
-              ))
-            ) : (
-              <div className="rounded-[var(--admin-radius-md)] border border-dashed border-border/60 bg-background/40 px-4 py-4 text-sm text-muted-foreground">
-                当前用户只有邮箱身份，没有绑定第三方账号。
-              </div>
-            )}
-          </div>
-        )}
-      />
+              )}
+            </div>
+          )}
+        />
+      )}
     </div>
   );
 }

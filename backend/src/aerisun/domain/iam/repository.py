@@ -100,3 +100,16 @@ def find_session_by_token(session: Session, token: str) -> AdminSession | None:
 def find_api_key_by_prefix(session: Session, prefix: str) -> ApiKey | None:
     """Find an API key by its prefix."""
     return session.query(ApiKey).filter(ApiKey.key_prefix == prefix).first()
+
+
+def find_api_key_by_prefix_and_suffix(session: Session, prefix: str, suffix: str) -> ApiKey | None:
+    """Find an API key by exact prefix and suffix hints."""
+
+    return (
+        session.query(ApiKey)
+        .filter(
+            ApiKey.key_prefix == prefix,
+            ApiKey.key_suffix == suffix,
+        )
+        .first()
+    )

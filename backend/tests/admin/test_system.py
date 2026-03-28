@@ -288,6 +288,8 @@ class TestApiKeys:
         assert "raw_key" in data
         assert data["item"]["key_name"] == "test-key"
         assert data["item"]["scopes"] == ["content:read"]
+        assert len(data["item"]["key_prefix"]) == 4
+        assert len(data["item"]["key_suffix"]) == 3
         key_id = data["item"]["id"]
 
         resp = client.get(f"{BASE}/api-keys", headers=admin_headers)

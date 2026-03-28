@@ -8,13 +8,13 @@ when:
   interval_seconds: 60
 where:
   type: mcp
-  endpoint: /api/mcp
+  endpoint: /api/mcp/mcp
 docs_url: /api/agent/usage
 use_cases:
   - 审核新评论并判断是否需要人工介入
   - 根据评论上下文生成审核建议或回复草稿
 workflow:
-  template: comment_moderation_v1
+  template: community_moderation_v1
   approval_required_for:
     - write
     - delete
