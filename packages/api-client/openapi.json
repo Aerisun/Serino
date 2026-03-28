@@ -3849,6 +3849,78 @@
         ]
       }
     },
+    "/api/v1/admin/site-config/runtime": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "获取运行时站点设置",
+        "operationId": "get_runtime_settings_api_v1_admin_site_config_runtime_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSiteSettingsAdminRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "更新运行时站点设置",
+        "operationId": "update_runtime_settings_api_v1_admin_site_config_runtime_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeSiteSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSiteSettingsAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/site-config/social-links/": {
       "get": {
         "tags": [
@@ -15016,6 +15088,73 @@
         ],
         "title": "NavReorderItem"
       },
+      "OAuthProviderSecretStatusRead": {
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "title": "Configured",
+            "description": "Whether this secret file is configured"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "description": "Expected secret filename under .store/secrets"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "file",
+              "env",
+              "missing"
+            ],
+            "title": "Source",
+            "description": "Active source for this value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "filename",
+          "source"
+        ],
+        "title": "OAuthProviderSecretStatusRead"
+      },
+      "OAuthProviderStatusRead": {
+        "properties": {
+          "enabled_for_visitors": {
+            "type": "boolean",
+            "title": "Enabled For Visitors",
+            "description": "Whether visitor login currently enables this provider"
+          },
+          "enabled_for_admin": {
+            "type": "boolean",
+            "title": "Enabled For Admin",
+            "description": "Whether admin auth currently enables this provider"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready",
+            "description": "Whether all required secret files are available"
+          },
+          "client_id": {
+            "$ref": "#/components/schemas/OAuthProviderSecretStatusRead",
+            "description": "Client id configuration status"
+          },
+          "client_secret": {
+            "$ref": "#/components/schemas/OAuthProviderSecretStatusRead",
+            "description": "Client secret configuration status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled_for_visitors",
+          "enabled_for_admin",
+          "ready",
+          "client_id",
+          "client_secret"
+        ],
+        "title": "OAuthProviderStatusRead"
+      },
       "OAuthStartResponse": {
         "properties": {
           "authorization_url": {
@@ -17568,6 +17707,306 @@
         "type": "object",
         "title": "ResumeSkillGroupUpdate"
       },
+      "RuntimeSiteSettingsAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Runtime site settings identifier"
+          },
+          "public_site_url": {
+            "type": "string",
+            "title": "Public Site Url",
+            "description": "Canonical public site URL"
+          },
+          "production_cors_origins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Production Cors Origins",
+            "description": "CORS allowlist for production"
+          },
+          "seo_default_title": {
+            "type": "string",
+            "title": "Seo Default Title",
+            "description": "Fallback SEO title"
+          },
+          "seo_default_description": {
+            "type": "string",
+            "title": "Seo Default Description",
+            "description": "Fallback SEO description"
+          },
+          "rss_title": {
+            "type": "string",
+            "title": "Rss Title",
+            "description": "RSS channel title"
+          },
+          "rss_description": {
+            "type": "string",
+            "title": "Rss Description",
+            "description": "RSS channel description"
+          },
+          "robots_indexing_enabled": {
+            "type": "boolean",
+            "title": "Robots Indexing Enabled",
+            "description": "Whether robots should allow indexing"
+          },
+          "sitemap_static_pages": {
+            "items": {
+              "$ref": "#/components/schemas/SitemapStaticPageRead"
+            },
+            "type": "array",
+            "title": "Sitemap Static Pages",
+            "description": "Configured static sitemap pages"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "public_site_url",
+          "seo_default_title",
+          "seo_default_description",
+          "rss_title",
+          "rss_description",
+          "robots_indexing_enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RuntimeSiteSettingsAdminRead"
+      },
+      "RuntimeSiteSettingsRead": {
+        "properties": {
+          "public_site_url": {
+            "type": "string",
+            "title": "Public Site Url",
+            "description": "Canonical public site URL"
+          },
+          "production_cors_origins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Production Cors Origins",
+            "description": "CORS allowlist for production"
+          },
+          "seo_default_title": {
+            "type": "string",
+            "title": "Seo Default Title",
+            "description": "Fallback SEO title"
+          },
+          "seo_default_description": {
+            "type": "string",
+            "title": "Seo Default Description",
+            "description": "Fallback SEO description"
+          },
+          "rss_title": {
+            "type": "string",
+            "title": "Rss Title",
+            "description": "RSS channel title"
+          },
+          "rss_description": {
+            "type": "string",
+            "title": "Rss Description",
+            "description": "RSS channel description"
+          },
+          "robots_indexing_enabled": {
+            "type": "boolean",
+            "title": "Robots Indexing Enabled",
+            "description": "Whether robots should allow indexing"
+          },
+          "sitemap_static_pages": {
+            "items": {
+              "$ref": "#/components/schemas/SitemapStaticPageRead"
+            },
+            "type": "array",
+            "title": "Sitemap Static Pages",
+            "description": "Configured static sitemap pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_site_url",
+          "seo_default_title",
+          "seo_default_description",
+          "rss_title",
+          "rss_description",
+          "robots_indexing_enabled"
+        ],
+        "title": "RuntimeSiteSettingsRead"
+      },
+      "RuntimeSiteSettingsSnapshotRead": {
+        "properties": {
+          "public_site_url": {
+            "type": "string",
+            "title": "Public Site Url"
+          },
+          "production_cors_origins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Production Cors Origins"
+          },
+          "seo_default_title": {
+            "type": "string",
+            "title": "Seo Default Title"
+          },
+          "seo_default_description": {
+            "type": "string",
+            "title": "Seo Default Description"
+          },
+          "rss_title": {
+            "type": "string",
+            "title": "Rss Title"
+          },
+          "rss_description": {
+            "type": "string",
+            "title": "Rss Description"
+          },
+          "robots_indexing_enabled": {
+            "type": "boolean",
+            "title": "Robots Indexing Enabled"
+          },
+          "sitemap_static_pages": {
+            "items": {
+              "$ref": "#/components/schemas/SitemapStaticPageRead"
+            },
+            "type": "array",
+            "title": "Sitemap Static Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_site_url",
+          "seo_default_title",
+          "seo_default_description",
+          "rss_title",
+          "rss_description",
+          "robots_indexing_enabled"
+        ],
+        "title": "RuntimeSiteSettingsSnapshotRead"
+      },
+      "RuntimeSiteSettingsUpdate": {
+        "properties": {
+          "public_site_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Site Url",
+            "description": "Canonical public site URL"
+          },
+          "production_cors_origins": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Production Cors Origins",
+            "description": "CORS allowlist for production"
+          },
+          "seo_default_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seo Default Title",
+            "description": "Fallback SEO title"
+          },
+          "seo_default_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seo Default Description",
+            "description": "Fallback SEO description"
+          },
+          "rss_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rss Title",
+            "description": "RSS channel title"
+          },
+          "rss_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rss Description",
+            "description": "RSS channel description"
+          },
+          "robots_indexing_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Robots Indexing Enabled",
+            "description": "Whether robots should allow indexing"
+          },
+          "sitemap_static_pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SitemapStaticPageRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sitemap Static Pages",
+            "description": "Configured static sitemap pages"
+          }
+        },
+        "type": "object",
+        "title": "RuntimeSiteSettingsUpdate"
+      },
       "SearchResponse": {
         "properties": {
           "items": {
@@ -17635,6 +18074,29 @@
           "snippet"
         ],
         "title": "SearchResultItem"
+      },
+      "SecretStatusRead": {
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "filename",
+          "source"
+        ],
+        "title": "SecretStatusRead"
       },
       "SiteAdminEmailIdentityBindRequest": {
         "properties": {
@@ -17767,7 +18229,7 @@
           "total_batches": {
             "type": "integer",
             "title": "Total Batches",
-            "description": "Total number of avatar candidate batches"
+            "description": "Total avatar candidate batches"
           },
           "avatar_candidates": {
             "items": {
@@ -17818,25 +18280,13 @@
             "title": "Admin Email Enabled",
             "description": "Whether email can be used as an admin identity"
           },
-          "google_client_id": {
-            "type": "string",
-            "title": "Google Client Id",
-            "description": "Google OAuth client id"
+          "google": {
+            "$ref": "#/components/schemas/OAuthProviderStatusRead",
+            "description": "Google OAuth secret readiness and enablement"
           },
-          "google_client_secret": {
-            "type": "string",
-            "title": "Google Client Secret",
-            "description": "Google OAuth client secret"
-          },
-          "github_client_id": {
-            "type": "string",
-            "title": "Github Client Id",
-            "description": "GitHub OAuth client id"
-          },
-          "github_client_secret": {
-            "type": "string",
-            "title": "Github Client Secret",
-            "description": "GitHub OAuth client secret"
+          "github": {
+            "$ref": "#/components/schemas/OAuthProviderStatusRead",
+            "description": "GitHub OAuth secret readiness and enablement"
           },
           "created_at": {
             "type": "string",
@@ -17856,10 +18306,8 @@
           "id",
           "email_login_enabled",
           "admin_email_enabled",
-          "google_client_id",
-          "google_client_secret",
-          "github_client_id",
-          "github_client_secret",
+          "google",
+          "github",
           "created_at",
           "updated_at"
         ],
@@ -17920,54 +18368,6 @@
             ],
             "title": "Admin Email Enabled",
             "description": "Whether email can be used as admin login"
-          },
-          "google_client_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Google Client Id",
-            "description": "Google OAuth client id"
-          },
-          "google_client_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Google Client Secret",
-            "description": "Google OAuth client secret"
-          },
-          "github_client_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Github Client Id",
-            "description": "GitHub OAuth client id"
-          },
-          "github_client_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Github Client Secret",
-            "description": "GitHub OAuth client secret"
           }
         },
         "type": "object",
@@ -18130,13 +18530,18 @@
             "type": "array",
             "title": "Navigation",
             "description": "Navigation menu items"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/RuntimeSiteSettingsRead",
+            "description": "Runtime site settings"
           }
         },
         "type": "object",
         "required": [
           "site",
           "social_links",
-          "poems"
+          "poems",
+          "runtime"
         ],
         "title": "SiteConfigRead"
       },
@@ -18829,6 +19234,32 @@
         ],
         "title": "SiteUserOAuthAccountAdminRead"
       },
+      "SitemapStaticPageRead": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Static sitemap path"
+          },
+          "changefreq": {
+            "type": "string",
+            "title": "Changefreq",
+            "description": "Sitemap changefreq value"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "description": "Sitemap priority value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "changefreq",
+          "priority"
+        ],
+        "title": "SitemapStaticPageRead"
+      },
       "SocialLinkAdminRead": {
         "properties": {
           "id": {
@@ -19077,6 +19508,19 @@
           "site_url": {
             "type": "string",
             "title": "Site Url"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/RuntimeSiteSettingsSnapshotRead"
+          },
+          "secrets_dir": {
+            "type": "string",
+            "title": "Secrets Dir"
+          },
+          "sentry_dsn": {
+            "$ref": "#/components/schemas/SecretStatusRead"
+          },
+          "waline_jwt_token": {
+            "$ref": "#/components/schemas/SecretStatusRead"
           }
         },
         "type": "object",
@@ -19086,7 +19530,11 @@
           "media_dir_size_bytes",
           "uptime_seconds",
           "environment",
-          "site_url"
+          "site_url",
+          "runtime",
+          "secrets_dir",
+          "sentry_dsn",
+          "waline_jwt_token"
         ],
         "title": "SystemInfo"
       },

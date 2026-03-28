@@ -62,6 +62,20 @@ type BackendSiteResponse = {
       href: string;
     }>;
   }>;
+  runtime: {
+    public_site_url: string;
+    production_cors_origins: string[];
+    seo_default_title: string;
+    seo_default_description: string;
+    rss_title: string;
+    rss_description: string;
+    robots_indexing_enabled: boolean;
+    sitemap_static_pages: Array<{
+      path: string;
+      changefreq: string;
+      priority: string;
+    }>;
+  };
 };
 
 type BackendPageCopyItem = {
@@ -172,6 +186,11 @@ export interface RuntimeConfigSnapshot {
     heroImageUrl: string;
     heroPosterUrl: string;
     metaDescription: string;
+    canonicalUrl: string;
+    rssTitle: string;
+    rssDescription: string;
+    robotsIndexingEnabled: boolean;
+    sitemapStaticPages: Array<{ path: string; changefreq: string; priority: string }>;
     copyright: string;
     socialLinks: Array<{ name: string; href: string; iconKey: string; placement: "hero" | "footer" | "both" }>;
     poems: string[];
@@ -261,7 +280,7 @@ const normalizeSiteConfig = (
 
   return {
     name: payload.site.name,
-    title: payload.site.title,
+    title: payload.runtime.seo_default_title || payload.site.title,
     bio: payload.site.bio,
     role: payload.site.role,
     author: payload.site.author,
@@ -269,7 +288,12 @@ const normalizeSiteConfig = (
     siteIconUrl: payload.site.site_icon_url ?? "",
     heroImageUrl: payload.site.hero_image_url,
     heroPosterUrl: payload.site.hero_poster_url,
-    metaDescription: payload.site.meta_description,
+    metaDescription: payload.runtime.seo_default_description || payload.site.meta_description,
+    canonicalUrl: payload.runtime.public_site_url,
+    rssTitle: payload.runtime.rss_title,
+    rssDescription: payload.runtime.rss_description,
+    robotsIndexingEnabled: payload.runtime.robots_indexing_enabled,
+    sitemapStaticPages: payload.runtime.sitemap_static_pages ?? [],
     copyright: payload.site.copyright,
     poems: payload.poems.map((p) => p.content).filter(Boolean),
     poemSource: payload.site.poem_source ?? "custom",

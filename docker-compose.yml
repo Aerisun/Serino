@@ -19,13 +19,11 @@ services:
       AERISUN_SITE_URL: ${AERISUN_SITE_URL}
       AERISUN_WALINE_SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
       AERISUN_CORS_ORIGINS: ${AERISUN_CORS_ORIGINS:-}
-      AERISUN_SENTRY_DSN: ${AERISUN_SENTRY_DSN:-}
       AERISUN_SEED_REFERENCE_DATA: ${AERISUN_SEED_REFERENCE_DATA}
       AERISUN_LOG_FORMAT: ${AERISUN_LOG_FORMAT:-auto}
       AERISUN_LOG_LEVEL: ${AERISUN_LOG_LEVEL:-INFO}
       AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL}
       AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL}
-      WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
     ports:
@@ -40,13 +38,15 @@ services:
 
   waline:
     image: lizheming/waline:latest
+    env_file:
+      # Waline itself only supports env-based JWT_TOKEN; we keep the secret in .store/secrets/waline.env
+      - ${AERISUN_SECRETS_DIR:-/srv/aerisun/store/secrets}/waline.env
     environment:
       SITE_NAME: ${AERISUN_APP_NAME}
       SITE_URL: ${AERISUN_SITE_URL}
       SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
       SQLITE_PATH: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
       SQLITE_DB: waline.db
-      JWT_TOKEN: ${WALINE_JWT_TOKEN}
       SECURE_DOMAINS: ${WALINE_SECURE_DOMAINS}
       AVATAR_PROXY: ${WALINE_AVATAR_PROXY}
       GRAVATAR_STR: ${WALINE_GRAVATAR_STR}
@@ -99,7 +99,6 @@ services:
         AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
         AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}
         AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}
-        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     ports:
       - "${AERISUN_HTTP_PORT:-80}:80"
       - "${AERISUN_HTTPS_PORT:-443}:443"

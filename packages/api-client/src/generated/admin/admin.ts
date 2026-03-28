@@ -127,6 +127,8 @@ import type {
   ResumeSkillGroupAdminRead,
   ResumeSkillGroupCreate,
   ResumeSkillGroupUpdate,
+  RuntimeSiteSettingsAdminRead,
+  RuntimeSiteSettingsUpdate,
   SiteAdminEmailIdentityBindRequest,
   SiteAdminIdentityAdminRead,
   SiteAuthConfigAdminRead,
@@ -4237,6 +4239,205 @@ export const useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut = <T
         TContext
       > => {
       return useMutation(getUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取运行时站点设置
+ */
+export type getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse200 = {
+  data: RuntimeSiteSettingsAdminRead
+  status: 200
+}
+
+export type getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponseSuccess = (getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse = (getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponseSuccess)
+
+export const getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/site-config/runtime`
+}
+
+export const getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet = async ( options?: RequestInit): Promise<getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse> => {
+
+  return customInstance<getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse>(getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryKey = () => {
+    return [
+    `/api/v1/admin/site-config/runtime`
+    ] as const;
+    }
+
+
+export const getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryOptions = <TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>> = ({ signal }) => getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryResult = NonNullable<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>>
+export type GetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryError = ErrorType<unknown>
+
+
+export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取运行时站点设置
+ */
+
+export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新运行时站点设置
+ */
+export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse200 = {
+  data: RuntimeSiteSettingsAdminRead
+  status: 200
+}
+
+export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseSuccess = (updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse200) & {
+  headers: Headers;
+};
+export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseError = (updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse422) & {
+  headers: Headers;
+};
+
+export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse = (updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseSuccess | updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseError)
+
+export const getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/site-config/runtime`
+}
+
+export const updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut = async (runtimeSiteSettingsUpdate: RuntimeSiteSettingsUpdate, options?: RequestInit): Promise<updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse> => {
+
+  return customInstance<updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse>(getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      runtimeSiteSettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, TError,{data: BodyType<RuntimeSiteSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, TError,{data: BodyType<RuntimeSiteSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, {data: BodyType<RuntimeSiteSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationResult = NonNullable<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>>
+    export type UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationBody = BodyType<RuntimeSiteSettingsUpdate>
+    export type UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新运行时站点设置
+ */
+export const useUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, TError,{data: BodyType<RuntimeSiteSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>,
+        TError,
+        {data: BodyType<RuntimeSiteSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取admin-site-config列表

@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from aerisun.core.schemas import ModelBase
+from aerisun.domain.site_config.schemas import SitemapStaticPageRead
 
 # ---------------------------------------------------------------------------
 # Moderation
@@ -175,6 +176,23 @@ class EnhancedDashboardStats(ModelBase):
     aux_metrics: DashboardAuxMetrics = Field(default_factory=DashboardAuxMetrics)
 
 
+class SecretStatusRead(BaseModel):
+    configured: bool
+    filename: str
+    source: str
+
+
+class RuntimeSiteSettingsSnapshotRead(BaseModel):
+    public_site_url: str
+    production_cors_origins: list[str] = Field(default_factory=list)
+    seo_default_title: str
+    seo_default_description: str
+    rss_title: str
+    rss_description: str
+    robots_indexing_enabled: bool
+    sitemap_static_pages: list[SitemapStaticPageRead] = Field(default_factory=list)
+
+
 class SystemInfo(BaseModel):
     version: str = "1.0.0"
     python_version: str
@@ -183,3 +201,7 @@ class SystemInfo(BaseModel):
     uptime_seconds: float
     environment: str
     site_url: str
+    runtime: RuntimeSiteSettingsSnapshotRead
+    secrets_dir: str
+    sentry_dsn: SecretStatusRead
+    waline_jwt_token: SecretStatusRead

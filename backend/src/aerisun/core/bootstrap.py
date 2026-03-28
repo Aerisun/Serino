@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from aerisun.core.db import dispose_engine
+from aerisun.core.db import dispose_engine, get_session_factory
 from aerisun.core.logging import setup_logging
 from aerisun.core.security import check_insecure_defaults
 from aerisun.core.sentry import init_sentry
@@ -27,7 +27,8 @@ async def lifespan(_app):
     logger.info("Infrastructure ready")
 
     # Phase 2: Integrations
-    check_insecure_defaults(settings)
+    with get_session_factory()() as session:
+        check_insecure_defaults(settings, session)
     init_sentry(settings)
     logger.info("Integrations ready")
 

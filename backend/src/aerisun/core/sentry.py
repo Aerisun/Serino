@@ -11,14 +11,16 @@ logger = logging.getLogger("aerisun.startup")
 
 def init_sentry(settings: Settings) -> None:
     """Conditionally initialise the Sentry SDK if a DSN is configured."""
-    if not settings.sentry_dsn:
+    secret = settings.sentry_dsn_secret()
+    if not secret.value:
         return
+
     import sentry_sdk
 
     sentry_sdk.init(
-        dsn=settings.sentry_dsn,
+        dsn=secret.value,
         environment=settings.environment,
         traces_sample_rate=settings.sentry_traces_sample_rate,
         send_default_pii=False,
     )
-    logger.info("Sentry initialised (env=%s)", settings.environment)
+    logger.info("Sentry initialised (env=%s, source=%s)", settings.environment, secret.source)

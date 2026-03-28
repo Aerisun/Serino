@@ -6,6 +6,7 @@
  */
 import type { NavItemRead } from './navItemRead';
 import type { PoemRead } from './poemRead';
+import type { RuntimeSiteSettingsRead } from './runtimeSiteSettingsRead';
 import type { SiteProfileRead } from './siteProfileRead';
 import type { SocialLinkRead } from './socialLinkRead';
 
@@ -18,4 +19,6 @@ export interface SiteConfigRead {
   poems: PoemRead[];
   /** Navigation menu items */
   navigation?: NavItemRead[];
+  /** Runtime site settings */
+  runtime: RuntimeSiteSettingsRead;
 }

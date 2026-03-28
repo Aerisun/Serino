@@ -12,6 +12,7 @@ from aerisun.domain.site_config.models import (
     ResumeBasics,
     ResumeExperience,
     ResumeSkillGroup,
+    RuntimeSiteSettings,
     SiteProfile,
     SocialLink,
 )
@@ -70,6 +71,11 @@ def find_all_page_display_options(session: Session) -> dict[str, PageDisplayOpti
 def find_community_config(session: Session) -> CommunityConfig | None:
     """Get the first community config."""
     return session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+
+
+def find_runtime_site_settings(session: Session) -> RuntimeSiteSettings | None:
+    """Get the first runtime site settings record."""
+    return session.scalars(select(RuntimeSiteSettings).order_by(RuntimeSiteSettings.created_at.asc())).first()
 
 
 def find_resume_basics(session: Session) -> ResumeBasics | None:

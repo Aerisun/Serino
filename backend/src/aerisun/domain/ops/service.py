@@ -11,6 +11,7 @@ from pathlib import Path
 import structlog
 from sqlalchemy.orm import Session
 
+from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.exceptions import ResourceNotFound
@@ -31,6 +32,7 @@ from aerisun.domain.ops.schemas import (
     TrafficTrendPoint,
     VisitorRecordRead,
 )
+from aerisun.domain.site_config.service import _runtime_site_settings_read
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records, list_counter_history_by_date, list_counter_stats
 
@@ -577,11 +579,28 @@ def get_system_info() -> SystemInfo:
             if f.is_file():
                 media_size += f.stat().st_size
 
+    sentry_secret = settings.sentry_dsn_secret()
+    waline_secret = settings.waline_jwt_secret()
+    with get_session_factory()() as session:
+        runtime = _runtime_site_settings_read(session)
+
     return SystemInfo(
         python_version=sys.version.split()[0],
         db_size_bytes=db_size,
         media_dir_size_bytes=media_size,
         uptime_seconds=time.time() - _STARTUP_TIME,
         environment=settings.environment,
-        site_url=settings.site_url,
+        site_url=runtime.public_site_url,
+        runtime=runtime,
+        secrets_dir=str(settings.secrets_dir),
+        sentry_dsn={
+            "configured": bool(sentry_secret.value),
+            "filename": sentry_secret.filename,
+            "source": sentry_secret.source,
+        },
+        waline_jwt_token={
+            "configured": bool(waline_secret.value),
+            "filename": waline_secret.filename,
+            "source": waline_secret.source,
+        },
     )

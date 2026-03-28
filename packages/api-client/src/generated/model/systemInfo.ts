@@ -4,6 +4,8 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { RuntimeSiteSettingsSnapshotRead } from './runtimeSiteSettingsSnapshotRead';
+import type { SecretStatusRead } from './secretStatusRead';
 
 export interface SystemInfo {
   version?: string;
@@ -13,4 +15,8 @@ export interface SystemInfo {
   uptime_seconds: number;
   environment: string;
   site_url: string;
+  runtime: RuntimeSiteSettingsSnapshotRead;
+  secrets_dir: string;
+  sentry_dsn: SecretStatusRead;
+  waline_jwt_token: SecretStatusRead;
 }

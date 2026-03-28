@@ -14,6 +14,7 @@ from aerisun.api.exception_handlers import register_exception_handlers
 from aerisun.api.mcp import mcp_app
 from aerisun.api.seo import router as seo_router
 from aerisun.core.bootstrap import lifespan
+from aerisun.core.db import get_session_factory
 from aerisun.core.middleware import register_middleware
 from aerisun.core.rate_limit import limiter
 from aerisun.core.settings import get_settings
@@ -37,7 +38,11 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     # Middleware stack
-    register_middleware(app, settings)
+    # Provide a DB session so CORS/Origin checks can use DB-backed runtime settings.
+    settings.ensure_directories()
+    factory = get_session_factory()
+    with factory() as session:
+        register_middleware(app, settings, session)
 
     # Routers
     app.include_router(api_router)

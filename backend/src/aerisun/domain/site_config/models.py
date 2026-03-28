@@ -139,6 +139,20 @@ class CommunityConfig(Base, TimestampMixin):
     migration_state: Mapped[str] = mapped_column(String(40), nullable=False, default="not_started")
 
 
+class RuntimeSiteSettings(Base, TimestampMixin):
+    __tablename__ = "runtime_site_settings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    public_site_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    production_cors_origins: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    seo_default_title: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    seo_default_description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    rss_title: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    rss_description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    robots_indexing_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    sitemap_static_pages: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+
+
 class ResumeBasics(Base, TimestampMixin):
     __tablename__ = "resume_basics"
 

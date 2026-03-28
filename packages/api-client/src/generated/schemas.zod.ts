@@ -51,7 +51,21 @@ export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
   "label": zod.string().describe('Child navigation label'),
   "href": zod.string().describe('Child navigation URL')
 })).optional().describe('Nested child navigation items')
-})).optional().describe('Navigation menu items')
+})).optional().describe('Navigation menu items'),
+  "runtime": zod.object({
+  "public_site_url": zod.string().describe('Canonical public site URL'),
+  "production_cors_origins": zod.array(zod.string()).optional().describe('CORS allowlist for production'),
+  "seo_default_title": zod.string().describe('Fallback SEO title'),
+  "seo_default_description": zod.string().describe('Fallback SEO description'),
+  "rss_title": zod.string().describe('RSS channel title'),
+  "rss_description": zod.string().describe('RSS channel description'),
+  "robots_indexing_enabled": zod.boolean().describe('Whether robots should allow indexing'),
+  "sitemap_static_pages": zod.array(zod.object({
+  "path": zod.string().describe('Static sitemap path'),
+  "changefreq": zod.string().describe('Sitemap changefreq value'),
+  "priority": zod.string().describe('Sitemap priority value')
+})).optional().describe('Configured static sitemap pages')
+}).describe('Runtime site settings')
 })
 
 
@@ -639,7 +653,7 @@ export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryParams = z
 
 export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetResponse = zod.object({
   "batch": zod.number().describe('Current avatar candidate batch'),
-  "total_batches": zod.number().describe('Total number of avatar candidate batches'),
+  "total_batches": zod.number().describe('Total avatar candidate batches'),
   "avatar_candidates": zod.array(zod.object({
   "key": zod.string().describe('Avatar option key'),
   "label": zod.string().describe('Avatar option label'),
@@ -2061,6 +2075,65 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
   "avatar_strategy": zod.string().describe('Avatar resolution strategy'),
   "avatar_helper_copy": zod.string().describe('Avatar helper text'),
   "migration_state": zod.string().describe('Waline migration state'),
+  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+})
+
+
+/**
+ * @summary 获取运行时站点设置
+ */
+export const GetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse = zod.object({
+  "id": zod.string().describe('Runtime site settings identifier'),
+  "public_site_url": zod.string().describe('Canonical public site URL'),
+  "production_cors_origins": zod.array(zod.string()).optional().describe('CORS allowlist for production'),
+  "seo_default_title": zod.string().describe('Fallback SEO title'),
+  "seo_default_description": zod.string().describe('Fallback SEO description'),
+  "rss_title": zod.string().describe('RSS channel title'),
+  "rss_description": zod.string().describe('RSS channel description'),
+  "robots_indexing_enabled": zod.boolean().describe('Whether robots should allow indexing'),
+  "sitemap_static_pages": zod.array(zod.object({
+  "path": zod.string().describe('Static sitemap path'),
+  "changefreq": zod.string().describe('Sitemap changefreq value'),
+  "priority": zod.string().describe('Sitemap priority value')
+})).optional().describe('Configured static sitemap pages'),
+  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
+  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+})
+
+
+/**
+ * @summary 更新运行时站点设置
+ */
+export const UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutBody = zod.object({
+  "public_site_url": zod.union([zod.string(),zod.null()]).optional().describe('Canonical public site URL'),
+  "production_cors_origins": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('CORS allowlist for production'),
+  "seo_default_title": zod.union([zod.string(),zod.null()]).optional().describe('Fallback SEO title'),
+  "seo_default_description": zod.union([zod.string(),zod.null()]).optional().describe('Fallback SEO description'),
+  "rss_title": zod.union([zod.string(),zod.null()]).optional().describe('RSS channel title'),
+  "rss_description": zod.union([zod.string(),zod.null()]).optional().describe('RSS channel description'),
+  "robots_indexing_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether robots should allow indexing'),
+  "sitemap_static_pages": zod.union([zod.array(zod.object({
+  "path": zod.string().describe('Static sitemap path'),
+  "changefreq": zod.string().describe('Sitemap changefreq value'),
+  "priority": zod.string().describe('Sitemap priority value')
+})),zod.null()]).optional().describe('Configured static sitemap pages')
+})
+
+export const UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse = zod.object({
+  "id": zod.string().describe('Runtime site settings identifier'),
+  "public_site_url": zod.string().describe('Canonical public site URL'),
+  "production_cors_origins": zod.array(zod.string()).optional().describe('CORS allowlist for production'),
+  "seo_default_title": zod.string().describe('Fallback SEO title'),
+  "seo_default_description": zod.string().describe('Fallback SEO description'),
+  "rss_title": zod.string().describe('RSS channel title'),
+  "rss_description": zod.string().describe('RSS channel description'),
+  "robots_indexing_enabled": zod.boolean().describe('Whether robots should allow indexing'),
+  "sitemap_static_pages": zod.array(zod.object({
+  "path": zod.string().describe('Static sitemap path'),
+  "changefreq": zod.string().describe('Sitemap changefreq value'),
+  "priority": zod.string().describe('Sitemap priority value')
+})).optional().describe('Configured static sitemap pages'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -4016,7 +4089,32 @@ export const SystemInfoApiV1AdminSystemInfoGetResponse = zod.object({
   "media_dir_size_bytes": zod.number(),
   "uptime_seconds": zod.number(),
   "environment": zod.string(),
-  "site_url": zod.string()
+  "site_url": zod.string(),
+  "runtime": zod.object({
+  "public_site_url": zod.string(),
+  "production_cors_origins": zod.array(zod.string()).optional(),
+  "seo_default_title": zod.string(),
+  "seo_default_description": zod.string(),
+  "rss_title": zod.string(),
+  "rss_description": zod.string(),
+  "robots_indexing_enabled": zod.boolean(),
+  "sitemap_static_pages": zod.array(zod.object({
+  "path": zod.string().describe('Static sitemap path'),
+  "changefreq": zod.string().describe('Sitemap changefreq value'),
+  "priority": zod.string().describe('Sitemap priority value')
+})).optional()
+}),
+  "secrets_dir": zod.string(),
+  "sentry_dsn": zod.object({
+  "configured": zod.boolean(),
+  "filename": zod.string(),
+  "source": zod.string()
+}),
+  "waline_jwt_token": zod.object({
+  "configured": zod.boolean(),
+  "filename": zod.string(),
+  "source": zod.string()
+})
 })
 
 
@@ -4220,10 +4318,36 @@ export const GetVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = zod.objec
   "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
   "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
-  "google_client_id": zod.string().describe('Google OAuth client id'),
-  "google_client_secret": zod.string().describe('Google OAuth client secret'),
-  "github_client_id": zod.string().describe('GitHub OAuth client id'),
-  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
+  "google": zod.object({
+  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
+  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
+  "ready": zod.boolean().describe('Whether all required secret files are available'),
+  "client_id": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client id configuration status'),
+  "client_secret": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client secret configuration status')
+}).describe('Google OAuth secret readiness and enablement'),
+  "github": zod.object({
+  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
+  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
+  "ready": zod.boolean().describe('Whether all required secret files are available'),
+  "client_id": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client id configuration status'),
+  "client_secret": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client secret configuration status')
+}).describe('GitHub OAuth secret readiness and enablement'),
   "created_at": zod.string().datetime({}).describe('Creation time'),
   "updated_at": zod.string().datetime({}).describe('Last update time')
 })
@@ -4236,11 +4360,7 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutBody = zod.object
   "email_login_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email login remains enabled'),
   "visitor_oauth_providers": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Auth methods reserved for admin-side usage'),
-  "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login'),
-  "google_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client id'),
-  "google_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client secret'),
-  "github_client_id": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client id'),
-  "github_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client secret')
+  "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login')
 })
 
 export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.object({
@@ -4249,10 +4369,36 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.ob
   "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
   "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
-  "google_client_id": zod.string().describe('Google OAuth client id'),
-  "google_client_secret": zod.string().describe('Google OAuth client secret'),
-  "github_client_id": zod.string().describe('GitHub OAuth client id'),
-  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
+  "google": zod.object({
+  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
+  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
+  "ready": zod.boolean().describe('Whether all required secret files are available'),
+  "client_id": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client id configuration status'),
+  "client_secret": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client secret configuration status')
+}).describe('Google OAuth secret readiness and enablement'),
+  "github": zod.object({
+  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
+  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
+  "ready": zod.boolean().describe('Whether all required secret files are available'),
+  "client_id": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client id configuration status'),
+  "client_secret": zod.object({
+  "configured": zod.boolean().describe('Whether this secret file is configured'),
+  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
+  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
+}).describe('Client secret configuration status')
+}).describe('GitHub OAuth secret readiness and enablement'),
   "created_at": zod.string().datetime({}).describe('Creation time'),
   "updated_at": zod.string().datetime({}).describe('Last update time')
 })

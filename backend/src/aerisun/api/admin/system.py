@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
-from aerisun.core.settings import get_settings
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
 from aerisun.domain.iam.service import (
@@ -49,6 +48,7 @@ from aerisun.domain.ops.service import (
 from aerisun.domain.ops.service import (
     restore_backup as _restore_backup,
 )
+from aerisun.domain.site_config.service import _runtime_site_settings_read
 
 from .deps import get_current_admin
 from .integrations_schemas import FeedLinkCollectionRead, FeedLinkRead
@@ -99,8 +99,10 @@ def delete_api_key(
 @integrations_router.get("/feeds", response_model=FeedLinkCollectionRead, summary="获取 Feed 列表")
 def list_feeds(
     _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
 ) -> FeedLinkCollectionRead:
-    site_url = (get_settings().site_url or "https://example.com").rstrip("/")
+    runtime = _runtime_site_settings_read(session)
+    site_url = runtime.public_site_url.rstrip("/")
     return FeedLinkCollectionRead(
         items=[
             FeedLinkRead(key="posts", title="Posts RSS", url=f"{site_url}/feeds/posts.xml"),

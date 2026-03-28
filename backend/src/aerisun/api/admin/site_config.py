@@ -11,10 +11,12 @@ from aerisun.domain.site_config.models import NavItem, PageCopy, PageDisplayOpti
 from aerisun.domain.site_config.service import (
     attach_site_profile_id,
     get_community_config_admin,
+    get_runtime_site_settings_admin,
     get_site_profile_admin,
     reorder_nav_items_admin,
     site_profile_scoped_query,
     update_community_config_admin,
+    update_runtime_site_settings_admin,
     update_site_profile_admin,
 )
 
@@ -36,6 +38,8 @@ from .schemas import (
     PoemAdminRead,
     PoemCreate,
     PoemUpdate,
+    RuntimeSiteSettingsAdminRead,
+    RuntimeSiteSettingsUpdate,
     SiteProfileAdminRead,
     SiteProfileUpdate,
     SocialLinkAdminRead,
@@ -69,6 +73,23 @@ def get_community_config(
     session: Session = Depends(get_session),
 ) -> Any:
     return get_community_config_admin(session)
+
+
+@router.get("/runtime", response_model=RuntimeSiteSettingsAdminRead, summary="获取运行时站点设置")
+def get_runtime_settings(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return get_runtime_site_settings_admin(session)
+
+
+@router.put("/runtime", response_model=RuntimeSiteSettingsAdminRead, summary="更新运行时站点设置")
+def update_runtime_settings(
+    payload: RuntimeSiteSettingsUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return update_runtime_site_settings_admin(session, payload)
 
 
 @router.put("/community-config", response_model=CommunityConfigAdminRead, summary="更新社区评论配置")

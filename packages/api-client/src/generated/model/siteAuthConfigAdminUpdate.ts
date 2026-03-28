@@ -14,12 +14,4 @@ export interface SiteAuthConfigAdminUpdate {
   admin_auth_methods?: string[] | null;
   /** Whether email can be used as admin login */
   admin_email_enabled?: boolean | null;
-  /** Google OAuth client id */
-  google_client_id?: string | null;
-  /** Google OAuth client secret */
-  google_client_secret?: string | null;
-  /** GitHub OAuth client id */
-  github_client_id?: string | null;
-  /** GitHub OAuth client secret */
-  github_client_secret?: string | null;
 }

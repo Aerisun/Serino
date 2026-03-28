@@ -25,7 +25,14 @@ def _strip_html(value: str) -> str:
     return " ".join("".join(chars).split())
 
 
-def build_posts_rss_xml(session: Session, site_url: str, *, limit: int = 20) -> str:
+def build_posts_rss_xml(
+    session: Session,
+    site_url: str,
+    *,
+    limit: int = 20,
+    channel_title: str,
+    channel_description: str,
+) -> str:
     settings_url = site_url.rstrip("/")
     feed_url = f"{settings_url}/feeds/posts.xml"
     channel_url = f"{settings_url}/posts"
@@ -33,9 +40,9 @@ def build_posts_rss_xml(session: Session, site_url: str, *, limit: int = 20) -> 
 
     rss = Element("rss", version="2.0")
     channel = SubElement(rss, "channel")
-    SubElement(channel, "title").text = "Aerisun Posts"
+    SubElement(channel, "title").text = channel_title
     SubElement(channel, "link").text = channel_url
-    SubElement(channel, "description").text = "Latest published posts from Aerisun"
+    SubElement(channel, "description").text = channel_description
     SubElement(channel, "language").text = "zh-CN"
     SubElement(channel, "generator").text = "Aerisun"
     SubElement(channel, "ttl").text = "60"

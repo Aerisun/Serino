@@ -35,8 +35,9 @@ def test_deploy_contract_reuses_shared_env_keys():
         'curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}'
     )
     assert healthcheck_curl in compose_text
-    assert "WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}" in compose_text
     assert "AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}" in compose_text
+    assert "env_file:" in compose_text
+    assert "waline.env" in compose_text
     assert "AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}" in compose_text
     assert "AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}" in compose_text
     assert "AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}" in compose_text
@@ -55,7 +56,9 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert 'ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"' in smoke_text
     assert 'WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"' in smoke_text
     assert "AERISUN_DOMAIN=http://${SITE_HOST}" in smoke_text
-    assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
+    assert "waline_jwt_token.txt" in smoke_text
+    assert "waline.env" in smoke_text
+    assert "VITE_SENTRY_DSN" not in smoke_text
 
     assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"' in dev_smoke_text
     assert 'admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"' in dev_smoke_text
@@ -71,9 +74,13 @@ def test_deploy_contract_reuses_shared_env_keys():
 
 def test_production_defaults_do_not_track_dev_only_upstreams():
     production_text = read_project_file(".env.production")
+    production_local_example_text = read_project_file(".env.production.local.example")
     dockerignore_text = read_project_file(".dockerignore")
 
     assert "AERISUN_FRONTEND_UPSTREAM" not in production_text
     assert "AERISUN_ADMIN_UPSTREAM" not in production_text
+    assert "VITE_SENTRY_DSN" not in production_text
+    assert "VITE_SENTRY_DSN" not in production_local_example_text
+    assert "waline.env" in production_text
     assert ".env.local" in dockerignore_text
     assert ".env.*.local" in dockerignore_text

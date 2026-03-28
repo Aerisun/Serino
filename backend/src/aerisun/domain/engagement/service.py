@@ -220,7 +220,12 @@ def _resolve_waline_server_url(session: Session) -> str:
     if raw_server_url.startswith(("http://", "https://")):
         return raw_server_url.rstrip("/")
 
-    site_url = get_settings().site_url.strip().rstrip("/")
+    runtime = site_config_repo.find_runtime_site_settings(session)
+    site_url = (
+        (runtime.public_site_url if runtime and runtime.public_site_url else get_settings().site_url)
+        .strip()
+        .rstrip("/")
+    )
     return urljoin(f"{site_url}/", raw_server_url.lstrip("/")).rstrip("/")
 
 

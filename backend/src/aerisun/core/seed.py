@@ -28,6 +28,7 @@ from aerisun.domain.site_config.models import (
     ResumeBasics,
     ResumeExperience,
     ResumeSkillGroup,
+    RuntimeSiteSettings,
     SiteProfile,
     SocialLink,
 )
@@ -728,6 +729,38 @@ def _seed_site_auth_config(session: Session) -> None:
         config.github_client_id = str(default_config["github_client_id"])
     if not config.github_client_secret:
         config.github_client_secret = str(default_config["github_client_secret"])
+
+
+def _seed_runtime_site_settings(session: Session) -> None:
+    runtime = session.scalars(select(RuntimeSiteSettings).order_by(RuntimeSiteSettings.created_at.asc())).first()
+    if runtime is not None:
+        return
+
+    site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    title = (site.title if site else "").strip()
+    description = (site.meta_description if site else "").strip()
+    session.add(
+        RuntimeSiteSettings(
+            public_site_url="",
+            production_cors_origins=[],
+            seo_default_title=title,
+            seo_default_description=description,
+            rss_title=title,
+            rss_description=description,
+            robots_indexing_enabled=True,
+            sitemap_static_pages=[
+                {"path": "/", "changefreq": "daily", "priority": "1.0"},
+                {"path": "/posts", "changefreq": "daily", "priority": "0.9"},
+                {"path": "/diary", "changefreq": "daily", "priority": "0.8"},
+                {"path": "/thoughts", "changefreq": "weekly", "priority": "0.7"},
+                {"path": "/excerpts", "changefreq": "weekly", "priority": "0.7"},
+                {"path": "/friends", "changefreq": "weekly", "priority": "0.6"},
+                {"path": "/guestbook", "changefreq": "weekly", "priority": "0.5"},
+                {"path": "/resume", "changefreq": "monthly", "priority": "0.6"},
+                {"path": "/calendar", "changefreq": "daily", "priority": "0.5"},
+            ],
+        )
+    )
 
 
 DEFAULT_RESUME = {
@@ -2293,6 +2326,7 @@ def seed_reference_data(*, force: bool = False) -> None:
 
         _seed_community_config(session)
         _seed_site_auth_config(session)
+        _seed_runtime_site_settings(session)
 
         _seed_content_entries(session, PostEntry, DEFAULT_POSTS)
         _seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)

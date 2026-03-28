@@ -46,13 +46,15 @@ const PageMeta = ({
     setMeta('meta[property="og:description"]', resolvedDescription);
     setMeta('meta[property="og:image"]', resolvedImage);
     setMeta('meta[property="og:site_name"]', resolvedSiteTitle);
+    setMeta('meta[property="og:url"]', site.canonicalUrl);
     setMeta('meta[name="twitter:title"]', resolvedPageTitle);
     setMeta('meta[name="twitter:description"]', resolvedDescription);
     setMeta('meta[name="twitter:image"]', resolvedImage);
     const resolvedIcon = site.siteIconUrl || "/favicon.svg";
     ensureHeadLink("icon", "/favicon.svg").href = resolvedIcon;
     ensureHeadLink("shortcut icon", "/favicon.ico").href = resolvedIcon;
-  }, [resolvedDescription, resolvedImage, resolvedPageTitle, resolvedSiteTitle, site.author, site.siteIconUrl]);
+    ensureHeadLink("canonical", site.canonicalUrl).href = site.canonicalUrl;
+  }, [resolvedDescription, resolvedImage, resolvedPageTitle, resolvedSiteTitle, site.author, site.canonicalUrl, site.siteIconUrl]);
 
   return null;
 };

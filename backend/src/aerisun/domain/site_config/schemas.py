@@ -54,11 +54,35 @@ class NavItemRead(ModelBase):
     children: list[NavChildRead] = Field(default_factory=list, description="Nested child navigation items")
 
 
+class SitemapStaticPageRead(ModelBase):
+    path: str = Field(description="Static sitemap path")
+    changefreq: str = Field(description="Sitemap changefreq value")
+    priority: str = Field(description="Sitemap priority value")
+
+
+class RuntimeSiteSettingsRead(ModelBase):
+    public_site_url: str = Field(description="Canonical public site URL")
+    production_cors_origins: list[str] = Field(
+        default_factory=list,
+        description="CORS allowlist for production",
+    )
+    seo_default_title: str = Field(description="Fallback SEO title")
+    seo_default_description: str = Field(description="Fallback SEO description")
+    rss_title: str = Field(description="RSS channel title")
+    rss_description: str = Field(description="RSS channel description")
+    robots_indexing_enabled: bool = Field(description="Whether robots should allow indexing")
+    sitemap_static_pages: list[SitemapStaticPageRead] = Field(
+        default_factory=list,
+        description="Configured static sitemap pages",
+    )
+
+
 class SiteConfigRead(ModelBase):
     site: SiteProfileRead = Field(description="Site profile configuration")
     social_links: list[SocialLinkRead] = Field(description="Social media links")
     poems: list[PoemRead] = Field(description="Featured poems")
     navigation: list[NavItemRead] = Field(default_factory=list, description="Navigation menu items")
+    runtime: RuntimeSiteSettingsRead = Field(description="Runtime site settings")
 
 
 class SitePoemPreviewRead(ModelBase):
@@ -421,6 +445,43 @@ class CommunityConfigAdminRead(ModelBase):
     avatar_strategy: str = Field(description="Avatar resolution strategy")
     avatar_helper_copy: str = Field(description="Avatar helper text")
     migration_state: str = Field(description="Waline migration state")
+    created_at: datetime = Field(description="Creation timestamp")
+    updated_at: datetime = Field(description="Last update timestamp")
+
+
+class RuntimeSiteSettingsUpdate(BaseModel):
+    public_site_url: str | None = Field(default=None, description="Canonical public site URL")
+    production_cors_origins: list[str] | None = Field(
+        default=None,
+        description="CORS allowlist for production",
+    )
+    seo_default_title: str | None = Field(default=None, description="Fallback SEO title")
+    seo_default_description: str | None = Field(default=None, description="Fallback SEO description")
+    rss_title: str | None = Field(default=None, description="RSS channel title")
+    rss_description: str | None = Field(default=None, description="RSS channel description")
+    robots_indexing_enabled: bool | None = Field(default=None, description="Whether robots should allow indexing")
+    sitemap_static_pages: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Configured static sitemap pages",
+    )
+
+
+class RuntimeSiteSettingsAdminRead(ModelBase):
+    id: str = Field(description="Runtime site settings identifier")
+    public_site_url: str = Field(description="Canonical public site URL")
+    production_cors_origins: list[str] = Field(
+        default_factory=list,
+        description="CORS allowlist for production",
+    )
+    seo_default_title: str = Field(description="Fallback SEO title")
+    seo_default_description: str = Field(description="Fallback SEO description")
+    rss_title: str = Field(description="RSS channel title")
+    rss_description: str = Field(description="RSS channel description")
+    robots_indexing_enabled: bool = Field(description="Whether robots should allow indexing")
+    sitemap_static_pages: list[SitemapStaticPageRead] = Field(
+        default_factory=list,
+        description="Configured static sitemap pages",
+    )
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
 

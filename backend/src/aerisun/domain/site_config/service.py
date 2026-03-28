@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import random
 from collections import deque
 from threading import Lock, Thread
 from typing import Literal
@@ -10,6 +9,8 @@ import httpx
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from aerisun.core.settings import get_settings
+from aerisun.domain.content.seo_service import clear_sitemap_cache
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.site_config import repository as repo
 from aerisun.domain.site_config.schemas import (
@@ -24,7 +25,10 @@ from aerisun.domain.site_config.schemas import (
     ResumeExperienceRead,
     ResumeRead,
     ResumeSkillGroupRead,
+    RuntimeSiteSettingsAdminRead,
+    RuntimeSiteSettingsRead,
     SiteConfigRead,
+    SitemapStaticPageRead,
     SitePoemPreviewRead,
     SiteProfileAdminRead,
     SiteProfileRead,
@@ -33,6 +37,17 @@ from aerisun.domain.site_config.schemas import (
 from aerisun.domain.waline.service import sync_admin_comment_profile
 
 DEFAULT_HITOKOTO_TYPES = ["d", "i"]
+DEFAULT_SITEMAP_STATIC_PAGES = [
+    {"path": "/", "changefreq": "daily", "priority": "1.0"},
+    {"path": "/posts", "changefreq": "daily", "priority": "0.9"},
+    {"path": "/diary", "changefreq": "daily", "priority": "0.8"},
+    {"path": "/thoughts", "changefreq": "weekly", "priority": "0.7"},
+    {"path": "/excerpts", "changefreq": "weekly", "priority": "0.7"},
+    {"path": "/friends", "changefreq": "weekly", "priority": "0.6"},
+    {"path": "/guestbook", "changefreq": "weekly", "priority": "0.5"},
+    {"path": "/resume", "changefreq": "monthly", "priority": "0.6"},
+    {"path": "/calendar", "changefreq": "daily", "priority": "0.5"},
+]
 HITOKOTO_ENDPOINT = "https://v1.hitokoto.cn/"
 HITOKOTO_RETRY_COUNT = 8
 HITOKOTO_TIMEOUT = 5.0
@@ -77,9 +92,77 @@ def _matches_hitokoto_keywords(payload: dict[str, object], keywords: list[str]) 
     return any(keyword in haystack for keyword in keywords)
 
 
-def _pick_custom_poem_content(poems: list) -> str:
-    candidates = [str(poem.content or "").strip() for poem in poems if str(poem.content or "").strip()]
-    return random.choice(candidates) if candidates else ""
+def _normalize_sitemap_static_pages(raw_pages: list[dict] | None) -> list[SitemapStaticPageRead]:
+    normalized: list[SitemapStaticPageRead] = []
+    seen_paths: set[str] = set()
+    for item in raw_pages or []:
+        if not isinstance(item, dict):
+            continue
+        path = str(item.get("path") or "").strip()
+        if not path.startswith("/"):
+            continue
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+
+        raw_changefreq = str(item.get("changefreq") or "weekly").strip().lower() or "weekly"
+        changefreq = (
+            raw_changefreq
+            if raw_changefreq in {"always", "hourly", "daily", "weekly", "monthly", "yearly", "never"}
+            else "weekly"
+        )
+
+        raw_priority = str(item.get("priority") or "0.5").strip() or "0.5"
+        try:
+            priority_value = max(0.0, min(1.0, float(raw_priority)))
+        except ValueError:
+            priority_value = 0.5
+
+        normalized.append(
+            SitemapStaticPageRead(
+                path=path,
+                changefreq=changefreq,
+                priority=f"{priority_value:.1f}",
+            )
+        )
+    return normalized or [SitemapStaticPageRead.model_validate(item) for item in DEFAULT_SITEMAP_STATIC_PAGES]
+
+
+def _canonical_public_site_url(session: Session) -> str:
+    settings = get_settings()
+    runtime = repo.find_runtime_site_settings(session)
+    runtime_value = (runtime.public_site_url if runtime and runtime.public_site_url else "").strip().rstrip("/")
+    if runtime_value:
+        return runtime_value
+
+    if settings.environment == "development":
+        fallback = (settings.site_url or "").strip().rstrip("/")
+        return fallback or "https://example.com"
+
+    return ""
+
+
+def runtime_site_url(session: Session) -> str:
+    return _canonical_public_site_url(session)
+
+
+def _runtime_site_settings_read(session: Session) -> RuntimeSiteSettingsRead:
+    site = repo.find_site_profile(session)
+    runtime = repo.find_runtime_site_settings(session)
+    seo_title_fallback = (site.title if site else "").strip()
+    seo_description_fallback = (site.meta_description if site else "").strip()
+
+    return RuntimeSiteSettingsRead(
+        public_site_url=_canonical_public_site_url(session),
+        production_cors_origins=list(runtime.production_cors_origins or []) if runtime else [],
+        seo_default_title=(runtime.seo_default_title if runtime else "").strip() or seo_title_fallback,
+        seo_default_description=(runtime.seo_default_description if runtime else "").strip()
+        or seo_description_fallback,
+        rss_title=(runtime.rss_title if runtime else "").strip() or seo_title_fallback,
+        rss_description=(runtime.rss_description if runtime else "").strip() or seo_description_fallback,
+        robots_indexing_enabled=True if runtime is None else bool(runtime.robots_indexing_enabled),
+        sitemap_static_pages=_normalize_sitemap_static_pages(runtime.sitemap_static_pages if runtime else None),
+    )
 
 
 def _fetch_hitokoto_poem_with_client(
@@ -293,7 +376,16 @@ def get_site_config(session: Session) -> SiteConfigRead:
         social_links=[SocialLinkRead.model_validate(link) for link in links],
         poems=[PoemRead.model_validate(poem) for poem in poems],
         navigation=navigation,
+        runtime=_runtime_site_settings_read(session),
     )
+
+
+def _pick_custom_poem_content(poems: list) -> str:
+    for poem in poems:
+        content = str(getattr(poem, "content", "") or "").strip()
+        if content:
+            return content
+    return "留一点呼吸的缝隙。"
 
 
 def get_site_poem_preview(
@@ -483,10 +575,37 @@ def _get_community_config_orm(session: Session):
     return config
 
 
+def _get_runtime_site_settings_orm(session: Session):
+    """Return the RuntimeSiteSettings ORM object, raising ResourceNotFound if missing."""
+    from aerisun.domain.site_config.models import RuntimeSiteSettings
+
+    runtime = session.query(RuntimeSiteSettings).order_by(RuntimeSiteSettings.created_at.asc()).first()
+    if runtime is None:
+        raise ResourceNotFound("Runtime site settings not configured")
+    return runtime
+
+
 def get_community_config_admin(session: Session) -> CommunityConfigAdminRead:
     """Return CommunityConfig as a DTO."""
     config = _get_community_config_orm(session)
     return CommunityConfigAdminRead.model_validate(config)
+
+
+def get_runtime_site_settings_admin(session: Session) -> RuntimeSiteSettingsAdminRead:
+    runtime = _get_runtime_site_settings_orm(session)
+    return RuntimeSiteSettingsAdminRead(
+        id=runtime.id,
+        public_site_url=(runtime.public_site_url or "").strip(),
+        production_cors_origins=list(runtime.production_cors_origins or []),
+        seo_default_title=(runtime.seo_default_title or "").strip(),
+        seo_default_description=(runtime.seo_default_description or "").strip(),
+        rss_title=(runtime.rss_title or "").strip(),
+        rss_description=(runtime.rss_description or "").strip(),
+        robots_indexing_enabled=bool(runtime.robots_indexing_enabled),
+        sitemap_static_pages=_normalize_sitemap_static_pages(runtime.sitemap_static_pages),
+        created_at=runtime.created_at,
+        updated_at=runtime.updated_at,
+    )
 
 
 def update_community_config_admin(session: Session, payload: BaseModel) -> CommunityConfigAdminRead:
@@ -497,6 +616,35 @@ def update_community_config_admin(session: Session, payload: BaseModel) -> Commu
     session.commit()
     session.refresh(config)
     return CommunityConfigAdminRead.model_validate(config)
+
+
+def update_runtime_site_settings_admin(session: Session, payload: BaseModel) -> RuntimeSiteSettingsAdminRead:
+    runtime = _get_runtime_site_settings_orm(session)
+    updates = payload.model_dump(exclude_unset=True)
+    if "public_site_url" in updates:
+        updates["public_site_url"] = updates["public_site_url"].strip()
+    if "production_cors_origins" in updates:
+        updates["production_cors_origins"] = [
+            item.strip() for item in updates["production_cors_origins"] if item.strip()
+        ]
+    if "sitemap_static_pages" in updates:
+        updates["sitemap_static_pages"] = [item for item in updates["sitemap_static_pages"] if isinstance(item, dict)]
+        updates["sitemap_static_pages"] = [
+            item.model_dump() for item in _normalize_sitemap_static_pages(updates["sitemap_static_pages"])
+        ]
+    for key, value in updates.items():
+        setattr(runtime, key, value)
+    session.commit()
+    session.refresh(runtime)
+    clear_sitemap_cache()
+    return get_runtime_site_settings_admin(session)
+
+
+def runtime_allowed_origins(session: Session, settings) -> list[str]:
+    if settings.environment == "development":
+        return settings.cors_origins
+    runtime = _runtime_site_settings_read(session)
+    return runtime.production_cors_origins or settings.cors_origins
 
 
 def reorder_nav_items_admin(session: Session, reorder_list: list) -> list[NavItemAdminRead]:
