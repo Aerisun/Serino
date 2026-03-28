@@ -47,7 +47,7 @@ make dev
 `make dev` 会按顺序做三件事：
 
 - 运行 `scripts/setup-ports.sh`
-- 启动后端 bootstrap 脚本
+- 启动带 `--reload` 的后端 bootstrap 脚本
 - 启动前台和管理端的 Vite 开发服务器
 
 如果你需要停掉当前工作树里的开发进程，可以运行：

@@ -95,7 +95,7 @@ bash "${SCRIPT_DIR}/sync-orval.sh"
 
 echo "==> 开发环境下：正在启动后端，并在就绪后并行启动前台和管理后台..."
 
-bash "${PROJECT_DIR}/backend/scripts/bootstrap.sh" &
+AERISUN_DEV_RELOAD=1 bash "${PROJECT_DIR}/backend/scripts/bootstrap.sh" &
 backend_pid=$!
 
 
