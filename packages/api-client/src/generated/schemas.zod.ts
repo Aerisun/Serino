@@ -559,11 +559,11 @@ export const ReadRecentActivityApiV1SiteRecentActivityGetResponse = zod.object({
 export const readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksDefault = 52;
 export const readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksMax = 104;
 
-
+export const readActivityHeatmapApiV1SiteActivityHeatmapGetQueryTzDefault = `Asia/Shanghai`;
 
 export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetQueryParams = zod.object({
   "weeks": zod.number().min(1).max(readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksMax).default(readActivityHeatmapApiV1SiteActivityHeatmapGetQueryWeeksDefault),
-  "tz": zod.union([zod.string(),zod.null()]).optional()
+  "tz": zod.string().default(readActivityHeatmapApiV1SiteActivityHeatmapGetQueryTzDefault)
 })
 
 export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetResponse = zod.object({
@@ -956,6 +956,62 @@ export const SearchContentApiV1SiteSearchGetResponse = zod.object({
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp')
 })).describe('Search result items'),
   "total": zod.number().describe('Total matching results')
+})
+
+
+/**
+ * @summary Subscribe To Content
+ */
+export const SubscribeToContentApiV1SiteSubscriptionsPostBody = zod.object({
+  "email": zod.string().describe('Subscriber email address'),
+  "content_types": zod.array(zod.string()).describe('Content types to subscribe to')
+})
+
+
+/**
+ * Capability discovery endpoint for external agents.
+ * @summary Agent Usage
+ */
+export const AgentUsageApiAgentUsageGetResponse = zod.object({
+  "name": zod.string().describe('Usage document name'),
+  "auth": zod.record(zod.string(), zod.unknown()).optional().describe('Authentication instructions'),
+  "endpoint_base": zod.string().describe('Base site URL'),
+  "docs_url": zod.string().describe('Canonical usage document URL'),
+  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested MCP-related scopes'),
+  "mcp": zod.object({
+  "endpoint": zod.string().describe('MCP endpoint URL'),
+  "transport": zod.string().describe('MCP transport'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
+  "available_scopes": zod.array(zod.string()).optional().describe('Scopes available on the current API key'),
+  "tools": zod.array(zod.object({
+  "name": zod.string().describe('Capability name'),
+  "kind": zod.string().describe('Capability kind: tool or resource'),
+  "description": zod.string().describe('Human-readable capability description'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
+  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
+  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
+})).optional().describe('Visible MCP tools'),
+  "resources": zod.array(zod.object({
+  "name": zod.string().describe('Capability name'),
+  "kind": zod.string().describe('Capability kind: tool or resource'),
+  "description": zod.string().describe('Human-readable capability description'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
+  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
+  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
+})).optional().describe('Visible MCP resources')
+}).describe('MCP capability summary'),
+  "skill_maps": zod.array(zod.object({
+  "id": zod.string().describe('Skill map identifier'),
+  "name": zod.string().describe('Skill map display name'),
+  "description": zod.string().describe('What this skill map is for'),
+  "version": zod.number().describe('Skill map version'),
+  "when": zod.record(zod.string(), zod.unknown()).optional().describe('Trigger conditions'),
+  "where": zod.record(zod.string(), zod.unknown()).optional().describe('Target MCP endpoint metadata'),
+  "docs_url": zod.string().describe('Usage docs URL the agent should read first'),
+  "use_cases": zod.array(zod.string()).optional().describe('Suggested usage scenarios'),
+  "workflow": zod.record(zod.string(), zod.unknown()).optional().describe('Workflow metadata')
+})).optional().describe('Local agent skill maps'),
+  "workflows": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Workflow templates or notes')
 })
 
 
@@ -2863,6 +2919,106 @@ export const BulkStatusNavItemsResponse = zod.object({
 
 
 /**
+ * @summary 获取内容订阅配置
+ */
+export const getContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponseSubscriberCountDefault = 0;
+
+export const GetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponse = zod.object({
+  "id": zod.string().describe('Subscription config id'),
+  "enabled": zod.boolean().describe('Whether public subscription is enabled'),
+  "smtp_auth_mode": zod.enum(['password', 'microsoft_oauth2']).describe('SMTP authentication mode'),
+  "smtp_host": zod.string().describe('SMTP host'),
+  "smtp_port": zod.number().describe('SMTP port'),
+  "smtp_username": zod.string().describe('SMTP username'),
+  "smtp_password": zod.string().describe('SMTP password'),
+  "smtp_oauth_tenant": zod.string().describe('Microsoft OAuth tenant identifier'),
+  "smtp_oauth_client_id": zod.string().describe('Microsoft OAuth client id'),
+  "smtp_oauth_client_secret": zod.string().describe('Microsoft OAuth client secret'),
+  "smtp_oauth_refresh_token": zod.string().describe('Microsoft OAuth refresh token'),
+  "smtp_from_email": zod.string().describe('SMTP sender email'),
+  "smtp_from_name": zod.string().describe('SMTP sender display name'),
+  "smtp_reply_to": zod.string().describe('SMTP reply-to email'),
+  "smtp_use_tls": zod.boolean().describe('Whether STARTTLS is enabled'),
+  "smtp_use_ssl": zod.boolean().describe('Whether implicit SSL is enabled'),
+  "subscriber_count": zod.number().default(getContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponseSubscriberCountDefault).describe('Number of active subscribers'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 更新内容订阅配置
+ */
+export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether public subscription is enabled'),
+  "smtp_auth_mode": zod.union([zod.enum(['password', 'microsoft_oauth2']),zod.null()]).optional().describe('SMTP authentication mode'),
+  "smtp_host": zod.union([zod.string(),zod.null()]).optional().describe('SMTP host'),
+  "smtp_port": zod.union([zod.number(),zod.null()]).optional().describe('SMTP port'),
+  "smtp_username": zod.union([zod.string(),zod.null()]).optional().describe('SMTP username'),
+  "smtp_password": zod.union([zod.string(),zod.null()]).optional().describe('SMTP password'),
+  "smtp_oauth_tenant": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth tenant identifier'),
+  "smtp_oauth_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth client id'),
+  "smtp_oauth_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth client secret'),
+  "smtp_oauth_refresh_token": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth refresh token'),
+  "smtp_from_email": zod.union([zod.string(),zod.null()]).optional().describe('SMTP sender email'),
+  "smtp_from_name": zod.union([zod.string(),zod.null()]).optional().describe('SMTP sender display name'),
+  "smtp_reply_to": zod.union([zod.string(),zod.null()]).optional().describe('SMTP reply-to email'),
+  "smtp_use_tls": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether STARTTLS is enabled'),
+  "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled')
+})
+
+export const updateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponseSubscriberCountDefault = 0;
+
+export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponse = zod.object({
+  "id": zod.string().describe('Subscription config id'),
+  "enabled": zod.boolean().describe('Whether public subscription is enabled'),
+  "smtp_auth_mode": zod.enum(['password', 'microsoft_oauth2']).describe('SMTP authentication mode'),
+  "smtp_host": zod.string().describe('SMTP host'),
+  "smtp_port": zod.number().describe('SMTP port'),
+  "smtp_username": zod.string().describe('SMTP username'),
+  "smtp_password": zod.string().describe('SMTP password'),
+  "smtp_oauth_tenant": zod.string().describe('Microsoft OAuth tenant identifier'),
+  "smtp_oauth_client_id": zod.string().describe('Microsoft OAuth client id'),
+  "smtp_oauth_client_secret": zod.string().describe('Microsoft OAuth client secret'),
+  "smtp_oauth_refresh_token": zod.string().describe('Microsoft OAuth refresh token'),
+  "smtp_from_email": zod.string().describe('SMTP sender email'),
+  "smtp_from_name": zod.string().describe('SMTP sender display name'),
+  "smtp_reply_to": zod.string().describe('SMTP reply-to email'),
+  "smtp_use_tls": zod.boolean().describe('Whether STARTTLS is enabled'),
+  "smtp_use_ssl": zod.boolean().describe('Whether implicit SSL is enabled'),
+  "subscriber_count": zod.number().default(updateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponseSubscriberCountDefault).describe('Number of active subscribers'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 测试内容订阅 SMTP 发信
+ */
+export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether public subscription is enabled'),
+  "smtp_auth_mode": zod.union([zod.enum(['password', 'microsoft_oauth2']),zod.null()]).optional().describe('SMTP authentication mode'),
+  "smtp_host": zod.union([zod.string(),zod.null()]).optional().describe('SMTP host'),
+  "smtp_port": zod.union([zod.number(),zod.null()]).optional().describe('SMTP port'),
+  "smtp_username": zod.union([zod.string(),zod.null()]).optional().describe('SMTP username'),
+  "smtp_password": zod.union([zod.string(),zod.null()]).optional().describe('SMTP password'),
+  "smtp_oauth_tenant": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth tenant identifier'),
+  "smtp_oauth_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth client id'),
+  "smtp_oauth_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth client secret'),
+  "smtp_oauth_refresh_token": zod.union([zod.string(),zod.null()]).optional().describe('Microsoft OAuth refresh token'),
+  "smtp_from_email": zod.union([zod.string(),zod.null()]).optional().describe('SMTP sender email'),
+  "smtp_from_name": zod.union([zod.string(),zod.null()]).optional().describe('SMTP sender display name'),
+  "smtp_reply_to": zod.union([zod.string(),zod.null()]).optional().describe('SMTP reply-to email'),
+  "smtp_use_tls": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether STARTTLS is enabled'),
+  "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled')
+})
+
+export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse = zod.object({
+  "recipient": zod.string().describe('Recipient email used for the test delivery')
+})
+
+
+/**
  * @summary 获取admin-resume列表
  */
 export const listBasicsQueryPageDefault = 1;
@@ -4191,6 +4347,383 @@ export const ListFeedsApiV1AdminIntegrationsFeedsGetResponse = zod.object({
 
 
 /**
+ * @summary 获取 Agent 使用说明
+ */
+export const GetAgentUsageApiV1AdminIntegrationsAgentUsageGetResponse = zod.object({
+  "item": zod.object({
+  "name": zod.string().describe('Usage document name'),
+  "auth": zod.record(zod.string(), zod.unknown()).optional().describe('Authentication instructions'),
+  "endpoint_base": zod.string().describe('Base site URL'),
+  "docs_url": zod.string().describe('Canonical usage document URL'),
+  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested MCP-related scopes'),
+  "mcp": zod.object({
+  "endpoint": zod.string().describe('MCP endpoint URL'),
+  "transport": zod.string().describe('MCP transport'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
+  "available_scopes": zod.array(zod.string()).optional().describe('Scopes available on the current API key'),
+  "tools": zod.array(zod.object({
+  "name": zod.string().describe('Capability name'),
+  "kind": zod.string().describe('Capability kind: tool or resource'),
+  "description": zod.string().describe('Human-readable capability description'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
+  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
+  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
+})).optional().describe('Visible MCP tools'),
+  "resources": zod.array(zod.object({
+  "name": zod.string().describe('Capability name'),
+  "kind": zod.string().describe('Capability kind: tool or resource'),
+  "description": zod.string().describe('Human-readable capability description'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
+  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
+  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
+})).optional().describe('Visible MCP resources')
+}).describe('MCP capability summary'),
+  "skill_maps": zod.array(zod.object({
+  "id": zod.string().describe('Skill map identifier'),
+  "name": zod.string().describe('Skill map display name'),
+  "description": zod.string().describe('What this skill map is for'),
+  "version": zod.number().describe('Skill map version'),
+  "when": zod.record(zod.string(), zod.unknown()).optional().describe('Trigger conditions'),
+  "where": zod.record(zod.string(), zod.unknown()).optional().describe('Target MCP endpoint metadata'),
+  "docs_url": zod.string().describe('Usage docs URL the agent should read first'),
+  "use_cases": zod.array(zod.string()).optional().describe('Suggested usage scenarios'),
+  "workflow": zod.record(zod.string(), zod.unknown()).optional().describe('Workflow metadata')
+})).optional().describe('Local agent skill maps'),
+  "workflows": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Workflow templates or notes')
+})
+})
+
+
+/**
+ * @summary 获取 Agent 运行记录
+ */
+export const GetRunsApiV1AdminAutomationRunsGetResponseItem = zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const GetRunsApiV1AdminAutomationRunsGetResponse = zod.array(GetRunsApiV1AdminAutomationRunsGetResponseItem)
+
+
+/**
+ * @summary 获取单个 Agent 运行记录
+ */
+export const GetRunApiV1AdminAutomationRunsRunIdGetParams = zod.object({
+  "run_id": zod.string()
+})
+
+export const GetRunApiV1AdminAutomationRunsRunIdGetResponse = zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取运行步骤
+ */
+export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetParams = zod.object({
+  "run_id": zod.string()
+})
+
+export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponseItem = zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "sequence_no": zod.number(),
+  "node_key": zod.string(),
+  "step_kind": zod.string(),
+  "status": zod.string(),
+  "narrative": zod.string(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponse = zod.array(GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponseItem)
+
+
+/**
+ * @summary 获取待审批项目
+ */
+export const GetApprovalsApiV1AdminAutomationApprovalsGetResponseItem = zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "step_id": zod.union([zod.string(),zod.null()]).optional(),
+  "interrupt_id": zod.string(),
+  "node_key": zod.string(),
+  "approval_type": zod.string(),
+  "status": zod.string(),
+  "request_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "response_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "requested_by_type": zod.string(),
+  "resolved_by_type": zod.union([zod.string(),zod.null()]).optional(),
+  "resolved_by_id": zod.union([zod.string(),zod.null()]).optional(),
+  "resolved_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const GetApprovalsApiV1AdminAutomationApprovalsGetResponse = zod.array(GetApprovalsApiV1AdminAutomationApprovalsGetResponseItem)
+
+
+/**
+ * @summary 提交审批结果并恢复工作流
+ */
+export const PostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPostParams = zod.object({
+  "approval_id": zod.string()
+})
+
+export const postApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPostBodyActionDefault = `approve`;
+
+export const PostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPostBody = zod.object({
+  "action": zod.string().default(postApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPostBodyActionDefault),
+  "reason": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const PostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPostResponse = zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取 Webhook 订阅
+ */
+export const GetWebhooksApiV1AdminAutomationWebhooksGetResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "status": zod.string(),
+  "target_url": zod.string(),
+  "secret": zod.union([zod.string(),zod.null()]).optional(),
+  "event_types": zod.array(zod.string()).optional(),
+  "timeout_seconds": zod.number(),
+  "max_attempts": zod.number(),
+  "backoff_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "headers": zod.record(zod.string(), zod.unknown()).optional(),
+  "last_delivery_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_success_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const GetWebhooksApiV1AdminAutomationWebhooksGetResponse = zod.array(GetWebhooksApiV1AdminAutomationWebhooksGetResponseItem)
+
+
+/**
+ * @summary 创建 Webhook 订阅
+ */
+export const postWebhookApiV1AdminAutomationWebhooksPostBodyTimeoutSecondsDefault = 10;
+export const postWebhookApiV1AdminAutomationWebhooksPostBodyMaxAttemptsDefault = 6;
+export const postWebhookApiV1AdminAutomationWebhooksPostBodyStatusDefault = `active`;
+
+export const PostWebhookApiV1AdminAutomationWebhooksPostBody = zod.object({
+  "name": zod.string(),
+  "target_url": zod.string(),
+  "event_types": zod.array(zod.string()).optional(),
+  "secret": zod.union([zod.string(),zod.null()]).optional(),
+  "timeout_seconds": zod.number().default(postWebhookApiV1AdminAutomationWebhooksPostBodyTimeoutSecondsDefault),
+  "max_attempts": zod.number().default(postWebhookApiV1AdminAutomationWebhooksPostBodyMaxAttemptsDefault),
+  "status": zod.string().default(postWebhookApiV1AdminAutomationWebhooksPostBodyStatusDefault),
+  "headers": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
+ * @summary 更新 Webhook 订阅
+ */
+export const PutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPutParams = zod.object({
+  "subscription_id": zod.string()
+})
+
+export const PutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPutBody = zod.object({
+  "name": zod.union([zod.string(),zod.null()]).optional(),
+  "target_url": zod.union([zod.string(),zod.null()]).optional(),
+  "event_types": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "secret": zod.union([zod.string(),zod.null()]).optional(),
+  "timeout_seconds": zod.union([zod.number(),zod.null()]).optional(),
+  "max_attempts": zod.union([zod.number(),zod.null()]).optional(),
+  "status": zod.union([zod.string(),zod.null()]).optional(),
+  "headers": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional()
+})
+
+export const PutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPutResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "status": zod.string(),
+  "target_url": zod.string(),
+  "secret": zod.union([zod.string(),zod.null()]).optional(),
+  "event_types": zod.array(zod.string()).optional(),
+  "timeout_seconds": zod.number(),
+  "max_attempts": zod.number(),
+  "backoff_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "headers": zod.record(zod.string(), zod.unknown()).optional(),
+  "last_delivery_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_success_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 删除 Webhook 订阅
+ */
+export const DeleteWebhookApiV1AdminAutomationWebhooksSubscriptionIdDeleteParams = zod.object({
+  "subscription_id": zod.string()
+})
+
+
+/**
+ * @summary 获取 Webhook 投递记录
+ */
+export const GetDeliveriesApiV1AdminAutomationDeliveriesGetResponseItem = zod.object({
+  "id": zod.string(),
+  "subscription_id": zod.string(),
+  "event_type": zod.string(),
+  "event_id": zod.string(),
+  "status": zod.string(),
+  "target_url": zod.string(),
+  "payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "headers": zod.record(zod.string(), zod.unknown()).optional(),
+  "attempt_count": zod.number(),
+  "next_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
+  "last_response_body": zod.union([zod.string(),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const GetDeliveriesApiV1AdminAutomationDeliveriesGetResponse = zod.array(GetDeliveriesApiV1AdminAutomationDeliveriesGetResponseItem)
+
+
+/**
+ * @summary 重试 Webhook 投递
+ */
+export const PostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPostParams = zod.object({
+  "delivery_id": zod.string()
+})
+
+export const PostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPostResponse = zod.object({
+  "id": zod.string(),
+  "subscription_id": zod.string(),
+  "event_type": zod.string(),
+  "event_id": zod.string(),
+  "status": zod.string(),
+  "target_url": zod.string(),
+  "payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "headers": zod.record(zod.string(), zod.unknown()).optional(),
+  "attempt_count": zod.number(),
+  "next_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
+  "last_response_body": zod.union([zod.string(),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取 Webhook 死信列表
+ */
+export const GetDeadLettersApiV1AdminAutomationDeadLettersGetResponseItem = zod.object({
+  "id": zod.string(),
+  "delivery_id": zod.string(),
+  "subscription_id": zod.string(),
+  "event_type": zod.string(),
+  "event_id": zod.string(),
+  "reason": zod.string(),
+  "payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "dead_lettered_at": zod.string().datetime({}),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const GetDeadLettersApiV1AdminAutomationDeadLettersGetResponse = zod.array(GetDeadLettersApiV1AdminAutomationDeadLettersGetResponseItem)
+
+
+/**
+ * @summary 回放死信投递
+ */
+export const PostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdReplayPostParams = zod.object({
+  "dead_letter_id": zod.string()
+})
+
+export const PostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdReplayPostResponse = zod.object({
+  "id": zod.string(),
+  "subscription_id": zod.string(),
+  "event_type": zod.string(),
+  "event_id": zod.string(),
+  "status": zod.string(),
+  "target_url": zod.string(),
+  "payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "headers": zod.record(zod.string(), zod.unknown()).optional(),
+  "attempt_count": zod.number(),
+  "next_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
+  "last_response_body": zod.union([zod.string(),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
  * @summary 聚合所有内容标签
  */
 export const ListTagsApiV1AdminContentTagsGetResponseItem = zod.object({
@@ -4533,6 +5066,24 @@ export const PostsFeedFeedsPostsXmlGetResponse = zod.unknown()
 
 
 /**
+ * @summary Diary Feed
+ */
+export const DiaryFeedFeedsDiaryXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Thoughts Feed
+ */
+export const ThoughtsFeedFeedsThoughtsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Excerpts Feed
+ */
+export const ExcerptsFeedFeedsExcerptsXmlGetResponse = zod.unknown()
+
+
+/**
  * @summary Rss Alias
  */
 export const RssAliasRssXmlGetResponse = zod.unknown()
@@ -4554,6 +5105,24 @@ export const RobotsTxtApiV1SiteRobotsTxtGetResponse = zod.unknown()
  * @summary Posts Feed
  */
 export const PostsFeedApiV1SiteFeedsPostsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Diary Feed
+ */
+export const DiaryFeedApiV1SiteFeedsDiaryXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Thoughts Feed
+ */
+export const ThoughtsFeedApiV1SiteFeedsThoughtsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Excerpts Feed
+ */
+export const ExcerptsFeedApiV1SiteFeedsExcerptsXmlGetResponse = zod.unknown()
 
 
 /**

@@ -51,11 +51,38 @@ def _require_scopes(ctx, required: list[str]) -> None:
 
 @lru_cache(maxsize=1)
 def build_mcp():
-    """Build a singleton FastMCP server."""
+    """Build a singleton FastMCP server.
+
+    We also attach a normalized Aerisun-owned capability registry onto the FastMCP
+    instance (mcp._aerisun_capabilities) so /api/mcp-meta and /api/agent/usage can
+    stay consistent without hand-maintained lists.
+    """
     from mcp.server.auth.settings import AuthSettings
     from mcp.server.fastmcp import FastMCP
 
     session_factory = get_session_factory()
+
+    capabilities: list[dict] = []
+
+    def _register_capability(
+        *,
+        kind: str,
+        name: str,
+        description: str,
+        required_scopes: list[str],
+        invocation: dict,
+        examples: list[dict] | None = None,
+    ) -> None:
+        capabilities.append(
+            {
+                "name": name,
+                "kind": kind,
+                "description": description,
+                "required_scopes": required_scopes,
+                "invocation": invocation,
+                "examples": examples or [],
+            }
+        )
 
     mcp = FastMCP(
         "Aerisun",
@@ -80,6 +107,14 @@ def build_mcp():
         finally:
             session.close()
 
+    _register_capability(
+        kind="resource",
+        name="aerisun://site-config",
+        description="Return site config as JSON.",
+        required_scopes=[MCP_CONFIG_READ],
+        invocation={"transport": "mcp", "resource": "aerisun://site-config"},
+    )
+
     @mcp.resource("aerisun://posts")
     def posts_resource(ctx: Context) -> str:
         """Return latest posts list as JSON."""
@@ -90,6 +125,14 @@ def build_mcp():
             return list_public_posts(session, limit=20, offset=0).model_dump_json()
         finally:
             session.close()
+
+    _register_capability(
+        kind="resource",
+        name="aerisun://posts",
+        description="Return latest posts list as JSON.",
+        required_scopes=[MCP_CONTENT_READ],
+        invocation={"transport": "mcp", "resource": "aerisun://posts"},
+    )
 
     @mcp.resource("aerisun://posts/{slug}")
     def post_resource(slug: str, ctx: Context) -> str:
@@ -102,6 +145,14 @@ def build_mcp():
         finally:
             session.close()
 
+    _register_capability(
+        kind="resource",
+        name="aerisun://posts/{slug}",
+        description="Return a single post by slug as JSON.",
+        required_scopes=[MCP_CONTENT_READ],
+        invocation={"transport": "mcp", "resource": "aerisun://posts/{slug}"},
+    )
+
     @mcp.resource("aerisun://feeds/posts")
     def posts_feed_resource(ctx: Context) -> str:
         """Return the posts RSS XML."""
@@ -113,6 +164,14 @@ def build_mcp():
         finally:
             session.close()
 
+    _register_capability(
+        kind="resource",
+        name="aerisun://feeds/posts",
+        description="Return the posts RSS XML.",
+        required_scopes=[MCP_CONTENT_READ],
+        invocation={"transport": "mcp", "resource": "aerisun://feeds/posts"},
+    )
+
     @mcp.tool(name="get_site_config")
     def get_site_config_tool(ctx: Context) -> dict:
         """Get current site config."""
@@ -122,6 +181,15 @@ def build_mcp():
             return get_site_config(session).model_dump()
         finally:
             session.close()
+
+    _register_capability(
+        kind="tool",
+        name="get_site_config",
+        description="Get current site config.",
+        required_scopes=[MCP_CONFIG_READ],
+        invocation={"transport": "mcp", "tool": "get_site_config"},
+        examples=[{"arguments": {}, "scenario": "读取站点基础配置用于判断功能入口。"}],
+    )
 
     @mcp.tool(name="list_posts")
     def list_posts_tool(limit: int = 20, offset: int = 0, ctx: Context | None = None) -> dict:
@@ -133,6 +201,15 @@ def build_mcp():
         finally:
             session.close()
 
+    _register_capability(
+        kind="tool",
+        name="list_posts",
+        description="List published posts.",
+        required_scopes=[MCP_CONTENT_READ],
+        invocation={"transport": "mcp", "tool": "list_posts"},
+        examples=[{"arguments": {"limit": 10, "offset": 0}, "scenario": "列出最近文章。"}],
+    )
+
     @mcp.tool(name="get_post")
     def get_post_tool(slug: str, ctx: Context) -> dict:
         """Get a published post by slug."""
@@ -142,6 +219,15 @@ def build_mcp():
             return get_public_post(session, slug).model_dump()
         finally:
             session.close()
+
+    _register_capability(
+        kind="tool",
+        name="get_post",
+        description="Get a published post by slug.",
+        required_scopes=[MCP_CONTENT_READ],
+        invocation={"transport": "mcp", "tool": "get_post"},
+        examples=[{"arguments": {"slug": "hello-world"}, "scenario": "读取单篇文章正文。"}],
+    )
 
     @mcp.tool(name="search_content")
     def search_content_tool(query: str, limit: int = 10, ctx: Context | None = None) -> dict:
@@ -153,4 +239,14 @@ def build_mcp():
         finally:
             session.close()
 
+    _register_capability(
+        kind="tool",
+        name="search_content",
+        description="Search public content.",
+        required_scopes=[MCP_CONTENT_READ],
+        invocation={"transport": "mcp", "tool": "search_content"},
+        examples=[{"arguments": {"query": "诗", "limit": 5}, "scenario": "按关键词搜索公开内容。"}],
+    )
+
+    setattr(mcp, "_aerisun_capabilities", tuple(capabilities))
     return mcp

@@ -11,5 +11,5 @@ export type ReadActivityHeatmapApiV1SiteActivityHeatmapGetParams = {
  * @maximum 104
  */
 weeks?: number;
-tz?: string | null;
+tz?: string;
 };

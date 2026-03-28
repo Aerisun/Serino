@@ -8,6 +8,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
 import SearchModal from "@/components/SearchModal";
+import SubscribeModal from "@/components/SubscribeModal";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -27,8 +28,10 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 function AppContent() {
   const featureFlags = useFeatureFlags();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [subscribeOpen, setSubscribeOpen] = useState(false);
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
+  const closeSubscribe = useCallback(() => setSubscribeOpen(false), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -38,11 +41,14 @@ function AppContent() {
       }
     };
     const onOpenSearch = () => setSearchOpen(true);
+    const onOpenSubscribe = () => setSubscribeOpen(true);
     document.addEventListener("keydown", onKey);
     window.addEventListener("aerisun:open-search", onOpenSearch);
+    window.addEventListener("aerisun:open-subscribe", onOpenSubscribe);
     return () => {
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("aerisun:open-search", onOpenSearch);
+      window.removeEventListener("aerisun:open-subscribe", onOpenSubscribe);
     };
   }, []);
 
@@ -77,6 +83,11 @@ function AppContent() {
           </Suspense>
         </ErrorBoundary>
         <SearchModal open={searchOpen} onClose={closeSearch} />
+        <SubscribeModal
+          open={subscribeOpen}
+          onClose={closeSubscribe}
+          enabled={featureFlags.content_subscription}
+        />
       </SiteAuthProvider>
     </BrowserRouter>
   );

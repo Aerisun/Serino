@@ -24,6 +24,8 @@ import aerisun.domain.ops.models  # noqa: E402, F401
 import aerisun.domain.site_auth.models  # noqa: E402, F401
 import aerisun.domain.site_config.models  # noqa: E402, F401
 import aerisun.domain.social.models  # noqa: E402, F401
+import aerisun.domain.subscription.models  # noqa: E402, F401
+import aerisun.domain.automation.models  # noqa: E402, F401
 
 config = context.config
 if config.config_file_name is not None:

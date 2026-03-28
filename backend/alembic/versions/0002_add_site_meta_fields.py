@@ -3,6 +3,7 @@
 - site_profile: author, og_image, meta_description, copyright, hero_actions
 - page_copy: nav_label
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -28,7 +29,9 @@ def upgrade() -> None:
         if "meta_description" not in site_profile_columns:
             batch_op.add_column(sa.Column("meta_description", sa.Text(), nullable=False, server_default=""))
         if "copyright" not in site_profile_columns:
-            batch_op.add_column(sa.Column("copyright", sa.String(200), nullable=False, server_default="All rights reserved"))
+            batch_op.add_column(
+                sa.Column("copyright", sa.String(200), nullable=False, server_default="All rights reserved")
+            )
         if "hero_actions" not in site_profile_columns:
             batch_op.add_column(sa.Column("hero_actions", sa.Text(), nullable=False, server_default="[]"))
 

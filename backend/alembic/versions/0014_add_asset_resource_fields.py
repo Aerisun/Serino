@@ -24,25 +24,31 @@ def upgrade() -> None:
     if "assets" not in inspector.get_table_names():
         return
 
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.add_column(
-            sa.Column("resource_key", sa.String(length=500), nullable=True)
-        )
-        batch_op.add_column(
+    existing_columns = {column["name"] for column in inspector.get_columns("assets")}
+
+    if "resource_key" not in existing_columns:
+        op.add_column("assets", sa.Column("resource_key", sa.String(length=500), nullable=True))
+
+    if "visibility" not in existing_columns:
+        op.add_column(
+            "assets",
             sa.Column(
                 "visibility",
                 sa.String(length=32),
                 nullable=False,
                 server_default="internal",
-            )
+            ),
         )
-        batch_op.add_column(
+
+    if "category" not in existing_columns:
+        op.add_column(
+            "assets",
             sa.Column(
                 "category",
                 sa.String(length=80),
                 nullable=False,
                 server_default="general",
-            )
+            ),
         )
 
     connection = op.get_bind()

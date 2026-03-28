@@ -38,7 +38,7 @@ class RecentActivityRead(ModelBase):
 class ActivityHeatmapStatsRead(ModelBase):
     total_contributions: int = Field(description="Total contributions in the period")
     peak_week: int = Field(description="Highest weekly contribution count")
-    average_per_week: int = Field(description="Average contributions per week")
+    average_per_week: float = Field(description="Average contributions per week")
 
 
 class ActivityHeatmapWeekRead(ModelBase):

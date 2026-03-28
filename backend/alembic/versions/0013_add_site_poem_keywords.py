@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import inspect
 
 revision = "0013_add_site_poem_keywords"
 down_revision = "0012_add_site_poem_source"
@@ -17,18 +18,18 @@ depends_on = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("site_profile") as batch_op:
-        batch_op.add_column(
+    existing_columns = {column["name"] for column in inspect(op.get_bind()).get_columns("site_profile")}
+
+    if "poem_hitokoto_keywords" not in existing_columns:
+        op.add_column(
+            "site_profile",
             sa.Column(
                 "poem_hitokoto_keywords",
                 sa.JSON(),
                 nullable=False,
                 server_default=sa.text("'[]'"),
-            )
+            ),
         )
-
-    with op.batch_alter_table("site_profile") as batch_op:
-        batch_op.alter_column("poem_hitokoto_keywords", server_default=None)
 
 
 def downgrade() -> None:

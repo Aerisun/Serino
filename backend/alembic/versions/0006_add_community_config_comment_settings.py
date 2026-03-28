@@ -1,4 +1,5 @@
 """Add comment system settings to community_config."""
+
 from __future__ import annotations
 
 import json
@@ -102,9 +103,7 @@ def upgrade() -> None:
                 )
             )
         if "anonymous_enabled" not in community_columns:
-            batch_op.add_column(
-                sa.Column("anonymous_enabled", sa.Boolean(), nullable=False, server_default=sa.true())
-            )
+            batch_op.add_column(sa.Column("anonymous_enabled", sa.Boolean(), nullable=False, server_default=sa.true()))
         if "moderation_mode" not in community_columns:
             batch_op.add_column(
                 sa.Column("moderation_mode", sa.String(length=40), nullable=False, server_default="all_pending")
@@ -129,9 +128,7 @@ def upgrade() -> None:
                 sa.Column("guest_avatar_mode", sa.String(length=40), nullable=False, server_default="preset")
             )
         if "draft_enabled" not in community_columns:
-            batch_op.add_column(
-                sa.Column("draft_enabled", sa.Boolean(), nullable=False, server_default=sa.true())
-            )
+            batch_op.add_column(sa.Column("draft_enabled", sa.Boolean(), nullable=False, server_default=sa.true()))
 
 
 def downgrade() -> None:

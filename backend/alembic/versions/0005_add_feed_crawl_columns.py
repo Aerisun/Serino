@@ -1,4 +1,5 @@
 """Add etag and last_error columns to friend_feed_sources."""
+
 from __future__ import annotations
 
 import sqlalchemy as sa

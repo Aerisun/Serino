@@ -1,4 +1,5 @@
 """Add hero_video_url to site_profile."""
+
 from __future__ import annotations
 
 import sqlalchemy as sa

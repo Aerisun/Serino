@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -11,10 +12,9 @@ from starlette.staticfiles import StaticFiles
 
 from aerisun.api import api_router
 from aerisun.api.exception_handlers import register_exception_handlers
-from aerisun.api.mcp import mcp_app
+from aerisun.api.mcp import create_mcp_mount
 from aerisun.api.seo import router as seo_router
 from aerisun.core.bootstrap import lifespan
-from aerisun.core.db import get_session_factory
 from aerisun.core.middleware import register_middleware
 from aerisun.core.rate_limit import limiter
 from aerisun.core.settings import get_settings
@@ -23,11 +23,18 @@ from aerisun.core.settings import get_settings
 def create_app() -> FastAPI:
     """Build and return a fully configured FastAPI application."""
     settings = get_settings()
+    mcp_server, mcp_app = create_mcp_mount()
+
+    @asynccontextmanager
+    async def app_lifespan(app: FastAPI):
+        async with lifespan(app):
+            async with mcp_server.session_manager.run():
+                yield
 
     app = FastAPI(
         title="Aerisun API",
         version="0.1.0",
-        lifespan=lifespan,
+        lifespan=app_lifespan,
     )
 
     # Rate limiting
@@ -38,11 +45,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     # Middleware stack
-    # Provide a DB session so CORS/Origin checks can use DB-backed runtime settings.
-    settings.ensure_directories()
-    factory = get_session_factory()
-    with factory() as session:
-        register_middleware(app, settings, session)
+    register_middleware(app, settings)
 
     # Routers
     app.include_router(api_router)

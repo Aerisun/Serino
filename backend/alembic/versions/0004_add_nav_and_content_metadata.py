@@ -1,4 +1,5 @@
 """Add nav_items table and content metadata columns."""
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -23,8 +24,15 @@ def upgrade() -> None:
         op.create_table(
             "nav_items",
             sa.Column("id", sa.String(length=36), primary_key=True, nullable=False),
-            sa.Column("site_profile_id", sa.String(length=36), sa.ForeignKey("site_profile.id", ondelete="CASCADE"), nullable=False),
-            sa.Column("parent_id", sa.String(length=36), sa.ForeignKey("nav_items.id", ondelete="CASCADE"), nullable=True),
+            sa.Column(
+                "site_profile_id",
+                sa.String(length=36),
+                sa.ForeignKey("site_profile.id", ondelete="CASCADE"),
+                nullable=False,
+            ),
+            sa.Column(
+                "parent_id", sa.String(length=36), sa.ForeignKey("nav_items.id", ondelete="CASCADE"), nullable=True
+            ),
             sa.Column("label", sa.String(length=120), nullable=False),
             sa.Column("href", sa.String(length=500), nullable=True),
             sa.Column("icon_key", sa.String(length=80), nullable=True),

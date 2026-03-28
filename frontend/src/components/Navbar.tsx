@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Menu, PencilLine, Search, Sparkles, X } from "lucide-react";
+import { BellRing, ChevronDown, LogOut, Menu, PencilLine, Search, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { transition } from "@/config";
@@ -242,6 +242,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const site = useSiteConfig();
+  const subscriptionAvailable = site.featureFlags.content_subscription;
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
@@ -600,6 +601,15 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
         </div>
 
         <div className="relative flex items-center gap-2 mr-1 md:mr-0 md:justify-self-end">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-subscribe"))}
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95 ${subscriptionAvailable ? "" : "opacity-60"}`}
+            aria-label={subscriptionAvailable ? "订阅更新" : "邮箱订阅敬请期待"}
+            title={subscriptionAvailable ? "订阅更新" : "邮箱订阅暂不可用，敬请期待"}
+          >
+            <BellRing className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-search"))}

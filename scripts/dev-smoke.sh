@@ -49,16 +49,7 @@ load_env_ports() {
 
 url_is_ready() {
   local url="$1"
-  (cd "${PROJECT_DIR}/backend" && uv run python - "$url" <<'PY'
-import sys
-from urllib.request import urlopen
-try:
-    with urlopen(sys.argv[1], timeout=3) as r:
-        raise SystemExit(0 if 200 <= r.status < 400 else 1)
-except Exception:
-    raise SystemExit(1)
-PY
-  )
+  curl --noproxy '*' -fsS -o /dev/null "${url}"
 }
 
 wait_for_url() {

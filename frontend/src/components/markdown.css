@@ -152,20 +152,20 @@
 
 .single-resume-markdown.prose {
   font-size: 0.98rem;
-  color: rgba(12, 16, 22, 0.78);
+  color: rgb(var(--shiro-foreground-rgb) / 0.74);
   font-family: "Barlow", sans-serif;
 }
 
 .single-resume-markdown.prose h2 {
   margin-top: 2.5rem;
   margin-bottom: 0.95rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  border-top: 1px solid rgb(var(--shiro-divider-rgb) / 0.24);
   padding-top: 1rem;
   font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.4);
+  color: rgb(var(--shiro-accent-rgb) / 0.68);
   font-family: "Barlow", sans-serif;
 }
 
@@ -174,7 +174,7 @@
   margin-bottom: 0.25rem;
   font-size: 1.08rem;
   font-weight: 600;
-  color: rgba(15, 23, 42, 0.88);
+  color: rgb(var(--shiro-foreground-rgb) / 0.92);
   font-family: "Instrument Serif", serif;
 }
 
@@ -187,6 +187,10 @@
   padding-left: 1.1rem;
 }
 
+.single-resume-markdown.prose li::marker {
+  color: rgb(var(--shiro-accent-rgb) / 0.46);
+}
+
 .single-resume-markdown.prose strong {
-  color: rgba(15, 23, 42, 0.82);
+  color: rgb(var(--shiro-foreground-rgb) / 0.92);
 }

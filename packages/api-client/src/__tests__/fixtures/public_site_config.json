@@ -34,7 +34,8 @@
     "feature_flags": {
       "toc": true,
       "reading_progress": true,
-      "social_sharing": true
+      "social_sharing": true,
+      "content_subscription": false
     }
   },
   "social_links": [

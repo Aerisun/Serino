@@ -3,6 +3,7 @@
 Revision ID: 0008_add_feature_flags
 Revises: 0007_add_pin_columns
 """
+
 from __future__ import annotations
 
 import json

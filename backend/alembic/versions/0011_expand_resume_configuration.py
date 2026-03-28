@@ -5,6 +5,7 @@ Revises: 0010_add_traffic_daily_snapshots
 Create Date: 2026-03-25 20:30:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -28,13 +29,19 @@ def upgrade() -> None:
 
     if inspector.has_table("resume_basics"):
         for column_name, column in (
-            ("template_key", sa.Column("template_key", sa.String(length=80), nullable=False, server_default="editorial")),
+            (
+                "template_key",
+                sa.Column("template_key", sa.String(length=80), nullable=False, server_default="editorial"),
+            ),
             ("accent_tone", sa.Column("accent_tone", sa.String(length=80), nullable=False, server_default="amber")),
             ("location", sa.Column("location", sa.String(length=160), nullable=False, server_default="")),
             ("availability", sa.Column("availability", sa.String(length=160), nullable=False, server_default="")),
             ("email", sa.Column("email", sa.String(length=160), nullable=False, server_default="")),
             ("website", sa.Column("website", sa.String(length=255), nullable=False, server_default="")),
-            ("profile_image_url", sa.Column("profile_image_url", sa.String(length=500), nullable=False, server_default="")),
+            (
+                "profile_image_url",
+                sa.Column("profile_image_url", sa.String(length=500), nullable=False, server_default=""),
+            ),
             ("highlights", sa.Column("highlights", sa.JSON(), nullable=False, server_default="[]")),
         ):
             if not _has_column(inspector, "resume_basics", column_name):

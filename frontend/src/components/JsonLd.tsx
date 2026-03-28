@@ -12,7 +12,6 @@ interface JsonLdProps {
 
 const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdProps) => {
   const site = useSiteConfig()
-  const canonicalBase = site.canonicalUrl.replace(/\/+$/, "")
 
   useEffect(() => {
     const script = document.createElement("script")
@@ -34,7 +33,7 @@ const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdPro
       },
       mainEntityOfPage: {
         "@type": "WebPage",
-        "@id": `${canonicalBase}/${type}/${slug}`,
+        "@id": `${window.location.origin}/${type}/${slug}`,
       },
     }
 
@@ -51,7 +50,7 @@ const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdPro
       const el = document.getElementById("json-ld-blogposting")
       if (el) el.remove()
     }
-  }, [title, description, slug, type, publishedAt, tags, site, canonicalBase])
+  }, [title, description, slug, type, publishedAt, tags, site])
 
   return null
 }

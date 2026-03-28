@@ -22,15 +22,20 @@ def upgrade() -> None:
     if "assets" not in inspector.get_table_names():
         return
 
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.add_column(
-            sa.Column("scope", sa.String(length=32), nullable=False, server_default="user")
+    existing_columns = {column["name"] for column in inspector.get_columns("assets")}
+    if "scope" not in existing_columns:
+        op.add_column(
+            "assets",
+            sa.Column("scope", sa.String(length=32), nullable=False, server_default="user"),
         )
-
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.alter_column("scope", server_default=None)
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.drop_column("scope")
+    inspector = inspect(op.get_bind())
+    if "assets" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("assets")}
+    if "scope" in existing_columns:
+        with op.batch_alter_table("assets") as batch_op:
+            batch_op.drop_column("scope")

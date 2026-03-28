@@ -30,17 +30,6 @@ load_env_file() {
   done < "${env_file}"
 }
 
-read_secret_file() {
-  local path="$1"
-  if [[ -f "${path}" ]]; then
-    python3 - <<'PY' "${path}"
-from pathlib import Path
-import sys
-print(Path(sys.argv[1]).read_text(encoding="utf-8").strip())
-PY
-  fi
-}
-
 if [[ -n "${COMMON_GIT_DIR}" ]]; then
   AERISUN_COMMON_ROOT="$(cd "$(dirname "${COMMON_GIT_DIR}")" && pwd)"
 else
@@ -72,18 +61,15 @@ export AERISUN_SECRETS_DIR="${AERISUN_PROCESS_SECRETS_DIR:-${AERISUN_PROCESS_STO
 export AERISUN_SITE_URL="${AERISUN_PROCESS_SITE_URL:-http://localhost:${AERISUN_PROCESS_FRONTEND_PORT}}"
 export AERISUN_WALINE_SERVER_URL="${AERISUN_PROCESS_BROWSER_WALINE_URL:-${AERISUN_WALINE_BASE_PATH}}"
 
-mkdir -p "${AERISUN_STORE_DIR}" "${AERISUN_MEDIA_DIR}" "${AERISUN_SECRETS_DIR}"
-
-waline_secret_file="${AERISUN_SECRETS_DIR}/waline_jwt_token.txt"
-waline_secret_value="$(read_secret_file "${waline_secret_file}")"
-
 export WALINE_PORT="${AERISUN_PROCESS_WALINE_PORT}"
 export WALINE_SERVER_URL="${AERISUN_PROCESS_WALINE_SERVER_URL:-http://localhost:${AERISUN_PROCESS_FRONTEND_PORT}${AERISUN_WALINE_BASE_PATH}}"
 export SITE_URL="${AERISUN_SITE_URL}"
 export SITE_NAME="${SITE_NAME:-Aerisun}"
-export JWT_TOKEN="${JWT_TOKEN:-${waline_secret_value:-change-me}}"
+export JWT_TOKEN="${JWT_TOKEN:-${WALINE_JWT_TOKEN:-change-me}}"
 export SECURE_DOMAINS="${SECURE_DOMAINS:-${WALINE_SECURE_DOMAINS:-localhost,127.0.0.1}}"
 export AVATAR_PROXY="${AVATAR_PROXY:-${WALINE_AVATAR_PROXY:-}}"
 export GRAVATAR_STR="${GRAVATAR_STR:-${WALINE_GRAVATAR_STR:-}}"
 export SQLITE_PATH="$(dirname "${AERISUN_WALINE_DB_PATH}")"
 export SQLITE_DB="$(basename "${AERISUN_WALINE_DB_PATH}" .db)"
+
+mkdir -p "${AERISUN_STORE_DIR}" "${AERISUN_MEDIA_DIR}" "${AERISUN_SECRETS_DIR}"

@@ -65,8 +65,6 @@ from aerisun.domain.site_config.schemas import (  # noqa: F401
     ResumeSkillGroupAdminRead,
     ResumeSkillGroupCreate,
     ResumeSkillGroupUpdate,
-    RuntimeSiteSettingsAdminRead,
-    RuntimeSiteSettingsUpdate,
     SiteProfileAdminRead,
     SiteProfileCreate,
     SiteProfileUpdate,

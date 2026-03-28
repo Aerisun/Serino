@@ -37,6 +37,13 @@ const AssetsPage = lazy(() => import("@/pages/assets/AssetsPage"));
 const ApiKeysPage = lazy(() => import("@/pages/system/ApiKeysPage"));
 const McpPage = lazy(() => import("@/pages/integrations/McpPage"));
 const FeedsPage = lazy(() => import("@/pages/integrations/FeedsPage"));
+const AgentUsagePage = lazy(() => import("@/pages/integrations/AgentUsagePage"));
+const AgentRunsPage = lazy(() => import("@/pages/automation/AgentRunsPage"));
+const AgentRunDetailPage = lazy(() => import("@/pages/automation/AgentRunDetailPage"));
+const ApprovalsPage = lazy(() => import("@/pages/automation/ApprovalsPage"));
+const WebhooksPage = lazy(() => import("@/pages/automation/WebhooksPage"));
+const DeliveriesPage = lazy(() => import("@/pages/automation/DeliveriesPage"));
+const DeadLettersPage = lazy(() => import("@/pages/automation/DeadLettersPage"));
 const AuditLogPage = lazy(() => import("@/pages/system/AuditLogPage"));
 const BackupsPage = lazy(() => import("@/pages/system/BackupsPage"));
 const SystemInfoPage = lazy(() => import("@/pages/system/SystemInfoPage"));
@@ -74,8 +81,9 @@ function ProtectedRoutes() {
           <Route path="excerpts/:id" element={<ExcerptEditPage />} />
           <Route path="content/categories" element={<ContentCategoriesPage />} />
           <Route path="site-config/:section?" element={<SiteConfigPage />} />
-          <Route path="site-config/more" element={<Navigate to="/more" replace />} />
-          <Route path="more" element={<MorePage />} />
+          <Route path="site-config/more" element={<Navigate to="/more/feature-flags" replace />} />
+          <Route path="more" element={<Navigate to="/more/feature-flags" replace />} />
+          <Route path="more/:section" element={<MorePage />} />
           <Route path="resume" element={<ResumePage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="moderation" element={<ModerationPage />} />
@@ -85,6 +93,13 @@ function ProtectedRoutes() {
           <Route path="integrations/api-keys" element={<ApiKeysPage />} />
           <Route path="integrations/feeds" element={<FeedsPage />} />
           <Route path="integrations/mcp" element={<McpPage />} />
+          <Route path="integrations/agent-usage" element={<AgentUsagePage />} />
+          <Route path="automation/runs" element={<AgentRunsPage />} />
+          <Route path="automation/runs/:runId" element={<AgentRunDetailPage />} />
+          <Route path="automation/approvals" element={<ApprovalsPage />} />
+          <Route path="automation/webhooks" element={<WebhooksPage />} />
+          <Route path="automation/deliveries" element={<DeliveriesPage />} />
+          <Route path="automation/dead-letters" element={<DeadLettersPage />} />
           <Route path="system/api-keys" element={<Navigate to="/integrations/api-keys" replace />} />
           <Route path="system/feeds" element={<Navigate to="/integrations/feeds" replace />} />
           <Route path="system/mcp" element={<Navigate to="/integrations/mcp" replace />} />

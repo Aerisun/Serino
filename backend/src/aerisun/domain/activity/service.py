@@ -19,6 +19,8 @@ from aerisun.domain.activity.schemas import (
 )
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
 
+DEFAULT_ACTIVITY_HEATMAP_TZ = "Asia/Shanghai"
+
 
 def _avatar_for_name(name: str) -> str:
     return f"https://api.dicebear.com/9.x/notionists/svg?seed={name}"
@@ -134,12 +136,14 @@ _HEATMAP_TTL = 300  # 5 minutes
 
 def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | None = None) -> ActivityHeatmapRead:
     weeks = max(1, min(weeks, 104))
+    resolved_tz_name = tz_name or DEFAULT_ACTIVITY_HEATMAP_TZ
     try:
-        tz = ZoneInfo(tz_name) if tz_name else UTC
+        tz = ZoneInfo(resolved_tz_name)
     except (KeyError, ValueError):
-        tz = UTC
+        resolved_tz_name = DEFAULT_ACTIVITY_HEATMAP_TZ
+        tz = ZoneInfo(resolved_tz_name)
 
-    cache_key = f"heatmap_{weeks}_{tz_name or 'UTC'}"
+    cache_key = f"heatmap_{weeks}_{resolved_tz_name}"
     now = time.monotonic()
     if cache_key in _heatmap_cache:
         cached_at, cached_result = _heatmap_cache[cache_key]
@@ -149,11 +153,11 @@ def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | Non
     today = datetime.now(tz).date()
     start = today - timedelta(days=today.weekday() + (weeks - 1) * 7)
 
-    # Use SQL GROUP BY for content counts
     daily_counts: defaultdict[date, int] = defaultdict(int)
-    daily_counts.update(repo.count_daily_content(session))
+    daily_counts.update(repo.count_daily_content(session, tz=tz))
+    for current_date, total in repo.count_daily_likes(session, tz=tz).items():
+        daily_counts[current_date] += total
 
-    # Waline comments and guestbook (separate SQLite DB, can't use ORM aggregation)
     for item in list_all_waline_records(status="approved", guestbook_only=False):
         dt = _normalize_timestamp(item.created_at).astimezone(tz)
         daily_counts[dt.date()] += 1
@@ -181,7 +185,7 @@ def build_activity_heatmap(session: Session, weeks: int = 52, tz_name: str | Non
 
     total_contributions = sum(totals)
     peak_week = max(totals, default=0)
-    average_per_week = round(total_contributions / weeks) if weeks else 0
+    average_per_week = round(total_contributions / weeks, 1) if weeks else 0.0
     result = ActivityHeatmapRead(
         stats=ActivityHeatmapStatsRead(
             total_contributions=total_contributions,

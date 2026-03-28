@@ -42,7 +42,7 @@ type BackendSiteResponse = {
       href: string;
       icon_key: string;
     }>;
-    feature_flags?: Record<string, boolean>;
+    feature_flags?: Record<string, unknown>;
   };
   social_links: Array<{
     name: string;
@@ -62,20 +62,6 @@ type BackendSiteResponse = {
       href: string;
     }>;
   }>;
-  runtime: {
-    public_site_url: string;
-    production_cors_origins: string[];
-    seo_default_title: string;
-    seo_default_description: string;
-    rss_title: string;
-    rss_description: string;
-    robots_indexing_enabled: boolean;
-    sitemap_static_pages: Array<{
-      path: string;
-      changefreq: string;
-      priority: string;
-    }>;
-  };
 };
 
 type BackendPageCopyItem = {
@@ -98,31 +84,10 @@ type BackendPagesResponse = {
 
 type BackendResumeResponse = {
   title: string;
-  subtitle: string;
   summary: string;
-  download_label: string;
-  template_key: string;
-  accent_tone: string;
   location: string;
-  availability: string;
   email: string;
-  website: string;
   profile_image_url: string;
-  highlights: string[];
-  skill_groups: Array<{
-    category: string;
-    items: string[];
-  }>;
-  experiences: Array<{
-    title: string;
-    company: string;
-    period: string;
-    location: string;
-    employment_type: string;
-    summary: string;
-    achievements: string[];
-    tech_stack: string[];
-  }>;
 };
 
 // ---------------------------------------------------------------------------
@@ -186,11 +151,6 @@ export interface RuntimeConfigSnapshot {
     heroImageUrl: string;
     heroPosterUrl: string;
     metaDescription: string;
-    canonicalUrl: string;
-    rssTitle: string;
-    rssDescription: string;
-    robotsIndexingEnabled: boolean;
-    sitemapStaticPages: Array<{ path: string; changefreq: string; priority: string }>;
     copyright: string;
     socialLinks: Array<{ name: string; href: string; iconKey: string; placement: "hero" | "footer" | "both" }>;
     poems: string[];
@@ -262,6 +222,17 @@ const normalizeSocialPlacement = (placement?: string | null): "hero" | "footer" 
 const normalizeSiteConfig = (
   payload: BackendSiteResponse,
 ): RuntimeConfigSnapshot["site"] => {
+  const featureFlags = {
+    toc: true,
+    reading_progress: true,
+    social_sharing: true,
+    content_subscription: false,
+  } as Record<string, boolean>
+
+  for (const [key, value] of Object.entries(payload.site.feature_flags ?? {})) {
+    featureFlags[key] = Boolean(value)
+  }
+
   // Build navigation from backend data
   const navigation: NavItem[] = (payload.navigation ?? []).map((entry) => {
     const item: NavItem = {
@@ -280,7 +251,7 @@ const normalizeSiteConfig = (
 
   return {
     name: payload.site.name,
-    title: payload.runtime.seo_default_title || payload.site.title,
+    title: payload.site.title,
     bio: payload.site.bio,
     role: payload.site.role,
     author: payload.site.author,
@@ -288,12 +259,7 @@ const normalizeSiteConfig = (
     siteIconUrl: payload.site.site_icon_url ?? "",
     heroImageUrl: payload.site.hero_image_url,
     heroPosterUrl: payload.site.hero_poster_url,
-    metaDescription: payload.runtime.seo_default_description || payload.site.meta_description,
-    canonicalUrl: payload.runtime.public_site_url,
-    rssTitle: payload.runtime.rss_title,
-    rssDescription: payload.runtime.rss_description,
-    robotsIndexingEnabled: payload.runtime.robots_indexing_enabled,
-    sitemapStaticPages: payload.runtime.sitemap_static_pages ?? [],
+    metaDescription: payload.site.meta_description,
     copyright: payload.site.copyright,
     poems: payload.poems.map((p) => p.content).filter(Boolean),
     poemSource: payload.site.poem_source ?? "custom",
@@ -316,7 +282,7 @@ const normalizeSiteConfig = (
       slogan: payload.site.footer_text ?? "",
       copyright: payload.site.copyright,
     },
-    featureFlags: payload.site.feature_flags ?? { toc: true, reading_progress: true, social_sharing: true },
+    featureFlags,
   };
 };
 
@@ -397,35 +363,13 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
   const defaults = PAGE_DEFAULTS.resume;
   return {
     title: payload.title,
-    subtitle: payload.subtitle,
     description: payload.summary,
-    downloadLabel: payload.download_label,
     bio: payload.summary,
-    templateKey: payload.template_key,
-    accentTone: payload.accent_tone,
     profileImageUrl: payload.profile_image_url,
-    highlights: payload.highlights,
     contacts: {
       location: payload.location,
-      availability: payload.availability,
       email: payload.email,
-      website: payload.website,
     },
-    skills: payload.skill_groups.flatMap((group) => group.items),
-    skillGroups: payload.skill_groups.map((group) => ({
-      category: group.category,
-      items: group.items,
-    })),
-    experience: payload.experiences.map((item) => ({
-      role: item.title,
-      org: item.company,
-      period: item.period,
-      location: item.location,
-      employmentType: item.employment_type,
-      desc: item.summary,
-      achievements: item.achievements,
-      techStack: item.tech_stack,
-    })),
     width: defaults?.width,
     motion: defaults?.motion,
   };

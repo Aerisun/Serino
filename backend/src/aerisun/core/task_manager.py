@@ -7,6 +7,8 @@ import logging
 
 from aerisun.core.settings import Settings
 from aerisun.core.tasks import cleanup_expired_sessions
+from aerisun.domain.automation.runtime_registry import get_automation_runtime
+from aerisun.domain.automation.service import dispatch_due_webhooks, execute_due_runs
 from aerisun.domain.ops.service import record_daily_traffic_snapshot
 
 logger = logging.getLogger("aerisun.startup")
@@ -56,6 +58,39 @@ class TaskManager:
                 max_instances=1,
                 coalesce=True,
             )
+
+        from aerisun.domain.subscription.service import dispatch_content_subscription_notifications
+
+        self._scheduler.add_job(
+            dispatch_content_subscription_notifications,
+            trigger="interval",
+            minutes=self._settings.subscription_dispatch_interval_minutes,
+            id="content_subscription_dispatch",
+            name="Content subscription dispatch",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
+            self._dispatch_workflow_runs,
+            trigger="interval",
+            seconds=15,
+            id="workflow_run_dispatcher",
+            name="Workflow run dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
+            self._dispatch_webhooks,
+            trigger="interval",
+            seconds=15,
+            id="webhook_delivery_dispatcher",
+            name="Webhook delivery dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
         self._scheduler.start()
         logger.info("Background scheduler started")
 
@@ -64,6 +99,19 @@ class TaskManager:
 
         with get_session_factory()() as session:
             record_daily_traffic_snapshot(session)
+
+    def _dispatch_workflow_runs(self) -> None:
+        from aerisun.core.db import get_session_factory
+
+        runtime = get_automation_runtime()
+        with get_session_factory()() as session:
+            execute_due_runs(session, runtime)
+
+    def _dispatch_webhooks(self) -> None:
+        from aerisun.core.db import get_session_factory
+
+        with get_session_factory()() as session:
+            dispatch_due_webhooks(session)
 
     async def stop(self) -> None:
         for task in self._async_tasks:

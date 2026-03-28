@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from aerisun.core.db import dispose_engine, get_session_factory
+from aerisun.core.db import dispose_engine
 from aerisun.core.logging import setup_logging
 from aerisun.core.security import check_insecure_defaults
 from aerisun.core.sentry import init_sentry
 from aerisun.core.settings import get_settings
 from aerisun.core.task_manager import TaskManager
+from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.ops.service import start_visit_record_worker, stop_visit_record_worker
 
 logger = logging.getLogger("aerisun.bootstrap")
@@ -27,13 +28,14 @@ async def lifespan(_app):
     logger.info("Infrastructure ready")
 
     # Phase 2: Integrations
-    with get_session_factory()() as session:
-        check_insecure_defaults(settings, session)
+    check_insecure_defaults(settings)
     init_sentry(settings)
     logger.info("Integrations ready")
 
     # Phase 3: Background services
     task_manager = TaskManager(settings)
+    runtime = get_automation_runtime()
+    runtime.start()
     await task_manager.start()
     await start_visit_record_worker()
     logger.info("Background services started")
@@ -45,6 +47,7 @@ async def lifespan(_app):
         logger.info("Shutting down background services")
         await stop_visit_record_worker()
         await task_manager.stop()
+        runtime.stop()
         logger.info("Disposing database engine")
         dispose_engine()
         logger.info("Shutdown complete")

@@ -95,16 +95,6 @@ assert_spa_response() {
   rm -f "${body_file}"
 }
 
-assert_contains() {
-  local haystack="$1"
-  local needle="$2"
-  local label="$3"
-  if [[ "${haystack}" != *"${needle}"* ]]; then
-    echo "ERROR: ${label} missing expected content: ${needle}" >&2
-    return 1
-  fi
-}
-
 cleanup() {
   local exit_code="$1"
   if [[ "${exit_code}" -ne 0 ]]; then
@@ -125,12 +115,9 @@ WALINE_PORT="${WALINE_PORT:-18360}"
 SITE_HOST="${AERISUN_SMOKE_HOST:-127.0.0.1}"
 SITE_URL="http://${SITE_HOST}:${HTTP_PORT}"
 PUBLIC_ORIGIN="${AERISUN_SMOKE_PUBLIC_ORIGIN:-https://smoke.aerisun.test}"
-CANONICAL_ORIGIN="${AERISUN_SMOKE_CANONICAL_ORIGIN:-https://runtime-smoke.aerisun.test}"
 HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
 ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"
 WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"
-ADMIN_BOOTSTRAP_USERNAME="${AERISUN_SMOKE_ADMIN_USERNAME:-admin}"
-ADMIN_BOOTSTRAP_PASSWORD="${AERISUN_SMOKE_ADMIN_PASSWORD:-admin123}"
 
 cat >"${TMP_ENV_FILE}" <<EOF
 AERISUN_DOMAIN=http://${SITE_HOST}
@@ -138,20 +125,18 @@ AERISUN_SITE_URL=${SITE_URL}
 AERISUN_WALINE_SERVER_URL=${SITE_URL}${WALINE_BASE_PATH}
 AERISUN_CORS_ORIGINS=["${PUBLIC_ORIGIN}"]
 WALINE_SECURE_DOMAINS=${SITE_HOST},localhost,127.0.0.1
+WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef
 AERISUN_HTTP_PORT=${HTTP_PORT}
 AERISUN_HTTPS_PORT=${HTTPS_PORT}
 AERISUN_PORT=${BACKEND_PORT}
 WALINE_PORT=${WALINE_PORT}
+AERISUN_SENTRY_DSN=
+VITE_SENTRY_DSN=
 EOF
 
 load_env_file "${PROJECT_DIR}/.env"
 load_env_file "${PROJECT_DIR}/.env.production"
 load_env_file "${TMP_ENV_FILE}"
-
-export AERISUN_SECRETS_DIR="${AERISUN_SECRETS_DIR:-${PROJECT_DIR}/.store/secrets}"
-mkdir -p "${AERISUN_SECRETS_DIR}"
-printf '%s' 'smoke-0123456789abcdef0123456789abcdef' > "${AERISUN_SECRETS_DIR}/waline_jwt_token.txt"
-printf 'JWT_TOKEN=%s\n' 'smoke-0123456789abcdef0123456789abcdef' > "${AERISUN_SECRETS_DIR}/waline.env"
 
 compose up --build -d
 
@@ -162,29 +147,5 @@ wait_for_url "${SITE_URL}${WALINE_BASE_PATH}/" "waline via caddy"
 
 assert_spa_response "${SITE_URL}/posts" "frontend deep link"
 assert_spa_response "${SITE_URL}${ADMIN_BASE_PATH}posts" "admin deep link"
-
-ADMIN_LOGIN_RESPONSE="$(curl -fsS -X POST "${SITE_URL}/api/v1/admin/auth/login" \
-  -H 'Content-Type: application/json' \
-  -d "{\"username\":\"${ADMIN_BOOTSTRAP_USERNAME}\",\"password\":\"${ADMIN_BOOTSTRAP_PASSWORD}\"}")"
-ADMIN_TOKEN="$(python3 - <<'PY' "${ADMIN_LOGIN_RESPONSE}"
-import json, sys
-print(json.loads(sys.argv[1])["token"])
-PY
-)"
-
-curl -fsS -X PUT "${SITE_URL}/api/v1/admin/site-config/runtime" \
-  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -d "{\"public_site_url\":\"${CANONICAL_ORIGIN}\",\"production_cors_origins\":[\"${PUBLIC_ORIGIN}\"],\"seo_default_title\":\"Smoke Runtime Title\",\"seo_default_description\":\"Smoke Runtime Description\",\"rss_title\":\"Smoke Feed\",\"rss_description\":\"Smoke Feed Description\",\"robots_indexing_enabled\":false,\"sitemap_static_pages\":[{\"path\":\"/smoke-runtime\",\"changefreq\":\"daily\",\"priority\":\"0.9\"}]}" >/dev/null
-
-SITEMAP_BODY="$(curl -fsS "${SITE_URL}/sitemap.xml")"
-ROBOTS_BODY="$(curl -fsS "${SITE_URL}/robots.txt")"
-RSS_BODY="$(curl -fsS "${SITE_URL}/rss.xml")"
-
-assert_contains "${SITEMAP_BODY}" "${CANONICAL_ORIGIN}/smoke-runtime" "sitemap.xml"
-assert_contains "${ROBOTS_BODY}" "Disallow: /" "robots.txt"
-assert_contains "${ROBOTS_BODY}" "Sitemap: ${CANONICAL_ORIGIN}/sitemap.xml" "robots.txt"
-assert_contains "${RSS_BODY}" "<title>Smoke Feed</title>" "rss.xml"
-assert_contains "${RSS_BODY}" "${CANONICAL_ORIGIN}/feeds/posts.xml" "rss.xml"
 
 echo "Docker smoke test passed for ${SITE_URL}"

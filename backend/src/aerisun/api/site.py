@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session
 from aerisun.core.schemas import HealthRead
 from aerisun.domain.activity.schemas import ActivityHeatmapRead, CalendarRead, RecentActivityRead
-from aerisun.domain.activity.service import build_activity_heatmap, list_calendar_events, list_recent_activity
+from aerisun.domain.activity.service import (
+    DEFAULT_ACTIVITY_HEATMAP_TZ,
+    build_activity_heatmap,
+    list_calendar_events,
+    list_recent_activity,
+)
 from aerisun.domain.content.schemas import ContentCollectionRead, ContentEntryRead
 from aerisun.domain.content.service import (
     get_public_diary_entry,
@@ -160,7 +165,7 @@ def read_recent_activity(
 @base_router.get("/activity-heatmap", response_model=ActivityHeatmapRead, summary="获取活动热力图")
 def read_activity_heatmap(
     weeks: int = Query(default=52, ge=1, le=104),
-    tz: str | None = Query(default=None),
+    tz: str = Query(default=DEFAULT_ACTIVITY_HEATMAP_TZ),
     session: Session = Depends(get_session),
 ) -> ActivityHeatmapRead:
     return build_activity_heatmap(session, weeks=weeks, tz_name=tz)

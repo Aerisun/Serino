@@ -5,16 +5,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -25,6 +29,8 @@ import type {
   CommunityConfigRead,
   ContentCollectionRead,
   ContentEntryRead,
+  ContentSubscriptionPublicCreate,
+  ContentSubscriptionPublicRead,
   FriendCollectionRead,
   FriendFeedCollectionRead,
   HTTPValidationError,
@@ -49,7 +55,7 @@ import type {
 } from '../model';
 
 import { customInstance } from '../../mutators/public-instance';
-import type { ErrorType } from '../../mutators/public-instance';
+import type { ErrorType , BodyType } from '../../mutators/public-instance';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -2208,3 +2214,92 @@ export function useSearchContentApiV1SiteSearchGet<TData = Awaited<ReturnType<ty
 
 
 
+/**
+ * @summary Subscribe To Content
+ */
+export type subscribeToContentApiV1SiteSubscriptionsPostResponse201 = {
+  data: ContentSubscriptionPublicRead
+  status: 201
+}
+
+export type subscribeToContentApiV1SiteSubscriptionsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type subscribeToContentApiV1SiteSubscriptionsPostResponseSuccess = (subscribeToContentApiV1SiteSubscriptionsPostResponse201) & {
+  headers: Headers;
+};
+export type subscribeToContentApiV1SiteSubscriptionsPostResponseError = (subscribeToContentApiV1SiteSubscriptionsPostResponse422) & {
+  headers: Headers;
+};
+
+export type subscribeToContentApiV1SiteSubscriptionsPostResponse = (subscribeToContentApiV1SiteSubscriptionsPostResponseSuccess | subscribeToContentApiV1SiteSubscriptionsPostResponseError)
+
+export const getSubscribeToContentApiV1SiteSubscriptionsPostUrl = () => {
+
+
+
+
+  return `/api/v1/site/subscriptions/`
+}
+
+export const subscribeToContentApiV1SiteSubscriptionsPost = async (contentSubscriptionPublicCreate: ContentSubscriptionPublicCreate, options?: RequestInit): Promise<subscribeToContentApiV1SiteSubscriptionsPostResponse> => {
+
+  return customInstance<subscribeToContentApiV1SiteSubscriptionsPostResponse>(getSubscribeToContentApiV1SiteSubscriptionsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentSubscriptionPublicCreate,)
+  }
+);}
+
+
+
+
+export const getSubscribeToContentApiV1SiteSubscriptionsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof subscribeToContentApiV1SiteSubscriptionsPost>>, TError,{data: BodyType<ContentSubscriptionPublicCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof subscribeToContentApiV1SiteSubscriptionsPost>>, TError,{data: BodyType<ContentSubscriptionPublicCreate>}, TContext> => {
+
+const mutationKey = ['subscribeToContentApiV1SiteSubscriptionsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof subscribeToContentApiV1SiteSubscriptionsPost>>, {data: BodyType<ContentSubscriptionPublicCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  subscribeToContentApiV1SiteSubscriptionsPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubscribeToContentApiV1SiteSubscriptionsPostMutationResult = NonNullable<Awaited<ReturnType<typeof subscribeToContentApiV1SiteSubscriptionsPost>>>
+    export type SubscribeToContentApiV1SiteSubscriptionsPostMutationBody = BodyType<ContentSubscriptionPublicCreate>
+    export type SubscribeToContentApiV1SiteSubscriptionsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary Subscribe To Content
+ */
+export const useSubscribeToContentApiV1SiteSubscriptionsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof subscribeToContentApiV1SiteSubscriptionsPost>>, TError,{data: BodyType<ContentSubscriptionPublicCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof subscribeToContentApiV1SiteSubscriptionsPost>>,
+        TError,
+        {data: BodyType<ContentSubscriptionPublicCreate>},
+        TContext
+      > => {
+      return useMutation(getSubscribeToContentApiV1SiteSubscriptionsPostMutationOptions(options), queryClient);
+    }

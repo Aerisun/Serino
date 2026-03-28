@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Heart, MessageCircle, Repeat2 } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, Search } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import CommentSection from "@/components/CommentSection";
 import { staggerItem } from "@/config";
@@ -23,9 +24,14 @@ interface Thought {
   comments: number;
   reposts: number;
   mood?: string;
+  category: string;
 }
 
-type ThoughtsPageConfig = BaseViewPageConfig;
+interface ThoughtsPageConfig extends BaseViewPageConfig {
+  categories?: {
+    all?: string;
+  };
+}
 
 const mapRemoteThought = (entry: ContentEntryRead): Thought => {
   const paragraphs = splitContentParagraphs(entry.body);
@@ -38,16 +44,33 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
     comments: entry.comment_count ?? 0,
     reposts: entry.repost_count ?? 0,
     mood: entry.mood ?? undefined,
+    category: entry.category || "",
   };
 };
 
+const matchesSearchText = (fields: Array<string | null | undefined>, query: string) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  return fields.some((field) => (field ?? "").toLowerCase().includes(normalizedQuery));
+};
+
 const Thoughts = () => {
+  const location = useLocation();
   const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
   const errorTitle = config.errorTitle ?? "碎碎念加载失败";
   const retryLabel = config.retryLabel ?? "重试";
   const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
   const pageSize = clampPageSize(config.pageSize, 30);
+  const allCategoryLabel = config.categories?.all ?? "全部";
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
+  const searchPlaceholder = config.searchPlaceholder ?? "搜索碎碎念...";
+  const [search, setSearch] = useState("");
+  const [rawSearch, setRawSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
     queryKey: ["site", "thoughts"],
@@ -55,6 +78,44 @@ const Thoughts = () => {
     pageSize,
     mapItem: mapRemoteThought,
   });
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  const allCategories = useMemo(
+    () => [
+      allCategoryLabel,
+      ...Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "zh-CN")),
+    ],
+    [items],
+  );
+
+  const filtered = useMemo(() => {
+    return items.filter((thought) => {
+      const matchSearch = matchesSearchText([thought.content, thought.date, thought.mood, thought.category], search);
+      const matchCategory = activeCategory === allCategoryLabel || thought.category === activeCategory;
+      return matchSearch && matchCategory;
+    });
+  }, [activeCategory, allCategoryLabel, items, search]);
+
+  useEffect(() => {
+    const targetId = location.hash.slice(1);
+    if (status !== "ready" || !targetId) {
+      return;
+    }
+
+    const element = document.getElementById(targetId);
+    if (element) {
+      requestAnimationFrame(() => {
+        element.scrollIntoView({ block: "center" });
+      });
+    }
+  }, [items, location.hash, status]);
 
   return (
     <PageShell
@@ -64,7 +125,57 @@ const Thoughts = () => {
       metaDescription={config.metaDescription}
       width={config.width}
     >
-      <div className="relative mt-10">
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="group relative max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
+            value={rawSearch}
+            onChange={(event) => {
+              const value = event.target.value;
+              setRawSearch(value);
+              if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+              }
+              debounceRef.current = setTimeout(() => setSearch(value), 300);
+            }}
+            maxLength={100}
+            aria-label={searchPlaceholder}
+            className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveCategory(allCategoryLabel)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
+              activeCategory === allCategoryLabel
+                ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
+                : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
+            }`}
+          >
+            {allCategoryLabel}
+          </button>
+          {allCategories.slice(1).map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setActiveCategory(category)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.97] ${
+                activeCategory === category
+                  ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.9)]"
+                  : "text-foreground/35 hover:bg-[rgb(var(--shiro-panel-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative mt-8">
         <div className="absolute bottom-0 left-5 top-0 w-px bg-[rgb(var(--shiro-divider-rgb)/0.26)]" />
 
         {status === "loading" &&
@@ -102,22 +213,23 @@ const Thoughts = () => {
           </div>
         )}
 
-        {status === "empty" && (
+        {(status === "empty" || (status === "ready" && filtered.length === 0)) && (
           <div className="relative pb-10 pl-14">
             <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
               <span>今天</span>
             </div>
             <p className="mt-2 text-[0.935rem] leading-7 text-foreground/45">
-              {config.emptyMessage ?? "最近没有新的碎碎念"}
+              {config.emptyMessage ?? "没有找到匹配的碎碎念"}
             </p>
           </div>
         )}
 
         {status === "ready" &&
-          items.map((thought, index) => (
+          filtered.map((thought, index) => (
             <motion.div
               key={thought.id}
+              id={thought.id}
               className="group relative pb-10 pl-14 last:pb-0"
               {...staggerItem(index, {
                 baseDelay: config.motion.delay,
@@ -135,6 +247,12 @@ const Thoughts = () => {
               <p className="mt-2 text-[0.935rem] leading-7 text-foreground/65 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
                 {thought.content}
               </p>
+
+              {thought.category ? (
+                <div className="mt-3 text-[10px] text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.58)]">
+                  {thought.category}
+                </div>
+              ) : null}
 
               <div className="mt-3 flex items-center gap-5 text-xs text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.42)]">
                 <span className="flex items-center gap-1.5">

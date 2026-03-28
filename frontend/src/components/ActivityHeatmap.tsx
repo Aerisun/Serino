@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "@serino/theme";
 import {
   useReadActivityHeatmapApiV1SiteActivityHeatmapGet,
@@ -6,6 +7,7 @@ import {
 import type {
   ActivityHeatmapWeekRead,
 } from "@serino/api-client/models";
+import { CalendarDays } from "lucide-react";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { usePageConfig } from "@/contexts/runtime-config";
 
@@ -81,7 +83,6 @@ const ActivityHeatmap = () => {
   const title = String(config.heatmapTitle ?? "Activity");
   const loadingLabel = String(config.heatmapLoadingLabel ?? "加载中");
   const errorLabel = String(config.heatmapErrorLabel ?? "加载失败");
-  const totalTemplate = String(config.heatmapTotalTemplate ?? "{total} contributions");
   const stats = [
     { key: "thisWeek", label: String(config.heatmapThisWeekLabel ?? "This week") },
     { key: "peakWeek", label: String(config.heatmapPeakWeekLabel ?? "Peak week") },
@@ -89,7 +90,10 @@ const ActivityHeatmap = () => {
   ] as const;
   const isDark = resolvedTheme === "dark";
 
-  const { data: response, isLoading, isError, refetch } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet({ weeks: 52 });
+  const { data: response, isLoading, isError, refetch } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet({
+    weeks: 52,
+    tz: "Asia/Shanghai",
+  });
   const remoteWeeks = response?.data?.weeks;
   const data = useMemo(() => (remoteWeeks ? normalizeHeatmapWeeks(remoteWeeks) : []), [remoteWeeks]);
   const remoteStats = response?.data?.stats ?? null;
@@ -179,11 +183,13 @@ const ActivityHeatmap = () => {
   }, [totalWidth]);
 
   const monthMarkers = useMemo(() => buildMonthMarkers(data), [data]);
-  const totalContributions = remoteStats?.total_contributions ?? 0;
   const thisWeek = data[data.length - 1]?.total ?? 0;
   const peakWeek = remoteStats?.peak_week ?? 0;
   const averagePerWeek = remoteStats?.average_per_week ?? 0;
-  const totalLabel = totalTemplate.replace("{total}", totalContributions.toLocaleString());
+  const averagePerWeekLabel = averagePerWeek.toLocaleString(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
 
   return (
     <div className="relative flex flex-col gap-4">
@@ -199,20 +205,21 @@ const ActivityHeatmap = () => {
         <h3 className="text-sm font-body font-medium uppercase tracking-[0.28em] text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.68)]">
           {title}
         </h3>
-        <span className="text-xs font-body tabular-nums text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.54)]">
-          {status === "loading"
-            ? loadingLabel
-            : status === "error"
-              ? errorLabel
-              : totalLabel}
-        </span>
+        <Link
+          to="/calendar"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1.5 text-xs font-body font-medium text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)] transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.9)] dark:bg-card/[0.82]"
+          aria-label="前往日历页面"
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          日历
+        </Link>
       </div>
 
       <div className="relative flex flex-wrap items-end gap-x-8 gap-y-3 sm:gap-x-12">
         {[
           { label: stats[0].label, value: hasData ? thisWeek : "—" },
           { label: stats[1].label, value: hasData ? peakWeek : "—" },
-          { label: stats[2].label, value: hasData ? averagePerWeek : "—" },
+          { label: stats[2].label, value: hasData ? averagePerWeekLabel : "—" },
         ].map((stat) => (
           <div key={stat.label} className="min-w-[6.5rem]">
             <span className="block text-xl font-body font-medium tabular-nums" style={{ color: statValueColor }}>

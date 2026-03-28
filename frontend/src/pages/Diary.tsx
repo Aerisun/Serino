@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -14,6 +14,7 @@ import {
   CloudHail,
   Haze,
   Snowflake,
+  Search,
   Sun,
   Wind,
 } from "lucide-react";
@@ -109,15 +110,28 @@ const mapRemoteDiaryEntry = (entry: ContentEntryRead, index: number): DiaryEntry
   };
 };
 
+const matchesSearchText = (fields: Array<string | null | undefined>, query: string) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  return fields.some((field) => (field ?? "").toLowerCase().includes(normalizedQuery));
+};
+
 const Diary = () => {
   const config = usePageConfig().diary as unknown as DiaryPageConfig;
   const errorTitle = config.errorTitle ?? "日记加载失败";
   const retryLabel = config.retryLabel ?? "重试";
   const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
   const detailCtaLabel = config.detailCtaLabel ?? "查看详情";
+  const searchPlaceholder = config.searchPlaceholder ?? "搜索日记...";
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const pageSize = clampPageSize(config.pageSize, 20);
+  const [search, setSearch] = useState("");
+  const [rawSearch, setRawSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
     queryKey: ["site", "diary"],
@@ -125,6 +139,23 @@ const Diary = () => {
     pageSize,
     mapItem: mapRemoteDiaryEntry,
   });
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    return items.filter((entry) =>
+      matchesSearchText(
+        [entry.date, entry.day, entry.weekday, entry.weatherLabel, entry.mood, entry.content],
+        search,
+      ),
+    );
+  }, [items, search]);
 
   return (
     <PageShell
@@ -134,6 +165,28 @@ const Diary = () => {
       metaDescription={config.metaDescription}
       width={config.width}
     >
+      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="group relative max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
+            value={rawSearch}
+            onChange={(event) => {
+              const value = event.target.value;
+              setRawSearch(value);
+              if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+              }
+              debounceRef.current = setTimeout(() => setSearch(value), 300);
+            }}
+            maxLength={100}
+            aria-label={searchPlaceholder}
+            className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
+          />
+        </div>
+      </div>
+
       <div className="mt-10 flex flex-col gap-3">
         {status === "loading" &&
           Array.from({ length: 5 }, (_, index) => (
@@ -170,16 +223,16 @@ const Diary = () => {
           </div>
         )}
 
-        {status === "empty" && (
+        {(status === "empty" || (status === "ready" && filtered.length === 0)) && (
           <div className="liquid-glass rounded-2xl px-5 py-4">
             <p className="text-sm font-body leading-relaxed text-foreground/35">
-              {config.emptyMessage ?? "今天还没有新的日记"}
+              {config.emptyMessage ?? "没有找到匹配的日记"}
             </p>
           </div>
         )}
 
         {status === "ready" &&
-          items.map((entry, i) => {
+          filtered.map((entry, i) => {
             const isExpanded = expandedId === entry.id;
             const WeatherIcon = entry.weather ? weatherIcons[entry.weather] : null;
 

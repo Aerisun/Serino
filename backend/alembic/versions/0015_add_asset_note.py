@@ -22,8 +22,9 @@ def upgrade() -> None:
     if "assets" not in inspector.get_table_names():
         return
 
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.add_column(sa.Column("note", sa.String(length=500), nullable=True))
+    existing_columns = {column["name"] for column in inspector.get_columns("assets")}
+    if "note" not in existing_columns:
+        op.add_column("assets", sa.Column("note", sa.String(length=500), nullable=True))
 
 
 def downgrade() -> None:

@@ -33,7 +33,7 @@ wait_for_backend_ready() {
 
 
   while true; do
-    if curl -fsS "${health_url}" >/dev/null 2>&1; then
+    if curl --noproxy '*' -fsS "${health_url}" >/dev/null 2>&1; then
       log "✅ 后端健康检查已通过"
       return 0
     fi

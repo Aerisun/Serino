@@ -23,6 +23,17 @@ export type SiteAuthState = SiteAuthStateRead;
 export type EmailLoginResponse = GeneratedEmailLoginResponse;
 export type SiteAuthAvatarCandidateBatch = GeneratedSiteAuthAvatarCandidateBatch;
 
+export interface SiteContentSubscriptionStatus {
+  email: string;
+  content_types: string[];
+  subscribed: boolean;
+}
+
+export interface SiteContentUnsubscribeResult {
+  email: string;
+  unsubscribed: boolean;
+}
+
 const resolveErrorMessage = (error: unknown) => {
   if (error instanceof AxiosError) {
     const detail = error.response?.data as { detail?: unknown; message?: unknown } | undefined;
@@ -45,6 +56,35 @@ async function withApiError<T>(request: Promise<{ data: T }>): Promise<T> {
   }
 }
 
+async function requestSiteAuthJson<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      credentials: "include",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new Error("请求失败，请检查网络连接");
+  }
+
+  const payload = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const detail =
+      payload &&
+      typeof payload === "object" &&
+      "detail" in payload
+        ? normalizeErrorMessage((payload as { detail?: unknown }).detail)
+        : null;
+    throw new Error(detail || "请求失败");
+  }
+
+  return payload as T;
+}
+
 export function readSiteAuthState() {
   return withApiError(readSiteAuthStateApiV1SiteAuthMeGet());
 }
@@ -63,6 +103,16 @@ export function readAvatarCandidates(payload: { identity?: string; batch?: numbe
 
 export function updateSiteAuthProfile(payload: SiteAuthProfileUpdateRequest) {
   return withApiError(updateMyProfileApiV1SiteAuthMePatch(payload));
+}
+
+export function readMyContentSubscription() {
+  return requestSiteAuthJson<SiteContentSubscriptionStatus>("/api/v1/site/subscriptions/me");
+}
+
+export function unsubscribeMyContentSubscription() {
+  return requestSiteAuthJson<SiteContentUnsubscribeResult>("/api/v1/site/subscriptions/me", {
+    method: "DELETE",
+  });
 }
 
 export async function getOAuthAuthorizationUrl(provider: string, returnTo: string) {

@@ -7,22 +7,32 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Github, Loader2, Mail, RefreshCcw, Sparkles, UserRoundPen } from "lucide-react";
+import { BellOff, Github, Loader2, Mail, RefreshCcw, Sparkles, UserRoundPen } from "lucide-react";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
   getOAuthAuthorizationUrl,
   loginWithEmail,
   logoutSiteAuth,
+  readMyContentSubscription,
   readAvatarCandidates,
   readSiteAuthState,
+  type SiteContentSubscriptionStatus,
   type SiteAuthAvatarCandidate,
   type SiteAuthAvatarCandidateBatch,
   type SiteAuthState,
+  unsubscribeMyContentSubscription,
   updateSiteAuthProfile,
 } from "@/lib/site-auth";
 import { SiteAuthContext, type SiteAuthContextValue } from "@/contexts/site-auth-context";
 type AuthDialogMode = "login" | "profile";
+
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  posts: "文章",
+  diary: "日记",
+  thoughts: "想法",
+  excerpts: "摘录",
+};
 
 function providerLabel(provider: string) {
   return provider === "google" ? "Google" : provider === "github" ? "GitHub" : provider;
@@ -50,6 +60,13 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const [avatarBatch, setAvatarBatch] = useState(0);
   const [avatarTotalBatches, setAvatarTotalBatches] = useState(1);
   const [needsProfile, setNeedsProfile] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SiteContentSubscriptionStatus | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [subscriptionPending, setSubscriptionPending] = useState(false);
+  const [subscriptionFeedback, setSubscriptionFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -76,6 +93,10 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     setAvatarBatch(0);
     setAvatarTotalBatches(1);
     setAvatarLoading(false);
+    setSubscriptionStatus(null);
+    setSubscriptionLoading(false);
+    setSubscriptionPending(false);
+    setSubscriptionFeedback(null);
     setMode("login");
   }, []);
 
@@ -171,6 +192,31 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     void loadAvatarBatch(authState.user.email, 0, authState.user.avatar_url);
   }, [authState?.user, loadAvatarBatch, mode, open]);
 
+  const loadSubscriptionStatus = useCallback(async () => {
+    if (!authState?.user) {
+      return;
+    }
+    setSubscriptionLoading(true);
+    try {
+      const nextStatus = await readMyContentSubscription();
+      setSubscriptionStatus(nextStatus);
+    } catch (err) {
+      setSubscriptionFeedback({
+        kind: "error",
+        message: err instanceof Error ? err.message : "订阅列表加载失败",
+      });
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  }, [authState?.user]);
+
+  useEffect(() => {
+    if (!open || mode !== "profile" || !authState?.user) {
+      return;
+    }
+    void loadSubscriptionStatus();
+  }, [authState?.user, loadSubscriptionStatus, mode, open]);
+
   const handleEmailLogin = useCallback(async () => {
     setSubmitting(true);
     setError(null);
@@ -261,6 +307,27 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const handleUnsubscribe = useCallback(async () => {
+    if (!authState?.user) {
+      return;
+    }
+    setSubscriptionPending(true);
+    setSubscriptionFeedback(null);
+    try {
+      await unsubscribeMyContentSubscription();
+      const nextStatus = await readMyContentSubscription();
+      setSubscriptionStatus(nextStatus);
+      setSubscriptionFeedback({ kind: "success", message: "取消订阅成功。" });
+    } catch (err) {
+      setSubscriptionFeedback({
+        kind: "error",
+        message: err instanceof Error ? err.message : "取消订阅失败",
+      });
+    } finally {
+      setSubscriptionPending(false);
+    }
+  }, [authState?.user]);
+
   const logout = useCallback(async () => {
     await logoutSiteAuth();
     setAuthState((current) => ({
@@ -316,6 +383,60 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
           <span className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.84] px-3 py-1 text-[0.72rem] text-foreground/50">
             {authState?.user?.is_admin ? "管理员评论将固定使用站点身份" : "邮箱仅用于后台识别"}
           </span>
+        </div>
+      ) : null}
+
+      {mode === "profile" ? (
+        <div className="mt-4 rounded-[1.2rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-foreground">订阅列表</div>
+              <div className="mt-1 text-xs text-foreground/48">显示当前登录邮箱的订阅信息，可直接取消订阅。</div>
+            </div>
+            {subscriptionLoading ? <Loader2 className="h-4 w-4 animate-spin text-foreground/52" /> : null}
+          </div>
+
+          {subscriptionStatus?.subscribed ? (
+            <div className="mt-3 rounded-[1rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.92] p-3">
+              <div className="text-[0.7rem] uppercase tracking-[0.12em] text-foreground/42">订阅邮箱</div>
+              <div className="mt-1 break-all text-sm font-medium text-foreground">{subscriptionStatus.email}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {subscriptionStatus.content_types.map((contentType) => (
+                  <span
+                    key={contentType}
+                    className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] px-2.5 py-1 text-xs text-foreground/64"
+                  >
+                    {CONTENT_TYPE_LABELS[contentType] ?? contentType}
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleUnsubscribe()}
+                disabled={subscriptionPending}
+                className="mt-3 inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/8 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-500/14 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-300"
+              >
+                {subscriptionPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellOff className="h-3.5 w-3.5" />}
+                {subscriptionPending ? "取消中..." : "取消订阅"}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-[1rem] border border-dashed border-[rgb(var(--shiro-border-rgb)/0.2)] bg-background/[0.76] px-3 py-2 text-xs text-foreground/56">
+              当前没有活跃订阅。可在站点右上角的“订阅”按钮中添加。
+            </div>
+          )}
+
+          {subscriptionFeedback ? (
+            <div
+              className={`mt-3 rounded-[0.9rem] border px-3 py-2 text-xs ${
+                subscriptionFeedback.kind === "success"
+                  ? "border-emerald-500/18 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-rose-500/18 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+              }`}
+            >
+              {subscriptionFeedback.message}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -723,14 +723,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "default": "Asia/Shanghai",
               "title": "Tz"
             }
           }
@@ -1629,6 +1623,74 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/site/subscriptions/": {
+      "post": {
+        "tags": [
+          "site"
+        ],
+        "summary": "Subscribe To Content",
+        "operationId": "subscribe_to_content_api_v1_site_subscriptions__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentSubscriptionPublicCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionPublicRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/usage": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Agent Usage",
+        "description": "Capability discovery endpoint for external agents.",
+        "operationId": "agent_usage_api_agent_usage_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentUsageRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/admin/auth/login": {
@@ -6151,6 +6213,125 @@
         ]
       }
     },
+    "/api/v1/admin/subscriptions/config": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "获取内容订阅配置",
+        "operationId": "get_content_subscription_config_api_v1_admin_subscriptions_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionConfigAdminRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "更新内容订阅配置",
+        "operationId": "update_content_subscription_config_api_v1_admin_subscriptions_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentSubscriptionConfigAdminUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionConfigAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/subscriptions/config/test": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "测试内容订阅 SMTP 发信",
+        "operationId": "test_content_subscription_config_api_v1_admin_subscriptions_config_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentSubscriptionConfigAdminUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentSubscriptionTestResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/resume/basics/": {
       "get": {
         "tags": [
@@ -9564,6 +9745,584 @@
         ]
       }
     },
+    "/api/v1/admin/integrations/agent-usage": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "获取 Agent 使用说明",
+        "operationId": "get_agent_usage_api_v1_admin_integrations_agent_usage_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAgentUsageRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/runs": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Agent 运行记录",
+        "operationId": "get_runs_api_v1_admin_automation_runs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentRunRead"
+                  },
+                  "type": "array",
+                  "title": "Response Get Runs Api V1 Admin Automation Runs Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取单个 Agent 运行记录",
+        "operationId": "get_run_api_v1_admin_automation_runs__run_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/runs/{run_id}/steps": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取运行步骤",
+        "operationId": "get_run_steps_api_v1_admin_automation_runs__run_id__steps_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentRunStepRead"
+                  },
+                  "title": "Response Get Run Steps Api V1 Admin Automation Runs  Run Id  Steps Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/approvals": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取待审批项目",
+        "operationId": "get_approvals_api_v1_admin_automation_approvals_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentRunApprovalRead"
+                  },
+                  "type": "array",
+                  "title": "Response Get Approvals Api V1 Admin Automation Approvals Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/approvals/{approval_id}/decision": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "提交审批结果并恢复工作流",
+        "operationId": "post_approval_decision_api_v1_admin_automation_approvals__approval_id__decision_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecisionWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/webhooks": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Webhook 订阅",
+        "operationId": "get_webhooks_api_v1_admin_automation_webhooks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookSubscriptionRead"
+                  },
+                  "type": "array",
+                  "title": "Response Get Webhooks Api V1 Admin Automation Webhooks Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "创建 Webhook 订阅",
+        "operationId": "post_webhook_api_v1_admin_automation_webhooks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscriptionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/webhooks/{subscription_id}": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "更新 Webhook 订阅",
+        "operationId": "put_webhook_api_v1_admin_automation_webhooks__subscription_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Subscription Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSubscriptionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "删除 Webhook 订阅",
+        "operationId": "delete_webhook_api_v1_admin_automation_webhooks__subscription_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Subscription Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/deliveries": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Webhook 投递记录",
+        "operationId": "get_deliveries_api_v1_admin_automation_deliveries_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDeliveryRead"
+                  },
+                  "type": "array",
+                  "title": "Response Get Deliveries Api V1 Admin Automation Deliveries Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/deliveries/{delivery_id}/retry": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "重试 Webhook 投递",
+        "operationId": "post_delivery_retry_api_v1_admin_automation_deliveries__delivery_id__retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "delivery_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Delivery Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/dead-letters": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Webhook 死信列表",
+        "operationId": "get_dead_letters_api_v1_admin_automation_dead_letters_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDeadLetterRead"
+                  },
+                  "type": "array",
+                  "title": "Response Get Dead Letters Api V1 Admin Automation Dead Letters Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/dead-letters/{dead_letter_id}/replay": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "回放死信投递",
+        "operationId": "post_dead_letter_replay_api_v1_admin_automation_dead_letters__dead_letter_id__replay_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dead_letter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dead Letter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/content/tags": {
       "get": {
         "tags": [
@@ -10329,6 +11088,63 @@
         }
       }
     },
+    "/feeds/diary.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Diary Feed",
+        "operationId": "diary_feed_feeds_diary_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feeds/thoughts.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Thoughts Feed",
+        "operationId": "thoughts_feed_feeds_thoughts_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feeds/excerpts.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Excerpts Feed",
+        "operationId": "excerpts_feed_feeds_excerpts_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/rss.xml": {
       "get": {
         "tags": [
@@ -10405,6 +11221,63 @@
         }
       }
     },
+    "/api/v1/site/feeds/diary.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Diary Feed",
+        "operationId": "diary_feed_api_v1_site_feeds_diary_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/feeds/thoughts.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Thoughts Feed",
+        "operationId": "thoughts_feed_api_v1_site_feeds_thoughts_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/feeds/excerpts.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Excerpts Feed",
+        "operationId": "excerpts_feed_api_v1_site_feeds_excerpts_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site/rss.xml": {
       "get": {
         "tags": [
@@ -10462,7 +11335,7 @@
             "description": "Highest weekly contribution count"
           },
           "average_per_week": {
-            "type": "integer",
+            "type": "number",
             "title": "Average Per Week",
             "description": "Average contributions per week"
           }
@@ -10515,6 +11388,18 @@
           "label"
         ],
         "title": "ActivityHeatmapWeekRead"
+      },
+      "AdminAgentUsageRead": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/AgentUsageRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "title": "AdminAgentUsageRead"
       },
       "AdminEmailLoginRequest": {
         "properties": {
@@ -10622,6 +11507,598 @@
           "created_at"
         ],
         "title": "AdminUserRead"
+      },
+      "AgentRunApprovalRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "step_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Id"
+          },
+          "interrupt_id": {
+            "type": "string",
+            "title": "Interrupt Id"
+          },
+          "node_key": {
+            "type": "string",
+            "title": "Node Key"
+          },
+          "approval_type": {
+            "type": "string",
+            "title": "Approval Type"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "request_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Request Payload"
+          },
+          "response_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Response Payload"
+          },
+          "requested_by_type": {
+            "type": "string",
+            "title": "Requested By Type"
+          },
+          "resolved_by_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Type"
+          },
+          "resolved_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Id"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "interrupt_id",
+          "node_key",
+          "approval_type",
+          "status",
+          "requested_by_type",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AgentRunApprovalRead"
+      },
+      "AgentRunRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "workflow_key": {
+            "type": "string",
+            "title": "Workflow Key"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "trigger_kind": {
+            "type": "string",
+            "title": "Trigger Kind"
+          },
+          "trigger_event": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Event"
+          },
+          "target_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Type"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "latest_checkpoint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Checkpoint Id"
+          },
+          "checkpoint_ns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Ns"
+          },
+          "input_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Payload"
+          },
+          "context_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context Payload"
+          },
+          "result_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result Payload"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workflow_key",
+          "status",
+          "trigger_kind",
+          "thread_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AgentRunRead"
+      },
+      "AgentRunStepRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "title": "Sequence No"
+          },
+          "node_key": {
+            "type": "string",
+            "title": "Node Key"
+          },
+          "step_kind": {
+            "type": "string",
+            "title": "Step Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "narrative": {
+            "type": "string",
+            "title": "Narrative"
+          },
+          "input_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Payload"
+          },
+          "output_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Output Payload"
+          },
+          "error_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Error Payload"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "sequence_no",
+          "node_key",
+          "step_kind",
+          "status",
+          "narrative",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AgentRunStepRead"
+      },
+      "AgentSkillMapRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Skill map identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Skill map display name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What this skill map is for"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "description": "Skill map version"
+          },
+          "when": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "When",
+            "description": "Trigger conditions"
+          },
+          "where": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Where",
+            "description": "Target MCP endpoint metadata"
+          },
+          "docs_url": {
+            "type": "string",
+            "title": "Docs Url",
+            "description": "Usage docs URL the agent should read first"
+          },
+          "use_cases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Use Cases",
+            "description": "Suggested usage scenarios"
+          },
+          "workflow": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Workflow",
+            "description": "Workflow metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "version",
+          "docs_url"
+        ],
+        "title": "AgentSkillMapRead"
+      },
+      "AgentUsageCapabilityRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Capability name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "Capability kind: tool or resource"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable capability description"
+          },
+          "required_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Scopes",
+            "description": "Scopes required to access this capability"
+          },
+          "invocation": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Invocation",
+            "description": "How to invoke this capability"
+          },
+          "examples": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Examples",
+            "description": "Optional few-shot examples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "description"
+        ],
+        "title": "AgentUsageCapabilityRead"
+      },
+      "AgentUsageMcpRead": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint",
+            "description": "MCP endpoint URL"
+          },
+          "transport": {
+            "type": "string",
+            "title": "Transport",
+            "description": "MCP transport"
+          },
+          "required_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Scopes",
+            "description": "Scopes required to connect to MCP"
+          },
+          "available_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available Scopes",
+            "description": "Scopes available on the current API key"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsageCapabilityRead"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "Visible MCP tools"
+          },
+          "resources": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsageCapabilityRead"
+            },
+            "type": "array",
+            "title": "Resources",
+            "description": "Visible MCP resources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "transport"
+        ],
+        "title": "AgentUsageMcpRead"
+      },
+      "AgentUsageRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Usage document name"
+          },
+          "auth": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Auth",
+            "description": "Authentication instructions"
+          },
+          "endpoint_base": {
+            "type": "string",
+            "title": "Endpoint Base",
+            "description": "Base site URL"
+          },
+          "docs_url": {
+            "type": "string",
+            "title": "Docs Url",
+            "description": "Canonical usage document URL"
+          },
+          "recommended_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Scopes",
+            "description": "Suggested MCP-related scopes"
+          },
+          "mcp": {
+            "$ref": "#/components/schemas/AgentUsageMcpRead",
+            "description": "MCP capability summary"
+          },
+          "skill_maps": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSkillMapRead"
+            },
+            "type": "array",
+            "title": "Skill Maps",
+            "description": "Local agent skill maps"
+          },
+          "workflows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Workflows",
+            "description": "Workflow templates or notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "endpoint_base",
+          "docs_url",
+          "mcp"
+        ],
+        "title": "AgentUsageRead"
       },
       "ApiKeyAdminRead": {
         "properties": {
@@ -10746,6 +12223,28 @@
         },
         "type": "object",
         "title": "ApiKeyUpdate"
+      },
+      "ApprovalDecisionWrite": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "default": "approve"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "title": "ApprovalDecisionWrite"
       },
       "AssetAdminRead": {
         "properties": {
@@ -13074,6 +14573,390 @@
           "updated_at"
         ],
         "title": "ContentEntryRead"
+      },
+      "ContentSubscriptionConfigAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Subscription config id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether public subscription is enabled"
+          },
+          "smtp_auth_mode": {
+            "type": "string",
+            "enum": [
+              "password",
+              "microsoft_oauth2"
+            ],
+            "title": "Smtp Auth Mode",
+            "description": "SMTP authentication mode"
+          },
+          "smtp_host": {
+            "type": "string",
+            "title": "Smtp Host",
+            "description": "SMTP host"
+          },
+          "smtp_port": {
+            "type": "integer",
+            "title": "Smtp Port",
+            "description": "SMTP port"
+          },
+          "smtp_username": {
+            "type": "string",
+            "title": "Smtp Username",
+            "description": "SMTP username"
+          },
+          "smtp_password": {
+            "type": "string",
+            "title": "Smtp Password",
+            "description": "SMTP password"
+          },
+          "smtp_oauth_tenant": {
+            "type": "string",
+            "title": "Smtp Oauth Tenant",
+            "description": "Microsoft OAuth tenant identifier"
+          },
+          "smtp_oauth_client_id": {
+            "type": "string",
+            "title": "Smtp Oauth Client Id",
+            "description": "Microsoft OAuth client id"
+          },
+          "smtp_oauth_client_secret": {
+            "type": "string",
+            "title": "Smtp Oauth Client Secret",
+            "description": "Microsoft OAuth client secret"
+          },
+          "smtp_oauth_refresh_token": {
+            "type": "string",
+            "title": "Smtp Oauth Refresh Token",
+            "description": "Microsoft OAuth refresh token"
+          },
+          "smtp_from_email": {
+            "type": "string",
+            "title": "Smtp From Email",
+            "description": "SMTP sender email"
+          },
+          "smtp_from_name": {
+            "type": "string",
+            "title": "Smtp From Name",
+            "description": "SMTP sender display name"
+          },
+          "smtp_reply_to": {
+            "type": "string",
+            "title": "Smtp Reply To",
+            "description": "SMTP reply-to email"
+          },
+          "smtp_use_tls": {
+            "type": "boolean",
+            "title": "Smtp Use Tls",
+            "description": "Whether STARTTLS is enabled"
+          },
+          "smtp_use_ssl": {
+            "type": "boolean",
+            "title": "Smtp Use Ssl",
+            "description": "Whether implicit SSL is enabled"
+          },
+          "subscriber_count": {
+            "type": "integer",
+            "title": "Subscriber Count",
+            "description": "Number of active subscribers",
+            "default": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "enabled",
+          "smtp_auth_mode",
+          "smtp_host",
+          "smtp_port",
+          "smtp_username",
+          "smtp_password",
+          "smtp_oauth_tenant",
+          "smtp_oauth_client_id",
+          "smtp_oauth_client_secret",
+          "smtp_oauth_refresh_token",
+          "smtp_from_email",
+          "smtp_from_name",
+          "smtp_reply_to",
+          "smtp_use_tls",
+          "smtp_use_ssl",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ContentSubscriptionConfigAdminRead"
+      },
+      "ContentSubscriptionConfigAdminUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled",
+            "description": "Whether public subscription is enabled"
+          },
+          "smtp_auth_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "password",
+                  "microsoft_oauth2"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Auth Mode",
+            "description": "SMTP authentication mode"
+          },
+          "smtp_host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Host",
+            "description": "SMTP host"
+          },
+          "smtp_port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Port",
+            "description": "SMTP port"
+          },
+          "smtp_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Username",
+            "description": "SMTP username"
+          },
+          "smtp_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Password",
+            "description": "SMTP password"
+          },
+          "smtp_oauth_tenant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Oauth Tenant",
+            "description": "Microsoft OAuth tenant identifier"
+          },
+          "smtp_oauth_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Oauth Client Id",
+            "description": "Microsoft OAuth client id"
+          },
+          "smtp_oauth_client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Oauth Client Secret",
+            "description": "Microsoft OAuth client secret"
+          },
+          "smtp_oauth_refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Oauth Refresh Token",
+            "description": "Microsoft OAuth refresh token"
+          },
+          "smtp_from_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp From Email",
+            "description": "SMTP sender email"
+          },
+          "smtp_from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp From Name",
+            "description": "SMTP sender display name"
+          },
+          "smtp_reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Reply To",
+            "description": "SMTP reply-to email"
+          },
+          "smtp_use_tls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Use Tls",
+            "description": "Whether STARTTLS is enabled"
+          },
+          "smtp_use_ssl": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Use Ssl",
+            "description": "Whether implicit SSL is enabled"
+          }
+        },
+        "type": "object",
+        "title": "ContentSubscriptionConfigAdminUpdate"
+      },
+      "ContentSubscriptionPublicCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Subscriber email address"
+          },
+          "content_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Content Types",
+            "description": "Content types to subscribe to"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "content_types"
+        ],
+        "title": "ContentSubscriptionPublicCreate"
+      },
+      "ContentSubscriptionPublicRead": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Subscriber email address"
+          },
+          "content_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Content Types",
+            "description": "Subscribed content types"
+          },
+          "subscribed": {
+            "type": "boolean",
+            "title": "Subscribed",
+            "description": "Whether the subscription is active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "content_types"
+        ],
+        "title": "ContentSubscriptionPublicRead"
+      },
+      "ContentSubscriptionTestResult": {
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "title": "Recipient",
+            "description": "Recipient email used for the test delivery"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipient"
+        ],
+        "title": "ContentSubscriptionTestResult"
       },
       "ContentUpdate": {
         "properties": {
@@ -19749,6 +21632,479 @@
           "duration_ms"
         ],
         "title": "VisitorRecordRead"
+      },
+      "WebhookDeadLetterRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "delivery_id": {
+            "type": "string",
+            "title": "Delivery Id"
+          },
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "last_response_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Response Status"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "dead_lettered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Dead Lettered At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "delivery_id",
+          "subscription_id",
+          "event_type",
+          "event_id",
+          "reason",
+          "dead_lettered_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WebhookDeadLetterRead"
+      },
+      "WebhookDeliveryRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "headers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Headers"
+          },
+          "attempt_count": {
+            "type": "integer",
+            "title": "Attempt Count"
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Attempt At"
+          },
+          "last_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Attempt At"
+          },
+          "last_response_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Response Status"
+          },
+          "last_response_body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Response Body"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "delivered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivered At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "subscription_id",
+          "event_type",
+          "event_id",
+          "status",
+          "target_url",
+          "attempt_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WebhookDeliveryRead"
+      },
+      "WebhookSubscriptionCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "event_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Event Types"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "title": "Timeout Seconds",
+            "default": 10
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts",
+            "default": 6
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "active"
+          },
+          "headers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Headers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "target_url"
+        ],
+        "title": "WebhookSubscriptionCreate"
+      },
+      "WebhookSubscriptionRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "event_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Event Types"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "title": "Timeout Seconds"
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts"
+          },
+          "backoff_policy": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Backoff Policy"
+          },
+          "headers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Headers"
+          },
+          "last_delivery_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Delivery At"
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "target_url",
+          "timeout_seconds",
+          "max_attempts",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WebhookSubscriptionRead"
+      },
+      "WebhookSubscriptionUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "target_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Url"
+          },
+          "event_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Types"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Seconds"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "headers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headers"
+          }
+        },
+        "type": "object",
+        "title": "WebhookSubscriptionUpdate"
       }
     },
     "securitySchemes": {

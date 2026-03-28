@@ -1,21 +1,21 @@
-import { useLocation, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Home, Sparkles } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import { usePageConfig } from "@/contexts/runtime-config";
 
 const NotFound = () => {
-  const location = useLocation();
   const config = (usePageConfig().notFound as Record<string, unknown> | undefined) ?? {};
-  const badgeLabel = String(config.badgeLabel ?? "Shell mismatch");
+  const badgeLabel = "404";
   const homeLabel = String(config.homeLabel ?? "返回首页");
   const backLabel = String(config.backLabel ?? "返回上页");
+  const title = "这里没有什么都没有找到唉~";
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 text-foreground">
       <PageMeta
-        title={String(config.metaTitle ?? config.title ?? "")}
-        description={String(config.metaDescription ?? config.description ?? "")}
+        title={title}
+        description=""
       />
       <div
         className="absolute inset-0 opacity-70"
@@ -41,21 +41,13 @@ const NotFound = () => {
 
         <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-foreground/25">404</p>
-            <h1 className="mt-2 text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
-              {String(config.title ?? "")}
+            <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
+              {title}
             </h1>
           </div>
-          <p className="max-w-sm text-sm leading-7 text-foreground/45">
-            你访问的路径{" "}
-            <span className="rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 font-mono text-[0.8em] text-foreground/70">
-              {location.pathname}
-            </span>{" "}
-            {String(config.description ?? "")}
-          </p>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             to="/"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform active:scale-[0.98]"

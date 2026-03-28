@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
@@ -15,6 +16,10 @@ CONTENT_MODELS: dict[str, type] = {
     "thoughts": ThoughtEntry,
     "excerpts": ExcerptEntry,
 }
+
+
+def _normalize_timestamp(value: datetime) -> datetime:
+    return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 def find_content_events(session: Session) -> list[tuple[datetime, str, str, str, str]]:
@@ -65,25 +70,32 @@ def batch_resolve_titles(session: Session, pairs: list[tuple[str, str]]) -> dict
     return result
 
 
-def count_daily_content(session: Session) -> dict[date, int]:
-    """Aggregate content publish counts by date using SQL GROUP BY."""
+def count_daily_content(session: Session, *, tz: ZoneInfo) -> dict[date, int]:
+    """Aggregate public content publish counts by day in the requested timezone."""
     daily: dict[date, int] = defaultdict(int)
-    for model in [PostEntry, DiaryEntry, ExcerptEntry]:
-        rows = session.execute(
-            select(
-                func.date(model.published_at),
-                func.count(model.id),
-            )
-            .where(
+    for model in [PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry]:
+        published_at_values = session.scalars(
+            select(model.published_at).where(
                 model.status == "published",
                 model.visibility == "public",
                 model.published_at.is_not(None),
             )
-            .group_by(func.date(model.published_at))
         ).all()
-        for date_str, count in rows:
-            if date_str:
-                daily[date.fromisoformat(str(date_str))] += count
+        for published_at in published_at_values:
+            if published_at is None:
+                continue
+            daily[_normalize_timestamp(published_at).astimezone(tz).date()] += 1
+    return daily
+
+
+def count_daily_likes(session: Session, *, tz: ZoneInfo) -> dict[date, int]:
+    """Aggregate like reactions by day in the requested timezone."""
+    daily: dict[date, int] = defaultdict(int)
+    created_at_values = session.scalars(
+        select(Reaction.created_at).where(Reaction.reaction_type == "like"),
+    ).all()
+    for created_at in created_at_values:
+        daily[_normalize_timestamp(created_at).astimezone(tz).date()] += 1
     return daily
 
 

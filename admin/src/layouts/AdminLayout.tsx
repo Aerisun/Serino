@@ -79,6 +79,17 @@ const navGroups = [
       { to: "/integrations/api-keys", icon: Key, labelKey: "nav.apiKeys" },
       { to: "/integrations/feeds", icon: Rss, labelKey: "nav.feeds" },
       { to: "/integrations/mcp", icon: Globe, labelKey: "nav.mcp" },
+      { to: "/integrations/agent-usage", icon: ClipboardList, labelKey: "nav.agentUsage" },
+    ],
+  },
+  {
+    labelKey: "nav.automation",
+    items: [
+      { to: "/automation/runs", icon: ClipboardList, labelKey: "nav.agentRuns" },
+      { to: "/automation/approvals", icon: Shield, labelKey: "nav.approvals" },
+      { to: "/automation/webhooks", icon: Globe, labelKey: "nav.webhooks" },
+      { to: "/automation/deliveries", icon: Rss, labelKey: "nav.deliveries" },
+      { to: "/automation/dead-letters", icon: ClipboardList, labelKey: "nav.deadLetters" },
     ],
   },
   {

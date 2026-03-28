@@ -3,6 +3,7 @@
 Revision ID: 0007_add_pin_columns
 Revises: 0006_add_community_config_comment_settings
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

@@ -18,6 +18,7 @@ export default defineConfig({
           "admin-assets",
           "admin-system",
           "admin-integrations",
+          "admin-automation",
           "admin-content-meta",
           "admin-import-export",
           "admin-visitors",

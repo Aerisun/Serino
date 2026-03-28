@@ -220,12 +220,7 @@ def _resolve_waline_server_url(session: Session) -> str:
     if raw_server_url.startswith(("http://", "https://")):
         return raw_server_url.rstrip("/")
 
-    runtime = site_config_repo.find_runtime_site_settings(session)
-    site_url = (
-        (runtime.public_site_url if runtime and runtime.public_site_url else get_settings().site_url)
-        .strip()
-        .rstrip("/")
-    )
+    site_url = get_settings().site_url.strip().rstrip("/")
     return urljoin(f"{site_url}/", raw_server_url.lstrip("/")).rstrip("/")
 
 
@@ -587,6 +582,8 @@ def create_public_guestbook_entry(
             requested_avatar_key=getattr(payload, "avatar_key", None),
         )
 
+    from aerisun.domain.automation.events import emit_guestbook_pending
+
     entry = create_waline_record(
         comment=payload.body.strip(),
         nick=author_name,
@@ -596,6 +593,12 @@ def create_public_guestbook_entry(
         url=build_comment_path("guestbook", "guestbook"),
         avatar_key=avatar_key,
         avatar_url=avatar_url,
+    )
+    emit_guestbook_pending(
+        session,
+        entry_id=str(entry.id),
+        author_name=entry.nick or "访客",
+        body_preview=(entry.comment or "")[:240],
     )
     return GuestbookCreateResponse(
         item=GuestbookEntryRead(
@@ -724,6 +727,8 @@ def create_public_comment(
         if parent is None or parent.url != url:
             raise ResourceNotFound(f"comment parent '{payload.parent_id}' was not found")
 
+    from aerisun.domain.automation.events import emit_comment_pending
+
     item = create_waline_record(
         comment=payload.body.strip(),
         nick=author_name,
@@ -734,6 +739,14 @@ def create_public_comment(
         parent_id=parent_id,
         avatar_key=avatar_key,
         avatar_url=avatar_url,
+    )
+    emit_comment_pending(
+        session,
+        comment_id=str(item.id),
+        content_type=content_type,
+        content_slug=content_slug,
+        author_name=item.nick or "访客",
+        body_preview=(item.comment or "")[:240],
     )
     return CommentCreateResponse(
         item=CommentRead(
@@ -1004,6 +1017,7 @@ def list_admin_guestbook(
 
 def moderate_comment(session: Session, comment_id: int, action: str, reason: str | None = None):
     """Moderate a comment. Returns CommentAdminRead or None for delete. Raises LookupError/ValueError."""
+    from aerisun.domain.automation.events import emit_comment_moderated
     from aerisun.domain.ops.models import ModerationRecord
     from aerisun.domain.waline.service import moderate_waline_record
 
@@ -1023,6 +1037,7 @@ def moderate_comment(session: Session, comment_id: int, action: str, reason: str
     )
     session.add(record)
     session.commit()
+    emit_comment_moderated(session, comment_id=str(comment_id), action=action, reason=reason)
 
     if action == "delete":
         return None
@@ -1031,6 +1046,7 @@ def moderate_comment(session: Session, comment_id: int, action: str, reason: str
 
 def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reason: str | None = None):
     """Moderate a guestbook entry. Returns GuestbookAdminRead or None for delete. Raises LookupError/ValueError."""
+    from aerisun.domain.automation.events import emit_guestbook_moderated
     from aerisun.domain.ops.models import ModerationRecord
     from aerisun.domain.waline.service import moderate_waline_record
 
@@ -1050,6 +1066,7 @@ def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reaso
     )
     session.add(record)
     session.commit()
+    emit_guestbook_moderated(session, entry_id=str(entry_id), action=action, reason=reason)
 
     if action == "delete":
         return None

@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,22 +12,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # own .store/ directory instead of sharing the main branch's.
 BACKEND_ROOT = Path(__file__).absolute().parents[3]
 PROJECT_ROOT = BACKEND_ROOT.parent
-
-
-@dataclass(frozen=True)
-class ResolvedSecret:
-    key: str
-    filename: str
-    path: Path
-    value: str
-    source: Literal["file", "env", "missing"]
-
-    @property
-    def configured(self) -> bool:
-        return bool(self.value)
-
-    def matches_any(self, *values: str) -> bool:
-        return self.value in {item for item in values if item}
 
 
 def _resolve_env_files() -> tuple[Path, ...]:
@@ -80,6 +62,7 @@ class Settings(BaseSettings):
     secrets_dir: Path = PROJECT_ROOT / ".store" / "secrets"
     db_path: Path = PROJECT_ROOT / ".store" / "aerisun.db"
     waline_db_path: Path = PROJECT_ROOT / ".store" / "waline.db"
+    workflow_db_path: Path = PROJECT_ROOT / ".store" / "langgraph.db"
     api_base_path: str = "/api"
     admin_base_path: str = "/admin/"
     waline_base_path: str = "/waline"
@@ -97,11 +80,6 @@ class Settings(BaseSettings):
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True
     cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())
-
-    # Emergency CORS escape hatch (non-development only).
-    # Format: JSON array string, e.g. ["https://example.com", "https://admin.example.com"]
-    production_cors_origins_override: list[str] | None = None
-
     session_ttl_hours: int = 24
     public_session_ttl_hours: int = 24 * 30
     public_session_cookie_name: str = "aerisun_site_session"
@@ -126,11 +104,28 @@ class Settings(BaseSettings):
         "Mozilla/5.0 (compatible; Aerisun/1.0; FriendCircle RSS Reader; +https://github.com/Aerisun)"
     )
 
+    # Content subscriptions / newsletter
+    subscription_dispatch_interval_minutes: int = 15
+    subscription_smtp_auth_mode: str = "password"
+    subscription_smtp_host: str = ""
+    subscription_smtp_port: int = 587
+    subscription_smtp_username: str = ""
+    subscription_smtp_password: str = ""
+    subscription_smtp_oauth_tenant: str = "common"
+    subscription_smtp_oauth_client_id: str = ""
+    subscription_smtp_oauth_client_secret: str = ""
+    subscription_smtp_oauth_refresh_token: str = ""
+    subscription_smtp_from_email: str = ""
+    subscription_smtp_from_name: str = ""
+    subscription_smtp_reply_to: str = ""
+    subscription_smtp_use_tls: bool = True
+    subscription_smtp_use_ssl: bool = False
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "auto"
 
-    # Sentry (migration fallback; prefer .store/secrets/sentry_dsn.txt)
+    # Sentry
     sentry_dsn: str = ""
     sentry_traces_sample_rate: float = 0.1
 
@@ -139,89 +134,6 @@ class Settings(BaseSettings):
         return f"sqlite+pysqlite:///{self.db_path.expanduser().resolve()}"
 
     _LOCALHOST_RE = re.compile(r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$")
-
-    def _normalize_secret_value(self, value: str | None) -> str:
-        return (value or "").strip()
-
-    def _secret_path(self, filename: str) -> Path:
-        return self.secrets_dir.expanduser() / filename
-
-    def resolve_secret(
-        self,
-        *,
-        key: str,
-        filename: str,
-        fallback_value: str = "",
-        env_name: str | None = None,
-    ) -> ResolvedSecret:
-        path = self._secret_path(filename)
-        file_value = ""
-        try:
-            if path.exists() and path.is_file():
-                file_value = path.read_text(encoding="utf-8").strip()
-        except OSError:
-            file_value = ""
-        if file_value:
-            return ResolvedSecret(key=key, filename=filename, path=path, value=file_value, source="file")
-
-        env_value = self._normalize_secret_value(os.environ.get(env_name)) if env_name else ""
-        if env_value:
-            return ResolvedSecret(key=key, filename=filename, path=path, value=env_value, source="env")
-
-        fallback = self._normalize_secret_value(fallback_value)
-        if fallback:
-            return ResolvedSecret(key=key, filename=filename, path=path, value=fallback, source="env")
-
-        return ResolvedSecret(key=key, filename=filename, path=path, value="", source="missing")
-
-    def oauth_google_client_id_secret(self) -> ResolvedSecret:
-        return self.resolve_secret(
-            key="oauth_google_client_id",
-            filename="oauth_google_client_id.txt",
-            fallback_value=self.oauth_google_client_id,
-        )
-
-    def oauth_google_client_secret_secret(self) -> ResolvedSecret:
-        return self.resolve_secret(
-            key="oauth_google_client_secret",
-            filename="oauth_google_client_secret.txt",
-            fallback_value=self.oauth_google_client_secret,
-        )
-
-    def oauth_github_client_id_secret(self) -> ResolvedSecret:
-        return self.resolve_secret(
-            key="oauth_github_client_id",
-            filename="oauth_github_client_id.txt",
-            fallback_value=self.oauth_github_client_id,
-        )
-
-    def oauth_github_client_secret_secret(self) -> ResolvedSecret:
-        return self.resolve_secret(
-            key="oauth_github_client_secret",
-            filename="oauth_github_client_secret.txt",
-            fallback_value=self.oauth_github_client_secret,
-        )
-
-    def sentry_dsn_secret(self) -> ResolvedSecret:
-        return self.resolve_secret(
-            key="sentry_dsn",
-            filename="sentry_dsn.txt",
-            fallback_value=self.sentry_dsn,
-        )
-
-    def waline_jwt_secret(self) -> ResolvedSecret:
-        return self.resolve_secret(
-            key="waline_jwt_token",
-            filename="waline_jwt_token.txt",
-        )
-
-    def oauth_provider_secrets(self, provider: str) -> tuple[ResolvedSecret, ResolvedSecret]:
-        normalized = provider.strip().lower()
-        if normalized == "google":
-            return self.oauth_google_client_id_secret(), self.oauth_google_client_secret_secret()
-        if normalized == "github":
-            return self.oauth_github_client_id_secret(), self.oauth_github_client_secret_secret()
-        raise ValueError(f"Unsupported oauth provider: {provider}")
 
     def has_only_localhost_origins(self) -> bool:
         return all(self._LOCALHOST_RE.match(o) for o in self.cors_origins)
@@ -232,6 +144,7 @@ class Settings(BaseSettings):
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
+        self.workflow_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
 
 
 @lru_cache(maxsize=1)

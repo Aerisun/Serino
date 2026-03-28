@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from pathlib import Path
 
-from aerisun.core.db import run_database_migrations
+from alembic import command
+from alembic.config import Config
+from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _get_columns(path: str, table: str) -> set[str]:
@@ -23,6 +28,193 @@ def _get_row(path: str, table: str) -> sqlite3.Row | None:
         return connection.execute(f"SELECT * FROM {table} LIMIT 1").fetchone()
     finally:
         connection.close()
+
+
+def _get_tables(path: str) -> set[str]:
+    connection = sqlite3.connect(path)
+    try:
+        rows = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        return {str(row[0]) for row in rows}
+    finally:
+        connection.close()
+
+
+def _configure_test_database(monkeypatch, tmp_path, db_path) -> None:
+    dispose_engine()
+    monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
+    monkeypatch.setenv("AERISUN_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("AERISUN_STORE_DIR", str(tmp_path))
+    monkeypatch.setenv("AERISUN_MEDIA_DIR", str(tmp_path / "media"))
+    monkeypatch.setenv("AERISUN_SECRETS_DIR", str(tmp_path / "secrets"))
+    get_settings.cache_clear()
+
+
+def _upgrade_to_revision(revision: str) -> None:
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
+    config.set_main_option("sqlalchemy.url", get_settings().database_url)
+    command.upgrade(config, revision)
+
+
+def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
+    site_profile_columns = _get_columns(str(db_path), "site_profile")
+    posts_columns = _get_columns(str(db_path), "posts")
+    diary_columns = _get_columns(str(db_path), "diary_entries")
+    thoughts_columns = _get_columns(str(db_path), "thoughts")
+    excerpts_columns = _get_columns(str(db_path), "excerpts")
+    nav_item_columns = _get_columns(str(db_path), "nav_items")
+    community_config_columns = _get_columns(str(db_path), "community_config")
+    assets_columns = _get_columns(str(db_path), "assets")
+    traffic_snapshot_columns = _get_columns(str(db_path), "traffic_daily_snapshots")
+    agent_run_columns = _get_columns(str(db_path), "agent_runs")
+    agent_run_step_columns = _get_columns(str(db_path), "agent_run_steps")
+    agent_run_approval_columns = _get_columns(str(db_path), "agent_run_approvals")
+    webhook_subscription_columns = _get_columns(str(db_path), "webhook_subscriptions")
+    webhook_delivery_columns = _get_columns(str(db_path), "webhook_deliveries")
+    webhook_dead_letter_columns = _get_columns(str(db_path), "webhook_dead_letters")
+
+    assert "hero_video_url" in site_profile_columns
+    assert "site_icon_url" in site_profile_columns
+    assert {"category", "view_count"} <= posts_columns
+    assert {"mood", "weather", "poem", "view_count"} <= diary_columns
+    assert {"mood", "view_count"} <= thoughts_columns
+    assert {"author_name", "source", "view_count"} <= excerpts_columns
+    assert {
+        "label",
+        "href",
+        "trigger",
+        "parent_id",
+        "site_profile_id",
+    } <= nav_item_columns
+    assert {
+        "oauth_providers",
+        "anonymous_enabled",
+        "moderation_mode",
+        "default_sorting",
+        "page_size",
+        "avatar_presets",
+        "guest_avatar_mode",
+        "draft_enabled",
+    } <= community_config_columns
+    assert {"resource_key", "visibility", "category", "note", "scope"} <= assets_columns
+    assert {
+        "snapshot_date",
+        "url",
+        "cumulative_views",
+        "daily_views",
+        "cumulative_reactions",
+        "created_at",
+        "updated_at",
+    } <= traffic_snapshot_columns
+
+    assert {"workflow_key", "status", "thread_id", "created_at"} <= agent_run_columns
+    assert {"run_id", "sequence_no", "node_key", "narrative"} <= agent_run_step_columns
+    assert {"run_id", "interrupt_id", "approval_type", "status"} <= agent_run_approval_columns
+    assert {"name", "status", "target_url", "event_types"} <= webhook_subscription_columns
+    assert {"subscription_id", "event_type", "event_id", "status", "attempt_count"} <= webhook_delivery_columns
+    assert {"delivery_id", "reason", "event_type", "dead_lettered_at"} <= webhook_dead_letter_columns
+
+    if expect_data_updates:
+        community_config_row = _get_row(str(db_path), "community_config")
+        asset_row = _get_row(str(db_path), "assets")
+
+        assert community_config_row is not None
+        assert json.loads(community_config_row["oauth_providers"]) == ["github", "google"]
+        assert community_config_row["anonymous_enabled"] in (1, True)
+        assert community_config_row["moderation_mode"] == "all_pending"
+        assert community_config_row["default_sorting"] == "latest"
+        assert community_config_row["page_size"] == 20
+        assert json.loads(community_config_row["avatar_presets"])[0]["key"] == "shiro"
+        assert community_config_row["guest_avatar_mode"] == "preset"
+        assert community_config_row["draft_enabled"] in (1, True)
+
+        assert asset_row is not None
+        assert asset_row["resource_key"] == "internal/assets/general/asset1.png"
+        assert asset_row["visibility"] == "internal"
+        assert asset_row["category"] == "general"
+        assert asset_row["scope"] == "user"
+        assert asset_row["note"] is None
+
+
+def test_0001_initial_is_static_historical_schema(tmp_path, monkeypatch) -> None:
+    db_path = tmp_path / "initial.db"
+
+    _configure_test_database(monkeypatch, tmp_path, db_path)
+    _upgrade_to_revision("0001_initial")
+
+    tables = _get_tables(str(db_path))
+    site_profile_columns = _get_columns(str(db_path), "site_profile")
+    posts_columns = _get_columns(str(db_path), "posts")
+    assets_columns = _get_columns(str(db_path), "assets")
+    community_config_columns = _get_columns(str(db_path), "community_config")
+
+    assert {
+        "site_profile",
+        "social_links",
+        "poems",
+        "page_copy",
+        "page_display_options",
+        "community_config",
+        "resume_basics",
+        "resume_skills",
+        "resume_experiences",
+        "posts",
+        "diary_entries",
+        "thoughts",
+        "excerpts",
+        "guestbook_entries",
+        "comments",
+        "reactions",
+        "friends",
+        "friend_feed_sources",
+        "friend_feed_items",
+        "assets",
+        "admin_users",
+        "admin_sessions",
+        "api_keys",
+        "audit_logs",
+        "moderation_records",
+        "backup_snapshots",
+        "restore_points",
+        "sync_runs",
+    } <= tables
+
+    assert {"nav_items", "content_categories", "traffic_daily_snapshots", "visit_records"} & tables == set()
+    assert {"site_users", "site_auth_config", "site_admin_identities"} & tables == set()
+    assert {"agent_runs", "agent_run_steps", "agent_run_approvals"} & tables == set()
+    assert {"webhook_subscriptions", "webhook_deliveries", "webhook_dead_letters"} & tables == set()
+
+    assert site_profile_columns == {
+        "id",
+        "name",
+        "title",
+        "bio",
+        "role",
+        "footer_text",
+        "created_at",
+        "updated_at",
+    }
+    assert {"category", "view_count", "is_pinned", "pin_order"} & posts_columns == set()
+    assert {"resource_key", "visibility", "category", "note", "scope"} & assets_columns == set()
+    assert {
+        "oauth_providers",
+        "anonymous_enabled",
+        "moderation_mode",
+        "default_sorting",
+        "page_size",
+        "avatar_presets",
+        "guest_avatar_mode",
+        "draft_enabled",
+        "image_max_bytes",
+    } & community_config_columns == set()
+
+
+def test_run_database_migrations_upgrades_empty_database(tmp_path, monkeypatch) -> None:
+    db_path = tmp_path / "fresh.db"
+
+    _configure_test_database(monkeypatch, tmp_path, db_path)
+    run_database_migrations()
+    _assert_head_schema(db_path, expect_data_updates=False)
 
 
 def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -> None:
@@ -244,76 +436,6 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
     finally:
         connection.close()
 
-    monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
-    monkeypatch.setenv("AERISUN_DATA_DIR", str(tmp_path))
-    monkeypatch.setenv("AERISUN_STORE_DIR", str(tmp_path))
-    monkeypatch.setenv("AERISUN_MEDIA_DIR", str(tmp_path / "media"))
-    monkeypatch.setenv("AERISUN_SECRETS_DIR", str(tmp_path / "secrets"))
-
-    get_settings.cache_clear()
-
+    _configure_test_database(monkeypatch, tmp_path, db_path)
     run_database_migrations()
-
-    site_profile_columns = _get_columns(str(db_path), "site_profile")
-    posts_columns = _get_columns(str(db_path), "posts")
-    diary_columns = _get_columns(str(db_path), "diary_entries")
-    thoughts_columns = _get_columns(str(db_path), "thoughts")
-    excerpts_columns = _get_columns(str(db_path), "excerpts")
-    nav_item_columns = _get_columns(str(db_path), "nav_items")
-    community_config_columns = _get_columns(str(db_path), "community_config")
-    assets_columns = _get_columns(str(db_path), "assets")
-    traffic_snapshot_columns = _get_columns(str(db_path), "traffic_daily_snapshots")
-
-    assert "hero_video_url" in site_profile_columns
-    assert "site_icon_url" in site_profile_columns
-    assert {"category", "view_count"} <= posts_columns
-    assert {"mood", "weather", "poem", "view_count"} <= diary_columns
-    assert {"mood", "view_count"} <= thoughts_columns
-    assert {"author_name", "source", "view_count"} <= excerpts_columns
-    assert {
-        "label",
-        "href",
-        "trigger",
-        "parent_id",
-        "site_profile_id",
-    } <= nav_item_columns
-    assert {
-        "oauth_providers",
-        "anonymous_enabled",
-        "moderation_mode",
-        "default_sorting",
-        "page_size",
-        "avatar_presets",
-        "guest_avatar_mode",
-        "draft_enabled",
-    } <= community_config_columns
-    assert {"resource_key", "visibility", "category", "note", "scope"} <= assets_columns
-    assert {
-        "snapshot_date",
-        "url",
-        "cumulative_views",
-        "daily_views",
-        "cumulative_reactions",
-        "created_at",
-        "updated_at",
-    } <= traffic_snapshot_columns
-
-    community_config_row = _get_row(str(db_path), "community_config")
-    asset_row = _get_row(str(db_path), "assets")
-
-    assert community_config_row is not None
-    assert json.loads(community_config_row["oauth_providers"]) == ["github", "google"]
-    assert community_config_row["anonymous_enabled"] in (1, True)
-    assert community_config_row["moderation_mode"] == "all_pending"
-    assert community_config_row["default_sorting"] == "latest"
-    assert community_config_row["page_size"] == 20
-    assert json.loads(community_config_row["avatar_presets"])[0]["key"] == "shiro"
-    assert community_config_row["guest_avatar_mode"] == "preset"
-    assert community_config_row["draft_enabled"] in (1, True)
-
-    assert asset_row is not None
-    assert asset_row["resource_key"] == "internal/assets/general/asset1.png"
-    assert asset_row["visibility"] == "internal"
-    assert asset_row["category"] == "general"
-    assert asset_row["scope"] == "user"
-    assert asset_row["note"] is None
+    _assert_head_schema(db_path, expect_data_updates=True)

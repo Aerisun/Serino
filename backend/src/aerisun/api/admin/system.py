@@ -6,6 +6,10 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.core.settings import get_settings
+from aerisun.domain.agent.schemas import McpAdminConfigRead, McpAdminConfigUpdate
+from aerisun.domain.agent.service import build_agent_usage, build_mcp_admin_config, save_mcp_admin_config
+from aerisun.domain.content.feed_service import list_feed_definitions
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
 from aerisun.domain.iam.service import (
@@ -48,10 +52,9 @@ from aerisun.domain.ops.service import (
 from aerisun.domain.ops.service import (
     restore_backup as _restore_backup,
 )
-from aerisun.domain.site_config.service import _runtime_site_settings_read
 
 from .deps import get_current_admin
-from .integrations_schemas import FeedLinkCollectionRead, FeedLinkRead
+from .integrations_schemas import AdminAgentUsageRead, FeedLinkCollectionRead, FeedLinkRead
 from .schemas import PaginatedResponse
 
 router = APIRouter(prefix="/system", tags=["admin-system"])
@@ -99,16 +102,49 @@ def delete_api_key(
 @integrations_router.get("/feeds", response_model=FeedLinkCollectionRead, summary="获取 Feed 列表")
 def list_feeds(
     _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
 ) -> FeedLinkCollectionRead:
-    runtime = _runtime_site_settings_read(session)
-    site_url = runtime.public_site_url.rstrip("/")
+    site_url = (get_settings().site_url or "https://example.com").rstrip("/")
     return FeedLinkCollectionRead(
         items=[
-            FeedLinkRead(key="posts", title="Posts RSS", url=f"{site_url}/feeds/posts.xml"),
-            FeedLinkRead(key="rss", title="RSS Alias", url=f"{site_url}/rss.xml"),
+            FeedLinkRead(
+                key=definition.key,
+                title=definition.title,
+                url=f"{site_url}{definition.feed_path}",
+            )
+            for definition in list_feed_definitions()
         ]
     )
+
+
+@integrations_router.get("/agent-usage", response_model=AdminAgentUsageRead, summary="获取 Agent 使用说明")
+def get_agent_usage(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> AdminAgentUsageRead:
+    settings = get_settings()
+    usage = build_agent_usage(session, settings.site_url, None)
+    return AdminAgentUsageRead(item=usage)
+
+
+@integrations_router.get("/mcp-config", response_model=McpAdminConfigRead, summary="获取 MCP 配置")
+def get_mcp_config(
+    api_key_id: str | None = Query(default=None),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> McpAdminConfigRead:
+    settings = get_settings()
+    return build_mcp_admin_config(session, settings.site_url, api_key_id)
+
+
+@integrations_router.put("/mcp-config", response_model=McpAdminConfigRead, summary="更新 MCP 配置")
+def update_mcp_config(
+    payload: McpAdminConfigUpdate,
+    api_key_id: str | None = Query(default=None),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> McpAdminConfigRead:
+    settings = get_settings()
+    return save_mcp_admin_config(session, settings.site_url, payload, api_key_id)
 
 
 @router.get("/api-keys", response_model=list[ApiKeyAdminRead], include_in_schema=False)

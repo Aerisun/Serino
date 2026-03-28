@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "0012_add_site_poem_source"
@@ -18,22 +19,26 @@ depends_on = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("site_profile") as batch_op:
-        batch_op.add_column(sa.Column("poem_source", sa.String(length=40), nullable=False, server_default="custom"))
-        batch_op.add_column(
+    existing_columns = {column["name"] for column in inspect(op.get_bind()).get_columns("site_profile")}
+
+    if "poem_source" not in existing_columns:
+        op.add_column(
+            "site_profile",
+            sa.Column("poem_source", sa.String(length=40), nullable=False, server_default="custom"),
+        )
+
+    if "poem_hitokoto_types" not in existing_columns:
+        op.add_column(
+            "site_profile",
             sa.Column(
                 "poem_hitokoto_types",
                 sa.JSON(),
                 nullable=False,
                 server_default=sa.text("'[]'"),
-            )
+            ),
         )
 
     op.execute("UPDATE site_profile SET poem_hitokoto_types = '[\"d\", \"i\"]' WHERE poem_hitokoto_types = '[]'")
-
-    with op.batch_alter_table("site_profile") as batch_op:
-        batch_op.alter_column("poem_source", server_default=None)
-        batch_op.alter_column("poem_hitokoto_types", server_default=None)
 
 
 def downgrade() -> None:

@@ -7,6 +7,7 @@ from aerisun.domain.content.service import normalize_content_create_state, norma
 
 from .assets import router as assets_router
 from .auth import router as auth_router
+from .automation import router as automation_router
 from .content import build_crud_router
 from .content_meta import router as content_meta_router
 from .import_export import router as import_export_router
@@ -15,6 +16,7 @@ from .resume import router as resume_router
 from .schemas import ContentAdminRead, ContentCreate, ContentUpdate
 from .site_config import router as site_config_router
 from .social import router as social_router
+from .subscriptions import router as subscriptions_router
 from .system import integrations_router
 from .system import router as system_router
 from .visitors import router as visitors_router
@@ -50,12 +52,14 @@ for model, prefix in [
 
 # Other admin routes
 admin_router.include_router(site_config_router)
+admin_router.include_router(subscriptions_router)
 admin_router.include_router(resume_router)
 admin_router.include_router(social_router)
 admin_router.include_router(moderation_router)
 admin_router.include_router(assets_router)
 admin_router.include_router(system_router)
 admin_router.include_router(integrations_router)
+admin_router.include_router(automation_router)
 admin_router.include_router(content_meta_router)
 admin_router.include_router(import_export_router)
 admin_router.include_router(visitors_router)

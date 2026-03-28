@@ -12,7 +12,6 @@ interface ResumePageConfig extends BaseViewPageConfig {
   contacts?: {
     location?: string;
     email?: string;
-    website?: string;
   };
 }
 
@@ -23,12 +22,12 @@ const Resume = () => {
   return (
     <PageShell
       eyebrow=""
-      title="Resume"
+      title=""
       description=""
       metaTitle={config.metaTitle}
       metaDescription={config.metaDescription}
       width="wide"
-      contentClassName="mt-2"
+      contentClassName="mt-0"
       compactHeader
     >
       <motion.div
@@ -40,7 +39,6 @@ const Resume = () => {
       >
         <EmbeddedResume
           name={config.title}
-          role=""
           content={config.bio ?? ""}
           profileImageUrl={config.profileImageUrl}
           contacts={config.contacts}

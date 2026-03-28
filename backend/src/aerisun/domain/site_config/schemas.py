@@ -54,35 +54,11 @@ class NavItemRead(ModelBase):
     children: list[NavChildRead] = Field(default_factory=list, description="Nested child navigation items")
 
 
-class SitemapStaticPageRead(ModelBase):
-    path: str = Field(description="Static sitemap path")
-    changefreq: str = Field(description="Sitemap changefreq value")
-    priority: str = Field(description="Sitemap priority value")
-
-
-class RuntimeSiteSettingsRead(ModelBase):
-    public_site_url: str = Field(description="Canonical public site URL")
-    production_cors_origins: list[str] = Field(
-        default_factory=list,
-        description="CORS allowlist for production",
-    )
-    seo_default_title: str = Field(description="Fallback SEO title")
-    seo_default_description: str = Field(description="Fallback SEO description")
-    rss_title: str = Field(description="RSS channel title")
-    rss_description: str = Field(description="RSS channel description")
-    robots_indexing_enabled: bool = Field(description="Whether robots should allow indexing")
-    sitemap_static_pages: list[SitemapStaticPageRead] = Field(
-        default_factory=list,
-        description="Configured static sitemap pages",
-    )
-
-
 class SiteConfigRead(ModelBase):
     site: SiteProfileRead = Field(description="Site profile configuration")
     social_links: list[SocialLinkRead] = Field(description="Social media links")
     poems: list[PoemRead] = Field(description="Featured poems")
     navigation: list[NavItemRead] = Field(default_factory=list, description="Navigation menu items")
-    runtime: RuntimeSiteSettingsRead = Field(description="Runtime site settings")
 
 
 class SitePoemPreviewRead(ModelBase):
@@ -163,19 +139,10 @@ class ResumeExperienceRead(ModelBase):
 
 class ResumeRead(ModelBase):
     title: str = Field(description="Resume page title")
-    subtitle: str = Field(description="Resume subtitle")
     summary: str = Field(description="Professional summary")
-    download_label: str = Field(description="PDF download label")
-    template_key: str = Field(default="editorial", description="Selected resume template key")
-    accent_tone: str = Field(default="amber", description="Selected accent tone")
     location: str = Field(default="", description="Current base location")
-    availability: str = Field(default="", description="Availability note")
     email: str = Field(default="", description="Primary contact email")
-    website: str = Field(default="", description="Primary website")
     profile_image_url: str = Field(default="", description="Profile image URL")
-    highlights: list[str] = Field(default_factory=list, description="Featured resume highlights")
-    skill_groups: list[ResumeSkillGroupRead] = Field(description="Skill categories and items")
-    experiences: list[ResumeExperienceRead] = Field(description="Work experience entries")
 
 
 # ---------------------------------------------------------------------------
@@ -449,43 +416,6 @@ class CommunityConfigAdminRead(ModelBase):
     updated_at: datetime = Field(description="Last update timestamp")
 
 
-class RuntimeSiteSettingsUpdate(BaseModel):
-    public_site_url: str | None = Field(default=None, description="Canonical public site URL")
-    production_cors_origins: list[str] | None = Field(
-        default=None,
-        description="CORS allowlist for production",
-    )
-    seo_default_title: str | None = Field(default=None, description="Fallback SEO title")
-    seo_default_description: str | None = Field(default=None, description="Fallback SEO description")
-    rss_title: str | None = Field(default=None, description="RSS channel title")
-    rss_description: str | None = Field(default=None, description="RSS channel description")
-    robots_indexing_enabled: bool | None = Field(default=None, description="Whether robots should allow indexing")
-    sitemap_static_pages: list[dict[str, Any]] | None = Field(
-        default=None,
-        description="Configured static sitemap pages",
-    )
-
-
-class RuntimeSiteSettingsAdminRead(ModelBase):
-    id: str = Field(description="Runtime site settings identifier")
-    public_site_url: str = Field(description="Canonical public site URL")
-    production_cors_origins: list[str] = Field(
-        default_factory=list,
-        description="CORS allowlist for production",
-    )
-    seo_default_title: str = Field(description="Fallback SEO title")
-    seo_default_description: str = Field(description="Fallback SEO description")
-    rss_title: str = Field(description="RSS channel title")
-    rss_description: str = Field(description="RSS channel description")
-    robots_indexing_enabled: bool = Field(description="Whether robots should allow indexing")
-    sitemap_static_pages: list[SitemapStaticPageRead] = Field(
-        default_factory=list,
-        description="Configured static sitemap pages",
-    )
-    created_at: datetime = Field(description="Creation timestamp")
-    updated_at: datetime = Field(description="Last update timestamp")
-
-
 # ---------------------------------------------------------------------------
 # Admin: Resume
 # ---------------------------------------------------------------------------
@@ -493,48 +423,27 @@ class RuntimeSiteSettingsAdminRead(ModelBase):
 
 class ResumeBasicsCreate(BaseModel):
     title: str = Field(description="Resume page title")
-    subtitle: str = Field(description="Resume subtitle or tagline")
-    summary: str = Field(description="Professional summary paragraph")
-    download_label: str = Field(description="PDF download button label")
-    template_key: str = Field(default="editorial", description="Selected resume template key")
-    accent_tone: str = Field(default="amber", description="Selected accent tone")
+    summary: str = Field(description="Markdown resume body")
     location: str = Field(default="", description="Current base location")
-    availability: str = Field(default="", description="Availability note")
     email: str = Field(default="", description="Primary contact email")
-    website: str = Field(default="", description="Primary website")
     profile_image_url: str = Field(default="", description="Profile image URL")
-    highlights: list[str] = Field(default_factory=list, description="Featured resume highlights")
 
 
 class ResumeBasicsUpdate(BaseModel):
     title: str | None = Field(default=None, description="Resume page title")
-    subtitle: str | None = Field(default=None, description="Resume subtitle")
-    summary: str | None = Field(default=None, description="Professional summary")
-    download_label: str | None = Field(default=None, description="Download button label")
-    template_key: str | None = Field(default=None, description="Selected resume template key")
-    accent_tone: str | None = Field(default=None, description="Selected accent tone")
+    summary: str | None = Field(default=None, description="Markdown resume body")
     location: str | None = Field(default=None, description="Current base location")
-    availability: str | None = Field(default=None, description="Availability note")
     email: str | None = Field(default=None, description="Primary contact email")
-    website: str | None = Field(default=None, description="Primary website")
     profile_image_url: str | None = Field(default=None, description="Profile image URL")
-    highlights: list[str] | None = Field(default=None, description="Featured resume highlights")
 
 
 class ResumeBasicsAdminRead(ModelBase):
     id: str = Field(description="Unique resume basics identifier")
     title: str = Field(description="Resume page title")
-    subtitle: str = Field(description="Resume subtitle")
-    summary: str = Field(description="Professional summary")
-    download_label: str = Field(description="Download button label")
-    template_key: str = Field(description="Selected resume template key")
-    accent_tone: str = Field(description="Selected accent tone")
+    summary: str = Field(description="Markdown resume body")
     location: str = Field(description="Current base location")
-    availability: str = Field(description="Availability note")
     email: str = Field(description="Primary contact email")
-    website: str = Field(description="Primary website")
     profile_image_url: str = Field(description="Profile image URL")
-    highlights: list[str] = Field(description="Featured resume highlights")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
 

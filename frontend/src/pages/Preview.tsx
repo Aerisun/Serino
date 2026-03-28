@@ -50,10 +50,8 @@ interface PreviewData {
   poem?: string;
   published_at?: string | null;
   created_at?: string;
-  subtitle?: string;
   location?: string;
   email?: string;
-  website?: string;
   profile_image_url?: string;
 }
 
@@ -222,10 +220,10 @@ function ResumePreview({ data }: { data: PreviewData }) {
   return (
     <PageShell
       eyebrow=""
-      title="Resume"
+      title=""
       description=""
       width="wide"
-      contentClassName="mt-2"
+      contentClassName="mt-0"
       compactHeader
     >
       <motion.div
@@ -235,13 +233,11 @@ function ResumePreview({ data }: { data: PreviewData }) {
       >
         <EmbeddedResume
           name={data.title || "Your Name"}
-          role=""
           content={data.summary || ""}
           profileImageUrl={data.profile_image_url}
           contacts={{
             location: data.location,
             email: data.email,
-            website: data.website,
           }}
         />
       </motion.div>
