@@ -30,9 +30,19 @@ import type {
   AdminProfileUpdate,
   AdminSessionRead,
   AdminUserRead,
+  AgentModelConfigRead,
+  AgentModelConfigTestRead,
+  AgentModelConfigUpdate,
   AgentRunApprovalRead,
   AgentRunRead,
   AgentRunStepRead,
+  AgentWorkflowCreate,
+  AgentWorkflowDraftChatWrite,
+  AgentWorkflowDraftCreateRead,
+  AgentWorkflowDraftCreateWrite,
+  AgentWorkflowDraftRead,
+  AgentWorkflowRead,
+  AgentWorkflowUpdate,
   ApiKeyAdminRead,
   ApiKeyCreate,
   ApiKeyCreateResponse,
@@ -70,6 +80,7 @@ import type {
   FriendFeedSourceCreate,
   FriendFeedSourceUpdate,
   FriendUpdate,
+  GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,
   GuestbookAdminRead,
   HTTPValidationError,
   ImportContentApiV1AdminContentImportPostParams,
@@ -79,6 +90,8 @@ import type {
   ListBasicsParams,
   ListCommentsApiV1AdminModerationCommentsGetParams,
   ListContentCategoriesParams,
+  ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams,
+  ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams,
   ListDiaryParams,
   ListDisplayOptionsParams,
   ListExcerptsParams,
@@ -95,6 +108,8 @@ import type {
   ListVisitorUsersApiV1AdminVisitorsUsersGetParams,
   LoginRequest,
   LoginResponse,
+  McpAdminConfigRead,
+  McpAdminConfigUpdate,
   ModerateAction,
   NavItemAdminRead,
   NavItemCreate,
@@ -110,6 +125,8 @@ import type {
   PaginatedResponseAuditLogRead,
   PaginatedResponseCommentAdminRead,
   PaginatedResponseContentAdminRead,
+  PaginatedResponseContentNotificationDeliveryAdminRead,
+  PaginatedResponseContentSubscriberAdminRead,
   PaginatedResponseFriendAdminRead,
   PaginatedResponseGuestbookAdminRead,
   PaginatedResponseNavItemAdminRead,
@@ -126,6 +143,8 @@ import type {
   PoemAdminRead,
   PoemCreate,
   PoemUpdate,
+  PostWebhookTestApiV1AdminAutomationWebhooksTestPost200,
+  PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams,
   ResumeBasicsAdminRead,
   ResumeBasicsCreate,
   ResumeBasicsUpdate,
@@ -135,8 +154,6 @@ import type {
   ResumeSkillGroupAdminRead,
   ResumeSkillGroupCreate,
   ResumeSkillGroupUpdate,
-  RuntimeSiteSettingsAdminRead,
-  RuntimeSiteSettingsUpdate,
   SiteAdminEmailIdentityBindRequest,
   SiteAdminIdentityAdminRead,
   SiteAuthConfigAdminRead,
@@ -148,6 +165,9 @@ import type {
   SocialLinkUpdate,
   SystemInfo,
   TagInfo,
+  TelegramWebhookConnectRead,
+  TelegramWebhookConnectWrite,
+  UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams,
   VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams,
   WebhookDeadLetterRead,
   WebhookDeliveryRead,
@@ -4254,205 +4274,6 @@ export const useUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPut = <T
       return useMutation(getUpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutMutationOptions(options), queryClient);
     }
     /**
- * @summary 获取运行时站点设置
- */
-export type getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse200 = {
-  data: RuntimeSiteSettingsAdminRead
-  status: 200
-}
-
-export type getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponseSuccess = (getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse = (getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponseSuccess)
-
-export const getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetUrl = () => {
-
-
-
-
-  return `/api/v1/admin/site-config/runtime`
-}
-
-export const getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet = async ( options?: RequestInit): Promise<getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse> => {
-
-  return customInstance<getRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse>(getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryKey = () => {
-    return [
-    `/api/v1/admin/site-config/runtime`
-    ] as const;
-    }
-
-
-export const getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryOptions = <TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>> = ({ signal }) => getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryResult = NonNullable<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>>
-export type GetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryError = ErrorType<unknown>
-
-
-export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>,
-          TError,
-          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>,
-          TError,
-          Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary 获取运行时站点设置
- */
-
-export function useGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGet<TData = Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRuntimeSettingsApiV1AdminSiteConfigRuntimeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-/**
- * @summary 更新运行时站点设置
- */
-export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse200 = {
-  data: RuntimeSiteSettingsAdminRead
-  status: 200
-}
-
-export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse422 = {
-  data: HTTPValidationError
-  status: 422
-}
-
-export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseSuccess = (updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse200) & {
-  headers: Headers;
-};
-export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseError = (updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse422) & {
-  headers: Headers;
-};
-
-export type updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse = (updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseSuccess | updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponseError)
-
-export const getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutUrl = () => {
-
-
-
-
-  return `/api/v1/admin/site-config/runtime`
-}
-
-export const updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut = async (runtimeSiteSettingsUpdate: RuntimeSiteSettingsUpdate, options?: RequestInit): Promise<updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse> => {
-
-  return customInstance<updateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse>(getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutUrl(),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      runtimeSiteSettingsUpdate,)
-  }
-);}
-
-
-
-
-export const getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, TError,{data: BodyType<RuntimeSiteSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, TError,{data: BodyType<RuntimeSiteSettingsUpdate>}, TContext> => {
-
-const mutationKey = ['updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, {data: BodyType<RuntimeSiteSettingsUpdate>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationResult = NonNullable<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>>
-    export type UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationBody = BodyType<RuntimeSiteSettingsUpdate>
-    export type UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationError = ErrorType<HTTPValidationError>
-
-    /**
- * @summary 更新运行时站点设置
- */
-export const useUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePut = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>, TError,{data: BodyType<RuntimeSiteSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateRuntimeSettingsApiV1AdminSiteConfigRuntimePut>>,
-        TError,
-        {data: BodyType<RuntimeSiteSettingsUpdate>},
-        TContext
-      > => {
-      return useMutation(getUpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutMutationOptions(options), queryClient);
-    }
-    /**
  * @summary 获取admin-site-config列表
  */
 export type listSocialLinksResponse200 = {
@@ -8260,6 +8081,262 @@ export const useTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPo
       return useMutation(getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostMutationOptions(options), queryClient);
     }
     /**
+ * @summary 获取内容订阅者列表
+ */
+export type listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse200 = {
+  data: PaginatedResponseContentSubscriberAdminRead
+  status: 200
+}
+
+export type listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseSuccess = (listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse200) & {
+  headers: Headers;
+};
+export type listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseError = (listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse422) & {
+  headers: Headers;
+};
+
+export type listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse = (listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseSuccess | listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseError)
+
+export const getListContentSubscribersApiV1AdminSubscriptionsSubscribersGetUrl = (params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/subscriptions/subscribers?${stringifiedParams}` : `/api/v1/admin/subscriptions/subscribers`
+}
+
+export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGet = async (params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams, options?: RequestInit): Promise<listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse> => {
+
+  return customInstance<listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse>(getListContentSubscribersApiV1AdminSubscriptionsSubscribersGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryKey = (params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams,) => {
+    return [
+    `/api/v1/admin/subscriptions/subscribers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryOptions = <TData = Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>> = ({ signal }) => listContentSubscribersApiV1AdminSubscriptionsSubscribersGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryResult = NonNullable<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>>
+export type ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListContentSubscribersApiV1AdminSubscriptionsSubscribersGet<TData = Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>,
+          TError,
+          Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContentSubscribersApiV1AdminSubscriptionsSubscribersGet<TData = Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>,
+          TError,
+          Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContentSubscribersApiV1AdminSubscriptionsSubscribersGet<TData = Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取内容订阅者列表
+ */
+
+export function useListContentSubscribersApiV1AdminSubscriptionsSubscribersGet<TData = Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscribersApiV1AdminSubscriptionsSubscribersGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取订阅者发送记录
+ */
+export type listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse200 = {
+  data: PaginatedResponseContentNotificationDeliveryAdminRead
+  status: 200
+}
+
+export type listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponseSuccess = (listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse200) & {
+  headers: Headers;
+};
+export type listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponseError = (listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse422) & {
+  headers: Headers;
+};
+
+export type listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse = (listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponseSuccess | listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponseError)
+
+export const getListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetUrl = (email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/subscriptions/subscribers/${email}/messages?${stringifiedParams}` : `/api/v1/admin/subscriptions/subscribers/${email}/messages`
+}
+
+export const listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet = async (email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams, options?: RequestInit): Promise<listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse> => {
+
+  return customInstance<listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse>(getListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetUrl(email,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryKey = (email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams,) => {
+    return [
+    `/api/v1/admin/subscriptions/subscribers/${email}/messages`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryOptions = <TData = Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError = ErrorType<HTTPValidationError>>(email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryKey(email,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>> = ({ signal }) => listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet(email,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(email), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>>
+export type ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet<TData = Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ email: string,
+    params: undefined |  ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet<TData = Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet<TData = Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取订阅者发送记录
+ */
+
+export function useListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet<TData = Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError = ErrorType<HTTPValidationError>>(
+ email: string,
+    params?: ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryOptions(email,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * @summary 获取admin-resume列表
  */
 export type listBasicsResponse200 = {
@@ -13941,6 +14018,1350 @@ export function useGetAgentUsageApiV1AdminIntegrationsAgentUsageGet<TData = Awai
 
 
 /**
+ * @summary 获取 MCP 配置
+ */
+export type getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse200 = {
+  data: McpAdminConfigRead
+  status: 200
+}
+
+export type getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseSuccess = (getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse200) & {
+  headers: Headers;
+};
+export type getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseError = (getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse422) & {
+  headers: Headers;
+};
+
+export type getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse = (getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseSuccess | getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseError)
+
+export const getGetMcpConfigApiV1AdminIntegrationsMcpConfigGetUrl = (params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/integrations/mcp-config?${stringifiedParams}` : `/api/v1/admin/integrations/mcp-config`
+}
+
+export const getMcpConfigApiV1AdminIntegrationsMcpConfigGet = async (params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams, options?: RequestInit): Promise<getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse> => {
+
+  return customInstance<getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse>(getGetMcpConfigApiV1AdminIntegrationsMcpConfigGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryKey = (params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,) => {
+    return [
+    `/api/v1/admin/integrations/mcp-config`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError = ErrorType<HTTPValidationError>>(params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>> = ({ signal }) => getMcpConfigApiV1AdminIntegrationsMcpConfigGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>>
+export type GetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetMcpConfigApiV1AdminIntegrationsMcpConfigGet<TData = Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMcpConfigApiV1AdminIntegrationsMcpConfigGet<TData = Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMcpConfigApiV1AdminIntegrationsMcpConfigGet<TData = Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 MCP 配置
+ */
+
+export function useGetMcpConfigApiV1AdminIntegrationsMcpConfigGet<TData = Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMcpConfigApiV1AdminIntegrationsMcpConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新 MCP 配置
+ */
+export type updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse200 = {
+  data: McpAdminConfigRead
+  status: 200
+}
+
+export type updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseSuccess = (updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse200) & {
+  headers: Headers;
+};
+export type updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseError = (updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse422) & {
+  headers: Headers;
+};
+
+export type updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse = (updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseSuccess | updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseError)
+
+export const getUpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutUrl = (params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/integrations/mcp-config?${stringifiedParams}` : `/api/v1/admin/integrations/mcp-config`
+}
+
+export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPut = async (mcpAdminConfigUpdate: McpAdminConfigUpdate,
+    params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams, options?: RequestInit): Promise<updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse> => {
+
+  return customInstance<updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse>(getUpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutUrl(params),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mcpAdminConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMcpConfigApiV1AdminIntegrationsMcpConfigPut>>, TError,{data: BodyType<McpAdminConfigUpdate>;params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMcpConfigApiV1AdminIntegrationsMcpConfigPut>>, TError,{data: BodyType<McpAdminConfigUpdate>;params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams}, TContext> => {
+
+const mutationKey = ['updateMcpConfigApiV1AdminIntegrationsMcpConfigPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMcpConfigApiV1AdminIntegrationsMcpConfigPut>>, {data: BodyType<McpAdminConfigUpdate>;params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  updateMcpConfigApiV1AdminIntegrationsMcpConfigPut(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateMcpConfigApiV1AdminIntegrationsMcpConfigPut>>>
+    export type UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutMutationBody = BodyType<McpAdminConfigUpdate>
+    export type UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新 MCP 配置
+ */
+export const useUpdateMcpConfigApiV1AdminIntegrationsMcpConfigPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMcpConfigApiV1AdminIntegrationsMcpConfigPut>>, TError,{data: BodyType<McpAdminConfigUpdate>;params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateMcpConfigApiV1AdminIntegrationsMcpConfigPut>>,
+        TError,
+        {data: BodyType<McpAdminConfigUpdate>;params?: UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams},
+        TContext
+      > => {
+      return useMutation(getUpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取 Agent 模型配置
+ */
+export type getModelConfigApiV1AdminAutomationModelConfigGetResponse200 = {
+  data: AgentModelConfigRead
+  status: 200
+}
+
+export type getModelConfigApiV1AdminAutomationModelConfigGetResponseSuccess = (getModelConfigApiV1AdminAutomationModelConfigGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getModelConfigApiV1AdminAutomationModelConfigGetResponse = (getModelConfigApiV1AdminAutomationModelConfigGetResponseSuccess)
+
+export const getGetModelConfigApiV1AdminAutomationModelConfigGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config`
+}
+
+export const getModelConfigApiV1AdminAutomationModelConfigGet = async ( options?: RequestInit): Promise<getModelConfigApiV1AdminAutomationModelConfigGetResponse> => {
+
+  return customInstance<getModelConfigApiV1AdminAutomationModelConfigGetResponse>(getGetModelConfigApiV1AdminAutomationModelConfigGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetModelConfigApiV1AdminAutomationModelConfigGetQueryKey = () => {
+    return [
+    `/api/v1/admin/automation/model-config`
+    ] as const;
+    }
+
+
+export const getGetModelConfigApiV1AdminAutomationModelConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetModelConfigApiV1AdminAutomationModelConfigGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>> = ({ signal }) => getModelConfigApiV1AdminAutomationModelConfigGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetModelConfigApiV1AdminAutomationModelConfigGetQueryResult = NonNullable<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>>
+export type GetModelConfigApiV1AdminAutomationModelConfigGetQueryError = ErrorType<unknown>
+
+
+export function useGetModelConfigApiV1AdminAutomationModelConfigGet<TData = Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetModelConfigApiV1AdminAutomationModelConfigGet<TData = Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetModelConfigApiV1AdminAutomationModelConfigGet<TData = Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 模型配置
+ */
+
+export function useGetModelConfigApiV1AdminAutomationModelConfigGet<TData = Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getModelConfigApiV1AdminAutomationModelConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetModelConfigApiV1AdminAutomationModelConfigGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新 Agent 模型配置
+ */
+export type putModelConfigApiV1AdminAutomationModelConfigPutResponse200 = {
+  data: AgentModelConfigRead
+  status: 200
+}
+
+export type putModelConfigApiV1AdminAutomationModelConfigPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type putModelConfigApiV1AdminAutomationModelConfigPutResponseSuccess = (putModelConfigApiV1AdminAutomationModelConfigPutResponse200) & {
+  headers: Headers;
+};
+export type putModelConfigApiV1AdminAutomationModelConfigPutResponseError = (putModelConfigApiV1AdminAutomationModelConfigPutResponse422) & {
+  headers: Headers;
+};
+
+export type putModelConfigApiV1AdminAutomationModelConfigPutResponse = (putModelConfigApiV1AdminAutomationModelConfigPutResponseSuccess | putModelConfigApiV1AdminAutomationModelConfigPutResponseError)
+
+export const getPutModelConfigApiV1AdminAutomationModelConfigPutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config`
+}
+
+export const putModelConfigApiV1AdminAutomationModelConfigPut = async (agentModelConfigUpdate: AgentModelConfigUpdate, options?: RequestInit): Promise<putModelConfigApiV1AdminAutomationModelConfigPutResponse> => {
+
+  return customInstance<putModelConfigApiV1AdminAutomationModelConfigPutResponse>(getPutModelConfigApiV1AdminAutomationModelConfigPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentModelConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getPutModelConfigApiV1AdminAutomationModelConfigPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putModelConfigApiV1AdminAutomationModelConfigPut>>, TError,{data: BodyType<AgentModelConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof putModelConfigApiV1AdminAutomationModelConfigPut>>, TError,{data: BodyType<AgentModelConfigUpdate>}, TContext> => {
+
+const mutationKey = ['putModelConfigApiV1AdminAutomationModelConfigPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putModelConfigApiV1AdminAutomationModelConfigPut>>, {data: BodyType<AgentModelConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putModelConfigApiV1AdminAutomationModelConfigPut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutModelConfigApiV1AdminAutomationModelConfigPutMutationResult = NonNullable<Awaited<ReturnType<typeof putModelConfigApiV1AdminAutomationModelConfigPut>>>
+    export type PutModelConfigApiV1AdminAutomationModelConfigPutMutationBody = BodyType<AgentModelConfigUpdate>
+    export type PutModelConfigApiV1AdminAutomationModelConfigPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新 Agent 模型配置
+ */
+export const usePutModelConfigApiV1AdminAutomationModelConfigPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putModelConfigApiV1AdminAutomationModelConfigPut>>, TError,{data: BodyType<AgentModelConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putModelConfigApiV1AdminAutomationModelConfigPut>>,
+        TError,
+        {data: BodyType<AgentModelConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getPutModelConfigApiV1AdminAutomationModelConfigPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 测试 Agent 模型配置
+ */
+export type postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse200 = {
+  data: AgentModelConfigTestRead
+  status: 200
+}
+
+export type postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseSuccess = (postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse200) & {
+  headers: Headers;
+};
+export type postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseError = (postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse422) & {
+  headers: Headers;
+};
+
+export type postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse = (postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseSuccess | postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseError)
+
+export const getPostModelConfigTestApiV1AdminAutomationModelConfigTestPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/model-config/test`
+}
+
+export const postModelConfigTestApiV1AdminAutomationModelConfigTestPost = async (agentModelConfigUpdate: AgentModelConfigUpdate, options?: RequestInit): Promise<postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse> => {
+
+  return customInstance<postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse>(getPostModelConfigTestApiV1AdminAutomationModelConfigTestPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentModelConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getPostModelConfigTestApiV1AdminAutomationModelConfigTestPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postModelConfigTestApiV1AdminAutomationModelConfigTestPost>>, TError,{data: BodyType<AgentModelConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postModelConfigTestApiV1AdminAutomationModelConfigTestPost>>, TError,{data: BodyType<AgentModelConfigUpdate>}, TContext> => {
+
+const mutationKey = ['postModelConfigTestApiV1AdminAutomationModelConfigTestPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postModelConfigTestApiV1AdminAutomationModelConfigTestPost>>, {data: BodyType<AgentModelConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postModelConfigTestApiV1AdminAutomationModelConfigTestPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostModelConfigTestApiV1AdminAutomationModelConfigTestPostMutationResult = NonNullable<Awaited<ReturnType<typeof postModelConfigTestApiV1AdminAutomationModelConfigTestPost>>>
+    export type PostModelConfigTestApiV1AdminAutomationModelConfigTestPostMutationBody = BodyType<AgentModelConfigUpdate>
+    export type PostModelConfigTestApiV1AdminAutomationModelConfigTestPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 测试 Agent 模型配置
+ */
+export const usePostModelConfigTestApiV1AdminAutomationModelConfigTestPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postModelConfigTestApiV1AdminAutomationModelConfigTestPost>>, TError,{data: BodyType<AgentModelConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postModelConfigTestApiV1AdminAutomationModelConfigTestPost>>,
+        TError,
+        {data: BodyType<AgentModelConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getPostModelConfigTestApiV1AdminAutomationModelConfigTestPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取 Agent 工作流
+ */
+export type getWorkflowsApiV1AdminAutomationWorkflowsGetResponse200 = {
+  data: AgentWorkflowRead[]
+  status: 200
+}
+
+export type getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSuccess = (getWorkflowsApiV1AdminAutomationWorkflowsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getWorkflowsApiV1AdminAutomationWorkflowsGetResponse = (getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSuccess)
+
+export const getGetWorkflowsApiV1AdminAutomationWorkflowsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows`
+}
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGet = async ( options?: RequestInit): Promise<getWorkflowsApiV1AdminAutomationWorkflowsGetResponse> => {
+
+  return customInstance<getWorkflowsApiV1AdminAutomationWorkflowsGetResponse>(getGetWorkflowsApiV1AdminAutomationWorkflowsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorkflowsApiV1AdminAutomationWorkflowsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/automation/workflows`
+    ] as const;
+    }
+
+
+export const getGetWorkflowsApiV1AdminAutomationWorkflowsGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkflowsApiV1AdminAutomationWorkflowsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>> = ({ signal }) => getWorkflowsApiV1AdminAutomationWorkflowsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWorkflowsApiV1AdminAutomationWorkflowsGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>>
+export type GetWorkflowsApiV1AdminAutomationWorkflowsGetQueryError = ErrorType<unknown>
+
+
+export function useGetWorkflowsApiV1AdminAutomationWorkflowsGet<TData = Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowsApiV1AdminAutomationWorkflowsGet<TData = Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowsApiV1AdminAutomationWorkflowsGet<TData = Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 工作流
+ */
+
+export function useGetWorkflowsApiV1AdminAutomationWorkflowsGet<TData = Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowsApiV1AdminAutomationWorkflowsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWorkflowsApiV1AdminAutomationWorkflowsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 创建 Agent 工作流
+ */
+export type postWorkflowApiV1AdminAutomationWorkflowsPostResponse201 = {
+  data: AgentWorkflowRead
+  status: 201
+}
+
+export type postWorkflowApiV1AdminAutomationWorkflowsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowApiV1AdminAutomationWorkflowsPostResponseSuccess = (postWorkflowApiV1AdminAutomationWorkflowsPostResponse201) & {
+  headers: Headers;
+};
+export type postWorkflowApiV1AdminAutomationWorkflowsPostResponseError = (postWorkflowApiV1AdminAutomationWorkflowsPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowApiV1AdminAutomationWorkflowsPostResponse = (postWorkflowApiV1AdminAutomationWorkflowsPostResponseSuccess | postWorkflowApiV1AdminAutomationWorkflowsPostResponseError)
+
+export const getPostWorkflowApiV1AdminAutomationWorkflowsPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows`
+}
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPost = async (agentWorkflowCreate: AgentWorkflowCreate, options?: RequestInit): Promise<postWorkflowApiV1AdminAutomationWorkflowsPostResponse> => {
+
+  return customInstance<postWorkflowApiV1AdminAutomationWorkflowsPostResponse>(getPostWorkflowApiV1AdminAutomationWorkflowsPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowCreate,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowApiV1AdminAutomationWorkflowsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowApiV1AdminAutomationWorkflowsPost>>, TError,{data: BodyType<AgentWorkflowCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowApiV1AdminAutomationWorkflowsPost>>, TError,{data: BodyType<AgentWorkflowCreate>}, TContext> => {
+
+const mutationKey = ['postWorkflowApiV1AdminAutomationWorkflowsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowApiV1AdminAutomationWorkflowsPost>>, {data: BodyType<AgentWorkflowCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowApiV1AdminAutomationWorkflowsPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowApiV1AdminAutomationWorkflowsPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowApiV1AdminAutomationWorkflowsPost>>>
+    export type PostWorkflowApiV1AdminAutomationWorkflowsPostMutationBody = BodyType<AgentWorkflowCreate>
+    export type PostWorkflowApiV1AdminAutomationWorkflowsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 创建 Agent 工作流
+ */
+export const usePostWorkflowApiV1AdminAutomationWorkflowsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowApiV1AdminAutomationWorkflowsPost>>, TError,{data: BodyType<AgentWorkflowCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowApiV1AdminAutomationWorkflowsPost>>,
+        TError,
+        {data: BodyType<AgentWorkflowCreate>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowApiV1AdminAutomationWorkflowsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取 Agent 工作流草稿
+ */
+export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse200 = {
+  data: AgentWorkflowDraftRead | null
+  status: 200
+}
+
+export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseSuccess = (getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = (getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseSuccess)
+
+export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft`
+}
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet = async ( options?: RequestInit): Promise<getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse> => {
+
+  return customInstance<getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse>(getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryKey = () => {
+    return [
+    `/api/v1/admin/automation/workflow-draft`
+    ] as const;
+    }
+
+
+export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>> = ({ signal }) => getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>>
+export type GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryError = ErrorType<unknown>
+
+
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 工作流草稿
+ */
+
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 清空 Agent 工作流草稿
+ */
+export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponseSuccess = (deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse = (deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponseSuccess)
+
+export const getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft`
+}
+
+export const deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = async ( options?: RequestInit): Promise<deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse> => {
+
+  return customInstance<deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse>(getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, void> = () => {
+
+
+          return  deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>>
+
+    export type DeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 清空 Agent 工作流草稿
+ */
+export const useDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 继续 Agent 工作流对话
+ */
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse200 = {
+  data: AgentWorkflowDraftRead
+  status: 200
+}
+
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSuccess = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseError = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSuccess | postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseError)
+
+export const getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft/messages`
+}
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost = async (agentWorkflowDraftChatWrite: AgentWorkflowDraftChatWrite, options?: RequestInit): Promise<postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse> => {
+
+  return customInstance<postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse>(getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowDraftChatWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, {data: BodyType<AgentWorkflowDraftChatWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>>
+    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationBody = BodyType<AgentWorkflowDraftChatWrite>
+    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 继续 Agent 工作流对话
+ */
+export const usePostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>,
+        TError,
+        {data: BodyType<AgentWorkflowDraftChatWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 流式继续 Agent 工作流对话
+ */
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseSuccess = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseError = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseSuccess | postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseError)
+
+export const getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft/messages/stream`
+}
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost = async (agentWorkflowDraftChatWrite: AgentWorkflowDraftChatWrite, options?: RequestInit): Promise<postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse> => {
+
+  return customInstance<postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse>(getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowDraftChatWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, {data: BodyType<AgentWorkflowDraftChatWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>>
+    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationBody = BodyType<AgentWorkflowDraftChatWrite>
+    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 流式继续 Agent 工作流对话
+ */
+export const usePostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>,
+        TError,
+        {data: BodyType<AgentWorkflowDraftChatWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 从草稿创建 Agent 工作流
+ */
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse200 = {
+  data: AgentWorkflowDraftCreateRead
+  status: 200
+}
+
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseSuccess = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseError = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseSuccess | postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseError)
+
+export const getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft/create`
+}
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost = async (agentWorkflowDraftCreateWrite: AgentWorkflowDraftCreateWrite, options?: RequestInit): Promise<postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse> => {
+
+  return customInstance<postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse>(getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowDraftCreateWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, {data: BodyType<AgentWorkflowDraftCreateWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>>
+    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationBody = BodyType<AgentWorkflowDraftCreateWrite>
+    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 从草稿创建 Agent 工作流
+ */
+export const usePostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>,
+        TError,
+        {data: BodyType<AgentWorkflowDraftCreateWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 更新 Agent 工作流
+ */
+export type putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse200 = {
+  data: AgentWorkflowRead
+  status: 200
+}
+
+export type putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSuccess = (putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse200) & {
+  headers: Headers;
+};
+export type putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseError = (putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse422) & {
+  headers: Headers;
+};
+
+export type putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse = (putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSuccess | putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseError)
+
+export const getPutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}`
+}
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut = async (workflowKey: string,
+    agentWorkflowUpdate: AgentWorkflowUpdate, options?: RequestInit): Promise<putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse> => {
+
+  return customInstance<putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse>(getPutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutUrl(workflowKey),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowUpdate,)
+  }
+);}
+
+
+
+
+export const getPutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowUpdate>}, TContext> => {
+
+const mutationKey = ['putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut>>, {workflowKey: string;data: BodyType<AgentWorkflowUpdate>}> = (props) => {
+          const {workflowKey,data} = props ?? {};
+
+          return  putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut(workflowKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutMutationResult = NonNullable<Awaited<ReturnType<typeof putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut>>>
+    export type PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutMutationBody = BodyType<AgentWorkflowUpdate>
+    export type PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新 Agent 工作流
+ */
+export const usePutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPut>>,
+        TError,
+        {workflowKey: string;data: BodyType<AgentWorkflowUpdate>},
+        TContext
+      > => {
+      return useMutation(getPutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除 Agent 工作流
+ */
+export type deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponseSuccess = (deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponseError = (deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse = (deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponseSuccess | deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponseError)
+
+export const getDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}`
+}
+
+export const deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete = async (workflowKey: string, options?: RequestInit): Promise<deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse> => {
+
+  return customInstance<deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteResponse>(getDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteUrl(workflowKey),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete>>, TError,{workflowKey: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete>>, TError,{workflowKey: string}, TContext> => {
+
+const mutationKey = ['deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete>>, {workflowKey: string}> = (props) => {
+          const {workflowKey} = props ?? {};
+
+          return  deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete(workflowKey,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete>>>
+
+    export type DeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除 Agent 工作流
+ */
+export const useDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete>>, TError,{workflowKey: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete>>,
+        TError,
+        {workflowKey: string},
+        TContext
+      > => {
+      return useMutation(getDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取 Agent 运行记录
  */
 export type getRunsApiV1AdminAutomationRunsGetResponse200 = {
@@ -14682,6 +16103,192 @@ export const usePostWebhookApiV1AdminAutomationWebhooksPost = <TError = ErrorTyp
         TContext
       > => {
       return useMutation(getPostWebhookApiV1AdminAutomationWebhooksPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 测试 Webhook 订阅
+ */
+export type postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse200 = {
+  data: PostWebhookTestApiV1AdminAutomationWebhooksTestPost200
+  status: 200
+}
+
+export type postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWebhookTestApiV1AdminAutomationWebhooksTestPostResponseSuccess = (postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse200) & {
+  headers: Headers;
+};
+export type postWebhookTestApiV1AdminAutomationWebhooksTestPostResponseError = (postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse = (postWebhookTestApiV1AdminAutomationWebhooksTestPostResponseSuccess | postWebhookTestApiV1AdminAutomationWebhooksTestPostResponseError)
+
+export const getPostWebhookTestApiV1AdminAutomationWebhooksTestPostUrl = (params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/automation/webhooks/test?${stringifiedParams}` : `/api/v1/admin/automation/webhooks/test`
+}
+
+export const postWebhookTestApiV1AdminAutomationWebhooksTestPost = async (webhookSubscriptionCreate: WebhookSubscriptionCreate,
+    params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams, options?: RequestInit): Promise<postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse> => {
+
+  return customInstance<postWebhookTestApiV1AdminAutomationWebhooksTestPostResponse>(getPostWebhookTestApiV1AdminAutomationWebhooksTestPostUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      webhookSubscriptionCreate,)
+  }
+);}
+
+
+
+
+export const getPostWebhookTestApiV1AdminAutomationWebhooksTestPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWebhookTestApiV1AdminAutomationWebhooksTestPost>>, TError,{data: BodyType<WebhookSubscriptionCreate>;params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWebhookTestApiV1AdminAutomationWebhooksTestPost>>, TError,{data: BodyType<WebhookSubscriptionCreate>;params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams}, TContext> => {
+
+const mutationKey = ['postWebhookTestApiV1AdminAutomationWebhooksTestPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWebhookTestApiV1AdminAutomationWebhooksTestPost>>, {data: BodyType<WebhookSubscriptionCreate>;params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  postWebhookTestApiV1AdminAutomationWebhooksTestPost(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWebhookTestApiV1AdminAutomationWebhooksTestPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWebhookTestApiV1AdminAutomationWebhooksTestPost>>>
+    export type PostWebhookTestApiV1AdminAutomationWebhooksTestPostMutationBody = BodyType<WebhookSubscriptionCreate>
+    export type PostWebhookTestApiV1AdminAutomationWebhooksTestPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 测试 Webhook 订阅
+ */
+export const usePostWebhookTestApiV1AdminAutomationWebhooksTestPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWebhookTestApiV1AdminAutomationWebhooksTestPost>>, TError,{data: BodyType<WebhookSubscriptionCreate>;params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWebhookTestApiV1AdminAutomationWebhooksTestPost>>,
+        TError,
+        {data: BodyType<WebhookSubscriptionCreate>;params?: PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams},
+        TContext
+      > => {
+      return useMutation(getPostWebhookTestApiV1AdminAutomationWebhooksTestPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 连接 Telegram 并自动识别 chat_id
+ */
+export type postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse200 = {
+  data: TelegramWebhookConnectRead
+  status: 200
+}
+
+export type postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseSuccess = (postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse200) & {
+  headers: Headers;
+};
+export type postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseError = (postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse = (postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseSuccess | postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseError)
+
+export const getPostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/webhooks/telegram/connect`
+}
+
+export const postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost = async (telegramWebhookConnectWrite: TelegramWebhookConnectWrite, options?: RequestInit): Promise<postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse> => {
+
+  return customInstance<postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse>(getPostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      telegramWebhookConnectWrite,)
+  }
+);}
+
+
+
+
+export const getPostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost>>, TError,{data: BodyType<TelegramWebhookConnectWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost>>, TError,{data: BodyType<TelegramWebhookConnectWrite>}, TContext> => {
+
+const mutationKey = ['postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost>>, {data: BodyType<TelegramWebhookConnectWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost>>>
+    export type PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostMutationBody = BodyType<TelegramWebhookConnectWrite>
+    export type PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 连接 Telegram 并自动识别 chat_id
+ */
+export const usePostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost>>, TError,{data: BodyType<TelegramWebhookConnectWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPost>>,
+        TError,
+        {data: BodyType<TelegramWebhookConnectWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 更新 Webhook 订阅

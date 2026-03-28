@@ -19,44 +19,40 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { toast } from "sonner";
 
-type BasicsForm = ResumeBasicsCreate;
+type BasicsForm = {
+  title: string;
+  summary: string;
+  location: string;
+  email: string;
+  profile_image_url: string;
+};
 
 type ResumePreviewPayload = BasicsForm & { type: "resume" };
 
-const STARTER_CONTENT = `## Profile
-专注把视觉、节奏和交互组织成清晰、克制、可维护的产品体验。
-
-## Experience
-### Personal Website & Design System
-**Independent** · 2024 - Now
-
-- 重构站点信息架构与视觉层级
-- 用统一组件与设计 token 降低维护成本
-- 把前台展示和后台配置统一成一套系统
-
-## Skills
-- React / TypeScript / Tailwind CSS
-- Design Systems / Motion / Information Architecture
-
-## Selected Projects
-- 内容型个人网站
-- 后台管理系统
-- 高完成度品牌页面`;
-
 const EMPTY_FORM: BasicsForm = {
   title: "",
-  subtitle: "",
   summary: "",
-  download_label: "",
-  template_key: "editorial",
-  accent_tone: "amber",
   location: "",
-  availability: "",
   email: "",
-  website: "",
   profile_image_url: "",
-  highlights: [],
 };
+
+function toApiPayload(form: BasicsForm): ResumeBasicsCreate {
+  return {
+    title: form.title,
+    subtitle: "",
+    summary: form.summary,
+    download_label: "",
+    template_key: "editorial",
+    accent_tone: "amber",
+    location: form.location,
+    availability: "",
+    email: form.email,
+    website: "",
+    profile_image_url: form.profile_image_url,
+    highlights: [],
+  };
+}
 
 function mutationError(error: unknown) {
   const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -72,18 +68,11 @@ export default function ResumePage() {
   useEffect(() => {
     if (!existing) return;
     setForm({
-      title: existing.title,
-      subtitle: existing.subtitle,
-      summary: existing.summary,
-      download_label: "",
-      template_key: existing.template_key,
-      accent_tone: existing.accent_tone,
-      location: existing.location,
-      availability: existing.availability,
-      email: existing.email,
-      website: existing.website,
-      profile_image_url: existing.profile_image_url,
-      highlights: existing.highlights,
+      title: existing.title ?? "",
+      summary: existing.summary ?? "",
+      location: existing.location ?? "",
+      email: existing.email ?? "",
+      profile_image_url: existing.profile_image_url ?? "",
     });
   }, [existing]);
 
@@ -110,7 +99,7 @@ export default function ResumePage() {
   const saving = createBasics.isPending || updateBasics.isPending;
 
   function handleSave() {
-    const payload = { ...form, download_label: "" };
+    const payload = toApiPayload(form);
     if (existing) {
       updateBasics.mutate({ itemId: existing.id, data: payload });
       return;
@@ -124,7 +113,7 @@ export default function ResumePage() {
   const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(/\/+$/, "");
   const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
   const storageKey = "aerisun-preview-resume";
-  const previewPayload = useMemo<ResumePreviewPayload>(() => ({ type: "resume", ...form, download_label: "" }), [form]);
+  const previewPayload = useMemo<ResumePreviewPayload>(() => ({ type: "resume", ...form }), [form]);
 
   useEffect(() => {
     if (!previewOpen) return;
@@ -188,14 +177,19 @@ export default function ResumePage() {
     <div>
       <PageHeader
         title="Markdown 简历"
-      description="去掉 PDF 下载，收成一套固定版式。后台只保留必要信息和 Markdown 正文。"
+        description="去掉 PDF 下载，收成一套固定版式。后台只保留必要信息和 Markdown 正文。"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" className="preview-glow-button" onClick={openPreview}>
               <ExternalLink className="mr-2 h-4 w-4" />
               真实页面预览
             </Button>
-            <Button variant="secondary" className="bg-slate-100 text-slate-900 border-slate-200 shadow-none backdrop-blur-0 ring-0 hover:bg-slate-200 hover:text-slate-950 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" onClick={handleSave} disabled={saving}>
+            <Button
+              variant="secondary"
+              className="bg-slate-100 text-slate-900 border-slate-200 shadow-none backdrop-blur-0 ring-0 hover:bg-slate-200 hover:text-slate-950 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+              onClick={handleSave}
+              disabled={saving}
+            >
               <Save className="mr-2 h-4 w-4" />
               {saving ? "保存中…" : "保存简历"}
             </Button>
@@ -212,10 +206,6 @@ export default function ResumePage() {
                 <Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>职业定位</Label>
-                <Input value={form.subtitle} onChange={(e) => setForm((p) => ({ ...p, subtitle: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
                 <Label>所在地</Label>
                 <Input value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
               </div>
@@ -224,13 +214,9 @@ export default function ResumePage() {
                 <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>网站 / 作品集</Label>
-                <Input value={form.website} onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
                 <ResourceUploadField
                   label="头像地址"
-                  value={form.profile_image_url ?? ""}
+                  value={form.profile_image_url}
                   category="resume-avatar"
                   accept="image/*"
                   placeholder="上传或填写头像地址"
@@ -250,7 +236,6 @@ export default function ResumePage() {
                 placeholder="使用 Markdown 编写简历正文"
               />
             </div>
-
           </CardContent>
         </Card>
       </div>

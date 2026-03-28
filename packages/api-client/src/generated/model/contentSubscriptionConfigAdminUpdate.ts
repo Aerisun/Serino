@@ -36,4 +36,10 @@ export interface ContentSubscriptionConfigAdminUpdate {
   smtp_use_tls?: boolean | null;
   /** Whether implicit SSL is enabled */
   smtp_use_ssl?: boolean | null;
+  /** Content types users can subscribe to */
+  allowed_content_types?: string[] | null;
+  /** Email subject template */
+  mail_subject_template?: string | null;
+  /** Email body template */
+  mail_body_template?: string | null;
 }

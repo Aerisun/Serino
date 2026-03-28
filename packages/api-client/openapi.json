@@ -3911,78 +3911,6 @@
         ]
       }
     },
-    "/api/v1/admin/site-config/runtime": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-site-config"
-        ],
-        "summary": "获取运行时站点设置",
-        "operationId": "get_runtime_settings_api_v1_admin_site_config_runtime_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RuntimeSiteSettingsAdminRead"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "admin",
-          "admin-site-config"
-        ],
-        "summary": "更新运行时站点设置",
-        "operationId": "update_runtime_settings_api_v1_admin_site_config_runtime_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RuntimeSiteSettingsUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RuntimeSiteSettingsAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
     "/api/v1/admin/site-config/social-links/": {
       "get": {
         "tags": [
@@ -6330,6 +6258,171 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/admin/subscriptions/subscribers": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "获取内容订阅者列表",
+        "operationId": "list_content_subscribers_api_v1_admin_subscriptions_subscribers_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "email",
+                "binding",
+                "subscriber"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ContentSubscriberAdminRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscriptions/subscribers/{email}/messages": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-site-config"
+        ],
+        "summary": "获取订阅者发送记录",
+        "operationId": "list_content_subscriber_messages_api_v1_admin_subscriptions_subscribers__email__messages_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Email"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ContentNotificationDeliveryAdminRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/resume/basics/": {
@@ -9772,6 +9865,608 @@
         ]
       }
     },
+    "/api/v1/admin/integrations/mcp-config": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "获取 MCP 配置",
+        "operationId": "get_mcp_config_api_v1_admin_integrations_mcp_config_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "api_key_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Api Key Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpAdminConfigRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-integrations"
+        ],
+        "summary": "更新 MCP 配置",
+        "operationId": "update_mcp_config_api_v1_admin_integrations_mcp_config_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "api_key_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Api Key Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpAdminConfigUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpAdminConfigRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/model-config": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Agent 模型配置",
+        "operationId": "get_model_config_api_v1_admin_automation_model_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentModelConfigRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "更新 Agent 模型配置",
+        "operationId": "put_model_config_api_v1_admin_automation_model_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentModelConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentModelConfigRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/model-config/test": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "测试 Agent 模型配置",
+        "operationId": "post_model_config_test_api_v1_admin_automation_model_config_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentModelConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentModelConfigTestRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/workflows": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Agent 工作流",
+        "operationId": "get_workflows_api_v1_admin_automation_workflows_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentWorkflowRead"
+                  },
+                  "type": "array",
+                  "title": "Response Get Workflows Api V1 Admin Automation Workflows Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "创建 Agent 工作流",
+        "operationId": "post_workflow_api_v1_admin_automation_workflows_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentWorkflowCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/workflow-draft": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "获取 Agent 工作流草稿",
+        "operationId": "get_workflow_draft_api_v1_admin_automation_workflow_draft_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentWorkflowDraftRead"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Workflow Draft Api V1 Admin Automation Workflow Draft Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "清空 Agent 工作流草稿",
+        "operationId": "delete_workflow_draft_api_v1_admin_automation_workflow_draft_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/workflow-draft/messages": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "继续 Agent 工作流对话",
+        "operationId": "post_workflow_draft_message_api_v1_admin_automation_workflow_draft_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentWorkflowDraftChatWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowDraftRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/workflow-draft/messages/stream": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "流式继续 Agent 工作流对话",
+        "operationId": "post_workflow_draft_message_stream_api_v1_admin_automation_workflow_draft_messages_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentWorkflowDraftChatWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/workflow-draft/create": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "从草稿创建 Agent 工作流",
+        "operationId": "post_workflow_draft_create_api_v1_admin_automation_workflow_draft_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentWorkflowDraftCreateWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowDraftCreateRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/workflows/{workflow_key}": {
+      "put": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "更新 Agent 工作流",
+        "operationId": "put_workflow_api_v1_admin_automation_workflows__workflow_key__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workflow_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workflow Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentWorkflowUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentWorkflowRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "删除 Agent 工作流",
+        "operationId": "delete_workflow_api_v1_admin_automation_workflows__workflow_key__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workflow_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workflow Key"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/automation/runs": {
       "get": {
         "tags": [
@@ -10046,6 +10741,120 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WebhookSubscriptionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/automation/webhooks/test": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "测试 Webhook 订阅",
+        "operationId": "post_webhook_test_api_v1_admin_automation_webhooks_test_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subscription Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Post Webhook Test Api V1 Admin Automation Webhooks Test Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/automation/webhooks/telegram/connect": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-automation"
+        ],
+        "summary": "连接 Telegram 并自动识别 chat_id",
+        "operationId": "post_webhook_telegram_connect_api_v1_admin_automation_webhooks_telegram_connect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramWebhookConnectWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramWebhookConnectRead"
                 }
               }
             }
@@ -11508,6 +12317,187 @@
         ],
         "title": "AdminUserRead"
       },
+      "AgentModelConfigRead": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "openai_compatible"
+          },
+          "base_url": {
+            "type": "string",
+            "title": "Base Url",
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": ""
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "default": ""
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Temperature",
+            "default": 0.2
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "maximum": 300.0,
+            "minimum": 5.0,
+            "title": "Timeout Seconds",
+            "default": 20
+          },
+          "advisory_prompt": {
+            "type": "string",
+            "title": "Advisory Prompt",
+            "default": ""
+          },
+          "is_ready": {
+            "type": "boolean",
+            "title": "Is Ready",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AgentModelConfigRead"
+      },
+      "AgentModelConfigTestRead": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "endpoint",
+          "summary"
+        ],
+        "title": "AgentModelConfigTestRead"
+      },
+      "AgentModelConfigUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 300.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout Seconds"
+          },
+          "advisory_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advisory Prompt"
+          }
+        },
+        "type": "object",
+        "title": "AgentModelConfigUpdate"
+      },
       "AgentRunApprovalRead": {
         "properties": {
           "id": {
@@ -11937,8 +12927,53 @@
         ],
         "title": "AgentSkillMapRead"
       },
+      "AgentUsageAuthRead": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Authentication type"
+          },
+          "header": {
+            "type": "string",
+            "title": "Header",
+            "description": "HTTP header used for authentication"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "description": "Expected header value format"
+          },
+          "example": {
+            "type": "string",
+            "title": "Example",
+            "description": "Authentication header example"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "description": "Additional auth notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "header",
+          "format",
+          "example"
+        ],
+        "title": "AgentUsageAuthRead"
+      },
       "AgentUsageCapabilityRead": {
         "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable capability identifier"
+          },
           "name": {
             "type": "string",
             "title": "Name",
@@ -11980,11 +13015,60 @@
         },
         "type": "object",
         "required": [
+          "id",
           "name",
           "kind",
           "description"
         ],
         "title": "AgentUsageCapabilityRead"
+      },
+      "AgentUsageEndpointRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable endpoint identifier"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "Absolute endpoint URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "description": "HTTP method",
+            "default": "GET"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What this endpoint is for"
+          },
+          "required_headers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Headers",
+            "description": "Required request headers"
+          },
+          "expected_status": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Expected Status",
+            "description": "Expected success status codes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "description"
+        ],
+        "title": "AgentUsageEndpointRead"
       },
       "AgentUsageMcpRead": {
         "properties": {
@@ -12029,6 +13113,22 @@
             "type": "array",
             "title": "Resources",
             "description": "Visible MCP resources"
+          },
+          "call_templates": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsageMcpTemplateRead"
+            },
+            "type": "array",
+            "title": "Call Templates",
+            "description": "High-signal MCP call sequences"
+          },
+          "usage_hints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Usage Hints",
+            "description": "Practical usage hints for agents"
           }
         },
         "type": "object",
@@ -12038,40 +13138,265 @@
         ],
         "title": "AgentUsageMcpRead"
       },
+      "AgentUsageMcpTemplateRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable template identifier"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Template purpose"
+          },
+          "sequence": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sequence",
+            "description": "Ordered MCP request sequence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description"
+        ],
+        "title": "AgentUsageMcpTemplateRead"
+      },
+      "AgentUsagePlaybookRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable playbook identifier"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Playbook title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Playbook purpose"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "Whether current API key can execute this playbook end-to-end"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level",
+            "description": "Operational risk level"
+          },
+          "required_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Scopes",
+            "description": "Scopes required by this playbook"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsagePlaybookStepRead"
+            },
+            "type": "array",
+            "title": "Steps",
+            "description": "Ordered steps"
+          },
+          "verification": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verification",
+            "description": "Post-run checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "available",
+          "risk_level"
+        ],
+        "title": "AgentUsagePlaybookRead"
+      },
+      "AgentUsagePlaybookStepRead": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "title": "Order",
+            "description": "Step sequence number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Short step title"
+          },
+          "action_type": {
+            "type": "string",
+            "title": "Action Type",
+            "description": "Action category such as mcp_call or curl"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload",
+            "description": "Machine-readable action payload"
+          },
+          "success_criteria": {
+            "type": "string",
+            "title": "Success Criteria",
+            "description": "How to determine the step succeeded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order",
+          "title",
+          "action_type",
+          "success_criteria"
+        ],
+        "title": "AgentUsagePlaybookStepRead"
+      },
+      "AgentUsageQuickstartRead": {
+        "properties": {
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "What the quickstart achieves"
+          },
+          "environment": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Environment",
+            "description": "Environment variables used by commands"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsageQuickstartStepRead"
+            },
+            "type": "array",
+            "title": "Steps",
+            "description": "Ordered quickstart steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary"
+        ],
+        "title": "AgentUsageQuickstartRead"
+      },
+      "AgentUsageQuickstartStepRead": {
+        "properties": {
+          "order": {
+            "type": "integer",
+            "title": "Order",
+            "description": "Step sequence number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Short step title"
+          },
+          "goal": {
+            "type": "string",
+            "title": "Goal",
+            "description": "What this step verifies"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command",
+            "description": "Copy-pasteable command snippet"
+          },
+          "expected_result": {
+            "type": "string",
+            "title": "Expected Result",
+            "description": "Expected success signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order",
+          "title",
+          "goal",
+          "command",
+          "expected_result"
+        ],
+        "title": "AgentUsageQuickstartStepRead"
+      },
       "AgentUsageRead": {
         "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version",
+            "description": "Usage schema version"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At",
+            "description": "Server generation timestamp"
+          },
           "name": {
             "type": "string",
             "title": "Name",
             "description": "Usage document name"
           },
+          "objective": {
+            "type": "string",
+            "title": "Objective",
+            "description": "Primary goal of this usage document"
+          },
           "auth": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Auth",
+            "$ref": "#/components/schemas/AgentUsageAuthRead",
             "description": "Authentication instructions"
           },
-          "endpoint_base": {
-            "type": "string",
-            "title": "Endpoint Base",
-            "description": "Base site URL"
-          },
-          "docs_url": {
-            "type": "string",
-            "title": "Docs Url",
-            "description": "Canonical usage document URL"
-          },
-          "recommended_scopes": {
+          "endpoints": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/AgentUsageEndpointRead"
             },
             "type": "array",
-            "title": "Recommended Scopes",
-            "description": "Suggested MCP-related scopes"
+            "title": "Endpoints",
+            "description": "Key endpoints agents should use"
+          },
+          "scope_guide": {
+            "$ref": "#/components/schemas/AgentUsageScopeGuideRead",
+            "description": "Scope guidance for current API key"
+          },
+          "quickstart": {
+            "$ref": "#/components/schemas/AgentUsageQuickstartRead",
+            "description": "Copy-pasteable first-run path"
+          },
+          "playbooks": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsagePlaybookRead"
+            },
+            "type": "array",
+            "title": "Playbooks",
+            "description": "Task-oriented execution playbooks"
           },
           "mcp": {
             "$ref": "#/components/schemas/AgentUsageMcpRead",
             "description": "MCP capability summary"
+          },
+          "troubleshooting": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsageTroubleshootingRead"
+            },
+            "type": "array",
+            "title": "Troubleshooting",
+            "description": "Common failures and recovery actions"
           },
           "skill_maps": {
             "items": {
@@ -12080,25 +13405,519 @@
             "type": "array",
             "title": "Skill Maps",
             "description": "Local agent skill maps"
-          },
-          "workflows": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Workflows",
-            "description": "Workflow templates or notes"
           }
         },
         "type": "object",
         "required": [
+          "schema_version",
+          "generated_at",
           "name",
-          "endpoint_base",
-          "docs_url",
+          "objective",
+          "auth",
+          "scope_guide",
+          "quickstart",
           "mcp"
         ],
         "title": "AgentUsageRead"
+      },
+      "AgentUsageScopeGuideRead": {
+        "properties": {
+          "required_for_connection": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required For Connection",
+            "description": "Scopes required to establish MCP connection"
+          },
+          "available_on_current_key": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available On Current Key",
+            "description": "Scopes granted to current API key"
+          },
+          "recommended_for_full_management": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended For Full Management",
+            "description": "Recommended scopes for full capability coverage"
+          },
+          "missing_recommended_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Recommended Scopes",
+            "description": "Recommended scopes not present on current API key"
+          }
+        },
+        "type": "object",
+        "title": "AgentUsageScopeGuideRead"
+      },
+      "AgentUsageTroubleshootingRead": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "HTTP status code or error tag"
+          },
+          "symptom": {
+            "type": "string",
+            "title": "Symptom",
+            "description": "Observed symptom"
+          },
+          "likely_causes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Likely Causes",
+            "description": "Likely causes"
+          },
+          "fixes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fixes",
+            "description": "Recommended fixes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "symptom"
+        ],
+        "title": "AgentUsageTroubleshootingRead"
+      },
+      "AgentWorkflowCreate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Description",
+            "default": ""
+          },
+          "trigger_event": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Trigger Event"
+          },
+          "target_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Type"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "require_human_approval": {
+            "type": "boolean",
+            "title": "Require Human Approval",
+            "default": true
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Instructions",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "trigger_event"
+        ],
+        "title": "AgentWorkflowCreate"
+      },
+      "AgentWorkflowDraftChatWrite": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AgentWorkflowDraftChatWrite"
+      },
+      "AgentWorkflowDraftCreateRead": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "draft_cleared": {
+            "type": "boolean",
+            "title": "Draft Cleared",
+            "default": true
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/AgentWorkflowRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary",
+          "workflow"
+        ],
+        "title": "AgentWorkflowDraftCreateRead"
+      },
+      "AgentWorkflowDraftCreateWrite": {
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AgentWorkflowDraftCreateWrite"
+      },
+      "AgentWorkflowDraftMessageRead": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content",
+          "created_at"
+        ],
+        "title": "AgentWorkflowDraftMessageRead"
+      },
+      "AgentWorkflowDraftOptionRead": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "requires_input": {
+            "type": "boolean",
+            "title": "Requires Input",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "AgentWorkflowDraftOptionRead"
+      },
+      "AgentWorkflowDraftQuestionRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "default": ""
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/AgentWorkflowDraftOptionRead"
+            },
+            "type": "array",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "AgentWorkflowDraftQuestionRead"
+      },
+      "AgentWorkflowDraftRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": "global"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "active"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "ready_to_create": {
+            "type": "boolean",
+            "title": "Ready To Create",
+            "default": false
+          },
+          "suggested_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Template"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentWorkflowDraftQuestionRead"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "current_question": {
+            "type": "string",
+            "title": "Current Question",
+            "default": ""
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/AgentWorkflowDraftOptionRead"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "working_document": {
+            "type": "string",
+            "title": "Working Document",
+            "default": ""
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/AgentWorkflowDraftMessageRead"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AgentWorkflowDraftRead"
+      },
+      "AgentWorkflowRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "trigger_event": {
+            "type": "string",
+            "title": "Trigger Event"
+          },
+          "target_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Type"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "require_human_approval": {
+            "type": "boolean",
+            "title": "Require Human Approval",
+            "default": true
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "default": ""
+          },
+          "built_in": {
+            "type": "boolean",
+            "title": "Built In",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "description",
+          "trigger_event"
+        ],
+        "title": "AgentWorkflowRead"
+      },
+      "AgentWorkflowUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "trigger_event": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Event"
+          },
+          "target_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Type"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "require_human_approval": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Human Approval"
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions"
+          }
+        },
+        "type": "object",
+        "title": "AgentWorkflowUpdate"
       },
       "ApiKeyAdminRead": {
         "properties": {
@@ -12113,6 +13932,10 @@
           "key_prefix": {
             "type": "string",
             "title": "Key Prefix"
+          },
+          "key_suffix": {
+            "type": "string",
+            "title": "Key Suffix"
           },
           "scopes": {
             "items": {
@@ -12149,6 +13972,7 @@
           "id",
           "key_name",
           "key_prefix",
+          "key_suffix",
           "scopes",
           "last_used_at",
           "created_at",
@@ -14574,6 +16398,211 @@
         ],
         "title": "ContentEntryRead"
       },
+      "ContentNotificationDeliveryAdminRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Delivery id"
+          },
+          "subscriber_email": {
+            "type": "string",
+            "title": "Subscriber Email",
+            "description": "Subscriber email"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type",
+            "description": "Content type"
+          },
+          "content_slug": {
+            "type": "string",
+            "title": "Content Slug",
+            "description": "Content slug"
+          },
+          "content_title": {
+            "type": "string",
+            "title": "Content Title",
+            "description": "Content title"
+          },
+          "content_url": {
+            "type": "string",
+            "title": "Content Url",
+            "description": "Public content URL"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Delivery status"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message",
+            "description": "Delivery error detail"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At",
+            "description": "Delivery time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "subscriber_email",
+          "content_type",
+          "content_slug",
+          "content_title",
+          "content_url",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ContentNotificationDeliveryAdminRead"
+      },
+      "ContentSubscriberAdminRead": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Subscriber email"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether subscription is active"
+          },
+          "content_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Content Types",
+            "description": "Subscribed content types"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "email",
+              "binding",
+              "unknown"
+            ],
+            "title": "Auth Mode",
+            "description": "Whether the subscriber email maps to email-only user, bound account user, or unknown user"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "Matched site user display name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url",
+            "description": "Matched site user avatar"
+          },
+          "primary_auth_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Auth Provider",
+            "description": "Matched site user primary auth provider"
+          },
+          "oauth_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Oauth Providers",
+            "description": "Matched OAuth providers"
+          },
+          "sent_count": {
+            "type": "integer",
+            "title": "Sent Count",
+            "description": "Number of successful deliveries",
+            "default": 0
+          },
+          "last_sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sent At",
+            "description": "Last successful delivery time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "is_active",
+          "auth_mode",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ContentSubscriberAdminRead"
+      },
       "ContentSubscriptionConfigAdminRead": {
         "properties": {
           "id": {
@@ -14660,6 +16689,42 @@
             "title": "Smtp Use Ssl",
             "description": "Whether implicit SSL is enabled"
           },
+          "smtp_test_passed": {
+            "type": "boolean",
+            "title": "Smtp Test Passed",
+            "description": "Whether SMTP test delivery succeeded for current settings"
+          },
+          "smtp_tested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smtp Tested At",
+            "description": "Last successful SMTP test timestamp"
+          },
+          "allowed_content_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Content Types",
+            "description": "Content types users can subscribe to"
+          },
+          "mail_subject_template": {
+            "type": "string",
+            "title": "Mail Subject Template",
+            "description": "Email subject template"
+          },
+          "mail_body_template": {
+            "type": "string",
+            "title": "Mail Body Template",
+            "description": "Email body template"
+          },
           "subscriber_count": {
             "type": "integer",
             "title": "Subscriber Count",
@@ -14697,6 +16762,11 @@
           "smtp_reply_to",
           "smtp_use_tls",
           "smtp_use_ssl",
+          "smtp_test_passed",
+          "smtp_tested_at",
+          "allowed_content_types",
+          "mail_subject_template",
+          "mail_body_template",
           "created_at",
           "updated_at"
         ],
@@ -14887,6 +16957,45 @@
             ],
             "title": "Smtp Use Ssl",
             "description": "Whether implicit SSL is enabled"
+          },
+          "allowed_content_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Content Types",
+            "description": "Content types users can subscribe to"
+          },
+          "mail_subject_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail Subject Template",
+            "description": "Email subject template"
+          },
+          "mail_body_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mail Body Template",
+            "description": "Email body template"
           }
         },
         "type": "object",
@@ -16518,6 +18627,251 @@
         ],
         "title": "LoginResponse"
       },
+      "McpAdminConfigRead": {
+        "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Id",
+            "description": "Selected API key identifier"
+          },
+          "api_key_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Name",
+            "description": "Selected API key display name"
+          },
+          "api_key_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Api Key Scopes",
+            "description": "Scopes currently granted to the selected API key"
+          },
+          "public_access": {
+            "type": "boolean",
+            "title": "Public Access",
+            "description": "Whether MCP public access is enabled"
+          },
+          "selected_preset": {
+            "type": "string",
+            "title": "Selected Preset",
+            "description": "Currently selected preset key"
+          },
+          "is_customized": {
+            "type": "boolean",
+            "title": "Is Customized",
+            "description": "Whether enabled capabilities were customized from the preset",
+            "default": false
+          },
+          "enabled_capability_count": {
+            "type": "integer",
+            "title": "Enabled Capability Count",
+            "description": "How many capabilities are currently enabled",
+            "default": 0
+          },
+          "available_capability_count": {
+            "type": "integer",
+            "title": "Available Capability Count",
+            "description": "How many capabilities exist in the MCP catalog",
+            "default": 0
+          },
+          "usage_url": {
+            "type": "string",
+            "title": "Usage Url",
+            "description": "Canonical MCP usage document URL"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint",
+            "description": "MCP endpoint URL"
+          },
+          "transport": {
+            "type": "string",
+            "title": "Transport",
+            "description": "MCP transport"
+          },
+          "required_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Scopes",
+            "description": "Scopes required to connect to MCP"
+          },
+          "recommended_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Scopes",
+            "description": "Suggested scopes based on enabled capabilities"
+          },
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/McpPresetRead"
+            },
+            "type": "array",
+            "title": "Presets",
+            "description": "Recommended MCP exposure presets"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/McpCapabilityConfigRead"
+            },
+            "type": "array",
+            "title": "Capabilities",
+            "description": "Full MCP capability catalog with enabled state for the selected API key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_access",
+          "selected_preset",
+          "usage_url",
+          "endpoint",
+          "transport"
+        ],
+        "title": "McpAdminConfigRead"
+      },
+      "McpAdminConfigUpdate": {
+        "properties": {
+          "public_access": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Access",
+            "description": "Whether MCP public access is enabled"
+          },
+          "selected_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Preset",
+            "description": "Selected preset key"
+          },
+          "enabled_capability_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled Capability Ids",
+            "description": "Explicitly enabled capability identifiers"
+          }
+        },
+        "type": "object",
+        "title": "McpAdminConfigUpdate"
+      },
+      "McpCapabilityConfigRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable capability identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Capability name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "Capability kind: tool or resource"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable capability description"
+          },
+          "required_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Scopes",
+            "description": "Scopes required to access this capability"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether this capability is enabled for MCP exposure"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "description",
+          "enabled"
+        ],
+        "title": "McpCapabilityConfigRead"
+      },
+      "McpPresetRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Preset identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Preset display name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Preset description"
+          },
+          "capability_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capability Ids",
+            "description": "Capabilities enabled by this preset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "description"
+        ],
+        "title": "McpPresetRead"
+      },
       "ModerateAction": {
         "properties": {
           "action": {
@@ -16970,73 +19324,6 @@
           "order_index"
         ],
         "title": "NavReorderItem"
-      },
-      "OAuthProviderSecretStatusRead": {
-        "properties": {
-          "configured": {
-            "type": "boolean",
-            "title": "Configured",
-            "description": "Whether this secret file is configured"
-          },
-          "filename": {
-            "type": "string",
-            "title": "Filename",
-            "description": "Expected secret filename under .store/secrets"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "file",
-              "env",
-              "missing"
-            ],
-            "title": "Source",
-            "description": "Active source for this value"
-          }
-        },
-        "type": "object",
-        "required": [
-          "configured",
-          "filename",
-          "source"
-        ],
-        "title": "OAuthProviderSecretStatusRead"
-      },
-      "OAuthProviderStatusRead": {
-        "properties": {
-          "enabled_for_visitors": {
-            "type": "boolean",
-            "title": "Enabled For Visitors",
-            "description": "Whether visitor login currently enables this provider"
-          },
-          "enabled_for_admin": {
-            "type": "boolean",
-            "title": "Enabled For Admin",
-            "description": "Whether admin auth currently enables this provider"
-          },
-          "ready": {
-            "type": "boolean",
-            "title": "Ready",
-            "description": "Whether all required secret files are available"
-          },
-          "client_id": {
-            "$ref": "#/components/schemas/OAuthProviderSecretStatusRead",
-            "description": "Client id configuration status"
-          },
-          "client_secret": {
-            "$ref": "#/components/schemas/OAuthProviderSecretStatusRead",
-            "description": "Client secret configuration status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "enabled_for_visitors",
-          "enabled_for_admin",
-          "ready",
-          "client_id",
-          "client_secret"
-        ],
-        "title": "OAuthProviderStatusRead"
       },
       "OAuthStartResponse": {
         "properties": {
@@ -17880,6 +20167,76 @@
         ],
         "title": "PaginatedResponse[ContentAdminRead]"
       },
+      "PaginatedResponse_ContentNotificationDeliveryAdminRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ContentNotificationDeliveryAdminRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[ContentNotificationDeliveryAdminRead]"
+      },
+      "PaginatedResponse_ContentSubscriberAdminRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ContentSubscriberAdminRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[ContentSubscriberAdminRead]"
+      },
       "PaginatedResponse_FriendAdminRead_": {
         "properties": {
           "items": {
@@ -18637,63 +20994,25 @@
             "title": "Title",
             "description": "Resume page title"
           },
-          "subtitle": {
-            "type": "string",
-            "title": "Subtitle",
-            "description": "Resume subtitle"
-          },
           "summary": {
             "type": "string",
             "title": "Summary",
-            "description": "Professional summary"
-          },
-          "download_label": {
-            "type": "string",
-            "title": "Download Label",
-            "description": "Download button label"
-          },
-          "template_key": {
-            "type": "string",
-            "title": "Template Key",
-            "description": "Selected resume template key"
-          },
-          "accent_tone": {
-            "type": "string",
-            "title": "Accent Tone",
-            "description": "Selected accent tone"
+            "description": "Markdown resume body"
           },
           "location": {
             "type": "string",
             "title": "Location",
             "description": "Current base location"
           },
-          "availability": {
-            "type": "string",
-            "title": "Availability",
-            "description": "Availability note"
-          },
           "email": {
             "type": "string",
             "title": "Email",
             "description": "Primary contact email"
           },
-          "website": {
-            "type": "string",
-            "title": "Website",
-            "description": "Primary website"
-          },
           "profile_image_url": {
             "type": "string",
             "title": "Profile Image Url",
             "description": "Profile image URL"
-          },
-          "highlights": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Highlights",
-            "description": "Featured resume highlights"
           },
           "created_at": {
             "type": "string",
@@ -18712,17 +21031,10 @@
         "required": [
           "id",
           "title",
-          "subtitle",
           "summary",
-          "download_label",
-          "template_key",
-          "accent_tone",
           "location",
-          "availability",
           "email",
-          "website",
           "profile_image_url",
-          "highlights",
           "created_at",
           "updated_at"
         ],
@@ -18735,43 +21047,15 @@
             "title": "Title",
             "description": "Resume page title"
           },
-          "subtitle": {
-            "type": "string",
-            "title": "Subtitle",
-            "description": "Resume subtitle or tagline"
-          },
           "summary": {
             "type": "string",
             "title": "Summary",
-            "description": "Professional summary paragraph"
-          },
-          "download_label": {
-            "type": "string",
-            "title": "Download Label",
-            "description": "PDF download button label"
-          },
-          "template_key": {
-            "type": "string",
-            "title": "Template Key",
-            "description": "Selected resume template key",
-            "default": "editorial"
-          },
-          "accent_tone": {
-            "type": "string",
-            "title": "Accent Tone",
-            "description": "Selected accent tone",
-            "default": "amber"
+            "description": "Markdown resume body"
           },
           "location": {
             "type": "string",
             "title": "Location",
             "description": "Current base location",
-            "default": ""
-          },
-          "availability": {
-            "type": "string",
-            "title": "Availability",
-            "description": "Availability note",
             "default": ""
           },
           "email": {
@@ -18780,33 +21064,17 @@
             "description": "Primary contact email",
             "default": ""
           },
-          "website": {
-            "type": "string",
-            "title": "Website",
-            "description": "Primary website",
-            "default": ""
-          },
           "profile_image_url": {
             "type": "string",
             "title": "Profile Image Url",
             "description": "Profile image URL",
             "default": ""
-          },
-          "highlights": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Highlights",
-            "description": "Featured resume highlights"
           }
         },
         "type": "object",
         "required": [
           "title",
-          "subtitle",
-          "summary",
-          "download_label"
+          "summary"
         ],
         "title": "ResumeBasicsCreate"
       },
@@ -18824,18 +21092,6 @@
             "title": "Title",
             "description": "Resume page title"
           },
-          "subtitle": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subtitle",
-            "description": "Resume subtitle"
-          },
           "summary": {
             "anyOf": [
               {
@@ -18846,43 +21102,7 @@
               }
             ],
             "title": "Summary",
-            "description": "Professional summary"
-          },
-          "download_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Download Label",
-            "description": "Download button label"
-          },
-          "template_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Template Key",
-            "description": "Selected resume template key"
-          },
-          "accent_tone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Accent Tone",
-            "description": "Selected accent tone"
+            "description": "Markdown resume body"
           },
           "location": {
             "anyOf": [
@@ -18896,18 +21116,6 @@
             "title": "Location",
             "description": "Current base location"
           },
-          "availability": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability",
-            "description": "Availability note"
-          },
           "email": {
             "anyOf": [
               {
@@ -18920,18 +21128,6 @@
             "title": "Email",
             "description": "Primary contact email"
           },
-          "website": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Website",
-            "description": "Primary website"
-          },
           "profile_image_url": {
             "anyOf": [
               {
@@ -18943,21 +21139,6 @@
             ],
             "title": "Profile Image Url",
             "description": "Profile image URL"
-          },
-          "highlights": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Highlights",
-            "description": "Featured resume highlights"
           }
         },
         "type": "object",
@@ -19135,72 +21316,6 @@
         ],
         "title": "ResumeExperienceCreate"
       },
-      "ResumeExperienceRead": {
-        "properties": {
-          "title": {
-            "type": "string",
-            "title": "Title",
-            "description": "Job title"
-          },
-          "company": {
-            "type": "string",
-            "title": "Company",
-            "description": "Company name"
-          },
-          "period": {
-            "type": "string",
-            "title": "Period",
-            "description": "Employment period"
-          },
-          "location": {
-            "type": "string",
-            "title": "Location",
-            "description": "Experience location",
-            "default": ""
-          },
-          "employment_type": {
-            "type": "string",
-            "title": "Employment Type",
-            "description": "Employment type",
-            "default": ""
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary",
-            "description": "Role description"
-          },
-          "achievements": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Achievements",
-            "description": "Achievement bullet points"
-          },
-          "tech_stack": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tech Stack",
-            "description": "Technologies used"
-          },
-          "order_index": {
-            "type": "integer",
-            "title": "Order Index",
-            "description": "Display order"
-          }
-        },
-        "type": "object",
-        "required": [
-          "title",
-          "company",
-          "period",
-          "summary",
-          "order_index"
-        ],
-        "title": "ResumeExperienceRead"
-      },
       "ResumeExperienceUpdate": {
         "properties": {
           "title": {
@@ -19328,43 +21443,15 @@
             "title": "Title",
             "description": "Resume page title"
           },
-          "subtitle": {
-            "type": "string",
-            "title": "Subtitle",
-            "description": "Resume subtitle"
-          },
           "summary": {
             "type": "string",
             "title": "Summary",
             "description": "Professional summary"
           },
-          "download_label": {
-            "type": "string",
-            "title": "Download Label",
-            "description": "PDF download label"
-          },
-          "template_key": {
-            "type": "string",
-            "title": "Template Key",
-            "description": "Selected resume template key",
-            "default": "editorial"
-          },
-          "accent_tone": {
-            "type": "string",
-            "title": "Accent Tone",
-            "description": "Selected accent tone",
-            "default": "amber"
-          },
           "location": {
             "type": "string",
             "title": "Location",
             "description": "Current base location",
-            "default": ""
-          },
-          "availability": {
-            "type": "string",
-            "title": "Availability",
-            "description": "Availability note",
             "default": ""
           },
           "email": {
@@ -19373,51 +21460,17 @@
             "description": "Primary contact email",
             "default": ""
           },
-          "website": {
-            "type": "string",
-            "title": "Website",
-            "description": "Primary website",
-            "default": ""
-          },
           "profile_image_url": {
             "type": "string",
             "title": "Profile Image Url",
             "description": "Profile image URL",
             "default": ""
-          },
-          "highlights": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Highlights",
-            "description": "Featured resume highlights"
-          },
-          "skill_groups": {
-            "items": {
-              "$ref": "#/components/schemas/ResumeSkillGroupRead"
-            },
-            "type": "array",
-            "title": "Skill Groups",
-            "description": "Skill categories and items"
-          },
-          "experiences": {
-            "items": {
-              "$ref": "#/components/schemas/ResumeExperienceRead"
-            },
-            "type": "array",
-            "title": "Experiences",
-            "description": "Work experience entries"
           }
         },
         "type": "object",
         "required": [
           "title",
-          "subtitle",
-          "summary",
-          "download_label",
-          "skill_groups",
-          "experiences"
+          "summary"
         ],
         "title": "ResumeRead"
       },
@@ -19516,35 +21569,6 @@
         ],
         "title": "ResumeSkillGroupCreate"
       },
-      "ResumeSkillGroupRead": {
-        "properties": {
-          "category": {
-            "type": "string",
-            "title": "Category",
-            "description": "Skill category name"
-          },
-          "items": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Items",
-            "description": "Skill names in this category"
-          },
-          "order_index": {
-            "type": "integer",
-            "title": "Order Index",
-            "description": "Display order"
-          }
-        },
-        "type": "object",
-        "required": [
-          "category",
-          "items",
-          "order_index"
-        ],
-        "title": "ResumeSkillGroupRead"
-      },
       "ResumeSkillGroupUpdate": {
         "properties": {
           "category": {
@@ -19589,306 +21613,6 @@
         },
         "type": "object",
         "title": "ResumeSkillGroupUpdate"
-      },
-      "RuntimeSiteSettingsAdminRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "Runtime site settings identifier"
-          },
-          "public_site_url": {
-            "type": "string",
-            "title": "Public Site Url",
-            "description": "Canonical public site URL"
-          },
-          "production_cors_origins": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Production Cors Origins",
-            "description": "CORS allowlist for production"
-          },
-          "seo_default_title": {
-            "type": "string",
-            "title": "Seo Default Title",
-            "description": "Fallback SEO title"
-          },
-          "seo_default_description": {
-            "type": "string",
-            "title": "Seo Default Description",
-            "description": "Fallback SEO description"
-          },
-          "rss_title": {
-            "type": "string",
-            "title": "Rss Title",
-            "description": "RSS channel title"
-          },
-          "rss_description": {
-            "type": "string",
-            "title": "Rss Description",
-            "description": "RSS channel description"
-          },
-          "robots_indexing_enabled": {
-            "type": "boolean",
-            "title": "Robots Indexing Enabled",
-            "description": "Whether robots should allow indexing"
-          },
-          "sitemap_static_pages": {
-            "items": {
-              "$ref": "#/components/schemas/SitemapStaticPageRead"
-            },
-            "type": "array",
-            "title": "Sitemap Static Pages",
-            "description": "Configured static sitemap pages"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "public_site_url",
-          "seo_default_title",
-          "seo_default_description",
-          "rss_title",
-          "rss_description",
-          "robots_indexing_enabled",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "RuntimeSiteSettingsAdminRead"
-      },
-      "RuntimeSiteSettingsRead": {
-        "properties": {
-          "public_site_url": {
-            "type": "string",
-            "title": "Public Site Url",
-            "description": "Canonical public site URL"
-          },
-          "production_cors_origins": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Production Cors Origins",
-            "description": "CORS allowlist for production"
-          },
-          "seo_default_title": {
-            "type": "string",
-            "title": "Seo Default Title",
-            "description": "Fallback SEO title"
-          },
-          "seo_default_description": {
-            "type": "string",
-            "title": "Seo Default Description",
-            "description": "Fallback SEO description"
-          },
-          "rss_title": {
-            "type": "string",
-            "title": "Rss Title",
-            "description": "RSS channel title"
-          },
-          "rss_description": {
-            "type": "string",
-            "title": "Rss Description",
-            "description": "RSS channel description"
-          },
-          "robots_indexing_enabled": {
-            "type": "boolean",
-            "title": "Robots Indexing Enabled",
-            "description": "Whether robots should allow indexing"
-          },
-          "sitemap_static_pages": {
-            "items": {
-              "$ref": "#/components/schemas/SitemapStaticPageRead"
-            },
-            "type": "array",
-            "title": "Sitemap Static Pages",
-            "description": "Configured static sitemap pages"
-          }
-        },
-        "type": "object",
-        "required": [
-          "public_site_url",
-          "seo_default_title",
-          "seo_default_description",
-          "rss_title",
-          "rss_description",
-          "robots_indexing_enabled"
-        ],
-        "title": "RuntimeSiteSettingsRead"
-      },
-      "RuntimeSiteSettingsSnapshotRead": {
-        "properties": {
-          "public_site_url": {
-            "type": "string",
-            "title": "Public Site Url"
-          },
-          "production_cors_origins": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Production Cors Origins"
-          },
-          "seo_default_title": {
-            "type": "string",
-            "title": "Seo Default Title"
-          },
-          "seo_default_description": {
-            "type": "string",
-            "title": "Seo Default Description"
-          },
-          "rss_title": {
-            "type": "string",
-            "title": "Rss Title"
-          },
-          "rss_description": {
-            "type": "string",
-            "title": "Rss Description"
-          },
-          "robots_indexing_enabled": {
-            "type": "boolean",
-            "title": "Robots Indexing Enabled"
-          },
-          "sitemap_static_pages": {
-            "items": {
-              "$ref": "#/components/schemas/SitemapStaticPageRead"
-            },
-            "type": "array",
-            "title": "Sitemap Static Pages"
-          }
-        },
-        "type": "object",
-        "required": [
-          "public_site_url",
-          "seo_default_title",
-          "seo_default_description",
-          "rss_title",
-          "rss_description",
-          "robots_indexing_enabled"
-        ],
-        "title": "RuntimeSiteSettingsSnapshotRead"
-      },
-      "RuntimeSiteSettingsUpdate": {
-        "properties": {
-          "public_site_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Site Url",
-            "description": "Canonical public site URL"
-          },
-          "production_cors_origins": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Production Cors Origins",
-            "description": "CORS allowlist for production"
-          },
-          "seo_default_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seo Default Title",
-            "description": "Fallback SEO title"
-          },
-          "seo_default_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seo Default Description",
-            "description": "Fallback SEO description"
-          },
-          "rss_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rss Title",
-            "description": "RSS channel title"
-          },
-          "rss_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rss Description",
-            "description": "RSS channel description"
-          },
-          "robots_indexing_enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Robots Indexing Enabled",
-            "description": "Whether robots should allow indexing"
-          },
-          "sitemap_static_pages": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/SitemapStaticPageRead"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sitemap Static Pages",
-            "description": "Configured static sitemap pages"
-          }
-        },
-        "type": "object",
-        "title": "RuntimeSiteSettingsUpdate"
       },
       "SearchResponse": {
         "properties": {
@@ -19957,29 +21681,6 @@
           "snippet"
         ],
         "title": "SearchResultItem"
-      },
-      "SecretStatusRead": {
-        "properties": {
-          "configured": {
-            "type": "boolean",
-            "title": "Configured"
-          },
-          "filename": {
-            "type": "string",
-            "title": "Filename"
-          },
-          "source": {
-            "type": "string",
-            "title": "Source"
-          }
-        },
-        "type": "object",
-        "required": [
-          "configured",
-          "filename",
-          "source"
-        ],
-        "title": "SecretStatusRead"
       },
       "SiteAdminEmailIdentityBindRequest": {
         "properties": {
@@ -20112,7 +21813,7 @@
           "total_batches": {
             "type": "integer",
             "title": "Total Batches",
-            "description": "Total avatar candidate batches"
+            "description": "Total number of avatar candidate batches"
           },
           "avatar_candidates": {
             "items": {
@@ -20163,13 +21864,25 @@
             "title": "Admin Email Enabled",
             "description": "Whether email can be used as an admin identity"
           },
-          "google": {
-            "$ref": "#/components/schemas/OAuthProviderStatusRead",
-            "description": "Google OAuth secret readiness and enablement"
+          "google_client_id": {
+            "type": "string",
+            "title": "Google Client Id",
+            "description": "Google OAuth client id"
           },
-          "github": {
-            "$ref": "#/components/schemas/OAuthProviderStatusRead",
-            "description": "GitHub OAuth secret readiness and enablement"
+          "google_client_secret": {
+            "type": "string",
+            "title": "Google Client Secret",
+            "description": "Google OAuth client secret"
+          },
+          "github_client_id": {
+            "type": "string",
+            "title": "Github Client Id",
+            "description": "GitHub OAuth client id"
+          },
+          "github_client_secret": {
+            "type": "string",
+            "title": "Github Client Secret",
+            "description": "GitHub OAuth client secret"
           },
           "created_at": {
             "type": "string",
@@ -20189,8 +21902,10 @@
           "id",
           "email_login_enabled",
           "admin_email_enabled",
-          "google",
-          "github",
+          "google_client_id",
+          "google_client_secret",
+          "github_client_id",
+          "github_client_secret",
           "created_at",
           "updated_at"
         ],
@@ -20251,6 +21966,54 @@
             ],
             "title": "Admin Email Enabled",
             "description": "Whether email can be used as admin login"
+          },
+          "google_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Client Id",
+            "description": "Google OAuth client id"
+          },
+          "google_client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Client Secret",
+            "description": "Google OAuth client secret"
+          },
+          "github_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Client Id",
+            "description": "GitHub OAuth client id"
+          },
+          "github_client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Client Secret",
+            "description": "GitHub OAuth client secret"
           }
         },
         "type": "object",
@@ -20413,18 +22176,13 @@
             "type": "array",
             "title": "Navigation",
             "description": "Navigation menu items"
-          },
-          "runtime": {
-            "$ref": "#/components/schemas/RuntimeSiteSettingsRead",
-            "description": "Runtime site settings"
           }
         },
         "type": "object",
         "required": [
           "site",
           "social_links",
-          "poems",
-          "runtime"
+          "poems"
         ],
         "title": "SiteConfigRead"
       },
@@ -21117,32 +22875,6 @@
         ],
         "title": "SiteUserOAuthAccountAdminRead"
       },
-      "SitemapStaticPageRead": {
-        "properties": {
-          "path": {
-            "type": "string",
-            "title": "Path",
-            "description": "Static sitemap path"
-          },
-          "changefreq": {
-            "type": "string",
-            "title": "Changefreq",
-            "description": "Sitemap changefreq value"
-          },
-          "priority": {
-            "type": "string",
-            "title": "Priority",
-            "description": "Sitemap priority value"
-          }
-        },
-        "type": "object",
-        "required": [
-          "path",
-          "changefreq",
-          "priority"
-        ],
-        "title": "SitemapStaticPageRead"
-      },
       "SocialLinkAdminRead": {
         "properties": {
           "id": {
@@ -21391,19 +23123,6 @@
           "site_url": {
             "type": "string",
             "title": "Site Url"
-          },
-          "runtime": {
-            "$ref": "#/components/schemas/RuntimeSiteSettingsSnapshotRead"
-          },
-          "secrets_dir": {
-            "type": "string",
-            "title": "Secrets Dir"
-          },
-          "sentry_dsn": {
-            "$ref": "#/components/schemas/SecretStatusRead"
-          },
-          "waline_jwt_token": {
-            "$ref": "#/components/schemas/SecretStatusRead"
           }
         },
         "type": "object",
@@ -21413,11 +23132,7 @@
           "media_dir_size_bytes",
           "uptime_seconds",
           "environment",
-          "site_url",
-          "runtime",
-          "secrets_dir",
-          "sentry_dsn",
-          "waline_jwt_token"
+          "site_url"
         ],
         "title": "SystemInfo"
       },
@@ -21440,6 +23155,85 @@
           "count"
         ],
         "title": "TagInfo"
+      },
+      "TelegramWebhookConnectRead": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": false
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "bot_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bot Username"
+          },
+          "chat_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Id"
+          },
+          "target_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "summary"
+        ],
+        "title": "TelegramWebhookConnectRead"
+      },
+      "TelegramWebhookConnectWrite": {
+        "properties": {
+          "bot_token": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 10,
+            "title": "Bot Token"
+          },
+          "send_test_message": {
+            "type": "boolean",
+            "title": "Send Test Message",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "bot_token"
+        ],
+        "title": "TelegramWebhookConnectWrite"
       },
       "TopPageMetric": {
         "properties": {
@@ -21983,6 +23777,40 @@
               }
             ],
             "title": "Last Success At"
+          },
+          "last_test_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Test Status"
+          },
+          "last_test_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Test Error"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
           },
           "created_at": {
             "type": "string",

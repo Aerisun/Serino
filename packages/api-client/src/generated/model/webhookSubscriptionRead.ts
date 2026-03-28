@@ -20,6 +20,9 @@ export interface WebhookSubscriptionRead {
   headers?: WebhookSubscriptionReadHeaders;
   last_delivery_at?: string | null;
   last_success_at?: string | null;
+  last_test_status?: string | null;
+  last_test_error?: string | null;
+  last_tested_at?: string | null;
   created_at: string;
   updated_at: string;
 }

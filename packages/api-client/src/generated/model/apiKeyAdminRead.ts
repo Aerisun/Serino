@@ -9,6 +9,7 @@ export interface ApiKeyAdminRead {
   id: string;
   key_name: string;
   key_prefix: string;
+  key_suffix: string;
   scopes: string[];
   last_used_at: string | null;
   created_at: string;

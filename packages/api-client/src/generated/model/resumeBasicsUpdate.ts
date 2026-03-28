@@ -8,26 +8,12 @@
 export interface ResumeBasicsUpdate {
   /** Resume page title */
   title?: string | null;
-  /** Resume subtitle */
-  subtitle?: string | null;
-  /** Professional summary */
+  /** Markdown resume body */
   summary?: string | null;
-  /** Download button label */
-  download_label?: string | null;
-  /** Selected resume template key */
-  template_key?: string | null;
-  /** Selected accent tone */
-  accent_tone?: string | null;
   /** Current base location */
   location?: string | null;
-  /** Availability note */
-  availability?: string | null;
   /** Primary contact email */
   email?: string | null;
-  /** Primary website */
-  website?: string | null;
   /** Profile image URL */
   profile_image_url?: string | null;
-  /** Featured resume highlights */
-  highlights?: string[] | null;
 }

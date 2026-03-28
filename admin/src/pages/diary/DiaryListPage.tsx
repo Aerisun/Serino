@@ -30,8 +30,8 @@ function useDiaryListConfig(): ContentListConfig {
         accessor: (row) => <StatusBadge status={row.visibility} />,
       },
       {
-        header: t("common.recordedAt"),
-        accessor: (row) => formatDate(row.published_at),
+        header: t("posts.publishedAt"),
+        accessor: (row) => formatDate(row.published_at || row.updated_at),
       },
       {
         header: t("diary.created"),

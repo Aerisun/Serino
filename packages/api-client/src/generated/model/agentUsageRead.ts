@@ -5,25 +5,37 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AgentSkillMapRead } from './agentSkillMapRead';
+import type { AgentUsageAuthRead } from './agentUsageAuthRead';
+import type { AgentUsageEndpointRead } from './agentUsageEndpointRead';
 import type { AgentUsageMcpRead } from './agentUsageMcpRead';
-import type { AgentUsageReadAuth } from './agentUsageReadAuth';
-import type { AgentUsageReadWorkflowsItem } from './agentUsageReadWorkflowsItem';
+import type { AgentUsagePlaybookRead } from './agentUsagePlaybookRead';
+import type { AgentUsageQuickstartRead } from './agentUsageQuickstartRead';
+import type { AgentUsageScopeGuideRead } from './agentUsageScopeGuideRead';
+import type { AgentUsageTroubleshootingRead } from './agentUsageTroubleshootingRead';
 
 export interface AgentUsageRead {
+  /** Usage schema version */
+  schema_version: string;
+  /** Server generation timestamp */
+  generated_at: string;
   /** Usage document name */
   name: string;
+  /** Primary goal of this usage document */
+  objective: string;
   /** Authentication instructions */
-  auth?: AgentUsageReadAuth;
-  /** Base site URL */
-  endpoint_base: string;
-  /** Canonical usage document URL */
-  docs_url: string;
-  /** Suggested MCP-related scopes */
-  recommended_scopes?: string[];
+  auth: AgentUsageAuthRead;
+  /** Key endpoints agents should use */
+  endpoints?: AgentUsageEndpointRead[];
+  /** Scope guidance for current API key */
+  scope_guide: AgentUsageScopeGuideRead;
+  /** Copy-pasteable first-run path */
+  quickstart: AgentUsageQuickstartRead;
+  /** Task-oriented execution playbooks */
+  playbooks?: AgentUsagePlaybookRead[];
   /** MCP capability summary */
   mcp: AgentUsageMcpRead;
+  /** Common failures and recovery actions */
+  troubleshooting?: AgentUsageTroubleshootingRead[];
   /** Local agent skill maps */
   skill_maps?: AgentSkillMapRead[];
-  /** Workflow templates or notes */
-  workflows?: AgentUsageReadWorkflowsItem[];
 }

@@ -96,9 +96,18 @@ export default function ThoughtEditPage() {
     category: "",
     mood: "",
   });
+  const [isPublishedAtManual, setIsPublishedAtManual] = useState(false);
 
   useEffect(() => {
-    if (item) setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: item.published_at, category: item.category || "", mood: item.mood || "" });
+    if (item) {
+      const effectivePublishedAt = item.published_at || item.updated_at || null;
+      const hasManualPublishedAt =
+        Boolean(item.published_at) &&
+        (!item.updated_at ||
+          Math.abs(new Date(item.published_at!).getTime() - new Date(item.updated_at).getTime()) > 60_000);
+      setForm({ slug: item.slug, title: item.title, summary: item.summary || "", body: item.body, tags: item.tags, status: item.status, visibility: item.visibility, published_at: effectivePublishedAt, category: item.category || "", mood: item.mood || "" });
+      setIsPublishedAtManual(hasManualPublishedAt);
+    }
   }, [item]);
 
   const invalidateQueries = () => {
@@ -144,7 +153,11 @@ export default function ThoughtEditPage() {
 
   const saveThought = async (mode: "draft" | "confirm") => {
     const nextStatus = mode === "draft" ? "draft" : form.visibility === "public" ? "published" : "archived";
-    const nextForm = { ...form, status: nextStatus };
+    const nextPublishedAt =
+      isPublishedAtManual && form.published_at
+        ? form.published_at
+        : new Date().toISOString();
+    const nextForm = { ...form, status: nextStatus, published_at: nextPublishedAt };
 
     setIsSaving(true);
     try {
@@ -153,7 +166,7 @@ export default function ThoughtEditPage() {
       } else {
         await updateThought({ itemId: id!, data: nextForm as ContentUpdate });
       }
-      setForm((prev) => ({ ...prev, status: nextStatus }));
+      setForm((prev) => ({ ...prev, status: nextStatus, published_at: nextPublishedAt }));
     } finally {
       setIsSaving(false);
     }
@@ -210,21 +223,45 @@ export default function ThoughtEditPage() {
           </Select>
         </div>
 
-        {!isNew && (
-          <div className="pt-6 border-t border-border flex justify-start">
-            <Button
-              variant="destructive"
-              type="button"
-              onClick={() => {
-                if (confirm(t("thoughts.deleteConfirm"))) {
-                  deleteThoughtMutate({ itemId: id! });
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
-            </Button>
+        <div className="pt-6 border-t border-border">
+          <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-4 sm:px-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              {!isNew && (
+                <Button
+                  variant="destructive"
+                  type="button"
+                  className="h-11 rounded-xl px-5 shadow-sm shadow-destructive/25"
+                  onClick={() => {
+                    if (confirm(t("thoughts.deleteConfirm"))) {
+                      deleteThoughtMutate({ itemId: id! });
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
+                </Button>
+              )}
+              <div className="space-y-2 w-full sm:w-80 sm:ml-auto">
+                <Label className="text-sm font-medium">{t("posts.publishedAt")}</Label>
+                <Input
+                  className="h-11 rounded-xl border-border/60 bg-background/90 shadow-sm"
+                  type="datetime-local"
+                  value={
+                    form.published_at
+                      ? new Date(form.published_at).toISOString().slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const nextPublishedAt = e.target.value
+                      ? new Date(e.target.value).toISOString()
+                      : null;
+                    setIsPublishedAtManual(Boolean(nextPublishedAt));
+                    setField("published_at", nextPublishedAt);
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </form>
     </div>
   );

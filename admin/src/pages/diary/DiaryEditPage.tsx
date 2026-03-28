@@ -124,9 +124,15 @@ export default function DiaryEditPage() {
     weather: "",
     poem: "",
   });
+  const [isPublishedAtManual, setIsPublishedAtManual] = useState(false);
 
   useEffect(() => {
-    if (item)
+    if (item) {
+      const effectivePublishedAt = item.published_at || item.updated_at || null;
+      const hasManualPublishedAt =
+        Boolean(item.published_at) &&
+        (!item.updated_at ||
+          Math.abs(new Date(item.published_at!).getTime() - new Date(item.updated_at).getTime()) > 60_000);
       setForm({
         slug: item.slug,
         title: item.title,
@@ -135,11 +141,13 @@ export default function DiaryEditPage() {
         tags: item.tags,
         status: item.status,
         visibility: item.visibility,
-        published_at: item.published_at,
+        published_at: effectivePublishedAt,
         mood: item.mood || "",
         weather: item.weather || "",
         poem: item.poem || "",
       });
+      setIsPublishedAtManual(hasManualPublishedAt);
+    }
   }, [item]);
 
   const invalidateQueries = () => {
@@ -194,7 +202,11 @@ export default function DiaryEditPage() {
 
   const saveDiary = async (mode: "draft" | "confirm") => {
     const nextStatus = mode === "draft" ? "draft" : form.visibility === "public" ? "published" : "archived";
-    const nextForm = { ...form, status: nextStatus };
+    const nextPublishedAt =
+      isPublishedAtManual && form.published_at
+        ? form.published_at
+        : new Date().toISOString();
+    const nextForm = { ...form, status: nextStatus, published_at: nextPublishedAt };
 
     setIsSaving(true);
     try {
@@ -203,7 +215,7 @@ export default function DiaryEditPage() {
       } else {
         await updateDiary({ itemId: id!, data: nextForm as ContentUpdate });
       }
-      setForm((prev) => ({ ...prev, status: nextStatus }));
+      setForm((prev) => ({ ...prev, status: nextStatus, published_at: nextPublishedAt }));
     } finally {
       setIsSaving(false);
     }
@@ -457,41 +469,45 @@ export default function DiaryEditPage() {
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>{t("posts.publishedAt")}</Label>
-          <Input
-            type="datetime-local"
-            value={
-              form.published_at
-                ? new Date(form.published_at).toISOString().slice(0, 16)
-                : ""
-            }
-            onChange={(e) =>
-              setField(
-                "published_at",
-                e.target.value
-                  ? new Date(e.target.value).toISOString()
-                  : null,
-              )
-            }
-          />
-        </div>
-
-        {!isNew && (
-          <div className="pt-6 border-t border-border flex justify-start">
-            <Button
-              variant="destructive"
-              type="button"
-              onClick={() => {
-                if (confirm(t("diary.deleteConfirm"))) {
-                  deleteDiaryMutate({ itemId: id! });
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
-            </Button>
+        <div className="pt-6 border-t border-border">
+          <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-4 sm:px-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              {!isNew && (
+                <Button
+                  variant="destructive"
+                  type="button"
+                  className="h-11 rounded-xl px-5 shadow-sm shadow-destructive/25"
+                  onClick={() => {
+                    if (confirm(t("diary.deleteConfirm"))) {
+                      deleteDiaryMutate({ itemId: id! });
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> {t("common.delete")}
+                </Button>
+              )}
+              <div className="space-y-2 w-full sm:w-80 sm:ml-auto">
+                <Label className="text-sm font-medium">{t("posts.publishedAt")}</Label>
+                <Input
+                  className="h-11 rounded-xl border-border/60 bg-background/90 shadow-sm"
+                  type="datetime-local"
+                  value={
+                    form.published_at
+                      ? new Date(form.published_at).toISOString().slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const nextPublishedAt = e.target.value
+                      ? new Date(e.target.value).toISOString()
+                      : null;
+                    setIsPublishedAtManual(Boolean(nextPublishedAt));
+                    setField("published_at", nextPublishedAt);
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </form>
     </div>
   );

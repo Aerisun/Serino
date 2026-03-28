@@ -235,7 +235,7 @@
       "empty_message": null,
       "max_width": "max-w-3xl",
       "page_size": null,
-      "download_label": "下载 PDF",
+      "download_label": null,
       "enabled": true,
       "extras": {}
     },

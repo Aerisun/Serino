@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SecretStatusRead {
-  configured: boolean;
-  filename: string;
-  source: string;
+export interface AgentWorkflowDraftMessageRead {
+  role: string;
+  content: string;
+  created_at: string;
 }

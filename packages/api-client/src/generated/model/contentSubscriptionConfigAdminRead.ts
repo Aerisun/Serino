@@ -39,6 +39,16 @@ export interface ContentSubscriptionConfigAdminRead {
   smtp_use_tls: boolean;
   /** Whether implicit SSL is enabled */
   smtp_use_ssl: boolean;
+  /** Whether SMTP test delivery succeeded for current settings */
+  smtp_test_passed: boolean;
+  /** Last successful SMTP test timestamp */
+  smtp_tested_at: string | null;
+  /** Content types users can subscribe to */
+  allowed_content_types: string[];
+  /** Email subject template */
+  mail_subject_template: string;
+  /** Email body template */
+  mail_body_template: string;
   /** Number of active subscribers */
   subscriber_count?: number;
   /** Creation time */

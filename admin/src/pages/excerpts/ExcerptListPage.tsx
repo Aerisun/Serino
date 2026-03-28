@@ -23,6 +23,7 @@ function useExcerptListConfig(): ContentListConfig {
       { header: t("common.title"), accessor: "title" },
       { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
       { header: t("posts.visibility"), accessor: (row) => <StatusBadge status={row.visibility} /> },
+      { header: t("posts.publishedAt"), accessor: (row) => formatDate(row.published_at || row.updated_at) },
       { header: t("diary.created"), accessor: (row) => formatDate(row.created_at) },
     ],
     useList: useListExcerpts as ContentListConfig["useList"],

@@ -8,6 +8,8 @@ import type { AgentUsageCapabilityReadExamplesItem } from './agentUsageCapabilit
 import type { AgentUsageCapabilityReadInvocation } from './agentUsageCapabilityReadInvocation';
 
 export interface AgentUsageCapabilityRead {
+  /** Stable capability identifier */
+  id: string;
   /** Capability name */
   name: string;
   /** Capability kind: tool or resource */

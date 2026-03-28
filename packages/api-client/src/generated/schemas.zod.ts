@@ -51,21 +51,7 @@ export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
   "label": zod.string().describe('Child navigation label'),
   "href": zod.string().describe('Child navigation URL')
 })).optional().describe('Nested child navigation items')
-})).optional().describe('Navigation menu items'),
-  "runtime": zod.object({
-  "public_site_url": zod.string().describe('Canonical public site URL'),
-  "production_cors_origins": zod.array(zod.string()).optional().describe('CORS allowlist for production'),
-  "seo_default_title": zod.string().describe('Fallback SEO title'),
-  "seo_default_description": zod.string().describe('Fallback SEO description'),
-  "rss_title": zod.string().describe('RSS channel title'),
-  "rss_description": zod.string().describe('RSS channel description'),
-  "robots_indexing_enabled": zod.boolean().describe('Whether robots should allow indexing'),
-  "sitemap_static_pages": zod.array(zod.object({
-  "path": zod.string().describe('Static sitemap path'),
-  "changefreq": zod.string().describe('Sitemap changefreq value'),
-  "priority": zod.string().describe('Sitemap priority value')
-})).optional().describe('Configured static sitemap pages')
-}).describe('Runtime site settings')
+})).optional().describe('Navigation menu items')
 })
 
 
@@ -130,45 +116,16 @@ export const ReadCommunityConfigApiV1SiteCommunityConfigGetResponse = zod.object
 /**
  * @summary 获取简历数据
  */
-export const readResumeApiV1SiteResumeGetResponseTemplateKeyDefault = `editorial`;
-export const readResumeApiV1SiteResumeGetResponseAccentToneDefault = `amber`;
 export const readResumeApiV1SiteResumeGetResponseLocationDefault = ``;
-export const readResumeApiV1SiteResumeGetResponseAvailabilityDefault = ``;
 export const readResumeApiV1SiteResumeGetResponseEmailDefault = ``;
-export const readResumeApiV1SiteResumeGetResponseWebsiteDefault = ``;
 export const readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault = ``;
-export const readResumeApiV1SiteResumeGetResponseExperiencesItemLocationDefault = ``;
-export const readResumeApiV1SiteResumeGetResponseExperiencesItemEmploymentTypeDefault = ``;
 
 export const ReadResumeApiV1SiteResumeGetResponse = zod.object({
   "title": zod.string().describe('Resume page title'),
-  "subtitle": zod.string().describe('Resume subtitle'),
   "summary": zod.string().describe('Professional summary'),
-  "download_label": zod.string().describe('PDF download label'),
-  "template_key": zod.string().default(readResumeApiV1SiteResumeGetResponseTemplateKeyDefault).describe('Selected resume template key'),
-  "accent_tone": zod.string().default(readResumeApiV1SiteResumeGetResponseAccentToneDefault).describe('Selected accent tone'),
   "location": zod.string().default(readResumeApiV1SiteResumeGetResponseLocationDefault).describe('Current base location'),
-  "availability": zod.string().default(readResumeApiV1SiteResumeGetResponseAvailabilityDefault).describe('Availability note'),
   "email": zod.string().default(readResumeApiV1SiteResumeGetResponseEmailDefault).describe('Primary contact email'),
-  "website": zod.string().default(readResumeApiV1SiteResumeGetResponseWebsiteDefault).describe('Primary website'),
-  "profile_image_url": zod.string().default(readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault).describe('Profile image URL'),
-  "highlights": zod.array(zod.string()).optional().describe('Featured resume highlights'),
-  "skill_groups": zod.array(zod.object({
-  "category": zod.string().describe('Skill category name'),
-  "items": zod.array(zod.string()).describe('Skill names in this category'),
-  "order_index": zod.number().describe('Display order')
-})).describe('Skill categories and items'),
-  "experiences": zod.array(zod.object({
-  "title": zod.string().describe('Job title'),
-  "company": zod.string().describe('Company name'),
-  "period": zod.string().describe('Employment period'),
-  "location": zod.string().default(readResumeApiV1SiteResumeGetResponseExperiencesItemLocationDefault).describe('Experience location'),
-  "employment_type": zod.string().default(readResumeApiV1SiteResumeGetResponseExperiencesItemEmploymentTypeDefault).describe('Employment type'),
-  "summary": zod.string().describe('Role description'),
-  "achievements": zod.array(zod.string()).optional().describe('Achievement bullet points'),
-  "tech_stack": zod.array(zod.string()).optional().describe('Technologies used'),
-  "order_index": zod.number().describe('Display order')
-})).describe('Work experience entries')
+  "profile_image_url": zod.string().default(readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault).describe('Profile image URL')
 })
 
 
@@ -653,7 +610,7 @@ export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetQueryParams = z
 
 export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetResponse = zod.object({
   "batch": zod.number().describe('Current avatar candidate batch'),
-  "total_batches": zod.number().describe('Total avatar candidate batches'),
+  "total_batches": zod.number().describe('Total number of avatar candidate batches'),
   "avatar_candidates": zod.array(zod.object({
   "key": zod.string().describe('Avatar option key'),
   "label": zod.string().describe('Avatar option label'),
@@ -972,18 +929,68 @@ export const SubscribeToContentApiV1SiteSubscriptionsPostBody = zod.object({
  * Capability discovery endpoint for external agents.
  * @summary Agent Usage
  */
+export const agentUsageApiAgentUsageGetResponseEndpointsItemMethodDefault = `GET`;
+
 export const AgentUsageApiAgentUsageGetResponse = zod.object({
+  "schema_version": zod.string().describe('Usage schema version'),
+  "generated_at": zod.string().datetime({}).describe('Server generation timestamp'),
   "name": zod.string().describe('Usage document name'),
-  "auth": zod.record(zod.string(), zod.unknown()).optional().describe('Authentication instructions'),
-  "endpoint_base": zod.string().describe('Base site URL'),
-  "docs_url": zod.string().describe('Canonical usage document URL'),
-  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested MCP-related scopes'),
+  "objective": zod.string().describe('Primary goal of this usage document'),
+  "auth": zod.object({
+  "type": zod.string().describe('Authentication type'),
+  "header": zod.string().describe('HTTP header used for authentication'),
+  "format": zod.string().describe('Expected header value format'),
+  "example": zod.string().describe('Authentication header example'),
+  "notes": zod.array(zod.string()).optional().describe('Additional auth notes')
+}).describe('Authentication instructions'),
+  "endpoints": zod.array(zod.object({
+  "id": zod.string().describe('Stable endpoint identifier'),
+  "url": zod.string().describe('Absolute endpoint URL'),
+  "method": zod.string().default(agentUsageApiAgentUsageGetResponseEndpointsItemMethodDefault).describe('HTTP method'),
+  "description": zod.string().describe('What this endpoint is for'),
+  "required_headers": zod.array(zod.string()).optional().describe('Required request headers'),
+  "expected_status": zod.array(zod.number()).optional().describe('Expected success status codes')
+})).optional().describe('Key endpoints agents should use'),
+  "scope_guide": zod.object({
+  "required_for_connection": zod.array(zod.string()).optional().describe('Scopes required to establish MCP connection'),
+  "available_on_current_key": zod.array(zod.string()).optional().describe('Scopes granted to current API key'),
+  "recommended_for_full_management": zod.array(zod.string()).optional().describe('Recommended scopes for full capability coverage'),
+  "missing_recommended_scopes": zod.array(zod.string()).optional().describe('Recommended scopes not present on current API key')
+}).describe('Scope guidance for current API key'),
+  "quickstart": zod.object({
+  "summary": zod.string().describe('What the quickstart achieves'),
+  "environment": zod.record(zod.string(), zod.string()).optional().describe('Environment variables used by commands'),
+  "steps": zod.array(zod.object({
+  "order": zod.number().describe('Step sequence number'),
+  "title": zod.string().describe('Short step title'),
+  "goal": zod.string().describe('What this step verifies'),
+  "command": zod.string().describe('Copy-pasteable command snippet'),
+  "expected_result": zod.string().describe('Expected success signal')
+})).optional().describe('Ordered quickstart steps')
+}).describe('Copy-pasteable first-run path'),
+  "playbooks": zod.array(zod.object({
+  "id": zod.string().describe('Stable playbook identifier'),
+  "title": zod.string().describe('Playbook title'),
+  "description": zod.string().describe('Playbook purpose'),
+  "available": zod.boolean().describe('Whether current API key can execute this playbook end-to-end'),
+  "risk_level": zod.string().describe('Operational risk level'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required by this playbook'),
+  "steps": zod.array(zod.object({
+  "order": zod.number().describe('Step sequence number'),
+  "title": zod.string().describe('Short step title'),
+  "action_type": zod.string().describe('Action category such as mcp_call or curl'),
+  "payload": zod.record(zod.string(), zod.unknown()).optional().describe('Machine-readable action payload'),
+  "success_criteria": zod.string().describe('How to determine the step succeeded')
+})).optional().describe('Ordered steps'),
+  "verification": zod.array(zod.string()).optional().describe('Post-run checks')
+})).optional().describe('Task-oriented execution playbooks'),
   "mcp": zod.object({
   "endpoint": zod.string().describe('MCP endpoint URL'),
   "transport": zod.string().describe('MCP transport'),
   "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
   "available_scopes": zod.array(zod.string()).optional().describe('Scopes available on the current API key'),
   "tools": zod.array(zod.object({
+  "id": zod.string().describe('Stable capability identifier'),
   "name": zod.string().describe('Capability name'),
   "kind": zod.string().describe('Capability kind: tool or resource'),
   "description": zod.string().describe('Human-readable capability description'),
@@ -992,14 +999,27 @@ export const AgentUsageApiAgentUsageGetResponse = zod.object({
   "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
 })).optional().describe('Visible MCP tools'),
   "resources": zod.array(zod.object({
+  "id": zod.string().describe('Stable capability identifier'),
   "name": zod.string().describe('Capability name'),
   "kind": zod.string().describe('Capability kind: tool or resource'),
   "description": zod.string().describe('Human-readable capability description'),
   "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
   "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
   "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
-})).optional().describe('Visible MCP resources')
+})).optional().describe('Visible MCP resources'),
+  "call_templates": zod.array(zod.object({
+  "id": zod.string().describe('Stable template identifier'),
+  "description": zod.string().describe('Template purpose'),
+  "sequence": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Ordered MCP request sequence')
+})).optional().describe('High-signal MCP call sequences'),
+  "usage_hints": zod.array(zod.string()).optional().describe('Practical usage hints for agents')
 }).describe('MCP capability summary'),
+  "troubleshooting": zod.array(zod.object({
+  "code": zod.string().describe('HTTP status code or error tag'),
+  "symptom": zod.string().describe('Observed symptom'),
+  "likely_causes": zod.array(zod.string()).optional().describe('Likely causes'),
+  "fixes": zod.array(zod.string()).optional().describe('Recommended fixes')
+})).optional().describe('Common failures and recovery actions'),
   "skill_maps": zod.array(zod.object({
   "id": zod.string().describe('Skill map identifier'),
   "name": zod.string().describe('Skill map display name'),
@@ -1010,8 +1030,7 @@ export const AgentUsageApiAgentUsageGetResponse = zod.object({
   "docs_url": zod.string().describe('Usage docs URL the agent should read first'),
   "use_cases": zod.array(zod.string()).optional().describe('Suggested usage scenarios'),
   "workflow": zod.record(zod.string(), zod.unknown()).optional().describe('Workflow metadata')
-})).optional().describe('Local agent skill maps'),
-  "workflows": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Workflow templates or notes')
+})).optional().describe('Local agent skill maps')
 })
 
 
@@ -2137,65 +2156,6 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
 
 
 /**
- * @summary 获取运行时站点设置
- */
-export const GetRuntimeSettingsApiV1AdminSiteConfigRuntimeGetResponse = zod.object({
-  "id": zod.string().describe('Runtime site settings identifier'),
-  "public_site_url": zod.string().describe('Canonical public site URL'),
-  "production_cors_origins": zod.array(zod.string()).optional().describe('CORS allowlist for production'),
-  "seo_default_title": zod.string().describe('Fallback SEO title'),
-  "seo_default_description": zod.string().describe('Fallback SEO description'),
-  "rss_title": zod.string().describe('RSS channel title'),
-  "rss_description": zod.string().describe('RSS channel description'),
-  "robots_indexing_enabled": zod.boolean().describe('Whether robots should allow indexing'),
-  "sitemap_static_pages": zod.array(zod.object({
-  "path": zod.string().describe('Static sitemap path'),
-  "changefreq": zod.string().describe('Sitemap changefreq value'),
-  "priority": zod.string().describe('Sitemap priority value')
-})).optional().describe('Configured static sitemap pages'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 更新运行时站点设置
- */
-export const UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutBody = zod.object({
-  "public_site_url": zod.union([zod.string(),zod.null()]).optional().describe('Canonical public site URL'),
-  "production_cors_origins": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('CORS allowlist for production'),
-  "seo_default_title": zod.union([zod.string(),zod.null()]).optional().describe('Fallback SEO title'),
-  "seo_default_description": zod.union([zod.string(),zod.null()]).optional().describe('Fallback SEO description'),
-  "rss_title": zod.union([zod.string(),zod.null()]).optional().describe('RSS channel title'),
-  "rss_description": zod.union([zod.string(),zod.null()]).optional().describe('RSS channel description'),
-  "robots_indexing_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether robots should allow indexing'),
-  "sitemap_static_pages": zod.union([zod.array(zod.object({
-  "path": zod.string().describe('Static sitemap path'),
-  "changefreq": zod.string().describe('Sitemap changefreq value'),
-  "priority": zod.string().describe('Sitemap priority value')
-})),zod.null()]).optional().describe('Configured static sitemap pages')
-})
-
-export const UpdateRuntimeSettingsApiV1AdminSiteConfigRuntimePutResponse = zod.object({
-  "id": zod.string().describe('Runtime site settings identifier'),
-  "public_site_url": zod.string().describe('Canonical public site URL'),
-  "production_cors_origins": zod.array(zod.string()).optional().describe('CORS allowlist for production'),
-  "seo_default_title": zod.string().describe('Fallback SEO title'),
-  "seo_default_description": zod.string().describe('Fallback SEO description'),
-  "rss_title": zod.string().describe('RSS channel title'),
-  "rss_description": zod.string().describe('RSS channel description'),
-  "robots_indexing_enabled": zod.boolean().describe('Whether robots should allow indexing'),
-  "sitemap_static_pages": zod.array(zod.object({
-  "path": zod.string().describe('Static sitemap path'),
-  "changefreq": zod.string().describe('Sitemap changefreq value'),
-  "priority": zod.string().describe('Sitemap priority value')
-})).optional().describe('Configured static sitemap pages'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
  * @summary 获取admin-site-config列表
  */
 export const listSocialLinksQueryPageDefault = 1;
@@ -2940,6 +2900,11 @@ export const GetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetRespons
   "smtp_reply_to": zod.string().describe('SMTP reply-to email'),
   "smtp_use_tls": zod.boolean().describe('Whether STARTTLS is enabled'),
   "smtp_use_ssl": zod.boolean().describe('Whether implicit SSL is enabled'),
+  "smtp_test_passed": zod.boolean().describe('Whether SMTP test delivery succeeded for current settings'),
+  "smtp_tested_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last successful SMTP test timestamp'),
+  "allowed_content_types": zod.array(zod.string()).describe('Content types users can subscribe to'),
+  "mail_subject_template": zod.string().describe('Email subject template'),
+  "mail_body_template": zod.string().describe('Email body template'),
   "subscriber_count": zod.number().default(getContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponseSubscriberCountDefault).describe('Number of active subscribers'),
   "created_at": zod.string().datetime({}).describe('Creation time'),
   "updated_at": zod.string().datetime({}).describe('Last update time')
@@ -2964,7 +2929,10 @@ export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutBody
   "smtp_from_name": zod.union([zod.string(),zod.null()]).optional().describe('SMTP sender display name'),
   "smtp_reply_to": zod.union([zod.string(),zod.null()]).optional().describe('SMTP reply-to email'),
   "smtp_use_tls": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether STARTTLS is enabled'),
-  "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled')
+  "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled'),
+  "allowed_content_types": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Content types users can subscribe to'),
+  "mail_subject_template": zod.union([zod.string(),zod.null()]).optional().describe('Email subject template'),
+  "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template')
 })
 
 export const updateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponseSubscriberCountDefault = 0;
@@ -2986,6 +2954,11 @@ export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResp
   "smtp_reply_to": zod.string().describe('SMTP reply-to email'),
   "smtp_use_tls": zod.boolean().describe('Whether STARTTLS is enabled'),
   "smtp_use_ssl": zod.boolean().describe('Whether implicit SSL is enabled'),
+  "smtp_test_passed": zod.boolean().describe('Whether SMTP test delivery succeeded for current settings'),
+  "smtp_tested_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last successful SMTP test timestamp'),
+  "allowed_content_types": zod.array(zod.string()).describe('Content types users can subscribe to'),
+  "mail_subject_template": zod.string().describe('Email subject template'),
+  "mail_body_template": zod.string().describe('Email body template'),
   "subscriber_count": zod.number().default(updateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponseSubscriberCountDefault).describe('Number of active subscribers'),
   "created_at": zod.string().datetime({}).describe('Creation time'),
   "updated_at": zod.string().datetime({}).describe('Last update time')
@@ -3010,11 +2983,94 @@ export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostB
   "smtp_from_name": zod.union([zod.string(),zod.null()]).optional().describe('SMTP sender display name'),
   "smtp_reply_to": zod.union([zod.string(),zod.null()]).optional().describe('SMTP reply-to email'),
   "smtp_use_tls": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether STARTTLS is enabled'),
-  "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled')
+  "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled'),
+  "allowed_content_types": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Content types users can subscribe to'),
+  "mail_subject_template": zod.union([zod.string(),zod.null()]).optional().describe('Email subject template'),
+  "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template')
 })
 
 export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse = zod.object({
   "recipient": zod.string().describe('Recipient email used for the test delivery')
+})
+
+
+/**
+ * @summary 获取内容订阅者列表
+ */
+export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryModeDefault = `all`;
+export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageDefault = 1;
+
+export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageSizeDefault = 20;
+export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageSizeMax = 100;
+
+
+
+export const ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryParams = zod.object({
+  "mode": zod.enum(['all', 'email', 'binding', 'subscriber']).default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryModeDefault),
+  "search": zod.union([zod.string(),zod.null()]).optional(),
+  "page": zod.number().min(1).default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageSizeMax).default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageSizeDefault)
+})
+
+export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseItemsItemSentCountDefault = 0;
+
+export const ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "email": zod.string().describe('Subscriber email'),
+  "is_active": zod.boolean().describe('Whether subscription is active'),
+  "content_types": zod.array(zod.string()).optional().describe('Subscribed content types'),
+  "auth_mode": zod.enum(['email', 'binding', 'unknown']).describe('Whether the subscriber email maps to email-only user, bound account user, or unknown user'),
+  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Matched site user display name'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Matched site user avatar'),
+  "primary_auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Matched site user primary auth provider'),
+  "oauth_providers": zod.array(zod.string()).optional().describe('Matched OAuth providers'),
+  "sent_count": zod.number().default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseItemsItemSentCountDefault).describe('Number of successful deliveries'),
+  "last_sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last successful delivery time'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})).describe('Page of result items'),
+  "total": zod.number().describe('Total number of items matching the query'),
+  "page": zod.number().describe('Current page number (1-based)'),
+  "page_size": zod.number().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 获取订阅者发送记录
+ */
+export const ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams = zod.object({
+  "email": zod.string()
+})
+
+export const listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryPageDefault = 1;
+
+export const listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryPageSizeDefault = 20;
+export const listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryPageSizeMax = 100;
+
+
+
+export const ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryPageSizeMax).default(listContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetQueryPageSizeDefault)
+})
+
+export const ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().describe('Delivery id'),
+  "subscriber_email": zod.string().describe('Subscriber email'),
+  "content_type": zod.string().describe('Content type'),
+  "content_slug": zod.string().describe('Content slug'),
+  "content_title": zod.string().describe('Content title'),
+  "content_url": zod.string().describe('Public content URL'),
+  "status": zod.string().describe('Delivery status'),
+  "error_message": zod.union([zod.string(),zod.null()]).optional().describe('Delivery error detail'),
+  "sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Delivery time'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})).describe('Page of result items'),
+  "total": zod.number().describe('Total number of items matching the query'),
+  "page": zod.number().describe('Current page number (1-based)'),
+  "page_size": zod.number().describe('Number of items per page')
 })
 
 
@@ -3044,17 +3100,10 @@ export const ListBasicsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string().describe('Unique resume basics identifier'),
   "title": zod.string().describe('Resume page title'),
-  "subtitle": zod.string().describe('Resume subtitle'),
-  "summary": zod.string().describe('Professional summary'),
-  "download_label": zod.string().describe('Download button label'),
-  "template_key": zod.string().describe('Selected resume template key'),
-  "accent_tone": zod.string().describe('Selected accent tone'),
+  "summary": zod.string().describe('Markdown resume body'),
   "location": zod.string().describe('Current base location'),
-  "availability": zod.string().describe('Availability note'),
   "email": zod.string().describe('Primary contact email'),
-  "website": zod.string().describe('Primary website'),
   "profile_image_url": zod.string().describe('Profile image URL'),
-  "highlights": zod.array(zod.string()).describe('Featured resume highlights'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })).describe('Page of result items'),
@@ -3067,27 +3116,16 @@ export const ListBasicsResponse = zod.object({
 /**
  * @summary 创建admin-resume
  */
-export const createBasicsBodyTemplateKeyDefault = `editorial`;
-export const createBasicsBodyAccentToneDefault = `amber`;
 export const createBasicsBodyLocationDefault = ``;
-export const createBasicsBodyAvailabilityDefault = ``;
 export const createBasicsBodyEmailDefault = ``;
-export const createBasicsBodyWebsiteDefault = ``;
 export const createBasicsBodyProfileImageUrlDefault = ``;
 
 export const CreateBasicsBody = zod.object({
   "title": zod.string().describe('Resume page title'),
-  "subtitle": zod.string().describe('Resume subtitle or tagline'),
-  "summary": zod.string().describe('Professional summary paragraph'),
-  "download_label": zod.string().describe('PDF download button label'),
-  "template_key": zod.string().default(createBasicsBodyTemplateKeyDefault).describe('Selected resume template key'),
-  "accent_tone": zod.string().default(createBasicsBodyAccentToneDefault).describe('Selected accent tone'),
+  "summary": zod.string().describe('Markdown resume body'),
   "location": zod.string().default(createBasicsBodyLocationDefault).describe('Current base location'),
-  "availability": zod.string().default(createBasicsBodyAvailabilityDefault).describe('Availability note'),
   "email": zod.string().default(createBasicsBodyEmailDefault).describe('Primary contact email'),
-  "website": zod.string().default(createBasicsBodyWebsiteDefault).describe('Primary website'),
-  "profile_image_url": zod.string().default(createBasicsBodyProfileImageUrlDefault).describe('Profile image URL'),
-  "highlights": zod.array(zod.string()).optional().describe('Featured resume highlights')
+  "profile_image_url": zod.string().default(createBasicsBodyProfileImageUrlDefault).describe('Profile image URL')
 })
 
 
@@ -3101,17 +3139,10 @@ export const GetBasicsParams = zod.object({
 export const GetBasicsResponse = zod.object({
   "id": zod.string().describe('Unique resume basics identifier'),
   "title": zod.string().describe('Resume page title'),
-  "subtitle": zod.string().describe('Resume subtitle'),
-  "summary": zod.string().describe('Professional summary'),
-  "download_label": zod.string().describe('Download button label'),
-  "template_key": zod.string().describe('Selected resume template key'),
-  "accent_tone": zod.string().describe('Selected accent tone'),
+  "summary": zod.string().describe('Markdown resume body'),
   "location": zod.string().describe('Current base location'),
-  "availability": zod.string().describe('Availability note'),
   "email": zod.string().describe('Primary contact email'),
-  "website": zod.string().describe('Primary website'),
   "profile_image_url": zod.string().describe('Profile image URL'),
-  "highlights": zod.array(zod.string()).describe('Featured resume highlights'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -3126,33 +3157,19 @@ export const UpdateBasicsParams = zod.object({
 
 export const UpdateBasicsBody = zod.object({
   "title": zod.union([zod.string(),zod.null()]).optional().describe('Resume page title'),
-  "subtitle": zod.union([zod.string(),zod.null()]).optional().describe('Resume subtitle'),
-  "summary": zod.union([zod.string(),zod.null()]).optional().describe('Professional summary'),
-  "download_label": zod.union([zod.string(),zod.null()]).optional().describe('Download button label'),
-  "template_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected resume template key'),
-  "accent_tone": zod.union([zod.string(),zod.null()]).optional().describe('Selected accent tone'),
+  "summary": zod.union([zod.string(),zod.null()]).optional().describe('Markdown resume body'),
   "location": zod.union([zod.string(),zod.null()]).optional().describe('Current base location'),
-  "availability": zod.union([zod.string(),zod.null()]).optional().describe('Availability note'),
   "email": zod.union([zod.string(),zod.null()]).optional().describe('Primary contact email'),
-  "website": zod.union([zod.string(),zod.null()]).optional().describe('Primary website'),
-  "profile_image_url": zod.union([zod.string(),zod.null()]).optional().describe('Profile image URL'),
-  "highlights": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Featured resume highlights')
+  "profile_image_url": zod.union([zod.string(),zod.null()]).optional().describe('Profile image URL')
 })
 
 export const UpdateBasicsResponse = zod.object({
   "id": zod.string().describe('Unique resume basics identifier'),
   "title": zod.string().describe('Resume page title'),
-  "subtitle": zod.string().describe('Resume subtitle'),
-  "summary": zod.string().describe('Professional summary'),
-  "download_label": zod.string().describe('Download button label'),
-  "template_key": zod.string().describe('Selected resume template key'),
-  "accent_tone": zod.string().describe('Selected accent tone'),
+  "summary": zod.string().describe('Markdown resume body'),
   "location": zod.string().describe('Current base location'),
-  "availability": zod.string().describe('Availability note'),
   "email": zod.string().describe('Primary contact email'),
-  "website": zod.string().describe('Primary website'),
   "profile_image_url": zod.string().describe('Profile image URL'),
-  "highlights": zod.array(zod.string()).describe('Featured resume highlights'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -4245,32 +4262,7 @@ export const SystemInfoApiV1AdminSystemInfoGetResponse = zod.object({
   "media_dir_size_bytes": zod.number(),
   "uptime_seconds": zod.number(),
   "environment": zod.string(),
-  "site_url": zod.string(),
-  "runtime": zod.object({
-  "public_site_url": zod.string(),
-  "production_cors_origins": zod.array(zod.string()).optional(),
-  "seo_default_title": zod.string(),
-  "seo_default_description": zod.string(),
-  "rss_title": zod.string(),
-  "rss_description": zod.string(),
-  "robots_indexing_enabled": zod.boolean(),
-  "sitemap_static_pages": zod.array(zod.object({
-  "path": zod.string().describe('Static sitemap path'),
-  "changefreq": zod.string().describe('Sitemap changefreq value'),
-  "priority": zod.string().describe('Sitemap priority value')
-})).optional()
-}),
-  "secrets_dir": zod.string(),
-  "sentry_dsn": zod.object({
-  "configured": zod.boolean(),
-  "filename": zod.string(),
-  "source": zod.string()
-}),
-  "waline_jwt_token": zod.object({
-  "configured": zod.boolean(),
-  "filename": zod.string(),
-  "source": zod.string()
-})
+  "site_url": zod.string()
 })
 
 
@@ -4281,6 +4273,7 @@ export const ListApiKeysApiV1AdminIntegrationsApiKeysGetResponseItem = zod.objec
   "id": zod.string(),
   "key_name": zod.string(),
   "key_prefix": zod.string(),
+  "key_suffix": zod.string(),
   "scopes": zod.array(zod.string()),
   "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
   "created_at": zod.string().datetime({}),
@@ -4314,6 +4307,7 @@ export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse = zod.obj
   "id": zod.string(),
   "key_name": zod.string(),
   "key_prefix": zod.string(),
+  "key_suffix": zod.string(),
   "scopes": zod.array(zod.string()),
   "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
   "created_at": zod.string().datetime({}),
@@ -4349,19 +4343,69 @@ export const ListFeedsApiV1AdminIntegrationsFeedsGetResponse = zod.object({
 /**
  * @summary 获取 Agent 使用说明
  */
+export const getAgentUsageApiV1AdminIntegrationsAgentUsageGetResponseItemEndpointsItemMethodDefault = `GET`;
+
 export const GetAgentUsageApiV1AdminIntegrationsAgentUsageGetResponse = zod.object({
   "item": zod.object({
+  "schema_version": zod.string().describe('Usage schema version'),
+  "generated_at": zod.string().datetime({}).describe('Server generation timestamp'),
   "name": zod.string().describe('Usage document name'),
-  "auth": zod.record(zod.string(), zod.unknown()).optional().describe('Authentication instructions'),
-  "endpoint_base": zod.string().describe('Base site URL'),
-  "docs_url": zod.string().describe('Canonical usage document URL'),
-  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested MCP-related scopes'),
+  "objective": zod.string().describe('Primary goal of this usage document'),
+  "auth": zod.object({
+  "type": zod.string().describe('Authentication type'),
+  "header": zod.string().describe('HTTP header used for authentication'),
+  "format": zod.string().describe('Expected header value format'),
+  "example": zod.string().describe('Authentication header example'),
+  "notes": zod.array(zod.string()).optional().describe('Additional auth notes')
+}).describe('Authentication instructions'),
+  "endpoints": zod.array(zod.object({
+  "id": zod.string().describe('Stable endpoint identifier'),
+  "url": zod.string().describe('Absolute endpoint URL'),
+  "method": zod.string().default(getAgentUsageApiV1AdminIntegrationsAgentUsageGetResponseItemEndpointsItemMethodDefault).describe('HTTP method'),
+  "description": zod.string().describe('What this endpoint is for'),
+  "required_headers": zod.array(zod.string()).optional().describe('Required request headers'),
+  "expected_status": zod.array(zod.number()).optional().describe('Expected success status codes')
+})).optional().describe('Key endpoints agents should use'),
+  "scope_guide": zod.object({
+  "required_for_connection": zod.array(zod.string()).optional().describe('Scopes required to establish MCP connection'),
+  "available_on_current_key": zod.array(zod.string()).optional().describe('Scopes granted to current API key'),
+  "recommended_for_full_management": zod.array(zod.string()).optional().describe('Recommended scopes for full capability coverage'),
+  "missing_recommended_scopes": zod.array(zod.string()).optional().describe('Recommended scopes not present on current API key')
+}).describe('Scope guidance for current API key'),
+  "quickstart": zod.object({
+  "summary": zod.string().describe('What the quickstart achieves'),
+  "environment": zod.record(zod.string(), zod.string()).optional().describe('Environment variables used by commands'),
+  "steps": zod.array(zod.object({
+  "order": zod.number().describe('Step sequence number'),
+  "title": zod.string().describe('Short step title'),
+  "goal": zod.string().describe('What this step verifies'),
+  "command": zod.string().describe('Copy-pasteable command snippet'),
+  "expected_result": zod.string().describe('Expected success signal')
+})).optional().describe('Ordered quickstart steps')
+}).describe('Copy-pasteable first-run path'),
+  "playbooks": zod.array(zod.object({
+  "id": zod.string().describe('Stable playbook identifier'),
+  "title": zod.string().describe('Playbook title'),
+  "description": zod.string().describe('Playbook purpose'),
+  "available": zod.boolean().describe('Whether current API key can execute this playbook end-to-end'),
+  "risk_level": zod.string().describe('Operational risk level'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required by this playbook'),
+  "steps": zod.array(zod.object({
+  "order": zod.number().describe('Step sequence number'),
+  "title": zod.string().describe('Short step title'),
+  "action_type": zod.string().describe('Action category such as mcp_call or curl'),
+  "payload": zod.record(zod.string(), zod.unknown()).optional().describe('Machine-readable action payload'),
+  "success_criteria": zod.string().describe('How to determine the step succeeded')
+})).optional().describe('Ordered steps'),
+  "verification": zod.array(zod.string()).optional().describe('Post-run checks')
+})).optional().describe('Task-oriented execution playbooks'),
   "mcp": zod.object({
   "endpoint": zod.string().describe('MCP endpoint URL'),
   "transport": zod.string().describe('MCP transport'),
   "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
   "available_scopes": zod.array(zod.string()).optional().describe('Scopes available on the current API key'),
   "tools": zod.array(zod.object({
+  "id": zod.string().describe('Stable capability identifier'),
   "name": zod.string().describe('Capability name'),
   "kind": zod.string().describe('Capability kind: tool or resource'),
   "description": zod.string().describe('Human-readable capability description'),
@@ -4370,14 +4414,27 @@ export const GetAgentUsageApiV1AdminIntegrationsAgentUsageGetResponse = zod.obje
   "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
 })).optional().describe('Visible MCP tools'),
   "resources": zod.array(zod.object({
+  "id": zod.string().describe('Stable capability identifier'),
   "name": zod.string().describe('Capability name'),
   "kind": zod.string().describe('Capability kind: tool or resource'),
   "description": zod.string().describe('Human-readable capability description'),
   "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
   "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
   "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
-})).optional().describe('Visible MCP resources')
+})).optional().describe('Visible MCP resources'),
+  "call_templates": zod.array(zod.object({
+  "id": zod.string().describe('Stable template identifier'),
+  "description": zod.string().describe('Template purpose'),
+  "sequence": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Ordered MCP request sequence')
+})).optional().describe('High-signal MCP call sequences'),
+  "usage_hints": zod.array(zod.string()).optional().describe('Practical usage hints for agents')
 }).describe('MCP capability summary'),
+  "troubleshooting": zod.array(zod.object({
+  "code": zod.string().describe('HTTP status code or error tag'),
+  "symptom": zod.string().describe('Observed symptom'),
+  "likely_causes": zod.array(zod.string()).optional().describe('Likely causes'),
+  "fixes": zod.array(zod.string()).optional().describe('Recommended fixes')
+})).optional().describe('Common failures and recovery actions'),
   "skill_maps": zod.array(zod.object({
   "id": zod.string().describe('Skill map identifier'),
   "name": zod.string().describe('Skill map display name'),
@@ -4388,9 +4445,480 @@ export const GetAgentUsageApiV1AdminIntegrationsAgentUsageGetResponse = zod.obje
   "docs_url": zod.string().describe('Usage docs URL the agent should read first'),
   "use_cases": zod.array(zod.string()).optional().describe('Suggested usage scenarios'),
   "workflow": zod.record(zod.string(), zod.unknown()).optional().describe('Workflow metadata')
-})).optional().describe('Local agent skill maps'),
-  "workflows": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Workflow templates or notes')
+})).optional().describe('Local agent skill maps')
 })
+})
+
+
+/**
+ * @summary 获取 MCP 配置
+ */
+export const GetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryParams = zod.object({
+  "api_key_id": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseIsCustomizedDefault = false;
+export const getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseEnabledCapabilityCountDefault = 0;
+export const getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseAvailableCapabilityCountDefault = 0;
+
+export const GetMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse = zod.object({
+  "api_key_id": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key identifier'),
+  "api_key_name": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key display name'),
+  "api_key_scopes": zod.array(zod.string()).optional().describe('Scopes currently granted to the selected API key'),
+  "public_access": zod.boolean().describe('Whether MCP public access is enabled'),
+  "selected_preset": zod.string().describe('Currently selected preset key'),
+  "is_customized": zod.boolean().default(getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseIsCustomizedDefault).describe('Whether enabled capabilities were customized from the preset'),
+  "enabled_capability_count": zod.number().default(getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseEnabledCapabilityCountDefault).describe('How many capabilities are currently enabled'),
+  "available_capability_count": zod.number().default(getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseAvailableCapabilityCountDefault).describe('How many capabilities exist in the MCP catalog'),
+  "usage_url": zod.string().describe('Canonical MCP usage document URL'),
+  "endpoint": zod.string().describe('MCP endpoint URL'),
+  "transport": zod.string().describe('MCP transport'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
+  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested scopes based on enabled capabilities'),
+  "presets": zod.array(zod.object({
+  "key": zod.string().describe('Preset identifier'),
+  "name": zod.string().describe('Preset display name'),
+  "description": zod.string().describe('Preset description'),
+  "capability_ids": zod.array(zod.string()).optional().describe('Capabilities enabled by this preset')
+})).optional().describe('Recommended MCP exposure presets'),
+  "capabilities": zod.array(zod.object({
+  "id": zod.string().describe('Stable capability identifier'),
+  "name": zod.string().describe('Capability name'),
+  "kind": zod.string().describe('Capability kind: tool or resource'),
+  "description": zod.string().describe('Human-readable capability description'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
+  "enabled": zod.boolean().describe('Whether this capability is enabled for MCP exposure')
+})).optional().describe('Full MCP capability catalog with enabled state for the selected API key')
+})
+
+
+/**
+ * @summary 更新 MCP 配置
+ */
+export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutQueryParams = zod.object({
+  "api_key_id": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutBody = zod.object({
+  "public_access": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether MCP public access is enabled'),
+  "selected_preset": zod.union([zod.string(),zod.null()]).optional().describe('Selected preset key'),
+  "enabled_capability_ids": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Explicitly enabled capability identifiers')
+})
+
+export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseIsCustomizedDefault = false;
+export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseEnabledCapabilityCountDefault = 0;
+export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseAvailableCapabilityCountDefault = 0;
+
+export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse = zod.object({
+  "api_key_id": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key identifier'),
+  "api_key_name": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key display name'),
+  "api_key_scopes": zod.array(zod.string()).optional().describe('Scopes currently granted to the selected API key'),
+  "public_access": zod.boolean().describe('Whether MCP public access is enabled'),
+  "selected_preset": zod.string().describe('Currently selected preset key'),
+  "is_customized": zod.boolean().default(updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseIsCustomizedDefault).describe('Whether enabled capabilities were customized from the preset'),
+  "enabled_capability_count": zod.number().default(updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseEnabledCapabilityCountDefault).describe('How many capabilities are currently enabled'),
+  "available_capability_count": zod.number().default(updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseAvailableCapabilityCountDefault).describe('How many capabilities exist in the MCP catalog'),
+  "usage_url": zod.string().describe('Canonical MCP usage document URL'),
+  "endpoint": zod.string().describe('MCP endpoint URL'),
+  "transport": zod.string().describe('MCP transport'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
+  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested scopes based on enabled capabilities'),
+  "presets": zod.array(zod.object({
+  "key": zod.string().describe('Preset identifier'),
+  "name": zod.string().describe('Preset display name'),
+  "description": zod.string().describe('Preset description'),
+  "capability_ids": zod.array(zod.string()).optional().describe('Capabilities enabled by this preset')
+})).optional().describe('Recommended MCP exposure presets'),
+  "capabilities": zod.array(zod.object({
+  "id": zod.string().describe('Stable capability identifier'),
+  "name": zod.string().describe('Capability name'),
+  "kind": zod.string().describe('Capability kind: tool or resource'),
+  "description": zod.string().describe('Human-readable capability description'),
+  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
+  "enabled": zod.boolean().describe('Whether this capability is enabled for MCP exposure')
+})).optional().describe('Full MCP capability catalog with enabled state for the selected API key')
+})
+
+
+/**
+ * @summary 获取 Agent 模型配置
+ */
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseEnabledDefault = false;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseProviderDefault = `openai_compatible`;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseBaseUrlDefault = ``;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseModelDefault = ``;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseApiKeyDefault = ``;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureDefault = 0.2;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMin = 0;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMax = 2;
+
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsDefault = 20;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMin = 5;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMax = 300;
+
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseAdvisoryPromptDefault = ``;
+export const getModelConfigApiV1AdminAutomationModelConfigGetResponseIsReadyDefault = false;
+
+export const GetModelConfigApiV1AdminAutomationModelConfigGetResponse = zod.object({
+  "enabled": zod.boolean().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseEnabledDefault),
+  "provider": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseProviderDefault),
+  "base_url": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseBaseUrlDefault),
+  "model": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseModelDefault),
+  "api_key": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseApiKeyDefault),
+  "temperature": zod.number().min(getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMin).max(getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMax).default(getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureDefault),
+  "timeout_seconds": zod.number().min(getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMin).max(getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMax).default(getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsDefault),
+  "advisory_prompt": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseAdvisoryPromptDefault),
+  "is_ready": zod.boolean().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseIsReadyDefault)
+})
+
+
+/**
+ * @summary 更新 Agent 模型配置
+ */
+export const putModelConfigApiV1AdminAutomationModelConfigPutBodyTemperatureOneMin = 0;
+export const putModelConfigApiV1AdminAutomationModelConfigPutBodyTemperatureOneMax = 2;
+
+export const putModelConfigApiV1AdminAutomationModelConfigPutBodyTimeoutSecondsOneMin = 5;
+export const putModelConfigApiV1AdminAutomationModelConfigPutBodyTimeoutSecondsOneMax = 300;
+
+
+
+export const PutModelConfigApiV1AdminAutomationModelConfigPutBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "provider": zod.union([zod.string(),zod.null()]).optional(),
+  "base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "model": zod.union([zod.string(),zod.null()]).optional(),
+  "api_key": zod.union([zod.string(),zod.null()]).optional(),
+  "temperature": zod.union([zod.number().min(putModelConfigApiV1AdminAutomationModelConfigPutBodyTemperatureOneMin).max(putModelConfigApiV1AdminAutomationModelConfigPutBodyTemperatureOneMax),zod.null()]).optional(),
+  "timeout_seconds": zod.union([zod.number().min(putModelConfigApiV1AdminAutomationModelConfigPutBodyTimeoutSecondsOneMin).max(putModelConfigApiV1AdminAutomationModelConfigPutBodyTimeoutSecondsOneMax),zod.null()]).optional(),
+  "advisory_prompt": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseEnabledDefault = false;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseProviderDefault = `openai_compatible`;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseBaseUrlDefault = ``;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseModelDefault = ``;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseApiKeyDefault = ``;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureDefault = 0.2;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMin = 0;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMax = 2;
+
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsDefault = 20;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMin = 5;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMax = 300;
+
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseAdvisoryPromptDefault = ``;
+export const putModelConfigApiV1AdminAutomationModelConfigPutResponseIsReadyDefault = false;
+
+export const PutModelConfigApiV1AdminAutomationModelConfigPutResponse = zod.object({
+  "enabled": zod.boolean().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseEnabledDefault),
+  "provider": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseProviderDefault),
+  "base_url": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseBaseUrlDefault),
+  "model": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseModelDefault),
+  "api_key": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseApiKeyDefault),
+  "temperature": zod.number().min(putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMin).max(putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMax).default(putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureDefault),
+  "timeout_seconds": zod.number().min(putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMin).max(putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMax).default(putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsDefault),
+  "advisory_prompt": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseAdvisoryPromptDefault),
+  "is_ready": zod.boolean().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseIsReadyDefault)
+})
+
+
+/**
+ * @summary 测试 Agent 模型配置
+ */
+export const postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTemperatureOneMin = 0;
+export const postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTemperatureOneMax = 2;
+
+export const postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTimeoutSecondsOneMin = 5;
+export const postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTimeoutSecondsOneMax = 300;
+
+
+
+export const PostModelConfigTestApiV1AdminAutomationModelConfigTestPostBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "provider": zod.union([zod.string(),zod.null()]).optional(),
+  "base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "model": zod.union([zod.string(),zod.null()]).optional(),
+  "api_key": zod.union([zod.string(),zod.null()]).optional(),
+  "temperature": zod.union([zod.number().min(postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTemperatureOneMin).max(postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTemperatureOneMax),zod.null()]).optional(),
+  "timeout_seconds": zod.union([zod.number().min(postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTimeoutSecondsOneMin).max(postModelConfigTestApiV1AdminAutomationModelConfigTestPostBodyTimeoutSecondsOneMax),zod.null()]).optional(),
+  "advisory_prompt": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseOkDefault = true;
+
+export const PostModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse = zod.object({
+  "ok": zod.boolean().default(postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseOkDefault),
+  "model": zod.string(),
+  "endpoint": zod.string(),
+  "summary": zod.string()
+})
+
+
+/**
+ * @summary 获取 Agent 工作流
+ */
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseEnabledDefault = true;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault = true;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault = ``;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault = false;
+
+export const GetWorkflowsApiV1AdminAutomationWorkflowsGetResponseItem = zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "trigger_event": zod.string(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "enabled": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseEnabledDefault),
+  "require_human_approval": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault),
+  "instructions": zod.string().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault),
+  "built_in": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault)
+})
+export const GetWorkflowsApiV1AdminAutomationWorkflowsGetResponse = zod.array(GetWorkflowsApiV1AdminAutomationWorkflowsGetResponseItem)
+
+
+/**
+ * @summary 创建 Agent 工作流
+ */
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyMin = 3;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyMax = 80;
+
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyRegExp = new RegExp('^[a-z0-9][a-z0-9_-]\*$');
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyNameMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionDefault = ``;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionMax = 500;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerEventMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTargetTypeOneMax = 80;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyEnabledDefault = true;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRequireHumanApprovalDefault = true;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsDefault = ``;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsMax = 4000;
+
+
+
+export const PostWorkflowApiV1AdminAutomationWorkflowsPostBody = zod.object({
+  "key": zod.string().min(postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyMin).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyMax).regex(postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyRegExp),
+  "name": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyNameMax),
+  "description": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionDefault),
+  "trigger_event": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerEventMax),
+  "target_type": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTargetTypeOneMax),zod.null()]).optional(),
+  "enabled": zod.boolean().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyEnabledDefault),
+  "require_human_approval": zod.boolean().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRequireHumanApprovalDefault),
+  "instructions": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsDefault)
+})
+
+
+/**
+ * @summary 获取 Agent 工作流草稿
+ */
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault = `global`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault = `active`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault = ``;
+
+export const GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = zod.union([zod.object({
+  "id": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault),
+  "status": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault),
+  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault),
+  "ready_to_create": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault),
+  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
+  "questions": zod.array(zod.object({
+  "key": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault),
+  "prompt": zod.string(),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault)
+})).optional()
+})).optional(),
+  "current_question": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault)
+})).optional(),
+  "working_document": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault),
+  "messages": zod.array(zod.object({
+  "role": zod.string(),
+  "content": zod.string(),
+  "created_at": zod.string().datetime({})
+})).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+}),zod.null()])
+
+
+/**
+ * @summary 继续 Agent 工作流对话
+ */
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodyMessageMax = 4000;
+
+
+
+export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBody = zod.object({
+  "message": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodyMessageMax)
+})
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault = `global`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault = `active`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault = ``;
+
+export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = zod.object({
+  "id": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault),
+  "status": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault),
+  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault),
+  "ready_to_create": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault),
+  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
+  "questions": zod.array(zod.object({
+  "key": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault),
+  "prompt": zod.string(),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault)
+})).optional()
+})).optional(),
+  "current_question": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault)
+})).optional(),
+  "working_document": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault),
+  "messages": zod.array(zod.object({
+  "role": zod.string(),
+  "content": zod.string(),
+  "created_at": zod.string().datetime({})
+})).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 流式继续 Agent 工作流对话
+ */
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodyMessageMax = 4000;
+
+
+
+export const PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBody = zod.object({
+  "message": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodyMessageMax)
+})
+
+export const PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse = zod.unknown()
+
+
+/**
+ * @summary 从草稿创建 Agent 工作流
+ */
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyForceDefault = false;
+
+export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBody = zod.object({
+  "force": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyForceDefault)
+})
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault = false;
+
+export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = zod.object({
+  "ok": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault),
+  "summary": zod.string(),
+  "draft_cleared": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault),
+  "workflow": zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "trigger_event": zod.string(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault),
+  "require_human_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault),
+  "instructions": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault),
+  "built_in": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault)
+})
+})
+
+
+/**
+ * @summary 更新 Agent 工作流
+ */
+export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutParams = zod.object({
+  "workflow_key": zod.string()
+})
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyNameOneMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyDescriptionOneMax = 500;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerEventOneMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTargetTypeOneMax = 80;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyInstructionsOneMax = 4000;
+
+
+
+export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBody = zod.object({
+  "name": zod.union([zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyNameOneMax),zod.null()]).optional(),
+  "description": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyDescriptionOneMax),zod.null()]).optional(),
+  "trigger_event": zod.union([zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerEventOneMax),zod.null()]).optional(),
+  "target_type": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTargetTypeOneMax),zod.null()]).optional(),
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "require_human_approval": zod.union([zod.boolean(),zod.null()]).optional(),
+  "instructions": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyInstructionsOneMax),zod.null()]).optional()
+})
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseEnabledDefault = true;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault = true;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault = false;
+
+export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse = zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "trigger_event": zod.string(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "enabled": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseEnabledDefault),
+  "require_human_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault),
+  "instructions": zod.string().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault),
+  "built_in": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault)
+})
+
+
+/**
+ * @summary 删除 Agent 工作流
+ */
+export const DeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteParams = zod.object({
+  "workflow_key": zod.string()
 })
 
 
@@ -4553,6 +5081,9 @@ export const GetWebhooksApiV1AdminAutomationWebhooksGetResponseItem = zod.object
   "headers": zod.record(zod.string(), zod.unknown()).optional(),
   "last_delivery_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_success_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_test_status": zod.union([zod.string(),zod.null()]).optional(),
+  "last_test_error": zod.union([zod.string(),zod.null()]).optional(),
+  "last_tested_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 })
@@ -4575,6 +5106,56 @@ export const PostWebhookApiV1AdminAutomationWebhooksPostBody = zod.object({
   "max_attempts": zod.number().default(postWebhookApiV1AdminAutomationWebhooksPostBodyMaxAttemptsDefault),
   "status": zod.string().default(postWebhookApiV1AdminAutomationWebhooksPostBodyStatusDefault),
   "headers": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
+ * @summary 测试 Webhook 订阅
+ */
+export const PostWebhookTestApiV1AdminAutomationWebhooksTestPostQueryParams = zod.object({
+  "subscription_id": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const postWebhookTestApiV1AdminAutomationWebhooksTestPostBodyTimeoutSecondsDefault = 10;
+export const postWebhookTestApiV1AdminAutomationWebhooksTestPostBodyMaxAttemptsDefault = 6;
+export const postWebhookTestApiV1AdminAutomationWebhooksTestPostBodyStatusDefault = `active`;
+
+export const PostWebhookTestApiV1AdminAutomationWebhooksTestPostBody = zod.object({
+  "name": zod.string(),
+  "target_url": zod.string(),
+  "event_types": zod.array(zod.string()).optional(),
+  "secret": zod.union([zod.string(),zod.null()]).optional(),
+  "timeout_seconds": zod.number().default(postWebhookTestApiV1AdminAutomationWebhooksTestPostBodyTimeoutSecondsDefault),
+  "max_attempts": zod.number().default(postWebhookTestApiV1AdminAutomationWebhooksTestPostBodyMaxAttemptsDefault),
+  "status": zod.string().default(postWebhookTestApiV1AdminAutomationWebhooksTestPostBodyStatusDefault),
+  "headers": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+export const PostWebhookTestApiV1AdminAutomationWebhooksTestPostResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary 连接 Telegram 并自动识别 chat_id
+ */
+export const postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodyBotTokenMin = 10;
+export const postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodyBotTokenMax = 256;
+
+export const postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodySendTestMessageDefault = true;
+
+export const PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBody = zod.object({
+  "bot_token": zod.string().min(postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodyBotTokenMin).max(postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodyBotTokenMax),
+  "send_test_message": zod.boolean().default(postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodySendTestMessageDefault)
+})
+
+export const postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseOkDefault = false;
+
+export const PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse = zod.object({
+  "ok": zod.boolean().default(postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseOkDefault),
+  "status": zod.string(),
+  "summary": zod.string(),
+  "bot_username": zod.union([zod.string(),zod.null()]).optional(),
+  "chat_id": zod.union([zod.number(),zod.string(),zod.null()]).optional(),
+  "target_url": zod.union([zod.string(),zod.null()]).optional()
 })
 
 
@@ -4609,6 +5190,9 @@ export const PutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPutResponse = z
   "headers": zod.record(zod.string(), zod.unknown()).optional(),
   "last_delivery_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_success_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_test_status": zod.union([zod.string(),zod.null()]).optional(),
+  "last_test_error": zod.union([zod.string(),zod.null()]).optional(),
+  "last_tested_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 })
@@ -4851,36 +5435,10 @@ export const GetVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = zod.objec
   "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
   "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
-  "google": zod.object({
-  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
-  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
-  "ready": zod.boolean().describe('Whether all required secret files are available'),
-  "client_id": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client id configuration status'),
-  "client_secret": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client secret configuration status')
-}).describe('Google OAuth secret readiness and enablement'),
-  "github": zod.object({
-  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
-  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
-  "ready": zod.boolean().describe('Whether all required secret files are available'),
-  "client_id": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client id configuration status'),
-  "client_secret": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client secret configuration status')
-}).describe('GitHub OAuth secret readiness and enablement'),
+  "google_client_id": zod.string().describe('Google OAuth client id'),
+  "google_client_secret": zod.string().describe('Google OAuth client secret'),
+  "github_client_id": zod.string().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
   "created_at": zod.string().datetime({}).describe('Creation time'),
   "updated_at": zod.string().datetime({}).describe('Last update time')
 })
@@ -4893,7 +5451,11 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutBody = zod.object
   "email_login_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email login remains enabled'),
   "visitor_oauth_providers": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Auth methods reserved for admin-side usage'),
-  "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login')
+  "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login'),
+  "google_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client id'),
+  "google_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client secret'),
+  "github_client_id": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client secret')
 })
 
 export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.object({
@@ -4902,36 +5464,10 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.ob
   "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
   "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
-  "google": zod.object({
-  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
-  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
-  "ready": zod.boolean().describe('Whether all required secret files are available'),
-  "client_id": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client id configuration status'),
-  "client_secret": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client secret configuration status')
-}).describe('Google OAuth secret readiness and enablement'),
-  "github": zod.object({
-  "enabled_for_visitors": zod.boolean().describe('Whether visitor login currently enables this provider'),
-  "enabled_for_admin": zod.boolean().describe('Whether admin auth currently enables this provider'),
-  "ready": zod.boolean().describe('Whether all required secret files are available'),
-  "client_id": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client id configuration status'),
-  "client_secret": zod.object({
-  "configured": zod.boolean().describe('Whether this secret file is configured'),
-  "filename": zod.string().describe('Expected secret filename under .store\/secrets'),
-  "source": zod.enum(['file', 'env', 'missing']).describe('Active source for this value')
-}).describe('Client secret configuration status')
-}).describe('GitHub OAuth secret readiness and enablement'),
+  "google_client_id": zod.string().describe('Google OAuth client id'),
+  "google_client_secret": zod.string().describe('Google OAuth client secret'),
+  "github_client_id": zod.string().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
   "created_at": zod.string().datetime({}).describe('Creation time'),
   "updated_at": zod.string().datetime({}).describe('Last update time')
 })

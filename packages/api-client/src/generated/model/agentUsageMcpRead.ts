@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AgentUsageCapabilityRead } from './agentUsageCapabilityRead';
+import type { AgentUsageMcpTemplateRead } from './agentUsageMcpTemplateRead';
 
 export interface AgentUsageMcpRead {
   /** MCP endpoint URL */
@@ -19,4 +20,8 @@ export interface AgentUsageMcpRead {
   tools?: AgentUsageCapabilityRead[];
   /** Visible MCP resources */
   resources?: AgentUsageCapabilityRead[];
+  /** High-signal MCP call sequences */
+  call_templates?: AgentUsageMcpTemplateRead[];
+  /** Practical usage hints for agents */
+  usage_hints?: string[];
 }

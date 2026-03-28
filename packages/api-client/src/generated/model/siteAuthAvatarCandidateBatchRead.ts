@@ -9,7 +9,7 @@ import type { SiteAuthAvatarCandidate } from './siteAuthAvatarCandidate';
 export interface SiteAuthAvatarCandidateBatchRead {
   /** Current avatar candidate batch */
   batch: number;
-  /** Total avatar candidate batches */
+  /** Total number of avatar candidate batches */
   total_batches: number;
   /** Avatar candidates */
   avatar_candidates?: SiteAuthAvatarCandidate[];

@@ -4,7 +4,6 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { OAuthProviderStatusRead } from './oAuthProviderStatusRead';
 
 export interface SiteAuthConfigAdminRead {
   /** Visitor auth config id */
@@ -17,10 +16,14 @@ export interface SiteAuthConfigAdminRead {
   admin_auth_methods?: string[];
   /** Whether email can be used as an admin identity */
   admin_email_enabled: boolean;
-  /** Google OAuth secret readiness and enablement */
-  google: OAuthProviderStatusRead;
-  /** GitHub OAuth secret readiness and enablement */
-  github: OAuthProviderStatusRead;
+  /** Google OAuth client id */
+  google_client_id: string;
+  /** Google OAuth client secret */
+  google_client_secret: string;
+  /** GitHub OAuth client id */
+  github_client_id: string;
+  /** GitHub OAuth client secret */
+  github_client_secret: string;
   /** Creation time */
   created_at: string;
   /** Last update time */
