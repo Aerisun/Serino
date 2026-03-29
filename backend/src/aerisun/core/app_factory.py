@@ -30,10 +30,14 @@ def create_app() -> FastAPI:
         async with lifespan(app), mcp_server.session_manager.run():
             yield
 
+    is_prod = settings.environment == "production"
     app = FastAPI(
         title="Aerisun API",
         version="0.1.0",
         lifespan=app_lifespan,
+        docs_url=None if is_prod else "/docs",
+        redoc_url=None if is_prod else "/redoc",
+        openapi_url=None if is_prod else "/openapi.json",
     )
 
     # Rate limiting
