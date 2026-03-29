@@ -12741,6 +12741,44 @@
         }
       }
     },
+    "/feeds.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Feeds Alias",
+        "operationId": "feeds_alias_feeds_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Feed Alias",
+        "operationId": "feed_alias_feed_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site/sitemap.xml": {
       "get": {
         "tags": [
@@ -12862,6 +12900,44 @@
         ],
         "summary": "Rss Alias",
         "operationId": "rss_alias_api_v1_site_rss_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/feeds.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Feeds Alias",
+        "operationId": "feeds_alias_api_v1_site_feeds_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/feed.xml": {
+      "get": {
+        "tags": [
+          "seo"
+        ],
+        "summary": "Feed Alias",
+        "operationId": "feed_alias_api_v1_site_feed_xml_get",
         "responses": {
           "200": {
             "description": "Successful Response",

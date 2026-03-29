@@ -6083,6 +6083,18 @@ export const RssAliasRssXmlGetResponse = zod.unknown()
 
 
 /**
+ * @summary Feeds Alias
+ */
+export const FeedsAliasFeedsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Feed Alias
+ */
+export const FeedAliasFeedXmlGetResponse = zod.unknown()
+
+
+/**
  * @summary Sitemap
  */
 export const SitemapApiV1SiteSitemapXmlGetResponse = zod.unknown()
@@ -6122,3 +6134,15 @@ export const ExcerptsFeedApiV1SiteFeedsExcerptsXmlGetResponse = zod.unknown()
  * @summary Rss Alias
  */
 export const RssAliasApiV1SiteRssXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Feeds Alias
+ */
+export const FeedsAliasApiV1SiteFeedsXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary Feed Alias
+ */
+export const FeedAliasApiV1SiteFeedXmlGetResponse = zod.unknown()
