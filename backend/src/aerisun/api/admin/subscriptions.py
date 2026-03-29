@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.subscription.schemas import (
     ContentNotificationDeliveryAdminRead,
     ContentSubscriberAdminRead,
@@ -42,7 +43,18 @@ def update_content_subscription_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> ContentSubscriptionConfigAdminRead:
-    return update_subscription_admin_config(session, payload)
+    before_snapshot = capture_config_resource(session, "subscriptions.config")
+    result = update_subscription_admin_config(session, payload)
+    after_snapshot = capture_config_resource(session, "subscriptions.config")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="subscriptions.config",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.post("/config/test", response_model=ContentSubscriptionTestResult, summary="测试内容订阅 SMTP 发信")

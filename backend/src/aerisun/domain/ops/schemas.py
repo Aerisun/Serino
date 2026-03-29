@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -57,6 +57,38 @@ class AuditLogRead(ModelBase):
     target_id: str | None
     payload: dict[str, Any]
     created_at: datetime
+
+
+class ConfigDiffLineRead(BaseModel):
+    path: str = Field(description="Flattened JSON path for the changed field")
+    before: str = Field(description="Human-readable previous value")
+    after: str = Field(description="Human-readable next value")
+
+
+class ConfigRevisionListItemRead(ModelBase):
+    id: str
+    actor_id: str | None
+    resource_key: str
+    resource_label: str
+    operation: str
+    resource_version: str
+    summary: str
+    changed_fields: list[str] = Field(default_factory=list)
+    sensitive_fields: list[str] = Field(default_factory=list)
+    restored_from_revision_id: str | None = None
+    created_at: datetime
+
+
+class ConfigRevisionDetailRead(ConfigRevisionListItemRead):
+    before_preview: Any = Field(default=None, description="Masked preview of the config before the change")
+    after_preview: Any = Field(default=None, description="Masked preview of the config after the change")
+    diff_lines: list[ConfigDiffLineRead] = Field(default_factory=list)
+    restorable: bool = Field(default=True, description="Whether the revision can be restored")
+
+
+class ConfigRevisionRestoreWrite(BaseModel):
+    target: Literal["before", "after"] = Field(default="before", description='Restore target: "before" or "after"')
+    reason: str | None = Field(default=None, description="Optional operator note recorded in the restore summary")
 
 
 class BackupSnapshotRead(ModelBase):

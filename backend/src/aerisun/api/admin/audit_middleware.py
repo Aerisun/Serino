@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from aerisun.core.db import get_session_factory
+from aerisun.domain.ops.config_revisions import is_tracked_config_request
 from aerisun.domain.ops.models import AuditLog
 
 logger = structlog.get_logger("aerisun.audit")
@@ -34,6 +35,8 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
         # Skip auth endpoints to avoid logging login/logout noise
         if "/auth/login" in path or "/auth/logout" in path:
+            return await call_next(request)
+        if is_tracked_config_request(path, method):
             return await call_next(request)
 
         response = await call_next(request)

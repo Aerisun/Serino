@@ -63,6 +63,7 @@ from aerisun.domain.automation.settings import (
     update_agent_workflow,
 )
 from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 
 from .deps import get_current_admin
 
@@ -88,7 +89,18 @@ def put_model_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> AgentModelConfigRead:
-    return update_agent_model_config(session, payload)
+    before_snapshot = capture_config_resource(session, "automation.model_config")
+    result = update_agent_model_config(session, payload)
+    after_snapshot = capture_config_resource(session, "automation.model_config")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="automation.model_config",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.post("/model-config/test", response_model=AgentModelConfigTestRead, summary="测试 Agent 模型配置")
@@ -230,7 +242,18 @@ def post_workflow(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> AgentWorkflowRead:
-    return create_agent_workflow(session, payload)
+    before_snapshot = capture_config_resource(session, "automation.workflows")
+    result = create_agent_workflow(session, payload)
+    after_snapshot = capture_config_resource(session, "automation.workflows")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="automation.workflows",
+        operation="create",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.put("/workflows/{workflow_key}", response_model=AgentWorkflowRead, summary="更新 Agent 工作流")
@@ -240,7 +263,18 @@ def put_workflow(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> AgentWorkflowRead:
-    return update_agent_workflow(session, workflow_key=workflow_key, payload=payload)
+    before_snapshot = capture_config_resource(session, "automation.workflows")
+    result = update_agent_workflow(session, workflow_key=workflow_key, payload=payload)
+    after_snapshot = capture_config_resource(session, "automation.workflows")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="automation.workflows",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.delete("/workflows/{workflow_key}", status_code=status.HTTP_204_NO_CONTENT, summary="删除 Agent 工作流")
@@ -249,7 +283,17 @@ def delete_workflow(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
+    before_snapshot = capture_config_resource(session, "automation.workflows")
     delete_agent_workflow(session, workflow_key=workflow_key)
+    after_snapshot = capture_config_resource(session, "automation.workflows")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="automation.workflows",
+        operation="delete",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
 
 
 @router.get("/runs", response_model=list[AgentRunRead], summary="获取 Agent 运行记录")

@@ -16,10 +16,24 @@ from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, T
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops import repository as repo
+from aerisun.domain.ops.config_revisions import (
+    build_diff_lines,
+    get_config_revision,
+)
+from aerisun.domain.ops.config_revisions import (
+    list_config_revisions as _list_config_revisions,
+)
+from aerisun.domain.ops.config_revisions import (
+    restore_config_revision as _restore_config_revision,
+)
 from aerisun.domain.ops.ip_geo import lookup_ip_geolocation
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     BackupSnapshotRead,
+    ConfigDiffLineRead,
+    ConfigRevisionDetailRead,
+    ConfigRevisionListItemRead,
+    ConfigRevisionRestoreWrite,
     DashboardAuxMetrics,
     DashboardTrafficMetrics,
     DashboardVisitorMetrics,
@@ -184,6 +198,74 @@ def list_audit_logs(
 def list_backups(session: Session) -> list[BackupSnapshotRead]:
     """List all backup snapshots."""
     return [BackupSnapshotRead.model_validate(s) for s in repo.find_all_backups(session)]
+
+
+def list_config_revisions(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    resource_key: str | None = None,
+    actor_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> dict[str, object]:
+    items, total = _list_config_revisions(
+        session,
+        page=page,
+        page_size=page_size,
+        resource_key=resource_key,
+        actor_id=actor_id,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    return {
+        "items": [ConfigRevisionListItemRead.model_validate(item) for item in items],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def get_config_revision_detail(session: Session, revision_id: str) -> ConfigRevisionDetailRead:
+    revision = get_config_revision(session, revision_id)
+    return ConfigRevisionDetailRead(
+        id=revision.id,
+        actor_id=revision.actor_id,
+        resource_key=revision.resource_key,
+        resource_label=revision.resource_label,
+        operation=revision.operation,
+        resource_version=revision.resource_version,
+        summary=revision.summary,
+        changed_fields=list(revision.changed_fields or []),
+        sensitive_fields=list(revision.sensitive_fields or []),
+        restored_from_revision_id=revision.restored_from_revision_id,
+        created_at=revision.created_at,
+        before_preview=revision.before_preview,
+        after_preview=revision.after_preview,
+        diff_lines=[
+            ConfigDiffLineRead.model_validate(item)
+            for item in build_diff_lines(revision.before_preview, revision.after_preview)
+        ],
+        restorable=bool(revision.before_snapshot is not None or revision.after_snapshot is not None),
+    )
+
+
+def restore_config_revision(
+    session: Session,
+    *,
+    revision_id: str,
+    actor_id: str | None,
+    payload: ConfigRevisionRestoreWrite,
+) -> ConfigRevisionDetailRead:
+    revision = _restore_config_revision(
+        session,
+        revision_id=revision_id,
+        actor_id=actor_id,
+        target="after" if payload.target == "after" else "before",
+        reason=payload.reason,
+    )
+    return get_config_revision_detail(session, revision.id)
 
 
 def create_backup_snapshot(session: Session) -> BackupSnapshotRead:

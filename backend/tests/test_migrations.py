@@ -58,6 +58,7 @@ def _upgrade_to_revision(revision: str) -> None:
 
 
 def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
+    tables = _get_tables(str(db_path))
     site_profile_columns = _get_columns(str(db_path), "site_profile")
     posts_columns = _get_columns(str(db_path), "posts")
     diary_columns = _get_columns(str(db_path), "diary_entries")
@@ -74,6 +75,7 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     webhook_delivery_columns = _get_columns(str(db_path), "webhook_deliveries")
     webhook_dead_letter_columns = _get_columns(str(db_path), "webhook_dead_letters")
 
+    assert "config_revisions" in tables
     assert "hero_video_url" in site_profile_columns
     assert "site_icon_url" in site_profile_columns
     assert {"category", "view_count"} <= posts_columns

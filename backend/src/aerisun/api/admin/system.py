@@ -24,34 +24,27 @@ from aerisun.domain.iam.service import (
 from aerisun.domain.iam.service import (
     update_api_key as _update_api_key,
 )
+from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     BackupSnapshotRead,
+    ConfigRevisionDetailRead,
+    ConfigRevisionListItemRead,
+    ConfigRevisionRestoreWrite,
     EnhancedDashboardStats,
     SystemInfo,
     VisitorRecordRead,
 )
-from aerisun.domain.ops.service import (
-    create_backup_snapshot as _create_backup,
-)
-from aerisun.domain.ops.service import (
-    get_dashboard_stats as _get_dashboard_stats,
-)
-from aerisun.domain.ops.service import (
-    get_system_info as _get_system_info,
-)
-from aerisun.domain.ops.service import (
-    list_audit_logs as _list_audit_logs,
-)
-from aerisun.domain.ops.service import (
-    list_backups as _list_backups,
-)
-from aerisun.domain.ops.service import (
-    list_visitor_records as _list_visitor_records,
-)
-from aerisun.domain.ops.service import (
-    restore_backup as _restore_backup,
-)
+from aerisun.domain.ops.service import create_backup_snapshot as _create_backup
+from aerisun.domain.ops.service import get_config_revision_detail as _get_config_revision_detail
+from aerisun.domain.ops.service import get_dashboard_stats as _get_dashboard_stats
+from aerisun.domain.ops.service import get_system_info as _get_system_info
+from aerisun.domain.ops.service import list_audit_logs as _list_audit_logs
+from aerisun.domain.ops.service import list_backups as _list_backups
+from aerisun.domain.ops.service import list_config_revisions as _list_config_revisions
+from aerisun.domain.ops.service import list_visitor_records as _list_visitor_records
+from aerisun.domain.ops.service import restore_backup as _restore_backup
+from aerisun.domain.ops.service import restore_config_revision as _restore_config_revision
 
 from .deps import get_current_admin
 from .integrations_schemas import AdminAgentUsageRead, FeedLinkCollectionRead, FeedLinkRead
@@ -143,8 +136,19 @@ def update_mcp_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> McpAdminConfigRead:
+    before_snapshot = capture_config_resource(session, "integrations.mcp_public_access")
     settings = get_settings()
-    return save_mcp_admin_config(session, settings.site_url, payload, api_key_id)
+    result = save_mcp_admin_config(session, settings.site_url, payload, api_key_id)
+    after_snapshot = capture_config_resource(session, "integrations.mcp_public_access")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="integrations.mcp_public_access",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.get("/api-keys", response_model=list[ApiKeyAdminRead], include_in_schema=False)
@@ -208,6 +212,55 @@ def list_audit_logs(
         date_from=date_from,
         date_to=date_to,
     )
+
+
+@router.get(
+    "/config-revisions",
+    response_model=PaginatedResponse[ConfigRevisionListItemRead],
+    summary="获取配置变更历史",
+)
+def list_config_revisions(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    resource_key: str | None = Query(default=None),
+    actor_id: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> dict[str, object]:
+    return _list_config_revisions(
+        session,
+        page=page,
+        page_size=page_size,
+        resource_key=resource_key,
+        actor_id=actor_id,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@router.get("/config-revisions/{revision_id}", response_model=ConfigRevisionDetailRead, summary="获取配置历史详情")
+def get_config_revision_detail(
+    revision_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ConfigRevisionDetailRead:
+    return _get_config_revision_detail(session, revision_id)
+
+
+@router.post(
+    "/config-revisions/{revision_id}/restore",
+    response_model=ConfigRevisionDetailRead,
+    summary="恢复配置历史版本",
+)
+def restore_config_revision(
+    revision_id: str,
+    payload: ConfigRevisionRestoreWrite,
+    admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ConfigRevisionDetailRead:
+    return _restore_config_revision(session, revision_id=revision_id, actor_id=admin.id, payload=payload)
 
 
 @router.get("/backups", response_model=list[BackupSnapshotRead], summary="获取备份列表")
