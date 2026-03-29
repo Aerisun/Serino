@@ -439,7 +439,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.apiKeys": "API 密钥",
     "system.apiKeysDescription": "管理 API 密钥",
     "system.auditLog": "审计日志",
-    "system.auditLogDescription": "系统活动日志",
+    "system.auditLogDescription": "配置历史与系统活动日志",
     "system.backups": "备份",
     "system.backupsDescription": "数据库备份快照",
     "system.createKey": "创建密钥",
@@ -765,10 +765,22 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // auditLog filters
     "auditLog.filterByAction": "按操作筛选",
+    "auditLog.filterByResource": "按资源筛选",
     "auditLog.dateFrom": "开始日期",
     "auditLog.dateTo": "结束日期",
     "auditLog.filter": "筛选",
     "auditLog.clearFilter": "清除",
+    "auditLog.viewConfigHistory": "配置历史",
+    "auditLog.viewAuditLog": "系统审计",
+    "auditLog.resource": "资源",
+    "auditLog.summary": "摘要",
+    "auditLog.changedFields": "变更项数",
+    "auditLog.changedField": "变更字段",
+    "auditLog.diffLines": "差异详情",
+    "auditLog.beforePreview": "变更前预览",
+    "auditLog.afterPreview": "变更后预览",
+    "auditLog.noDiff": "这次变更没有可展示的差异。",
+    "auditLog.restoreConfigConfirm": "确认将当前配置恢复到这条历史记录之前的状态吗？",
 
     // edit page fields
     "diary.mood": "心情",
@@ -1372,7 +1384,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.apiKeys": "API Keys",
     "system.apiKeysDescription": "Manage API keys",
     "system.auditLog": "Audit Log",
-    "system.auditLogDescription": "System activity log",
+    "system.auditLogDescription": "Configuration history and system activity log",
     "system.backups": "Backups",
     "system.backupsDescription": "Database backup snapshots",
     "system.createKey": "Create Key",
@@ -1683,10 +1695,22 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // auditLog filters
     "auditLog.filterByAction": "Filter by action",
+    "auditLog.filterByResource": "Filter by resource",
     "auditLog.dateFrom": "From date",
     "auditLog.dateTo": "To date",
     "auditLog.filter": "Filter",
     "auditLog.clearFilter": "Clear",
+    "auditLog.viewConfigHistory": "Config History",
+    "auditLog.viewAuditLog": "System Audit",
+    "auditLog.resource": "Resource",
+    "auditLog.summary": "Summary",
+    "auditLog.changedFields": "Changed",
+    "auditLog.changedField": "Field",
+    "auditLog.diffLines": "Diff",
+    "auditLog.beforePreview": "Before",
+    "auditLog.afterPreview": "After",
+    "auditLog.noDiff": "No visible diff for this revision.",
+    "auditLog.restoreConfigConfirm": "Restore the current configuration to the state before this revision?",
 
     // edit page fields
     "diary.mood": "Mood",
