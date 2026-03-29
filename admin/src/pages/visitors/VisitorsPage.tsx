@@ -519,7 +519,7 @@ export default function VisitorsPage() {
   const bindCurrent = useBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost({
     mutation: {
       onMutate: () => setBindingError(""),
-      onSuccess: (response, variables) => {
+      onSuccess: (_response, variables) => {
         queryClient.invalidateQueries({
           queryKey: getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
         });

@@ -490,52 +490,6 @@ function findThreadForItem(
   return [root];
 }
 
-function ModerationHistory({
-  item,
-  titleMap,
-}: {
-  item: ModerationRecord;
-  titleMap?: TitleMap;
-}) {
-  const { t, lang } = useI18n();
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <History className="h-3 w-3" />
-        <span>{t("moderation.currentStatus")}</span>
-        <StatusBadge status={normalizeModerationStatus(item.status)} />
-      </div>
-      <dl className="grid gap-x-4 gap-y-2 text-xs grid-cols-2">
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t("moderation.source")}</dt>
-          <dd>{getModerationSource(item, lang)}</dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t("moderation.path")}</dt>
-          <dd className="break-all">
-            {getModerationPath(item, lang, titleMap)}
-          </dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t("common.author")}</dt>
-          <dd>{getModerationAuthor(item, t("moderation.guest"))}</dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">
-            {getModerationAuthFieldLabel(lang)}
-          </dt>
-          <dd>{getModerationAuthDisplay(item, lang)}</dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t("moderation.updated")}</dt>
-          <dd>{formatDate(item.updated_at)}</dd>
-        </div>
-      </dl>
-      <ModerationBodyPreview content={getModerationBody(item)} />
-    </div>
-  );
-}
-
 function ThreadTree({
   nodes,
   activeId,
@@ -931,7 +885,7 @@ function FiltersBar({
 
 function ModerationQueue({
   kind,
-  description,
+  _description,
   loadItems,
   moderateItem,
   queryKeyFn,

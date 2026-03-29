@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { AgentRunsPanel } from "./AgentRunsPage";
 import { ApprovalsPanel } from "./ApprovalsPage";
 
-const ACTIVITY_VIEWS = ["runs", "approvals"] as const;
+type ActivityView = "runs" | "approvals";
 
 const COPY = {
   zh: {
@@ -29,7 +29,7 @@ const COPY = {
 
 export function AgentActivitySection() {
   const { lang } = useI18n();
-  const [view, setView] = useState<(typeof ACTIVITY_VIEWS)[number]>("runs");
+  const [view, setView] = useState<ActivityView>("runs");
   const copy = COPY[lang];
   const { data: approvalsRaw } = useGetApprovalsApiV1AdminAutomationApprovalsGet({ query: { refetchInterval: 5000 } });
   const { data: runsRaw } = useGetRunsApiV1AdminAutomationRunsGet();
@@ -50,7 +50,7 @@ export function AgentActivitySection() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <AdminSegmentedFilter
           value={view}
-          onValueChange={(next) => setView(next as (typeof ACTIVITY_VIEWS)[number])}
+          onValueChange={(next) => setView(next as ActivityView)}
           items={[
             { value: "approvals", label: copy.approvalsList, badge: approvals.length },
             { value: "runs", label: copy.runsList, badge: runs.length },

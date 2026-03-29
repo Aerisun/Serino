@@ -26,7 +26,7 @@ import {
   updateAgentWorkflow,
 } from "@/api/endpoints/agent";
 import { useI18n } from "@/i18n";
-import { Check, ChevronLeft, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, Pencil, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const WORKFLOWS_QUERY_KEY = ["admin", "agent", "workflows"] as const;
