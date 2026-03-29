@@ -15,6 +15,16 @@ from aerisun.domain.content.seo_service import build_robots_txt, build_sitemap_x
 
 router = APIRouter(tags=["seo"])
 
+_RSS_CONTENT_TYPE = "application/rss+xml; charset=utf-8"
+
+
+def _rss_response(xml: str) -> Response:
+    return Response(
+        content=xml.encode("utf-8"),
+        media_type="application/rss+xml",
+        headers={"Content-Type": _RSS_CONTENT_TYPE},
+    )
+
 
 @router.get("/sitemap.xml")
 def sitemap(session: Session = Depends(get_session)) -> Response:
@@ -37,7 +47,7 @@ def posts_feed(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_posts_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)
 
 
 @router.get("/feeds/diary.xml")
@@ -45,7 +55,7 @@ def diary_feed(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_diary_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)
 
 
 @router.get("/feeds/thoughts.xml")
@@ -53,7 +63,7 @@ def thoughts_feed(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_thoughts_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)
 
 
 @router.get("/feeds/excerpts.xml")
@@ -61,7 +71,7 @@ def excerpts_feed(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_excerpts_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)
 
 
 @router.get("/rss.xml")
@@ -69,7 +79,7 @@ def rss_alias(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_posts_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)
 
 
 @router.get("/feeds.xml")
@@ -77,7 +87,7 @@ def feeds_alias(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_posts_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)
 
 
 @router.get("/feed.xml")
@@ -85,4 +95,4 @@ def feed_alias(session: Session = Depends(get_session)) -> Response:
     settings = get_settings()
     site_url = settings.site_url or "https://example.com"
     xml = build_posts_rss_xml(session, site_url)
-    return Response(content=xml, media_type="application/rss+xml")
+    return _rss_response(xml)

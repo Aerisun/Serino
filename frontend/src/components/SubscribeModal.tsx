@@ -241,7 +241,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-3 py-3 sm:px-4 sm:py-[10vh]"
+            className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto scrollbar-hide px-3 pb-4 pt-[calc(env(safe-area-inset-top)+4.25rem)] sm:px-4 sm:py-[10vh]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -258,9 +258,9 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.96 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 mx-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[30px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:max-h-[calc(100dvh-4.5rem)]"
+              className="relative z-10 mx-auto flex max-h-[calc(100dvh-5.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[30px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:max-h-[calc(100dvh-4.5rem)]"
             >
-            <div className="relative flex-1 overflow-y-auto overscroll-contain">
+            <div className="relative flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute -left-12 top-6 h-28 w-28 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.12)] blur-3xl"
