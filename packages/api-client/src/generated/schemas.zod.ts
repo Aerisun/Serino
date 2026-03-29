@@ -4144,6 +4144,306 @@ export const RestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostResponse =
 
 
 /**
+ * @summary 获取备份同步配置
+ */
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEnabledDefault = false;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponsePausedDefault = false;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseIntervalMinutesDefault = 60;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault = `receiver`;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSiteSlugDefault = `aerisun`;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetriesDefault = 3;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRetryBackoffSecondsDefault = 300;
+
+export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEnabledDefault),
+  "paused": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponsePausedDefault),
+  "interval_minutes": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseIntervalMinutesDefault),
+  "transport_mode": zod.string().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault),
+  "site_slug": zod.string().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSiteSlugDefault),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "max_retries": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRetryBackoffSecondsDefault),
+  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "transport": zod.object({
+  "mode": zod.string(),
+  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional()
+}),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 更新备份同步配置
+ */
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEnabledDefault = false;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyPausedDefault = false;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyIntervalMinutesDefault = 60;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyTransportModeDefault = `receiver`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodySiteSlugDefault = `aerisun`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetriesDefault = 3;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault = 300;
+
+export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBody = zod.object({
+  "enabled": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEnabledDefault),
+  "paused": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyPausedDefault),
+  "interval_minutes": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyIntervalMinutesDefault),
+  "transport_mode": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyTransportModeDefault),
+  "site_slug": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodySiteSlugDefault),
+  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional(),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "max_retries": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault)
+})
+
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEnabledDefault = false;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponsePausedDefault = false;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseIntervalMinutesDefault = 60;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault = `receiver`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSiteSlugDefault = `aerisun`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetriesDefault = 3;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRetryBackoffSecondsDefault = 300;
+
+export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEnabledDefault),
+  "paused": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponsePausedDefault),
+  "interval_minutes": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseIntervalMinutesDefault),
+  "transport_mode": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault),
+  "site_slug": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSiteSlugDefault),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "max_retries": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRetryBackoffSecondsDefault),
+  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "transport": zod.object({
+  "mode": zod.string(),
+  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional()
+}),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取备份同步队列
+ */
+export const ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponseItem = zod.object({
+  "id": zod.string(),
+  "transport": zod.string(),
+  "trigger_kind": zod.string(),
+  "status": zod.string(),
+  "dataset_versions": zod.record(zod.string(), zod.unknown()),
+  "verified_chunks": zod.array(zod.string()),
+  "retry_count": zod.number(),
+  "next_retry_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "last_error": zod.union([zod.string(),zod.null()]),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse = zod.array(ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponseItem)
+
+
+/**
+ * @summary 获取备份同步运行记录
+ */
+export const listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseRetryCountDefault = 0;
+
+export const ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseItem = zod.object({
+  "id": zod.string(),
+  "job_name": zod.string(),
+  "status": zod.string(),
+  "transport": zod.union([zod.string(),zod.null()]).optional(),
+  "trigger_kind": zod.union([zod.string(),zod.null()]).optional(),
+  "queue_item_id": zod.union([zod.string(),zod.null()]).optional(),
+  "commit_id": zod.union([zod.string(),zod.null()]).optional(),
+  "stats_json": zod.record(zod.string(), zod.unknown()).optional(),
+  "retry_count": zod.number().default(listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseRetryCountDefault),
+  "next_retry_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "message": zod.union([zod.string(),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse = zod.array(ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseItem)
+
+
+/**
+ * @summary 重试备份同步
+ */
+export const RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostParams = zod.object({
+  "run_id": zod.string()
+})
+
+export const retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseRetryCountDefault = 0;
+
+export const RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse = zod.object({
+  "id": zod.string(),
+  "job_name": zod.string(),
+  "status": zod.string(),
+  "transport": zod.union([zod.string(),zod.null()]).optional(),
+  "trigger_kind": zod.union([zod.string(),zod.null()]).optional(),
+  "queue_item_id": zod.union([zod.string(),zod.null()]).optional(),
+  "commit_id": zod.union([zod.string(),zod.null()]).optional(),
+  "stats_json": zod.record(zod.string(), zod.unknown()).optional(),
+  "retry_count": zod.number().default(retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseRetryCountDefault),
+  "next_retry_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "message": zod.union([zod.string(),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 暂停备份同步
+ */
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEnabledDefault = false;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponsePausedDefault = false;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseIntervalMinutesDefault = 60;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault = `receiver`;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSiteSlugDefault = `aerisun`;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetriesDefault = 3;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRetryBackoffSecondsDefault = 300;
+
+export const PauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEnabledDefault),
+  "paused": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponsePausedDefault),
+  "interval_minutes": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseIntervalMinutesDefault),
+  "transport_mode": zod.string().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault),
+  "site_slug": zod.string().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSiteSlugDefault),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "max_retries": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRetryBackoffSecondsDefault),
+  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "transport": zod.object({
+  "mode": zod.string(),
+  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional()
+}),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 恢复备份同步
+ */
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEnabledDefault = false;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponsePausedDefault = false;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseIntervalMinutesDefault = 60;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault = `receiver`;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSiteSlugDefault = `aerisun`;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetriesDefault = 3;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRetryBackoffSecondsDefault = 300;
+
+export const ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = zod.object({
+  "id": zod.string(),
+  "enabled": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEnabledDefault),
+  "paused": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponsePausedDefault),
+  "interval_minutes": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseIntervalMinutesDefault),
+  "transport_mode": zod.string().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault),
+  "site_slug": zod.string().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSiteSlugDefault),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "max_retries": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRetryBackoffSecondsDefault),
+  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "transport": zod.object({
+  "mode": zod.string(),
+  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional()
+}),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取备份提交记录
+ */
+export const ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponseItem = zod.object({
+  "id": zod.string(),
+  "transport": zod.string(),
+  "trigger_kind": zod.string(),
+  "site_slug": zod.string(),
+  "remote_commit_id": zod.string(),
+  "manifest_digest": zod.string(),
+  "backup_path": zod.union([zod.string(),zod.null()]),
+  "datasets": zod.record(zod.string(), zod.unknown()),
+  "stats_json": zod.record(zod.string(), zod.unknown()),
+  "snapshot_started_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "snapshot_finished_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "restored_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+export const ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse = zod.array(ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponseItem)
+
+
+/**
+ * @summary 从备份提交恢复
+ */
+export const RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostParams = zod.object({
+  "commit_id": zod.string()
+})
+
+export const RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse = zod.object({
+  "id": zod.string(),
+  "transport": zod.string(),
+  "trigger_kind": zod.string(),
+  "site_slug": zod.string(),
+  "remote_commit_id": zod.string(),
+  "manifest_digest": zod.string(),
+  "backup_path": zod.union([zod.string(),zod.null()]),
+  "datasets": zod.record(zod.string(), zod.unknown()),
+  "stats_json": zod.record(zod.string(), zod.unknown()),
+  "snapshot_started_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "snapshot_finished_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "restored_at": zod.union([zod.string().datetime({}),zod.null()]),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
  * @summary 获取仪表盘统计
  */
 export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemPostsDefault = 0;

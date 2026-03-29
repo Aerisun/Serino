@@ -50,7 +50,12 @@ import type {
   ApprovalDecisionWrite,
   AssetAdminRead,
   AssetAdminUpdate,
+  BackupCommitRead,
+  BackupQueueItemRead,
+  BackupRunRead,
   BackupSnapshotRead,
+  BackupSyncConfig,
+  BackupSyncConfigUpdate,
   BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams,
   BodyImportContentApiV1AdminContentImportPost,
   BodyUploadAssetEndpointApiV1AdminAssetsPost,
@@ -13075,6 +13080,954 @@ export const useRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePost = <TEr
         TContext
       > => {
       return useMutation(getRestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取备份同步配置
+ */
+export type getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse200 = {
+  data: BackupSyncConfig
+  status: 200
+}
+
+export type getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSuccess = (getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = (getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSuccess)
+
+export const getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/config`
+}
+
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet = async ( options?: RequestInit): Promise<getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse> => {
+
+  return customInstance<getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse>(getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryKey = () => {
+    return [
+    `/api/v1/admin/system/backup-sync/config`
+    ] as const;
+    }
+
+
+export const getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>> = ({ signal }) => getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryResult = NonNullable<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>>
+export type GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryError = ErrorType<unknown>
+
+
+export function useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet<TData = Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet<TData = Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet<TData = Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取备份同步配置
+ */
+
+export function useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet<TData = Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新备份同步配置
+ */
+export type updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse200 = {
+  data: BackupSyncConfig
+  status: 200
+}
+
+export type updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSuccess = (updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse200) & {
+  headers: Headers;
+};
+export type updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseError = (updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse422) & {
+  headers: Headers;
+};
+
+export type updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse = (updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSuccess | updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseError)
+
+export const getUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/config`
+}
+
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut = async (backupSyncConfigUpdate: BackupSyncConfigUpdate, options?: RequestInit): Promise<updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse> => {
+
+  return customInstance<updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse>(getUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupSyncConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext> => {
+
+const mutationKey = ['updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut>>, {data: BodyType<BackupSyncConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut>>>
+    export type UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutMutationBody = BodyType<BackupSyncConfigUpdate>
+    export type UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新备份同步配置
+ */
+export const useUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut>>,
+        TError,
+        {data: BodyType<BackupSyncConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取备份同步队列
+ */
+export type listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse200 = {
+  data: BackupQueueItemRead[]
+  status: 200
+}
+
+export type listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponseSuccess = (listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse = (listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponseSuccess)
+
+export const getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/queue`
+}
+
+export const listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet = async ( options?: RequestInit): Promise<listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse> => {
+
+  return customInstance<listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse>(getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryKey = () => {
+    return [
+    `/api/v1/admin/system/backup-sync/queue`
+    ] as const;
+    }
+
+
+export const getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryOptions = <TData = Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>> = ({ signal }) => listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryResult = NonNullable<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>>
+export type ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryError = ErrorType<unknown>
+
+
+export function useListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet<TData = Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet<TData = Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet<TData = Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取备份同步队列
+ */
+
+export function useListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet<TData = Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取备份同步运行记录
+ */
+export type listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse200 = {
+  data: BackupRunRead[]
+  status: 200
+}
+
+export type listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseSuccess = (listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse = (listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseSuccess)
+
+export const getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/runs`
+}
+
+export const listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet = async ( options?: RequestInit): Promise<listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse> => {
+
+  return customInstance<listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse>(getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/system/backup-sync/runs`
+    ] as const;
+    }
+
+
+export const getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryOptions = <TData = Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>> = ({ signal }) => listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>>
+export type ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryError = ErrorType<unknown>
+
+
+export function useListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet<TData = Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet<TData = Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet<TData = Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取备份同步运行记录
+ */
+
+export function useListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet<TData = Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 手动触发备份同步
+ */
+export type triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponse201 = {
+  data: BackupRunRead
+  status: 201
+}
+
+export type triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponseSuccess = (triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponse201) & {
+  headers: Headers;
+};
+;
+
+export type triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponse = (triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponseSuccess)
+
+export const getTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/runs`
+}
+
+export const triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost = async ( options?: RequestInit): Promise<triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponse> => {
+
+  return customInstance<triggerBackupSyncApiV1AdminSystemBackupSyncRunsPostResponse>(getTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost>>, TError,void, TContext> => {
+
+const mutationKey = ['triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost>>, void> = () => {
+
+
+          return  triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TriggerBackupSyncApiV1AdminSystemBackupSyncRunsPostMutationResult = NonNullable<Awaited<ReturnType<typeof triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost>>>
+
+    export type TriggerBackupSyncApiV1AdminSystemBackupSyncRunsPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 手动触发备份同步
+ */
+export const useTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof triggerBackupSyncApiV1AdminSystemBackupSyncRunsPost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 重试备份同步
+ */
+export type retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse200 = {
+  data: BackupRunRead
+  status: 200
+}
+
+export type retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseSuccess = (retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse200) & {
+  headers: Headers;
+};
+export type retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseError = (retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse422) & {
+  headers: Headers;
+};
+
+export type retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse = (retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseSuccess | retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseError)
+
+export const getRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostUrl = (runId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/runs/${runId}/retry`
+}
+
+export const retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost = async (runId: string, options?: RequestInit): Promise<retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse> => {
+
+  return customInstance<retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse>(getRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostUrl(runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost>>, TError,{runId: string}, TContext> => {
+
+const mutationKey = ['retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost>>, {runId: string}> = (props) => {
+          const {runId} = props ?? {};
+
+          return  retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost(runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostMutationResult = NonNullable<Awaited<ReturnType<typeof retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost>>>
+
+    export type RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 重试备份同步
+ */
+export const useRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost>>,
+        TError,
+        {runId: string},
+        TContext
+      > => {
+      return useMutation(getRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 暂停备份同步
+ */
+export type pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse200 = {
+  data: BackupSyncConfig
+  status: 200
+}
+
+export type pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSuccess = (pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse200) & {
+  headers: Headers;
+};
+;
+
+export type pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = (pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSuccess)
+
+export const getPauseBackupSyncApiV1AdminSystemBackupSyncPausePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/pause`
+}
+
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePost = async ( options?: RequestInit): Promise<pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse> => {
+
+  return customInstance<pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse>(getPauseBackupSyncApiV1AdminSystemBackupSyncPausePostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPauseBackupSyncApiV1AdminSystemBackupSyncPausePostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pauseBackupSyncApiV1AdminSystemBackupSyncPausePost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof pauseBackupSyncApiV1AdminSystemBackupSyncPausePost>>, TError,void, TContext> => {
+
+const mutationKey = ['pauseBackupSyncApiV1AdminSystemBackupSyncPausePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pauseBackupSyncApiV1AdminSystemBackupSyncPausePost>>, void> = () => {
+
+
+          return  pauseBackupSyncApiV1AdminSystemBackupSyncPausePost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PauseBackupSyncApiV1AdminSystemBackupSyncPausePostMutationResult = NonNullable<Awaited<ReturnType<typeof pauseBackupSyncApiV1AdminSystemBackupSyncPausePost>>>
+
+    export type PauseBackupSyncApiV1AdminSystemBackupSyncPausePostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 暂停备份同步
+ */
+export const usePauseBackupSyncApiV1AdminSystemBackupSyncPausePost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pauseBackupSyncApiV1AdminSystemBackupSyncPausePost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof pauseBackupSyncApiV1AdminSystemBackupSyncPausePost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPauseBackupSyncApiV1AdminSystemBackupSyncPausePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 恢复备份同步
+ */
+export type resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse200 = {
+  data: BackupSyncConfig
+  status: 200
+}
+
+export type resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSuccess = (resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse200) & {
+  headers: Headers;
+};
+;
+
+export type resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = (resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSuccess)
+
+export const getResumeBackupSyncApiV1AdminSystemBackupSyncResumePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/resume`
+}
+
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePost = async ( options?: RequestInit): Promise<resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse> => {
+
+  return customInstance<resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse>(getResumeBackupSyncApiV1AdminSystemBackupSyncResumePostUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResumeBackupSyncApiV1AdminSystemBackupSyncResumePostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBackupSyncApiV1AdminSystemBackupSyncResumePost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof resumeBackupSyncApiV1AdminSystemBackupSyncResumePost>>, TError,void, TContext> => {
+
+const mutationKey = ['resumeBackupSyncApiV1AdminSystemBackupSyncResumePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resumeBackupSyncApiV1AdminSystemBackupSyncResumePost>>, void> = () => {
+
+
+          return  resumeBackupSyncApiV1AdminSystemBackupSyncResumePost(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostMutationResult = NonNullable<Awaited<ReturnType<typeof resumeBackupSyncApiV1AdminSystemBackupSyncResumePost>>>
+
+    export type ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 恢复备份同步
+ */
+export const useResumeBackupSyncApiV1AdminSystemBackupSyncResumePost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBackupSyncApiV1AdminSystemBackupSyncResumePost>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resumeBackupSyncApiV1AdminSystemBackupSyncResumePost>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getResumeBackupSyncApiV1AdminSystemBackupSyncResumePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取备份提交记录
+ */
+export type listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse200 = {
+  data: BackupCommitRead[]
+  status: 200
+}
+
+export type listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponseSuccess = (listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse = (listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponseSuccess)
+
+export const getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/commits`
+}
+
+export const listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet = async ( options?: RequestInit): Promise<listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse> => {
+
+  return customInstance<listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse>(getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey = () => {
+    return [
+    `/api/v1/admin/system/backup-sync/commits`
+    ] as const;
+    }
+
+
+export const getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryOptions = <TData = Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>> = ({ signal }) => listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>>
+export type ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryError = ErrorType<unknown>
+
+
+export function useListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet<TData = Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet<TData = Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet<TData = Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取备份提交记录
+ */
+
+export function useListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet<TData = Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 从备份提交恢复
+ */
+export type restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse200 = {
+  data: BackupCommitRead
+  status: 200
+}
+
+export type restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponseSuccess = (restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse200) & {
+  headers: Headers;
+};
+export type restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponseError = (restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse422) & {
+  headers: Headers;
+};
+
+export type restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse = (restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponseSuccess | restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponseError)
+
+export const getRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostUrl = (commitId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/commits/${commitId}/restore`
+}
+
+export const restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost = async (commitId: string, options?: RequestInit): Promise<restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse> => {
+
+  return customInstance<restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse>(getRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostUrl(commitId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost>>, TError,{commitId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost>>, TError,{commitId: string}, TContext> => {
+
+const mutationKey = ['restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost>>, {commitId: string}> = (props) => {
+          const {commitId} = props ?? {};
+
+          return  restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost(commitId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostMutationResult = NonNullable<Awaited<ReturnType<typeof restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost>>>
+
+    export type RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 从备份提交恢复
+ */
+export const useRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost>>, TError,{commitId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost>>,
+        TError,
+        {commitId: string},
+        TContext
+      > => {
+      return useMutation(getRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取仪表盘统计
