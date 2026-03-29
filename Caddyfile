@@ -26,6 +26,13 @@
     # 管理端 SPA
     handle_path {$AERISUN_ADMIN_BASE_PATH:/admin/}* {
         root * {$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}
+
+        @hashed path *.js *.css *.woff2 *.woff
+        header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+        @html path *.html /
+        header @html Cache-Control "no-cache"
+
         try_files {path} /index.html
         file_server
     }
@@ -33,6 +40,13 @@
     # 前端 SPA
     handle {
         root * {$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}
+
+        @hashed path *.js *.css *.woff2 *.woff
+        header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+        @html path *.html /
+        header @html Cache-Control "no-cache"
+
         try_files {path} /index.html
         file_server
     }
