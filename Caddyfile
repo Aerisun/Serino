@@ -17,9 +17,24 @@
         reverse_proxy waline:8360
     }
 
-    # Sitemap 重写
+    # SEO / Feed XML
     handle /sitemap.xml {
-        rewrite * /api/v1/public/sitemap.xml
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    handle /feed.xml {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    handle /rss.xml {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    handle /feeds.xml {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
+    handle /feeds/* {
         reverse_proxy api:{$AERISUN_PORT:8000}
     }
 

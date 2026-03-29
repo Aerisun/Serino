@@ -36,6 +36,26 @@ export default defineConfig(({ mode }) => {
           target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
           changeOrigin: true,
         },
+        "/sitemap.xml": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
+        "/feed.xml": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
+        "/rss.xml": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
+        "/feeds.xml": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
+        "/feeds": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
         [walineBasePath]: {
           target: `http://127.0.0.1:${walinePort}`,
           changeOrigin: true,

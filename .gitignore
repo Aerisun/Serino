@@ -2,6 +2,20 @@
 *node_modules/
 *dist/
 *.vite/
+coverage/
+
+# Python cache and tooling artifacts (global)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+*.egg-info/
 
 # Local environment files
 /frontend/.env

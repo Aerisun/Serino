@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: /api/v1/public/sitemap.xml
+Sitemap: /sitemap.xml
