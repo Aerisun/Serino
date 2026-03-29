@@ -114,6 +114,7 @@ def _replace_non_domain(link: str, blog_url: str) -> str:
             return urljoin(blog_url.rstrip("/") + "/", path.lstrip("/"))
         return link
     except Exception:
+        logger.warning("Failed to replace non-domain link %s", link, exc_info=True)
         return link
 
 

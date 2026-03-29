@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import threading
 import time
 from collections.abc import Callable
@@ -62,6 +63,8 @@ from aerisun.domain.automation.settings import (
     workflow_template_rule,
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 def enqueue_workflow_run(
@@ -276,6 +279,7 @@ def _draft_from_payload(raw: dict[str, Any] | None) -> AgentWorkflowDraftRead | 
     try:
         return AgentWorkflowDraftRead.model_validate(raw)
     except Exception:
+        logger.warning("Failed to parse agent workflow draft payload", exc_info=True)
         return None
 
 
@@ -436,6 +440,7 @@ def _schedule_workflow_draft_plan_enrichment(*, expected_updated_at: str) -> Non
                 )
                 _persist_agent_workflow_draft(session, next_draft)
             except Exception:
+                logger.warning("Workflow draft finalization failed, using fallback", exc_info=True)
                 latest = get_agent_workflow_draft(session)
                 if latest is None:
                     return

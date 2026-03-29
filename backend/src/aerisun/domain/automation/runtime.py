@@ -13,7 +13,7 @@ from langgraph.types import Command, interrupt
 
 from aerisun.core.db import get_session_factory
 from aerisun.domain.agent.capabilities.registry import execute_capability
-from aerisun.domain.exceptions import ValidationError
+from aerisun.domain.exceptions import StateConflict, ValidationError
 
 
 class ModerationWorkflowState(TypedDict, total=False):
@@ -56,7 +56,7 @@ class AutomationRuntime:
     @property
     def graph(self):
         if self._graph is None:
-            raise RuntimeError("Automation runtime not started")
+            raise StateConflict("Automation runtime not started")
         return self._graph
 
     def invoke(self, state: dict[str, Any], *, thread_id: str) -> dict[str, Any]:
@@ -145,17 +145,17 @@ def _chat_completions_url(base_url: str) -> str:
 def _extract_message_content(payload: dict[str, Any]) -> str:
     choices = payload.get("choices")
     if not isinstance(choices, list) or not choices:
-        raise ValueError("Missing model choices")
+        raise ValidationError("Missing model choices")
     message = choices[0].get("message") if isinstance(choices[0], dict) else None
     if not isinstance(message, dict):
-        raise ValueError("Missing model message")
+        raise ValidationError("Missing model message")
     content = message.get("content")
     if isinstance(content, str):
         return content
     if isinstance(content, list):
         texts = [item.get("text", "") for item in content if isinstance(item, dict)]
         return "\n".join(part for part in texts if part)
-    raise ValueError("Unsupported model content")
+    raise ValidationError("Unsupported model content")
 
 
 def _parse_json_object(content: str) -> dict[str, Any]:
@@ -166,10 +166,10 @@ def _parse_json_object(content: str) -> dict[str, Any]:
     start = candidate.find("{")
     end = candidate.rfind("}")
     if start == -1 or end == -1 or end <= start:
-        raise ValueError("Model response does not contain a JSON object")
+        raise ValidationError("Model response does not contain a JSON object")
     parsed = json.loads(candidate[start : end + 1])
     if not isinstance(parsed, dict):
-        raise ValueError("Model response JSON is not an object")
+        raise ValidationError("Model response JSON is not an object")
     return parsed
 
 
@@ -245,11 +245,15 @@ def _invoke_model_json(model_config: dict[str, Any], *, messages: list[dict[str,
     payload = _safe_json_payload(response, endpoint=endpoint)
     try:
         content = _extract_message_content(payload)
+    except ValidationError:
+        raise
     except ValueError as exc:
         raise ValidationError(f"Model endpoint payload format is invalid: {exc}") from exc
 
     try:
         return _parse_json_object(content)
+    except ValidationError:
+        raise
     except ValueError as exc:
         preview = content.strip().replace("\n", " ")[:200]
         extra = f" Raw content: {preview}" if preview else ""
