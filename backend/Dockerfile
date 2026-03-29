@@ -19,6 +19,11 @@ COPY src ./src
 
 RUN uv sync --no-dev
 
+RUN groupadd -r aerisun && useradd -r -g aerisun -u 1001 aerisun \
+    && chown -R aerisun:aerisun /app
+
+USER aerisun
+
 EXPOSE 8000
 
 CMD ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]
