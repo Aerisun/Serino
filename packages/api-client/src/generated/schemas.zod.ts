@@ -4105,6 +4105,116 @@ export const ListAuditLogsApiV1AdminSystemAuditLogsGetResponse = zod.object({
 
 
 /**
+ * @summary 获取配置变更历史
+ */
+export const listConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryPageDefault = 1;
+
+export const listConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryPageSizeDefault = 20;
+export const listConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryPageSizeMax = 100;
+
+
+
+export const ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(listConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(listConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryPageSizeMax).default(listConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryPageSizeDefault),
+  "resource_key": zod.union([zod.string(),zod.null()]).optional(),
+  "actor_id": zod.union([zod.string(),zod.null()]).optional(),
+  "date_from": zod.union([zod.string(),zod.null()]).optional(),
+  "date_to": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "actor_id": zod.union([zod.string(),zod.null()]),
+  "resource_key": zod.string(),
+  "resource_label": zod.string(),
+  "operation": zod.string(),
+  "resource_version": zod.string(),
+  "summary": zod.string(),
+  "changed_fields": zod.array(zod.string()).optional(),
+  "sensitive_fields": zod.array(zod.string()).optional(),
+  "restored_from_revision_id": zod.union([zod.string(),zod.null()]).optional(),
+  "created_at": zod.string().datetime({})
+})).describe('Page of result items'),
+  "total": zod.number().describe('Total number of items matching the query'),
+  "page": zod.number().describe('Current page number (1-based)'),
+  "page_size": zod.number().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 获取配置历史详情
+ */
+export const GetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetParams = zod.object({
+  "revision_id": zod.string()
+})
+
+export const getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseRestorableDefault = true;
+
+export const GetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse = zod.object({
+  "id": zod.string(),
+  "actor_id": zod.union([zod.string(),zod.null()]),
+  "resource_key": zod.string(),
+  "resource_label": zod.string(),
+  "operation": zod.string(),
+  "resource_version": zod.string(),
+  "summary": zod.string(),
+  "changed_fields": zod.array(zod.string()).optional(),
+  "sensitive_fields": zod.array(zod.string()).optional(),
+  "restored_from_revision_id": zod.union([zod.string(),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "before_preview": zod.unknown().optional().describe('Masked preview of the config before the change'),
+  "after_preview": zod.unknown().optional().describe('Masked preview of the config after the change'),
+  "diff_lines": zod.array(zod.object({
+  "path": zod.string().describe('Flattened JSON path for the changed field'),
+  "before": zod.string().describe('Human-readable previous value'),
+  "after": zod.string().describe('Human-readable next value')
+})).optional(),
+  "restorable": zod.boolean().default(getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseRestorableDefault).describe('Whether the revision can be restored')
+})
+
+
+/**
+ * @summary 恢复配置历史版本
+ */
+export const RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostParams = zod.object({
+  "revision_id": zod.string()
+})
+
+export const restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostBodyTargetDefault = `before`;
+
+export const RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostBody = zod.object({
+  "target": zod.enum(['before', 'after']).default(restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostBodyTargetDefault).describe('Restore target: \"before\" or \"after\"'),
+  "reason": zod.union([zod.string(),zod.null()]).optional().describe('Optional operator note recorded in the restore summary')
+})
+
+export const restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseRestorableDefault = true;
+
+export const RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse = zod.object({
+  "id": zod.string(),
+  "actor_id": zod.union([zod.string(),zod.null()]),
+  "resource_key": zod.string(),
+  "resource_label": zod.string(),
+  "operation": zod.string(),
+  "resource_version": zod.string(),
+  "summary": zod.string(),
+  "changed_fields": zod.array(zod.string()).optional(),
+  "sensitive_fields": zod.array(zod.string()).optional(),
+  "restored_from_revision_id": zod.union([zod.string(),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "before_preview": zod.unknown().optional().describe('Masked preview of the config before the change'),
+  "after_preview": zod.unknown().optional().describe('Masked preview of the config after the change'),
+  "diff_lines": zod.array(zod.object({
+  "path": zod.string().describe('Flattened JSON path for the changed field'),
+  "before": zod.string().describe('Human-readable previous value'),
+  "after": zod.string().describe('Human-readable next value')
+})).optional(),
+  "restorable": zod.boolean().default(restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseRestorableDefault).describe('Whether the revision can be restored')
+})
+
+
+/**
  * @summary 获取备份列表
  */
 export const ListBackupsApiV1AdminSystemBackupsGetResponseItem = zod.object({

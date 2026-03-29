@@ -9540,6 +9540,238 @@
         }
       }
     },
+    "/api/v1/admin/system/config-revisions": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "获取配置变更历史",
+        "operationId": "list_config_revisions_api_v1_admin_system_config_revisions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "resource_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Key"
+            }
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ConfigRevisionListItemRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/system/config-revisions/{revision_id}": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "获取配置历史详情",
+        "operationId": "get_config_revision_detail_api_v1_admin_system_config_revisions__revision_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "revision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Revision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigRevisionDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/system/config-revisions/{revision_id}/restore": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "恢复配置历史版本",
+        "operationId": "restore_config_revision_api_v1_admin_system_config_revisions__revision_id__restore_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "revision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Revision Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigRevisionRestoreWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigRevisionDetailRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/system/backups": {
       "get": {
         "tags": [
@@ -15892,6 +16124,243 @@
         "type": "object",
         "title": "CommunitySurfaceUpdate"
       },
+      "ConfigDiffLineRead": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Flattened JSON path for the changed field"
+          },
+          "before": {
+            "type": "string",
+            "title": "Before",
+            "description": "Human-readable previous value"
+          },
+          "after": {
+            "type": "string",
+            "title": "After",
+            "description": "Human-readable next value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "before",
+          "after"
+        ],
+        "title": "ConfigDiffLineRead"
+      },
+      "ConfigRevisionDetailRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "resource_key": {
+            "type": "string",
+            "title": "Resource Key"
+          },
+          "resource_label": {
+            "type": "string",
+            "title": "Resource Label"
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "resource_version": {
+            "type": "string",
+            "title": "Resource Version"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "changed_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed Fields"
+          },
+          "sensitive_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sensitive Fields"
+          },
+          "restored_from_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored From Revision Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "before_preview": {
+            "title": "Before Preview",
+            "description": "Masked preview of the config before the change"
+          },
+          "after_preview": {
+            "title": "After Preview",
+            "description": "Masked preview of the config after the change"
+          },
+          "diff_lines": {
+            "items": {
+              "$ref": "#/components/schemas/ConfigDiffLineRead"
+            },
+            "type": "array",
+            "title": "Diff Lines"
+          },
+          "restorable": {
+            "type": "boolean",
+            "title": "Restorable",
+            "description": "Whether the revision can be restored",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "actor_id",
+          "resource_key",
+          "resource_label",
+          "operation",
+          "resource_version",
+          "summary",
+          "created_at"
+        ],
+        "title": "ConfigRevisionDetailRead"
+      },
+      "ConfigRevisionListItemRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "resource_key": {
+            "type": "string",
+            "title": "Resource Key"
+          },
+          "resource_label": {
+            "type": "string",
+            "title": "Resource Label"
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "resource_version": {
+            "type": "string",
+            "title": "Resource Version"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "changed_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed Fields"
+          },
+          "sensitive_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sensitive Fields"
+          },
+          "restored_from_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored From Revision Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "actor_id",
+          "resource_key",
+          "resource_label",
+          "operation",
+          "resource_version",
+          "summary",
+          "created_at"
+        ],
+        "title": "ConfigRevisionListItemRead"
+      },
+      "ConfigRevisionRestoreWrite": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": [
+              "before",
+              "after"
+            ],
+            "title": "Target",
+            "description": "Restore target: \"before\" or \"after\"",
+            "default": "before"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Optional operator note recorded in the restore summary"
+          }
+        },
+        "type": "object",
+        "title": "ConfigRevisionRestoreWrite"
+      },
       "ContentAdminRead": {
         "properties": {
           "id": {
@@ -20402,6 +20871,41 @@
           "page_size"
         ],
         "title": "PaginatedResponse[CommentAdminRead]"
+      },
+      "PaginatedResponse_ConfigRevisionListItemRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConfigRevisionListItemRead"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[ConfigRevisionListItemRead]"
       },
       "PaginatedResponse_ContentAdminRead_": {
         "properties": {
