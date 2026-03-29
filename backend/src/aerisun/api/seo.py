@@ -70,3 +70,19 @@ def rss_alias(session: Session = Depends(get_session)) -> Response:
     site_url = settings.site_url or "https://example.com"
     xml = build_posts_rss_xml(session, site_url)
     return Response(content=xml, media_type="application/rss+xml")
+
+
+@router.get("/feeds.xml")
+def feeds_alias(session: Session = Depends(get_session)) -> Response:
+    settings = get_settings()
+    site_url = settings.site_url or "https://example.com"
+    xml = build_posts_rss_xml(session, site_url)
+    return Response(content=xml, media_type="application/rss+xml")
+
+
+@router.get("/feed.xml")
+def feed_alias(session: Session = Depends(get_session)) -> Response:
+    settings = get_settings()
+    site_url = settings.site_url or "https://example.com"
+    xml = build_posts_rss_xml(session, site_url)
+    return Response(content=xml, media_type="application/rss+xml")

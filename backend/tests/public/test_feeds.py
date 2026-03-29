@@ -39,9 +39,10 @@ def test_public_content_feeds_return_rss_xml(client, path: str, channel_title: s
     assert f"{site_url}{item_path}" in response.text
 
 
-def test_rss_alias_returns_same_xml_as_posts_feed(client) -> None:
+@pytest.mark.parametrize("alias_path", ["/rss.xml", "/feed.xml", "/feeds.xml"])
+def test_posts_feed_aliases_return_same_xml_as_posts_feed(client, alias_path: str) -> None:
     posts_response = client.get("/feeds/posts.xml")
-    alias_response = client.get("/rss.xml")
+    alias_response = client.get(alias_path)
 
     assert posts_response.status_code == 200
     assert alias_response.status_code == 200
