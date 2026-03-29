@@ -6,7 +6,16 @@ from typing import Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from aerisun.domain.ops.models import AuditLog, BackupSnapshot, TrafficDailySnapshot, VisitRecord
+from aerisun.domain.ops.models import (
+    AuditLog,
+    BackupCommit,
+    BackupQueueItem,
+    BackupSnapshot,
+    BackupTargetConfig,
+    SyncRun,
+    TrafficDailySnapshot,
+    VisitRecord,
+)
 
 
 def _apply_visit_filters(
@@ -71,6 +80,86 @@ def create_backup(session: Session, **kwargs) -> BackupSnapshot:
 def find_backup_by_id(session: Session, snapshot_id: str) -> BackupSnapshot | None:
     """Find a backup snapshot by ID."""
     return session.get(BackupSnapshot, snapshot_id)
+
+
+def get_backup_target_config(session: Session) -> BackupTargetConfig | None:
+    return session.query(BackupTargetConfig).order_by(BackupTargetConfig.created_at.asc()).first()
+
+
+def create_backup_target_config(session: Session, **kwargs) -> BackupTargetConfig:
+    item = BackupTargetConfig(**kwargs)
+    session.add(item)
+    return item
+
+
+def list_backup_queue_items(session: Session) -> list[BackupQueueItem]:
+    return list(session.query(BackupQueueItem).order_by(BackupQueueItem.created_at.asc()).all())
+
+
+def create_backup_queue_item(session: Session, **kwargs) -> BackupQueueItem:
+    item = BackupQueueItem(**kwargs)
+    session.add(item)
+    return item
+
+
+def get_backup_queue_item(session: Session, queue_item_id: str) -> BackupQueueItem | None:
+    return session.get(BackupQueueItem, queue_item_id)
+
+
+def find_active_backup_queue_item(session: Session) -> BackupQueueItem | None:
+    return (
+        session.query(BackupQueueItem)
+        .filter(BackupQueueItem.status.in_(("queued", "running", "retrying")))
+        .order_by(BackupQueueItem.created_at.asc())
+        .first()
+    )
+
+
+def find_due_backup_queue_item(session: Session, *, now: datetime) -> BackupQueueItem | None:
+    return (
+        session.query(BackupQueueItem)
+        .filter(BackupQueueItem.status.in_(("queued", "retrying")))
+        .filter((BackupQueueItem.next_retry_at.is_(None)) | (BackupQueueItem.next_retry_at <= now))
+        .order_by(BackupQueueItem.created_at.asc())
+        .first()
+    )
+
+
+def list_backup_commits(session: Session) -> list[BackupCommit]:
+    return list(session.query(BackupCommit).order_by(BackupCommit.created_at.desc()).all())
+
+
+def create_backup_commit(session: Session, **kwargs) -> BackupCommit:
+    item = BackupCommit(**kwargs)
+    session.add(item)
+    return item
+
+
+def get_backup_commit(session: Session, commit_id: str) -> BackupCommit | None:
+    return session.get(BackupCommit, commit_id)
+
+
+def list_sync_runs(session: Session) -> list[SyncRun]:
+    return list(session.query(SyncRun).order_by(SyncRun.created_at.desc()).all())
+
+
+def create_sync_run(session: Session, **kwargs) -> SyncRun:
+    item = SyncRun(**kwargs)
+    session.add(item)
+    return item
+
+
+def get_sync_run(session: Session, run_id: str) -> SyncRun | None:
+    return session.get(SyncRun, run_id)
+
+
+def find_running_sync_run(session: Session, *, job_name: str) -> SyncRun | None:
+    return (
+        session.query(SyncRun)
+        .filter(SyncRun.job_name == job_name, SyncRun.status == "running")
+        .order_by(SyncRun.created_at.asc())
+        .first()
+    )
 
 
 # -- Stats helpers --

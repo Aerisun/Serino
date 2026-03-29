@@ -85,9 +85,73 @@ class SyncRun(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     job_name: Mapped[str] = mapped_column(String(160), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    transport: Mapped[str | None] = mapped_column(String(32))
+    trigger_kind: Mapped[str | None] = mapped_column(String(32))
+    queue_item_id: Mapped[str | None] = mapped_column(String(36))
+    commit_id: Mapped[str | None] = mapped_column(String(36))
+    stats_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    retry_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     message: Mapped[str | None] = mapped_column(Text)
+
+
+class BackupTargetConfig(Base, TimestampMixin):
+    __tablename__ = "backup_target_configs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    enabled: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
+    paused: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
+    interval_minutes: Mapped[int] = mapped_column(Integer(), nullable=False, default=60)
+    transport_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="receiver")
+    site_slug: Mapped[str] = mapped_column(String(120), nullable=False, default="aerisun")
+    receiver_base_url: Mapped[str | None] = mapped_column(String(500))
+    remote_host: Mapped[str | None] = mapped_column(String(255))
+    remote_port: Mapped[int | None] = mapped_column(Integer())
+    remote_path: Mapped[str | None] = mapped_column(String(500))
+    remote_username: Mapped[str | None] = mapped_column(String(255))
+    credential_ref: Mapped[str | None] = mapped_column(String(255))
+    age_public_key_fingerprint: Mapped[str | None] = mapped_column(String(255))
+    max_retries: Mapped[int] = mapped_column(Integer(), nullable=False, default=3)
+    retry_backoff_seconds: Mapped[int] = mapped_column(Integer(), nullable=False, default=300)
+    last_scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+
+
+class BackupQueueItem(Base, TimestampMixin):
+    __tablename__ = "backup_queue_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    transport: Mapped[str] = mapped_column(String(32), nullable=False)
+    trigger_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="scheduled")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    dataset_versions: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    verified_chunks: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    retry_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class BackupCommit(Base, TimestampMixin):
+    __tablename__ = "backup_commits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    transport: Mapped[str] = mapped_column(String(32), nullable=False)
+    trigger_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="scheduled")
+    site_slug: Mapped[str] = mapped_column(String(120), nullable=False)
+    remote_commit_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    manifest_digest: Mapped[str] = mapped_column(String(128), nullable=False)
+    backup_path: Mapped[str | None] = mapped_column(String(500))
+    datasets: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    stats_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    snapshot_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    snapshot_finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    restored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TrafficDailySnapshot(Base, TimestampMixin):

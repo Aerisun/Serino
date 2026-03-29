@@ -74,6 +74,10 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     webhook_subscription_columns = _get_columns(str(db_path), "webhook_subscriptions")
     webhook_delivery_columns = _get_columns(str(db_path), "webhook_deliveries")
     webhook_dead_letter_columns = _get_columns(str(db_path), "webhook_dead_letters")
+    sync_run_columns = _get_columns(str(db_path), "sync_runs")
+    backup_target_config_columns = _get_columns(str(db_path), "backup_target_configs")
+    backup_queue_item_columns = _get_columns(str(db_path), "backup_queue_items")
+    backup_commit_columns = _get_columns(str(db_path), "backup_commits")
 
     assert "config_revisions" in tables
     assert "hero_video_url" in site_profile_columns
@@ -116,6 +120,39 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     assert {"name", "status", "target_url", "event_types"} <= webhook_subscription_columns
     assert {"subscription_id", "event_type", "event_id", "status", "attempt_count"} <= webhook_delivery_columns
     assert {"delivery_id", "reason", "event_type", "dead_lettered_at"} <= webhook_dead_letter_columns
+    assert {
+        "job_name",
+        "status",
+        "transport",
+        "trigger_kind",
+        "queue_item_id",
+        "commit_id",
+        "stats_json",
+    } <= sync_run_columns
+    assert {
+        "enabled",
+        "paused",
+        "interval_minutes",
+        "transport_mode",
+        "site_slug",
+        "credential_ref",
+    } <= backup_target_config_columns
+    assert {
+        "transport",
+        "trigger_kind",
+        "status",
+        "dataset_versions",
+        "verified_chunks",
+        "retry_count",
+    } <= backup_queue_item_columns
+    assert {
+        "transport",
+        "trigger_kind",
+        "site_slug",
+        "remote_commit_id",
+        "manifest_digest",
+        "datasets",
+    } <= backup_commit_columns
 
     if expect_data_updates:
         community_config_row = _get_row(str(db_path), "community_config")
