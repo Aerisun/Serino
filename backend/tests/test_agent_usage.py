@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from aerisun.core.db import get_session_factory
-from aerisun.domain.iam.models import ApiKey
-
 from aerisun.api.admin.scopes import (
     MCP_ASSETS_READ,
     MCP_ASSETS_WRITE,
@@ -14,6 +11,8 @@ from aerisun.api.admin.scopes import (
     MCP_MODERATION_READ,
     MCP_MODERATION_WRITE,
 )
+from aerisun.core.db import get_session_factory
+from aerisun.domain.iam.models import ApiKey
 
 
 class TestAgentUsage:
@@ -158,7 +157,13 @@ class TestAgentUsage:
             key_id,
             [MCP_CONNECT, MCP_CONTENT_READ, MCP_MODERATION_READ, MCP_CONFIG_READ, MCP_ASSETS_READ],
         )
-        assert response["scopes"] == [MCP_ASSETS_READ, MCP_CONFIG_READ, MCP_CONNECT, MCP_CONTENT_READ, MCP_MODERATION_READ]
+        assert response["scopes"] == [
+            MCP_ASSETS_READ,
+            MCP_CONFIG_READ,
+            MCP_CONNECT,
+            MCP_CONTENT_READ,
+            MCP_MODERATION_READ,
+        ]
 
         response = client.get(f"/api/v1/admin/integrations/mcp-config?api_key_id={key_id}", headers=admin_headers)
         assert response.status_code == 200

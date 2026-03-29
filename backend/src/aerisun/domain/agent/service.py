@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 
 import yaml
@@ -15,12 +15,12 @@ from aerisun.domain.agent.mcp_settings import (
     update_mcp_flags,
 )
 from aerisun.domain.agent.schemas import (
-    AgentUsageAuthRead,
     AgentSkillMapRead,
+    AgentUsageAuthRead,
     AgentUsageCapabilityRead,
     AgentUsageEndpointRead,
-    AgentUsageMcpTemplateRead,
     AgentUsageMcpRead,
+    AgentUsageMcpTemplateRead,
     AgentUsagePlaybookRead,
     AgentUsagePlaybookStepRead,
     AgentUsageQuickstartRead,
@@ -100,20 +100,14 @@ def _build_quickstart(base_url: str) -> AgentUsageQuickstartRead:
                 order=1,
                 title="Read usage document",
                 goal="Confirm endpoint and scope context for this API key",
-                command=(
-                    'curl -sS -H "Authorization: Bearer $KEY" '
-                    f'"{usage_url}"'
-                ),
+                command=(f'curl -sS -H "Authorization: Bearer $KEY" "{usage_url}"'),
                 expected_result="HTTP 200 with schema_version and mcp.tool/resource lists",
             ),
             AgentUsageQuickstartStepRead(
                 order=2,
                 title="Check MCP metadata",
                 goal="Ensure MCP public access and key permissions are active",
-                command=(
-                    'curl -sS -H "Authorization: Bearer $KEY" '
-                    f'"{_absolute_url(base_url, "/api/mcp-meta")}"'
-                ),
+                command=(f'curl -sS -H "Authorization: Bearer $KEY" "{_absolute_url(base_url, "/api/mcp-meta")}"'),
                 expected_result="HTTP 200 with tools/resources arrays",
             ),
             AgentUsageQuickstartStepRead(
@@ -130,7 +124,9 @@ def _build_quickstart(base_url: str) -> AgentUsageQuickstartRead:
     )
 
 
-def _playbook_step(order: int, title: str, action_type: str, payload: dict[str, object], success: str) -> AgentUsagePlaybookStepRead:
+def _playbook_step(
+    order: int, title: str, action_type: str, payload: dict[str, object], success: str
+) -> AgentUsagePlaybookStepRead:
     return AgentUsagePlaybookStepRead(
         order=order,
         title=title,
@@ -253,7 +249,7 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                     {
                         "command": (
                             'curl -sS -X PUT -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" '
-                            "-d '{\"status\":\"archived\"}' "
+                            '-d \'{"status":"archived"}\' '
                             f'"{_absolute_url(base_url, "/api/v1/admin/posts/")}<ARCHIVE_ID>"'
                         )
                     },
@@ -493,7 +489,7 @@ def build_agent_usage(
 
     return AgentUsageRead(
         schema_version="2026-03-usage-v2",
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
         name="Aerisun Agent Usage",
         objective=(
             "Provide executable MCP and REST guidance so an agent can discover capabilities, "
@@ -545,9 +541,7 @@ def build_mcp_admin_config(session: Session, site_url: str, api_key_id: str | No
         raise ResourceNotFound("API key not found")
 
     scoped_capabilities = (
-        filter_capabilities_for_scopes(all_capabilities, list(api_key.scopes or []))
-        if api_key is not None
-        else []
+        filter_capabilities_for_scopes(all_capabilities, list(api_key.scopes or [])) if api_key is not None else []
     )
     resolved = resolve_mcp_config(
         session,

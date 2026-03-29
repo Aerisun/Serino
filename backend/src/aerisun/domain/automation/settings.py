@@ -104,7 +104,9 @@ def _build_community_workflow_from_legacy(workflows: list[dict[str, Any]]) -> di
         any(bool(item.get("require_human_approval", True)) for item in legacy_items) if legacy_items else False
     )
     instructions = "\n\n".join(
-        str(item.get("instructions") or "").strip() for item in legacy_items if str(item.get("instructions") or "").strip()
+        str(item.get("instructions") or "").strip()
+        for item in legacy_items
+        if str(item.get("instructions") or "").strip()
     )
     return {
         "key": "community_moderation_v1",

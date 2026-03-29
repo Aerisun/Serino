@@ -27,9 +27,8 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def app_lifespan(app: FastAPI):
-        async with lifespan(app):
-            async with mcp_server.session_manager.run():
-                yield
+        async with lifespan(app), mcp_server.session_manager.run():
+            yield
 
     app = FastAPI(
         title="Aerisun API",

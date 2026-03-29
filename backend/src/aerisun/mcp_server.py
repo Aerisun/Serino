@@ -126,10 +126,7 @@ def _serialize_tool_result(result: Any) -> Any:
 
 def _build_wrapper_signature(capability: AgentCapabilityDefinition, *, include_ctx: bool) -> inspect.Signature:
     handler_signature = inspect.signature(capability.handler)
-    parameters = [
-        parameter.replace(annotation=Any if parameter.annotation is not inspect._empty else Any)
-        for parameter in handler_signature.parameters.values()
-    ]
+    parameters = [parameter.replace(annotation=Any) for parameter in handler_signature.parameters.values()]
     if parameters and parameters[0].name == "session":
         parameters = parameters[1:]
     if include_ctx:

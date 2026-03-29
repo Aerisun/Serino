@@ -4,12 +4,12 @@ import base64
 import logging
 import smtplib
 from datetime import datetime
-from string import Formatter
 from email.message import EmailMessage
+from string import Formatter
 from uuid import uuid4
 
 import httpx
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import utcnow
@@ -18,8 +18,8 @@ from aerisun.core.settings import Settings, get_settings
 from aerisun.domain.content.feed_service import get_feed_definition, list_feed_definitions
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.exceptions import ValidationError
-from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.site_auth.models import SiteUser, SiteUserOAuthAccount
+from aerisun.domain.site_config import repository as site_config_repo
 
 from .models import (
     ContentNotification,
@@ -278,9 +278,7 @@ def create_or_update_public_subscription(
     settings = get_settings()
     site = site_config_repo.find_site_profile(session)
     site_name = (
-        (site.title if site is not None else "").strip()
-        or (site.name if site is not None else "").strip()
-        or "Aerisun"
+        (site.title if site is not None else "").strip() or (site.name if site is not None else "").strip() or "Aerisun"
     )
     site_url = (settings.site_url or "https://example.com").rstrip("/")
     welcome_message = _build_subscription_welcome_message(
@@ -313,9 +311,7 @@ def get_public_subscription_for_email(
     email: str,
 ) -> ContentSubscriptionPublicStatusRead:
     normalized_email = _normalize_email(email)
-    subscriber = session.scalars(
-        select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)
-    ).first()
+    subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
     if subscriber is None:
         return ContentSubscriptionPublicStatusRead(
             email=normalized_email,
@@ -336,9 +332,7 @@ def unsubscribe_public_subscription(
     email: str,
 ) -> ContentSubscriptionPublicUnsubscribeResult:
     normalized_email = _normalize_email(email)
-    subscriber = session.scalars(
-        select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)
-    ).first()
+    subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
     if subscriber is not None and subscriber.is_active:
         subscriber.is_active = False
         session.commit()
@@ -623,11 +617,7 @@ def list_admin_subscribers(
     subscribers = list(session.scalars(stmt).all())
 
     initiator_ids = [item.initiator_site_user_id for item in subscribers if item.initiator_site_user_id]
-    users = (
-        list(session.scalars(select(SiteUser).where(SiteUser.id.in_(initiator_ids))).all())
-        if initiator_ids
-        else []
-    )
+    users = list(session.scalars(select(SiteUser).where(SiteUser.id.in_(initiator_ids))).all()) if initiator_ids else []
     user_by_id = {user.id: user for user in users}
     user_ids = [user.id for user in users]
     oauth_rows = (
@@ -662,11 +652,7 @@ def list_admin_subscribers(
 
     items: list[ContentSubscriberAdminRead] = []
     for subscriber in subscribers:
-        matched_user = (
-            user_by_id.get(subscriber.initiator_site_user_id)
-            if subscriber.initiator_site_user_id
-            else None
-        )
+        matched_user = user_by_id.get(subscriber.initiator_site_user_id) if subscriber.initiator_site_user_id else None
         providers = sorted(set(oauth_map.get(matched_user.id, []))) if matched_user else []
         auth_mode = "unknown"
         if matched_user is not None:
@@ -812,9 +798,9 @@ def _send_email(
     def _authenticate(server: smtplib.SMTP) -> None:
         if _smtp_auth_mode(config) == SMTP_AUTH_MODE_MICROSOFT_OAUTH2:
             access_token = _fetch_microsoft_smtp_access_token(config)
-            auth_string = base64.b64encode(
-                f"user={username}\x01auth=Bearer {access_token}\x01\x01".encode()
-            ).decode("ascii")
+            auth_string = base64.b64encode(f"user={username}\x01auth=Bearer {access_token}\x01\x01".encode()).decode(
+                "ascii"
+            )
             code, response = server.docmd("AUTH", f"XOAUTH2 {auth_string}")
             if code != 235:
                 raise smtplib.SMTPAuthenticationError(code, response)

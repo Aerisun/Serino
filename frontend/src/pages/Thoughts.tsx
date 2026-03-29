@@ -92,7 +92,7 @@ const Thoughts = () => {
       allCategoryLabel,
       ...Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "zh-CN")),
     ],
-    [items],
+    [allCategoryLabel, items],
   );
 
   const filtered = useMemo(() => {

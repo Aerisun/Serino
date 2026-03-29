@@ -180,7 +180,11 @@ def _safe_json_payload(response: httpx.Response, *, endpoint: str) -> dict[str, 
         content_type = str(response.headers.get("content-type") or "").lower()
         body_preview = response.text.strip()
         lower_preview = body_preview.lower()
-        if "text/html" in content_type or lower_preview.startswith("<!doctype html") or lower_preview.startswith("<html"):
+        if (
+            "text/html" in content_type
+            or lower_preview.startswith("<!doctype html")
+            or lower_preview.startswith("<html")
+        ):
             raise ValidationError(
                 f"Model endpoint returned HTML instead of JSON at {endpoint}. "
                 "Please verify base_url points to an OpenAI-compatible API endpoint "

@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 from aerisun.api.admin.scopes import (
-    MCP_ASSETS_WRITE,
     MCP_ASSETS_READ,
-    MCP_CONFIG_WRITE,
+    MCP_ASSETS_WRITE,
     MCP_CONFIG_READ,
-    MCP_CONTENT_WRITE,
-    MCP_CONTENT_READ,
-    MCP_MODERATION_WRITE,
-    MCP_MODERATION_READ,
+    MCP_CONFIG_WRITE,
     MCP_CONNECT,
+    MCP_CONTENT_READ,
+    MCP_CONTENT_WRITE,
+    MCP_MODERATION_READ,
+    MCP_MODERATION_WRITE,
 )
 from aerisun.domain.agent.capability_ids import build_capability_id
 from aerisun.domain.agent.schemas import AgentUsageCapabilityRead, McpPresetRead
@@ -58,9 +58,7 @@ def filter_capabilities_for_scopes(
     if available_scopes is None:
         return list(capabilities)
     allowed = set(available_scopes)
-    return [
-        item for item in capabilities if all(scope in allowed for scope in (item.required_scopes or []))
-    ]
+    return [item for item in capabilities if all(scope in allowed for scope in (item.required_scopes or []))]
 
 
 def _capability_ids_without_write_scopes(capabilities: list[AgentUsageCapabilityRead]) -> list[str]:

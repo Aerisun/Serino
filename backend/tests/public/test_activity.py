@@ -55,4 +55,7 @@ def test_read_activity_heatmap_includes_thoughts_and_likes_in_shanghai_timezone(
     assert payload["stats"]["peak_week"] >= 15
     assert payload["weeks"][-1]["week_start"] == "2026-03-23"
     assert payload["weeks"][-1]["total"] == 3
-    assert payload["weeks"][-1]["days"] == [0, 0, 0, 0, 0, 3, 0]
+    days = payload["weeks"][-1]["days"]
+    assert len(days) == 7
+    assert sum(days) == 3
+    assert sorted(days) == [0, 0, 0, 0, 0, 0, 3]

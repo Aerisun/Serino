@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from typing import ClassVar
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.automation.events import emit_comment_pending, emit_guestbook_pending
@@ -107,8 +108,7 @@ def test_admin_agent_model_config_test_uses_payload(client, admin_headers, monke
                     {
                         "message": {
                             "content": (
-                                '{"summary":"connection_ok","needs_approval":false,'
-                                '"proposed_action":"approve"}'
+                                '{"summary":"connection_ok","needs_approval":false,"proposed_action":"approve"}'
                             )
                         }
                     }
@@ -151,8 +151,7 @@ def test_admin_agent_model_config_test_auto_appends_v1_suffix(client, admin_head
                     {
                         "message": {
                             "content": (
-                                '{"summary":"connection_ok","needs_approval":false,'
-                                '"proposed_action":"approve"}'
+                                '{"summary":"connection_ok","needs_approval":false,"proposed_action":"approve"}'
                             )
                         }
                     }
@@ -184,7 +183,7 @@ def test_admin_agent_model_config_test_rejects_empty_response_body(client, admin
     class FakeResponse:
         status_code = 200
         text = ""
-        headers = {"content-type": "application/json"}
+        headers: ClassVar[dict[str, str]] = {"content-type": "application/json"}
 
         def raise_for_status(self) -> None:
             return None
@@ -215,7 +214,7 @@ def test_admin_agent_model_config_test_rejects_html_response_body(client, admin_
     class FakeResponse:
         status_code = 200
         text = "<!doctype html><html><head></head><body>not json</body></html>"
-        headers = {"content-type": "text/html; charset=utf-8"}
+        headers: ClassVar[dict[str, str]] = {"content-type": "text/html; charset=utf-8"}
 
         def raise_for_status(self) -> None:
             return None
@@ -578,8 +577,7 @@ def test_execute_due_runs_uses_model_config(seeded_session, tmp_path, monkeypatc
                     {
                         "message": {
                             "content": (
-                                '{"summary":"LLM review summary","needs_approval":true,'
-                                '"proposed_action":"reject"}'
+                                '{"summary":"LLM review summary","needs_approval":true,"proposed_action":"reject"}'
                             )
                         }
                     }
@@ -646,10 +644,7 @@ def test_auto_reject_is_deferred_to_pending_for_manual_review(seeded_session, tm
                 "choices": [
                     {
                         "message": {
-                            "content": (
-                                '{"summary":"Looks risky","needs_approval":false,'
-                                '"proposed_action":"reject"}'
-                            )
+                            "content": ('{"summary":"Looks risky","needs_approval":false,"proposed_action":"reject"}')
                         }
                     }
                 ]
@@ -775,8 +770,7 @@ def test_comment_pending_run_can_apply_approval_and_emit_moderated_event(
                     {
                         "message": {
                             "content": (
-                                '{"summary":"Looks safe to approve","needs_approval":true,'
-                                '"proposed_action":"approve"}'
+                                '{"summary":"Looks safe to approve","needs_approval":true,"proposed_action":"approve"}'
                             )
                         }
                     }
@@ -813,7 +807,6 @@ def test_comment_pending_run_can_apply_approval_and_emit_moderated_event(
     assert run.result_payload["applied"] is True
     assert run.result_payload["execution"]["capability"] == "moderate_comment"
     assert any(
-        item.event_type == "comment.approve"
-        and item.payload.get("payload", {}).get("comment_id") == str(comment_id)
+        item.event_type == "comment.approve" and item.payload.get("payload", {}).get("comment_id") == str(comment_id)
         for item in deliveries
     )

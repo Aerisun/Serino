@@ -36,10 +36,16 @@ class AgentUsageEndpointRead(ModelBase):
 
 
 class AgentUsageScopeGuideRead(ModelBase):
-    required_for_connection: list[str] = Field(default_factory=list, description="Scopes required to establish MCP connection")
+    required_for_connection: list[str] = Field(
+        default_factory=list, description="Scopes required to establish MCP connection"
+    )
     available_on_current_key: list[str] = Field(default_factory=list, description="Scopes granted to current API key")
-    recommended_for_full_management: list[str] = Field(default_factory=list, description="Recommended scopes for full capability coverage")
-    missing_recommended_scopes: list[str] = Field(default_factory=list, description="Recommended scopes not present on current API key")
+    recommended_for_full_management: list[str] = Field(
+        default_factory=list, description="Recommended scopes for full capability coverage"
+    )
+    missing_recommended_scopes: list[str] = Field(
+        default_factory=list, description="Recommended scopes not present on current API key"
+    )
 
 
 class AgentUsageQuickstartStepRead(ModelBase):
@@ -95,7 +101,9 @@ class AgentUsageMcpRead(ModelBase):
     available_scopes: list[str] = Field(default_factory=list, description="Scopes available on the current API key")
     tools: list[AgentUsageCapabilityRead] = Field(default_factory=list, description="Visible MCP tools")
     resources: list[AgentUsageCapabilityRead] = Field(default_factory=list, description="Visible MCP resources")
-    call_templates: list[AgentUsageMcpTemplateRead] = Field(default_factory=list, description="High-signal MCP call sequences")
+    call_templates: list[AgentUsageMcpTemplateRead] = Field(
+        default_factory=list, description="High-signal MCP call sequences"
+    )
     usage_hints: list[str] = Field(default_factory=list, description="Practical usage hints for agents")
 
 
@@ -120,9 +128,13 @@ class AgentUsageRead(ModelBase):
     endpoints: list[AgentUsageEndpointRead] = Field(default_factory=list, description="Key endpoints agents should use")
     scope_guide: AgentUsageScopeGuideRead = Field(description="Scope guidance for current API key")
     quickstart: AgentUsageQuickstartRead = Field(description="Copy-pasteable first-run path")
-    playbooks: list[AgentUsagePlaybookRead] = Field(default_factory=list, description="Task-oriented execution playbooks")
+    playbooks: list[AgentUsagePlaybookRead] = Field(
+        default_factory=list, description="Task-oriented execution playbooks"
+    )
     mcp: AgentUsageMcpRead = Field(description="MCP capability summary")
-    troubleshooting: list[AgentUsageTroubleshootingRead] = Field(default_factory=list, description="Common failures and recovery actions")
+    troubleshooting: list[AgentUsageTroubleshootingRead] = Field(
+        default_factory=list, description="Common failures and recovery actions"
+    )
     skill_maps: list[AgentSkillMapRead] = Field(default_factory=list, description="Local agent skill maps")
 
 
@@ -145,10 +157,14 @@ class McpCapabilityConfigRead(ModelBase):
 class McpAdminConfigRead(ModelBase):
     api_key_id: str | None = Field(default=None, description="Selected API key identifier")
     api_key_name: str | None = Field(default=None, description="Selected API key display name")
-    api_key_scopes: list[str] = Field(default_factory=list, description="Scopes currently granted to the selected API key")
+    api_key_scopes: list[str] = Field(
+        default_factory=list, description="Scopes currently granted to the selected API key"
+    )
     public_access: bool = Field(description="Whether MCP public access is enabled")
     selected_preset: str = Field(description="Currently selected preset key")
-    is_customized: bool = Field(default=False, description="Whether enabled capabilities were customized from the preset")
+    is_customized: bool = Field(
+        default=False, description="Whether enabled capabilities were customized from the preset"
+    )
     enabled_capability_count: int = Field(default=0, description="How many capabilities are currently enabled")
     available_capability_count: int = Field(default=0, description="How many capabilities exist in the MCP catalog")
     usage_url: str = Field(description="Canonical MCP usage document URL")

@@ -255,7 +255,9 @@ def test_webhook_test_endpoint_persists_subscription_test_status(
     assert second_row["last_tested_at"] is not None
 
 
-def test_webhook_telegram_connect_endpoint_detects_chat_and_sends_verification(client, admin_headers, monkeypatch) -> None:
+def test_webhook_telegram_connect_endpoint_detects_chat_and_sends_verification(
+    client, admin_headers, monkeypatch
+) -> None:
     class FakeResponse:
         def __init__(self, status_code: int, payload: dict[str, object], text: str = "ok") -> None:
             self.status_code = status_code
@@ -320,7 +322,9 @@ def test_webhook_telegram_connect_endpoint_detects_chat_and_sends_verification(c
     assert post_calls[0]["json"]["chat_id"] == 123456789
 
 
-def test_webhook_telegram_connect_endpoint_returns_awaiting_message_when_no_updates(client, admin_headers, monkeypatch) -> None:
+def test_webhook_telegram_connect_endpoint_returns_awaiting_message_when_no_updates(
+    client, admin_headers, monkeypatch
+) -> None:
     class FakeResponse:
         def __init__(self, status_code: int, payload: dict[str, object], text: str = "ok") -> None:
             self.status_code = status_code

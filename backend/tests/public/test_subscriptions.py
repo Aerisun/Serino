@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from aerisun.core.db import get_session_factory
+from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.subscription.models import ContentSubscriber
 from aerisun.domain.subscription.service import get_subscription_config_orm
-from aerisun.domain.site_auth.models import SiteUser
 
 PUBLIC_BASE = "/api/v1/site"
 
@@ -220,7 +220,9 @@ def test_public_subscription_me_status_and_unsubscribe(client, monkeypatch) -> N
     }
 
 
-def test_public_subscription_stores_initiating_visitor_independently_from_subscription_email(client, monkeypatch) -> None:
+def test_public_subscription_stores_initiating_visitor_independently_from_subscription_email(
+    client, monkeypatch
+) -> None:
     _enable_subscriptions()
     monkeypatch.setattr("aerisun.domain.subscription.service._send_email", lambda **_: None)
     _login_site_user(client, email="visitor@example.com")

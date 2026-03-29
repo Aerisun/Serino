@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from aerisun.core.db import get_session_factory, get_session
+from aerisun.core.db import get_session, get_session_factory
 from aerisun.domain.automation.schemas import (
     AgentModelConfigRead,
     AgentModelConfigTestRead,
@@ -17,11 +17,11 @@ from aerisun.domain.automation.schemas import (
     AgentRunApprovalRead,
     AgentRunRead,
     AgentRunStepRead,
+    AgentWorkflowCreate,
     AgentWorkflowDraftChatWrite,
     AgentWorkflowDraftCreateRead,
     AgentWorkflowDraftCreateWrite,
     AgentWorkflowDraftRead,
-    AgentWorkflowCreate,
     AgentWorkflowRead,
     AgentWorkflowUpdate,
     ApprovalDecisionWrite,
@@ -35,12 +35,13 @@ from aerisun.domain.automation.schemas import (
 )
 from aerisun.domain.automation.service import (
     clear_agent_workflow_draft,
+    connect_telegram_webhook,
     continue_agent_workflow_draft,
-    create_webhook_subscription,
     create_agent_workflow_from_draft,
+    create_webhook_subscription,
     delete_webhook_subscription,
-    get_run_detail,
     get_agent_workflow_draft,
+    get_run_detail,
     list_pending_approvals,
     list_runs,
     list_webhook_dead_letters,
@@ -48,9 +49,8 @@ from aerisun.domain.automation.service import (
     list_webhook_subscriptions,
     replay_dead_letter,
     resolve_approval,
-    connect_telegram_webhook,
-    test_webhook_subscription,
     test_agent_model_config,
+    test_webhook_subscription,
     trigger_delivery_retry,
     update_webhook_subscription,
 )
@@ -163,14 +163,17 @@ def post_workflow_draft_message_stream(
                     elapsed_seconds = max(1, int(time.monotonic() - started_at))
                     if elapsed_seconds != last_model_wait_seconds:
                         last_model_wait_seconds = elapsed_seconds
-                        yield json.dumps(
-                            {
-                                "type": "status",
-                                "status": "waiting_for_model",
-                                "elapsed_seconds": elapsed_seconds,
-                            },
-                            ensure_ascii=False,
-                        ) + "\n"
+                        yield (
+                            json.dumps(
+                                {
+                                    "type": "status",
+                                    "status": "waiting_for_model",
+                                    "elapsed_seconds": elapsed_seconds,
+                                },
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
                     continue
                 if worker.is_alive():
                     continue
@@ -189,7 +192,9 @@ def post_workflow_draft_message_stream(
             draft = payload_or_error
             break
 
-        assistant_message = draft.messages[-1].content if draft.messages and draft.messages[-1].role == "assistant" else ""
+        assistant_message = (
+            draft.messages[-1].content if draft.messages and draft.messages[-1].role == "assistant" else ""
+        )
         for chunk in _workflow_stream_chunks(assistant_message):
             yield json.dumps({"type": "chunk", "content": chunk}, ensure_ascii=False) + "\n"
         yield json.dumps({"type": "done", "draft": draft.model_dump(mode="json")}, ensure_ascii=False) + "\n"

@@ -10,8 +10,8 @@ from sqlalchemy.orm import Query as SAQuery
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
-from aerisun.domain.content.service import resolve_content_bulk_state
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.content.service import resolve_content_bulk_state
 from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
@@ -19,13 +19,12 @@ CONTENT_PUBLICATION_MODELS = (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
 
 
 def _is_published_public(obj: Any) -> bool:
-    return (
-        getattr(obj, "status", None) == "published"
-        and getattr(obj, "visibility", None) == "public"
-    )
+    return getattr(obj, "status", None) == "published" and getattr(obj, "visibility", None) == "public"
 
 
-def _dispatch_content_subscriptions_if_needed(model: type[Base], *, obj: Any | None = None, status: str | None = None, visibility: str | None = None) -> None:
+def _dispatch_content_subscriptions_if_needed(
+    model: type[Base], *, obj: Any | None = None, status: str | None = None, visibility: str | None = None
+) -> None:
     if model not in CONTENT_PUBLICATION_MODELS:
         return
 

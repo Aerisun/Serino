@@ -89,7 +89,7 @@ class AgentWorkflowDraftCreateRead(ModelBase):
     ok: bool = True
     summary: str
     draft_cleared: bool = True
-    workflow: "AgentWorkflowRead"
+    workflow: AgentWorkflowRead
 
 
 class AgentWorkflowCreate(BaseModel):

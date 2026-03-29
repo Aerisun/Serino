@@ -4,17 +4,22 @@ import base64
 import hashlib
 import hmac
 import json
-import time
 import threading
-from uuid import uuid4
+import time
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from uuid import uuid4
 
 import httpx
 from sqlalchemy.orm import Session
 
+from aerisun.core.db import get_session_factory
+from aerisun.core.settings import get_settings
+from aerisun.domain.agent.capabilities.registry import list_capability_models
+from aerisun.domain.agent.service import build_workflow_planning_usage_context
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation.models import AgentRun, AutomationEvent, WebhookDelivery, WebhookSubscription
 from aerisun.domain.automation.runtime import AutomationRuntime, invoke_model_json, probe_model_config
@@ -24,6 +29,7 @@ from aerisun.domain.automation.schemas import (
     AgentRunApprovalRead,
     AgentRunRead,
     AgentRunStepRead,
+    AgentWorkflowCreate,
     AgentWorkflowDraftChatWrite,
     AgentWorkflowDraftCreateRead,
     AgentWorkflowDraftCreateWrite,
@@ -31,20 +37,16 @@ from aerisun.domain.automation.schemas import (
     AgentWorkflowDraftOptionRead,
     AgentWorkflowDraftQuestionRead,
     AgentWorkflowDraftRead,
-    AgentWorkflowUpdate,
     AgentWorkflowRead,
+    AgentWorkflowUpdate,
     ApprovalDecisionWrite,
+    TelegramWebhookConnectRead,
     WebhookDeadLetterRead,
     WebhookDeliveryRead,
-    TelegramWebhookConnectRead,
     WebhookSubscriptionCreate,
     WebhookSubscriptionRead,
     WebhookSubscriptionUpdate,
 )
-from aerisun.core.settings import get_settings
-from aerisun.core.db import get_session_factory
-from aerisun.domain.agent.capabilities.registry import list_capability_models
-from aerisun.domain.agent.service import build_workflow_planning_usage_context
 from aerisun.domain.automation.settings import (
     clear_agent_workflow_draft_payload,
     create_agent_workflow,
@@ -52,10 +54,9 @@ from aerisun.domain.automation.settings import (
     find_agent_workflow,
     get_agent_model_config,
     get_agent_workflow_draft_payload,
-    list_agent_workflows,
     list_workflows_for_event,
-    resolve_workflow_template_key,
     resolve_agent_model_config,
+    resolve_workflow_template_key,
     save_agent_workflow_draft_payload,
     update_agent_workflow,
     workflow_template_rule,
@@ -393,12 +394,7 @@ def _build_detailed_working_document(
             },
             {
                 "role": "user",
-                "content": (
-                    "Clarified summary:\n"
-                    f"{summary}\n\n"
-                    "Conversation transcript:\n"
-                    f"{conversation_text}"
-                ),
+                "content": (f"Clarified summary:\n{summary}\n\nConversation transcript:\n{conversation_text}"),
             },
         ],
     )
@@ -554,7 +550,9 @@ def continue_agent_workflow_draft(
         current_question = ""
         options = []
 
-    trimmed_messages.append(AgentWorkflowDraftMessageRead(role="assistant", content=assistant_message, created_at=_now_utc()))
+    trimmed_messages.append(
+        AgentWorkflowDraftMessageRead(role="assistant", content=assistant_message, created_at=_now_utc())
+    )
 
     next_draft = AgentWorkflowDraftRead(
         id=WORKFLOW_DRAFT_ID,
@@ -640,12 +638,18 @@ def create_agent_workflow_from_draft(
     rule = workflow_template_rule(template_key)
     workflow_payload = dict(parsed.get("workflow") or {})
     default_key = default_workflow_key_for_template(template_key)
-    workflow_key = default_key if template_key == "community_moderation" else str(workflow_payload.get("key") or default_key).strip()
+    workflow_key = (
+        default_key
+        if template_key == "community_moderation"
+        else str(workflow_payload.get("key") or default_key).strip()
+    )
     if not workflow_key:
         workflow_key = default_key
 
     existing = find_agent_workflow(session, workflow_key)
-    workflow_name = str(workflow_payload.get("name") or (existing.name if existing else default_key)).strip() or default_key
+    workflow_name = (
+        str(workflow_payload.get("name") or (existing.name if existing else default_key)).strip() or default_key
+    )
     workflow_description = str(
         workflow_payload.get("description") or (existing.description if existing else draft.summary)
     ).strip()
@@ -783,11 +787,7 @@ def test_webhook_subscription(
         return result
 
     ok = response.status_code < 400
-    summary = (
-        "Webhook test succeeded"
-        if ok
-        else f"Webhook returned HTTP {response.status_code}"
-    )
+    summary = "Webhook test succeeded" if ok else f"Webhook returned HTTP {response.status_code}"
     result = {
         "ok": ok,
         "provider": _detect_webhook_provider(target_url),
@@ -1050,7 +1050,9 @@ def test_agent_model_config(session: Session, payload: AgentModelConfigUpdate) -
     endpoint = _model_chat_completions_url(str(config.base_url or ""))
     try:
         probe = probe_model_config(config.model_dump(exclude={"is_ready"}))
-        return AgentModelConfigTestRead(ok=True, model=probe["model"], endpoint=probe["endpoint"], summary=probe["summary"])
+        return AgentModelConfigTestRead(
+            ok=True, model=probe["model"], endpoint=probe["endpoint"], summary=probe["summary"]
+        )
     except Exception as exc:
         return AgentModelConfigTestRead(
             ok=False,
@@ -1566,10 +1568,12 @@ def _sign_feishu_url(target_url: str, secret: str) -> str:
     timestamp = str(int(datetime.now(UTC).timestamp()))
     string_to_sign = f"{timestamp}\n{secret}"
     digest = hmac.new(secret.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256).digest()
-    query_items.update({
-        "timestamp": timestamp,
-        "sign": base64.b64encode(digest).decode("utf-8"),
-    })
+    query_items.update(
+        {
+            "timestamp": timestamp,
+            "sign": base64.b64encode(digest).decode("utf-8"),
+        }
+    )
     return urlunparse(parsed._replace(query=urlencode(query_items)))
 
 
@@ -1594,9 +1598,7 @@ def _build_webhook_request(
         url = _sign_feishu_url(target_url, str(subscription.secret or "").strip())
         payload = {
             "msg_type": "text",
-            "content": {
-                "text": _render_webhook_text(event, max_length=28000)
-            },
+            "content": {"text": _render_webhook_text(event, max_length=28000)},
         }
         return url, payload, headers
 

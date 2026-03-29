@@ -9,6 +9,7 @@ operations, search, pagination, and authentication guards.
 from __future__ import annotations
 
 import pytest
+
 from aerisun.domain.crud import service as crud_service
 
 # Base URL for all admin content endpoints.

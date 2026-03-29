@@ -7,6 +7,7 @@ import respx
 
 from aerisun.core.base import utcnow
 from aerisun.core.db import get_session_factory
+from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.subscription.models import (
     ContentNotification,
     ContentNotificationDelivery,
@@ -17,7 +18,6 @@ from aerisun.domain.subscription.service import (
     dispatch_content_subscription_notifications,
     get_subscription_config_orm,
 )
-from aerisun.domain.site_auth.models import SiteUser
 
 ADMIN_BASE = "/api/v1/admin/subscriptions"
 
