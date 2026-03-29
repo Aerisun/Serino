@@ -94,7 +94,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   >([]);
   const [selectedAvatar, setSelectedAvatar] = useState("");
   const [avatarBatch, setAvatarBatch] = useState(0);
-  const [avatarTotalBatches, setAvatarTotalBatches] = useState(1);
+  const [_avatarTotalBatches, setAvatarTotalBatches] = useState(1);
   const [needsProfile, setNeedsProfile] = useState(false);
   const [subscriptionStatuses, setSubscriptionStatuses] = useState<
     SiteContentSubscriptionStatus[]

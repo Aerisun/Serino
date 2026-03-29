@@ -1,5 +1,5 @@
 import type { ContentSubscriptionConfigAdminUpdate } from "@serino/api-client/models";
-import { getAdminToken } from "@/lib/storage";
+import { adminRequest } from "./admin-request";
 
 export interface SubscriptionTestResult {
   recipient: string;
@@ -59,37 +59,6 @@ export const SUBSCRIPTION_TEST_RECIPIENT = "do-not-reply@course.pku.edu.cn";
 export function buildSubscriptionTestFailureMessage(detail?: string): string {
   const base = `给测试邮箱：${SUBSCRIPTION_TEST_RECIPIENT}发送邮件失败`;
   return detail?.trim() ? `${base}。${detail.trim()}` : base;
-}
-
-async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getAdminToken();
-  if (!token) {
-    throw new Error("未登录，无法执行管理操作");
-  }
-
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...(init?.headers ?? {}),
-      },
-    });
-  } catch {
-    throw new Error("请求失败，请检查网络连接或后端服务状态");
-  }
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const detail =
-      payload && typeof payload === "object" && "detail" in payload
-        ? payload.detail
-        : undefined;
-    throw new Error(typeof detail === "string" ? detail : "操作失败");
-  }
-  return payload as T;
 }
 
 export async function sendSubscriptionTestEmail(

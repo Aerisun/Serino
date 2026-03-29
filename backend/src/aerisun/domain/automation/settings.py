@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import threading
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -13,6 +15,10 @@ from aerisun.domain.automation.schemas import (
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.site_config import repository as site_repo
+
+logger = logging.getLogger(__name__)
+
+_feature_flags_lock = threading.Lock()
 
 AGENT_MODEL_CONFIG_FLAG_KEY = "agent_model_config"
 AGENT_WORKFLOWS_FLAG_KEY = "agent_workflows"
@@ -162,24 +168,25 @@ def _workflow_to_read(raw: dict[str, Any]) -> AgentWorkflowRead:
 
 
 def _persist_workflows(session: Session, workflows: list[AgentWorkflowRead]) -> list[AgentWorkflowRead]:
-    profile = _get_site_profile(session)
-    feature_flags = dict(profile.feature_flags or {})
-    feature_flags[AGENT_WORKFLOWS_FLAG_KEY] = [
-        {
-            "key": workflow.key,
-            "name": workflow.name,
-            "description": workflow.description,
-            "trigger_event": workflow.trigger_event,
-            "target_type": workflow.target_type,
-            "enabled": workflow.enabled,
-            "require_human_approval": workflow.require_human_approval,
-            "instructions": workflow.instructions,
-        }
-        for workflow in workflows
-    ]
-    profile.feature_flags = feature_flags
-    session.commit()
-    session.refresh(profile)
+    with _feature_flags_lock:
+        profile = _get_site_profile(session)
+        feature_flags = dict(profile.feature_flags or {})
+        feature_flags[AGENT_WORKFLOWS_FLAG_KEY] = [
+            {
+                "key": workflow.key,
+                "name": workflow.name,
+                "description": workflow.description,
+                "trigger_event": workflow.trigger_event,
+                "target_type": workflow.target_type,
+                "enabled": workflow.enabled,
+                "require_human_approval": workflow.require_human_approval,
+                "instructions": workflow.instructions,
+            }
+            for workflow in workflows
+        ]
+        profile.feature_flags = feature_flags
+        session.commit()
+        session.refresh(profile)
     return list_agent_workflows(session)
 
 
@@ -205,12 +212,13 @@ def resolve_agent_model_config(session: Session, payload: AgentModelConfigUpdate
 def update_agent_model_config(session: Session, payload: AgentModelConfigUpdate) -> AgentModelConfigRead:
     config = resolve_agent_model_config(session, payload)
 
-    profile = _get_site_profile(session)
-    feature_flags = dict(profile.feature_flags or {})
-    feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = config.model_dump(exclude={"is_ready"})
-    profile.feature_flags = feature_flags
-    session.commit()
-    session.refresh(profile)
+    with _feature_flags_lock:
+        profile = _get_site_profile(session)
+        feature_flags = dict(profile.feature_flags or {})
+        feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = config.model_dump(exclude={"is_ready"})
+        profile.feature_flags = feature_flags
+        session.commit()
+        session.refresh(profile)
     return get_agent_model_config(session)
 
 
@@ -220,22 +228,24 @@ def get_agent_workflow_draft_payload(session: Session) -> dict[str, Any] | None:
 
 
 def save_agent_workflow_draft_payload(session: Session, payload: dict[str, Any]) -> dict[str, Any]:
-    profile = _get_site_profile(session)
-    feature_flags = dict(profile.feature_flags or {})
-    feature_flags[AGENT_WORKFLOW_DRAFT_FLAG_KEY] = payload
-    profile.feature_flags = feature_flags
-    session.commit()
-    session.refresh(profile)
-    return dict(profile.feature_flags.get(AGENT_WORKFLOW_DRAFT_FLAG_KEY) or {})
+    with _feature_flags_lock:
+        profile = _get_site_profile(session)
+        feature_flags = dict(profile.feature_flags or {})
+        feature_flags[AGENT_WORKFLOW_DRAFT_FLAG_KEY] = payload
+        profile.feature_flags = feature_flags
+        session.commit()
+        session.refresh(profile)
+        return dict(profile.feature_flags.get(AGENT_WORKFLOW_DRAFT_FLAG_KEY) or {})
 
 
 def clear_agent_workflow_draft_payload(session: Session) -> None:
-    profile = _get_site_profile(session)
-    feature_flags = dict(profile.feature_flags or {})
-    feature_flags.pop(AGENT_WORKFLOW_DRAFT_FLAG_KEY, None)
-    profile.feature_flags = feature_flags
-    session.commit()
-    session.refresh(profile)
+    with _feature_flags_lock:
+        profile = _get_site_profile(session)
+        feature_flags = dict(profile.feature_flags or {})
+        feature_flags.pop(AGENT_WORKFLOW_DRAFT_FLAG_KEY, None)
+        profile.feature_flags = feature_flags
+        session.commit()
+        session.refresh(profile)
 
 
 def list_agent_workflows(session: Session) -> list[AgentWorkflowRead]:
@@ -249,6 +259,7 @@ def list_agent_workflows(session: Session) -> list[AgentWorkflowRead]:
         try:
             workflows.append(_workflow_to_read(item))
         except Exception:
+            logger.warning("Failed to parse agent workflow item: %s", item, exc_info=True)
             continue
     if workflows:
         return workflows

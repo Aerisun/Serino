@@ -14,7 +14,6 @@ import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { useI18n } from "@/i18n";
@@ -23,13 +22,12 @@ import { Plus, Trash2, Pencil, CheckCircle2 } from "lucide-react";
 import { connectTelegramWebhook, testWebhookSubscription } from "@/api/endpoints/webhooks";
 import { DeliveriesPanel } from "./DeliveriesPage";
 
-const WEBHOOK_VIEWS = ["webhooks", "deliveries"] as const;
-const WEBHOOK_PROVIDERS = ["feishu", "telegram"] as const;
+type WebhookView = "webhooks" | "deliveries";
 const DEFAULT_EVENT_TYPES = ["comment.pending", "guestbook.pending"] as const;
 const DEFAULT_TIMEOUT_SECONDS = 10;
 const DEFAULT_MAX_ATTEMPTS = 6;
 
-type WebhookProvider = (typeof WEBHOOK_PROVIDERS)[number];
+type WebhookProvider = "feishu" | "telegram";
 
 interface WebhookFormState {
   name: string;
@@ -684,7 +682,7 @@ export function WebhooksPanel() {
 
 export function WebhookManagementSwitcher() {
   const { lang } = useI18n();
-  const [view, setView] = useState<(typeof WEBHOOK_VIEWS)[number]>("webhooks");
+  const [view, setView] = useState<WebhookView>("webhooks");
 
   const viewCopy = lang === "zh"
     ? {
@@ -700,7 +698,7 @@ export function WebhookManagementSwitcher() {
     <div className="space-y-4">
       <AdminSegmentedFilter
         value={view}
-        onValueChange={(next) => setView(next as (typeof WEBHOOK_VIEWS)[number])}
+        onValueChange={(next) => setView(next as WebhookView)}
         items={[
           { value: "webhooks", label: viewCopy.webhooks },
           { value: "deliveries", label: viewCopy.deliveries },

@@ -14,7 +14,7 @@ import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import EmbeddedResume from "@/components/EmbeddedResume";
 
-const STORAGE_KEY_PREFIX = "aerisun-preview-";
+const _STORAGE_KEY_PREFIX = "aerisun-preview-";
 
 const estimateReadTime = (value: string) =>
   `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;

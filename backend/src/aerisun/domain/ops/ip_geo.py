@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import httpx
 
 from aerisun.core.settings import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -68,6 +71,7 @@ def lookup_ip_geolocation(ip: str) -> IpGeoResult:
                 owner=payload.get("organizationName") or payload.get("owner") or None,
             )
     except Exception:
+        logger.warning("IP geolocation lookup failed for %s", ip, exc_info=True)
         result = IpGeoResult()
 
     _CACHE[ip] = (now + timedelta(seconds=settings.ip_geo_cache_ttl_seconds), result)

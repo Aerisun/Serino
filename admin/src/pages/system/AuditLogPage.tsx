@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import {
-  type ConfigRevisionDetail,
   type ConfigRevisionListItem,
   getConfigRevisionDetail,
   listConfigRevisions,

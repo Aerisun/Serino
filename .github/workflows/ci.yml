@@ -98,6 +98,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
         working-directory: frontend
+      - name: Type check
+        run: pnpm run typecheck
+        working-directory: frontend
       - run: pnpm run build
         working-directory: frontend
 
@@ -118,6 +121,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
+        working-directory: admin
+      - name: Type check
+        run: pnpm run typecheck
         working-directory: admin
       - run: pnpm run build
         working-directory: admin

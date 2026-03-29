@@ -81,8 +81,8 @@ const ActivityHeatmap = () => {
   const { resolvedTheme } = useTheme();
   const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
   const title = String(config.heatmapTitle ?? "Activity");
-  const loadingLabel = String(config.heatmapLoadingLabel ?? "加载中");
-  const errorLabel = String(config.heatmapErrorLabel ?? "加载失败");
+  const _loadingLabel = String(config.heatmapLoadingLabel ?? "加载中");
+  const _errorLabel = String(config.heatmapErrorLabel ?? "加载失败");
   const stats = [
     { key: "thisWeek", label: String(config.heatmapThisWeekLabel ?? "This week") },
     { key: "peakWeek", label: String(config.heatmapPeakWeekLabel ?? "Peak week") },

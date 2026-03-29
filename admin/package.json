@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -18,7 +19,7 @@
     "@serino/theme": "workspace:*",
     "@serino/api-client": "workspace:*",
     "@serino/utils": "workspace:*",
-    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-query": "^5.95.2",
     "lucide-react": "^0.462.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

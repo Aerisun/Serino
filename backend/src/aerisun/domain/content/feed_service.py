@@ -15,6 +15,7 @@ from aerisun.domain.content.service import (
     list_public_posts,
     list_public_thoughts,
 )
+from aerisun.domain.exceptions import ValidationError
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,7 +103,7 @@ def get_feed_definition(feed_key: str) -> FeedDefinition:
     try:
         return _FEED_DEFINITIONS[feed_key]
     except KeyError as exc:  # pragma: no cover - internal misuse guard
-        raise ValueError(f"Unsupported feed key: {feed_key}") from exc
+        raise ValidationError(f"Unsupported feed key: {feed_key}") from exc
 
 
 def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit: int | None = None) -> str:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -18,6 +19,8 @@ from .config_service import enabled_oauth_providers, oauth_credentials
 from .profile import build_avatar_candidates, suggest_display_name
 from .sessions import create_site_session
 from .shared import ALLOWED_OAUTH_PROVIDERS, normalize_display_name, normalize_email, normalize_return_to
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -38,6 +41,7 @@ def parse_oauth_state_cookie(raw: str | None) -> OAuthStatePayload | None:
     try:
         payload = json.loads(base64.urlsafe_b64decode(raw.encode("ascii")).decode("utf-8"))
     except Exception:
+        logger.warning("Failed to parse OAuth state cookie", exc_info=True)
         return None
     provider = str(payload.get("provider") or "").strip().lower()
     state = str(payload.get("state") or "").strip()

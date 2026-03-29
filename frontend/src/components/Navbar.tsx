@@ -23,7 +23,7 @@ const getItemIsActive = (item: NavItem, pathname: string) =>
   item.children?.some((child) => isPathActive(child.href, pathname)) ||
   false;
 
-const authProviderLabel = (provider: string) =>
+const _authProviderLabel = (provider: string) =>
   provider === "google" ? "Google" : provider === "github" ? "GitHub" : "邮箱识别";
 
 const NavDropdown = ({

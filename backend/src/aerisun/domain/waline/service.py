@@ -8,6 +8,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.exceptions import StateConflict, ValidationError
 
 WALINE_GUESTBOOK_PATH = "/guestbook"
 WALINE_REACTION_COLUMNS = tuple(f"reaction{index}" for index in range(9))
@@ -632,9 +633,9 @@ def upsert_waline_nick_identity(
     nick_key = normalize_comment_nick(nick)
     normalized_mail = normalize_comment_mail(mail)
     if not nick_key:
-        raise ValueError("Comment nickname cannot be empty")
+        raise ValidationError("Comment nickname cannot be empty")
     if not normalized_mail:
-        raise ValueError("Comment email cannot be empty")
+        raise ValidationError("Comment email cannot be empty")
 
     display_nick = " ".join(nick.strip().split())
 
@@ -656,7 +657,7 @@ def upsert_waline_nick_identity(
             (nick_key,),
         ).fetchone()
         if row is None:
-            raise RuntimeError("Failed to persist Waline nick identity")
+            raise StateConflict("Failed to persist Waline nick identity")
         return _row_to_identity(row)
 
 
@@ -784,7 +785,7 @@ def create_waline_record(
 
         created = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (comment_id,)).fetchone()
         if created is None:
-            raise RuntimeError("Failed to create Waline record")
+            raise StateConflict("Failed to create Waline record")
         return _row_to_record(created)
 
 

@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/Dialog";
 import { useI18n } from "@/i18n";
 import { CONTENT_CATEGORY_LABEL_KEYS, CONTENT_CATEGORY_TYPES, type ContentCategoryType } from "@/lib/contentCategories";
-import { cn } from "@/lib/utils";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
