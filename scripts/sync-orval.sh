@@ -106,7 +106,7 @@ run_orval_if_needed \
   "${PROJECT_DIR}/packages/api-client/orval.config.ts" \
   "${PROJECT_DIR}/packages/api-client/package.json" \
   "${PROJECT_DIR}/packages/api-client/src/mutators/admin-instance.ts" \
-  "${PROJECT_DIR}/packages/api-client/src/mutators/public-fetch.ts"
+  "${PROJECT_DIR}/packages/api-client/src/mutators/public-instance.ts"
 
 cat >"${STATE_FILE}" <<EOF
 api_client_codegen_fingerprint=${api_client_codegen_fingerprint}

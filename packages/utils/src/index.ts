@@ -6,3 +6,4 @@ export {
   isPreviewRequestMessage,
 } from "./preview";
 export { initSentry } from "./sentry";
+export { compressImageFile, canCompressImage, type CompressImageOptions } from "./image-upload";
