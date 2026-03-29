@@ -10,6 +10,7 @@ from aerisun.core.settings import get_settings
 from aerisun.domain.agent.schemas import McpAdminConfigRead, McpAdminConfigUpdate
 from aerisun.domain.agent.service import build_agent_usage, build_mcp_admin_config, save_mcp_admin_config
 from aerisun.domain.content.feed_service import list_feed_definitions
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
 from aerisun.domain.iam.service import (
@@ -24,9 +25,50 @@ from aerisun.domain.iam.service import (
 from aerisun.domain.iam.service import (
     update_api_key as _update_api_key,
 )
+from aerisun.domain.ops.backup_sync import (
+    get_backup_sync_config as _get_backup_sync_config,
+)
+from aerisun.domain.ops.backup_sync import (
+    list_backup_snapshots_compat as _list_backup_snapshots_compat,
+)
+from aerisun.domain.ops.backup_sync import (
+    list_backup_sync_commits as _list_backup_sync_commits,
+)
+from aerisun.domain.ops.backup_sync import (
+    list_backup_sync_queue as _list_backup_sync_queue,
+)
+from aerisun.domain.ops.backup_sync import (
+    list_backup_sync_runs as _list_backup_sync_runs,
+)
+from aerisun.domain.ops.backup_sync import (
+    pause_backup_sync as _pause_backup_sync,
+)
+from aerisun.domain.ops.backup_sync import (
+    restore_backup_commit as _restore_backup_commit,
+)
+from aerisun.domain.ops.backup_sync import (
+    restore_backup_snapshot_compat as _restore_backup_snapshot_compat,
+)
+from aerisun.domain.ops.backup_sync import (
+    resume_backup_sync as _resume_backup_sync,
+)
+from aerisun.domain.ops.backup_sync import (
+    retry_backup_sync_run as _retry_backup_sync_run,
+)
+from aerisun.domain.ops.backup_sync import (
+    trigger_backup_sync as _trigger_backup_sync,
+)
+from aerisun.domain.ops.backup_sync import (
+    update_backup_sync_config as _update_backup_sync_config,
+)
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
+    BackupCommitRead,
+    BackupQueueItemRead,
+    BackupRunRead,
     BackupSnapshotRead,
+    BackupSyncConfig,
+    BackupSyncConfigUpdate,
     EnhancedDashboardStats,
     SystemInfo,
     VisitorRecordRead,
@@ -215,7 +257,8 @@ def list_backups(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return _list_backups(session)
+    commits = _list_backup_snapshots_compat(session)
+    return commits or _list_backups(session)
 
 
 @router.post("/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED, summary="创建备份快照")
@@ -223,7 +266,25 @@ def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return _create_backup(session)
+    try:
+        run = _trigger_backup_sync(session)
+        snapshots = _list_backup_snapshots_compat(session)
+        if snapshots:
+            return snapshots[0]
+        return BackupSnapshotRead(
+            id=run.id,
+            snapshot_type=run.trigger_kind or "manual",
+            status=run.status,
+            db_path="aerisun.db",
+            replica_url=None,
+            backup_path=None,
+            checksum=None,
+            completed_at=run.finished_at,
+            created_at=run.created_at,
+            updated_at=run.updated_at,
+        )
+    except Exception:
+        return _create_backup(session)
 
 
 @router.post("/backups/{snapshot_id}/restore", response_model=BackupSnapshotRead, summary="从备份恢复")
@@ -232,7 +293,95 @@ def restore_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return _restore_backup(session, snapshot_id)
+    try:
+        return _restore_backup_snapshot_compat(session, snapshot_id)
+    except ResourceNotFound:
+        return _restore_backup(session, snapshot_id)
+
+
+@router.get("/backup-sync/config", response_model=BackupSyncConfig, summary="获取备份同步配置")
+def get_backup_sync_config(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfig:
+    return _get_backup_sync_config(session)
+
+
+@router.put("/backup-sync/config", response_model=BackupSyncConfig, summary="更新备份同步配置")
+def update_backup_sync_config(
+    payload: BackupSyncConfigUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfig:
+    return _update_backup_sync_config(session, payload)
+
+
+@router.get("/backup-sync/queue", response_model=list[BackupQueueItemRead], summary="获取备份同步队列")
+def list_backup_sync_queue(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> list[BackupQueueItemRead]:
+    return _list_backup_sync_queue(session)
+
+
+@router.get("/backup-sync/runs", response_model=list[BackupRunRead], summary="获取备份同步运行记录")
+def list_backup_sync_runs(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> list[BackupRunRead]:
+    return _list_backup_sync_runs(session)
+
+
+@router.post(
+    "/backup-sync/runs", response_model=BackupRunRead, status_code=status.HTTP_201_CREATED, summary="手动触发备份同步"
+)
+def trigger_backup_sync(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupRunRead:
+    return _trigger_backup_sync(session)
+
+
+@router.post("/backup-sync/runs/{run_id}/retry", response_model=BackupRunRead, summary="重试备份同步")
+def retry_backup_sync(
+    run_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupRunRead:
+    return _retry_backup_sync_run(session, run_id)
+
+
+@router.post("/backup-sync/pause", response_model=BackupSyncConfig, summary="暂停备份同步")
+def pause_backup_sync(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfig:
+    return _pause_backup_sync(session)
+
+
+@router.post("/backup-sync/resume", response_model=BackupSyncConfig, summary="恢复备份同步")
+def resume_backup_sync(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfig:
+    return _resume_backup_sync(session)
+
+
+@router.get("/backup-sync/commits", response_model=list[BackupCommitRead], summary="获取备份提交记录")
+def list_backup_sync_commits(
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> list[BackupCommitRead]:
+    return _list_backup_sync_commits(session)
+
+
+@router.post("/backup-sync/commits/{commit_id}/restore", response_model=BackupCommitRead, summary="从备份提交恢复")
+def restore_backup_commit(
+    commit_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupCommitRead:
+    return _restore_backup_commit(session, commit_id)
 
 
 @router.get("/dashboard/stats", response_model=EnhancedDashboardStats, summary="获取仪表盘统计")

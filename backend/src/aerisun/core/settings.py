@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     backup_rsync_uri: str = Field(default="backup-user@backup-host:/backup/aerisun")
     backup_ssh_port: int = 22
     backup_ssh_key: str | None = None
+    backup_sync_tmp_dir: Path = PROJECT_ROOT / ".store" / ".backup-sync-tmp"
+    backup_sync_default_site_slug: str = "aerisun"
+    backup_sync_default_interval_minutes: int = 60
+    backup_sync_chunk_size_bytes: int = 8 * 1024 * 1024
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True
     cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())
@@ -142,6 +146,7 @@ class Settings(BaseSettings):
         self.store_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.media_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.secrets_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
+        self.backup_sync_tmp_dir.expanduser().resolve().mkdir(parents=True, exist_ok=True)
         self.db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.waline_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         self.workflow_db_path.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)

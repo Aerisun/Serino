@@ -29,7 +29,12 @@ from aerisun.domain.iam.schemas import (  # noqa: F401
 from aerisun.domain.media.schemas import AssetAdminRead  # noqa: F401
 from aerisun.domain.ops.schemas import (  # noqa: F401
     AuditLogRead,
+    BackupCommitRead,
+    BackupQueueItemRead,
+    BackupRunRead,
     BackupSnapshotRead,
+    BackupSyncConfig,
+    BackupSyncConfigUpdate,
     CommentAdminRead,
     DashboardStats,
     EnhancedDashboardStats,

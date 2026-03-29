@@ -9,6 +9,7 @@ from aerisun.core.settings import Settings
 from aerisun.core.tasks import cleanup_expired_sessions
 from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.automation.service import dispatch_due_webhooks, execute_due_runs
+from aerisun.domain.ops.backup_sync import dispatch_backup_sync
 from aerisun.domain.ops.service import record_daily_traffic_snapshot
 
 logger = logging.getLogger("aerisun.startup")
@@ -79,6 +80,16 @@ class TaskManager:
             max_instances=1,
             coalesce=True,
         )
+        self._scheduler.add_job(
+            self._dispatch_backup_sync,
+            trigger="interval",
+            seconds=60,
+            id="backup_sync_dispatcher",
+            name="Backup sync dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
         self._scheduler.start()
         logger.info("Background scheduler started")
 
@@ -100,6 +111,9 @@ class TaskManager:
 
         with get_session_factory()() as session:
             dispatch_due_webhooks(session)
+
+    def _dispatch_backup_sync(self) -> None:
+        dispatch_backup_sync()
 
     async def stop(self) -> None:
         for task in self._async_tasks:
