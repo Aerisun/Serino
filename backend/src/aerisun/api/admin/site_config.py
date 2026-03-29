@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.site_config.models import NavItem, PageCopy, PageDisplayOption, Poem, SocialLink
 from aerisun.domain.site_config.service import (
     attach_site_profile_id,
@@ -60,7 +61,18 @@ def update_profile(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return update_site_profile_admin(session, payload)
+    before_snapshot = capture_config_resource(session, "site.profile")
+    result = update_site_profile_admin(session, payload)
+    after_snapshot = capture_config_resource(session, "site.profile")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="site.profile",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.get("/community-config", response_model=CommunityConfigAdminRead, summary="获取社区评论配置")
@@ -77,7 +89,18 @@ def update_community_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return update_community_config_admin(session, payload)
+    before_snapshot = capture_config_resource(session, "site.community")
+    result = update_community_config_admin(session, payload)
+    after_snapshot = capture_config_resource(session, "site.community")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="site.community",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 social_links_router = build_crud_router(
@@ -89,6 +112,8 @@ social_links_router = build_crud_router(
     tag="admin-site-config",
     base_query_factory=lambda session: site_profile_scoped_query(session, SocialLink),
     prepare_create_data=attach_site_profile_id,
+    config_resource_key="site.social_links",
+    capture_before=lambda session: capture_config_resource(session, "site.social_links"),
 )
 
 poems_router = build_crud_router(
@@ -100,6 +125,8 @@ poems_router = build_crud_router(
     tag="admin-site-config",
     base_query_factory=lambda session: site_profile_scoped_query(session, Poem),
     prepare_create_data=attach_site_profile_id,
+    config_resource_key="site.poems",
+    capture_before=lambda session: capture_config_resource(session, "site.poems"),
 )
 
 page_copy_router = build_crud_router(
@@ -109,6 +136,8 @@ page_copy_router = build_crud_router(
     read_schema=PageCopyAdminRead,
     prefix="/page-copy",
     tag="admin-site-config",
+    config_resource_key="site.pages",
+    capture_before=lambda session: capture_config_resource(session, "site.pages"),
 )
 
 display_options_router = build_crud_router(
@@ -118,6 +147,8 @@ display_options_router = build_crud_router(
     read_schema=PageDisplayOptionAdminRead,
     prefix="/display-options",
     tag="admin-site-config",
+    config_resource_key="site.pages",
+    capture_before=lambda session: capture_config_resource(session, "site.pages"),
 )
 
 router.include_router(social_links_router)
@@ -132,7 +163,18 @@ def reorder_nav_items(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return reorder_nav_items_admin(session, items)
+    before_snapshot = capture_config_resource(session, "site.navigation")
+    result = reorder_nav_items_admin(session, items)
+    after_snapshot = capture_config_resource(session, "site.navigation")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="site.navigation",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 nav_items_router = build_crud_router(
@@ -144,6 +186,8 @@ nav_items_router = build_crud_router(
     tag="admin-site-config",
     base_query_factory=lambda session: site_profile_scoped_query(session, NavItem),
     prepare_create_data=attach_site_profile_id,
+    config_resource_key="site.navigation",
+    capture_before=lambda session: capture_config_resource(session, "site.navigation"),
 )
 
 router.include_router(nav_items_router)

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from aerisun.api.deps.site_auth import get_current_site_user
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.site_auth.models import SiteUser
 from aerisun.domain.site_auth.schemas import (
     SiteAdminEmailIdentityBindRequest,
@@ -46,7 +47,18 @@ def update_visitor_auth_config(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> SiteAuthConfigAdminRead:
-    return update_site_auth_admin_config(session, payload)
+    before_snapshot = capture_config_resource(session, "visitors.auth")
+    result = update_site_auth_admin_config(session, payload)
+    after_snapshot = capture_config_resource(session, "visitors.auth")
+    create_config_revision(
+        session,
+        actor_id=_admin.id,
+        resource_key="visitors.auth",
+        operation="update",
+        before_snapshot=before_snapshot,
+        after_snapshot=after_snapshot,
+    )
+    return result
 
 
 @router.get("/users", response_model=PaginatedResponse[SiteUserAdminRead], summary="获取站点访客用户列表")

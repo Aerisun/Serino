@@ -10,6 +10,7 @@ from aerisun.core.base import Base
 from aerisun.core.db import get_session
 from aerisun.domain.crud import service as crud_service
 from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.ops.config_revisions import create_config_revision
 
 from .deps import get_current_admin
 from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest, PaginatedResponse
@@ -26,6 +27,10 @@ def build_crud_router(
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
     prepare_create_data: Callable[[Session, dict[str, Any]], dict[str, Any]] | None = None,
     prepare_update_data: Callable[[Session, Any, dict[str, Any]], dict[str, Any]] | None = None,
+    config_resource_key: str | None = None,
+    capture_before: Callable[[Session], Any] | None = None,
+    capture_after: Callable[[Session], Any] | None = None,
+    build_revision_summary: Callable[[str, Any, Any], str | None] | None = None,
 ) -> APIRouter:
     """Factory that returns a full CRUD router for a given SQLAlchemy model."""
 
@@ -74,13 +79,30 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        return crud_service.create_item(
+        before_snapshot = capture_before(session) if config_resource_key and capture_before is not None else None
+        result = crud_service.create_item(
             session,
             model,
             payload,
             read_schema=read_schema,
             prepare_data=prepare_create_data,
         )
+        if config_resource_key and capture_before is not None:
+            after_snapshot = (capture_after or capture_before)(session)
+            create_config_revision(
+                session,
+                actor_id=_admin.id,
+                resource_key=config_resource_key,
+                operation="create",
+                before_snapshot=before_snapshot,
+                after_snapshot=after_snapshot,
+                summary_override=(
+                    build_revision_summary("create", before_snapshot, after_snapshot)
+                    if build_revision_summary
+                    else None
+                ),
+            )
+        return result
 
     @router.get("/{item_id}", response_model=read_schema, summary=f"获取单条{tag}", operation_id=f"get_{resource}")
     def get_item(
@@ -103,7 +125,8 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> Any:
-        return crud_service.update_item(
+        before_snapshot = capture_before(session) if config_resource_key and capture_before is not None else None
+        result = crud_service.update_item(
             session,
             model,
             item_id,
@@ -112,6 +135,22 @@ def build_crud_router(
             base_query_factory=base_query_factory,
             prepare_data=prepare_update_data,
         )
+        if config_resource_key and capture_before is not None:
+            after_snapshot = (capture_after or capture_before)(session)
+            create_config_revision(
+                session,
+                actor_id=_admin.id,
+                resource_key=config_resource_key,
+                operation="update",
+                before_snapshot=before_snapshot,
+                after_snapshot=after_snapshot,
+                summary_override=(
+                    build_revision_summary("update", before_snapshot, after_snapshot)
+                    if build_revision_summary
+                    else None
+                ),
+            )
+        return result
 
     @router.delete(
         "/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary=f"删除{tag}", operation_id=f"delete_{resource}"
@@ -121,7 +160,23 @@ def build_crud_router(
         _admin: AdminUser = Depends(get_current_admin),
         session: Session = Depends(get_session),
     ) -> None:
+        before_snapshot = capture_before(session) if config_resource_key and capture_before is not None else None
         crud_service.delete_item(session, model, item_id, base_query_factory=base_query_factory)
+        if config_resource_key and capture_before is not None:
+            after_snapshot = (capture_after or capture_before)(session)
+            create_config_revision(
+                session,
+                actor_id=_admin.id,
+                resource_key=config_resource_key,
+                operation="delete",
+                before_snapshot=before_snapshot,
+                after_snapshot=after_snapshot,
+                summary_override=(
+                    build_revision_summary("delete", before_snapshot, after_snapshot)
+                    if build_revision_summary
+                    else None
+                ),
+            )
 
     @router.post(
         "/bulk-delete",

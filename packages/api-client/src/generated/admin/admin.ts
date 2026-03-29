@@ -60,6 +60,8 @@ import type {
   CommentAdminRead,
   CommunityConfigAdminRead,
   CommunityConfigUpdate,
+  ConfigRevisionDetailRead,
+  ConfigRevisionRestoreWrite,
   ContentAdminRead,
   ContentCategoryCreate,
   ContentCategoryRead,
@@ -89,6 +91,7 @@ import type {
   ListAuditLogsApiV1AdminSystemAuditLogsGetParams,
   ListBasicsParams,
   ListCommentsApiV1AdminModerationCommentsGetParams,
+  ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams,
   ListContentCategoriesParams,
   ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetParams,
   ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetParams,
@@ -124,6 +127,7 @@ import type {
   PaginatedResponseAssetAdminRead,
   PaginatedResponseAuditLogRead,
   PaginatedResponseCommentAdminRead,
+  PaginatedResponseConfigRevisionListItemRead,
   PaginatedResponseContentAdminRead,
   PaginatedResponseContentNotificationDeliveryAdminRead,
   PaginatedResponseContentSubscriberAdminRead,
@@ -12798,6 +12802,337 @@ export function useListAuditLogsApiV1AdminSystemAuditLogsGet<TData = Awaited<Ret
 
 
 /**
+ * @summary 获取配置变更历史
+ */
+export type listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse200 = {
+  data: PaginatedResponseConfigRevisionListItemRead
+  status: 200
+}
+
+export type listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponseSuccess = (listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse200) & {
+  headers: Headers;
+};
+export type listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponseError = (listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse422) & {
+  headers: Headers;
+};
+
+export type listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse = (listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponseSuccess | listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponseError)
+
+export const getListConfigRevisionsApiV1AdminSystemConfigRevisionsGetUrl = (params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/system/config-revisions?${stringifiedParams}` : `/api/v1/admin/system/config-revisions`
+}
+
+export const listConfigRevisionsApiV1AdminSystemConfigRevisionsGet = async (params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams, options?: RequestInit): Promise<listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse> => {
+
+  return customInstance<listConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse>(getListConfigRevisionsApiV1AdminSystemConfigRevisionsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryKey = (params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams,) => {
+    return [
+    `/api/v1/admin/system/config-revisions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryOptions = <TData = Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError = ErrorType<HTTPValidationError>>(params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>> = ({ signal }) => listConfigRevisionsApiV1AdminSystemConfigRevisionsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>>
+export type ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useListConfigRevisionsApiV1AdminSystemConfigRevisionsGet<TData = Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListConfigRevisionsApiV1AdminSystemConfigRevisionsGet<TData = Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListConfigRevisionsApiV1AdminSystemConfigRevisionsGet<TData = Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取配置变更历史
+ */
+
+export function useListConfigRevisionsApiV1AdminSystemConfigRevisionsGet<TData = Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listConfigRevisionsApiV1AdminSystemConfigRevisionsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取配置历史详情
+ */
+export type getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse200 = {
+  data: ConfigRevisionDetailRead
+  status: 200
+}
+
+export type getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseSuccess = (getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse200) & {
+  headers: Headers;
+};
+export type getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseError = (getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse422) & {
+  headers: Headers;
+};
+
+export type getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse = (getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseSuccess | getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseError)
+
+export const getGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetUrl = (revisionId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/config-revisions/${revisionId}`
+}
+
+export const getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet = async (revisionId: string, options?: RequestInit): Promise<getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse> => {
+
+  return customInstance<getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse>(getGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetUrl(revisionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetQueryKey = (revisionId: string,) => {
+    return [
+    `/api/v1/admin/system/config-revisions/${revisionId}`
+    ] as const;
+    }
+
+
+export const getGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError = ErrorType<HTTPValidationError>>(revisionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetQueryKey(revisionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>> = ({ signal }) => getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet(revisionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(revisionId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>>
+export type GetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet<TData = Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ revisionId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet<TData = Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ revisionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet<TData = Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ revisionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取配置历史详情
+ */
+
+export function useGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet<TData = Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError = ErrorType<HTTPValidationError>>(
+ revisionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetQueryOptions(revisionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 恢复配置历史版本
+ */
+export type restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse200 = {
+  data: ConfigRevisionDetailRead
+  status: 200
+}
+
+export type restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseSuccess = (restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse200) & {
+  headers: Headers;
+};
+export type restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseError = (restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse422) & {
+  headers: Headers;
+};
+
+export type restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse = (restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseSuccess | restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseError)
+
+export const getRestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostUrl = (revisionId: string,) => {
+
+
+
+
+  return `/api/v1/admin/system/config-revisions/${revisionId}/restore`
+}
+
+export const restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost = async (revisionId: string,
+    configRevisionRestoreWrite: ConfigRevisionRestoreWrite, options?: RequestInit): Promise<restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse> => {
+
+  return customInstance<restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse>(getRestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostUrl(revisionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      configRevisionRestoreWrite,)
+  }
+);}
+
+
+
+
+export const getRestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost>>, TError,{revisionId: string;data: BodyType<ConfigRevisionRestoreWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost>>, TError,{revisionId: string;data: BodyType<ConfigRevisionRestoreWrite>}, TContext> => {
+
+const mutationKey = ['restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost>>, {revisionId: string;data: BodyType<ConfigRevisionRestoreWrite>}> = (props) => {
+          const {revisionId,data} = props ?? {};
+
+          return  restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost(revisionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostMutationResult = NonNullable<Awaited<ReturnType<typeof restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost>>>
+    export type RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostMutationBody = BodyType<ConfigRevisionRestoreWrite>
+    export type RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 恢复配置历史版本
+ */
+export const useRestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost>>, TError,{revisionId: string;data: BodyType<ConfigRevisionRestoreWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost>>,
+        TError,
+        {revisionId: string;data: BodyType<ConfigRevisionRestoreWrite>},
+        TContext
+      > => {
+      return useMutation(getRestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取备份列表
  */
 export type listBackupsApiV1AdminSystemBackupsGetResponse200 = {

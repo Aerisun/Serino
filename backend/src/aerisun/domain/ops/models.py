@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import JSON, Boolean, Date, DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from aerisun.core.base import Base, TimestampMixin, uuid_str
+from aerisun.core.base import Base, TimestampMixin, utcnow, uuid_str
 
 
 class AuditLog(Base, TimestampMixin):
@@ -19,6 +19,31 @@ class AuditLog(Base, TimestampMixin):
     target_type: Mapped[str | None] = mapped_column(String(80))
     target_id: Mapped[str | None] = mapped_column(String(36))
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class ConfigRevision(Base):
+    __tablename__ = "config_revisions"
+    __table_args__ = (
+        Index("ix_config_revisions_resource_key_created_at", "resource_key", "created_at"),
+        Index("ix_config_revisions_actor_id_created_at", "actor_id", "created_at"),
+        Index("ix_config_revisions_restored_from_revision_id", "restored_from_revision_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    actor_id: Mapped[str | None] = mapped_column(String(36))
+    resource_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    resource_label: Mapped[str] = mapped_column(String(160), nullable=False)
+    operation: Mapped[str] = mapped_column(String(40), nullable=False)
+    resource_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    changed_fields: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    before_snapshot: Mapped[Any] = mapped_column(JSON, nullable=True)
+    after_snapshot: Mapped[Any] = mapped_column(JSON, nullable=True)
+    before_preview: Mapped[Any] = mapped_column(JSON, nullable=True)
+    after_preview: Mapped[Any] = mapped_column(JSON, nullable=True)
+    sensitive_fields: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    restored_from_revision_id: Mapped[str | None] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class ModerationRecord(Base, TimestampMixin):
