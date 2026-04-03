@@ -14,8 +14,6 @@ export interface FriendUpdate {
   avatar_url?: string | null;
   /** Short description */
   description?: string | null;
-  /** Link status */
+  /** Website status */
   status?: string | null;
-  /** Display order */
-  order_index?: number | null;
 }

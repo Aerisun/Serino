@@ -4,6 +4,7 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowDraftPreviewReadInput } from './agentWorkflowDraftPreviewReadInput';
 
 export interface AgentWorkflowDraftChatWrite {
   /**
@@ -11,4 +12,5 @@ export interface AgentWorkflowDraftChatWrite {
      * @maxLength 4000
      */
   message: string;
+  sketch_workflow?: AgentWorkflowDraftPreviewReadInput | null;
 }

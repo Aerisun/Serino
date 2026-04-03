@@ -14,8 +14,6 @@ export interface FriendCreate {
   avatar_url?: string | null;
   /** Short description of the friend site */
   description?: string | null;
-  /** Link status: active or inactive */
+  /** Website status: active, lost, or archived */
   status?: string;
-  /** Display order (lower first) */
-  order_index?: number;
 }

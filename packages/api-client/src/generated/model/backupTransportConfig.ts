@@ -7,7 +7,6 @@
 
 export interface BackupTransportConfig {
   mode: string;
-  receiver_base_url?: string | null;
   remote_host?: string | null;
   remote_port?: number | null;
   remote_path?: string | null;

@@ -8,4 +8,5 @@
 export interface ApiKeyUpdate {
   key_name?: string | null;
   scopes?: string[] | null;
+  enabled?: boolean | null;
 }

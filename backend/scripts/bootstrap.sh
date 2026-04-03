@@ -31,15 +31,21 @@ import json, os
 from pathlib import Path
 from aerisun.core.settings import get_settings
 from aerisun.core.db_preflight import run_preflight
+from aerisun.core.seed_profile import normalize_seed_profile, resolve_seed_path
 
 settings = get_settings()
 settings.ensure_directories()
+seed_profile = normalize_seed_profile(os.environ.get(
+    "AERISUN_SEED_PROFILE",
+    "dev-seed" if settings.environment == "development" and settings.seed_dev_data else "seed",
+))
 
 backend_dir = Path(os.environ["BACKEND_DIR"])
 result = run_preflight(
     db_path=settings.db_path,
     alembic_dir=backend_dir / "alembic",
-    seed_path=backend_dir / "src" / "aerisun" / "core" / "seed.py",
+    seed_path=resolve_seed_path(backend_dir / "src" / "aerisun" / "core", seed_profile=seed_profile),
+    seed_profile=seed_profile,
 )
 print(json.dumps(result))
 PY
@@ -70,9 +76,10 @@ uv run alembic upgrade head
 FORCE_RESEED="${FORCE_RESEED:-false}" uv run python -u - <<'PY'
 import os
 from pathlib import Path
+from importlib import import_module
 
-from aerisun.core.db_preflight import compute_seed_fingerprint, store_seed_fingerprint
-from aerisun.core.seed import seed_reference_data
+from aerisun.core.db_preflight import compute_seed_fingerprint, store_seed_metadata
+from aerisun.core.seed_profile import normalize_seed_profile, resolve_seed_module_name, resolve_seed_path
 from aerisun.core.settings import get_settings
 
 
@@ -81,13 +88,24 @@ def log(message: str) -> None:
 
 settings = get_settings()
 force_reseed = os.environ.get("FORCE_RESEED", "").lower() in {"true", "1"}
+seed_profile = normalize_seed_profile(os.environ.get(
+    "AERISUN_SEED_PROFILE",
+    "dev-seed" if settings.environment == "development" and settings.seed_dev_data else "seed",
+))
+seed_module = import_module(resolve_seed_module_name(seed_profile))
+seed_path = resolve_seed_path(Path(os.environ["BACKEND_DIR"]) / "src" / "aerisun" / "core", seed_profile=seed_profile)
 
 if settings.seed_reference_data:
-    seed_reference_data(force=force_reseed)
-    seed_path = Path(os.environ["BACKEND_DIR"]) / "src" / "aerisun" / "core" / "seed.py"
+    seed_module.seed_reference_data(force=force_reseed)
     if seed_path.exists():
-        store_seed_fingerprint(settings.db_path, compute_seed_fingerprint(seed_path))
-    log(f"种子数据已准备完成（force={force_reseed}）")
+        store_seed_metadata(
+            settings.db_path,
+            fingerprint=compute_seed_fingerprint(seed_path, seed_profile=seed_profile),
+        )
+    log(
+        "种子数据已准备完成"
+        f"（profile={seed_profile}, module={seed_module.__name__}, force={force_reseed}）"
+    )
 else:
     log("已跳过种子数据初始化，因为未启用 AERISUN_SEED_REFERENCE_DATA。")
 PY

@@ -8,6 +8,5 @@
 export type ReadPoemPreviewApiV1SitePoemPreviewGetParams = {
 mode?: 'custom' | 'hitokoto' | null;
 types?: string[] | null;
-keywords?: string[] | null;
 strict?: boolean;
 };

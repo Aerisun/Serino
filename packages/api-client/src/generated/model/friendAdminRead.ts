@@ -16,10 +16,14 @@ export interface FriendAdminRead {
   avatar_url: string | null;
   /** Short description */
   description: string | null;
-  /** Link status */
+  /** Website status */
   status: string;
-  /** Display order */
-  order_index: number;
+  /** RSS status derived from the configured feed sources */
+  rss_status: string;
+  /** Last website availability check timestamp */
+  last_checked_at: string | null;
+  /** Last website availability error message */
+  last_error: string | null;
   /** Creation timestamp */
   created_at: string;
   /** Last update timestamp */

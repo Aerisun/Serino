@@ -17,6 +17,7 @@ export default defineConfig({
           "admin-moderation",
           "admin-assets",
           "admin-system",
+          "admin-network",
           "admin-integrations",
           "admin-automation",
           "admin-content-meta",

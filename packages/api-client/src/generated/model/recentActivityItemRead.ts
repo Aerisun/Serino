@@ -6,15 +6,15 @@
  */
 
 export interface RecentActivityItemRead {
-  /** Activity type: comment, guestbook, or reaction */
+  /** Activity type: comment, guestbook, reaction, or publish_* */
   kind: string;
   /** Name of the person who performed the action */
   actor_name: string;
   /** Actor avatar URL */
   actor_avatar: string;
-  /** Title of the target content */
+  /** Title of the target content, when applicable */
   target_title: string;
-  /** Brief excerpt of the activity content */
+  /** Brief excerpt or content preview */
   excerpt: string | null;
   /** Activity timestamp */
   created_at: string;

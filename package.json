@@ -1,18 +1,33 @@
 {
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.31.0",
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.38.0"
+  },
   "scripts": {
-    "generate:api": "pnpm --filter @serino/api-client run generate:api",
+    "generate:api": "uv run --directory backend python ../scripts/export-openapi.py && pnpm --filter @serino/api-client run generate:api",
     "dev:frontend": "pnpm -C frontend dev",
     "dev:admin": "pnpm -C admin dev",
     "build:frontend": "pnpm -C frontend build",
     "build:admin": "pnpm -C admin build",
+    "typecheck:frontend": "pnpm -C frontend typecheck",
+    "typecheck:admin": "pnpm -C admin typecheck",
+    "typecheck:packages": "pnpm -r --filter './packages/*' --if-present run typecheck",
+    "typecheck": "pnpm run typecheck:frontend && pnpm run typecheck:admin && pnpm run typecheck:packages",
+    "lint:boundaries": "bash ./scripts/lint-boundaries.sh",
     "lint:workspace": "pnpm -r --if-present run lint",
     "lint:backend": "uv run --directory backend ruff check src/ tests/ && uv run --directory backend ruff format --check src/ tests/",
-    "lint": "pnpm run lint:workspace && pnpm run lint:backend",
+    "lint": "pnpm run lint:workspace && pnpm run lint:backend && pnpm run lint:boundaries",
     "test:workspace": "pnpm --filter @serino/api-client test",
     "test:backend": "uv run --directory backend pytest",
     "test": "pnpm run test:backend && pnpm run test:workspace",
-    "check": "pnpm run generate:api && pnpm run lint && pnpm run test && pnpm run build:frontend && pnpm run build:admin"
+    "verify:generated:api-client": "bash ./scripts/verify-generated-api-client.sh",
+    "check": "pnpm run generate:api && pnpm run verify:generated:api-client && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build:frontend && pnpm run build:admin"
   }
 }

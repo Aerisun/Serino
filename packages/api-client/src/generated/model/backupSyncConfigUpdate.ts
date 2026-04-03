@@ -11,13 +11,13 @@ export interface BackupSyncConfigUpdate {
   interval_minutes?: number;
   transport_mode?: string;
   site_slug?: string;
-  receiver_base_url?: string | null;
   remote_host?: string | null;
   remote_port?: number | null;
   remote_path?: string | null;
   remote_username?: string | null;
   credential_ref?: string | null;
-  age_public_key_fingerprint?: string | null;
+  encrypt_runtime_data?: boolean;
   max_retries?: number;
   retry_backoff_seconds?: number;
+  max_retention_count?: number;
 }

@@ -12,10 +12,12 @@ export interface FriendFeedSourceAdminRead {
   friend_id: string;
   /** RSS/Atom feed URL */
   feed_url: string;
-  /** Last successful fetch timestamp */
+  /** Last RSS fetch/check timestamp */
   last_fetched_at: string | null;
   /** Whether actively crawled */
   is_enabled: boolean;
+  /** Current RSS status for this source */
+  rss_status: string;
   /** HTTP ETag for conditional requests */
   etag?: string | null;
   /** Last crawl error message */

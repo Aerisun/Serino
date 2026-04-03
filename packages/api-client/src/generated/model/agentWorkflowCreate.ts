@@ -4,6 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowCreateSummary } from './agentWorkflowCreateSummary';
+import type { AgentWorkflowGraphInput } from './agentWorkflowGraphInput';
+import type { AgentWorkflowRuntimePolicy } from './agentWorkflowRuntimePolicy';
+import type { AgentWorkflowTriggerBinding } from './agentWorkflowTriggerBinding';
 
 export interface AgentWorkflowCreate {
   /**
@@ -19,14 +23,18 @@ export interface AgentWorkflowCreate {
   name: string;
   /** @maxLength 500 */
   description?: string;
-  /**
-     * @minLength 1
-     * @maxLength 120
-     */
-  trigger_event: string;
-  target_type?: string | null;
   enabled?: boolean;
-  require_human_approval?: boolean;
-  /** @maxLength 4000 */
-  instructions?: string;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  schema_version?: number;
+  graph?: AgentWorkflowGraphInput | null;
+  trigger_bindings?: AgentWorkflowTriggerBinding[];
+  runtime_policy?: AgentWorkflowRuntimePolicy | null;
+  summary?: AgentWorkflowCreateSummary;
+  trigger_event?: string | null;
+  target_type?: string | null;
+  require_human_approval?: boolean | null;
+  instructions?: string | null;
 }

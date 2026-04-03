@@ -6,6 +6,6 @@
   "main": "src/index.tsx",
   "types": "src/index.tsx",
   "peerDependencies": {
-    "react": "^18.0.0"
+    "react": ">=18 <20"
   }
 }

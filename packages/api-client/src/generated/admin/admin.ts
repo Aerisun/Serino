@@ -36,13 +36,17 @@ import type {
   AgentRunApprovalRead,
   AgentRunRead,
   AgentRunStepRead,
+  AgentWorkflowCatalogRead,
   AgentWorkflowCreate,
   AgentWorkflowDraftChatWrite,
   AgentWorkflowDraftCreateRead,
   AgentWorkflowDraftCreateWrite,
   AgentWorkflowDraftRead,
   AgentWorkflowRead,
+  AgentWorkflowRunCreateRead,
+  AgentWorkflowRunCreateWrite,
   AgentWorkflowUpdate,
+  AgentWorkflowValidationRead,
   ApiKeyAdminRead,
   ApiKeyCreate,
   ApiKeyCreateResponse,
@@ -51,10 +55,16 @@ import type {
   AssetAdminRead,
   AssetAdminUpdate,
   BackupCommitRead,
+  BackupCredentialAcknowledgeWrite,
+  BackupCredentialEnsureRead,
+  BackupCredentialEnsureWrite,
+  BackupCredentialExportRead,
+  BackupCredentialExportWrite,
   BackupQueueItemRead,
   BackupRunRead,
   BackupSnapshotRead,
   BackupSyncConfig,
+  BackupSyncConfigTestRead,
   BackupSyncConfigUpdate,
   BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostParams,
   BodyImportContentApiV1AdminContentImportPost,
@@ -72,10 +82,14 @@ import type {
   ContentCategoryRead,
   ContentCategoryUpdate,
   ContentCreate,
+  ContentSubscriberAdminRead,
+  ContentSubscriberAdminUpdate,
   ContentSubscriptionConfigAdminRead,
   ContentSubscriptionConfigAdminUpdate,
   ContentSubscriptionTestResult,
   ContentUpdate,
+  DeriveAiSchemaRequest,
+  DeriveAiSchemaResponse,
   EnhancedDashboardStats,
   ExportContentApiV1AdminContentExportGetParams,
   FeedCrawlAllResultRead,
@@ -88,6 +102,7 @@ import type {
   FriendFeedSourceUpdate,
   FriendUpdate,
   GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,
+  GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,
   GuestbookAdminRead,
   HTTPValidationError,
   ImportContentApiV1AdminContentImportPostParams,
@@ -123,6 +138,9 @@ import type {
   NavItemCreate,
   NavItemUpdate,
   NavReorderItem,
+  OutboundProxyConfigRead,
+  OutboundProxyConfigUpdate,
+  OutboundProxyHealthRead,
   PageCopyAdminRead,
   PageCopyCreate,
   PageCopyUpdate,
@@ -151,6 +169,8 @@ import type {
   PasswordChangeRequest,
   PoemAdminRead,
   PoemCreate,
+  PoemGenerationRequest,
+  PoemGenerationResponse,
   PoemUpdate,
   PostWebhookTestApiV1AdminAutomationWebhooksTestPost200,
   PostWebhookTestApiV1AdminAutomationWebhooksTestPostParams,
@@ -172,10 +192,14 @@ import type {
   SocialLinkAdminRead,
   SocialLinkCreate,
   SocialLinkUpdate,
+  SurfaceDraftApplyRead,
+  SurfaceDraftChatWrite,
+  SurfaceDraftRead,
   SystemInfo,
   TagInfo,
   TelegramWebhookConnectRead,
   TelegramWebhookConnectWrite,
+  TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams,
   UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams,
   VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams,
   WebhookDeadLetterRead,
@@ -3883,6 +3907,95 @@ export const useBulkStatusExcerpts = <TError = ErrorType<HTTPValidationError>,
         TContext
       > => {
       return useMutation(getBulkStatusExcerptsMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 根据日记草稿生成诗句
+ */
+export type postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse200 = {
+  data: PoemGenerationResponse
+  status: 200
+}
+
+export type postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponseSuccess = (postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse200) & {
+  headers: Headers;
+};
+export type postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponseError = (postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse422) & {
+  headers: Headers;
+};
+
+export type postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse = (postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponseSuccess | postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponseError)
+
+export const getPostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/diary/generate-poem`
+}
+
+export const postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost = async (poemGenerationRequest: PoemGenerationRequest, options?: RequestInit): Promise<postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse> => {
+
+  return customInstance<postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse>(getPostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      poemGenerationRequest,)
+  }
+);}
+
+
+
+
+export const getPostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost>>, TError,{data: BodyType<PoemGenerationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost>>, TError,{data: BodyType<PoemGenerationRequest>}, TContext> => {
+
+const mutationKey = ['postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost>>, {data: BodyType<PoemGenerationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostMutationResult = NonNullable<Awaited<ReturnType<typeof postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost>>>
+    export type PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostMutationBody = BodyType<PoemGenerationRequest>
+    export type PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 根据日记草稿生成诗句
+ */
+export const usePostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost>>, TError,{data: BodyType<PoemGenerationRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPost>>,
+        TError,
+        {data: BodyType<PoemGenerationRequest>},
+        TContext
+      > => {
+      return useMutation(getPostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取站点资料
@@ -8022,17 +8135,25 @@ export type testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostRe
 
 export type testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse = (testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponseSuccess | testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponseError)
 
-export const getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostUrl = () => {
+export const getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostUrl = (params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/v1/admin/subscriptions/config/test`
+  return stringifiedParams.length > 0 ? `/api/v1/admin/subscriptions/config/test?${stringifiedParams}` : `/api/v1/admin/subscriptions/config/test`
 }
 
-export const testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost = async (contentSubscriptionConfigAdminUpdate: ContentSubscriptionConfigAdminUpdate, options?: RequestInit): Promise<testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse> => {
+export const testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost = async (contentSubscriptionConfigAdminUpdate: ContentSubscriptionConfigAdminUpdate,
+    params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams, options?: RequestInit): Promise<testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse> => {
 
-  return customInstance<testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse>(getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostUrl(),
+  return customInstance<testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse>(getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostUrl(params),
   {
     ...options,
     method: 'POST',
@@ -8046,8 +8167,8 @@ export const testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost 
 
 
 export const getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, TError,{data: BodyType<ContentSubscriptionConfigAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, TError,{data: BodyType<ContentSubscriptionConfigAdminUpdate>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, TError,{data: BodyType<ContentSubscriptionConfigAdminUpdate>;params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, TError,{data: BodyType<ContentSubscriptionConfigAdminUpdate>;params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams}, TContext> => {
 
 const mutationKey = ['testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -8059,10 +8180,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, {data: BodyType<ContentSubscriptionConfigAdminUpdate>}> = (props) => {
-          const {data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, {data: BodyType<ContentSubscriptionConfigAdminUpdate>;params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams}> = (props) => {
+          const {data,params} = props ?? {};
 
-          return  testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost(data,requestOptions)
+          return  testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost(data,params,requestOptions)
         }
 
 
@@ -8080,11 +8201,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary 测试内容订阅 SMTP 发信
  */
 export const useTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, TError,{data: BodyType<ContentSubscriptionConfigAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>, TError,{data: BodyType<ContentSubscriptionConfigAdminUpdate>;params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPost>>,
         TError,
-        {data: BodyType<ContentSubscriptionConfigAdminUpdate>},
+        {data: BodyType<ContentSubscriptionConfigAdminUpdate>;params?: TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams},
         TContext
       > => {
       return useMutation(getTestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostMutationOptions(options), queryClient);
@@ -8346,6 +8467,472 @@ export function useListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribe
 
 
 /**
+ * @summary 启用或停用订阅者
+ */
+export type updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse200 = {
+  data: ContentSubscriberAdminRead
+  status: 200
+}
+
+export type updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseSuccess = (updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse200) & {
+  headers: Headers;
+};
+export type updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseError = (updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse = (updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseSuccess | updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseError)
+
+export const getUpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchUrl = (email: string,) => {
+
+
+
+
+  return `/api/v1/admin/subscriptions/subscribers/${email}`
+}
+
+export const updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch = async (email: string,
+    contentSubscriberAdminUpdate: ContentSubscriberAdminUpdate, options?: RequestInit): Promise<updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse> => {
+
+  return customInstance<updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse>(getUpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchUrl(email),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contentSubscriberAdminUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch>>, TError,{email: string;data: BodyType<ContentSubscriberAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch>>, TError,{email: string;data: BodyType<ContentSubscriberAdminUpdate>}, TContext> => {
+
+const mutationKey = ['updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch>>, {email: string;data: BodyType<ContentSubscriberAdminUpdate>}> = (props) => {
+          const {email,data} = props ?? {};
+
+          return  updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch(email,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch>>>
+    export type UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchMutationBody = BodyType<ContentSubscriberAdminUpdate>
+    export type UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 启用或停用订阅者
+ */
+export const useUpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch>>, TError,{email: string;data: BodyType<ContentSubscriberAdminUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch>>,
+        TError,
+        {email: string;data: BodyType<ContentSubscriberAdminUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除订阅者
+ */
+export type deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponseSuccess = (deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponseError = (deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse = (deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponseSuccess | deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponseError)
+
+export const getDeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteUrl = (email: string,) => {
+
+
+
+
+  return `/api/v1/admin/subscriptions/subscribers/${email}`
+}
+
+export const deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete = async (email: string, options?: RequestInit): Promise<deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse> => {
+
+  return customInstance<deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteResponse>(getDeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteUrl(email),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete>>, TError,{email: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete>>, TError,{email: string}, TContext> => {
+
+const mutationKey = ['deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete>>, {email: string}> = (props) => {
+          const {email} = props ?? {};
+
+          return  deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete(email,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete>>>
+
+    export type DeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除订阅者
+ */
+export const useDeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete>>, TError,{email: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelete>>,
+        TError,
+        {email: string},
+        TContext
+      > => {
+      return useMutation(getDeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取出站代理配置
+ */
+export type getProxyConfigApiV1AdminProxyConfigGetResponse200 = {
+  data: OutboundProxyConfigRead
+  status: 200
+}
+
+export type getProxyConfigApiV1AdminProxyConfigGetResponseSuccess = (getProxyConfigApiV1AdminProxyConfigGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getProxyConfigApiV1AdminProxyConfigGetResponse = (getProxyConfigApiV1AdminProxyConfigGetResponseSuccess)
+
+export const getGetProxyConfigApiV1AdminProxyConfigGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/proxy-config`
+}
+
+export const getProxyConfigApiV1AdminProxyConfigGet = async ( options?: RequestInit): Promise<getProxyConfigApiV1AdminProxyConfigGetResponse> => {
+
+  return customInstance<getProxyConfigApiV1AdminProxyConfigGetResponse>(getGetProxyConfigApiV1AdminProxyConfigGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProxyConfigApiV1AdminProxyConfigGetQueryKey = () => {
+    return [
+    `/api/v1/admin/proxy-config`
+    ] as const;
+    }
+
+
+export const getGetProxyConfigApiV1AdminProxyConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProxyConfigApiV1AdminProxyConfigGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>> = ({ signal }) => getProxyConfigApiV1AdminProxyConfigGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetProxyConfigApiV1AdminProxyConfigGetQueryResult = NonNullable<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>>
+export type GetProxyConfigApiV1AdminProxyConfigGetQueryError = ErrorType<unknown>
+
+
+export function useGetProxyConfigApiV1AdminProxyConfigGet<TData = Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProxyConfigApiV1AdminProxyConfigGet<TData = Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetProxyConfigApiV1AdminProxyConfigGet<TData = Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取出站代理配置
+ */
+
+export function useGetProxyConfigApiV1AdminProxyConfigGet<TData = Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProxyConfigApiV1AdminProxyConfigGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetProxyConfigApiV1AdminProxyConfigGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 更新出站代理配置
+ */
+export type putProxyConfigApiV1AdminProxyConfigPutResponse200 = {
+  data: OutboundProxyConfigRead
+  status: 200
+}
+
+export type putProxyConfigApiV1AdminProxyConfigPutResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type putProxyConfigApiV1AdminProxyConfigPutResponseSuccess = (putProxyConfigApiV1AdminProxyConfigPutResponse200) & {
+  headers: Headers;
+};
+export type putProxyConfigApiV1AdminProxyConfigPutResponseError = (putProxyConfigApiV1AdminProxyConfigPutResponse422) & {
+  headers: Headers;
+};
+
+export type putProxyConfigApiV1AdminProxyConfigPutResponse = (putProxyConfigApiV1AdminProxyConfigPutResponseSuccess | putProxyConfigApiV1AdminProxyConfigPutResponseError)
+
+export const getPutProxyConfigApiV1AdminProxyConfigPutUrl = () => {
+
+
+
+
+  return `/api/v1/admin/proxy-config`
+}
+
+export const putProxyConfigApiV1AdminProxyConfigPut = async (outboundProxyConfigUpdate: OutboundProxyConfigUpdate, options?: RequestInit): Promise<putProxyConfigApiV1AdminProxyConfigPutResponse> => {
+
+  return customInstance<putProxyConfigApiV1AdminProxyConfigPutResponse>(getPutProxyConfigApiV1AdminProxyConfigPutUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      outboundProxyConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getPutProxyConfigApiV1AdminProxyConfigPutMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProxyConfigApiV1AdminProxyConfigPut>>, TError,{data: BodyType<OutboundProxyConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof putProxyConfigApiV1AdminProxyConfigPut>>, TError,{data: BodyType<OutboundProxyConfigUpdate>}, TContext> => {
+
+const mutationKey = ['putProxyConfigApiV1AdminProxyConfigPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putProxyConfigApiV1AdminProxyConfigPut>>, {data: BodyType<OutboundProxyConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putProxyConfigApiV1AdminProxyConfigPut(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutProxyConfigApiV1AdminProxyConfigPutMutationResult = NonNullable<Awaited<ReturnType<typeof putProxyConfigApiV1AdminProxyConfigPut>>>
+    export type PutProxyConfigApiV1AdminProxyConfigPutMutationBody = BodyType<OutboundProxyConfigUpdate>
+    export type PutProxyConfigApiV1AdminProxyConfigPutMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新出站代理配置
+ */
+export const usePutProxyConfigApiV1AdminProxyConfigPut = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putProxyConfigApiV1AdminProxyConfigPut>>, TError,{data: BodyType<OutboundProxyConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putProxyConfigApiV1AdminProxyConfigPut>>,
+        TError,
+        {data: BodyType<OutboundProxyConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getPutProxyConfigApiV1AdminProxyConfigPutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 测试出站代理端口
+ */
+export type postProxyConfigTestApiV1AdminProxyConfigTestPostResponse200 = {
+  data: OutboundProxyHealthRead
+  status: 200
+}
+
+export type postProxyConfigTestApiV1AdminProxyConfigTestPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postProxyConfigTestApiV1AdminProxyConfigTestPostResponseSuccess = (postProxyConfigTestApiV1AdminProxyConfigTestPostResponse200) & {
+  headers: Headers;
+};
+export type postProxyConfigTestApiV1AdminProxyConfigTestPostResponseError = (postProxyConfigTestApiV1AdminProxyConfigTestPostResponse422) & {
+  headers: Headers;
+};
+
+export type postProxyConfigTestApiV1AdminProxyConfigTestPostResponse = (postProxyConfigTestApiV1AdminProxyConfigTestPostResponseSuccess | postProxyConfigTestApiV1AdminProxyConfigTestPostResponseError)
+
+export const getPostProxyConfigTestApiV1AdminProxyConfigTestPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/proxy-config/test`
+}
+
+export const postProxyConfigTestApiV1AdminProxyConfigTestPost = async (outboundProxyConfigUpdate: OutboundProxyConfigUpdate, options?: RequestInit): Promise<postProxyConfigTestApiV1AdminProxyConfigTestPostResponse> => {
+
+  return customInstance<postProxyConfigTestApiV1AdminProxyConfigTestPostResponse>(getPostProxyConfigTestApiV1AdminProxyConfigTestPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      outboundProxyConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getPostProxyConfigTestApiV1AdminProxyConfigTestPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postProxyConfigTestApiV1AdminProxyConfigTestPost>>, TError,{data: BodyType<OutboundProxyConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postProxyConfigTestApiV1AdminProxyConfigTestPost>>, TError,{data: BodyType<OutboundProxyConfigUpdate>}, TContext> => {
+
+const mutationKey = ['postProxyConfigTestApiV1AdminProxyConfigTestPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postProxyConfigTestApiV1AdminProxyConfigTestPost>>, {data: BodyType<OutboundProxyConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postProxyConfigTestApiV1AdminProxyConfigTestPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostProxyConfigTestApiV1AdminProxyConfigTestPostMutationResult = NonNullable<Awaited<ReturnType<typeof postProxyConfigTestApiV1AdminProxyConfigTestPost>>>
+    export type PostProxyConfigTestApiV1AdminProxyConfigTestPostMutationBody = BodyType<OutboundProxyConfigUpdate>
+    export type PostProxyConfigTestApiV1AdminProxyConfigTestPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 测试出站代理端口
+ */
+export const usePostProxyConfigTestApiV1AdminProxyConfigTestPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postProxyConfigTestApiV1AdminProxyConfigTestPost>>, TError,{data: BodyType<OutboundProxyConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postProxyConfigTestApiV1AdminProxyConfigTestPost>>,
+        TError,
+        {data: BodyType<OutboundProxyConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getPostProxyConfigTestApiV1AdminProxyConfigTestPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取admin-resume列表
  */
 export type listBasicsResponse200 = {
@@ -11090,6 +11677,94 @@ export const useBulkStatusFriends = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkStatusFriendsMutationOptions(options), queryClient);
     }
     /**
+ * @summary 立即检查友链网站与 RSS
+ */
+export type checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponseSuccess = (checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse200) & {
+  headers: Headers;
+};
+export type checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponseError = (checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse422) & {
+  headers: Headers;
+};
+
+export type checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse = (checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponseSuccess | checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponseError)
+
+export const getCheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostUrl = (friendId: string,) => {
+
+
+
+
+  return `/api/v1/admin/social/friends/${friendId}/check`
+}
+
+export const checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost = async (friendId: string, options?: RequestInit): Promise<checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse> => {
+
+  return customInstance<checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse>(getCheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostUrl(friendId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost>>, TError,{friendId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost>>, TError,{friendId: string}, TContext> => {
+
+const mutationKey = ['checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost>>, {friendId: string}> = (props) => {
+          const {friendId} = props ?? {};
+
+          return  checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost(friendId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostMutationResult = NonNullable<Awaited<ReturnType<typeof checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost>>>
+
+    export type CheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 立即检查友链网站与 RSS
+ */
+export const useCheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost>>, TError,{friendId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkFriendHealthApiV1AdminSocialFriendsFriendIdCheckPost>>,
+        TError,
+        {friendId: string},
+        TContext
+      > => {
+      return useMutation(getCheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 手动触发全量抓取
  */
 export type triggerFeedCrawlApiV1AdminSocialFeedsCrawlPostResponse200 = {
@@ -13616,6 +14291,362 @@ export const useUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut = <TEr
       return useMutation(getUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutMutationOptions(options), queryClient);
     }
     /**
+ * @summary 自动确认或生成本机备份密钥
+ */
+export type ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse200 = {
+  data: BackupCredentialEnsureRead
+  status: 200
+}
+
+export type ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponseSuccess = (ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse200) & {
+  headers: Headers;
+};
+export type ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponseError = (ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse422) & {
+  headers: Headers;
+};
+
+export type ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse = (ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponseSuccess | ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponseError)
+
+export const getEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/credentials/ensure`
+}
+
+export const ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost = async (backupCredentialEnsureWrite: BackupCredentialEnsureWrite, options?: RequestInit): Promise<ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse> => {
+
+  return customInstance<ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse>(getEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupCredentialEnsureWrite,)
+  }
+);}
+
+
+
+
+export const getEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost>>, TError,{data: BodyType<BackupCredentialEnsureWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost>>, TError,{data: BodyType<BackupCredentialEnsureWrite>}, TContext> => {
+
+const mutationKey = ['ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost>>, {data: BodyType<BackupCredentialEnsureWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostMutationResult = NonNullable<Awaited<ReturnType<typeof ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost>>>
+    export type EnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostMutationBody = BodyType<BackupCredentialEnsureWrite>
+    export type EnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 自动确认或生成本机备份密钥
+ */
+export const useEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost>>, TError,{data: BodyType<BackupCredentialEnsureWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePost>>,
+        TError,
+        {data: BodyType<BackupCredentialEnsureWrite>},
+        TContext
+      > => {
+      return useMutation(getEnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 生成、导出或轮换恢复私钥
+ */
+export type exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse200 = {
+  data: BackupCredentialExportRead
+  status: 200
+}
+
+export type exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponseSuccess = (exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse200) & {
+  headers: Headers;
+};
+export type exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponseError = (exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse422) & {
+  headers: Headers;
+};
+
+export type exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse = (exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponseSuccess | exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponseError)
+
+export const getExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/recovery-key/export`
+}
+
+export const exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost = async (backupCredentialExportWrite: BackupCredentialExportWrite, options?: RequestInit): Promise<exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse> => {
+
+  return customInstance<exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse>(getExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupCredentialExportWrite,)
+  }
+);}
+
+
+
+
+export const getExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>, TError,{data: BodyType<BackupCredentialExportWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>, TError,{data: BodyType<BackupCredentialExportWrite>}, TContext> => {
+
+const mutationKey = ['exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>, {data: BodyType<BackupCredentialExportWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationResult = NonNullable<Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>>
+    export type ExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationBody = BodyType<BackupCredentialExportWrite>
+    export type ExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 生成、导出或轮换恢复私钥
+ */
+export const useExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>, TError,{data: BodyType<BackupCredentialExportWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost>>,
+        TError,
+        {data: BodyType<BackupCredentialExportWrite>},
+        TContext
+      > => {
+      return useMutation(getExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 确认已复制或下载恢复私钥
+ */
+export type acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse200 = {
+  data: BackupCredentialEnsureRead
+  status: 200
+}
+
+export type acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponseSuccess = (acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse200) & {
+  headers: Headers;
+};
+export type acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponseError = (acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse422) & {
+  headers: Headers;
+};
+
+export type acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse = (acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponseSuccess | acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponseError)
+
+export const getAcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/recovery-key/acknowledge`
+}
+
+export const acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost = async (backupCredentialAcknowledgeWrite: BackupCredentialAcknowledgeWrite, options?: RequestInit): Promise<acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse> => {
+
+  return customInstance<acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse>(getAcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupCredentialAcknowledgeWrite,)
+  }
+);}
+
+
+
+
+export const getAcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>, TError,{data: BodyType<BackupCredentialAcknowledgeWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>, TError,{data: BodyType<BackupCredentialAcknowledgeWrite>}, TContext> => {
+
+const mutationKey = ['acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>, {data: BodyType<BackupCredentialAcknowledgeWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostMutationResult = NonNullable<Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>>
+    export type AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostMutationBody = BodyType<BackupCredentialAcknowledgeWrite>
+    export type AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 确认已复制或下载恢复私钥
+ */
+export const useAcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>, TError,{data: BodyType<BackupCredentialAcknowledgeWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePost>>,
+        TError,
+        {data: BodyType<BackupCredentialAcknowledgeWrite>},
+        TContext
+      > => {
+      return useMutation(getAcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 测试备份配置
+ */
+export type testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse200 = {
+  data: BackupSyncConfigTestRead
+  status: 200
+}
+
+export type testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseSuccess = (testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse200) & {
+  headers: Headers;
+};
+export type testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseError = (testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse422) & {
+  headers: Headers;
+};
+
+export type testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse = (testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseSuccess | testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseError)
+
+export const getTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/config/test`
+}
+
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost = async (backupSyncConfigUpdate: BackupSyncConfigUpdate, options?: RequestInit): Promise<testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse> => {
+
+  return customInstance<testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse>(getTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupSyncConfigUpdate,)
+  }
+);}
+
+
+
+
+export const getTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext> => {
+
+const mutationKey = ['testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost>>, {data: BodyType<BackupSyncConfigUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostMutationResult = NonNullable<Awaited<ReturnType<typeof testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost>>>
+    export type TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostMutationBody = BodyType<BackupSyncConfigUpdate>
+    export type TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 测试备份配置
+ */
+export const useTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost>>, TError,{data: BodyType<BackupSyncConfigUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost>>,
+        TError,
+        {data: BodyType<BackupSyncConfigUpdate>},
+        TContext
+      > => {
+      return useMutation(getTestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取备份同步队列
  */
 export type listBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse200 = {
@@ -16014,31 +17045,45 @@ export const usePostWorkflowApiV1AdminAutomationWorkflowsPost = <TError = ErrorT
       return useMutation(getPostWorkflowApiV1AdminAutomationWorkflowsPostMutationOptions(options), queryClient);
     }
     /**
- * @summary 获取 Agent 工作流草稿
+ * @summary 获取工作流 v2 目录
  */
-export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse200 = {
-  data: AgentWorkflowDraftRead | null
+export type getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse200 = {
+  data: AgentWorkflowCatalogRead
   status: 200
 }
 
-export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseSuccess = (getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = (getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseSuccess)
-
-export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetUrl = () => {
-
-
-
-
-  return `/api/v1/admin/automation/workflow-draft`
+export type getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
 }
 
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet = async ( options?: RequestInit): Promise<getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse> => {
+export type getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseSuccess = (getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse200) & {
+  headers: Headers;
+};
+export type getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseError = (getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse422) & {
+  headers: Headers;
+};
 
-  return customInstance<getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse>(getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetUrl(),
+export type getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse = (getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseSuccess | getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseError)
+
+export const getGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetUrl = (params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/automation/workflow-catalog?${stringifiedParams}` : `/api/v1/admin/automation/workflow-catalog`
+}
+
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet = async (params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams, options?: RequestInit): Promise<getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse> => {
+
+  return customInstance<getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse>(getGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -16051,69 +17096,69 @@ export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet = async ( opti
 
 
 
-export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryKey = () => {
+export const getGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryKey = (params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,) => {
     return [
-    `/api/v1/admin/automation/workflow-draft`
+    `/api/v1/admin/automation/workflow-catalog`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError = ErrorType<HTTPValidationError>>(params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>> = ({ signal }) => getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>> = ({ signal }) => getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>>
-export type GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryError = ErrorType<unknown>
+export type GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>>
+export type GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryError = ErrorType<HTTPValidationError>
 
 
-export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>> & Pick<
+export function useGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet<TData = Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>,
+          Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>,
           TError,
-          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>
+          Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>> & Pick<
+export function useGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet<TData = Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>,
+          Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>,
           TError,
-          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>
+          Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet<TData = Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary 获取 Agent 工作流草稿
+ * @summary 获取工作流 v2 目录
  */
 
-export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet<TData = Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryOptions(options)
+  const queryOptions = getGetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -16124,31 +17169,155 @@ export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = 
 
 
 /**
- * @summary 清空 Agent 工作流草稿
+ * @summary 获取当前工作流的 Surface 草稿
  */
-export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse204 = {
+export type getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse200 = {
+  data: SurfaceDraftRead | null
+  status: 200
+}
+
+export type getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseSuccess = (getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse200) & {
+  headers: Headers;
+};
+export type getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseError = (getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse422) & {
+  headers: Headers;
+};
+
+export type getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse = (getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseSuccess | getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseError)
+
+export const getGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/surface-draft`
+}
+
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet = async (workflowKey: string, options?: RequestInit): Promise<getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse> => {
+
+  return customInstance<getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse>(getGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetUrl(workflowKey),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetQueryKey = (workflowKey: string,) => {
+    return [
+    `/api/v1/admin/automation/workflows/${workflowKey}/surface-draft`
+    ] as const;
+    }
+
+
+export const getGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError = ErrorType<HTTPValidationError>>(workflowKey: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetQueryKey(workflowKey);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>> = ({ signal }) => getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet(workflowKey, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(workflowKey), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>>
+export type GetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet<TData = Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError = ErrorType<HTTPValidationError>>(
+ workflowKey: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet<TData = Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError = ErrorType<HTTPValidationError>>(
+ workflowKey: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet<TData = Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError = ErrorType<HTTPValidationError>>(
+ workflowKey: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取当前工作流的 Surface 草稿
+ */
+
+export function useGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet<TData = Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError = ErrorType<HTTPValidationError>>(
+ workflowKey: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetQueryOptions(workflowKey,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 清空当前工作流的 Surface 草稿
+ */
+export type deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse204 = {
   data: void
   status: 204
 }
 
-export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponseSuccess = (deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse204) & {
-  headers: Headers;
-};
-;
-
-export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse = (deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponseSuccess)
-
-export const getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteUrl = () => {
-
-
-
-
-  return `/api/v1/admin/automation/workflow-draft`
+export type deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
 }
 
-export const deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = async ( options?: RequestInit): Promise<deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse> => {
+export type deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponseSuccess = (deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponseError = (deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse422) & {
+  headers: Headers;
+};
 
-  return customInstance<deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse>(getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteUrl(),
+export type deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse = (deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponseSuccess | deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponseError)
+
+export const getDeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/surface-draft`
+}
+
+export const deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete = async (workflowKey: string, options?: RequestInit): Promise<deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse> => {
+
+  return customInstance<deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteResponse>(getDeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteUrl(workflowKey),
   {
     ...options,
     method: 'DELETE'
@@ -16160,11 +17329,11 @@ export const deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = async 
 
 
 
-export const getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext> => {
+export const getDeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete>>, TError,{workflowKey: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete>>, TError,{workflowKey: string}, TContext> => {
 
-const mutationKey = ['deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete'];
+const mutationKey = ['deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -16174,10 +17343,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete>>, {workflowKey: string}> = (props) => {
+          const {workflowKey} = props ?? {};
 
-
-          return  deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete(requestOptions)
+          return  deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete(workflowKey,requestOptions)
         }
 
 
@@ -16187,73 +17356,74 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>>
+    export type DeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete>>>
 
-    export type DeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationError = ErrorType<unknown>
+    export type DeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 清空 Agent 工作流草稿
+ * @summary 清空当前工作流的 Surface 草稿
  */
-export const useDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useDeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete>>, TError,{workflowKey: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>,
+        Awaited<ReturnType<typeof deleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDelete>>,
         TError,
-        void,
+        {workflowKey: string},
         TContext
       > => {
-      return useMutation(getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationOptions(options), queryClient);
+      return useMutation(getDeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteMutationOptions(options), queryClient);
     }
     /**
- * @summary 继续 Agent 工作流对话
+ * @summary 继续当前工作流的 Surface 对话
  */
-export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse200 = {
-  data: AgentWorkflowDraftRead
+export type postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse200 = {
+  data: SurfaceDraftRead
   status: 200
 }
 
-export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse422 = {
+export type postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSuccess = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse200) & {
+export type postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseSuccess = (postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse200) & {
   headers: Headers;
 };
-export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseError = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse422) & {
+export type postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseError = (postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse422) & {
   headers: Headers;
 };
 
-export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSuccess | postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseError)
+export type postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse = (postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseSuccess | postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseError)
 
-export const getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostUrl = () => {
-
-
+export const getPostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostUrl = (workflowKey: string,) => {
 
 
-  return `/api/v1/admin/automation/workflow-draft/messages`
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/surface-draft/messages`
 }
 
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost = async (agentWorkflowDraftChatWrite: AgentWorkflowDraftChatWrite, options?: RequestInit): Promise<postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse> => {
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost = async (workflowKey: string,
+    surfaceDraftChatWrite: SurfaceDraftChatWrite, options?: RequestInit): Promise<postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse> => {
 
-  return customInstance<postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse>(getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostUrl(),
+  return customInstance<postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse>(getPostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostUrl(workflowKey),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      agentWorkflowDraftChatWrite,)
+      surfaceDraftChatWrite,)
   }
 );}
 
 
 
 
-export const getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext> => {
+export const getPostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost>>, TError,{workflowKey: string;data: BodyType<SurfaceDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost>>, TError,{workflowKey: string;data: BodyType<SurfaceDraftChatWrite>}, TContext> => {
 
-const mutationKey = ['postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost'];
+const mutationKey = ['postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -16263,10 +17433,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, {data: BodyType<AgentWorkflowDraftChatWrite>}> = (props) => {
-          const {data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost>>, {workflowKey: string;data: BodyType<SurfaceDraftChatWrite>}> = (props) => {
+          const {workflowKey,data} = props ?? {};
 
-          return  postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost(data,requestOptions)
+          return  postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost(workflowKey,data,requestOptions)
         }
 
 
@@ -16276,73 +17446,72 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>>
-    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationBody = BodyType<AgentWorkflowDraftChatWrite>
-    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationError = ErrorType<HTTPValidationError>
+    export type PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost>>>
+    export type PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostMutationBody = BodyType<SurfaceDraftChatWrite>
+    export type PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 继续 Agent 工作流对话
+ * @summary 继续当前工作流的 Surface 对话
  */
-export const usePostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const usePostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost>>, TError,{workflowKey: string;data: BodyType<SurfaceDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>,
+        Awaited<ReturnType<typeof postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPost>>,
         TError,
-        {data: BodyType<AgentWorkflowDraftChatWrite>},
+        {workflowKey: string;data: BodyType<SurfaceDraftChatWrite>},
         TContext
       > => {
-      return useMutation(getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationOptions(options), queryClient);
+      return useMutation(getPostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostMutationOptions(options), queryClient);
     }
     /**
- * @summary 流式继续 Agent 工作流对话
+ * @summary 应用当前工作流的 Surface 草稿
  */
-export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse200 = {
-  data: unknown
+export type postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse200 = {
+  data: SurfaceDraftApplyRead
   status: 200
 }
 
-export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse422 = {
+export type postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseSuccess = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse200) & {
+export type postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseSuccess = (postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse200) & {
   headers: Headers;
 };
-export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseError = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse422) & {
+export type postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseError = (postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse422) & {
   headers: Headers;
 };
 
-export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseSuccess | postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseError)
+export type postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse = (postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseSuccess | postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseError)
 
-export const getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostUrl = () => {
-
-
+export const getPostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostUrl = (workflowKey: string,) => {
 
 
-  return `/api/v1/admin/automation/workflow-draft/messages/stream`
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/surface-draft/apply`
 }
 
-export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost = async (agentWorkflowDraftChatWrite: AgentWorkflowDraftChatWrite, options?: RequestInit): Promise<postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse> => {
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost = async (workflowKey: string, options?: RequestInit): Promise<postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse> => {
 
-  return customInstance<postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse>(getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostUrl(),
+  return customInstance<postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse>(getPostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostUrl(workflowKey),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      agentWorkflowDraftChatWrite,)
+    method: 'POST'
+
+
   }
 );}
 
 
 
 
-export const getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext> => {
+export const getPostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost>>, TError,{workflowKey: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost>>, TError,{workflowKey: string}, TContext> => {
 
-const mutationKey = ['postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost'];
+const mutationKey = ['postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -16352,10 +17521,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, {data: BodyType<AgentWorkflowDraftChatWrite>}> = (props) => {
-          const {data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost>>, {workflowKey: string}> = (props) => {
+          const {workflowKey} = props ?? {};
 
-          return  postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost(data,requestOptions)
+          return  postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost(workflowKey,requestOptions)
         }
 
 
@@ -16365,73 +17534,73 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>>
-    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationBody = BodyType<AgentWorkflowDraftChatWrite>
-    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationError = ErrorType<HTTPValidationError>
+    export type PostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost>>>
+
+    export type PostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 流式继续 Agent 工作流对话
+ * @summary 应用当前工作流的 Surface 草稿
  */
-export const usePostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const usePostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost>>, TError,{workflowKey: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>,
+        Awaited<ReturnType<typeof postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPost>>,
         TError,
-        {data: BodyType<AgentWorkflowDraftChatWrite>},
+        {workflowKey: string},
         TContext
       > => {
-      return useMutation(getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationOptions(options), queryClient);
+      return useMutation(getPostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostMutationOptions(options), queryClient);
     }
     /**
- * @summary 从草稿创建 Agent 工作流
+ * @summary 校验工作流定义
  */
-export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse200 = {
-  data: AgentWorkflowDraftCreateRead
+export type postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse200 = {
+  data: AgentWorkflowValidationRead
   status: 200
 }
 
-export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse422 = {
+export type postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseSuccess = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse200) & {
+export type postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseSuccess = (postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse200) & {
   headers: Headers;
 };
-export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseError = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse422) & {
+export type postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseError = (postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse422) & {
   headers: Headers;
 };
 
-export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseSuccess | postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseError)
+export type postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse = (postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseSuccess | postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseError)
 
-export const getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostUrl = () => {
-
-
+export const getPostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostUrl = () => {
 
 
-  return `/api/v1/admin/automation/workflow-draft/create`
+
+
+  return `/api/v1/admin/automation/workflows/validate`
 }
 
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost = async (agentWorkflowDraftCreateWrite: AgentWorkflowDraftCreateWrite, options?: RequestInit): Promise<postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse> => {
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost = async (agentWorkflowCreate: AgentWorkflowCreate, options?: RequestInit): Promise<postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse> => {
 
-  return customInstance<postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse>(getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostUrl(),
+  return customInstance<postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse>(getPostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      agentWorkflowDraftCreateWrite,)
+      agentWorkflowCreate,)
   }
 );}
 
 
 
 
-export const getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext> => {
+export const getPostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost>>, TError,{data: BodyType<AgentWorkflowCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost>>, TError,{data: BodyType<AgentWorkflowCreate>}, TContext> => {
 
-const mutationKey = ['postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost'];
+const mutationKey = ['postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -16441,10 +17610,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, {data: BodyType<AgentWorkflowDraftCreateWrite>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost>>, {data: BodyType<AgentWorkflowCreate>}> = (props) => {
           const {data} = props ?? {};
 
-          return  postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost(data,requestOptions)
+          return  postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost(data,requestOptions)
         }
 
 
@@ -16454,22 +17623,112 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>>
-    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationBody = BodyType<AgentWorkflowDraftCreateWrite>
-    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationError = ErrorType<HTTPValidationError>
+    export type PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost>>>
+    export type PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostMutationBody = BodyType<AgentWorkflowCreate>
+    export type PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 从草稿创建 Agent 工作流
+ * @summary 校验工作流定义
  */
-export const usePostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const usePostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost>>, TError,{data: BodyType<AgentWorkflowCreate>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>,
+        Awaited<ReturnType<typeof postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePost>>,
         TError,
-        {data: BodyType<AgentWorkflowDraftCreateWrite>},
+        {data: BodyType<AgentWorkflowCreate>},
         TContext
       > => {
-      return useMutation(getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationOptions(options), queryClient);
+      return useMutation(getPostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostMutationOptions(options), queryClient);
+    }
+    /**
+ * Derive the required output schema for an AI node based on its downstream connections.
+ * @summary 推导 AI 节点输出 Schema
+ */
+export type postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse200 = {
+  data: DeriveAiSchemaResponse
+  status: 200
+}
+
+export type postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseSuccess = (postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse200) & {
+  headers: Headers;
+};
+export type postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseError = (postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse422) & {
+  headers: Headers;
+};
+
+export type postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse = (postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseSuccess | postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseError)
+
+export const getPostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/derive-ai-schema`
+}
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost = async (deriveAiSchemaRequest: DeriveAiSchemaRequest, options?: RequestInit): Promise<postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse> => {
+
+  return customInstance<postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse>(getPostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deriveAiSchemaRequest,)
+  }
+);}
+
+
+
+
+export const getPostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost>>, TError,{data: BodyType<DeriveAiSchemaRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost>>, TError,{data: BodyType<DeriveAiSchemaRequest>}, TContext> => {
+
+const mutationKey = ['postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost>>, {data: BodyType<DeriveAiSchemaRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostMutationResult = NonNullable<Awaited<ReturnType<typeof postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost>>>
+    export type PostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostMutationBody = BodyType<DeriveAiSchemaRequest>
+    export type PostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 推导 AI 节点输出 Schema
+ */
+export const usePostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost>>, TError,{data: BodyType<DeriveAiSchemaRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPost>>,
+        TError,
+        {data: BodyType<DeriveAiSchemaRequest>},
+        TContext
+      > => {
+      return useMutation(getPostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 更新 Agent 工作流
@@ -16648,6 +17907,186 @@ export const useDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDelete = <
         TContext
       > => {
       return useMutation(getDeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 手动触发工作流
+ */
+export type postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse200 = {
+  data: AgentWorkflowRunCreateRead
+  status: 200
+}
+
+export type postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseSuccess = (postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseError = (postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse = (postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseSuccess | postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseError)
+
+export const getPostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/runs`
+}
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost = async (workflowKey: string,
+    agentWorkflowRunCreateWrite: AgentWorkflowRunCreateWrite, options?: RequestInit): Promise<postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse> => {
+
+  return customInstance<postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse>(getPostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostUrl(workflowKey),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowRunCreateWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost>>, {workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}> = (props) => {
+          const {workflowKey,data} = props ?? {};
+
+          return  postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost(workflowKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost>>>
+    export type PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostMutationBody = BodyType<AgentWorkflowRunCreateWrite>
+    export type PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 手动触发工作流
+ */
+export const usePostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPost>>,
+        TError,
+        {workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 测试运行工作流
+ */
+export type postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse200 = {
+  data: AgentWorkflowRunCreateRead
+  status: 200
+}
+
+export type postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseSuccess = (postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseError = (postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse = (postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseSuccess | postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseError)
+
+export const getPostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostUrl = (workflowKey: string,) => {
+
+
+
+
+  return `/api/v1/admin/automation/workflows/${workflowKey}/test-runs`
+}
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost = async (workflowKey: string,
+    agentWorkflowRunCreateWrite: AgentWorkflowRunCreateWrite, options?: RequestInit): Promise<postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse> => {
+
+  return customInstance<postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse>(getPostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostUrl(workflowKey),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowRunCreateWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost>>, {workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}> = (props) => {
+          const {workflowKey,data} = props ?? {};
+
+          return  postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost(workflowKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost>>>
+    export type PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostMutationBody = BodyType<AgentWorkflowRunCreateWrite>
+    export type PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 测试运行工作流
+ */
+export const usePostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost>>, TError,{workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPost>>,
+        TError,
+        {workflowKey: string;data: BodyType<AgentWorkflowRunCreateWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取 Agent 运行记录
@@ -18151,6 +19590,464 @@ export const usePostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdR
         TContext
       > => {
       return useMutation(getPostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdReplayPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 获取 Agent 工作流草稿
+ */
+export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse200 = {
+  data: AgentWorkflowDraftRead | null
+  status: 200
+}
+
+export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseSuccess = (getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = (getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseSuccess)
+
+export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft`
+}
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet = async ( options?: RequestInit): Promise<getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse> => {
+
+  return customInstance<getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse>(getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryKey = () => {
+    return [
+    `/api/v1/admin/automation/workflow-draft`
+    ] as const;
+    }
+
+
+export const getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>> = ({ signal }) => getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>>
+export type GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryError = ErrorType<unknown>
+
+
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取 Agent 工作流草稿
+ */
+
+export function useGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGet<TData = Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkflowDraftApiV1AdminAutomationWorkflowDraftGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 清空 Agent 工作流草稿
+ */
+export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponseSuccess = (deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse = (deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponseSuccess)
+
+export const getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft`
+}
+
+export const deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = async ( options?: RequestInit): Promise<deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse> => {
+
+  return customInstance<deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteResponse>(getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, void> = () => {
+
+
+          return  deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>>
+
+    export type DeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary 清空 Agent 工作流草稿
+ */
+export const useDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDelete>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteWorkflowDraftApiV1AdminAutomationWorkflowDraftDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 继续 Agent 工作流对话
+ */
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse200 = {
+  data: AgentWorkflowDraftRead
+  status: 200
+}
+
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSuccess = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseError = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = (postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSuccess | postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseError)
+
+export const getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft/messages`
+}
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost = async (agentWorkflowDraftChatWrite: AgentWorkflowDraftChatWrite, options?: RequestInit): Promise<postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse> => {
+
+  return customInstance<postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse>(getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowDraftChatWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, {data: BodyType<AgentWorkflowDraftChatWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>>
+    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationBody = BodyType<AgentWorkflowDraftChatWrite>
+    export type PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 继续 Agent 工作流对话
+ */
+export const usePostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPost>>,
+        TError,
+        {data: BodyType<AgentWorkflowDraftChatWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 流式继续 Agent 工作流对话
+ */
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseSuccess = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseError = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse = (postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseSuccess | postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponseError)
+
+export const getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft/messages/stream`
+}
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost = async (agentWorkflowDraftChatWrite: AgentWorkflowDraftChatWrite, options?: RequestInit): Promise<postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse> => {
+
+  return customInstance<postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse>(getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowDraftChatWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, {data: BodyType<AgentWorkflowDraftChatWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>>
+    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationBody = BodyType<AgentWorkflowDraftChatWrite>
+    export type PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 流式继续 Agent 工作流对话
+ */
+export const usePostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>, TError,{data: BodyType<AgentWorkflowDraftChatWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPost>>,
+        TError,
+        {data: BodyType<AgentWorkflowDraftChatWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 从草稿创建 Agent 工作流
+ */
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse200 = {
+  data: AgentWorkflowDraftCreateRead
+  status: 200
+}
+
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseSuccess = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse200) & {
+  headers: Headers;
+};
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseError = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse422) & {
+  headers: Headers;
+};
+
+export type postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = (postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseSuccess | postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseError)
+
+export const getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/automation/workflow-draft/create`
+}
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost = async (agentWorkflowDraftCreateWrite: AgentWorkflowDraftCreateWrite, options?: RequestInit): Promise<postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse> => {
+
+  return customInstance<postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse>(getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentWorkflowDraftCreateWrite,)
+  }
+);}
+
+
+
+
+export const getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext> => {
+
+const mutationKey = ['postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, {data: BodyType<AgentWorkflowDraftCreateWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationResult = NonNullable<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>>
+    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationBody = BodyType<AgentWorkflowDraftCreateWrite>
+    export type PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 从草稿创建 Agent 工作流
+ */
+export const usePostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>, TError,{data: BodyType<AgentWorkflowDraftCreateWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePost>>,
+        TError,
+        {data: BodyType<AgentWorkflowDraftCreateWrite>},
+        TContext
+      > => {
+      return useMutation(getPostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostMutationOptions(options), queryClient);
     }
     /**
  * @summary 聚合所有内容标签

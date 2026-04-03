@@ -4,7 +4,6 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { CommunityConfigAdminReadAvatarPresetsItem } from './communityConfigAdminReadAvatarPresetsItem';
 import type { CommunitySurfaceRead } from './communitySurfaceRead';
 
 export interface CommunityConfigAdminRead {
@@ -26,12 +25,6 @@ export interface CommunityConfigAdminRead {
   enable_enjoy_search: boolean;
   /** Image uploads allowed */
   image_uploader: boolean;
-  /** Authentication mode, fixed to login-required */
-  login_mode: string;
-  /** OAuth endpoint URL */
-  oauth_url: string | null;
-  /** Enabled OAuth providers */
-  oauth_providers: string[];
   /** Whether email login is allowed for commenting */
   anonymous_enabled: boolean;
   /** Comment moderation mode */
@@ -42,14 +35,6 @@ export interface CommunityConfigAdminRead {
   page_size: number;
   /** Max upload image size in bytes */
   image_max_bytes?: number | null;
-  /** Predefined avatar options */
-  avatar_presets: CommunityConfigAdminReadAvatarPresetsItem[];
-  /** Guest avatar mode */
-  guest_avatar_mode: string;
-  /** Draft saving enabled */
-  draft_enabled: boolean;
-  /** Avatar resolution strategy */
-  avatar_strategy: string;
   /** Avatar helper text */
   avatar_helper_copy: string;
   /** Waline migration state */

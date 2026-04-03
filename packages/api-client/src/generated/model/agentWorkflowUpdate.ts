@@ -4,13 +4,22 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowGraphInput } from './agentWorkflowGraphInput';
+import type { AgentWorkflowRuntimePolicy } from './agentWorkflowRuntimePolicy';
+import type { AgentWorkflowTriggerBinding } from './agentWorkflowTriggerBinding';
+import type { AgentWorkflowUpdateSummary } from './agentWorkflowUpdateSummary';
 
 export interface AgentWorkflowUpdate {
   name?: string | null;
   description?: string | null;
+  enabled?: boolean | null;
+  schema_version?: number | null;
+  graph?: AgentWorkflowGraphInput | null;
+  trigger_bindings?: AgentWorkflowTriggerBinding[] | null;
+  runtime_policy?: AgentWorkflowRuntimePolicy | null;
+  summary?: AgentWorkflowUpdateSummary;
   trigger_event?: string | null;
   target_type?: string | null;
-  enabled?: boolean | null;
   require_human_approval?: boolean | null;
   instructions?: string | null;
 }
