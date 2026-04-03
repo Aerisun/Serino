@@ -38,6 +38,7 @@ interface ResourceUploadFieldProps {
   note?: string;
   uniqueByCategory?: boolean;
   onChange: (value: string) => void;
+  onUploadPersist?: (value: string) => Promise<void>;
 }
 
 export function ResourceUploadField({
@@ -50,11 +51,15 @@ export function ResourceUploadField({
   note,
   uniqueByCategory = false,
   onChange,
+  onUploadPersist,
 }: ResourceUploadFieldProps) {
   const [open, setOpen] = useState(false);
-  const [uploadMode, setUploadMode] = useState<"compress" | "original">("compress");
+  const [uploadMode, setUploadMode] = useState<"compress" | "original">(
+    "compress",
+  );
   const [isCompressing, setIsCompressing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPersisting, setIsPersisting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const visibility = "internal";
@@ -129,12 +134,35 @@ export function ResourceUploadField({
         toast.error("新资源已上传，但旧资源清理失败");
       }
       onChange(asset.internal_url);
-      toast.success("资源上传成功");
+      let autoSaveFailed = false;
+      if (onUploadPersist) {
+        setIsPersisting(true);
+        try {
+          await onUploadPersist(asset.internal_url);
+        } catch (error) {
+          autoSaveFailed = true;
+          const message = error instanceof Error ? error.message : "请稍后重试";
+          toast.error(`资源已上传，但自动保存失败：${message}`);
+        } finally {
+          setIsPersisting(false);
+        }
+      }
+      toast.success(
+        autoSaveFailed
+          ? "资源上传成功，请手动保存页面修改"
+          : onUploadPersist
+            ? "资源上传并自动保存成功"
+            : "资源上传成功",
+      );
       setOpen(false);
       setSelectedFile(null);
       if (fileRef.current) fileRef.current.value = "";
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "压缩失败，请改用原样上传或重试");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "压缩失败，请改用原样上传或重试",
+      );
     } finally {
       setIsCompressing(false);
       setIsUploading(false);
@@ -174,7 +202,11 @@ export function ResourceUploadField({
         <DialogContent className="max-w-xl rounded-2xl" hideCloseButton={false}>
           <DialogHeader className="text-left">
             <DialogTitle>{uploadLabel}</DialogTitle>
-            <DialogDescription>上传后会自动写入系统资料资源。</DialogDescription>
+            <DialogDescription>
+              {onUploadPersist
+                ? "上传后会自动写入系统资料资源，并立即保存当前地址。"
+                : "上传后会自动写入系统资料资源。"}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4">
@@ -183,7 +215,9 @@ export function ResourceUploadField({
                 <Label>上传模式</Label>
                 <Select
                   value={uploadMode}
-                  onValueChange={(nextValue) => setUploadMode(nextValue as "compress" | "original")}
+                  onValueChange={(nextValue) =>
+                    setUploadMode(nextValue as "compress" | "original")
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择上传模式" />
@@ -204,7 +238,11 @@ export function ResourceUploadField({
                   className="hidden"
                   onChange={handleFileChange}
                 />
-                <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileRef.current?.click()}
+                >
                   {selectedFile ? selectedFile.name : "选择文件"}
                 </Button>
               </div>
@@ -213,29 +251,54 @@ export function ResourceUploadField({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>可见性</Label>
-                <Input value="仅对内" disabled className="bg-muted text-muted-foreground" />
+                <Input
+                  value="仅对内"
+                  disabled
+                  className="bg-muted text-muted-foreground"
+                />
               </div>
               <div className="grid gap-2">
                 <Label>分类</Label>
-                <Input value={category} disabled className="bg-muted text-muted-foreground" />
+                <Input
+                  value={category}
+                  disabled
+                  className="bg-muted text-muted-foreground"
+                />
               </div>
             </div>
 
             <div className="grid gap-2">
               <Label>备注</Label>
-              <Textarea value={fixedNote} disabled rows={3} className="bg-muted text-muted-foreground" />
+              <Textarea
+                value={fixedNote}
+                disabled
+                rows={3}
+                className="bg-muted text-muted-foreground"
+              />
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setOpen(false)}
+              >
                 取消
               </Button>
               <Button
                 type="button"
                 onClick={() => void handleUpload()}
-                disabled={isUploading || isCompressing || !selectedFile}
+                disabled={
+                  isUploading || isCompressing || isPersisting || !selectedFile
+                }
               >
-                {isCompressing ? "压缩中..." : isUploading ? "上传中..." : "确认上传"}
+                {isCompressing
+                  ? "压缩中..."
+                  : isUploading
+                    ? "上传中..."
+                    : isPersisting
+                      ? "保存中..."
+                      : "确认上传"}
               </Button>
             </div>
           </div>

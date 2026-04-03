@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PREVIEW_DATA_MESSAGE, isPreviewRequestMessage } from "@serino/utils";
 import {
+  createBasics as createBasicsRecord,
   getListBasicsQueryKey,
+  updateBasics as updateBasicsRecord,
   useCreateBasics,
   useListBasics,
   useSystemInfoApiV1AdminSystemInfoGet,
   useUpdateBasics,
 } from "@serino/api-client/admin";
-import type { ResumeBasicsCreate } from "@serino/api-client/models";
+import type { ResumeBasicsAdminRead, ResumeBasicsCreate } from "@serino/api-client/models";
 import { ExternalLink, Save } from "lucide-react";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { PageHeader } from "@/components/PageHeader";
@@ -37,6 +39,16 @@ const EMPTY_FORM: BasicsForm = {
   profile_image_url: "",
 };
 
+function createBasicsForm(basics?: ResumeBasicsAdminRead | null): BasicsForm {
+  return {
+    title: basics?.title ?? "",
+    summary: basics?.summary ?? "",
+    location: basics?.location ?? "",
+    email: basics?.email ?? "",
+    profile_image_url: basics?.profile_image_url ?? "",
+  };
+}
+
 function toApiPayload(form: BasicsForm): ResumeBasicsCreate {
   return {
     title: form.title,
@@ -58,21 +70,25 @@ export default function ResumePage() {
   const basicsQuery = useListBasics();
   const existing = basicsQuery.data?.data?.items?.[0];
   const [form, setForm] = useState<BasicsForm>(EMPTY_FORM);
+  const [savedForm, setSavedForm] = useState<BasicsForm | null>(null);
+  const [recordId, setRecordId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!existing) return;
-    setForm({
-      title: existing.title ?? "",
-      summary: existing.summary ?? "",
-      location: existing.location ?? "",
-      email: existing.email ?? "",
-      profile_image_url: existing.profile_image_url ?? "",
-    });
-  }, [existing]);
+    if (!existing || savedForm) return;
+    const nextForm = createBasicsForm(existing);
+    setForm(nextForm);
+    setSavedForm(nextForm);
+    setRecordId(existing.id);
+  }, [existing, savedForm]);
 
-  const createBasics = useCreateBasics({
+  const createBasicsMutation = useCreateBasics({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        const nextBasics = response.data as ResumeBasicsAdminRead | undefined;
+        const nextForm = createBasicsForm(nextBasics);
+        setForm(nextForm);
+        setSavedForm(nextForm);
+        setRecordId(nextBasics?.id ?? null);
         queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() });
         toast.success("简历配置已保存");
       },
@@ -80,9 +96,14 @@ export default function ResumePage() {
     },
   });
 
-  const updateBasics = useUpdateBasics({
+  const updateBasicsMutation = useUpdateBasics({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        const nextBasics = response.data as ResumeBasicsAdminRead | undefined;
+        const nextForm = createBasicsForm(nextBasics);
+        setForm(nextForm);
+        setSavedForm(nextForm);
+        setRecordId(nextBasics?.id ?? recordId);
         queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() });
         toast.success("简历配置已更新");
       },
@@ -90,16 +111,38 @@ export default function ResumePage() {
     },
   });
 
-  const saving = createBasics.isPending || updateBasics.isPending;
+  const saving = createBasicsMutation.isPending || updateBasicsMutation.isPending;
 
   function handleSave() {
     const payload = toApiPayload(form);
-    if (existing) {
-      updateBasics.mutate({ itemId: existing.id, data: payload });
+    if (recordId) {
+      updateBasicsMutation.mutate({ itemId: recordId, data: payload });
       return;
     }
-    createBasics.mutate({ data: payload });
+    createBasicsMutation.mutate({ data: payload });
   }
+
+  const autoSaveProfileImage = async (value: string) => {
+    try {
+      const response = recordId
+        ? await updateBasicsRecord(recordId, { profile_image_url: value })
+        : await createBasicsRecord({
+            ...(savedForm ? toApiPayload(savedForm) : EMPTY_FORM),
+            profile_image_url: value,
+          });
+      const nextBasics = response.data as ResumeBasicsAdminRead | undefined;
+      const nextSavedForm = createBasicsForm(nextBasics);
+      setSavedForm(nextSavedForm);
+      setRecordId(nextBasics?.id ?? recordId);
+      setForm((current) => ({
+        ...current,
+        profile_image_url: nextSavedForm.profile_image_url || value,
+      }));
+      queryClient.invalidateQueries({ queryKey: getListBasicsQueryKey() });
+    } catch (error) {
+      throw new Error(mutationError(error));
+    }
+  };
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const previewWindowRef = useRef<Window | null>(null);
@@ -256,6 +299,7 @@ export default function ResumePage() {
                   onChange={(value) =>
                     setForm((p) => ({ ...p, profile_image_url: value }))
                   }
+                  onUploadPersist={autoSaveProfileImage}
                 />
               </div>
             </div>

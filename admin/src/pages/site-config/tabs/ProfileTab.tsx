@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  updateProfileApiV1AdminSiteConfigProfilePut,
   useGetProfileApiV1AdminSiteConfigProfileGet,
   useUpdateProfileApiV1AdminSiteConfigProfilePut,
   getGetProfileApiV1AdminSiteConfigProfileGetQueryKey,
@@ -358,6 +359,7 @@ export function ProfileTab() {
       },
     },
   });
+  const persistUploadedField = useUpdateProfileApiV1AdminSiteConfigProfilePut();
 
   if (isLoading && !savedForm)
     return <p className="py-4 text-muted-foreground">{t("common.loading")}</p>;
@@ -377,6 +379,31 @@ export function ProfileTab() {
       usageItems={copy[key].usageItems}
     />
   );
+  const autoSaveUploadedField = async (
+    key: Extract<
+      ProfileFieldKey,
+      "hero_image_url" | "hero_poster_url" | "hero_video_url" | "og_image" | "site_icon_url"
+    >,
+    value: string,
+  ) => {
+    try {
+      const response = await persistUploadedField.mutateAsync({
+        data: { [key]: value } as Parameters<typeof updateProfileApiV1AdminSiteConfigProfilePut>[0],
+      });
+      const nextProfile = response.data as SiteProfileAdminRead | undefined;
+      const nextSavedForm = nextProfile ? createProfileForm(nextProfile) : effectiveSavedForm;
+      setSavedForm(nextSavedForm);
+      setForm((current) => ({
+        ...current,
+        [key]: nextSavedForm[key],
+      }));
+      queryClient.invalidateQueries({
+        queryKey: getGetProfileApiV1AdminSiteConfigProfileGetQueryKey(),
+      });
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, t("common.operationFailed")));
+    }
+  };
 
   return (
     <Card className="mt-4 max-w-2xl">
@@ -413,6 +440,7 @@ export function ProfileTab() {
           note={copy.hero_image_url.note}
           uniqueByCategory
           onChange={(value) => updateField("hero_image_url", value)}
+          onUploadPersist={(value) => autoSaveUploadedField("hero_image_url", value)}
         />
         <ResourceUploadField
           label={renderHelpLabel("hero_poster_url")}
@@ -423,6 +451,7 @@ export function ProfileTab() {
           note={copy.hero_poster_url.note}
           uniqueByCategory
           onChange={(value) => updateField("hero_poster_url", value)}
+          onUploadPersist={(value) => autoSaveUploadedField("hero_poster_url", value)}
         />
         <ResourceUploadField
           label={renderHelpLabel("hero_video_url")}
@@ -433,6 +462,7 @@ export function ProfileTab() {
           note={copy.hero_video_url.note}
           uniqueByCategory
           onChange={(value) => updateField("hero_video_url", value)}
+          onUploadPersist={(value) => autoSaveUploadedField("hero_video_url", value)}
         />
         <ResourceUploadField
           label={renderHelpLabel("og_image")}
@@ -443,6 +473,7 @@ export function ProfileTab() {
           note={copy.og_image.note}
           uniqueByCategory
           onChange={(value) => updateField("og_image", value)}
+          onUploadPersist={(value) => autoSaveUploadedField("og_image", value)}
         />
         <ResourceUploadField
           label={renderHelpLabel("site_icon_url")}
@@ -453,6 +484,7 @@ export function ProfileTab() {
           note={copy.site_icon_url.note}
           uniqueByCategory
           onChange={(value) => updateField("site_icon_url", value)}
+          onUploadPersist={(value) => autoSaveUploadedField("site_icon_url", value)}
         />
         <div className="space-y-2">
           {renderHelpLabel("bio")}
