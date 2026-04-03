@@ -72,6 +72,39 @@ wait_for_url() {
   done
 }
 
+assert_spa_response() {
+  local url="$1"
+  local label="$2"
+  local body_file
+  body_file="$(mktemp)"
+
+  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  if ! grep -qi '<!doctype html' "${body_file}"; then
+    echo "ERROR: ${label} did not return an SPA document: ${url}" >&2
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    return 1
+  fi
+
+  rm -f "${body_file}"
+}
+
+assert_health_payload() {
+  local url="$1"
+  local body_file
+  body_file="$(mktemp)"
+
+  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  if ! grep -q '"status"' "${body_file}"; then
+    echo "ERROR: backend health endpoint did not return the expected JSON payload: ${url}" >&2
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    return 1
+  fi
+
+  rm -f "${body_file}"
+}
+
 wait_for_stack_ready() {
   wait_for_url "http://127.0.0.1:${backend_port}${healthcheck_path}" "backend"
   wait_for_url "http://127.0.0.1:${frontend_port}/" "frontend"
@@ -125,13 +158,8 @@ trap cleanup EXIT INT TERM ERR
 wait_for_stack_ready
 
 # ========== 测试区 =============
-
-
-
-
-
+assert_health_payload "http://127.0.0.1:${backend_port}${healthcheck_path}"
+assert_spa_response "http://127.0.0.1:${frontend_port}/posts" "frontend deep link"
+assert_spa_response "http://127.0.0.1:${admin_port}${admin_base_path}posts" "admin deep link"
 # ===============================
-
-
-
 echo "Development smoke test passed. Logs: ${LOG_FILE}"

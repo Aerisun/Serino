@@ -56,29 +56,6 @@ class ModerationRecord(Base, TimestampMixin):
     reason: Mapped[str | None] = mapped_column(Text)
 
 
-class BackupSnapshot(Base, TimestampMixin):
-    __tablename__ = "backup_snapshots"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    snapshot_type: Mapped[str] = mapped_column(String(80), nullable=False)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
-    db_path: Mapped[str] = mapped_column(String(500), nullable=False)
-    replica_url: Mapped[str | None] = mapped_column(String(500))
-    backup_path: Mapped[str | None] = mapped_column(String(500))
-    checksum: Mapped[str | None] = mapped_column(String(128))
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-
-
-class RestorePoint(Base, TimestampMixin):
-    __tablename__ = "restore_points"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    snapshot_id: Mapped[str | None] = mapped_column(String(36))
-    db_path: Mapped[str] = mapped_column(String(500), nullable=False)
-    point_in_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    notes: Mapped[str | None] = mapped_column(Text)
-
-
 class SyncRun(Base, TimestampMixin):
     __tablename__ = "sync_runs"
 
@@ -105,17 +82,17 @@ class BackupTargetConfig(Base, TimestampMixin):
     enabled: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
     paused: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
     interval_minutes: Mapped[int] = mapped_column(Integer(), nullable=False, default=60)
-    transport_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="receiver")
+    transport_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="sftp")
     site_slug: Mapped[str] = mapped_column(String(120), nullable=False, default="aerisun")
-    receiver_base_url: Mapped[str | None] = mapped_column(String(500))
     remote_host: Mapped[str | None] = mapped_column(String(255))
     remote_port: Mapped[int | None] = mapped_column(Integer())
     remote_path: Mapped[str | None] = mapped_column(String(500))
     remote_username: Mapped[str | None] = mapped_column(String(255))
     credential_ref: Mapped[str | None] = mapped_column(String(255))
-    age_public_key_fingerprint: Mapped[str | None] = mapped_column(String(255))
+    encrypt_runtime_data: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
     max_retries: Mapped[int] = mapped_column(Integer(), nullable=False, default=3)
     retry_backoff_seconds: Mapped[int] = mapped_column(Integer(), nullable=False, default=300)
+    max_retention_count: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
     last_scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str | None] = mapped_column(Text)
@@ -152,6 +129,25 @@ class BackupCommit(Base, TimestampMixin):
     snapshot_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     snapshot_finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     restored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class BackupRecoveryKey(Base, TimestampMixin):
+    __tablename__ = "backup_recovery_keys"
+    __table_args__ = (
+        Index("ix_backup_recovery_keys_credential_status", "credential_ref", "status", "created_at"),
+        Index("ix_backup_recovery_keys_fingerprint", "secrets_fingerprint"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    credential_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    site_slug: Mapped[str] = mapped_column(String(120), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    secrets_fingerprint: Mapped[str] = mapped_column(String(255), nullable=False)
+    secrets_public_pem: Mapped[str] = mapped_column(Text, nullable=False)
+    encrypted_private_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_exported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TrafficDailySnapshot(Base, TimestampMixin):

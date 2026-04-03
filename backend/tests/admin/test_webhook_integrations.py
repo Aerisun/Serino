@@ -7,6 +7,8 @@ import httpx
 from aerisun.domain.automation.events import emit_comment_pending
 from aerisun.domain.automation.schemas import WebhookSubscriptionCreate
 from aerisun.domain.automation.service import create_webhook_subscription, dispatch_due_webhooks
+from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
+from aerisun.domain.outbound_proxy.service import update_outbound_proxy_config
 
 
 class FakeResponse:
@@ -40,7 +42,7 @@ def test_dispatch_due_webhooks_formats_feishu_payload(seeded_session, monkeypatc
         calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return FakeResponse()
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.post", fake_post)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
 
     processed = dispatch_due_webhooks(seeded_session)
 
@@ -81,7 +83,7 @@ def test_dispatch_due_webhooks_formats_telegram_payload(seeded_session, monkeypa
         calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return FakeResponse()
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.post", fake_post)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
 
     processed = dispatch_due_webhooks(seeded_session)
 
@@ -104,7 +106,7 @@ def test_webhook_test_endpoint_formats_feishu_request(client, admin_headers, mon
         calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return FakeResponse()
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.post", fake_post)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
 
     response = client.post(
         "/api/v1/admin/automation/webhooks/test",
@@ -146,7 +148,7 @@ def test_webhook_test_endpoint_formats_telegram_request(client, admin_headers, m
         calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return FakeResponse()
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.post", fake_post)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
 
     response = client.post(
         "/api/v1/admin/automation/webhooks/test",
@@ -172,6 +174,52 @@ def test_webhook_test_endpoint_formats_telegram_request(client, admin_headers, m
     assert body["text"].startswith("Aerisun automation event")
 
 
+def test_webhook_test_endpoint_uses_configured_proxy(client, admin_headers, monkeypatch) -> None:
+    update_response = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={"proxy_port": 7890, "webhook_enabled": True},
+    )
+    assert update_response.status_code == 200
+
+    calls: list[dict[str, object]] = []
+
+    def fake_post(url, json, headers, timeout, proxy=None, trust_env=True):
+        calls.append(
+            {
+                "url": url,
+                "json": json,
+                "headers": headers,
+                "timeout": timeout,
+                "proxy": proxy,
+                "trust_env": trust_env,
+            }
+        )
+        return FakeResponse()
+
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
+
+    response = client.post(
+        "/api/v1/admin/automation/webhooks/test",
+        headers=admin_headers,
+        json={
+            "name": "Proxy hook",
+            "target_url": "https://example.com/webhook",
+            "event_types": ["comment.pending"],
+            "timeout_seconds": 10,
+            "max_attempts": 6,
+            "status": "active",
+            "headers": {},
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert len(calls) == 1
+    assert calls[0]["proxy"] == "http://127.0.0.1:7890"
+    assert calls[0]["trust_env"] is False
+
+
 def test_webhook_test_endpoint_persists_subscription_test_status(
     client,
     admin_headers,
@@ -193,7 +241,7 @@ def test_webhook_test_endpoint_persists_subscription_test_status(
         text = "not found"
 
     monkeypatch.setattr(
-        "aerisun.domain.automation.service.httpx.post",
+        "aerisun.domain.automation.webhooks.httpx.post",
         lambda *args, **kwargs: FailedResponse(),
     )
 
@@ -226,7 +274,7 @@ def test_webhook_test_endpoint_persists_subscription_test_status(
         text = "ok"
 
     monkeypatch.setattr(
-        "aerisun.domain.automation.service.httpx.post",
+        "aerisun.domain.automation.webhooks.httpx.post",
         lambda *args, **kwargs: SuccessResponse(),
     )
 
@@ -297,8 +345,8 @@ def test_webhook_telegram_connect_endpoint_detects_chat_and_sends_verification(
         post_calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return FakeResponse(200, {"ok": True, "result": {"message_id": 1}})
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.get", fake_get)
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.post", fake_post)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.get", fake_get)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
 
     response = client.post(
         "/api/v1/admin/automation/webhooks/telegram/connect",
@@ -320,6 +368,63 @@ def test_webhook_telegram_connect_endpoint_detects_chat_and_sends_verification(
     assert get_calls[2]["params"] == {"offset": -1, "limit": 1, "timeout": 0}
     assert len(post_calls) == 1
     assert post_calls[0]["json"]["chat_id"] == 123456789
+
+
+def test_webhook_telegram_connect_endpoint_uses_configured_proxy(client, admin_headers, monkeypatch) -> None:
+    update_response = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={"proxy_port": 7890, "webhook_enabled": True},
+    )
+    assert update_response.status_code == 200
+
+    calls: list[dict[str, object]] = []
+
+    class FakeTelegramResponse:
+        def __init__(self, status_code: int, payload: dict[str, object], text: str = "ok") -> None:
+            self.status_code = status_code
+            self._payload = payload
+            self.text = text
+
+        def json(self) -> dict[str, object]:
+            return self._payload
+
+    def fake_get(url, *, params=None, timeout=None, proxy=None, trust_env=True):
+        calls.append(
+            {
+                "method": "GET",
+                "url": url,
+                "params": params,
+                "proxy": proxy,
+                "trust_env": trust_env,
+            }
+        )
+        if str(url).endswith("/getMe"):
+            return FakeTelegramResponse(200, {"ok": True, "result": {"username": "aerisun_bot"}})
+        if str(url).endswith("/deleteWebhook"):
+            return FakeTelegramResponse(200, {"ok": True, "result": True})
+        if str(url).endswith("/getUpdates"):
+            return FakeTelegramResponse(200, {"ok": True, "result": []})
+        raise AssertionError(f"Unexpected Telegram URL: {url}")
+
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.get", fake_get)
+
+    response = client.post(
+        "/api/v1/admin/automation/webhooks/telegram/connect",
+        headers=admin_headers,
+        json={
+            "bot_token": "123456:ABCDEF1234567890",
+            "send_test_message": False,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["status"] == "awaiting_message"
+    assert calls
+    assert all(call["proxy"] == "http://127.0.0.1:7890" for call in calls)
+    assert all(call["trust_env"] is False for call in calls)
 
 
 def test_webhook_telegram_connect_endpoint_returns_awaiting_message_when_no_updates(
@@ -352,8 +457,8 @@ def test_webhook_telegram_connect_endpoint_returns_awaiting_message_when_no_upda
         post_calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return FakeResponse(200, {"ok": True, "result": {"message_id": 1}})
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.get", fake_get)
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.post", fake_post)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.get", fake_get)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
 
     response = client.post(
         "/api/v1/admin/automation/webhooks/telegram/connect",
@@ -413,7 +518,7 @@ def test_webhook_telegram_connect_endpoint_retries_after_tls_timeout(client, adm
             )
         raise AssertionError(f"unexpected get url: {url}")
 
-    monkeypatch.setattr("aerisun.domain.automation.service.httpx.get", fake_get)
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.get", fake_get)
 
     response = client.post(
         "/api/v1/admin/automation/webhooks/telegram/connect",
@@ -431,3 +536,51 @@ def test_webhook_telegram_connect_endpoint_retries_after_tls_timeout(client, adm
     assert payload["chat_id"] == 987654321
     assert me_attempts["count"] == 2
     assert sum(1 for call in get_calls if str(call["url"]).endswith("/getMe")) == 2
+
+
+def test_dispatch_due_webhooks_uses_configured_proxy(seeded_session, monkeypatch) -> None:
+    update_outbound_proxy_config(
+        seeded_session,
+        OutboundProxyConfigUpdate(proxy_port=7890, webhook_enabled=True),
+    )
+    create_webhook_subscription(
+        seeded_session,
+        WebhookSubscriptionCreate(
+            name="Proxy delivery",
+            target_url="https://example.com/webhook",
+            event_types=["comment.pending"],
+        ),
+    )
+
+    emit_comment_pending(
+        seeded_session,
+        comment_id="comment-proxy-1",
+        content_type="posts",
+        content_slug="hello-world",
+        author_name="Rowan",
+        body_preview="Proxy delivery body.",
+    )
+
+    calls: list[dict[str, object]] = []
+
+    def fake_post(url, json, headers, timeout, proxy=None, trust_env=True):
+        calls.append(
+            {
+                "url": url,
+                "json": json,
+                "headers": headers,
+                "timeout": timeout,
+                "proxy": proxy,
+                "trust_env": trust_env,
+            }
+        )
+        return FakeResponse()
+
+    monkeypatch.setattr("aerisun.domain.automation.webhooks.httpx.post", fake_post)
+
+    processed = dispatch_due_webhooks(seeded_session)
+
+    assert processed == 1
+    assert len(calls) == 1
+    assert calls[0]["proxy"] == "http://127.0.0.1:7890"
+    assert calls[0]["trust_env"] is False

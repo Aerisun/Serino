@@ -38,6 +38,7 @@ class ApiKey(Base, TimestampMixin):
     key_prefix: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     key_suffix: Mapped[str] = mapped_column(String(16), nullable=False)
     hashed_secret: Mapped[str] = mapped_column(String(255), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     scopes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     mcp_config: Mapped[dict[str, object]] = mapped_column(JSON, default=dict, nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

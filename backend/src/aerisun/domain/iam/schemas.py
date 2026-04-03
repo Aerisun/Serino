@@ -66,6 +66,7 @@ class ApiKeyCreate(BaseModel):
 class ApiKeyUpdate(BaseModel):
     key_name: str | None = None
     scopes: list[str] | None = None
+    enabled: bool | None = None
 
 
 class ApiKeyAdminRead(ModelBase):
@@ -73,6 +74,7 @@ class ApiKeyAdminRead(ModelBase):
     key_name: str
     key_prefix: str
     key_suffix: str
+    enabled: bool
     scopes: list[str]
     last_used_at: datetime | None
     created_at: datetime

@@ -12,8 +12,8 @@ import structlog
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.activity.repository import batch_resolve_titles
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops import repository as repo
 from aerisun.domain.ops.config_revisions import (
@@ -29,7 +29,6 @@ from aerisun.domain.ops.config_revisions import (
 from aerisun.domain.ops.ip_geo import lookup_ip_geolocation
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
-    BackupSnapshotRead,
     ConfigDiffLineRead,
     ConfigRevisionDetailRead,
     ConfigRevisionListItemRead,
@@ -54,6 +53,13 @@ _TOP_PAGES_LIMIT = 10
 _DISTRIBUTION_LIMIT = 5
 _VISIT_RECORD_QUEUE_MAXSIZE = 1000
 _VISIT_RECORD_QUEUE_DRAIN_TIMEOUT_SECONDS = 5.0
+
+_CONTENT_PATH_TO_TYPE: dict[str, str] = {
+    "posts": "posts",
+    "diary": "diary",
+    "thoughts": "thoughts",
+    "excerpts": "excerpts",
+}
 
 logger = structlog.get_logger("aerisun.ops")
 _visit_logger = structlog.stdlib.get_logger("aerisun.ops.visit")
@@ -195,11 +201,6 @@ def list_audit_logs(
     }
 
 
-def list_backups(session: Session) -> list[BackupSnapshotRead]:
-    """List all backup snapshots."""
-    return [BackupSnapshotRead.model_validate(s) for s in repo.find_all_backups(session)]
-
-
 def list_config_revisions(
     session: Session,
     *,
@@ -266,32 +267,6 @@ def restore_config_revision(
         reason=payload.reason,
     )
     return get_config_revision_detail(session, revision.id)
-
-
-def create_backup_snapshot(session: Session) -> BackupSnapshotRead:
-    """Create a manual backup snapshot. Commits."""
-    settings = get_settings()
-    snapshot = repo.create_backup(
-        session,
-        snapshot_type="manual",
-        status="queued",
-        db_path=str(settings.db_path),
-        replica_url=settings.litestream_replica_url,
-    )
-    session.commit()
-    session.refresh(snapshot)
-    return BackupSnapshotRead.model_validate(snapshot)
-
-
-def restore_backup(session: Session, snapshot_id: str) -> BackupSnapshotRead:
-    """Mark a backup as restoring. Raises LookupError if not found. Commits."""
-    snapshot = repo.find_backup_by_id(session, snapshot_id)
-    if snapshot is None:
-        raise ResourceNotFound("Backup snapshot not found")
-    snapshot.status = "restoring"
-    session.commit()
-    session.refresh(snapshot)
-    return BackupSnapshotRead.model_validate(snapshot)
 
 
 def _seed_missing_traffic_history(session: Session) -> None:
@@ -375,11 +350,15 @@ def _build_traffic_metrics(session: Session) -> DashboardTrafficMetrics:
     latest_snapshots = repo.list_latest_traffic_snapshots(session, as_of_date=end_date)
     total_views = sum(item.cumulative_views for item in latest_snapshots)
 
+    ranked_page_urls = [item.url for item in latest_snapshots if item.url and item.url != "/guestbook"]
+    resolved_titles = _resolve_content_titles_for_paths(session, ranked_page_urls)
+
     ranked_pages = [
         TopPageMetric(
             url=item.url,
             views=item.cumulative_views,
             share=round((item.cumulative_views / total_views), 4) if total_views else 0.0,
+            title=resolved_titles.get(item.url),
         )
         for item in latest_snapshots
         if item.url and item.url != "/guestbook"
@@ -444,6 +423,45 @@ def _status_text(status_code: int) -> str:
     return "未知"
 
 
+def _extract_content_pair_from_path(path: str) -> tuple[str, str] | None:
+    normalized_path = path.split("?", 1)[0].split("#", 1)[0]
+    segments = [segment for segment in normalized_path.split("/") if segment]
+    if len(segments) < 2:
+        return None
+
+    content_type = _CONTENT_PATH_TO_TYPE.get(segments[0])
+    if content_type is None:
+        return None
+
+    slug = segments[-1]
+    if not slug:
+        return None
+    return content_type, slug
+
+
+def _resolve_content_titles_for_paths(session: Session, paths: list[str]) -> dict[str, str]:
+    path_to_pair: dict[str, tuple[str, str]] = {}
+    unique_pairs: set[tuple[str, str]] = set()
+
+    for path in paths:
+        pair = _extract_content_pair_from_path(path)
+        if pair is None:
+            continue
+        path_to_pair[path] = pair
+        unique_pairs.add(pair)
+
+    if not unique_pairs:
+        return {}
+
+    resolved = batch_resolve_titles(session, list(unique_pairs))
+    result: dict[str, str] = {}
+    for path, pair in path_to_pair.items():
+        title = resolved.get(pair)
+        if title:
+            result[path] = title
+    return result
+
+
 def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
     now = datetime.now(UTC)
     history_days = 14
@@ -466,12 +484,14 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
     unique_visitors_7d = repo.count_unique_visitors_since(session, since=now - timedelta(days=7))
     average_request_duration_ms = repo.average_visit_duration_since(session, since=now - timedelta(days=7))
     top_page_rows = repo.list_visit_top_pages(session, since=now - timedelta(days=14), limit=_TOP_PAGES_LIMIT)
+    resolved_titles = _resolve_content_titles_for_paths(session, [path for path, _ in top_page_rows])
     top_total = sum(views for _, views in top_page_rows)
     top_pages = [
         TopPageMetric(
             url=path,
             views=views,
             share=round((views / top_total), 4) if top_total else 0.0,
+            title=resolved_titles.get(path),
         )
         for path, views in top_page_rows
     ]

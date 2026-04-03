@@ -6,6 +6,7 @@ VISITORS_BASE = "/api/v1/admin/visitors"
 SUBSCRIPTIONS_BASE = "/api/v1/admin/subscriptions"
 AUTOMATION_BASE = "/api/v1/admin/automation"
 INTEGRATIONS_BASE = "/api/v1/admin/integrations"
+PROXY_BASE = "/api/v1/admin/proxy-config"
 
 
 def _list_revisions(client, admin_headers, *, resource_key: str | None = None) -> list[dict[str, object]]:
@@ -78,7 +79,7 @@ def test_community_config_revision_detail_lists_changed_fields(client, admin_hea
             "moderation_mode": "manual",
             "default_sorting": "oldest",
             "page_size": 30,
-            "oauth_providers": ["github"],
+            "avatar_helper_copy": "登录后再评论",
         },
     )
     assert response.status_code == 200
@@ -89,7 +90,7 @@ def test_community_config_revision_detail_lists_changed_fields(client, admin_hea
     assert "moderation_mode" in paths
     assert "default_sorting" in paths
     assert "page_size" in paths
-    assert "oauth_providers[1]" in paths
+    assert "avatar_helper_copy" in paths
 
 
 def test_navigation_delete_restore_recreates_item(client, admin_headers) -> None:
@@ -208,6 +209,38 @@ def test_sensitive_config_previews_are_masked_and_restore_works(client, admin_he
     subscription_revision = _list_revisions(client, admin_headers, resource_key="subscriptions.config")[0]
     subscription_detail = _get_revision_detail(client, admin_headers, str(subscription_revision["id"]))
     assert subscription_detail["after_preview"]["smtp_password"].startswith("******")
+
+
+def test_outbound_proxy_config_revision_roundtrip(client, admin_headers) -> None:
+    current = client.get(PROXY_BASE, headers=admin_headers)
+    assert current.status_code == 200
+    original = current.json()
+
+    response = client.put(
+        PROXY_BASE,
+        headers=admin_headers,
+        json={"proxy_port": 7890, "webhook_enabled": True},
+    )
+    assert response.status_code == 200
+
+    latest = _list_revisions(client, admin_headers, resource_key="network.outbound_proxy")[0]
+    assert latest["resource_key"] == "network.outbound_proxy"
+
+    detail = _get_revision_detail(client, admin_headers, str(latest["id"]))
+    paths = {line["path"] for line in detail["diff_lines"]}
+    assert "proxy_port" in paths
+    assert "webhook_enabled" in paths
+
+    restore_response = client.post(
+        f"{BASE}/config-revisions/{latest['id']}/restore",
+        headers=admin_headers,
+        json={"target": "before"},
+    )
+    assert restore_response.status_code == 200
+
+    restored = client.get(PROXY_BASE, headers=admin_headers)
+    assert restored.status_code == 200
+    assert restored.json() == original
 
 
 def test_config_revision_failure_paths_and_mcp_tracking(client, admin_headers) -> None:

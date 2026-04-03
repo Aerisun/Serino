@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from aerisun.core.settings import get_settings
+
 BASE = "/api/v1/admin/assets"
 
 
@@ -38,7 +40,32 @@ def test_upload_public_asset_returns_public_url(client, admin_headers):
     assert payload["visibility"] == "public"
     assert payload["scope"] == "user"
     assert payload["resource_key"].startswith("public/assets/site/")
-    assert payload["public_url"] == f"/media/{payload['resource_key']}"
+    assert payload["internal_url"] == f"/media/{payload['resource_key']}"
+    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{payload['resource_key']}"
+
+
+def test_update_asset_visibility_returns_absolute_public_url(client, admin_headers):
+    created = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("headphoto.jpg", b"headphoto-bytes", "image/jpeg")},
+        data={"visibility": "internal", "category": "comment"},
+    )
+    assert created.status_code == 201
+
+    asset = created.json()
+    response = client.patch(
+        f"{BASE}/{asset['id']}",
+        headers=admin_headers,
+        json={"visibility": "public"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["visibility"] == "public"
+    assert payload["resource_key"].startswith("public/assets/comment/")
+    assert payload["internal_url"] == f"/media/{payload['resource_key']}"
+    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{payload['resource_key']}"
 
 
 def test_list_assets_returns_resource_urls(client, admin_headers):

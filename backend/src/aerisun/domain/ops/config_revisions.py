@@ -15,9 +15,15 @@ from aerisun.domain.automation.settings import (
     AGENT_WORKFLOWS_FLAG_KEY,
     list_agent_workflows,
 )
-from aerisun.domain.automation.settings import get_agent_model_config as get_agent_model_config_read
+from aerisun.domain.automation.settings import (
+    get_agent_model_config as get_agent_model_config_read,
+)
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict
 from aerisun.domain.ops.models import AuditLog, ConfigRevision
+from aerisun.domain.outbound_proxy.service import (
+    get_outbound_proxy_config,
+    restore_outbound_proxy_config,
+)
 from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
 from aerisun.domain.site_config import repository as site_repo
 from aerisun.domain.site_config.models import (
@@ -368,6 +374,8 @@ def is_tracked_config_request(path: str, method: str) -> bool:
         return method == "PUT"
     if path == "/api/v1/admin/subscriptions/config":
         return method == "PUT"
+    if path == "/api/v1/admin/proxy-config":
+        return method == "PUT"
     if path == "/api/v1/admin/integrations/mcp-config":
         return method == "PUT"
     if path == "/api/v1/admin/automation/model-config":
@@ -389,14 +397,11 @@ def _site_profile_capture(session: Session) -> dict[str, Any]:
             "title": profile.title,
             "bio": profile.bio,
             "role": profile.role,
-            "footer_text": profile.footer_text,
-            "author": profile.author,
             "og_image": profile.og_image,
             "site_icon_url": profile.site_icon_url,
             "hero_image_url": profile.hero_image_url,
             "hero_poster_url": profile.hero_poster_url,
-            "meta_description": profile.meta_description,
-            "copyright": profile.copyright,
+            "filing_info": profile.filing_info,
             "hero_actions": _coerce_hero_actions(profile.hero_actions),
             "hero_video_url": profile.hero_video_url,
             "poem_source": profile.poem_source,
@@ -435,18 +440,11 @@ def _community_capture(session: Session) -> dict[str, Any]:
             "emoji_presets": list(config.emoji_presets or []),
             "enable_enjoy_search": config.enable_enjoy_search,
             "image_uploader": config.image_uploader,
-            "login_mode": config.login_mode,
-            "oauth_url": config.oauth_url,
-            "oauth_providers": list(config.oauth_providers or []),
             "anonymous_enabled": config.anonymous_enabled,
             "moderation_mode": config.moderation_mode,
             "default_sorting": config.default_sorting,
             "page_size": config.page_size,
             "image_max_bytes": config.image_max_bytes,
-            "avatar_presets": list(config.avatar_presets or []),
-            "guest_avatar_mode": config.guest_avatar_mode,
-            "draft_enabled": config.draft_enabled,
-            "avatar_strategy": config.avatar_strategy,
             "avatar_helper_copy": config.avatar_helper_copy,
             "migration_state": config.migration_state,
         }
@@ -700,6 +698,14 @@ def _restore_mcp_public_access(session: Session, snapshot: dict[str, bool]) -> N
     session.flush()
 
 
+def _capture_outbound_proxy_config(session: Session) -> dict[str, Any]:
+    return canonicalize_snapshot(get_outbound_proxy_config(session).model_dump())
+
+
+def _restore_outbound_proxy_config(session: Session, snapshot: dict[str, Any]) -> None:
+    restore_outbound_proxy_config(session, snapshot)
+
+
 def _capture_agent_model_config(session: Session) -> dict[str, Any]:
     config = get_agent_model_config_read(session)
     return canonicalize_snapshot(config.model_dump(exclude={"is_ready"}))
@@ -800,6 +806,14 @@ _CONFIG_RESOURCES: dict[str, ConfigResourceSpec] = {
         capture=_capture_subscriptions_config,
         restore=_restore_subscriptions_config,
         summarize=_static_summary("订阅配置"),
+    ),
+    "network.outbound_proxy": ConfigResourceSpec(
+        key="network.outbound_proxy",
+        label="出站代理",
+        resource_version=RESOURCE_VERSION,
+        capture=_capture_outbound_proxy_config,
+        restore=_restore_outbound_proxy_config,
+        summarize=_static_summary("出站代理"),
     ),
     "integrations.mcp_public_access": ConfigResourceSpec(
         key="integrations.mcp_public_access",

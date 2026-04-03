@@ -54,6 +54,20 @@ fi
 
 source_runtime_env_chain
 
+# Local `make dev` should show the current development sample dataset by default.
+# You can still disable it explicitly with `AERISUN_SEED_DEV_DATA=false make dev`.
+export AERISUN_SEED_DEV_DATA="${AERISUN_SEED_DEV_DATA:-true}"
+if [[ -z "${AERISUN_SEED_PROFILE:-}" ]]; then
+  case "${AERISUN_SEED_DEV_DATA,,}" in
+    1|true|yes|on)
+      export AERISUN_SEED_PROFILE="dev-seed"
+      ;;
+    *)
+      export AERISUN_SEED_PROFILE="seed"
+      ;;
+  esac
+fi
+
 mkdir -p "${DEV_DIR}"
 
 if [[ -f "${PID_FILE}" ]]; then
@@ -94,6 +108,8 @@ log "==> 正在同步 OpenAPI/Orval 生成产物..."
 bash "${SCRIPT_DIR}/sync-orval.sh"
 
 echo "==> 开发环境下：正在启动后端，并在就绪后并行启动前台和管理后台..."
+echo "==> 开发种子开关：AERISUN_SEED_DEV_DATA=${AERISUN_SEED_DEV_DATA}"
+echo "==> Seed profile：AERISUN_SEED_PROFILE=${AERISUN_SEED_PROFILE}"
 
 AERISUN_DEV_RELOAD=1 bash "${PROJECT_DIR}/backend/scripts/bootstrap.sh" &
 backend_pid=$!

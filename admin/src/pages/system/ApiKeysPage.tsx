@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Copy } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import type { ApiKeyAdminRead } from "@serino/api-client/models";
 
@@ -35,14 +36,14 @@ export default function ApiKeysPage() {
         queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey() });
         toast.success(t("common.operationSuccess"));
       },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 
   const del = useDeleteApiKeyApiV1AdminIntegrationsApiKeysKeyIdDelete({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListApiKeysApiV1AdminIntegrationsApiKeysGetQueryKey() }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 

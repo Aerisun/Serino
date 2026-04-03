@@ -9,11 +9,16 @@ import {
   useUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut,
 } from "@serino/api-client/admin";
 import { AdminSurface } from "@/components/AdminSurface";
+import {
+  ActivationToggleButton,
+  inactiveRowClassName,
+} from "@/components/ActivationState";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import {
   Dialog,
   DialogContent,
@@ -30,10 +35,12 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  CONNECT_SCOPE,
   describeMcpPreset,
   detectMcpPreset,
   mergeMcpScopes,
@@ -42,12 +49,15 @@ import {
   type McpKeyPreset,
 } from "./mcpScopes";
 
-export function McpApiKeysSection() {
-  const { t } = useI18n();
+interface McpApiKeysSectionProps {
+  disabled?: boolean;
+}
+
+export function McpApiKeysSection({ disabled = false }: McpApiKeysSectionProps) {
+  const { t, lang } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [rawKey, setRawKey] = useState<string | null>(null);
-  const [sessionRawKeys, setSessionRawKeys] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<ApiKeyAdminRead | null>(null);
   const [form, setForm] = useState<{ key_name: string; preset: McpKeyPreset }>({
     key_name: "",
@@ -57,7 +67,7 @@ export function McpApiKeysSection() {
   const { data: raw, isLoading } = useListApiKeysApiV1AdminIntegrationsApiKeysGet();
   const apiKeys = raw?.data as ApiKeyAdminRead[] | undefined;
   const mcpKeys = useMemo(
-    () => (apiKeys ?? []).filter((item) => item.scopes.includes("mcp:connect")),
+    () => (apiKeys ?? []).filter((item) => item.scopes.includes(CONNECT_SCOPE)),
     [apiKeys],
   );
 
@@ -71,14 +81,22 @@ export function McpApiKeysSection() {
       onSuccess: async (response) => {
         await invalidate();
         setRawKey(response.data.raw_key);
-        setSessionRawKeys((current) => ({
-          ...current,
-          [response.data.item.id]: response.data.raw_key,
-        }));
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        toast.error(error?.response?.data?.detail || t("common.operationFailed"));
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+      },
+    },
+  });
+
+  const toggleKey = useUpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPut({
+    mutation: {
+      onSuccess: async () => {
+        await invalidate();
+        toast.success(t("common.operationSuccess"));
+      },
+      onError: (error: any) => {
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -92,7 +110,7 @@ export function McpApiKeysSection() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        toast.error(error?.response?.data?.detail || t("common.operationFailed"));
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -104,7 +122,7 @@ export function McpApiKeysSection() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        toast.error(error?.response?.data?.detail || t("common.operationFailed"));
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -188,45 +206,143 @@ export function McpApiKeysSection() {
     return `${head}****${normalizedSuffix.slice(-3)}`;
   };
 
-  const copyKeyValue = async (item: ApiKeyAdminRead) => {
-    const sessionRawKey = sessionRawKeys[item.id];
-    const valueToCopy = sessionRawKey ?? buildMaskedKey(item.key_prefix, item.key_suffix);
-
-    try {
-      await navigator.clipboard.writeText(valueToCopy);
-      toast.success(
-        sessionRawKey ? t("integrations.mcpKeyCopiedFull") : t("integrations.mcpKeyCopiedMasked"),
-      );
-    } catch {
-      toast.error(t("common.operationFailed"));
-    }
-  };
-
   return (
-    <AdminSurface
-      eyebrow={t("integrations.mcp")}
-      title={t("integrations.mcpKeys")}
-      description={t("integrations.mcpKeysDescription")}
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          resetDialog();
+          return;
+        }
+        setOpen(true);
+      }}
     >
-      <div className="mb-4 flex items-center justify-between gap-3 rounded-[var(--admin-radius-lg)] border border-border/60 bg-background/55 px-4 py-3">
-        <div className="text-sm text-muted-foreground">{t("integrations.mcpKeysHint")}</div>
-        <Dialog
-          open={open}
-          onOpenChange={(nextOpen) => {
-            if (!nextOpen) {
-              resetDialog();
-              return;
-            }
-            setOpen(true);
-          }}
-        >
+      <AdminSurface
+        eyebrow={t("integrations.mcp")}
+        title={t("integrations.mcpKeys")}
+        titleAccessory={
+          <LabelWithHelp
+            label={t("integrations.mcpKeys")}
+            title={t("integrations.mcpKeys")}
+            description={t("integrations.mcpKeysDescription")}
+            usageTitle={lang === "zh" ? "用途" : "Usage"}
+            usageItems={[t("integrations.mcpKeysHint")]}
+            hideLabel
+            className="gap-0"
+          />
+        }
+        className={cn(disabled && "opacity-55")}
+        actions={
           <DialogTrigger asChild>
-            <Button type="button" onClick={openCreate}>
+            <Button type="button" onClick={openCreate} disabled={disabled}>
               <Plus className="mr-2 h-4 w-4" />
               {t("system.createKey")}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg rounded-2xl">
+        }
+      >
+        <div className={cn("overflow-hidden rounded-[var(--admin-radius-xl)]", disabled && "pointer-events-none")}>
+          <DataTable<ApiKeyAdminRead>
+            columns={[
+              { header: t("common.name"), accessor: "key_name", className: "text-center" },
+              {
+                header: t("integrations.mcpKeyValue"),
+                accessor: (row) => (
+                  <code
+                    className={cn(
+                      "rounded-md bg-muted/50 px-2 py-1 font-mono text-xs",
+                      !row.enabled && "bg-muted/35 text-muted-foreground",
+                    )}
+                  >
+                    {buildMaskedKey(row.key_prefix, row.key_suffix)}
+                  </code>
+                ),
+                className: "min-w-[10rem] text-center",
+              },
+              {
+                header: t("integrations.mcpKeyLevel"),
+                accessor: (row) => {
+                  const presetState = describeMcpPreset(row.scopes);
+                  return (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {presetState.isCustom ? (
+                        <Badge
+                          variant={row.enabled ? "warning" : "secondary"}
+                          className={cn(!row.enabled && "border-border/40 bg-muted/35 text-muted-foreground")}
+                        >
+                          {t("integrations.mcpKeyCustom")}
+                        </Badge>
+                      ) : null}
+                      <Badge
+                        variant={row.enabled ? (presetState.basePreset === "full_management" ? "info" : "outline") : "secondary"}
+                        className={cn(!row.enabled && "border-border/40 bg-muted/35 text-muted-foreground")}
+                      >
+                        {presetLabel(t, presetState.basePreset ?? "custom")}
+                      </Badge>
+                    </div>
+                  );
+                },
+                className: "text-center",
+              },
+              {
+                header: t("system.lastUsed"),
+                accessor: (row) => formatDate(row.last_used_at),
+                className: "text-center",
+              },
+              {
+                header: t("common.actions"),
+                accessor: (row) => (
+                  <div className="flex items-center justify-center gap-1.5">
+                    <ActivationToggleButton
+                      isActive={row.enabled}
+                      disabled={toggleKey.isPending}
+                      activeLabel={t("integrations.enabled")}
+                      inactiveLabel={t("integrations.disabled")}
+                      activeTitle={t("integrations.enabled")}
+                      inactiveTitle={t("integrations.disabled")}
+                      onClick={() =>
+                        toggleKey.mutate({
+                          keyId: row.id,
+                          data: {
+                            enabled: !row.enabled,
+                          },
+                        })
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={cn("min-h-0 h-8 w-8", !row.enabled && "text-muted-foreground")}
+                      onClick={() => openEdit(row)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={cn("min-h-0 h-8 w-8", !row.enabled && "text-muted-foreground")}
+                      onClick={() => {
+                        if (confirm(t("system.deleteConfirm"))) {
+                          del.mutate({ keyId: row.id });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ),
+                className: "w-[12rem] text-center",
+              },
+            ]}
+            data={mcpKeys}
+            total={mcpKeys.length}
+            isLoading={isLoading}
+            getRowClassName={(row) => inactiveRowClassName(row.enabled)}
+          />
+        </div>
+        <DialogContent className="max-w-lg rounded-2xl">
             <DialogHeader className="text-left">
               <DialogTitle>
                 {rawKey
@@ -309,82 +425,8 @@ export function McpApiKeysSection() {
                 </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="overflow-hidden rounded-[var(--admin-radius-xl)]">
-        <DataTable<ApiKeyAdminRead>
-          columns={[
-            { header: t("common.name"), accessor: "key_name" },
-            {
-              header: t("integrations.mcpKeyValue"),
-              accessor: (row) => (
-                <div className="flex items-center gap-2">
-                  <code className="rounded-md bg-muted/50 px-2 py-1 font-mono text-xs">
-                    {buildMaskedKey(row.key_prefix, row.key_suffix)}
-                  </code>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label={t("integrations.copyMcpKey")}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void copyKeyValue(row);
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              ),
-              className: "min-w-[14rem]",
-            },
-            {
-              header: t("integrations.mcpKeyLevel"),
-              accessor: (row) => {
-                const presetState = describeMcpPreset(row.scopes);
-                return (
-                  <div className="flex flex-wrap gap-2">
-                    {presetState.isCustom ? <Badge variant="warning">{t("integrations.mcpKeyCustom")}</Badge> : null}
-                    <Badge variant={presetState.basePreset === "full_management" ? "info" : "outline"}>
-                      {presetLabel(t, presetState.basePreset ?? "custom")}
-                    </Badge>
-                  </div>
-                );
-              },
-            },
-            { header: t("system.lastUsed"), accessor: (row) => formatDate(row.last_used_at) },
-            {
-              header: "",
-              accessor: (row) => (
-                <div className="flex justify-end gap-1">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => openEdit(row)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      if (confirm(t("system.deleteConfirm"))) {
-                        del.mutate({ keyId: row.id });
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ),
-              className: "w-[7rem]",
-            },
-          ]}
-          data={mcpKeys}
-          total={mcpKeys.length}
-          isLoading={isLoading}
-        />
-      </div>
-    </AdminSurface>
+        </DialogContent>
+      </AdminSurface>
+    </Dialog>
   );
 }
