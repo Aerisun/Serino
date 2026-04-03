@@ -93,7 +93,7 @@ const navGroups = [
 ];
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, requiresPasswordChange } = useAuth();
   const { t, lang, setLang } = useI18n();
   const { theme, setTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
@@ -108,6 +108,7 @@ export default function AdminLayout() {
         status: "pending",
       }),
     refetchInterval: 30000,
+    enabled: !requiresPasswordChange,
   });
   const { data: pendingGuestbook } = useQuery({
     queryKey: ["guestbook", "pending-count"],
@@ -118,16 +119,25 @@ export default function AdminLayout() {
         status: "pending",
       }),
     refetchInterval: 30000,
+    enabled: !requiresPasswordChange,
   });
   const pendingCount =
     (pendingComments?.total ?? 0) + (pendingGuestbook?.total ?? 0);
+  const effectiveNavGroups = requiresPasswordChange
+    ? [
+        {
+          labelKey: "nav.system",
+          items: [{ to: "/system/info", icon: Info, labelKey: "nav.systemInfo" }],
+        },
+      ]
+    : navGroups;
 
   const toggleLang = () => setLang(lang === "zh" ? "en" : "zh");
 
   const sidebarContent = (
     <>
       <nav className="flex-1 overflow-y-auto py-2">
-        {navGroups.map((group) => (
+        {effectiveNavGroups.map((group) => (
           <div key={group.labelKey} className="mb-2">
             {!collapsed && !group.hideLabel && (
               <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">

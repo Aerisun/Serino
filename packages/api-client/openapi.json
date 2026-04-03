@@ -13722,6 +13722,10 @@
             "type": "boolean",
             "title": "Is Active"
           },
+          "password_change_required": {
+            "type": "boolean",
+            "title": "Password Change Required"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -13733,6 +13737,7 @@
           "id",
           "username",
           "is_active",
+          "password_change_required",
           "created_at"
         ],
         "title": "AdminUserRead"

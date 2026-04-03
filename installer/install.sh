@@ -100,7 +100,7 @@ main() {
   write_production_env "${AERISUN_ENV_FILE}"
   compose_up_release
   wait_for_release_ready
-  verify_default_admin_login || die "服务已启动，但默认管理员登录检查失败。"
+  verify_default_admin_login || die "服务已启动，但默认管理员首登改密状态检查失败。"
 
   if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "domain" ]]; then
     print_install_summary \

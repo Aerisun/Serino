@@ -37,6 +37,18 @@ def delete_sessions_for_user(session: Session, admin_user_id: str) -> int:
     return count
 
 
+def delete_other_sessions_for_user(session: Session, admin_user_id: str, keep_token: str | None) -> int:
+    """Delete all sessions for a user except the provided token. Caller must commit."""
+    query = session.query(AdminSession).filter(AdminSession.admin_user_id == admin_user_id)
+    if keep_token:
+        query = query.filter(AdminSession.session_token != keep_token)
+    sessions = query.all()
+    count = len(sessions)
+    for item in sessions:
+        session.delete(item)
+    return count
+
+
 def find_active_sessions(session: Session, admin_user_id: str, *, now: datetime) -> list[AdminSession]:
     """Find all non-expired sessions for a user, ordered by created_at desc."""
     return list(

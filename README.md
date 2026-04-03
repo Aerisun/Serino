@@ -19,25 +19,19 @@ cd backend && uv sync --dev
 
 ### 开发密钥文件（推荐）
 
-为了避免把 SMTP / OAuth / AI / Webhook 等敏感信息写进种子文件，请使用本地密钥文件：
+如需本地密钥配置：
 
 ```bash
 cp .env.development.local.example .env.development.local
 ```
 
-`.env.development.local` 已被 gitignore，填写真实值后：
-- `make dev` / `make dev-pseed` 会自动加载这些变量
-- 开发种子会在本地数据库里初始化/补空相关配置，不会覆盖后台已手动保存的密钥（仅 development）
+`make dev` / `make dev-pseed` 会自动加载 `.env.development.local`。
 
-建议在本机启用提交前密钥防护（只需一次）：
+如需提交前密钥检查：
 
 ```bash
 make install-git-hooks
 ```
-
-启用后，提交时会自动阻止：
-- 把 `.env.local` / `.env.*.local` / `companions/**/.env` 提交进 git
-- 新增内容中出现明显密钥模式（私钥头、常见 API Key 前缀、可疑 secret/password/token 赋值）
 
 手动全仓检查：
 
@@ -67,6 +61,7 @@ make check-secrets
   - 前台：`http://127.0.0.1:8080/`
   - 后台：`http://127.0.0.1:3001/admin/`
   - 默认管理账号密码（针对空数据库创建）：`admin` / `admin123`
+  - 首次登录后台后必须立即修改密码，未完成前其余后台功能会保持锁定
 
 - 停止环境：
 
@@ -107,6 +102,7 @@ make check-secrets
 - 全新生产部署成功后，默认后台账号密码为：
   - `admin`
   - `admin123`
+  - 首次登录后台后必须立即修改密码
 
 - 生产安装与升级默认遵循三段式数据流程：
   - 首装：`migration + bootstrap seed`

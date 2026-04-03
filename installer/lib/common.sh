@@ -159,6 +159,7 @@ print_install_summary() {
 后台地址：${admin_url}
 默认管理员：admin
 默认密码：admin123
+首次登录后台后必须立即修改密码
 
 常用命令：
   aerisunctl status

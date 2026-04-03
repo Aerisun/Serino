@@ -1,6 +1,7 @@
 {
-  "id": "935dd6c3-7285-40f9-aaf7-821cc431cb5b",
+  "id": "4d13c925-a87f-4e93-825f-fdfe58b13566",
   "username": "test-admin",
   "is_active": true,
-  "created_at": "2026-04-03T13:17:05.120387"
+  "password_change_required": false,
+  "created_at": "2026-04-03T17:13:32.450286"
 }

@@ -49,16 +49,23 @@ def test_production_first_boot_creates_default_admin_and_allows_login(production
             "/api/v1/admin/auth/login",
             json={"username": "admin", "password": "admin123"},
         )
+        token = response.json()["token"]
+        me_response = client.get(
+            "/api/v1/admin/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
     finally:
         client.close()
 
     assert response.status_code == 200
     assert response.json()["token"]
+    assert me_response.status_code == 200
+    assert me_response.json()["password_change_required"] is True
 
 
 def test_production_non_first_boot_does_not_backfill_default_admin(production_runtime) -> None:
-    from aerisun.core.db import get_session_factory
     from aerisun.core.bootstrap_admin import ensure_first_boot_default_admin
+    from aerisun.core.db import get_session_factory
     from aerisun.domain.iam.models import AdminUser
 
     created = ensure_first_boot_default_admin(is_first_boot=False)
@@ -69,8 +76,8 @@ def test_production_non_first_boot_does_not_backfill_default_admin(production_ru
 
 
 def test_production_non_first_boot_does_not_reset_existing_admin_password(production_runtime) -> None:
-    from aerisun.core.db import get_session_factory
     from aerisun.core.bootstrap_admin import ensure_first_boot_default_admin
+    from aerisun.core.db import get_session_factory
     from aerisun.domain.exceptions import AuthenticationFailed
     from aerisun.domain.iam.bootstrap import add_admin_user
     from aerisun.domain.iam.service import authenticate_admin

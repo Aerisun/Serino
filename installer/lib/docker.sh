@@ -138,7 +138,7 @@ wait_for_release_ready() {
 verify_default_admin_login() {
   load_env_file "${AERISUN_ENV_FILE}"
 
-  local response
+  local response token me_response
   response="$(
     curl --fail --silent --show-error \
       -H 'content-type: application/json' \
@@ -146,5 +146,14 @@ verify_default_admin_login() {
       "http://127.0.0.1:${AERISUN_PORT:-8000}/api/v1/admin/auth/login"
   )" || return 1
 
-  grep -q '"token"' <<<"${response}"
+  token="$(printf '%s' "${response}" | tr -d '\n' | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+  [[ -n "${token}" ]] || return 1
+
+  me_response="$(
+    curl --fail --silent --show-error \
+      -H "Authorization: Bearer ${token}" \
+      "http://127.0.0.1:${AERISUN_PORT:-8000}/api/v1/admin/auth/me"
+  )" || return 1
+
+  grep -q '"password_change_required"[[:space:]]*:[[:space:]]*true' <<<"${me_response}"
 }

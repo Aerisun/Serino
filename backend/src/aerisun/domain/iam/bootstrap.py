@@ -19,11 +19,13 @@ def add_admin_user(
     username: str,
     password: str,
     is_active: bool = True,
+    password_change_required: bool = False,
 ) -> AdminUser:
     user = AdminUser(
         username=username,
         password_hash=hash_admin_password(password),
         is_active=is_active,
+        password_change_required=password_change_required,
     )
     session.add(user)
     return user
@@ -44,6 +46,7 @@ def ensure_default_production_admin(
         session,
         username=DEFAULT_ADMIN_USERNAME,
         password=DEFAULT_ADMIN_PASSWORD,
+        password_change_required=True,
     )
     session.commit()
     session.refresh(user)

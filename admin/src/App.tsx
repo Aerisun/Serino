@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/Toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/AuthProvider";
@@ -50,7 +50,8 @@ const queryClient = new QueryClient({
 });
 
 function ProtectedRoutes() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, requiresPasswordChange } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div className="flex h-dvh min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
@@ -58,6 +59,10 @@ function ProtectedRoutes() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (requiresPasswordChange && !location.pathname.startsWith("/system/info")) {
+    return <Navigate to="/system/info" replace />;
   }
 
   return (
@@ -124,8 +129,8 @@ export default function App() {
 }
 
 function LoginRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, requiresPasswordChange } = useAuth();
   if (isLoading) return null;
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to={requiresPasswordChange ? "/system/info" : "/"} replace />;
   return <LoginPage />;
 }
