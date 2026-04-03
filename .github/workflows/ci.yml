@@ -20,6 +20,8 @@ concurrency:
 env:
   CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
   DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME != '' && vars.DOCKERHUB_USERNAME || 'aerisun' }}
+  TCR_REGISTRY: ${{ vars.TCR_REGISTRY }}
+  TCR_NAMESPACE: ${{ vars.TCR_NAMESPACE }}
 
 jobs:
   workspace-guards:
@@ -343,7 +345,8 @@ jobs:
           version="${release_tag#v}"
           IFS='.' read -r major minor patch <<<"${version}"
 
-          echo "image=docker.io/${DOCKERHUB_USERNAME}/${{ matrix.image_name }}" >> "${GITHUB_OUTPUT}"
+          echo "dockerhub_image=docker.io/${DOCKERHUB_USERNAME}/${{ matrix.image_name }}" >> "${GITHUB_OUTPUT}"
+          echo "tcr_image=${TCR_REGISTRY}/${TCR_NAMESPACE}/${{ matrix.image_name }}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "major_minor=${major}.${minor}" >> "${GITHUB_OUTPUT}"
           echo "major=${major}" >> "${GITHUB_OUTPUT}"
@@ -359,11 +362,33 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Require TCR publish settings
+        shell: bash
+        env:
+          TCR_USERNAME: ${{ secrets.TCR_USERNAME }}
+          TCR_PASSWORD: ${{ secrets.TCR_PASSWORD }}
+        run: |
+          for key in TCR_REGISTRY TCR_NAMESPACE TCR_USERNAME TCR_PASSWORD; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "Missing required TCR publish setting: ${key}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Login to Tencent Cloud TCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.TCR_REGISTRY }}
+          username: ${{ secrets.TCR_USERNAME }}
+          password: ${{ secrets.TCR_PASSWORD }}
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.prep.outputs.image }}
+          images: |
+            ${{ steps.prep.outputs.dockerhub_image }}
+            ${{ steps.prep.outputs.tcr_image }}
           tags: |
             type=raw,value=${{ steps.prep.outputs.version }}
             type=raw,value=${{ steps.prep.outputs.major_minor }}

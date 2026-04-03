@@ -1,6 +1,6 @@
 services:
   api:
-    image: ${AERISUN_API_IMAGE:-docker.io/aerisun/serino-api}:${AERISUN_IMAGE_TAG:-latest}
+    image: ${AERISUN_IMAGE_REGISTRY:-docker.io/aerisun}/serino-api:${AERISUN_IMAGE_TAG:-latest}
     environment:
       AERISUN_ENVIRONMENT: ${AERISUN_ENVIRONMENT:-production}
       AERISUN_HOST: ${AERISUN_HOST:-0.0.0.0}
@@ -43,7 +43,7 @@ services:
         max-file: "3"
 
   waline:
-    image: ${AERISUN_WALINE_IMAGE:-docker.io/aerisun/serino-waline}:${AERISUN_IMAGE_TAG:-latest}
+    image: ${AERISUN_IMAGE_REGISTRY:-docker.io/aerisun}/serino-waline:${AERISUN_IMAGE_TAG:-latest}
     environment:
       SITE_NAME: ${AERISUN_APP_NAME:-Aerisun}
       SITE_URL: ${AERISUN_SITE_URL}
@@ -80,7 +80,7 @@ services:
         max-file: "3"
 
   caddy:
-    image: ${AERISUN_WEB_IMAGE:-docker.io/aerisun/serino-web}:${AERISUN_IMAGE_TAG:-latest}
+    image: ${AERISUN_IMAGE_REGISTRY:-docker.io/aerisun}/serino-web:${AERISUN_IMAGE_TAG:-latest}
     ports:
       - "${AERISUN_HTTP_PORT:-80}:80"
       - "${AERISUN_HTTPS_PORT:-443}:443"

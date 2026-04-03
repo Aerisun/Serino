@@ -90,15 +90,28 @@ make check-secrets
 
 ## Docker 发布与部署
 
-- 正式镜像固定发布到 Docker Hub：
-  - `docker.io/aerisun/serino-api`
-  - `docker.io/aerisun/serino-web`
-  - `docker.io/aerisun/serino-waline`
+- 正式镜像同时发布到 Docker Hub 和腾讯云 TCR 个人版：
+  - Docker Hub
+    - `docker.io/aerisun/serino-api`
+    - `docker.io/aerisun/serino-web`
+    - `docker.io/aerisun/serino-waline`
+  - 腾讯云 TCR
+    - `${TCR_REGISTRY}/${TCR_NAMESPACE}/serino-api`
+    - `${TCR_REGISTRY}/${TCR_NAMESPACE}/serino-web`
+    - `${TCR_REGISTRY}/${TCR_NAMESPACE}/serino-waline`
 
 - GitHub Actions 行为：
   - `main` 和 Pull Request：只做镜像构建验证，不推送
-  - `vX.Y.Z` tag：先跑 smoke，再发布 `1.2.3`、`1.2`、`1`、`latest`
+  - `vX.Y.Z` tag：先跑 smoke，再向两个仓库同时发布 `1.2.3`、`1.2`、`1`、`latest`
   - `workflow_dispatch`：输入同一个 tag，可手动重发镜像
+
+- 发布作业依赖以下 GitHub 配置：
+  - `vars.DOCKERHUB_USERNAME`
+  - `secrets.DOCKERHUB_TOKEN`
+  - `vars.TCR_REGISTRY`
+  - `vars.TCR_NAMESPACE`
+  - `secrets.TCR_USERNAME`
+  - `secrets.TCR_PASSWORD`
 
 - 部署前先复制发布环境文件：
 
@@ -110,6 +123,12 @@ make check-secrets
 
   ```bash
   docker compose --env-file .env.production.local -f docker-compose.release.yml up -d
+  ```
+
+- `docker-compose.release.yml` 默认从 Docker Hub 拉取；如果要切到腾讯云 TCR，可在 `.env.production.local` 里加入：
+
+  ```bash
+  AERISUN_IMAGE_REGISTRY=${TCR_REGISTRY}/${TCR_NAMESPACE}
   ```
 
 - 默认数据会落到当前目录下的 `./.aerisun-store/`，容器内仍然使用 `/srv/aerisun/store`
