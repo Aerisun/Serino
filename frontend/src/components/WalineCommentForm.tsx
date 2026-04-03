@@ -118,7 +118,6 @@ const WalineCommentForm = ({
   authError,
   requiresAuthentication,
   commentEmailLoginEnabled,
-  loginMethodLabels,
   hasLoginMethod,
   onOpenLogin,
   onLogout,
@@ -217,34 +216,13 @@ const WalineCommentForm = ({
                 </button>
               </div>
             ) : requiresAuthentication ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] px-4 py-3 dark:bg-card/[0.82]">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">{t("waline.form.loginRequiredTitle")}</p>
-                  <p className="text-xs text-foreground/45">
-                    {t("waline.form.loginRequiredDesc")}
-                  </p>
-                  {loginMethodLabels.length ? (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {loginMethodLabels.map((label) => (
-                        <span
-                          key={label}
-                          className="inline-flex items-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.14)] bg-background/[0.8] px-2.5 py-1 text-[0.7rem] text-foreground/58 dark:bg-card/[0.88]"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="pt-1 text-xs text-amber-700 dark:text-amber-300">
-                      {t("waline.form.noLoginMethod")}
-                    </p>
-                  )}
-                </div>
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] px-4 py-5 text-center dark:bg-card/[0.82]">
+                <p className="text-sm font-medium text-foreground">{t("waline.form.loginRequiredTitle")}</p>
                 <button
                   type="button"
                   onClick={() => onOpenLogin({ allowEmailLogin: commentEmailLoginEnabled })}
                   disabled={!hasLoginMethod}
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.1)] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.88)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.14)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.1)] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.88)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.14)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <LockKeyhole className="h-4 w-4" />
                   {t("waline.form.loginToComment")}
@@ -300,19 +278,6 @@ const WalineCommentForm = ({
                   </div>
                 ) : null}
               </div>
-            ) : null}
-
-            {/* Website field (guestbook only) */}
-            {isGuestbook ? (
-              <label className="block space-y-2">
-                <span className="text-xs font-medium uppercase tracking-[0.22em] text-foreground/40">{t("common.website")}</span>
-                <input
-                  value={draft.website}
-                  onChange={(event) => onFieldChange("website", event.target.value)}
-                  placeholder="https://example.com"
-                  className={communityInputClass}
-                />
-              </label>
             ) : null}
 
             {/* Reply target indicator */}

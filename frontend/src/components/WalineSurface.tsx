@@ -549,7 +549,7 @@ const WalineSurface = ({
 
   return (
     <section className={`aerisun-community-surface space-y-5 ${className ?? ""}`.trim()}>
-      <div className={communityPanelClass}>
+      <div className={`${communityPanelClass} ${composerOpen ? "" : "py-4"}`.trim()}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2 text-[0.72rem] font-medium uppercase tracking-[0.22em] text-foreground/42">
             <Sparkles className="h-3.5 w-3.5" />
@@ -558,7 +558,7 @@ const WalineSurface = ({
           <button
             type="button"
             onClick={() => setComposerOpen((current) => !current)}
-            className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-4 py-2 text-sm font-medium text-foreground/60 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.82]"
+            className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-4 py-1.5 text-sm font-medium text-foreground/60 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.82]"
           >
             <PencilLine className="h-4 w-4" />
             {composerOpen
@@ -571,7 +571,7 @@ const WalineSurface = ({
           </button>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className={composerOpen ? "mt-4 space-y-3" : "mt-0"}>
           <WalineCommentForm
             authLoading={authLoading}
             authSession={authSession}
