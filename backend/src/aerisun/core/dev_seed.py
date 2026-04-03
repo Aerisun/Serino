@@ -20,7 +20,7 @@ from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.time import beijing_today
 from aerisun.domain.automation.models import WebhookSubscription
 from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
-from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference
+from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference, purge_managed_media_root
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import (
     seed_content_entries,
@@ -2250,6 +2250,8 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
         if force and reseed_all_blocks:
             _clear_seed_data(session)
             clear_waline_seed_data()
+            session.commit()
+            purge_managed_media_root()
         elif incremental_force:
             _logger = logging.getLogger("aerisun.seed")
             if blocks_to_reseed:

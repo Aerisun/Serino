@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
-from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference
+from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference, purge_managed_media_root
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import seed_missing_page_copies
 from aerisun.core.seed_steps.legacy import seed_dev_admin
@@ -696,6 +696,8 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
         if force:
             _clear_seed_data(session)
             clear_waline_seed_data()
+            session.commit()
+            purge_managed_media_root()
 
         frontend_public_dir = BACKEND_ROOT.parent / "frontend" / "public"
         frontend_public_images = frontend_public_dir / "images"
