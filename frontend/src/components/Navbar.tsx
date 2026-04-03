@@ -28,10 +28,17 @@ const adminBasePath =
   typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
     ? __AERISUN_ADMIN_BASE_PATH__
     : "/admin/";
+const adminBaseUrl =
+  typeof __AERISUN_ADMIN_BASE_URL__ === "string"
+    ? __AERISUN_ADMIN_BASE_URL__
+    : "";
 
 const buildAdminConsoleEntryHref = () => {
-  const target = new URL("login?site_admin=1", window.location.origin + adminBasePath);
-  return `${target.pathname}${target.search}`;
+  const base = adminBaseUrl
+    ? new URL(adminBasePath.replace(/^\/+/, ""), `${adminBaseUrl}/`).toString()
+    : window.location.origin + adminBasePath;
+  const target = new URL("login?site_admin=1", base);
+  return target.toString();
 };
 
 const NavDropdown = ({
@@ -262,7 +269,9 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const prefersReducedMotion = useReducedMotionPreference();
   const { user, openLogin, openProfileEditor, logout } = useSiteAuth();
   const adminConsoleEntryHref =
-    typeof window !== "undefined" ? buildAdminConsoleEntryHref() : "/admin/login?site_admin=1";
+    typeof window !== "undefined"
+      ? buildAdminConsoleEntryHref()
+      : `${adminBaseUrl || ""}${adminBasePath}login?site_admin=1`;
   const navGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
   const navStrongGlassClass =
     glassVariant === "hero" ? "liquid-glass-hero-strong" : "liquid-glass-strong";

@@ -128,7 +128,7 @@ class Settings(BaseSettings):
     dev_seed_agent_model: str = ""
     dev_seed_agent_model_api_key: str = ""
     dev_seed_agent_model_temperature: float = 0.2
-    dev_seed_agent_model_timeout_seconds: int = 20
+    dev_seed_agent_model_timeout_seconds: int = 60
     dev_seed_agent_model_advisory_prompt: str = ""
     dev_seed_webhook_name: str = ""
     dev_seed_webhook_target_url: str = ""

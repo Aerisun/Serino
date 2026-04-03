@@ -61,7 +61,7 @@ DEFAULT_AGENT_MODEL_CONFIG: dict[str, Any] = {
     "model": "",
     "api_key": "",
     "temperature": 0.2,
-    "timeout_seconds": 20,
+    "timeout_seconds": 60,
     "advisory_prompt": (
         "You are assisting a website automation workflow for a Chinese content/admin site. "
         "Return strict JSON that matches the requested schema and never wrap it in markdown. "

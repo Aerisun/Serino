@@ -366,7 +366,7 @@ def build_default_community_config() -> dict[str, object]:
         "required_meta": ["nick"],
         "emoji_presets": ["twemoji", "qq", "bilibili"],
         "enable_enjoy_search": True,
-        "image_uploader": False,
+        "image_uploader": True,
         "anonymous_enabled": True,
         "moderation_mode": "all_pending",
         "default_sorting": "latest",

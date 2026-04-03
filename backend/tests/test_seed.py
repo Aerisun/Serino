@@ -6,9 +6,10 @@ from aerisun.core.dev_seed import seed_development_data, seed_reference_data
 from aerisun.core.seed import seed_bootstrap_data
 from aerisun.core.seed_profile import resolve_seed_path
 from aerisun.core.settings import get_settings
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.ops.models import AuditLog, ConfigRevision, TrafficDailySnapshot
-from aerisun.domain.site_config.models import PageCopy
+from aerisun.domain.site_config.models import CommunityConfig, PageCopy, SiteProfile
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -51,7 +52,7 @@ def test_seed_reference_data_merges_missing_page_copy_extras(client) -> None:
         friends_page = session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
         assert friends_page.title == "Custom Friends"
         assert friends_page.extras["circle_title"] == "Custom Circle"
-        assert friends_page.extras["statusLabel"] == "状态"
+        assert friends_page.extras["refreshLabel"] == "刷新"
     finally:
         session.close()
 
@@ -233,6 +234,40 @@ def test_seed_bootstrap_data_only_initializes_safe_scaffold(tmp_path, monkeypatc
 
         assert int(total[0]) == 0
         assert int(counters[0]) == 0
+    finally:
+        teardown_runtime_state()
+
+
+def test_seed_bootstrap_data_uses_updated_defaults(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        seed_bootstrap_data(force=True)
+
+        session_factory = get_session_factory()
+        with session_factory() as session:
+            community = session.query(CommunityConfig).one()
+
+        assert community.image_uploader is True
+    finally:
+        teardown_runtime_state()
+
+
+def test_seed_development_data_uses_updated_defaults(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        seed_development_data(force=True)
+
+        session_factory = get_session_factory()
+        with session_factory() as session:
+            community = session.query(CommunityConfig).one()
+
+        assert community.image_uploader is True
     finally:
         teardown_runtime_state()
 

@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
+from aerisun.core.time import beijing_today
 from aerisun.domain.automation.models import WebhookSubscription
 from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference
@@ -473,7 +474,7 @@ def build_default_community_config() -> dict[str, object]:
         "required_meta": ["nick"],
         "emoji_presets": ["twemoji", "qq", "bilibili"],
         "enable_enjoy_search": True,
-        "image_uploader": False,
+        "image_uploader": True,
         "anonymous_enabled": True,
         "moderation_mode": "all_pending",
         "default_sorting": "latest",
@@ -1764,7 +1765,7 @@ DEFAULT_TRAFFIC_REACTION_SERIES = {
 
 
 def _build_default_traffic_snapshots() -> list[dict[str, object]]:
-    today = datetime.now(UTC).date()
+    today = beijing_today()
     snapshots: list[dict[str, object]] = []
     for url, cumulative_views in DEFAULT_TRAFFIC_SNAPSHOT_SERIES.items():
         cumulative_reactions = DEFAULT_TRAFFIC_REACTION_SERIES.get(url, [0] * len(cumulative_views))

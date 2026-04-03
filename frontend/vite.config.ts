@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => {
   const apiBaseUrl = (env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
   const apiBasePath = stripTrailingSlash(env.AERISUN_API_BASE_PATH ?? "/api");
   const adminBasePath = (env.AERISUN_ADMIN_BASE_PATH ?? "/admin/").trim() || "/admin/";
+  const explicitAdminBaseUrl = (env.VITE_ADMIN_BASE_URL ?? "").replace(/\/+$/, "");
+  const adminPort = parseInt(env.AERISUN_ADMIN_PORT || "3001", 10);
+  const adminBaseUrl =
+    explicitAdminBaseUrl || (mode !== "production" ? `http://127.0.0.1:${adminPort}` : "");
   const walineBasePath = stripTrailingSlash(env.AERISUN_WALINE_BASE_PATH ?? "/waline");
   const apiBasePathPattern = new RegExp(`${escapeRegExp(apiBasePath)}/`);
   const walinePort = env.WALINE_PORT || "8360";
@@ -20,6 +24,7 @@ export default defineConfig(({ mode }) => {
       __AERISUN_API_BASE_URL__: JSON.stringify(apiBaseUrl),
       __AERISUN_API_BASE_PATH__: JSON.stringify(apiBasePath),
       __AERISUN_ADMIN_BASE_PATH__: JSON.stringify(adminBasePath),
+      __AERISUN_ADMIN_BASE_URL__: JSON.stringify(adminBaseUrl),
       __AERISUN_WALINE_BASE_PATH__: JSON.stringify(walineBasePath),
       __SERINO_DEV__: JSON.stringify(mode !== "production"),
     },
