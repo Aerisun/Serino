@@ -17,10 +17,6 @@ from sqlalchemy.orm import Session
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
-from aerisun.core.time import beijing_today
-from aerisun.domain.automation.models import WebhookSubscription
-from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
-from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import (
     seed_content_entries,
@@ -37,12 +33,16 @@ from aerisun.core.seed_steps.social import (
     seed_traffic_snapshot_data,
     seed_visit_record_data,
 )
+from aerisun.core.seed_steps.system_assets import normalize_core_system_asset_references, seed_core_system_asset_urls
 from aerisun.core.seed_steps.waline import (
     clear_waline_seed_data,
     seed_waline_comment_data,
     seed_waline_counter_data,
 )
-from aerisun.core.settings import BACKEND_ROOT, get_settings
+from aerisun.core.settings import get_settings
+from aerisun.core.time import beijing_today
+from aerisun.domain.automation.models import WebhookSubscription
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser
@@ -599,7 +599,9 @@ def _seed_site_auth_config(session: Session) -> None:
 
 def _seed_subscription_config_from_settings(session: Session) -> None:
     settings = get_settings()
-    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    config = session.scalars(
+        select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())
+    ).first()
     created = False
     if config is None:
         config = ContentSubscriptionConfig()
@@ -679,9 +681,7 @@ def _seed_agent_model_config_from_settings(session: Session) -> None:
     api_key = settings.dev_seed_agent_model_api_key.strip()
     advisory_prompt = settings.dev_seed_agent_model_advisory_prompt.strip()
 
-    should_apply = bool(
-        settings.dev_seed_agent_model_enabled or base_url or model_name or api_key or advisory_prompt
-    )
+    should_apply = bool(settings.dev_seed_agent_model_enabled or base_url or model_name or api_key or advisory_prompt)
     if not should_apply:
         return
 
@@ -703,7 +703,9 @@ def _seed_agent_model_config_from_settings(session: Session) -> None:
         merged["model"] = model_name
     if ("api_key" not in current_data or _is_blank_value(current_data.get("api_key"))) and api_key:
         merged["api_key"] = api_key
-    if ("advisory_prompt" not in current_data or _is_blank_value(current_data.get("advisory_prompt"))) and advisory_prompt:
+    if (
+        "advisory_prompt" not in current_data or _is_blank_value(current_data.get("advisory_prompt"))
+    ) and advisory_prompt:
         merged["advisory_prompt"] = advisory_prompt
 
     if "temperature" not in current_data or current_data.get("temperature") is None:
@@ -747,7 +749,9 @@ def _seed_webhook_subscription_from_settings(session: Session) -> None:
             )
 
     webhook = session.scalars(
-        select(WebhookSubscription).where(WebhookSubscription.name == name).order_by(WebhookSubscription.created_at.asc())
+        select(WebhookSubscription)
+        .where(WebhookSubscription.name == name)
+        .order_by(WebhookSubscription.created_at.asc())
     ).first()
     if webhook is None:
         webhook = WebhookSubscription(
@@ -1835,10 +1839,7 @@ def _seed_function_source(fn: object) -> str:
 def _fingerprint_seed_block(*parts: object) -> str:
     digest = hashlib.sha256()
     for part in parts:
-        if callable(part):
-            payload = _seed_function_source(part)
-        else:
-            payload = repr(part)
+        payload = _seed_function_source(part) if callable(part) else repr(part)
         digest.update(payload.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()[:16]
@@ -1916,10 +1917,7 @@ def _load_seed_block_fingerprints(db_path: Path, *, include_dev_data: bool) -> d
 
     connection = sqlite3.connect(str(db_path))
     try:
-        tables = {
-            row[0]
-            for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-        }
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
         if "_aerisun_meta" not in tables:
             return {}
 
@@ -1965,11 +1963,7 @@ def _determine_incremental_reseed_blocks(
     stored_fingerprints = _load_seed_block_fingerprints(db_path, include_dev_data=include_dev_data)
     if not stored_fingerprints:
         return set(active_blocks)
-    return {
-        block
-        for block in active_blocks
-        if stored_fingerprints.get(block) != current_fingerprints.get(block)
-    }
+    return {block for block in active_blocks if stored_fingerprints.get(block) != current_fingerprints.get(block)}
 
 
 def _clear_seed_models(session: Session, models: list[type], *, label: str) -> None:
@@ -2076,45 +2070,16 @@ def _should_preserve_social_block(session: Session) -> bool:
     )
 
 
-def _seed_core_reference_data(session: Session, *, frontend_public_dir: Path, frontend_public_images: Path) -> None:
-    seeded_og_image = ensure_seed_asset(
-        session,
-        source_path=frontend_public_images / "hero_bg.jpeg",
-        category="site-og",
-        note="站点默认 OG 分享图（seed 初始化）",
-    )
-    seeded_site_icon = ensure_seed_asset(
-        session,
-        source_path=frontend_public_dir / "favicon.svg",
-        category="site-icon",
-        note="站点默认标签页图标（seed 初始化）",
-    )
-    seeded_hero_image = ensure_seed_asset(
-        session,
-        source_path=frontend_public_images / "avatar.webp",
-        category="hero-image",
-        note="首页 Hero 默认视觉图（seed 初始化）",
-    )
-    seeded_hero_poster = ensure_seed_asset(
-        session,
-        source_path=frontend_public_images / "hero_bg.jpeg",
-        category="hero-poster",
-        note="首页 Hero 视频默认封面图（seed 初始化）",
-    )
-    seeded_resume_avatar = ensure_seed_asset(
-        session,
-        source_path=frontend_public_images / "avatar.webp",
-        category="resume-avatar",
-        note="简历默认头像（seed 初始化）",
-    )
+def _seed_core_reference_data(session: Session) -> None:
+    seeded_assets = seed_core_system_asset_urls(session)
 
     if is_empty(session, SiteProfile):
         site_payload = {
             **DEFAULT_SITE_PROFILE,
-            "og_image": seeded_og_image,
-            "site_icon_url": seeded_site_icon,
-            "hero_image_url": seeded_hero_image,
-            "hero_poster_url": seeded_hero_poster,
+            "og_image": seeded_assets["og_image"],
+            "site_icon_url": seeded_assets["site_icon_url"],
+            "hero_image_url": seeded_assets["hero_image_url"],
+            "hero_poster_url": seeded_assets["hero_poster_url"],
         }
         site = SiteProfile(**site_payload)
         session.add(site)
@@ -2122,13 +2087,10 @@ def _seed_core_reference_data(session: Session, *, frontend_public_dir: Path, fr
 
         session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
         session.add_all(
-            [
-                Poem(site_profile_id=site.id, order_index=index, content=text)
-                for index, text in enumerate(DEFAULT_POEMS)
-            ]
+            [Poem(site_profile_id=site.id, order_index=index, content=text) for index, text in enumerate(DEFAULT_POEMS)]
         )
         session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
-        resume_payload = {**DEFAULT_RESUME, "profile_image_url": seeded_resume_avatar}
+        resume_payload = {**DEFAULT_RESUME, "profile_image_url": seeded_assets["profile_image_url"]}
         resume = ResumeBasics(**resume_payload)
         session.add(resume)
         session.flush()
@@ -2136,55 +2098,8 @@ def _seed_core_reference_data(session: Session, *, frontend_public_dir: Path, fr
     seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
 
     current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-    if current_site is not None:
-        current_site.og_image = ensure_system_asset_reference(
-            session,
-            source_value=current_site.og_image,
-            category="site-og",
-            note="站点分享图（系统资源归拢）",
-            public_root=frontend_public_dir,
-        )
-        current_site.site_icon_url = ensure_system_asset_reference(
-            session,
-            source_value=current_site.site_icon_url,
-            category="site-icon",
-            note="站点标签页图标（系统资源归拢）",
-            public_root=frontend_public_dir,
-        )
-        current_site.hero_image_url = ensure_system_asset_reference(
-            session,
-            source_value=current_site.hero_image_url,
-            category="hero-image",
-            note="首页 Hero 视觉图（系统资源归拢）",
-            public_root=frontend_public_dir,
-        )
-        current_site.hero_poster_url = ensure_system_asset_reference(
-            session,
-            source_value=current_site.hero_poster_url,
-            category="hero-poster",
-            note="首页 Hero 视频封面图（系统资源归拢）",
-            public_root=frontend_public_dir,
-        )
-        current_site.hero_video_url = (
-            ensure_system_asset_reference(
-                session,
-                source_value=current_site.hero_video_url,
-                category="hero-video",
-                note="首页 Hero 背景视频（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            or None
-        )
-
     current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
-    if current_resume is not None:
-        current_resume.profile_image_url = ensure_system_asset_reference(
-            session,
-            source_value=current_resume.profile_image_url,
-            category="resume-avatar",
-            note="简历默认头像（系统资源归拢）",
-            public_root=frontend_public_dir,
-        )
+    normalize_core_system_asset_references(session, site=current_site, resume=current_resume)
 
     if is_empty(session, NavItem):
         site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
@@ -2282,9 +2197,6 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
             if include_dev_data and "waline" in blocks_to_reseed:
                 clear_waline_seed_data()
 
-        frontend_public_dir = BACKEND_ROOT.parent / "frontend" / "public"
-        frontend_public_images = frontend_public_dir / "images"
-
         run_core = reseed_all_blocks or "core" in blocks_to_reseed
         run_content = reseed_all_blocks or "content" in blocks_to_reseed
         run_social = include_dev_data and (reseed_all_blocks or "social" in blocks_to_reseed)
@@ -2293,11 +2205,7 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
         run_admin = reseed_all_blocks or "admin" in blocks_to_reseed
 
         if run_core:
-            _seed_core_reference_data(
-                session,
-                frontend_public_dir=frontend_public_dir,
-                frontend_public_images=frontend_public_images,
-            )
+            _seed_core_reference_data(session)
 
         if run_content:
             seed_content_entries(session, PostEntry, DEFAULT_POSTS)
