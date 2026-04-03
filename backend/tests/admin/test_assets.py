@@ -8,7 +8,7 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.domain.media import object_storage as media_object_storage
 from aerisun.domain.media import repository as media_repo
-from aerisun.domain.media.models import Asset, AssetRemoteDeleteQueueItem, AssetRemoteUploadQueueItem
+from aerisun.domain.media.models import Asset, AssetMirrorQueueItem, AssetRemoteDeleteQueueItem, AssetRemoteUploadQueueItem
 
 BASE = "/api/v1/admin/assets"
 
@@ -111,6 +111,96 @@ def test_init_upload_returns_local_mode_when_oss_disabled(client, admin_headers)
     assert payload["mode"] == "local"
     assert payload["upload_url"] is None
     assert payload["asset"] is None
+
+
+def test_upload_asset_with_oss_queues_async_mirror_without_writing_local_file(client, admin_headers, monkeypatch):
+    from aerisun.domain.media import service as media_service
+
+    class _Provider:
+        def upload_bytes(self, *, object_key: str, data: bytes, content_type: str | None):
+            return media_object_storage.ObjectHead(
+                content_length=len(data),
+                content_type=content_type,
+                etag="etag-direct-upload",
+                last_modified=utcnow(),
+            )
+
+    monkeypatch.setattr(media_service, "build_object_storage_provider", lambda session: _Provider())
+    monkeypatch.setattr(media_object_storage, "build_object_storage_provider", lambda session: _Provider())
+
+    response = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("avatar.png", b"avatar-bytes", "image/png")},
+        data={"visibility": "internal", "category": "avatar"},
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert not Path(payload["storage_path"]).exists()
+
+    with get_session_factory()() as session:
+        asset = session.query(Asset).filter_by(id=payload["id"]).one()
+        mirrors = session.query(AssetMirrorQueueItem).filter_by(asset_id=payload["id"]).all()
+        assert asset.remote_status == "available"
+        assert asset.mirror_status == "queued"
+        assert len(mirrors) == 1
+        assert mirrors[0].status == "queued"
+        assert mirrors[0].object_key == payload["resource_key"]
+
+
+def test_complete_upload_queues_async_mirror_without_writing_local_file(monkeypatch, client, admin_headers):
+    from aerisun.domain.media import service as media_service
+
+    class _Provider:
+        def sign_upload(self, *, object_key: str, content_type: str | None, expires_in: int) -> str:
+            return f"https://upload.example.com/{object_key}"
+
+        def head_object(self, *, object_key: str):
+            return media_object_storage.ObjectHead(
+                content_length=12,
+                content_type="image/png",
+                etag="etag-complete-upload",
+                last_modified=utcnow(),
+            )
+
+    monkeypatch.setattr(media_service, "build_object_storage_provider", lambda session: _Provider())
+    monkeypatch.setattr(media_object_storage, "build_object_storage_provider", lambda session: _Provider())
+
+    plan = client.post(
+        f"{BASE}/init-upload",
+        headers=admin_headers,
+        json={
+            "file_name": "avatar.png",
+            "byte_size": 12,
+            "sha256": "a" * 64,
+            "mime_type": "image/png",
+            "visibility": "internal",
+            "scope": "user",
+            "category": "avatar",
+        },
+    )
+    assert plan.status_code == 200
+    payload = plan.json()
+    assert payload["mode"] == "oss"
+
+    complete = client.post(
+        f"{BASE}/complete-upload",
+        headers=admin_headers,
+        json={"asset_id": payload["asset_id"]},
+    )
+    assert complete.status_code == 200
+    complete_payload = complete.json()
+    assert not Path(complete_payload["storage_path"]).exists()
+
+    with get_session_factory()() as session:
+        asset = session.query(Asset).filter_by(id=payload["asset_id"]).one()
+        mirrors = session.query(AssetMirrorQueueItem).filter_by(asset_id=payload["asset_id"]).all()
+        assert asset.remote_status == "available"
+        assert asset.mirror_status == "queued"
+        assert len(mirrors) == 1
+        assert mirrors[0].status == "queued"
+        assert mirrors[0].object_key == payload["resource_key"]
 
 
 def test_media_gateway_redirects_when_runtime_remote_link_available(client, admin_headers, monkeypatch):

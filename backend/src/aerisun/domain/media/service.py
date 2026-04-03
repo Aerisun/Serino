@@ -183,7 +183,13 @@ def upload_asset(
     if existing is not None:
         storage_path = Path(existing.storage_path)
         if not storage_path.exists():
-            _write_local_file(storage_path, content)
+            provider = build_object_storage_provider(session)
+            if provider is not None and existing.storage_provider == "bitiful" and existing.remote_status == "available":
+                queue_asset_mirror(session, existing)
+                session.commit()
+                session.refresh(existing)
+            else:
+                _write_local_file(storage_path, content)
         return asset_admin_read_from_model(existing)
 
     storage_path = build_asset_storage_path(resource_key)
@@ -204,11 +210,11 @@ def upload_asset(
             storage_provider="bitiful",
             remote_object_key=resource_key,
             remote_status="available",
-            mirror_status="completed",
+            mirror_status="queued",
             oss_acceleration_enabled_at_upload=True,
         )
         upload_asset_bytes_to_remote(session, asset=asset, content=content, mime_type=mime_type)
-        _write_local_file(storage_path, content)
+        queue_asset_mirror(session, asset)
     else:
         _write_local_file(storage_path, content)
         asset = _create_asset_record(

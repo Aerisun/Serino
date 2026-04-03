@@ -459,6 +459,7 @@ def should_use_direct_upload(session: Session) -> bool:
 
 
 def queue_asset_mirror(session: Session, asset: Asset) -> AssetMirrorQueueItem:
+    session.flush()
     existing = repo.find_active_mirror_queue_item_for_asset(session, asset.id)
     if existing is not None:
         return existing

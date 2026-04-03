@@ -94,12 +94,23 @@ def _update_community_config(**changes) -> None:
 
 
 def _login_site_user(client, *, email: str, display_name: str) -> None:
+    _login_site_user_with_options(client, email=email, display_name=display_name)
+
+
+def _login_site_user_with_options(
+    client,
+    *,
+    email: str,
+    display_name: str,
+    admin_password: str | None = None,
+) -> None:
     response = client.post(
         "/api/v1/site-auth/email",
         json={
             "email": email,
             "display_name": display_name,
             "avatar_url": f"https://api.dicebear.com/9.x/notionists/svg?seed={display_name}",
+            **({"admin_password": admin_password} if admin_password is not None else {}),
         },
     )
     assert response.status_code == 200
@@ -131,6 +142,10 @@ def _bind_admin_identity_by_email(*, email: str) -> None:
         config = session.query(SiteAuthConfig).first()
         assert config is not None
         config.admin_email_enabled = True
+        config.admin_email_password_hash = bcrypt.hashpw(
+            b"comment-password",
+            bcrypt.gensalt(),
+        ).decode()
         session.commit()
 
         bind_site_admin_identity_by_email(
@@ -304,13 +319,19 @@ def test_read_comments_marks_email_bound_admin_identity(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     comment = next(item for item in _flatten_comments(payload["items"]) if item["body"] == "邮箱绑定管理员评论")
-    assert comment["author_name"] == "并不是站点标题"
+    assert comment["author_name"] == "Felix"
     assert comment["is_author"] is True
+    assert "/media/internal/assets/hero-image/" in comment["avatar_url"]
 
 
 def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
     _bind_admin_identity_by_email(email="admin-comment@example.com")
-    _login_site_user(client, email="admin-comment@example.com", display_name="Comment Admin")
+    _login_site_user_with_options(
+        client,
+        email="admin-comment@example.com",
+        display_name="Comment Admin",
+        admin_password="comment-password",
+    )
 
     response = client.post(
         "/api/v1/site-interactions/comments/posts/from-zero-design-system",
@@ -325,6 +346,58 @@ def test_create_comment_marks_bound_admin_user_as_author(client) -> None:
     payload = response.json()
     assert payload["accepted"] is True
     assert payload["item"]["author_name"] == "Felix"
+    assert payload["item"]["is_author"] is True
+    assert payload["item"]["avatar"] == "site-admin"
+    assert "/media/internal/assets/hero-image/" in payload["item"]["avatar_url"]
+
+
+def test_read_guestbook_marks_email_bound_admin_identity(client) -> None:
+    from aerisun.domain.waline.service import build_comment_path, create_waline_record
+
+    _bind_admin_identity_by_email(email="guestbook-owner@example.com")
+    create_waline_record(
+        comment="管理员留言",
+        nick="并不是站点标题",
+        mail="guestbook-owner@example.com",
+        link=None,
+        status="approved",
+        url=build_comment_path("guestbook", "guestbook"),
+        avatar_key="guestbook-owner-avatar",
+        avatar_url="https://api.dicebear.com/9.x/notionists/svg?seed=guestbook-owner",
+    )
+
+    response = client.get("/api/v1/site-interactions/guestbook")
+
+    assert response.status_code == 200
+    payload = response.json()
+    entry = next(item for item in payload["items"] if item["body"] == "管理员留言")
+    assert entry["name"] == "Felix"
+    assert entry["is_author"] is True
+    assert "/media/internal/assets/hero-image/" in entry["avatar_url"]
+
+
+def test_create_guestbook_marks_bound_admin_user_as_author(client) -> None:
+    _bind_admin_identity_by_email(email="admin-guestbook@example.com")
+    _login_site_user_with_options(
+        client,
+        email="admin-guestbook@example.com",
+        display_name="Guestbook Admin",
+        admin_password="comment-password",
+    )
+
+    response = client.post(
+        "/api/v1/site-interactions/guestbook",
+        json={
+            "name": "Ignored Name",
+            "email": "ignored@example.com",
+            "body": "管理员实际发出的留言。",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["item"]["name"] == "Felix"
     assert payload["item"]["is_author"] is True
     assert payload["item"]["avatar"] == "site-admin"
     assert "/media/internal/assets/hero-image/" in payload["item"]["avatar_url"]
@@ -417,6 +490,54 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
     assert asset.category == "comment"
     assert asset.file_name == "image.png"
     assert Path(asset.storage_path).is_file()
+
+
+def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) -> None:
+    _update_community_config(image_uploader=True)
+
+    from pathlib import Path
+
+    from aerisun.core.base import utcnow
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.media import object_storage as media_object_storage
+    from aerisun.domain.media import service as media_service
+    from aerisun.domain.media.models import Asset, AssetMirrorQueueItem
+
+    class _Provider:
+        def upload_bytes(self, *, object_key: str, data: bytes, content_type: str | None):
+            return media_object_storage.ObjectHead(
+                content_length=len(data),
+                content_type=content_type,
+                etag="etag-comment-upload",
+                last_modified=utcnow(),
+            )
+
+    monkeypatch.setattr(media_service, "build_object_storage_provider", lambda session: _Provider())
+    monkeypatch.setattr(media_object_storage, "build_object_storage_provider", lambda session: _Provider())
+
+    response = client.post(
+        "/api/v1/site-interactions/comment-image",
+        files={"file": ("image.png", b"image-bytes", "image/png")},
+    )
+
+    assert response.status_code == 200
+    url = response.json()["data"]["url"]
+    resource_key = url.removeprefix("/media/")
+
+    with get_session_factory()() as session:
+        asset = session.query(Asset).filter(Asset.resource_key == resource_key).one()
+        mirrors = session.query(AssetMirrorQueueItem).filter_by(asset_id=asset.id).all()
+
+    assert asset.scope == "user"
+    assert asset.visibility == "internal"
+    assert asset.category == "comment"
+    assert asset.file_name == "image.png"
+    assert asset.remote_status == "available"
+    assert asset.mirror_status == "queued"
+    assert len(mirrors) == 1
+    assert mirrors[0].status == "queued"
+    assert mirrors[0].object_key == resource_key
+    assert not Path(asset.storage_path).exists()
 
 
 def test_create_reaction_returns_total(client) -> None:
