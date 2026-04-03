@@ -41,10 +41,12 @@ venv/
 
 # Unified data store
 /.store
+/.aerisun-store
 /.dev
 
 # vibe coding
-/temp
+/temp/
+/output/
 /openspec
 /.claude
 /.codex
@@ -53,4 +55,4 @@ venv/
 # Local env overrides (worktree-specific ports)
 .env.local
 .env.*.local
-
+.env.release

@@ -1,24 +1,27 @@
-import { useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Clock, Eye, MessageCircle, Tag } from "lucide-react";
+import { ArrowLeft, FileText, Tag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import BackToTop from "@/components/BackToTop";
-import CommentSection from "@/components/CommentSection";
 
 import PageMeta from "@/components/PageMeta";
-import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
-import TableOfContents from "@/components/TableOfContents";
+import PreviewModeBadge from "@/components/PreviewModeBadge";
+import LazyOnVisible from "@/components/LazyOnVisible";
+import ArticleEnhancements from "@/components/ArticleEnhancements";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
+import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+
+const CommentSection = lazy(() => import("@/components/CommentSection"));
 
 interface PostData {
   slug: string;
@@ -29,7 +32,7 @@ interface PostData {
   likes: number;
   views: number;
   comments: number;
-  readTime: string;
+  wordCount: string;
   content: string;
 }
 
@@ -44,7 +47,27 @@ interface PostDetailPageConfig extends BaseViewPageConfig {
   detailEndLabel?: string;
 }
 
-const estimateReadTime = (value: string) => `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
+const estimateWordCount = (value: string) => {
+  const plainText = value
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[#>*_~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const cjkCount = (plainText.match(/[\u3400-\u9FFF\uF900-\uFAFF]/g) ?? []).length;
+  const latinWordCount = (
+    plainText
+      .replace(/[\u3400-\u9FFF\uF900-\uFAFF]/g, " ")
+      .match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) ?? []
+  ).length;
+
+  const total = cjkCount + latinWordCount;
+  return `${total.toLocaleString("zh-CN")} 字`;
+};
 
 const buildRemotePost = (entry: ContentEntryRead, fallbackCategoryLabel: string): PostData => ({
   slug: entry.slug,
@@ -55,12 +78,29 @@ const buildRemotePost = (entry: ContentEntryRead, fallbackCategoryLabel: string)
   likes: entry.like_count ?? 0,
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,
-  readTime: entry.read_time ?? estimateReadTime(entry.body),
+  wordCount: estimateWordCount(entry.body),
   content: entry.body,
+});
+
+const buildPreviewPost = (
+  preview: ContentPreviewData,
+  fallbackCategoryLabel: string,
+): PostData => ({
+  slug: preview.slug || "",
+  title: preview.title,
+  date: formatPublishedDate(preview.published_at) || "草稿",
+  category: preview.category || fallbackCategoryLabel,
+  tags: preview.tags || [],
+  likes: 0,
+  views: 0,
+  comments: 0,
+  wordCount: estimateWordCount(preview.body || ""),
+  content: preview.body || "",
 });
 
 const PostDetail = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const pages = usePageConfig();
@@ -75,22 +115,36 @@ const PostDetail = () => {
   const errorTitle = postsConfig.errorTitle ?? "文章加载失败";
   const retryLabel = postsConfig.retryLabel ?? "重试";
   const articleRef = useRef<HTMLElement>(null);
+  const previewStorageKey = searchParams.get("previewStorageKey") || "";
 
   const slug = id ? decodeURIComponent(id) : "";
+  const { data: previewData, isLoading: isPreviewLoading } =
+    usePreviewChannel(previewStorageKey);
   const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, { query: { enabled: !!id } });
 
-  const post = response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null;
+  const previewPost =
+    previewData?.type === "posts"
+      ? buildPreviewPost(previewData, fallbackCategoryLabel)
+      : null;
+  const post =
+    previewPost ??
+    (response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null);
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
-  const status: "loading" | "ready" | "empty" | "error" = isLoading
-    ? "loading"
-    : isError
-      ? is404 ? "empty" : "error"
-      : post ? "ready" : "empty";
+  const status: "loading" | "ready" | "empty" | "error" = previewPost
+    ? "ready"
+    : isLoading
+      ? "loading"
+      : isError
+        ? is404 ? "empty" : "error"
+        : post ? "ready" : "empty";
+  const pageStatus: "loading" | "ready" | "empty" | "error" =
+    isPreviewLoading && !previewPost ? "loading" : status;
   const errorMessage = isError
     ? is404
       ? detailMissingDescription
       : error instanceof Error ? error.message : errorTitle
     : !id ? "缺少文章标识" : "";
+  const showArticleEnhancements = Boolean(post) && featureFlags.toc;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -110,8 +164,9 @@ const PostDetail = () => {
       )}
       <FallingPetals />
       <Navbar />
+      {previewPost ? <PreviewModeBadge /> : null}
 
-      <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
+      <main className="mx-auto max-w-5xl px-6 pt-28 pb-20 lg:px-8">
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
@@ -124,7 +179,7 @@ const PostDetail = () => {
           {detailBackLabel}
         </motion.button>
 
-        {status === "loading" ? (
+        {pageStatus === "loading" ? (
           <>
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -172,16 +227,8 @@ const PostDetail = () => {
                   {post.category}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {post.readTime}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
-                  {post.views.toLocaleString()}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageCircle className="h-3 w-3" />
-                  {post.comments}
+                  <FileText className="h-3 w-3" />
+                  {post.wordCount}
                 </span>
               </div>
 
@@ -209,20 +256,41 @@ const PostDetail = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              <MarkdownRenderer content={post.content} />
+              <MarkdownRenderer content={post.content} className="detail-markdown" />
             </motion.article>
 
-            <CodeHighlighter containerRef={articleRef} content={[post.content]} />
-            {featureFlags.toc && <TableOfContents containerRef={articleRef} content={[post.content]} />}
+            {showArticleEnhancements ? (
+              <ArticleEnhancements
+                containerRef={articleRef}
+                content={post.content}
+                enableToc={featureFlags.toc}
+              />
+            ) : null}
 
             <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
-              <p className="text-center text-xs font-body text-foreground/20">{detailEndLabel}</p>
+              <p
+                className="text-center text-[2.4rem] leading-none text-[rgb(var(--shiro-accent-rgb)/0.78)]"
+                style={{
+                  fontFamily: "'Pinyon Script', cursive",
+                  textShadow: "0 0 14px rgb(var(--shiro-glow-rgb) / 0.24)",
+                }}
+              >
+                {detailEndLabel}
+              </p>
             </div>
 
-            <CommentSection
-              contentType="posts"
-              contentSlug={post.slug}
-            />
+            <LazyOnVisible
+              fallback={
+                <div className="mt-12 h-24 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.12)] bg-foreground/[0.02]" />
+              }
+            >
+              <Suspense fallback={null}>
+                <CommentSection
+                  contentType="posts"
+                  contentSlug={post.slug}
+                />
+              </Suspense>
+            </LazyOnVisible>
           </>
         ) : (
           <motion.div
@@ -232,17 +300,17 @@ const PostDetail = () => {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <p className="text-sm font-body text-foreground/40">
-              {status === "error" ? errorTitle : detailMissingTitle}
+              {pageStatus === "error" ? errorTitle : detailMissingTitle}
             </p>
             <p className="mt-2 text-xs font-body text-foreground/25">
               {errorMessage || detailMissingDescription}
             </p>
             <button
               type="button"
-              onClick={status === "error" ? () => refetch() : () => navigate("/posts")}
+              onClick={pageStatus === "error" ? () => refetch() : () => navigate("/posts")}
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
-              {status === "error" ? retryLabel : detailListLabel}
+              {pageStatus === "error" ? retryLabel : detailListLabel}
             </button>
           </motion.div>
         )}

@@ -3,14 +3,35 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*.*.*"]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to republish, for example v0.1.0
+        required: true
+        type: string
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
   cancel-in-progress: true
 
+env:
+  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+  DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME != '' && vars.DOCKERHUB_USERNAME || 'aerisun' }}
+
 jobs:
+  workspace-guards:
+    name: Workspace Guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+      - name: Enforce workspace boundaries
+        run: bash ./scripts/lint-boundaries.sh
+
   backend:
     name: Backend (Python)
     runs-on: ubuntu-latest
@@ -19,6 +40,8 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -39,6 +62,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -61,6 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
       - uses: actions/download-artifact@v4
         with:
           name: openapi-spec
@@ -73,6 +100,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Generate API client
         run: pnpm --filter @serino/api-client run generate:api
+      - name: Verify generated client is committed
+        run: bash ./scripts/verify-generated-api-client.sh
       - uses: actions/upload-artifact@v4
         with:
           name: api-client-generated
@@ -82,10 +111,12 @@ jobs:
 
   frontend:
     name: Frontend
-    needs: [api-client]
+    needs: [api-client, workspace-guards]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
       - uses: actions/download-artifact@v4
         with:
           name: api-client-generated
@@ -106,10 +137,12 @@ jobs:
 
   admin:
     name: Admin
-    needs: [api-client]
+    needs: [api-client, workspace-guards]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
       - uses: actions/download-artifact@v4
         with:
           name: api-client-generated
@@ -134,6 +167,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -158,10 +193,196 @@ jobs:
       - name: Validate contracts
         run: pnpm --filter @serino/api-client test
 
-  docker:
-    name: Docker Build
+  docker-build:
+    name: Docker Build (${{ matrix.title }})
+    needs: [backend, frontend, admin, contract]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - title: API
+            image_name: serino-api
+            image_title: Serino API
+            image_description: Serino backend API service
+            context: ./backend
+            file: ./backend/Dockerfile
+            artifact_name: ""
+          - title: Web
+            image_name: serino-web
+            image_title: Serino Web
+            image_description: Serino Caddy image with built frontend and admin assets
+            context: .
+            file: ./Dockerfile.caddy
+            artifact_name: api-client-generated
+          - title: Waline
+            image_name: serino-waline
+            image_title: Serino Waline
+            image_description: Serino-managed Waline service image
+            context: .
+            file: ./Dockerfile.waline
+            artifact_name: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Download generated API client
+        if: matrix.artifact_name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: packages/api-client
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}
+          tags: |
+            type=raw,value=build-validation
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image_title }}
+            org.opencontainers.image.description=${{ matrix.image_description }}
+            org.opencontainers.image.vendor=Aerisun
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build validation image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          push: false
+          provenance: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image_name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
+
+  docker-smoke:
+    name: Docker Smoke
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: [backend, frontend, admin, contract, docker-build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build API image
-        run: docker build -t aerisun-api-test ./backend
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-client-generated
+          path: packages/api-client
+      - name: Smoke test release compose with locally built images
+        run: bash ./scripts/docker-smoke.sh
+
+  docker-publish:
+    name: Docker Publish (${{ matrix.title }})
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: [docker-smoke]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - title: API
+            image_name: serino-api
+            image_title: Serino API
+            image_description: Serino backend API service
+            context: ./backend
+            file: ./backend/Dockerfile
+            artifact_name: ""
+          - title: Web
+            image_name: serino-web
+            image_title: Serino Web
+            image_description: Serino Caddy image with built frontend and admin assets
+            context: .
+            file: ./Dockerfile.caddy
+            artifact_name: api-client-generated
+          - title: Waline
+            image_name: serino-waline
+            image_title: Serino Waline
+            image_description: Serino-managed Waline service image
+            context: .
+            file: ./Dockerfile.waline
+            artifact_name: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Download generated API client
+        if: matrix.artifact_name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: packages/api-client
+
+      - name: Prepare release metadata
+        id: prep
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            release_tag="${{ inputs.release_tag }}"
+          else
+            release_tag="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ ! "${release_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Release tag must look like v1.2.3, got '${release_tag}'" >&2
+            exit 1
+          fi
+
+          version="${release_tag#v}"
+          IFS='.' read -r major minor patch <<<"${version}"
+
+          echo "image=docker.io/${DOCKERHUB_USERNAME}/${{ matrix.image_name }}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "major_minor=${major}.${minor}" >> "${GITHUB_OUTPUT}"
+          echo "major=${major}" >> "${GITHUB_OUTPUT}"
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.prep.outputs.image }}
+          tags: |
+            type=raw,value=${{ steps.prep.outputs.version }}
+            type=raw,value=${{ steps.prep.outputs.major_minor }}
+            type=raw,value=${{ steps.prep.outputs.major }}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image_title }}
+            org.opencontainers.image.description=${{ matrix.image_description }}
+            org.opencontainers.image.vendor=Aerisun
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.prep.outputs.version }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image_name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}

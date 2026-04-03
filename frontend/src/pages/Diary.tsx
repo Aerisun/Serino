@@ -38,6 +38,7 @@ interface DiaryEntry {
   weatherLabel: string;
   mood?: string;
   content: string;
+  poem?: string;
 }
 
 type WeatherIconComponent = typeof Sun;
@@ -107,6 +108,7 @@ const mapRemoteDiaryEntry = (entry: ContentEntryRead, index: number): DiaryEntry
     weatherLabel: (entry.weather && weatherLabels[entry.weather]) || "",
     mood: entry.mood ?? undefined,
     content: entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
+    poem: entry.poem?.trim() || undefined,
   };
 };
 
@@ -135,7 +137,18 @@ const Diary = () => {
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
     queryKey: ["site", "diary"],
-    queryFn: (p) => readDiaryApiV1SiteDiaryGet(p).then(r => r.data),
+    queryFn: async (p) => {
+      const data = (await readDiaryApiV1SiteDiaryGet(p)).data;
+
+      if (data && "items" in data && Array.isArray(data.items)) {
+        return {
+          items: data.items,
+          has_more: Boolean(data.has_more),
+        };
+      }
+
+      throw new Error("Invalid diary response");
+    },
     pageSize,
     mapItem: mapRemoteDiaryEntry,
   });
@@ -151,7 +164,7 @@ const Diary = () => {
   const filtered = useMemo(() => {
     return items.filter((entry) =>
       matchesSearchText(
-        [entry.date, entry.day, entry.weekday, entry.weatherLabel, entry.mood, entry.content],
+        [entry.date, entry.day, entry.weekday, entry.weatherLabel, entry.mood, entry.content, entry.poem],
         search,
       ),
     );
@@ -163,7 +176,7 @@ const Diary = () => {
       title={config.title}
       description={config.description}
       metaDescription={config.metaDescription}
-      width={config.width}
+      width={config.width === "narrow" ? "content" : (config.width ?? "content")}
     >
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
@@ -305,16 +318,18 @@ const Diary = () => {
                             {entry.content}
                           </p>
                           <div className="mt-4 flex items-center justify-between border-t border-foreground/[0.05] pt-3 transition-colors group-hover:border-[rgb(var(--shiro-divider-rgb)/0.28)]">
-                            <span className="text-[10px] font-body uppercase tracking-wider text-foreground/15 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.48)]">
-                              {[entry.date, entry.weatherLabel].filter(Boolean).join(" · ")}
-                            </span>
+                            {entry.poem ? (
+                              <span className="text-[11px] font-heading italic tracking-wide text-[rgb(var(--shiro-accent-rgb)/0.5)] transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">
+                                {entry.poem}
+                              </span>
+                            ) : null}
                             <button
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 navigate(`/diary/${entry.slug}`);
                               }}
-                              className="text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
+                              className="ml-auto text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
                             >
                               {detailCtaLabel} →
                             </button>

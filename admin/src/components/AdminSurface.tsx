@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 interface AdminSurfaceProps extends Omit<CardProps, "title"> {
   eyebrow?: ReactNode;
   title?: ReactNode;
+  titleAccessory?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   contentClassName?: string;
@@ -14,6 +15,7 @@ interface AdminSurfaceProps extends Omit<CardProps, "title"> {
 export function AdminSurface({
   eyebrow,
   title,
+  titleAccessory,
   description,
   actions,
   className,
@@ -23,7 +25,7 @@ export function AdminSurface({
   surface = "default",
   ...props
 }: AdminSurfaceProps) {
-  const hasHeader = eyebrow || title || description || actions;
+  const hasHeader = eyebrow || title || titleAccessory || description || actions;
 
   return (
     <Card
@@ -42,7 +44,10 @@ export function AdminSurface({
               ) : null}
               {title ? (
                 <CardTitle className="text-lg font-semibold tracking-tight text-foreground/95">
-                  {title}
+                  <span className="inline-flex items-center gap-2">
+                    <span>{title}</span>
+                    {titleAccessory ? <span className="flex shrink-0 items-center">{titleAccessory}</span> : null}
+                  </span>
                 </CardTitle>
               ) : null}
               {description ? (

@@ -37,6 +37,13 @@ const HeroContent = () => {
   const fallbackPoems = site.poems.length > 0 ? site.poems : EMPTY_POEMS;
   const [poem, setPoem] = useState(() => fallbackPoems[0]);
   const [flipped, setFlipped] = useState(false);
+  const heroFlipImage = site.heroImageUrl || site.heroPosterUrl;
+  const socialHoverMotion = prefersReducedMotion
+    ? undefined
+    : { y: -3, scale: 1.06 };
+  const socialTapMotion = prefersReducedMotion
+    ? undefined
+    : { scale: 0.95 };
 
   useEffect(() => {
     if (site.poemSource !== "hitokoto") {
@@ -160,12 +167,16 @@ const HeroContent = () => {
               }}
             >
               <div className="h-full w-full rounded-full overflow-hidden liquid-glass-coin-hero">
-                <img
-                  src={site.heroImageUrl || site.ogImage}
-                  alt={site.name}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
+                {heroFlipImage ? (
+                  <img
+                    src={heroFlipImage}
+                    alt={site.name}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-white/10" />
+                )}
               </div>
             </div>
           </motion.div>
@@ -196,19 +207,30 @@ const HeroContent = () => {
           })}
         >
           {heroSocialLinks.map((link) => (
-            <a
+            <motion.a
               key={`${link.name}-${link.href}`}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
               title={link.name}
-              className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-colors duration-200 hover:text-white focus-visible:text-white active:scale-95"
+              whileHover={socialHoverMotion}
+              whileTap={socialTapMotion}
+              transition={transition({
+                duration: 0.22,
+                reducedMotion: prefersReducedMotion,
+              })}
+              className="group relative flex h-11 w-11 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-colors duration-200 hover:text-white focus-visible:text-white"
             >
+              <span className="pointer-events-none absolute -inset-2 rounded-full bg-white/0 opacity-0 blur-xl transition duration-300 group-hover:bg-white/16 group-hover:opacity-100 group-focus-visible:bg-white/16 group-focus-visible:opacity-100" />
+              <span className="pointer-events-none absolute inset-0 rounded-full bg-white/0 transition duration-300 group-hover:bg-white/10 group-focus-visible:bg-white/10" />
+              <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-full border border-white/20 bg-white/14 px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] text-white/86 opacity-0 shadow-[0_10px_24px_rgba(12,18,32,0.18)] backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+                {link.name}
+              </span>
               <SocialIcon
                 iconKey={link.iconKey}
-                className="h-[18px] w-[18px]"
+                className="relative z-[1] h-[18px] w-[18px] transition duration-300 group-hover:scale-110 group-hover:-rotate-3 group-focus-visible:scale-110 group-focus-visible:-rotate-3"
               />
-            </a>
+            </motion.a>
           ))}
         </motion.div>
 

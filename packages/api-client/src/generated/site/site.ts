@@ -38,6 +38,7 @@ import type {
   FriendFeedCollectionRead,
   HTTPValidationError,
   HealthRead,
+  LinkPreviewRead,
   PageCollectionRead,
   ReadActivityHeatmapApiV1SiteActivityHeatmapGetParams,
   ReadCalendarApiV1SiteCalendarGetParams,
@@ -45,6 +46,8 @@ import type {
   ReadExcerptsApiV1SiteExcerptsGetParams,
   ReadFriendFeedApiV1SiteFriendFeedGetParams,
   ReadFriendsApiV1SiteFriendsGetParams,
+  ReadLinkPreviewApiV1SiteLinkPreviewGetParams,
+  ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams,
   ReadPoemPreviewApiV1SitePoemPreviewGetParams,
   ReadPostsApiV1SitePostsGetParams,
   ReadRecentActivityApiV1SiteRecentActivityGetParams,
@@ -66,6 +69,116 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
+/**
+ * @summary 获取站点 Web App Manifest
+ */
+export type readSiteManifestManifestWebmanifestGetResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type readSiteManifestManifestWebmanifestGetResponseSuccess = (readSiteManifestManifestWebmanifestGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type readSiteManifestManifestWebmanifestGetResponse = (readSiteManifestManifestWebmanifestGetResponseSuccess)
+
+export const getReadSiteManifestManifestWebmanifestGetUrl = () => {
+
+
+
+
+  return `/manifest.webmanifest`
+}
+
+export const readSiteManifestManifestWebmanifestGet = async ( options?: RequestInit): Promise<readSiteManifestManifestWebmanifestGetResponse> => {
+
+  return customInstance<readSiteManifestManifestWebmanifestGetResponse>(getReadSiteManifestManifestWebmanifestGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadSiteManifestManifestWebmanifestGetQueryKey = () => {
+    return [
+    `/manifest.webmanifest`
+    ] as const;
+    }
+
+
+export const getReadSiteManifestManifestWebmanifestGetQueryOptions = <TData = Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadSiteManifestManifestWebmanifestGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>> = ({ signal }) => readSiteManifestManifestWebmanifestGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadSiteManifestManifestWebmanifestGetQueryResult = NonNullable<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>>
+export type ReadSiteManifestManifestWebmanifestGetQueryError = ErrorType<unknown>
+
+
+export function useReadSiteManifestManifestWebmanifestGet<TData = Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>,
+          TError,
+          Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadSiteManifestManifestWebmanifestGet<TData = Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>,
+          TError,
+          Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadSiteManifestManifestWebmanifestGet<TData = Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取站点 Web App Manifest
+ */
+
+export function useReadSiteManifestManifestWebmanifestGet<TData = Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteManifestManifestWebmanifestGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadSiteManifestManifestWebmanifestGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
 
 
 
@@ -624,6 +737,254 @@ export function useReadPoemPreviewApiV1SitePoemPreviewGet<TData = Awaited<Return
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReadPoemPreviewApiV1SitePoemPreviewGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取外链预览元信息
+ */
+export type readLinkPreviewApiV1SiteLinkPreviewGetResponse200 = {
+  data: LinkPreviewRead
+  status: 200
+}
+
+export type readLinkPreviewApiV1SiteLinkPreviewGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readLinkPreviewApiV1SiteLinkPreviewGetResponseSuccess = (readLinkPreviewApiV1SiteLinkPreviewGetResponse200) & {
+  headers: Headers;
+};
+export type readLinkPreviewApiV1SiteLinkPreviewGetResponseError = (readLinkPreviewApiV1SiteLinkPreviewGetResponse422) & {
+  headers: Headers;
+};
+
+export type readLinkPreviewApiV1SiteLinkPreviewGetResponse = (readLinkPreviewApiV1SiteLinkPreviewGetResponseSuccess | readLinkPreviewApiV1SiteLinkPreviewGetResponseError)
+
+export const getReadLinkPreviewApiV1SiteLinkPreviewGetUrl = (params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/site/link-preview?${stringifiedParams}` : `/api/v1/site/link-preview`
+}
+
+export const readLinkPreviewApiV1SiteLinkPreviewGet = async (params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams, options?: RequestInit): Promise<readLinkPreviewApiV1SiteLinkPreviewGetResponse> => {
+
+  return customInstance<readLinkPreviewApiV1SiteLinkPreviewGetResponse>(getReadLinkPreviewApiV1SiteLinkPreviewGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadLinkPreviewApiV1SiteLinkPreviewGetQueryKey = (params?: ReadLinkPreviewApiV1SiteLinkPreviewGetParams,) => {
+    return [
+    `/api/v1/site/link-preview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReadLinkPreviewApiV1SiteLinkPreviewGetQueryOptions = <TData = Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError = ErrorType<HTTPValidationError>>(params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadLinkPreviewApiV1SiteLinkPreviewGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>> = ({ signal }) => readLinkPreviewApiV1SiteLinkPreviewGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadLinkPreviewApiV1SiteLinkPreviewGetQueryResult = NonNullable<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>>
+export type ReadLinkPreviewApiV1SiteLinkPreviewGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadLinkPreviewApiV1SiteLinkPreviewGet<TData = Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadLinkPreviewApiV1SiteLinkPreviewGet<TData = Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadLinkPreviewApiV1SiteLinkPreviewGet<TData = Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取外链预览元信息
+ */
+
+export function useReadLinkPreviewApiV1SiteLinkPreviewGet<TData = Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewApiV1SiteLinkPreviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewApiV1SiteLinkPreviewGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadLinkPreviewApiV1SiteLinkPreviewGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 代理外链预览图片
+ */
+export type readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponseSuccess = (readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse200) & {
+  headers: Headers;
+};
+export type readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponseError = (readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse422) & {
+  headers: Headers;
+};
+
+export type readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse = (readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponseSuccess | readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponseError)
+
+export const getReadLinkPreviewImageApiV1SiteLinkPreviewImageGetUrl = (params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/site/link-preview-image?${stringifiedParams}` : `/api/v1/site/link-preview-image`
+}
+
+export const readLinkPreviewImageApiV1SiteLinkPreviewImageGet = async (params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams, options?: RequestInit): Promise<readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse> => {
+
+  return customInstance<readLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse>(getReadLinkPreviewImageApiV1SiteLinkPreviewImageGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryKey = (params?: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams,) => {
+    return [
+    `/api/v1/site/link-preview-image`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryOptions = <TData = Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError = ErrorType<HTTPValidationError>>(params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>> = ({ signal }) => readLinkPreviewImageApiV1SiteLinkPreviewImageGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryResult = NonNullable<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>>
+export type ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useReadLinkPreviewImageApiV1SiteLinkPreviewImageGet<TData = Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>,
+          TError,
+          Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadLinkPreviewImageApiV1SiteLinkPreviewImageGet<TData = Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>,
+          TError,
+          Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadLinkPreviewImageApiV1SiteLinkPreviewImageGet<TData = Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 代理外链预览图片
+ */
+
+export function useReadLinkPreviewImageApiV1SiteLinkPreviewImageGet<TData = Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readLinkPreviewImageApiV1SiteLinkPreviewImageGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -76,6 +76,7 @@ DEFAULT_AVATAR_PRESETS = [
         "avatar_url": "https://api.dicebear.com/9.x/notionists/svg?seed=Linen",
     },
 ]
+DEFAULT_AVATAR_HELPER_COPY = "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。"
 
 
 def _column_names(inspector: sa.InspectionAttr, table_name: str) -> set[str]:
@@ -114,6 +115,15 @@ def upgrade() -> None:
             )
         if "page_size" not in community_columns:
             batch_op.add_column(sa.Column("page_size", sa.Integer(), nullable=False, server_default="20"))
+        if "avatar_helper_copy" not in community_columns:
+            batch_op.add_column(
+                sa.Column(
+                    "avatar_helper_copy",
+                    sa.Text(),
+                    nullable=False,
+                    server_default=DEFAULT_AVATAR_HELPER_COPY,
+                )
+            )
         if "avatar_presets" not in community_columns:
             batch_op.add_column(
                 sa.Column(
@@ -129,6 +139,16 @@ def upgrade() -> None:
             )
         if "draft_enabled" not in community_columns:
             batch_op.add_column(sa.Column("draft_enabled", sa.Boolean(), nullable=False, server_default=sa.true()))
+
+    op.execute(
+        sa.text(
+            """
+            UPDATE community_config
+            SET avatar_helper_copy = :helper_copy
+            WHERE avatar_helper_copy IS NULL OR trim(avatar_helper_copy) = ''
+            """
+        ).bindparams(helper_copy=DEFAULT_AVATAR_HELPER_COPY)
+    )
 
 
 def downgrade() -> None:
@@ -146,6 +166,8 @@ def downgrade() -> None:
             batch_op.drop_column("avatar_presets")
         if "page_size" in community_columns:
             batch_op.drop_column("page_size")
+        if "avatar_helper_copy" in community_columns:
+            batch_op.drop_column("avatar_helper_copy")
         if "default_sorting" in community_columns:
             batch_op.drop_column("default_sorting")
         if "moderation_mode" in community_columns:

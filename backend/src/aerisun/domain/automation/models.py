@@ -99,6 +99,59 @@ class AgentRunApproval(Base, TimestampMixin):
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class WorkflowGateState(Base, TimestampMixin):
+    __tablename__ = "workflow_gate_states"
+    __table_args__ = (Index("ix_workflow_gate_states_workflow_node", "workflow_key", "node_id", unique=True),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    workflow_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    node_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="closed")
+    in_flight_run_id: Mapped[str | None] = mapped_column(String(36))
+    last_control_signal: Mapped[str | None] = mapped_column(String(32))
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WorkflowGateBufferItem(Base, TimestampMixin):
+    __tablename__ = "workflow_gate_buffer_items"
+    __table_args__ = (
+        Index("ix_workflow_gate_buffer_items_gate_status", "workflow_key", "node_id", "status"),
+        Index("ix_workflow_gate_buffer_items_run_id", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    workflow_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    node_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    run_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="buffered")
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WorkflowBuildTask(Base, TimestampMixin):
+    __tablename__ = "workflow_build_tasks"
+    __table_args__ = (Index("ix_workflow_build_tasks_workflow_status", "workflow_key", "status"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    workflow_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    task_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    result_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class WorkflowBuildTaskStep(Base, TimestampMixin):
+    __tablename__ = "workflow_build_task_steps"
+    __table_args__ = (Index("ix_workflow_build_task_steps_task_created_at", "task_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    task_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+
 class WebhookSubscription(Base, TimestampMixin):
     __tablename__ = "webhook_subscriptions"
     __table_args__ = (Index("ix_webhook_subscriptions_status_created_at", "status", "created_at"),)

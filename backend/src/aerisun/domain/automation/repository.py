@@ -13,6 +13,10 @@ from aerisun.domain.automation.models import (
     WebhookDeadLetter,
     WebhookDelivery,
     WebhookSubscription,
+    WorkflowBuildTask,
+    WorkflowBuildTaskStep,
+    WorkflowGateBufferItem,
+    WorkflowGateState,
 )
 
 
@@ -40,6 +44,123 @@ def create_agent_run(
     )
     session.add(run)
     return run
+
+
+def get_workflow_gate_state(session: Session, *, workflow_key: str, node_id: str) -> WorkflowGateState | None:
+    return (
+        session.query(WorkflowGateState)
+        .filter(WorkflowGateState.workflow_key == workflow_key, WorkflowGateState.node_id == node_id)
+        .first()
+    )
+
+
+def get_or_create_workflow_gate_state(
+    session: Session,
+    *,
+    workflow_key: str,
+    node_id: str,
+    default_status: str = "closed",
+) -> WorkflowGateState:
+    state = get_workflow_gate_state(session, workflow_key=workflow_key, node_id=node_id)
+    if state is not None:
+        return state
+    state = WorkflowGateState(workflow_key=workflow_key, node_id=node_id, status=default_status)
+    session.add(state)
+    session.flush()
+    return state
+
+
+def get_gate_buffer_item_by_run(
+    session: Session,
+    *,
+    workflow_key: str,
+    node_id: str,
+    run_id: str,
+) -> WorkflowGateBufferItem | None:
+    return (
+        session.query(WorkflowGateBufferItem)
+        .filter(
+            WorkflowGateBufferItem.workflow_key == workflow_key,
+            WorkflowGateBufferItem.node_id == node_id,
+            WorkflowGateBufferItem.run_id == run_id,
+        )
+        .first()
+    )
+
+
+def create_gate_buffer_item(
+    session: Session,
+    *,
+    workflow_key: str,
+    node_id: str,
+    run_id: str,
+    payload: dict[str, Any] | None = None,
+) -> WorkflowGateBufferItem:
+    item = WorkflowGateBufferItem(
+        workflow_key=workflow_key,
+        node_id=node_id,
+        run_id=run_id,
+        payload=payload or {},
+    )
+    session.add(item)
+    session.flush()
+    return item
+
+
+def list_gate_buffer_items(
+    session: Session,
+    *,
+    workflow_key: str,
+    node_id: str,
+    status: str | None = None,
+) -> list[WorkflowGateBufferItem]:
+    query = session.query(WorkflowGateBufferItem).filter(
+        WorkflowGateBufferItem.workflow_key == workflow_key,
+        WorkflowGateBufferItem.node_id == node_id,
+    )
+    if status:
+        query = query.filter(WorkflowGateBufferItem.status == status)
+    return list(query.order_by(WorkflowGateBufferItem.created_at.asc()).all())
+
+
+def next_gate_buffer_item(session: Session, *, workflow_key: str, node_id: str) -> WorkflowGateBufferItem | None:
+    return (
+        session.query(WorkflowGateBufferItem)
+        .filter(
+            WorkflowGateBufferItem.workflow_key == workflow_key,
+            WorkflowGateBufferItem.node_id == node_id,
+            WorkflowGateBufferItem.status == "buffered",
+        )
+        .order_by(WorkflowGateBufferItem.created_at.asc())
+        .first()
+    )
+
+
+def create_workflow_build_task(
+    session: Session,
+    *,
+    workflow_key: str,
+    task_type: str,
+    summary: str = "",
+) -> WorkflowBuildTask:
+    task = WorkflowBuildTask(workflow_key=workflow_key, task_type=task_type, summary=summary)
+    session.add(task)
+    session.flush()
+    return task
+
+
+def add_workflow_build_task_step(
+    session: Session,
+    *,
+    task_id: str,
+    name: str,
+    status: str,
+    detail: str = "",
+) -> WorkflowBuildTaskStep:
+    step = WorkflowBuildTaskStep(task_id=task_id, name=name, status=status, detail=detail)
+    session.add(step)
+    session.flush()
+    return step
 
 
 def add_agent_run_step(

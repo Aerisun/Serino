@@ -1,28 +1,53 @@
+import { lazy, Suspense } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
-import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
 import { Blocks, FileText, MessageSquareMore, Quote, ScrollText, UserRound } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ProfileTab } from "./tabs/ProfileTab";
-import { SocialLinksTab } from "./tabs/SocialLinksTab";
-import { PoemsTab } from "./tabs/PoemsTab";
-import { PagesTab } from "./tabs/PagesTab";
-import { NavItemsTab } from "./tabs/NavItemsTab";
-import { CommunityTab } from "./tabs/CommunityTab";
+import { useParams } from "react-router-dom";
+import { SectionLoader } from "@/components/SectionLoader";
+import AdminNotFoundPage from "@/pages/AdminNotFoundPage";
+
+const ProfileTab = lazy(() =>
+  import("./tabs/ProfileTab").then((module) => ({
+    default: module.ProfileTab,
+  })),
+);
+const SocialLinksTab = lazy(() =>
+  import("./tabs/SocialLinksTab").then((module) => ({
+    default: module.SocialLinksTab,
+  })),
+);
+const PoemsTab = lazy(() =>
+  import("./tabs/PoemsTab").then((module) => ({
+    default: module.PoemsTab,
+  })),
+);
+const PagesTab = lazy(() =>
+  import("./tabs/PagesTab").then((module) => ({
+    default: module.PagesTab,
+  })),
+);
+const NavItemsTab = lazy(() =>
+  import("./tabs/NavItemsTab").then((module) => ({
+    default: module.NavItemsTab,
+  })),
+);
+const CommunityTab = lazy(() =>
+  import("./tabs/CommunityTab").then((module) => ({
+    default: module.CommunityTab,
+  })),
+);
 
 export default function SiteConfigPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const { section } = useParams();
-  const tab =
-    section && ["profile", "social", "poems", "pages", "nav", "community"].includes(section)
-      ? section
-      : "profile";
+  const validSections = ["profile", "social", "poems", "pages", "nav", "community"] as const;
 
-  const goToTab = (value: string) => {
-    navigate(value === "profile" ? "/site-config" : `/site-config/${value}`);
-  };
+  if (section && !validSections.includes(section as (typeof validSections)[number])) {
+    return <AdminNotFoundPage />;
+  }
+
+  const tab = section ?? "profile";
 
   const items = [
     {
@@ -75,28 +100,23 @@ export default function SiteConfigPage() {
       <PageHeader
         title={t("siteConfig.title")}
         description={t("siteConfig.description")}
-        secondary={<AdminSectionTabs items={items} />}
+        secondary={<AdminSectionTabs items={items} className="w-fit" />}
       />
-      <Tabs value={tab} onValueChange={goToTab}>
-        <TabsContent value="profile">
-          <ProfileTab />
-        </TabsContent>
-        <TabsContent value="social">
+      <Suspense fallback={<SectionLoader label={t("common.loading")} />}>
+        {tab === "social" ? (
           <SocialLinksTab />
-        </TabsContent>
-        <TabsContent value="poems">
+        ) : tab === "poems" ? (
           <PoemsTab />
-        </TabsContent>
-        <TabsContent value="pages">
+        ) : tab === "pages" ? (
           <PagesTab />
-        </TabsContent>
-        <TabsContent value="nav">
+        ) : tab === "nav" ? (
           <NavItemsTab />
-        </TabsContent>
-        <TabsContent value="community">
+        ) : tab === "community" ? (
           <CommunityTab />
-        </TabsContent>
-      </Tabs>
+        ) : (
+          <ProfileTab />
+        )}
+      </Suspense>
     </div>
   );
 }

@@ -10,7 +10,7 @@ from aerisun.domain.ops.models import (
     AuditLog,
     BackupCommit,
     BackupQueueItem,
-    BackupSnapshot,
+    BackupRecoveryKey,
     BackupTargetConfig,
     SyncRun,
     TrafficDailySnapshot,
@@ -63,23 +63,6 @@ def find_audit_logs_paginated(
     total = q.count()
     items = list(q.order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all())
     return items, total
-
-
-def find_all_backups(session: Session) -> list[BackupSnapshot]:
-    """List all backup snapshots ordered by created_at desc."""
-    return list(session.query(BackupSnapshot).order_by(BackupSnapshot.created_at.desc()).all())
-
-
-def create_backup(session: Session, **kwargs) -> BackupSnapshot:
-    """Create a new backup snapshot. Caller must commit."""
-    snapshot = BackupSnapshot(**kwargs)
-    session.add(snapshot)
-    return snapshot
-
-
-def find_backup_by_id(session: Session, snapshot_id: str) -> BackupSnapshot | None:
-    """Find a backup snapshot by ID."""
-    return session.get(BackupSnapshot, snapshot_id)
 
 
 def get_backup_target_config(session: Session) -> BackupTargetConfig | None:
@@ -137,6 +120,47 @@ def create_backup_commit(session: Session, **kwargs) -> BackupCommit:
 
 def get_backup_commit(session: Session, commit_id: str) -> BackupCommit | None:
     return session.get(BackupCommit, commit_id)
+
+
+def list_backup_recovery_keys(session: Session, *, credential_ref: str) -> list[BackupRecoveryKey]:
+    return list(
+        session.query(BackupRecoveryKey)
+        .filter(BackupRecoveryKey.credential_ref == credential_ref)
+        .order_by(BackupRecoveryKey.created_at.desc())
+        .all()
+    )
+
+
+def get_active_backup_recovery_key(session: Session, *, credential_ref: str) -> BackupRecoveryKey | None:
+    return (
+        session.query(BackupRecoveryKey)
+        .filter(
+            BackupRecoveryKey.credential_ref == credential_ref,
+            BackupRecoveryKey.status == "active",
+        )
+        .order_by(BackupRecoveryKey.created_at.desc())
+        .first()
+    )
+
+
+def get_backup_recovery_key_by_fingerprint(
+    session: Session, *, credential_ref: str, secrets_fingerprint: str
+) -> BackupRecoveryKey | None:
+    return (
+        session.query(BackupRecoveryKey)
+        .filter(
+            BackupRecoveryKey.credential_ref == credential_ref,
+            BackupRecoveryKey.secrets_fingerprint == secrets_fingerprint,
+        )
+        .order_by(BackupRecoveryKey.created_at.desc())
+        .first()
+    )
+
+
+def create_backup_recovery_key(session: Session, **kwargs) -> BackupRecoveryKey:
+    item = BackupRecoveryKey(**kwargs)
+    session.add(item)
+    return item
 
 
 def list_sync_runs(session: Session) -> list[SyncRun]:

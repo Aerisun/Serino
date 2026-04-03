@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import mimetypes
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -26,23 +28,58 @@ from aerisun.domain.content.service import (
 )
 from aerisun.domain.site_config.schemas import (
     CommunityConfigRead,
+    LinkPreviewRead,
     PageCollectionRead,
     ResumeRead,
     SiteConfigRead,
     SitePoemPreviewRead,
 )
 from aerisun.domain.site_config.service import (
+    fetch_site_link_preview_image,
     get_community_config,
     get_page_copy,
     get_resume,
     get_site_config,
+    get_site_link_preview,
     get_site_poem_preview,
 )
 from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead
 from aerisun.domain.social.service import list_public_friend_feed, list_public_friends
 
 base_router = APIRouter()
+public_router = APIRouter(tags=["site"])
 router = APIRouter(prefix="/api/v1/site", tags=["site"])
+
+
+@public_router.get("/manifest.webmanifest", summary="获取站点 Web App Manifest")
+def read_site_manifest(session: Session = Depends(get_session)) -> JSONResponse:
+    payload = get_site_config(session)
+    site = payload.site
+    icon_src = str(site.site_icon_url or "").strip()
+    icon_type = mimetypes.guess_type(icon_src)[0] if icon_src else None
+
+    manifest = {
+        "name": (site.title or site.name or "Aerisun").strip() or "Aerisun",
+        "short_name": (site.name or site.title or "Aerisun").strip() or "Aerisun",
+        "description": (site.bio or "").strip(),
+        "theme_color": "#ffffff",
+        "background_color": "#ffffff",
+        "display": "standalone",
+        "start_url": "/",
+        "scope": "/",
+        "icons": (
+            [
+                {
+                    "src": icon_src,
+                    "sizes": "any",
+                    **({"type": icon_type} if icon_type else {}),
+                }
+            ]
+            if icon_src
+            else []
+        ),
+    }
+    return JSONResponse(content=manifest, media_type="application/manifest+json")
 
 
 @base_router.get("/site", response_model=SiteConfigRead, summary="获取站点配置")
@@ -70,14 +107,32 @@ def read_poem_preview(
     response: Response,
     mode: Literal["custom", "hitokoto"] | None = Query(default=None),
     types: list[str] | None = Query(default=None),
-    keywords: list[str] | None = Query(default=None),
     strict: bool = Query(default=False),
     session: Session = Depends(get_session),
 ) -> SitePoemPreviewRead:
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
-    return get_site_poem_preview(session, mode=mode, types=types, keywords=keywords, strict=strict)
+    return get_site_poem_preview(session, mode=mode, types=types, strict=strict)
+
+
+@base_router.get("/link-preview", response_model=LinkPreviewRead, summary="获取外链预览元信息")
+def read_link_preview(url: str = Query(description="需要预览的 http/https 外链")) -> LinkPreviewRead:
+    return get_site_link_preview(url)
+
+
+@base_router.get("/link-preview-image", summary="代理外链预览图片")
+def read_link_preview_image(
+    url: str = Query(description="外链预览图片地址"),
+) -> Response:
+    payload, content_type = fetch_site_link_preview_image(url)
+    return Response(
+        content=payload,
+        media_type=content_type,
+        headers={
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
 
 
 @base_router.get("/posts", response_model=ContentCollectionRead, summary="获取已发布文章列表")

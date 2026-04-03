@@ -1,20 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  deleteSubscriptionSubscriber,
   listSubscriptionSubscriberMessages,
   listSubscriptionSubscribers,
   type SubscriptionDeliveryItem,
   type SubscriptionSubscriberItem,
-} from "@/api/endpoints/subscriptions";
+  updateSubscriptionSubscriber,
+} from "@/pages/visitors/api";
 import { DataTable } from "@/components/DataTable";
 import { PageHeader } from "@/components/PageHeader";
+import {
+  ActivationStateText,
+  ActivationToggleButton,
+  inactiveRowClassName,
+} from "@/components/ActivationState";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { Input } from "@/components/ui/Input";
 import { cn, formatDate } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { VisitorsSectionSwitch } from "@/pages/visitors/VisitorsSectionSwitch";
+import { toast } from "sonner";
 
 const SUBSCRIBER_MODE_OPTIONS = [
   { key: "all", label: "全部" },
@@ -45,14 +53,6 @@ function authModeLabel(mode: string): string {
   if (mode === "binding") return "绑定";
   if (mode === "email") return "邮箱";
   return "未知";
-}
-
-function providerBadgeTone(provider: string) {
-  if (provider === "google") return "bg-[#4285F4]/12 text-[#3367D6] border-[#4285F4]/16";
-  if (provider === "github") {
-    return "bg-slate-900/8 text-slate-700 border-slate-900/12 dark:bg-white/8 dark:text-white/82 dark:border-white/16";
-  }
-  return "bg-emerald-500/12 text-emerald-700 border-emerald-500/16";
 }
 
 function SubscriberMessageList({ email }: { email: string }) {
@@ -156,10 +156,12 @@ export function VisitorsSubscribersPanel({
   showSearch = true,
   searchKeyword,
 }: VisitorsSubscribersPanelProps = {}) {
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<SubscriberMode>(initialMode);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const effectiveSearch = searchKeyword ?? search;
+  const queryKey = ["subscription-subscribers", mode, effectiveSearch, page] as const;
 
   useEffect(() => {
     if (searchKeyword === undefined) {
@@ -169,7 +171,7 @@ export function VisitorsSubscribersPanel({
   }, [searchKeyword]);
 
   const query = useQuery({
-    queryKey: ["subscription-subscribers", mode, effectiveSearch, page],
+    queryKey,
     queryFn: () =>
       listSubscriptionSubscribers({
         mode,
@@ -177,6 +179,39 @@ export function VisitorsSubscribersPanel({
         page,
         page_size: 20,
       }),
+  });
+
+  const refreshSubscribers = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["subscription-subscribers"] });
+  };
+
+  const toggleSubscriber = useMutation({
+    mutationFn: ({ email, isActive }: { email: string; isActive: boolean }) =>
+      updateSubscriptionSubscriber(email, { is_active: isActive }),
+    onSuccess: async (_data, variables) => {
+      await refreshSubscribers();
+      toast.success(variables.isActive ? "已启用订阅发送" : "已暂停订阅发送");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "操作失败");
+    },
+  });
+
+  const removeSubscriber = useMutation({
+    mutationFn: (email: string) => deleteSubscriptionSubscriber(email),
+    onSuccess: async (_data, email) => {
+      await Promise.all([
+        refreshSubscribers(),
+        queryClient.invalidateQueries({ queryKey: ["subscription-subscriber-messages", email] }),
+      ]);
+      toast.success("已删除订阅");
+      if (rows.length === 1 && page > 1) {
+        setPage((current) => Math.max(1, current - 1));
+      }
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "操作失败");
+    },
   });
 
   const rows = useMemo<SubscriberRow[]>(
@@ -196,20 +231,36 @@ export function VisitorsSubscribersPanel({
               <img
                 src={row.avatar_url}
                 alt={row.display_name ?? row.email}
-                className="h-10 w-10 rounded-full border border-border/60 object-cover"
+                className={cn(
+                  "h-10 w-10 rounded-full border border-border/60 object-cover",
+                  !row.is_active && "grayscale opacity-40",
+                )}
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted text-sm font-semibold text-muted-foreground">
+              <div
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted text-sm font-semibold text-muted-foreground",
+                  !row.is_active && "opacity-45",
+                )}
+              >
                 {(row.display_name ?? row.email).slice(0, 1).toUpperCase()}
               </div>
             )}
             <div className="min-w-0">
-              <div className="truncate font-medium text-foreground">
+              <ActivationStateText
+                as="div"
+                inactive={!row.is_active}
+                className="truncate font-medium text-foreground"
+              >
                 {row.display_name || "未匹配访客身份"}
-              </div>
-              <div className="truncate text-xs text-muted-foreground">
+              </ActivationStateText>
+              <ActivationStateText
+                as="div"
+                inactive={!row.is_active}
+                className="truncate text-xs text-muted-foreground"
+              >
                 {row.initiator_email || row.primary_auth_provider || "未记录访客邮箱"}
-              </div>
+              </ActivationStateText>
             </div>
           </div>
         ),
@@ -217,56 +268,113 @@ export function VisitorsSubscribersPanel({
       {
         header: "邮箱",
         accessor: (row: SubscriberRow) => (
-          <span className="font-mono text-xs text-muted-foreground">{row.email}</span>
+          <ActivationStateText inactive={!row.is_active} className="font-mono text-xs text-muted-foreground">
+            {row.email}
+          </ActivationStateText>
         ),
       },
       {
         header: "身份",
         accessor: (row: SubscriberRow) => (
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{authModeLabel(row.auth_mode)}</Badge>
-            {(row.oauth_providers ?? []).map((provider) => (
-              <span
-                key={`${row.id}-${provider}`}
-                className={cn(
-                  "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium",
-                  providerBadgeTone(provider),
-                )}
+          <div className="space-y-1 text-sm">
+            <ActivationStateText
+              as="div"
+              inactive={!row.is_active}
+              className="text-foreground"
+            >
+              {authModeLabel(row.auth_mode)}
+            </ActivationStateText>
+            {(row.oauth_providers ?? []).length > 0 ? (
+              <ActivationStateText
+                as="div"
+                inactive={!row.is_active}
+                className="text-xs text-muted-foreground"
               >
-                {provider === "google" ? "Google" : provider === "github" ? "GitHub" : provider}
-              </span>
-            ))}
+                {(row.oauth_providers ?? [])
+                  .map((provider) =>
+                    provider === "google" ? "Google" : provider === "github" ? "GitHub" : provider,
+                  )
+                  .join(" / ")}
+              </ActivationStateText>
+            ) : null}
           </div>
         ),
       },
       {
         header: "订阅内容",
         accessor: (row: SubscriberRow) => (
-          <div className="flex flex-wrap gap-2">
-            {(row.content_types ?? []).map((item) => (
-              <Badge key={`${row.id}-${item}`} variant="secondary">
-                {CONTENT_TYPE_LABELS[item] ?? item}
-              </Badge>
-            ))}
-          </div>
+          <ActivationStateText inactive={!row.is_active} className="text-sm text-muted-foreground">
+            {(row.content_types ?? []).map((item) => CONTENT_TYPE_LABELS[item] ?? item).join(" / ") || "-"}
+          </ActivationStateText>
         ),
       },
       {
         header: "已发送",
         accessor: (row: SubscriberRow) => (
-          <span className="text-sm text-foreground">{row.sent_count}</span>
+          <ActivationStateText inactive={!row.is_active} className="text-sm text-foreground">
+            {row.sent_count}
+          </ActivationStateText>
         ),
       },
       {
         header: "最近发送",
         accessor: (row: SubscriberRow) => (
-          <span className="text-sm text-muted-foreground">
+          <ActivationStateText inactive={!row.is_active} className="text-sm text-muted-foreground">
             {row.last_sent_at ? formatDate(row.last_sent_at) : "-"}
-          </span>
+          </ActivationStateText>
         ),
       },
+      {
+        header: "操作",
+        className: "w-[120px] text-center whitespace-nowrap",
+        accessor: (row: SubscriberRow) => {
+          const isToggling =
+            toggleSubscriber.isPending && toggleSubscriber.variables?.email === row.email;
+          const isRemoving =
+            removeSubscriber.isPending && removeSubscriber.variables === row.email;
+          const busy = isToggling || isRemoving;
+
+          return (
+            <div className="flex items-center justify-center gap-1.5">
+              <ActivationToggleButton
+                isActive={row.is_active}
+                disabled={busy}
+                activeLabel="禁用"
+                inactiveLabel="启用"
+                activeTitle="禁用发送"
+                inactiveTitle="启用发送"
+                onClick={() =>
+                  toggleSubscriber.mutate({
+                    email: row.email,
+                    isActive: !row.is_active,
+                  })
+                }
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  !row.is_active && "text-muted-foreground/80 opacity-70 hover:bg-muted/35 hover:text-muted-foreground",
+                )}
+                title="删除订阅"
+                disabled={busy}
+                onClick={() => {
+                  if (!window.confirm(`确认删除订阅：${row.email}？`)) {
+                    return;
+                  }
+                  removeSubscriber.mutate(row.email);
+                }}
+              >
+                <Trash2 className={cn("h-4 w-4", row.is_active ? "text-rose-500" : "text-muted-foreground/80")} />
+              </Button>
+            </div>
+          );
+        },
+      },
     ],
-    [],
+    [removeSubscriber, toggleSubscriber],
   );
 
   return (
@@ -316,6 +424,7 @@ export function VisitorsSubscribersPanel({
         pageSize={20}
         onPageChange={setPage}
         isLoading={query.isLoading}
+        getRowClassName={(row) => inactiveRowClassName(row.is_active)}
         renderExpandedRow={(row) => <SubscriberMessageList email={row.email} />}
       />
     </div>

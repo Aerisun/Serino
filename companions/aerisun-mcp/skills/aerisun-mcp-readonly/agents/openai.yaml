@@ -1,0 +1,15 @@
+interface:
+  display_name: "Aerisun MCP Readonly"
+  short_description: "Use Aerisun MCP safely in read-only mode"
+  default_prompt: "Use $aerisun-mcp-readonly to inspect Aerisun MCP data without changing any state."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "aerisun-mcp"
+      description: "Aerisun MCP server configured through the companion .env file"
+      transport: "streamable_http"
+      url: "${AERISUN_MCP_ENDPOINT}"
+
+policy:
+  allow_implicit_invocation: true

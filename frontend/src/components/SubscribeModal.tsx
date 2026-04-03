@@ -3,13 +3,14 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { BellRing, Check, Copy, ExternalLink, Mail, Rss, X } from "lucide-react";
 import { subscribeToContentApiV1SiteSubscriptionsPost } from "@serino/api-client/site";
+import { useFrontendI18n } from "@/i18n";
 import { trackSubscriptionEmail } from "@/lib/subscription-tracker";
 
 const CONTENT_OPTIONS = [
-  { key: "posts", label: "文章", feedPath: "/feeds/posts.xml" },
-  { key: "diary", label: "日记", feedPath: "/feeds/diary.xml" },
-  { key: "thoughts", label: "想法", feedPath: "/feeds/thoughts.xml" },
-  { key: "excerpts", label: "摘录", feedPath: "/feeds/excerpts.xml" },
+  { key: "posts", feedPath: "/feeds/posts.xml" },
+  { key: "diary", feedPath: "/feeds/diary.xml" },
+  { key: "thoughts", feedPath: "/feeds/thoughts.xml" },
+  { key: "excerpts", feedPath: "/feeds/excerpts.xml" },
 ] as const;
 
 type ContentType = (typeof CONTENT_OPTIONS)[number]["key"];
@@ -52,6 +53,7 @@ const isSubscriptionSuccessPayload = (
 };
 
 const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
+  const { t } = useFrontendI18n();
   const [email, setEmail] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<ContentType[]>(
     CONTENT_OPTIONS.map((item) => item.key),
@@ -138,26 +140,26 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
         setCopiedKey((current) => (current === key ? null : current));
       }, 1600);
     } catch {
-      setFeedback({ kind: "error", message: "复制失败，请手动复制。" });
+      setFeedback({ kind: "error", message: t("subscribe.copyFailed") });
     }
   };
 
   const handleSubmit = async () => {
     if (!enabled) {
-      const message = "邮箱订阅暂未开放，敬请期待。";
+      const message = t("subscribe.notEnabled");
       setFeedback({ kind: "error", message });
       pushToast("error", message);
       return;
     }
 
     if (!email.trim()) {
-      const message = "请输入邮箱。";
+      const message = t("subscribe.emailRequired");
       setFeedback({ kind: "error", message });
       pushToast("error", message);
       return;
     }
     if (selectedTypes.length === 0) {
-      const message = "至少选择一项内容。";
+      const message = t("subscribe.typeRequired");
       setFeedback({ kind: "error", message });
       pushToast("error", message);
       return;
@@ -172,10 +174,10 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       });
       const subscribed = response.data;
       if (!isSubscriptionSuccessPayload(subscribed)) {
-        throw new Error("订阅请求返回异常，请稍后重试。");
+        throw new Error(t("subscribe.invalidResponse"));
       }
       trackSubscriptionEmail(subscribed.email);
-      const message = `确认邮件发送成功，订阅已生效。已记录你填写的邮箱 ${subscribed.email}。`;
+      const message = t("subscribe.success", { email: subscribed.email });
       setFeedback({ kind: "success", message });
       pushToast("success", message);
       window.dispatchEvent(
@@ -201,7 +203,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
         (detail?.trim() ?? "") ||
         (error instanceof Error && error.message.trim()
           ? error.message
-          : "订阅失败，请稍后重试。");
+          : t("subscribe.failed"));
       setFeedback({ kind: "error", message });
       pushToast("error", message);
     } finally {
@@ -251,7 +253,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
               type="button"
               className="fixed inset-0 bg-background/70 backdrop-blur-sm"
               onClick={onClose}
-              aria-label="关闭订阅弹窗"
+              aria-label={t("subscribe.closeAria")}
             />
             <motion.div
               initial={{ opacity: 0, y: -20, scale: 0.96 }}
@@ -273,7 +275,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
               <div className="relative overflow-hidden border-b border-[rgb(var(--shiro-divider-rgb)/0.14)] bg-[linear-gradient(135deg,rgb(var(--shiro-panel-rgb)/0.78),rgb(var(--shiro-panel-strong-rgb)/0.4))] px-5 py-5 sm:px-6">
                 <div className="max-w-2xl">
                   <h2 className="font-body text-[1.9rem] text-foreground/88">
-                    订阅更新
+                    {t("subscribe.title")}
                   </h2>
                   <div
                     aria-hidden="true"
@@ -290,7 +292,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                 <div className="space-y-5 p-5 sm:p-6">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-foreground/72">
-                      接收订阅信息的邮箱
+                      {t("subscribe.emailLabel")}
                     </label>
                     <div className="flex h-12 items-center gap-3 rounded-[20px] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-white/58 px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition focus-within:border-[rgb(var(--shiro-accent-rgb)/0.36)] focus-within:bg-white/72 focus-within:shadow-[0_12px_28px_rgba(15,23,42,0.06)] dark:bg-black/10 dark:focus-within:bg-black/20">
                       <Mail className="h-4 w-4 shrink-0 text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
@@ -313,7 +315,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm font-medium text-foreground/72">
-                        接收内容
+                        {t("subscribe.contentLabel")}
                       </div>
                       <div className="text-[11px] uppercase tracking-[0.16em] text-foreground/34">
                         {selectedTypes.length}/4
@@ -329,7 +331,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                             onClick={() => toggleType(item.key)}
                             aria-pressed={checked}
                             disabled={!enabled || submitting}
-                            className={`group relative flex h-[68px] items-center justify-between gap-3 overflow-hidden rounded-[20px] border px-4 text-left transition ${
+                              className={`group relative flex h-[68px] items-center justify-between gap-3 overflow-hidden rounded-[20px] border px-4 text-left transition ${
                               checked
                                 ? "border-[rgb(var(--shiro-accent-rgb)/0.34)] bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.13),rgb(var(--shiro-accent-rgb)/0.08))] shadow-[0_12px_24px_rgba(15,23,42,0.06)]"
                                 : "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/36 hover:bg-white/54 hover:shadow-[0_10px_22px_rgba(15,23,42,0.04)] dark:bg-black/10 dark:hover:bg-black/16"
@@ -345,7 +347,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                             />
                             <span className="min-w-0">
                               <span className="block text-sm font-medium text-foreground/82">
-                                {item.label}
+                                {t(`subscribe.content.${item.key}`)}
                               </span>
                             </span>
                             <span
@@ -383,7 +385,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                       className="inline-flex h-11 items-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.16)] px-5 text-sm font-medium text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.22)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <BellRing className="h-4 w-4" />
-                      {enabled ? (submitting ? "提交中..." : "订阅") : "敬请期待"}
+                      {enabled ? (submitting ? t("subscribe.submitting") : t("subscribe.submit")) : t("subscribe.unavailable")}
                     </button>
                   </div>
                 </div>
@@ -406,7 +408,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                                 aria-hidden="true"
                                 className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.72)]"
                               />
-                              {item.label}
+                              {t(`subscribe.content.${item.key}`)}
                             </div>
                             <div className="mt-1 break-all text-xs leading-5 text-foreground/46">
                               {item.url}
@@ -417,8 +419,8 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              title="打开 RSS 链接"
-                              aria-label="打开 RSS 链接"
+                              title={t("subscribe.openRss")}
+                              aria-label={t("subscribe.openRss")}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -428,13 +430,13 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                               onClick={() => void handleCopy(item.key, item.url)}
                               title={
                                 copiedKey === item.key
-                                  ? "已复制"
-                                  : "复制 RSS 链接"
+                                  ? t("subscribe.copied")
+                                  : t("subscribe.copyRss")
                               }
                               aria-label={
                                 copiedKey === item.key
-                                  ? "已复制 RSS 链接"
-                                  : "复制 RSS 链接"
+                                  ? t("subscribe.copiedRss")
+                                  : t("subscribe.copyRss")
                               }
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16"
                             >
@@ -457,7 +459,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
               type="button"
               onClick={onClose}
               className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/44 text-foreground/54 transition hover:text-foreground/84 dark:bg-black/10"
-              aria-label="关闭订阅弹窗"
+              aria-label={t("subscribe.closeAria")}
             >
               <X className="h-4 w-4" />
             </button>

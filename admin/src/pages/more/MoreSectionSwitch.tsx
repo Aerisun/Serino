@@ -1,6 +1,6 @@
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { useI18n } from "@/i18n";
-import { Mail, Settings2 } from "lucide-react";
+import { Cpu, Mail, Plug, Settings2 } from "lucide-react";
 
 export function MoreSectionSwitch() {
   const { t } = useI18n();
@@ -14,13 +14,27 @@ export function MoreSectionSwitch() {
       icon: Settings2,
     },
     {
-      value: "external-config",
-      to: "/more/external-config",
-      label: t("more.tabs.externalConfig"),
-      description: t("more.sectionDescriptions.externalConfig"),
+      value: "mail-config",
+      to: "/more/mail-config",
+      label: t("more.tabs.mailConfig"),
+      description: t("more.sectionDescriptions.mailConfig"),
       icon: Mail,
+    },
+    {
+      value: "api-config",
+      to: "/more/api-config",
+      label: t("more.tabs.apiConfig"),
+      description: t("more.sectionDescriptions.apiConfig"),
+      icon: Cpu,
+    },
+    {
+      value: "proxy-config",
+      to: "/more/proxy-config",
+      label: t("more.tabs.proxyConfig"),
+      description: t("more.sectionDescriptions.proxyConfig"),
+      icon: Plug,
     },
   ] as const;
 
-  return <AdminSectionTabs items={items} />;
+  return <AdminSectionTabs items={items} className="w-fit" />;
 }

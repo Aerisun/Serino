@@ -4,10 +4,8 @@ import {
   BarChart3,
   BookOpen,
   ChevronRight,
-  Clock3,
   FileText,
   Flag,
-  Globe,
   MessageSquare,
   Quote,
   TrendingUp,
@@ -28,6 +26,11 @@ import { SummaryMetricCard } from "@/components/dashboard/SummaryMetricCard";
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
+import {
+  formatContentSlugFallback,
+  formatContentTypeTitleLabel,
+  getContentTargetFromPath,
+} from "@/lib/contentPathLabel";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -41,10 +44,18 @@ type TrafficPoint = {
   views: number;
 };
 
+type TrafficPlotPoint = TrafficPoint & {
+  x: number;
+  y: number;
+  xPercent: number;
+  yPercent: number;
+};
+
 type TopPageMetric = {
   url: string;
   views: number;
   share?: number;
+  title?: string | null;
 };
 
 type VisitorRecord = {
@@ -65,25 +76,38 @@ type VisitorRecord = {
 
 type DashboardSection = "metrics" | "charts" | "recent" | "visitors";
 
-function buildTrafficPath(points: TrafficPoint[], width: number, height: number) {
-  if (points.length === 0) return "";
-  if (points.length === 1) return `M 0 ${height / 2}`;
-
+function buildTrafficPlotPoints(points: TrafficPoint[], width: number, height: number): TrafficPlotPoint[] {
+  if (points.length === 0) return [];
   const max = Math.max(...points.map((point) => point.views), 1);
-  const stepX = width / Math.max(points.length - 1, 1);
-  const normalized = points.map((point, index) => ({
-    x: index * stepX,
-    y: height - (point.views / max) * (height - 12) - 6,
-  }));
+  const stepX = points.length > 1 ? width / Math.max(points.length - 1, 1) : 0;
+  return points.map((point, index) => {
+    const x = points.length === 1 ? width / 2 : index * stepX;
+    const y = height - (point.views / max) * (height - 20) - 10;
+    return {
+      ...point,
+      x,
+      y,
+      xPercent: width === 0 ? 0 : (x / width) * 100,
+      yPercent: height === 0 ? 0 : (y / height) * 100,
+    };
+  });
+}
 
-  let path = `M ${normalized[0].x} ${normalized[0].y}`;
-  for (let index = 0; index < normalized.length - 1; index += 1) {
-    const current = normalized[index];
-    const next = normalized[index + 1];
+function buildTrafficPath(points: TrafficPlotPoint[]) {
+  if (points.length <= 1) return "";
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
     const controlX = (current.x + next.x) / 2;
     path += ` C ${controlX} ${current.y}, ${controlX} ${next.y}, ${next.x} ${next.y}`;
   }
   return path;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function formatCompactNumber(value: number) {
@@ -114,17 +138,7 @@ function formatDurationMs(value: number) {
   return `${value} ms`;
 }
 
-function formatReadableSegment(segment: string) {
-  try {
-    const decoded = decodeURIComponent(segment).replace(/[-_]+/g, " ").trim();
-    if (!decoded) return segment;
-    return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-  } catch {
-    return segment;
-  }
-}
-
-function formatPageLabel(url: string, t: (key: string) => string) {
+function formatPageLabel(url: string, t: (key: string) => string, explicitTitle?: string | null) {
   if (url === "/" || url === "") {
     return t("dashboard.homePage");
   }
@@ -132,12 +146,28 @@ function formatPageLabel(url: string, t: (key: string) => string) {
     return t("dashboard.guestbook");
   }
 
+  const target = getContentTargetFromPath(url);
+  if (target) {
+    return formatContentTypeTitleLabel({
+      contentType: target.contentType,
+      t,
+      title: explicitTitle,
+      slug: target.slug,
+      separator: " / ",
+    });
+  }
+
+  const normalizedExplicitTitle = explicitTitle?.trim();
+  if (normalizedExplicitTitle) {
+    return normalizedExplicitTitle;
+  }
+
   const segments = url.split("/").filter(Boolean);
   const lastSegment = segments[segments.length - 1];
   if (!lastSegment) {
     return url;
   }
-  return formatReadableSegment(lastSegment);
+  return formatContentSlugFallback(lastSegment);
 }
 
 function contentTypeLabel(type: string, t: (key: string) => string) {
@@ -211,28 +241,23 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<DashboardSection>("metrics");
+  const [hoveredVisitorIndex, setHoveredVisitorIndex] = useState<number | null>(null);
 
   const { data: raw, isLoading } =
     useDashboardStatsApiV1AdminSystemDashboardStatsGet();
   const stats = raw?.data as EnhancedDashboardStats | undefined;
 
-  const trafficSeries = useMemo(
-    () =>
-      (stats?.traffic?.history ?? []).map((point) => ({
-        date: String(point.date),
-        views: point.views ?? 0,
-      })),
-    [stats],
-  );
   const distribution = useMemo(() => stats?.traffic?.distribution ?? [], [stats]);
   const topPages = useMemo(() => stats?.traffic?.top_pages ?? [], [stats]);
   const recentContent = useMemo(() => stats?.recent_content ?? [], [stats]);
   const visitorSeries = useMemo(
     () =>
-      (stats?.visitors?.history ?? []).map((point) => ({
-        date: String(point.date),
-        views: point.views ?? 0,
-      })),
+      (stats?.visitors?.history ?? [])
+        .map((point) => ({
+          date: String(point.date),
+          views: point.views ?? 0,
+        }))
+        .slice(-30),
     [stats],
   );
   const visitorTopPages = useMemo(() => stats?.visitors?.top_pages ?? [], [stats]);
@@ -241,9 +266,44 @@ export default function DashboardPage() {
     [stats],
   );
 
-  const visitorPath = buildTrafficPath(visitorSeries, 100, 100);
-  const visitorMax = Math.max(...visitorSeries.map((point) => point.views), 1);
-  const trafficChartWidth = Math.max(760, Math.max(trafficSeries.length, visitorSeries.length) * 72);
+  const visitorPlotPoints = useMemo(
+    () => buildTrafficPlotPoints(visitorSeries, 100, 100),
+    [visitorSeries],
+  );
+  const visitorPath = useMemo(() => buildTrafficPath(visitorPlotPoints), [visitorPlotPoints]);
+  const visitorMax = Math.max(...visitorSeries.map((point) => point.views), 0);
+  const visitorPeakIndex = visitorSeries.findIndex((point) => point.views === visitorMax);
+  const visitorPeakPoint = visitorPeakIndex >= 0 ? visitorSeries[visitorPeakIndex] : undefined;
+  const visitorPeakPlotPoint =
+    visitorPeakIndex >= 0 ? visitorPlotPoints[visitorPeakIndex] : undefined;
+  const visitorLatestPoint = visitorSeries[visitorSeries.length - 1];
+  const visitorLatestPlotPoint = visitorPlotPoints[visitorPlotPoints.length - 1];
+  const hoveredVisitorPoint =
+    hoveredVisitorIndex !== null ? visitorSeries[hoveredVisitorIndex] : undefined;
+  const hoveredVisitorPlotPoint =
+    hoveredVisitorIndex !== null ? visitorPlotPoints[hoveredVisitorIndex] : undefined;
+  const visitorAverage = useMemo(
+    () =>
+      visitorSeries.length > 0
+        ? visitorSeries.reduce((sum, point) => sum + point.views, 0) / visitorSeries.length
+        : 0,
+    [visitorSeries],
+  );
+  const visitorAxisPoints = useMemo(() => {
+    if (visitorSeries.length === 0) return [] as TrafficPoint[];
+    if (visitorSeries.length <= 3) return visitorSeries;
+
+    const lastIndex = visitorSeries.length - 1;
+    const selectedIndexes = [
+      0,
+      Math.floor(lastIndex / 2),
+      lastIndex,
+    ];
+    const uniqueSortedIndexes = Array.from(new Set(selectedIndexes)).sort((a, b) => a - b);
+    return uniqueSortedIndexes.map((index) => visitorSeries[index]);
+  }, [visitorSeries]);
+  const visitorStartPoint = visitorSeries[0];
+  const trafficChartWidth = Math.max(520, Math.max(visitorSeries.length, 12) * 42);
   const totalPublished =
     (stats?.aux_metrics?.published_posts ?? 0) +
     (stats?.aux_metrics?.published_diary_entries ?? 0) +
@@ -322,12 +382,12 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("dashboard.title")}
-        description={t("dashboard.description")}
         secondary={
           <AdminSectionTabs
             items={sectionItems}
             value={activeSection}
             onValueChange={(value) => setActiveSection(value as DashboardSection)}
+            className="w-fit"
           />
         }
       />
@@ -380,7 +440,7 @@ export default function DashboardPage() {
                   {featuredPage ? (
                     <div className="space-y-2">
                       <div className="truncate text-xl font-semibold tracking-tight text-foreground/95">
-                        {formatPageLabel(featuredPage.url, t)}
+                        {formatPageLabel(featuredPage.url, t, featuredPage.title)}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{featuredPage.url}</div>
                       <div className="pt-3 text-3xl font-semibold tracking-tight text-foreground/95">
@@ -402,130 +462,192 @@ export default function DashboardPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="charts" className="mt-0 space-y-5">
-              <div className="grid gap-5 xl:grid-cols-[1.5fr_0.9fr]">
+            <TabsContent value="charts" className="mt-0 space-y-4">
+              <div className="grid gap-4 xl:grid-cols-[1.5fr_0.9fr]">
                 <DashboardSurface
-                  eyebrow={t("dashboard.trafficEyebrow")}
                   title={t("dashboard.trafficTrendTitle")}
-                  description={t("dashboard.trafficTrendDescription")}
-                  contentClassName="space-y-5"
+                  contentClassName="space-y-4"
                 >
                   {visitorSeries.length > 0 ? (
-                    <>
-                      <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="space-y-3">
+                      <div className="grid gap-3 border-b border-black/6 pb-3 dark:border-white/10 md:grid-cols-3">
                         {[
-                          {
-                            label: t("dashboard.trafficCurrent"),
-                            value: formatCompactNumber(visitorSeries[visitorSeries.length - 1]?.views ?? 0),
-                          },
                           {
                             label: t("dashboard.trafficPeak"),
                             value: formatCompactNumber(visitorMax),
+                            meta: visitorPeakPoint?.date ?? "--",
+                          },
+                          {
+                            label: t("dashboard.trafficAverage"),
+                            value: formatCompactNumber(visitorAverage),
+                            meta: t("dashboard.trafficAverageMeta"),
                           },
                           {
                             label: t("dashboard.trafficPeriods"),
                             value: visitorSeries.length,
+                            meta: `${visitorSeries.length}d`,
                           },
                         ].map((item) => (
                           <div
                             key={item.label}
-                            className="rounded-2xl border border-black/5 bg-black/[0.018] px-4 py-3 dark:border-white/10 dark:bg-white/[0.02]"
+                            className="space-y-1 md:border-l md:border-black/6 md:pl-4 md:first:border-l-0 md:first:pl-0 dark:md:border-white/10"
                           >
-                            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                               {item.label}
                             </p>
-                            <p className="mt-2 text-xl font-semibold tracking-tight text-foreground/95">
+                            <p className="text-[1.75rem] font-semibold leading-none tracking-[-0.04em] text-foreground/96">
                               {item.value}
+                            </p>
+                            <p className="text-[12px] tabular-nums text-muted-foreground">
+                              {item.meta}
                             </p>
                           </div>
                         ))}
                       </div>
 
-                      <div className="overflow-x-auto overflow-y-hidden rounded-[22px] border border-black/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.48),rgba(255,255,255,0.12))] p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))]">
+                      <div className="overflow-x-auto overflow-y-hidden rounded-[22px] border border-black/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.72))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
                         <div className="min-w-full" style={{ minWidth: `${trafficChartWidth}px` }}>
-                          <div className="relative h-[220px] w-full">
-                            <div className="absolute inset-0 grid grid-rows-4">
-                            {Array.from({ length: 4 }, (_, index) => (
-                              <div
-                                key={index}
-                                className="border-b border-dashed border-black/6 dark:border-white/8"
-                              />
-                            ))}
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/6 px-4 py-3 dark:border-white/10 sm:px-5">
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                                {t("dashboard.trafficPeriods")} / {visitorSeries.length}d
+                              </p>
+                              <p className="text-[13px] tabular-nums text-muted-foreground">
+                                {visitorStartPoint?.date} - {visitorLatestPoint?.date}
+                              </p>
                             </div>
-                            <svg
-                              viewBox="0 0 100 100"
-                              preserveAspectRatio="none"
-                              className="relative h-full w-full overflow-visible"
+
+                            <div className="flex items-center gap-4 text-[11px] font-medium tabular-nums text-muted-foreground">
+                              {visitorPeakPlotPoint ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="h-2 w-2 rounded-full border border-[rgb(var(--admin-accent-rgb)/0.45)] bg-transparent" />
+                                  {t("dashboard.trafficPeak")}
+                                </span>
+                              ) : null}
+                              {visitorLatestPlotPoint ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="h-2 w-2 rounded-full bg-[rgb(var(--admin-accent-rgb)/0.9)]" />
+                                  {visitorLatestPoint?.date}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="px-4 pb-4 pt-5 sm:px-5 sm:pb-5">
+                            <div
+                              className="relative h-[216px]"
+                              onMouseLeave={() => setHoveredVisitorIndex(null)}
                             >
-                              <defs>
-                                <linearGradient
-                                  id="admin-dashboard-line-fill"
-                                  x1="0"
-                                  y1="0"
-                                  x2="0"
-                                  y2="1"
+                              <div className="pointer-events-none absolute inset-x-0 top-[18%] h-px bg-black/5 dark:bg-white/8" />
+                              <div className="pointer-events-none absolute inset-x-0 top-[52%] h-px bg-black/[0.04] dark:bg-white/[0.06]" />
+                              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-black/6 dark:bg-white/10" />
+
+                              {hoveredVisitorPoint && hoveredVisitorPlotPoint ? (
+                                <div
+                                  className="pointer-events-none absolute z-10 rounded-2xl border border-black/6 bg-background/94 px-3 py-2 text-left shadow-[0_16px_40px_-24px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-950/88"
+                                  style={{
+                                    left: `${clamp(hoveredVisitorPlotPoint.xPercent, 10, 90)}%`,
+                                    top: `${clamp(hoveredVisitorPlotPoint.yPercent - 14, 10, 76)}%`,
+                                    transform: "translate(-50%, -100%)",
+                                  }}
                                 >
-                                  <stop
-                                    offset="0%"
-                                    stopColor="rgb(var(--admin-accent-rgb) / 0.18)"
-                                  />
-                                  <stop
-                                    offset="100%"
-                                    stopColor="rgb(var(--admin-accent-rgb) / 0)"
-                                  />
-                                </linearGradient>
-                              </defs>
-                              {visitorPath ? (
-                                <>
-                                  <path
-                                    d={`${visitorPath} L 100 100 L 0 100 Z`}
-                                    fill="url(#admin-dashboard-line-fill)"
-                                  />
+                                  <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                                    {hoveredVisitorPoint.date}
+                                  </div>
+                                  <div className="mt-1 text-sm font-semibold tabular-nums text-foreground/94">
+                                    {formatCompactNumber(hoveredVisitorPoint.views)}
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              <svg
+                                viewBox="0 0 100 100"
+                                preserveAspectRatio="none"
+                                className="relative h-full w-full overflow-visible"
+                              >
+                                {visitorPath ? (
                                   <path
                                     d={visitorPath}
                                     fill="none"
                                     stroke="rgb(var(--admin-accent-rgb) / 0.88)"
-                                    strokeWidth="2.1"
+                                    strokeWidth="1.05"
                                     strokeLinecap="round"
                                   />
-                                  {visitorSeries.map((point, index) => {
-                                    const x =
-                                      visitorSeries.length === 1
-                                        ? 0
-                                        : (index / (visitorSeries.length - 1)) * 100;
-                                    const y = 100 - (point.views / visitorMax) * 88 - 6;
-                                    return (
-                                      <circle
-                                        key={`${point.date}-${index}`}
-                                        cx={x}
-                                        cy={y}
-                                        r="1.65"
-                                        fill="rgb(var(--admin-accent-rgb) / 0.95)"
-                                      />
-                                    );
-                                  })}
-                                </>
-                              ) : null}
-                            </svg>
-                          </div>
-                          <div className="mt-4 grid grid-cols-4 gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                            {visitorSeries
-                              .filter(
-                                (_, index) =>
-                                  index === 0 ||
-                                  index === visitorSeries.length - 1 ||
-                                  index === Math.floor((visitorSeries.length - 1) / 2) ||
-                                  index === Math.floor(((visitorSeries.length - 1) * 3) / 4),
-                              )
-                              .map((point) => (
-                                <span key={point.date} className="truncate">
-                                  {point.date}
-                                </span>
-                              ))}
+                                ) : null}
+
+                                {hoveredVisitorPlotPoint ? (
+                                  <g>
+                                    <circle
+                                      cx={hoveredVisitorPlotPoint.x}
+                                      cy={hoveredVisitorPlotPoint.y}
+                                      r="2.8"
+                                      fill="rgb(var(--admin-accent-rgb) / 0.12)"
+                                    />
+                                    <circle
+                                      cx={hoveredVisitorPlotPoint.x}
+                                      cy={hoveredVisitorPlotPoint.y}
+                                      r="1.45"
+                                      fill="rgb(var(--admin-accent-rgb) / 0.96)"
+                                      stroke="rgb(255 255 255 / 0.94)"
+                                      strokeWidth="0.6"
+                                    />
+                                  </g>
+                                ) : null}
+                              </svg>
+
+                              <div className="absolute inset-0">
+                                {visitorPlotPoints.map((point, index) => (
+                                  <button
+                                    key={`${point.date}-${index}`}
+                                    type="button"
+                                    className="absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-transparent focus:outline-none"
+                                    style={{
+                                      left: `${point.xPercent}%`,
+                                      top: `${point.yPercent}%`,
+                                    }}
+                                    aria-label={`${point.date}: ${point.views}`}
+                                    onMouseEnter={() => setHoveredVisitorIndex(index)}
+                                    onFocus={() => setHoveredVisitorIndex(index)}
+                                    onBlur={() => setHoveredVisitorIndex((current) => (current === index ? null : current))}
+                                    onClick={() => setHoveredVisitorIndex(index)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between text-[11px] tabular-nums text-muted-foreground">
+                              {visitorAxisPoints.map((point, index) => {
+                                const isLatest = point.date === visitorLatestPoint?.date;
+                                const alignmentClass =
+                                  index === 0
+                                    ? "items-start text-left"
+                                    : index === visitorAxisPoints.length - 1
+                                      ? "items-end text-right"
+                                      : "items-center text-center";
+
+                                return (
+                                  <div
+                                    key={point.date}
+                                    className={`flex flex-col gap-1 ${alignmentClass}`}
+                                  >
+                                    <span
+                                      className={`h-1.5 w-1.5 rounded-full ${
+                                        isLatest
+                                          ? "bg-[rgb(var(--admin-accent-rgb)/0.85)]"
+                                          : "bg-black/12 dark:bg-white/12"
+                                      }`}
+                                    />
+                                    <div className={isLatest ? "font-medium text-foreground/88" : undefined}>
+                                      {point.date}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <DashboardEmptyState
                       title={t("dashboard.trafficEmptyTitle")}
@@ -535,10 +657,8 @@ export default function DashboardPage() {
                 </DashboardSurface>
 
                 <DashboardSurface
-                  eyebrow={t("dashboard.distributionEyebrow")}
                   title={t("dashboard.distributionTitle")}
-                  description={t("dashboard.distributionDescription")}
-                  contentClassName="max-h-[520px] space-y-1 divide-y divide-black/5 overflow-y-auto pr-1 dark:divide-white/10"
+                  contentClassName="max-h-[480px] space-y-1 divide-y divide-black/5 overflow-y-auto pr-1 dark:divide-white/10"
                 >
                   {visitorTopPages.length > 0 ? (
                     visitorTopPages.map((item: TopPageMetric) => {
@@ -546,7 +666,7 @@ export default function DashboardPage() {
                       return (
                         <div key={item.url} className="py-3 first:pt-0 last:pb-0">
                           <DashboardListRow
-                            title={formatPageLabel(item.url, t)}
+                            title={formatPageLabel(item.url, t, item.title)}
                             subtitle={item.url}
                             trailing={
                               <div className="text-right">
@@ -581,12 +701,10 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="recent" className="mt-0">
-              <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
+              <div className="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
                 <DashboardSurface
-                  eyebrow={t("dashboard.recentEyebrow")}
                   title={t("dashboard.recentContent")}
-                  description={t("dashboard.recentContentDescription")}
-                  contentClassName="max-h-[520px] space-y-1 divide-y divide-black/5 overflow-y-auto pr-1 dark:divide-white/10"
+                  contentClassName="max-h-[480px] space-y-1 divide-y divide-black/5 overflow-y-auto pr-1 dark:divide-white/10"
                 >
                   {recentContent.length > 0 ? (
                     recentContent.map((item: RecentContentItem) => (
@@ -623,10 +741,8 @@ export default function DashboardPage() {
                 </DashboardSurface>
 
                 <DashboardSurface
-                  eyebrow={t("dashboard.contentEyebrow")}
                   title={t("dashboard.contentBreakdownTitle")}
-                  description={t("dashboard.contentBreakdownDescription")}
-                  contentClassName="max-h-[520px] space-y-4 overflow-y-auto pr-1"
+                  contentClassName="max-h-[480px] space-y-4 overflow-y-auto pr-1"
                 >
                   {totalPublished > 0 ? (
                     [
@@ -682,45 +798,36 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="visitors" className="mt-0 space-y-5">
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 {[
                   {
                     label: t("dashboard.visitorsTotal"),
                     value: stats.visitors?.total_visits ?? 0,
-                    hint: t("dashboard.visitorsTotalHint"),
-                    icon: Globe,
-                    tone: "accent" as const,
                   },
                   {
                     label: t("dashboard.visitorsUv24h"),
                     value: stats.visitors?.unique_visitors_24h ?? 0,
-                    hint: t("dashboard.visitorsUv24hHint"),
-                    icon: Users,
-                    tone: "default" as const,
                   },
                   {
                     label: t("dashboard.visitorsUv7d"),
                     value: stats.visitors?.unique_visitors_7d ?? 0,
-                    hint: t("dashboard.visitorsUv7dHint"),
-                    icon: Users,
-                    tone: "default" as const,
                   },
                   {
                     label: t("dashboard.visitorsAvgDuration"),
                     value: formatDurationMs(stats.visitors?.average_request_duration_ms ?? 0),
-                    hint: t("dashboard.visitorsAvgDurationHint"),
-                    icon: Clock3,
-                    tone: "default" as const,
                   },
-                ].map((card) => (
-                  <SummaryMetricCard key={card.label} {...card} />
+                ].map((item) => (
+                  <div key={item.label} className="flex items-baseline gap-2 whitespace-nowrap">
+                    <span className="text-sm font-medium text-muted-foreground">{item.label}:</span>
+                    <span className="text-lg font-bold tabular-nums text-foreground/95">
+                      {item.value}
+                    </span>
+                  </div>
                 ))}
               </div>
 
               <DashboardSurface
-                eyebrow={t("dashboard.visitorsRecordsEyebrow")}
                 title={t("dashboard.visitorsRecordsTitle")}
-                description={t("dashboard.visitorsRecordsDescription")}
                 contentClassName="space-y-4"
               >
                 <DataTable

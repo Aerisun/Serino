@@ -10,10 +10,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.creating": "创建中...",
     "common.edit": "编辑",
     "common.delete": "删除",
+    "common.empty": "留空",
     "common.search": "搜索",
     "common.confirm": "确认",
     "common.back": "返回",
-    "common.saveDraft": "退出并保存为草稿",
+    "common.saveDraft": "存为草稿退出",
+    "common.exit": "退出",
     "common.actions": "操作",
     "common.status": "状态",
     "common.visibility": "可见性",
@@ -64,6 +66,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.deleteConfirm": "确认删除",
     "common.deleteConfirmDesc": "确定要删除这一项吗？此操作不可撤销。",
     "common.optional": "可选",
+    "common.invalidDateFormat": "请输入有效的日期时间格式",
 
     // nav
     "nav.dashboard": "仪表盘",
@@ -82,7 +85,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.assets": "资源",
     "nav.integrations": "集成",
     "nav.apiKeys": "API 密钥",
-    "nav.mcp": "MCP",
+    "nav.mcp": "MCP 访问",
     "nav.agentUsage": "Agent 使用说明",
     "nav.agent": "Agent",
     "nav.auditLog": "审计日志",
@@ -201,6 +204,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "contentCategories.deleteSuccess": "分类已删除",
     "contentCategories.deleteConfirm": "确认删除这个分类？",
     "contentCategories.usedCountSuffix": " 篇内容在使用",
+    "contentCategories.managedItems": "已分类的内容",
+    "contentCategories.unclassifiedItems": "未分类的内容",
+    "contentCategories.addItems": "添加内容",
+    "contentCategories.removeItem": "移出分类",
+    "contentCategories.addToCategory": "加入分类",
+    "contentCategories.noManagedItems": "当前没有内容使用此分类",
+    "contentCategories.noUnclassifiedItems": "所有内容都已分类",
+    "contentCategories.loadingItems": "加载中…",
 
     // siteConfig
     "siteConfig.title": "站点配置",
@@ -357,8 +368,36 @@ export const translations: Record<Lang, Record<string, string>> = {
     "friends.avatar": "头像",
     "friends.avatarUrl": "头像 URL",
     "friends.description2": "描述",
+    "friends.websiteStatus": "网站状态",
+    "friends.rssStatus": "RSS 状态",
     "friends.newFriend": "新建友链",
     "friends.addFriend": "添加友链",
+    "friends.show": "显示",
+    "friends.archiveAction": "归档",
+    "friends.tabs.friends": "朋友们",
+    "friends.tabs.moreConfig": "更多配置",
+    "friends.sectionDescriptions.friends": "管理友情链接与订阅源。",
+    "friends.sectionDescriptions.moreConfig":
+      "配置友链页随机文章、自动刷新与巡检策略。",
+    "friends.moreConfigTitle": "友链页更多配置",
+    "friends.moreConfigDescription":
+      "这里保存的是后端页面配置，前台友链页和后台巡检任务都会读取这些数值来控制随机文章、自动刷新和定时巡检。",
+    "friends.randomRecentDays": "友链随机文章时间范围（天）",
+    "friends.autoRefreshSeconds": "友链动态自动刷新间隔（秒）",
+    "friends.websiteHealthCheckEnabled": "定时检查友链网站",
+    "friends.websiteHealthCheckEnabledDesc":
+      "开启后会按设定间隔检查网站是否可访问，无法访问时自动标记为失联。",
+    "friends.websiteHealthCheckRunning":
+      "已开启 · 每 {minutes} 分钟检查一次网站可访问性。",
+    "friends.websiteHealthCheckInterval": "网站巡检间隔（分钟）",
+    "friends.rssHealthCheckEnabled": "定时检查友链 RSS",
+    "friends.rssHealthCheckEnabledDesc":
+      "开启后会按设定间隔检查 RSS 是否可访问，无法访问时自动标记为失效。",
+    "friends.rssHealthCheckRunning":
+      "已开启 · 每 {minutes} 分钟检查一次 RSS 可访问性。",
+    "friends.rssHealthCheckInterval": "RSS 巡检间隔（分钟）",
+    "friends.moreConfigMissing":
+      "还没有找到友链页配置，请先初始化页面文案配置。",
 
     // moderation
     "moderation.title": "审核",
@@ -441,7 +480,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.auditLog": "审计日志",
     "system.auditLogDescription": "配置历史与系统活动日志",
     "system.backups": "备份",
-    "system.backupsDescription": "管理 Tailnet 安全备份同步、失败队列与可恢复提交记录",
+    "system.backupsDescription": "管理运行数据备份、失败队列与可恢复提交记录",
     "system.createKey": "创建密钥",
     "system.keyName": "密钥名称",
     "system.scopes": "权限范围",
@@ -450,7 +489,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.action": "操作",
     "system.target": "目标",
     "system.timestamp": "时间",
-    "system.triggerBackup": "创建备份",
+    "system.triggerBackup": "手动备份",
     "system.restore": "恢复",
     "system.newApiKey": "新建 API 密钥",
     "system.keyCreated": "密钥已创建",
@@ -462,29 +501,140 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.restoreConfirm": "确认恢复此备份？",
     "system.deleteConfirm": "确认删除？",
     "system.backupSyncConfig": "同步配置",
-    "system.backupSyncConfigDescription": "配置接收器、SFTP 后备、时间间隔与凭据引用。",
+    "system.backupSyncConfigDescription":
+      "配置 SFTP 目标、自动同步时间间隔与恢复密钥目录。",
     "system.backupSyncTriggered": "已触发备份同步",
     "system.backupSyncPaused": "备份同步已暂停",
     "system.backupSyncResumed": "备份同步已恢复",
     "system.backupSyncRetried": "已重新加入同步重试",
+    "system.localKeysGenerated": "已生成本机备份密钥",
+    "system.localKeysConfirmed": "已确认本机备份密钥",
+    "system.localKeysReady": "本机备份密钥已就绪",
+    "system.exportRecoveryKey": "获取恢复私钥",
+    "system.rotateRecoveryKey": "重新生成恢复私钥",
+    "system.rotateRecoveryKeyDescription":
+      "会生成一把新的恢复私钥用于之后的新备份。系统会保留历史密钥，旧备份仍然可以恢复。",
+    "system.exportRecoveryKeyDescription":
+      "请输入一个密码，系统会用它重新封装数据库中的恢复密钥副本，并把当前私钥显示给你复制和保存。",
+    "system.recoveryKeyPassword": "恢复密钥保护密码",
+    "system.recoveryKeyPasswordDescription":
+      "这个密码用于加密数据库中的恢复密钥副本。以后如果只剩数据库，也可以用这个密码配合 companion 工具把私钥取出来。",
+    "system.recoveryKeyOneTimeWarning":
+      "请立即复制并妥善保存这把恢复私钥。服务器端会保存一份加密副本，但你仍然应该自己保存一份离线副本。",
+    "system.recoveryKeyPrivatePem": "恢复私钥",
+    "system.recoveryKeyPrivatePemDescription":
+      "这是 PEM 格式的原始恢复私钥。复制或下载后请妥善保存，不要发到聊天记录或工单系统里。",
+    "system.copyRecoveryKey": "复制恢复私钥",
+    "system.downloadRecoveryKey": "下载恢复私钥",
+    "system.recoveryKeyCopied": "已复制恢复私钥",
+    "system.recoveryKeyExported": "已导出恢复私钥",
+    "system.recoveryKeyRotated": "已生成新的恢复私钥",
+    "system.testBackupConfig": "测试配置",
+    "system.testingBackupConfig": "测试中...",
+    "system.backupConfigTestSuccess": "备份配置测试通过",
+    "system.backupConfigTestFailed": "备份配置测试失败",
+    "system.backupConfigTestStatus": "测试结果",
+    "system.backupConfigTestOk": "可连接",
+    "system.backupConfigTestLatency": "连接耗时",
+    "system.recoveryKeyRequiredBeforeSave":
+      "第一次建立备份前，必须先获取恢复私钥、设置密码，并把私钥复制或下载保存好。完成这一步之后才能保存备份配置。",
+    "system.recoveryKeyMustBeCopiedBeforeSave":
+      "你刚刚生成了新的恢复私钥。请先复制或下载保存，然后再继续保存备份配置。",
+    "system.prepareLocalKeys": "准备本机密钥",
+    "system.saveAndRunFirstBackup": "保存并创建首次备份",
+    "system.firstBackupStarted": "已保存配置并触发首次备份",
+    "system.quickSetupTitle": "更省事的初始化方式",
+    "system.quickSetupDescription":
+      "现在保存前会自动确认或生成本机备份密钥。第一次配置时，推荐直接点击“保存并创建首次备份”。",
+    "system.autoKeyProvisionHint":
+      "如果当前凭据目录不存在，系统会在保存时自动生成本机备份密钥；如果已经存在，就直接复用。",
     "system.transportMode": "传输模式",
-    "system.transportReceiver": "专用接收器",
     "system.transportSftp": "SSH / SFTP",
+    "system.transportMethodLabel": "同步方式",
+    "system.transportMethodDescription": "当前版本只保留 SSH / SFTP 远端存储。",
+    "system.backupsTabs.settings": "设置",
+    "system.backupsTabs.settingsDescription": "接入方式、凭据与自动同步",
+    "system.backupsTabs.records": "记录",
+    "system.backupsTabs.recordsDescription": "队列、运行与可恢复提交",
+    "system.backupBasicSettings": "基础设置",
+    "system.backupBasicSettingsDescription": "先设置恢复密钥才可以备份",
+    "system.backupAdvancedSettings": "高级设置",
+    "system.backupAdvancedSettingsDescription":
+      "这里包含凭据目录引用，以及不常改的重试和站点参数。",
+    "system.advancedOptions": "高级选项",
+    "system.backupScheduleTitle": "定时同步",
+    "system.backupScheduleAlwaysOnDescription":
+      "保存后会直接启用定时同步，你只需要设置时间间隔。",
+    "system.syncIntervalDescription": "例如 60 表示每 60 分钟自动同步一次。",
+    "system.backupManualOnlyHint":
+      "关闭定时同步后，你仍然可以在“记录”页手动创建备份。",
+    "system.backupSetupGuideTitle": "接入方式",
+    "system.backupSetupGuideDescription":
+      "远端不需要运行 Aerisun，也不需要启动接收器。只要提供一个可写的 SSH / SFTP 目录即可。",
+    "system.backupSetupStepCredential":
+      "保存时系统会自动确认或生成本机恢复密钥目录。",
+    "system.backupSetupStepVerify":
+      "保存后去“记录”页手动创建一次备份，确认运行记录和提交记录都能出现。",
     "system.siteSlug": "站点标识",
+    "system.siteSlugDescription":
+      "用于远端站点目录命名，通常保持 aerisun 即可。",
+    "system.remoteSiteDirectoryLabel": "远端站点目录名",
+    "system.remoteSiteDirectoryDescription":
+      "系统会把当前站点的数据放到远端备份根目录下的这个子目录里。",
     "system.credentialRef": "凭据引用",
+    "system.credentialRefDescription":
+      "默认建议使用 aerisun-backup-source，对应凭据目录名。",
+    "system.localBackupKeyDirLabel": "本地备份密钥目录",
+    "system.localBackupKeyDirDescription":
+      "这里不是 SSH 登录凭据。系统会从本机读取这套恢复密钥，用于加密备份中的 secrets，启用高级加密时也会用于运行数据解密。",
+    "system.credentialRefGuideTitle": "凭据目录位置",
+    "system.credentialRefGuideDescription":
+      "凭据引用会映射到默认目录下的一个子目录。默认建议使用 aerisun-backup-source，并确保目录内有下面 4 个文件。",
+    "system.credentialRefDirectoryName": "凭据目录名",
     "system.syncIntervalMinutes": "同步间隔（分钟）",
+    "system.syncIntervalLabel": "自动同步间隔（分钟）",
+    "system.syncIntervalLabelDescription":
+      "系统会按这个时间间隔自动创建一次备份任务。",
     "system.maxRetries": "最大重试次数",
+    "system.maxRetriesDescription":
+      "单次同步失败后，系统最多自动再尝试多少次。",
     "system.retryBackoffSeconds": "重试退避（秒）",
-    "system.receiverUrl": "接收器地址",
+    "system.retryBackoffDescription":
+      "每次失败后的等待时间基数，重试次数越多，等待也会变长。",
+    "system.connectionConfig": "连接设置",
     "system.remoteHost": "远端主机",
     "system.remotePort": "远端端口",
     "system.remotePath": "远端根路径",
     "system.remoteUsername": "远端用户名",
-    "system.ageFingerprint": "密钥指纹",
+    "system.sshHostLabel": "SSH 主机",
+    "system.sshHostDescription": "填写提供 SFTP 服务的服务器地址或主机名。",
+    "system.sshPortLabel": "SSH 端口",
+    "system.sshPortDescription":
+      "默认一般是 22，只有服务器改过端口时才需要调整。",
+    "system.remoteBackupRootLabel": "远端备份根目录",
+    "system.remoteBackupRootDescription":
+      "这里填备份在服务器上的父目录。系统会在下面继续创建站点目录。",
+    "system.remotePathPreviewTitle": "最终目录示例",
+    "system.sshUsernameLabel": "SSH 用户名",
+    "system.sshUsernameDescription":
+      "这里是登录 SFTP 服务器的 SSH 用户名，不是本地备份密钥目录名。",
+    "system.runtimeEncryptionLabel": "加密数据库与媒体备份",
+    "system.runtimeEncryptionDescription":
+      "关闭时，数据库、媒体和 workflow 文件以普通压缩形式保存在远端；开启后，运行数据会在上传前先加密再发送。secrets 始终加密。",
+    "system.runtimeEncryptionEnabled": "运行数据加密已开启",
+    "system.runtimeEncryptionDisabled": "运行数据加密未开启",
+    "system.recoveryKeyFingerprint": "恢复密钥指纹",
+    "system.recoveryKeyActions": "恢复私钥管理",
     "system.syncEnabled": "启用定时安全同步",
-    "system.syncEnabledDescription": "开启后，系统会按时间间隔创建同步队列并执行增量传输。",
+    "system.syncEnabledDescription":
+      "开启后，系统会按时间间隔创建同步队列并执行增量传输。",
     "system.pauseSync": "暂停同步",
     "system.resumeSync": "恢复同步",
+    "system.connectionConfigSftpDescription":
+      "当前使用 SFTP，需要填写远端主机、端口、路径和用户名。",
+    "system.syncStatusCard": "同步状态",
+    "system.syncStatusCardDescription":
+      "这里显示最近一次入队、同步结果和错误信息。",
     "system.queueRecords": "待同步队列",
     "system.runRecords": "运行记录",
     "system.commitRecords": "提交记录",
@@ -492,8 +642,17 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.queueDepth": "待处理队列数",
     "system.protectionStatus": "保护状态",
     "system.backupNotConfigured": "尚未完成配置",
+    "system.configReady": "设置已就绪",
+    "system.configNeedsAttention": "还缺少必要配置",
+    "system.syncEnabledShort": "已启用定时同步",
+    "system.syncDisabledShort": "未启用定时同步",
+    "system.syncPausedShort": "同步已暂停",
     "system.noPendingQueue": "当前没有待处理队列",
+    "system.noCommitYet": "还没有成功提交",
     "system.missingFingerprint": "尚未填写密钥指纹",
+    "system.recordsNeedSetupTitle": "记录页暂时还不会有内容",
+    "system.recordsNeedSetupDescription":
+      "先在“设置”页填好 SFTP 信息和恢复密钥目录；保存后再手动创建一次备份，就会开始出现运行记录和提交记录。",
     "system.triggerKind": "触发来源",
     "system.retryCount": "重试次数",
     "system.nextRetryAt": "下次重试",
@@ -528,10 +687,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.capabilities": "权限范围",
     "integrations.capabilityCatalog": "能力目录",
     "integrations.capabilityCatalogDescription":
-      "把 MCP 的权限说明和动态发现内容收拢到同一个页面里查看。",
+      "把 MCP 权限说明和动态发现内容收拢到同一个页面里查看。",
     "integrations.capabilitySource": "动态发现来源",
     "integrations.capabilitySourceHint":
-      "下面的 tools/resources 直接来自服务端 MCP 注册元数据，不再手工维护固定列表。",
+      "下面的 tools/resources 直接来自服务端 MCP 运行时注册元数据，不再手工维护固定列表。",
     "integrations.visibleTools": "当前可见能力",
     "integrations.visibleToolsHint":
       "这里展示 usage 文档里当前可见的 MCP tools 与 resources。",
@@ -551,7 +710,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.mcpKeysHint":
       "远端 Agent 需要拿着这里生成的 API 密钥，才能访问 /api/mcp 和 /api/agent/usage。",
     "integrations.mcpKeyDialogDescription":
-      "直接选一个访问档位即可，系统会自动填好对应的 MCP scopes。",
+      "直接选一个访问档位即可，系统会自动填好对应的内部能力 scopes。",
     "integrations.mcpEditKey": "编辑 MCP 密钥",
     "integrations.mcpKeyValue": "密钥",
     "integrations.copyMcpKey": "复制密钥",
@@ -560,7 +719,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.mcpKeyLevel": "访问档位",
     "integrations.mcpKeyReadonly": "只读档次",
     "integrations.mcpKeyReadonlyHint":
-      "开放这个 API Key 当前可用的读取类 MCP 能力。",
+      "开放这个 API Key 当前可用的只读 MCP 能力。",
     "integrations.mcpKeyBasic": "初级管理档次",
     "integrations.mcpKeyBasicHint":
       "在只读基础上开放当前 API Key 可用的编辑、发布、可见性调整，以及评论和留言审核。",
@@ -583,7 +742,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.capabilityToggleDescription":
       "按需开启具体 scopes，小白也可以直接使用上面的推荐档位。",
     "integrations.scopeConnectHint":
-      "控制这个 API Key 是否允许建立 MCP 连接；关闭后会一并关闭其它 MCP scopes。",
+      "控制这个 API Key 是否允许建立 MCP 连接；关闭后会一并关闭其它相关 scopes。",
     "integrations.scopeRelatedCapabilities":
       "关联 {count} 个 MCP 能力；开启后可访问需要这个 scope 的 tools / resources。",
     "integrations.scopeUnused": "当前还没有 MCP 能力使用这个 scope。",
@@ -598,14 +757,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.mcpAuthHint":
       "客户端通过 Authorization: Bearer <API_KEY> 访问，并由服务端按 scope 校验能力。",
     "integrations.mcpScopesHint":
-      "先保留最小只读能力，后续再按具体工具暴露更多细粒度 scope。",
+      "先保留最小只读能力，后续再按具体工具暴露更多细粒度内部 scope。",
     "integrations.mcpAccess": "MCP 授权开关",
     "integrations.mcpAccessDescription":
-      "关闭后，即使 API Key 带有 MCP scope，也无法访问 /api/mcp 和 /api/agent/usage。",
+      "关闭后，即使 API Key 带有内部能力 scope，也无法访问 /api/mcp 和 /api/agent/usage。",
     "integrations.mcpEnabled": "已开启",
     "integrations.mcpDisabled": "已关闭",
-    "integrations.enabled": "启用",
-    "integrations.disabled": "停用",
+    "integrations.enabled": "禁用",
+    "integrations.disabled": "恢复",
 
     // agent
     "nav.automation": "自动化",
@@ -647,6 +806,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "status.approved": "已通过",
     "status.rejected": "已拒绝",
     "status.active": "活跃",
+    "status.lost": "失联",
+    "status.invalid": "失效",
+    "status.unconfigured": "未配置",
     "status.inactive": "未激活",
     "status.queued": "排队中",
     "status.running": "运行中",
@@ -727,6 +889,8 @@ export const translations: Record<Lang, Record<string, string>> = {
       "按时间查看流量起伏，卡片可左右滑动查看更多时间跨度。",
     "dashboard.trafficCurrent": "最新区间",
     "dashboard.trafficPeak": "峰值",
+    "dashboard.trafficAverage": "平均值",
+    "dashboard.trafficAverageMeta": "日均",
     "dashboard.trafficPeriods": "统计区间",
     "dashboard.trafficEmptyTitle": "暂无流量趋势数据",
     "dashboard.trafficEmptyDescription":
@@ -826,8 +990,30 @@ export const translations: Record<Lang, Record<string, string>> = {
     "auditLog.diffLines": "差异详情",
     "auditLog.beforePreview": "变更前预览",
     "auditLog.afterPreview": "变更后预览",
+    "auditLog.changedBadge": "已变更",
+    "auditLog.changeHighlights": "本次变更",
+    "auditLog.changedItemsSummary": "共 {count} 项字段发生变化",
+    "auditLog.oldValue": "变更前",
+    "auditLog.newValue": "变更后",
+    "auditLog.previewAutoExpanded": "已自动展开与本次改动相关的分支",
+    "auditLog.objectCount": "{count} 个字段",
+    "auditLog.arrayCount": "{count} 项",
+    "auditLog.emptyObject": "空对象",
+    "auditLog.emptyArray": "空列表",
+    "auditLog.rootNode": "根节点",
+    "auditLog.objectColumn": "对象",
+    "auditLog.fieldColumn": "字段",
+    "auditLog.rawPathLabel": "原始路径",
+    "auditLog.contextPathLabel": "相关片段路径",
+    "auditLog.contextBefore": "相关片段（变更前）",
+    "auditLog.contextAfter": "相关片段（变更后）",
+    "auditLog.fullBeforePreview": "完整变更前快照",
+    "auditLog.fullAfterPreview": "完整变更后快照",
+    "auditLog.wholeObject": "整个对象",
+    "auditLog.indexItem": "第 {index} 项",
     "auditLog.noDiff": "这次变更没有可展示的差异。",
-    "auditLog.restoreConfigConfirm": "确认将当前配置恢复到这条历史记录之前的状态吗？",
+    "auditLog.restoreConfigConfirm":
+      "确认将当前配置恢复到这条历史记录之前的状态吗？",
 
     // edit page fields
     "diary.mood": "心情",
@@ -836,6 +1022,30 @@ export const translations: Record<Lang, Record<string, string>> = {
     "diary.weatherPlaceholder": "如：晴、雨",
     "diary.poem": "诗句",
     "diary.poemPlaceholder": "可选",
+    "diary.poemAiGenerate": "AI 生成",
+    "diary.poemAiGenerating": "生成中...",
+    "diary.poemAiPromptLabel": "定制要求",
+    "diary.poemAiPromptPlaceholder":
+      "例如：偏清冷一点、带一点春雨意象、不要太伤感",
+    "diary.poemAiPromptHint":
+      "留空时会仅根据当前 Markdown 草稿内容挑选最应景的诗句。",
+    "diary.poemAiPanelTitle": "诗句生成偏好",
+    "diary.poemAiPanelAction": "按要求生成",
+    "diary.poemAiResponseTitle": "当前生成结果",
+    "diary.poemAiNeedDraft": "请先在 Markdown 编辑框里写一点草稿",
+    "diary.poemAiSuccess": "诗句已生成并填入",
+    "diary.weatherSunny": "晴",
+    "diary.weatherCloudy": "多云",
+    "diary.weatherFog": "雾",
+    "diary.weatherHaze": "霾",
+    "diary.weatherLightRain": "小雨",
+    "diary.weatherShower": "阵雨",
+    "diary.weatherHeavyRain": "大雨",
+    "diary.weatherLightSnow": "小雪",
+    "diary.weatherHeavySnow": "大雪",
+    "diary.weatherSleet": "雨夹雪",
+    "diary.weatherStormy": "雷阵雨",
+    "diary.weatherWindy": "大风",
     "thoughts.mood": "心情",
     "thoughts.moodPlaceholder": "如：开心、平静、思考",
     "excerpts.authorName": "作者",
@@ -882,7 +1092,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.contentSubscriptionConfigHint":
       "下面填写实际发信配置。建议先保存 SMTP 后再对外开启订阅入口。",
     "siteConfig.contentSubscriptionSetupGuide":
-      "请在上面\"外界配置\"中的配置好邮箱并测试，以开启邮箱订阅服务",
+      '请在上面"外界配置"中的配置好邮箱并测试，以开启邮箱订阅服务',
     "siteConfig.contentSubscriptionAdvancedTitle": "订阅配置",
     "siteConfig.contentSubscriptionAdvancedDesc":
       "SMTP 试发通过后可配置允许订阅的内容范围和邮件模板。",
@@ -916,8 +1126,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.contentSubscriptionAvailable": "邮箱订阅可用",
     "siteConfig.contentSubscriptionUnavailable":
       "邮箱订阅不可用（请先完成试发）",
-    "siteConfig.contentSubscriptionServiceNotConfigured":
-      "邮箱订阅服务未配置",
+    "siteConfig.contentSubscriptionServiceNotConfigured": "邮箱订阅服务未配置",
     "siteConfig.contentSubscriptionPaused":
       "订阅入口当前关闭。重新开启后，前台才会显示订阅按钮，下面的 SMTP 配置也会参与邮件发送。",
     "siteConfig.contentSubscriptionSave": "保存订阅设置",
@@ -942,14 +1151,17 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // more
     "more.description":
-      "把运行期开关和外界服务配置拆开管理，后续邮箱、API 等都统一放在这里。",
+      "把运行期开关和常用配置拆开管理，邮箱、API 与代理都统一放在这里。",
     "more.tabs.featureFlags": "功能开关",
-    "more.tabs.externalConfig": "外界配置",
+    "more.tabs.mailConfig": "邮箱配置",
+    "more.tabs.apiConfig": "API配置",
+    "more.tabs.proxyConfig": "代理设置",
     "more.sectionDescriptions.featureFlags": "前台能力与订阅入口",
-    "more.sectionDescriptions.externalConfig": "邮箱、API 等外部服务",
+    "more.sectionDescriptions.mailConfig": "订阅邮件与 SMTP 发信设置",
+    "more.sectionDescriptions.apiConfig": "大模型 API 接入配置",
+    "more.sectionDescriptions.proxyConfig": "本机代理端口与 Webhook 出站路由",
     "more.mailSettings": "邮件发送",
-    "more.mailSettingsDescription":
-      "配置订阅通知使用的 SMTP 发件账号。后续大模型 API 等外界配置也会继续收口到这里。",
+    "more.mailSettingsDescription": "配置订阅通知使用的 SMTP 发件账号。",
 
     // siteConfig tabs
     "siteConfig.tabs.profile": "个人资料",
@@ -989,10 +1201,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.creating": "Creating...",
     "common.edit": "Edit",
     "common.delete": "Delete",
+    "common.empty": "Empty",
     "common.search": "Search",
     "common.confirm": "Confirm",
     "common.back": "Back",
-    "common.saveDraft": "Save and exit as draft",
+    "common.saveDraft": "Save draft and exit",
+    "common.exit": "Exit",
     "common.actions": "Actions",
     "common.status": "Status",
     "common.loading": "Loading...",
@@ -1043,6 +1257,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.deleteConfirmDesc":
       "Are you sure you want to delete this item? This action cannot be undone.",
     "common.optional": "optional",
+    "common.invalidDateFormat": "Please enter a valid date and time",
 
     // nav
     "nav.dashboard": "Dashboard",
@@ -1061,7 +1276,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.assets": "Assets",
     "nav.integrations": "Integrations",
     "nav.apiKeys": "API Keys",
-    "nav.mcp": "MCP",
+    "nav.mcp": "Agent Access",
     "nav.agentUsage": "Agent Usage",
     "nav.auditLog": "Audit Log",
     "nav.backups": "Backups",
@@ -1183,6 +1398,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "contentCategories.deleteSuccess": "Category deleted.",
     "contentCategories.deleteConfirm": "Delete this category?",
     "contentCategories.usedCountSuffix": " items using it",
+    "contentCategories.managedItems": "Items in this category",
+    "contentCategories.unclassifiedItems": "Uncategorized items",
+    "contentCategories.addItems": "Add items",
+    "contentCategories.removeItem": "Remove from category",
+    "contentCategories.addToCategory": "Add to category",
+    "contentCategories.noManagedItems": "No items in this category",
+    "contentCategories.noUnclassifiedItems": "All items are categorized",
+    "contentCategories.loadingItems": "Loading…",
 
     // siteConfig
     "siteConfig.title": "Site Configuration",
@@ -1347,8 +1570,37 @@ export const translations: Record<Lang, Record<string, string>> = {
     "friends.avatar": "Avatar",
     "friends.avatarUrl": "Avatar URL",
     "friends.description2": "Description",
+    "friends.websiteStatus": "Website Status",
+    "friends.rssStatus": "RSS Status",
     "friends.newFriend": "New Friend",
     "friends.addFriend": "Add Friend",
+    "friends.show": "Show",
+    "friends.archiveAction": "Archive",
+    "friends.tabs.friends": "Friends",
+    "friends.tabs.moreConfig": "More Config",
+    "friends.sectionDescriptions.friends":
+      "Manage friend links and feed sources.",
+    "friends.sectionDescriptions.moreConfig":
+      "Configure random article, auto-refresh, and health-check behavior for the friends page.",
+    "friends.moreConfigTitle": "Friends Page Config",
+    "friends.moreConfigDescription":
+      "These values are stored in backend page config and are used by the public friends page and background health checks.",
+    "friends.randomRecentDays": "Random article window (days)",
+    "friends.autoRefreshSeconds": "Auto refresh interval (seconds)",
+    "friends.websiteHealthCheckEnabled": "Check friend websites",
+    "friends.websiteHealthCheckEnabledDesc":
+      "When enabled, friend websites are checked on a schedule and unreachable sites are marked as lost.",
+    "friends.websiteHealthCheckRunning":
+      "Enabled · checks website availability every {minutes} minutes.",
+    "friends.websiteHealthCheckInterval": "Website check interval (minutes)",
+    "friends.rssHealthCheckEnabled": "Check friend RSS feeds",
+    "friends.rssHealthCheckEnabledDesc":
+      "When enabled, RSS feeds are checked on a schedule and broken feeds are marked as invalid.",
+    "friends.rssHealthCheckRunning":
+      "Enabled · checks RSS availability every {minutes} minutes.",
+    "friends.rssHealthCheckInterval": "RSS check interval (minutes)",
+    "friends.moreConfigMissing":
+      "Friends page config was not found. Initialize page copy configuration first.",
 
     // moderation
     "moderation.title": "Moderation",
@@ -1431,9 +1683,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.apiKeys": "API Keys",
     "system.apiKeysDescription": "Manage API keys",
     "system.auditLog": "Audit Log",
-    "system.auditLogDescription": "Configuration history and system activity log",
+    "system.auditLogDescription":
+      "Configuration history and system activity log",
     "system.backups": "Backups",
-    "system.backupsDescription": "Manage Tailnet-safe backup sync, retry queues, and restoreable commits",
+    "system.backupsDescription":
+      "Manage runtime backups, retry queues, and restorable commits",
     "system.createKey": "Create Key",
     "system.keyName": "Key Name",
     "system.scopes": "Scopes",
@@ -1454,29 +1708,147 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.restoreConfirm": "Restore this backup?",
     "system.deleteConfirm": "Delete?",
     "system.backupSyncConfig": "Sync Configuration",
-    "system.backupSyncConfigDescription": "Configure the receiver path, SFTP fallback, schedule, and credential references.",
+    "system.backupSyncConfigDescription":
+      "Configure the SFTP target, schedule, and recovery key directory.",
     "system.backupSyncTriggered": "Backup sync has been triggered",
     "system.backupSyncPaused": "Backup sync paused",
     "system.backupSyncResumed": "Backup sync resumed",
     "system.backupSyncRetried": "Backup run queued for retry",
+    "system.localKeysGenerated": "Local backup keys generated",
+    "system.localKeysConfirmed": "Local backup keys confirmed",
+    "system.localKeysReady": "Local backup keys are ready",
+    "system.exportRecoveryKey": "Get Recovery Key",
+    "system.rotateRecoveryKey": "Rotate Recovery Key",
+    "system.rotateRecoveryKeyDescription":
+      "This creates a new recovery key for future backups. Historical keys stay on the server so older backups remain restorable.",
+    "system.exportRecoveryKeyDescription":
+      "Enter a password and the system will re-wrap the database escrow copy, then show you the current private key for copying and offline storage.",
+    "system.recoveryKeyPassword": "Recovery Key Password",
+    "system.recoveryKeyPasswordDescription":
+      "This password encrypts the recovery-key escrow copy stored in the database. If only the database survives, you can still extract the key with this password and the companion tool.",
+    "system.recoveryKeyOneTimeWarning":
+      "Copy and store this recovery key now. The server keeps an encrypted escrow copy, but you should still keep your own offline copy.",
+    "system.recoveryKeyPrivatePem": "Recovery Private Key",
+    "system.recoveryKeyPrivatePemDescription":
+      "This is the raw PEM-formatted recovery private key. Copy or download it and store it somewhere safe.",
+    "system.copyRecoveryKey": "Copy Recovery Key",
+    "system.downloadRecoveryKey": "Download Recovery Key",
+    "system.recoveryKeyCopied": "Recovery key copied",
+    "system.recoveryKeyExported": "Recovery key exported",
+    "system.recoveryKeyRotated": "A new recovery key has been created",
+    "system.testBackupConfig": "Test Config",
+    "system.testingBackupConfig": "Testing...",
+    "system.backupConfigTestSuccess": "Backup configuration test passed",
+    "system.backupConfigTestFailed": "Backup configuration test failed",
+    "system.backupConfigTestStatus": "Test Result",
+    "system.backupConfigTestOk": "Reachable",
+    "system.backupConfigTestLatency": "Latency",
+    "system.recoveryKeyRequiredBeforeSave":
+      "Before the first backup can be configured, you must generate the recovery key, set a password, and copy or download the key for safekeeping. Saving is blocked until that step is complete.",
+    "system.recoveryKeyMustBeCopiedBeforeSave":
+      "You just generated a new recovery key. Copy or download it before saving the backup configuration.",
+    "system.prepareLocalKeys": "Prepare Local Keys",
+    "system.saveAndRunFirstBackup": "Save and Run First Backup",
+    "system.firstBackupStarted":
+      "Settings saved and the first backup has been triggered",
+    "system.quickSetupTitle": "Lower-Friction Setup",
+    "system.quickSetupDescription":
+      "Saving now automatically confirms or generates local backup keys. For a new setup, the fastest path is Save and Run First Backup.",
+    "system.autoKeyProvisionHint":
+      "If the credential directory does not exist yet, the system will generate local backup keys during save. If it already exists, the existing keys will be reused.",
     "system.transportMode": "Transport Mode",
-    "system.transportReceiver": "Dedicated Receiver",
     "system.transportSftp": "SSH / SFTP",
+    "system.transportMethodLabel": "Sync Method",
+    "system.transportMethodDescription":
+      "The current version only keeps SSH / SFTP as the remote backup transport.",
+    "system.backupsTabs.settings": "Setup",
+    "system.backupsTabs.settingsDescription":
+      "Transport, credentials, and scheduling",
+    "system.backupsTabs.records": "Records",
+    "system.backupsTabs.recordsDescription":
+      "Queues, runs, and restoreable commits",
+    "system.backupBasicSettings": "Basic Settings",
+    "system.backupBasicSettingsDescription":
+      "Start with the SFTP connection and scheduled sync. The recovery key directory lives in advanced settings.",
+    "system.backupAdvancedSettings": "Advanced Settings",
+    "system.backupAdvancedSettingsDescription":
+      "This section contains the credential directory reference, plus site and retry settings that rarely change.",
+    "system.advancedOptions": "Advanced Options",
+    "system.backupScheduleTitle": "Scheduled Sync",
+    "system.backupScheduleAlwaysOnDescription":
+      "Saving this form will enable scheduled sync directly. You only need to choose the interval.",
+    "system.syncIntervalDescription":
+      "For example, 60 means the system will sync every 60 minutes.",
+    "system.backupManualOnlyHint":
+      "When scheduled sync is off, you can still create backups manually from Records.",
+    "system.backupSetupGuideTitle": "How It Connects",
+    "system.backupSetupGuideDescription":
+      "The remote machine does not need to run Aerisun. It only needs to expose one writable SSH / SFTP directory.",
+    "system.backupSetupStepCredential":
+      "Saving will automatically confirm or generate the local recovery key directory.",
+    "system.backupSetupStepVerify":
+      "After saving, open Records and trigger one manual backup to confirm that run records and commit records appear.",
     "system.siteSlug": "Site Slug",
+    "system.siteSlugDescription":
+      "Used for the remote site directory. In most cases, keeping aerisun is fine.",
+    "system.remoteSiteDirectoryLabel": "Remote Site Directory",
+    "system.remoteSiteDirectoryDescription":
+      "The system stores this site's data under this subdirectory inside the remote backup root.",
     "system.credentialRef": "Credential Ref",
+    "system.credentialRefDescription":
+      "The recommended default is aerisun-backup-source, which maps to the credential directory name.",
+    "system.localBackupKeyDirLabel": "Local Backup Key Directory",
+    "system.localBackupKeyDirDescription":
+      "This is not your SSH login credential. The system reads this local recovery key set to encrypt the secrets backup, and it is also used later to decrypt runtime data when advanced encryption is enabled.",
+    "system.credentialRefGuideTitle": "Credential Directory",
+    "system.credentialRefGuideDescription":
+      "The credential reference maps to a subdirectory under the default backup-sync path. The recommended default is aerisun-backup-source. Make sure the four files below exist inside that directory.",
+    "system.credentialRefDirectoryName": "credential-directory-name",
     "system.syncIntervalMinutes": "Sync Interval (minutes)",
+    "system.syncIntervalLabel": "Automatic Sync Interval (minutes)",
+    "system.syncIntervalLabelDescription":
+      "The system will automatically create one backup job using this interval.",
     "system.maxRetries": "Max Retries",
+    "system.maxRetriesDescription":
+      "How many times the system should retry automatically after a sync failure.",
     "system.retryBackoffSeconds": "Retry Backoff (seconds)",
-    "system.receiverUrl": "Receiver URL",
+    "system.retryBackoffDescription":
+      "The base wait time after each failure. Higher retry counts will wait longer.",
+    "system.connectionConfig": "Connection Settings",
     "system.remoteHost": "Remote Host",
     "system.remotePort": "Remote Port",
     "system.remotePath": "Remote Root Path",
     "system.remoteUsername": "Remote Username",
-    "system.ageFingerprint": "Key Fingerprint",
+    "system.sshHostLabel": "SSH Host",
+    "system.sshHostDescription":
+      "Enter the server address or hostname that provides the SFTP service.",
+    "system.sshPortLabel": "SSH Port",
+    "system.sshPortDescription":
+      "The default is usually 22. Change it only when your server uses a custom SSH port.",
+    "system.remoteBackupRootLabel": "Remote Backup Root",
+    "system.remoteBackupRootDescription":
+      "This is the parent directory on the server where backups live. The system will create the site directory underneath it.",
+    "system.remotePathPreviewTitle": "Final Directory Example",
+    "system.sshUsernameLabel": "SSH Username",
+    "system.sshUsernameDescription":
+      "This is the username for logging into the SFTP server. It is not the local backup key directory name.",
+    "system.runtimeEncryptionLabel": "Encrypt Database and Media Backups",
+    "system.runtimeEncryptionDescription":
+      "When off, databases, media, and workflow files are stored remotely as compressed payloads. When on, runtime data is encrypted before upload. Secrets are always encrypted.",
+    "system.runtimeEncryptionEnabled": "Runtime data encryption is enabled",
+    "system.runtimeEncryptionDisabled": "Runtime data encryption is disabled",
+    "system.recoveryKeyFingerprint": "Recovery Key Fingerprint",
+    "system.recoveryKeyActions": "Recovery Key Management",
     "system.syncEnabled": "Enable scheduled secure sync",
-    "system.syncEnabledDescription": "When enabled, the system will enqueue and execute incremental syncs on schedule.",
+    "system.syncEnabledDescription":
+      "When enabled, the system will enqueue and execute incremental syncs on schedule.",
     "system.pauseSync": "Pause Sync",
     "system.resumeSync": "Resume Sync",
+    "system.connectionConfigSftpDescription":
+      "SFTP is selected, so you need the remote host, port, path, and username.",
+    "system.syncStatusCard": "Sync Status",
+    "system.syncStatusCardDescription":
+      "Shows the most recent enqueue, sync result, and error message.",
     "system.queueRecords": "Queue Records",
     "system.runRecords": "Run Records",
     "system.commitRecords": "Commit Records",
@@ -1484,8 +1856,17 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.queueDepth": "Pending Queue Depth",
     "system.protectionStatus": "Protection Status",
     "system.backupNotConfigured": "Not configured yet",
+    "system.configReady": "Setup Ready",
+    "system.configNeedsAttention": "Missing Required Settings",
+    "system.syncEnabledShort": "Scheduled Sync Enabled",
+    "system.syncDisabledShort": "Scheduled Sync Disabled",
+    "system.syncPausedShort": "Sync Paused",
     "system.noPendingQueue": "No pending queue items",
+    "system.noCommitYet": "No successful commit yet",
     "system.missingFingerprint": "Fingerprint not configured",
+    "system.recordsNeedSetupTitle": "There is nothing to show in Records yet",
+    "system.recordsNeedSetupDescription":
+      "Complete the SFTP settings and the recovery key directory in Setup first. After saving, trigger one manual backup and the run and commit records will start to appear.",
     "system.triggerKind": "Trigger",
     "system.retryCount": "Retry Count",
     "system.nextRetryAt": "Next Retry",
@@ -1546,12 +1927,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.mcpKeysHint":
       "Remote agents need an API key created here before they can use /api/mcp or /api/agent/usage.",
     "integrations.mcpKeyDialogDescription":
-      "Pick an access level and the matching MCP scopes will be filled automatically.",
+      "Pick an access level and the matching internal capability scopes will be filled automatically.",
     "integrations.mcpEditKey": "Edit MCP Key",
     "integrations.mcpKeyValue": "Key",
     "integrations.copyMcpKey": "Copy key",
     "integrations.mcpKeyCopiedFull": "Full key copied",
-    "integrations.mcpKeyCopiedMasked": "Masked key copied (full value is only visible when created)",
+    "integrations.mcpKeyCopiedMasked":
+      "Masked key copied (full value is only visible when created)",
     "integrations.mcpKeyLevel": "Access Level",
     "integrations.mcpKeyReadonly": "Read Only",
     "integrations.mcpKeyReadonlyHint":
@@ -1579,7 +1961,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.capabilityToggleDescription":
       "Enable specific scopes only when needed, or keep the recommended preset for a simpler setup.",
     "integrations.scopeConnectHint":
-      "Controls whether this API key can establish an MCP connection. Turning it off also disables the other MCP scopes.",
+      "Controls whether this API key can establish an MCP connection. Turning it off also disables the other related scopes.",
     "integrations.scopeRelatedCapabilities":
       "Used by {count} MCP capabilities. Enable it to access the tools and resources that require this scope.",
     "integrations.scopeUnused":
@@ -1595,10 +1977,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.mcpAuthHint":
       "Clients should send Authorization: Bearer <API_KEY>, and the server should enforce scopes per capability.",
     "integrations.mcpScopesHint":
-      "Start with minimum read-only access and expand to finer-grained scopes when MCP tools are added.",
+      "Start with minimum read-only access and expand to finer-grained internal scopes as more MCP capabilities are enabled.",
     "integrations.mcpAccess": "MCP access",
     "integrations.mcpAccessDescription":
-      "When disabled, both /api/mcp and /api/agent/usage are blocked even if an API key has MCP scopes.",
+      "When disabled, both /api/mcp and /api/agent/usage are blocked even if an API key has internal capability scopes.",
     "integrations.mcpEnabled": "Enabled",
     "integrations.mcpDisabled": "Disabled",
     "integrations.enabled": "Enabled",
@@ -1651,6 +2033,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "status.approved": "Approved",
     "status.rejected": "Rejected",
     "status.active": "Active",
+    "status.lost": "Lost",
+    "status.invalid": "Invalid",
+    "status.unconfigured": "Unconfigured",
     "status.inactive": "Inactive",
     "status.queued": "Queued",
     "status.running": "Running",
@@ -1731,6 +2116,8 @@ export const translations: Record<Lang, Record<string, string>> = {
       "Monitor traffic movement over time and scroll horizontally to inspect a wider date range.",
     "dashboard.trafficCurrent": "Latest period",
     "dashboard.trafficPeak": "Peak",
+    "dashboard.trafficAverage": "Average",
+    "dashboard.trafficAverageMeta": "Per day",
     "dashboard.trafficPeriods": "Periods",
     "dashboard.trafficEmptyTitle": "No traffic trend data yet",
     "dashboard.trafficEmptyDescription":
@@ -1803,8 +2190,31 @@ export const translations: Record<Lang, Record<string, string>> = {
     "auditLog.diffLines": "Diff",
     "auditLog.beforePreview": "Before",
     "auditLog.afterPreview": "After",
+    "auditLog.changedBadge": "Changed",
+    "auditLog.changeHighlights": "Change Highlights",
+    "auditLog.changedItemsSummary": "{count} changed fields",
+    "auditLog.oldValue": "Before",
+    "auditLog.newValue": "After",
+    "auditLog.previewAutoExpanded":
+      "Branches related to this change are expanded automatically.",
+    "auditLog.objectCount": "{count} fields",
+    "auditLog.arrayCount": "{count} items",
+    "auditLog.emptyObject": "Empty object",
+    "auditLog.emptyArray": "Empty list",
+    "auditLog.rootNode": "Root node",
+    "auditLog.objectColumn": "Object",
+    "auditLog.fieldColumn": "Field",
+    "auditLog.rawPathLabel": "Raw path",
+    "auditLog.contextPathLabel": "Context path",
+    "auditLog.contextBefore": "Context before",
+    "auditLog.contextAfter": "Context after",
+    "auditLog.fullBeforePreview": "Full before snapshot",
+    "auditLog.fullAfterPreview": "Full after snapshot",
+    "auditLog.wholeObject": "Whole object",
+    "auditLog.indexItem": "Item {index}",
     "auditLog.noDiff": "No visible diff for this revision.",
-    "auditLog.restoreConfigConfirm": "Restore the current configuration to the state before this revision?",
+    "auditLog.restoreConfigConfirm":
+      "Restore the current configuration to the state before this revision?",
 
     // edit page fields
     "diary.mood": "Mood",
@@ -1813,6 +2223,31 @@ export const translations: Record<Lang, Record<string, string>> = {
     "diary.weatherPlaceholder": "e.g. Sunny, Rainy",
     "diary.poem": "Poem",
     "diary.poemPlaceholder": "Optional",
+    "diary.poemAiGenerate": "Generate",
+    "diary.poemAiGenerating": "Generating...",
+    "diary.poemAiPromptLabel": "Custom Prompt",
+    "diary.poemAiPromptPlaceholder":
+      "For example: colder tone, a hint of spring rain, not too sorrowful",
+    "diary.poemAiPromptHint":
+      "Leave this empty to let AI pick the most fitting line from the current Markdown draft alone.",
+    "diary.poemAiPanelTitle": "Poem Generation Notes",
+    "diary.poemAiPanelAction": "Generate With Prompt",
+    "diary.poemAiResponseTitle": "Current Result",
+    "diary.poemAiNeedDraft":
+      "Write a little draft in the Markdown editor first",
+    "diary.poemAiSuccess": "Poem generated and filled in",
+    "diary.weatherSunny": "Sunny",
+    "diary.weatherCloudy": "Cloudy",
+    "diary.weatherFog": "Fog",
+    "diary.weatherHaze": "Haze",
+    "diary.weatherLightRain": "Light Rain",
+    "diary.weatherShower": "Shower",
+    "diary.weatherHeavyRain": "Heavy Rain",
+    "diary.weatherLightSnow": "Light Snow",
+    "diary.weatherHeavySnow": "Heavy Snow",
+    "diary.weatherSleet": "Sleet",
+    "diary.weatherStormy": "Stormy",
+    "diary.weatherWindy": "Windy",
     "thoughts.mood": "Mood",
     "thoughts.moodPlaceholder": "e.g. Happy, Calm, Reflective",
     "excerpts.authorName": "Author",
@@ -1862,11 +2297,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.contentSubscriptionConfigHint":
       "Fill in the actual outbound mail settings below. Saving SMTP before exposing the entry is recommended.",
     "siteConfig.contentSubscriptionSetupGuide":
-      "Please configure and test email in \"External Config\" above to enable the email subscription service.",
+      'Please configure and test email in "External Config" above to enable the email subscription service.',
     "siteConfig.contentSubscriptionAdvancedTitle": "Subscription Settings",
     "siteConfig.contentSubscriptionAdvancedDesc":
       "After SMTP test passes, configure allowed subscription content and email templates here.",
-    "siteConfig.contentSubscriptionAllowedTypes": "Allowed subscription content types",
+    "siteConfig.contentSubscriptionAllowedTypes":
+      "Allowed subscription content types",
     "siteConfig.contentSubscriptionAdvancedAtLeastOneType":
       "Keep at least one subscribable content type",
     "siteConfig.contentSubscriptionSubjectTemplate": "Email subject template",
@@ -1878,7 +2314,8 @@ export const translations: Record<Lang, Record<string, string>> = {
       "Email template placeholders",
     "siteConfig.contentSubscriptionPlaceholderHelpDescription":
       "Use the following placeholders in subject and body templates. They are replaced with real values when sending emails.",
-    "siteConfig.contentSubscriptionPlaceholderHelpUsageTitle": "Placeholder list",
+    "siteConfig.contentSubscriptionPlaceholderHelpUsageTitle":
+      "Placeholder list",
     "siteConfig.contentSubscriptionPlaceholderHelpSiteName":
       "{site_name}: Site name",
     "siteConfig.contentSubscriptionPlaceholderHelpContentType":
@@ -1923,16 +2360,21 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // more
     "more.description":
-      "Separate runtime toggles from external service configuration so mail and future API settings live in one place.",
+      "Separate runtime toggles from common operational settings so mail, API, and proxy configuration all live here.",
     "more.tabs.featureFlags": "Feature Toggles",
-    "more.tabs.externalConfig": "External Config",
+    "more.tabs.mailConfig": "Mail Config",
+    "more.tabs.apiConfig": "API Config",
+    "more.tabs.proxyConfig": "Proxy Settings",
     "more.sectionDescriptions.featureFlags":
       "Frontend capabilities and subscribe entry",
-    "more.sectionDescriptions.externalConfig":
-      "Mail, API, and other external services",
+    "more.sectionDescriptions.mailConfig":
+      "Subscription mail and SMTP sender settings",
+    "more.sectionDescriptions.apiConfig": "Model API connection settings",
+    "more.sectionDescriptions.proxyConfig":
+      "Local proxy port and outbound webhook routing",
     "more.mailSettings": "Mail Delivery",
     "more.mailSettingsDescription":
-      "Configure the SMTP sender used for subscription notifications. Future model API settings can also live here.",
+      "Configure the SMTP sender used for subscription notifications.",
 
     // siteConfig tabs
     "siteConfig.tabs.profile": "Profile",

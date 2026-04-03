@@ -4,7 +4,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TMP_ENV_FILE="$(mktemp)"
-COMPOSE_PROJECT="aerisun-smoke-$(date +%s)"
+TMP_STORE_DIR="$(mktemp -d)"
+COMPOSE_PROJECT="serino-smoke-$(date +%s)"
+SMOKE_TAG="${AERISUN_SMOKE_IMAGE_TAG:-smoke}"
+LOCAL_API_IMAGE="${AERISUN_SMOKE_API_IMAGE:-serino-api-smoke}"
+LOCAL_WEB_IMAGE="${AERISUN_SMOKE_WEB_IMAGE:-serino-web-smoke}"
+LOCAL_WALINE_IMAGE="${AERISUN_SMOKE_WALINE_IMAGE:-serino-waline-smoke}"
 
 load_env_file() {
   local env_file="$1"
@@ -95,15 +100,44 @@ assert_spa_response() {
   rm -f "${body_file}"
 }
 
+assert_not_404() {
+  local url="$1"
+  local label="$2"
+  local status
+  local response_file
+
+  response_file="$(mktemp)"
+
+  status="$(curl -sS -o "${response_file}" -w '%{http_code}' "${url}")"
+  if [[ "${status}" == "404" ]]; then
+    echo "ERROR: ${label} returned 404: ${url}" >&2
+    cat "${response_file}" >&2
+    rm -f "${response_file}"
+    return 1
+  fi
+  rm -f "${response_file}"
+}
+
+build_local_images() {
+  docker build -t "${LOCAL_API_IMAGE}:${SMOKE_TAG}" ./backend
+  docker build -t "${LOCAL_WEB_IMAGE}:${SMOKE_TAG}" -f Dockerfile.caddy .
+  docker build -t "${LOCAL_WALINE_IMAGE}:${SMOKE_TAG}" -f Dockerfile.waline .
+}
+
 cleanup() {
   local exit_code="$1"
   if [[ "${exit_code}" -ne 0 ]]; then
     echo "Docker smoke failed; dumping compose diagnostics..." >&2
-    compose ps || true
-    compose logs --tail 80 api waline litestream caddy || true
+    compose -f docker-compose.release.yml ps || true
+    compose -f docker-compose.release.yml logs --tail 80 api waline caddy || true
   fi
-  compose down -v --remove-orphans >/dev/null 2>&1 || true
+  compose -f docker-compose.release.yml down -v --remove-orphans >/dev/null 2>&1 || true
+  docker image rm \
+    "${LOCAL_API_IMAGE}:${SMOKE_TAG}" \
+    "${LOCAL_WEB_IMAGE}:${SMOKE_TAG}" \
+    "${LOCAL_WALINE_IMAGE}:${SMOKE_TAG}" >/dev/null 2>&1 || true
   rm -f "${TMP_ENV_FILE}"
+  rm -rf "${TMP_STORE_DIR}"
 }
 
 trap 'cleanup $?' EXIT INT TERM
@@ -119,6 +153,8 @@ HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
 ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"
 WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"
 
+chmod 0777 "${TMP_STORE_DIR}"
+
 cat >"${TMP_ENV_FILE}" <<EOF
 AERISUN_DOMAIN=http://${SITE_HOST}
 AERISUN_SITE_URL=${SITE_URL}
@@ -132,18 +168,26 @@ AERISUN_PORT=${BACKEND_PORT}
 WALINE_PORT=${WALINE_PORT}
 AERISUN_SENTRY_DSN=
 VITE_SENTRY_DSN=
+AERISUN_STORE_BIND_DIR=${TMP_STORE_DIR}
+AERISUN_API_IMAGE=${LOCAL_API_IMAGE}
+AERISUN_WEB_IMAGE=${LOCAL_WEB_IMAGE}
+AERISUN_WALINE_IMAGE=${LOCAL_WALINE_IMAGE}
+AERISUN_IMAGE_TAG=${SMOKE_TAG}
 EOF
 
 load_env_file "${PROJECT_DIR}/.env"
 load_env_file "${PROJECT_DIR}/.env.production"
 load_env_file "${TMP_ENV_FILE}"
 
-compose up --build -d
+build_local_images
+
+compose -f docker-compose.release.yml up -d
 
 wait_for_url "${SITE_URL}/" "frontend"
 wait_for_url "${SITE_URL}${ADMIN_BASE_PATH}" "admin"
 wait_for_url "${SITE_URL}${HEALTHCHECK_PATH}" "backend via caddy"
 wait_for_url "${SITE_URL}${WALINE_BASE_PATH}/" "waline via caddy"
+assert_not_404 "${SITE_URL}${WALINE_BASE_PATH}/api/comment?type=recent&pageSize=1" "waline API"
 
 assert_spa_response "${SITE_URL}/posts" "frontend deep link"
 assert_spa_response "${SITE_URL}${ADMIN_BASE_PATH}posts" "admin deep link"

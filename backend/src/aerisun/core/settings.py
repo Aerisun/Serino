@@ -71,18 +71,14 @@ class Settings(BaseSettings):
     admin_dist_dir: Path = Path("/srv/aerisun/admin")
     site_url: str = "http://localhost:5173"
     waline_server_url: str = "/waline"
-    litestream_config_path: Path = BACKEND_ROOT / "litestream.yml"
-    litestream_replica_url: str = Field(default="sftp://backup-user@backup-host:22/backup/aerisun/aerisun.db")
-    waline_litestream_replica_url: str = Field(default="sftp://backup-user@backup-host:22/backup/aerisun/waline.db")
-    backup_rsync_uri: str = Field(default="backup-user@backup-host:/backup/aerisun")
-    backup_ssh_port: int = 22
-    backup_ssh_key: str | None = None
     backup_sync_tmp_dir: Path = PROJECT_ROOT / ".store" / ".backup-sync-tmp"
     backup_sync_default_site_slug: str = "aerisun"
     backup_sync_default_interval_minutes: int = 60
     backup_sync_chunk_size_bytes: int = 8 * 1024 * 1024
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True
+    seed_dev_data: bool = False
+    seed_profile: str = "seed"
     cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())
     session_ttl_hours: int = 24
     public_session_ttl_hours: int = 24 * 30

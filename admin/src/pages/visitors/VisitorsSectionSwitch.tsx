@@ -20,5 +20,5 @@ const tabs = [
 ] as const;
 
 export function VisitorsSectionSwitch() {
-  return <AdminSectionTabs items={tabs} />;
+  return <AdminSectionTabs items={tabs} className="w-fit" />
 }

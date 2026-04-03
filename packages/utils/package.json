@@ -10,11 +10,15 @@
     "tailwind-merge": "^2.6.0"
   },
   "peerDependencies": {
-    "@sentry/react": "^10.0.0"
+    "@sentry/react": "^10.0.0",
+    "react": "^19.0.0"
   },
   "peerDependenciesMeta": {
     "@sentry/react": {
       "optional": true
+    },
+    "react": {
+      "optional": false
     }
   }
 }

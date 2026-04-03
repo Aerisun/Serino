@@ -23,8 +23,6 @@ services:
       AERISUN_SEED_REFERENCE_DATA: ${AERISUN_SEED_REFERENCE_DATA}
       AERISUN_LOG_FORMAT: ${AERISUN_LOG_FORMAT:-auto}
       AERISUN_LOG_LEVEL: ${AERISUN_LOG_LEVEL:-INFO}
-      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL}
-      AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL}
       WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
@@ -51,7 +49,9 @@ services:
         max-file: "3"
 
   waline:
-    image: lizheming/waline:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.waline
     environment:
       SITE_NAME: ${AERISUN_APP_NAME}
       SITE_URL: ${AERISUN_SITE_URL}
@@ -91,34 +91,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  litestream:
-    image: litestream/litestream:latest
-    environment:
-      AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/store/aerisun.db}
-      AERISUN_LITESTREAM_REPLICA_URL: ${AERISUN_LITESTREAM_REPLICA_URL}
-      AERISUN_WALINE_DB_PATH: ${AERISUN_WALINE_DB_PATH:-/srv/aerisun/store/waline.db}
-      AERISUN_WALINE_LITESTREAM_REPLICA_URL: ${AERISUN_WALINE_LITESTREAM_REPLICA_URL}
-    volumes:
-      - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
-      - ./backend/litestream.yml.template:/etc/litestream.yml:ro
-    depends_on:
-      api:
-        condition: service_healthy
-      waline:
-        condition: service_healthy
-    command:
-      - replicate
-      - -config
-      - /etc/litestream.yml
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.25"
-    security_opt:
-      - no-new-privileges:true
 
   caddy:
     build:

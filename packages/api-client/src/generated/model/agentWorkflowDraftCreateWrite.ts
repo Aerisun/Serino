@@ -4,7 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentWorkflowDraftPreviewReadInput } from './agentWorkflowDraftPreviewReadInput';
 
 export interface AgentWorkflowDraftCreateWrite {
   force?: boolean;
+  refined_sketch_workflow?: AgentWorkflowDraftPreviewReadInput | null;
 }

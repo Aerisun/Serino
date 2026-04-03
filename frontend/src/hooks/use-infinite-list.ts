@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useCallback } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { translateFrontendText } from "@/i18n";
 import { clampPageSize } from "@/lib/page-size";
 
 interface UseInfiniteListOptions<TRemote, TLocal> {
@@ -69,7 +70,7 @@ export function useInfiniteList<TRemote, TLocal>(
         : "ready";
 
   const errorMessage =
-    error instanceof Error ? error.message : isError ? "加载失败" : "";
+    error instanceof Error ? error.message : isError ? translateFrontendText("list.loadFailed") : "";
 
   const reload = useCallback(() => {
     queryClient.invalidateQueries({ queryKey });

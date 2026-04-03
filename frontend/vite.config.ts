@@ -36,6 +36,10 @@ export default defineConfig(({ mode }) => {
           target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
           changeOrigin: true,
         },
+        "/manifest.webmanifest": {
+          target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
+          changeOrigin: true,
+        },
         "/sitemap.xml": {
           target: `http://127.0.0.1:${env.AERISUN_PORT || "8000"}`,
           changeOrigin: true,
@@ -66,18 +70,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: "autoUpdate",
-        manifest: {
-          name: "Aerisun",
-          short_name: "Aerisun",
-          description: "个人博客与创意空间",
-          theme_color: "#ffffff",
-          background_color: "#ffffff",
-          display: "standalone",
-          start_url: "/",
-          icons: [
-            { src: "/favicon.svg", sizes: "any", type: "image/svg+xml" },
-          ],
-        },
+        manifest: false,
         workbox: {
           runtimeCaching: [
             {

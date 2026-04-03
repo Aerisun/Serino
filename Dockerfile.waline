@@ -1,0 +1,25 @@
+FROM node:20-alpine AS waline-build
+
+ARG WALINE_VERSION=1.39.3
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN npm install --no-audit --no-fund --omit=dev --silent "@waline/vercel@${WALINE_VERSION}"
+
+FROM node:20-alpine
+
+ARG WALINE_VERSION=1.39.3
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    TZ=Asia/Shanghai \
+    WALINE_VERSION=${WALINE_VERSION}
+
+COPY --from=waline-build /app /app
+
+EXPOSE 8360
+
+CMD ["node", "node_modules/@waline/vercel/vanilla.js"]

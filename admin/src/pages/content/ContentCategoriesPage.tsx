@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getListContentCategoriesQueryKey,
@@ -11,76 +11,13 @@ import type { ContentCategoryRead } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/Dialog";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { CONTENT_CATEGORY_LABEL_KEYS, CONTENT_CATEGORY_TYPES, type ContentCategoryType } from "@/lib/contentCategories";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-function CategoryDialog({
-  open,
-  title,
-  description,
-  value,
-  onValueChange,
-  onSubmit,
-  onOpenChange,
-  pending,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  value: string;
-  onValueChange: (value: string) => void;
-  onSubmit: () => void;
-  onOpenChange: (open: boolean) => void;
-  pending: boolean;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl">
-        <DialogHeader className="text-left">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("contentCategories.nameLabel")}</Label>
-            <Input
-              value={value}
-              onChange={(event) => onValueChange(event.target.value)}
-              placeholder={t("contentCategories.namePlaceholder")}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  onSubmit();
-                }
-              }}
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button type="button" onClick={onSubmit} disabled={pending}>
-              {pending ? t("common.saving") : t("common.confirm")}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { CategoryDialog, EditCategoryDialog } from "./ContentCategoryDialogs";
+import { getContentListQueryOptions } from "./contentCategoryQueries";
 
 export default function ContentCategoriesPage() {
   const { t } = useI18n();
@@ -97,6 +34,10 @@ export default function ContentCategoriesPage() {
   );
 
   const categories = useMemo(() => data?.data ?? [], [data]);
+
+  useEffect(() => {
+    void queryClient.prefetchQuery(getContentListQueryOptions(activeType));
+  }, [activeType, queryClient]);
 
   const invalidate = async (contentType: ContentCategoryType) => {
     await queryClient.invalidateQueries({
@@ -116,8 +57,7 @@ export default function ContentCategoriesPage() {
         toast.success(t("contentCategories.createSuccess"));
       },
       onError: (error: any) => {
-        const message = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(message);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -132,8 +72,7 @@ export default function ContentCategoriesPage() {
         toast.success(t("contentCategories.updateSuccess"));
       },
       onError: (error: any) => {
-        const message = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(message);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -145,8 +84,7 @@ export default function ContentCategoriesPage() {
         toast.success(t("contentCategories.deleteSuccess"));
       },
       onError: (error: any) => {
-        const message = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(message);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -282,13 +220,13 @@ export default function ContentCategoriesPage() {
         pending={createCategory.isPending}
       />
 
-      <CategoryDialog
+      <EditCategoryDialog
         open={editOpen}
-        title={t("contentCategories.editTitle")}
-        description={editing?.name || ""}
-        value={draftName}
-        onValueChange={setDraftName}
-        onSubmit={() => void handleUpdate()}
+        category={editing}
+        contentType={activeType}
+        categoryName={draftName}
+        onNameChange={setDraftName}
+        onSave={handleUpdate}
         onOpenChange={(open) => {
           setEditOpen(open);
           if (!open) {

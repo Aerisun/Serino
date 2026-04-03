@@ -15,22 +15,16 @@ export interface SiteProfileUpdate {
   bio?: string | null;
   /** Professional role or tagline */
   role?: string | null;
-  /** Footer text */
-  footer_text?: string | null;
-  /** Default author name */
-  author?: string | null;
-  /** Open Graph image path */
+  /** Open Graph/Twitter sharing image path */
   og_image?: string | null;
   /** Browser tab icon path */
   site_icon_url?: string | null;
   /** Hero image path */
   hero_image_url?: string | null;
-  /** Hero video poster image path */
+  /** Hero video poster and fallback background image path */
   hero_poster_url?: string | null;
-  /** Meta description for SEO */
-  meta_description?: string | null;
-  /** Copyright notice */
-  copyright?: string | null;
+  /** Regulatory filing or ICP notice */
+  filing_info?: string | null;
   /** Hero action buttons JSON */
   hero_actions?: string | null;
   /** Hero background video URL */

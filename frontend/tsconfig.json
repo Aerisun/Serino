@@ -1,16 +1,12 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "allowJs": true,
-    "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
     "paths": {
       "@/*": [
         "./src/*"
       ]
-    },
-    "skipLibCheck": true,
-    "strictNullChecks": true
+    }
   },
   "files": [],
   "references": [

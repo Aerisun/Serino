@@ -1,0 +1,109 @@
+services:
+  api:
+    image: ${AERISUN_API_IMAGE:-docker.io/aerisun/serino-api}:${AERISUN_IMAGE_TAG:-latest}
+    environment:
+      AERISUN_ENVIRONMENT: ${AERISUN_ENVIRONMENT:-production}
+      AERISUN_HOST: ${AERISUN_HOST:-0.0.0.0}
+      AERISUN_PORT: ${AERISUN_PORT:-8000}
+      AERISUN_STORE_DIR: ${AERISUN_STORE_DIR:-/srv/aerisun/store}
+      AERISUN_DATA_DIR: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
+      AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/store/aerisun.db}
+      AERISUN_WALINE_DB_PATH: ${AERISUN_WALINE_DB_PATH:-/srv/aerisun/store/waline.db}
+      AERISUN_MEDIA_DIR: ${AERISUN_MEDIA_DIR:-/srv/aerisun/store/media}
+      AERISUN_SECRETS_DIR: ${AERISUN_SECRETS_DIR:-/srv/aerisun/store/secrets}
+      AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
+      AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
+      AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
+      AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}
+      AERISUN_SITE_URL: ${AERISUN_SITE_URL}
+      AERISUN_WALINE_SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
+      AERISUN_CORS_ORIGINS: ${AERISUN_CORS_ORIGINS:-}
+      AERISUN_SENTRY_DSN: ${AERISUN_SENTRY_DSN:-}
+      AERISUN_SEED_REFERENCE_DATA: ${AERISUN_SEED_REFERENCE_DATA:-false}
+      AERISUN_LOG_FORMAT: ${AERISUN_LOG_FORMAT:-json}
+      AERISUN_LOG_LEVEL: ${AERISUN_LOG_LEVEL:-INFO}
+      WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
+    volumes:
+      - ${AERISUN_STORE_BIND_DIR:-./.aerisun-store}:/srv/aerisun/store
+    ports:
+      - "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  waline:
+    image: ${AERISUN_WALINE_IMAGE:-docker.io/aerisun/serino-waline}:${AERISUN_IMAGE_TAG:-latest}
+    environment:
+      SITE_NAME: ${AERISUN_APP_NAME:-Aerisun}
+      SITE_URL: ${AERISUN_SITE_URL}
+      SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
+      SQLITE_PATH: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
+      SQLITE_DB: waline.db
+      JWT_TOKEN: ${WALINE_JWT_TOKEN}
+      SECURE_DOMAINS: ${WALINE_SECURE_DOMAINS}
+      AVATAR_PROXY: ${WALINE_AVATAR_PROXY:-https://avatar.75cdn.workers.dev}
+      GRAVATAR_STR: ${WALINE_GRAVATAR_STR}
+    volumes:
+      - ${AERISUN_STORE_BIND_DIR:-./.aerisun-store}:/srv/aerisun/store
+    ports:
+      - "127.0.0.1:${WALINE_PORT:-8360}:8360"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:8360', (res) => process.exit(res.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: ${AERISUN_WEB_IMAGE:-docker.io/aerisun/serino-web}:${AERISUN_IMAGE_TAG:-latest}
+    ports:
+      - "${AERISUN_HTTP_PORT:-80}:80"
+      - "${AERISUN_HTTPS_PORT:-443}:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      AERISUN_DOMAIN: ${AERISUN_DOMAIN:-localhost}
+      AERISUN_PORT: ${AERISUN_PORT:-8000}
+      AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
+      AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
+      AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
+      AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}
+      AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}
+    depends_on:
+      api:
+        condition: service_healthy
+      waline:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy_data:
+  caddy_config:

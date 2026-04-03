@@ -1,9 +1,13 @@
-.PHONY: dev dev-smoke dev-stop docker-dev docker-prod docker-smoke setup-ports
+.PHONY: dev dev-pseed dev-smoke dev-stop docker-dev docker-prod docker-smoke setup-ports
 
 # ── 本地开发（不走 Docker）──────────────────────────────
 dev: 
 	@bash ./scripts/setup-ports.sh
-	@bash ./scripts/dev-start.sh
+	@AERISUN_SEED_DEV_DATA=true AERISUN_SEED_PROFILE=dev-seed bash ./scripts/dev-start.sh
+
+dev-pseed:
+	@bash ./scripts/setup-ports.sh
+	@AERISUN_SEED_DEV_DATA=false AERISUN_SEED_PROFILE=seed bash ./scripts/dev-start.sh
 
 dev-smoke:
 	@bash ./scripts/dev-smoke.sh

@@ -474,6 +474,15 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
 
   const dialogEmailLoginEnabled =
     Boolean(authState?.email_login_enabled) && allowEmailLoginInDialog;
+  const enabledOAuthProviderSet = useMemo(
+    () =>
+      new Set(
+        (authState?.oauth_providers ?? [])
+          .map((provider) => provider.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    [authState?.oauth_providers],
+  );
 
   const value = useMemo<SiteAuthContextValue>(
     () => ({
@@ -748,48 +757,71 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                       )}
                       {mode === "profile" ? "PROFILE" : "Sign In"}
                     </div>
-                    <h2 className="mt-4 font-display text-3xl text-foreground">
+                    <h2
+                      className={
+                        mode === "profile"
+                          ? "mt-4 text-3xl text-foreground"
+                          : "mt-4 text-3xl leading-[1.18] text-foreground"
+                      }
+                      style={
+                        mode === "profile"
+                          ? undefined
+                          : {
+                              fontFamily:
+                                "'LXGW WenKai', 'STKaiti', 'KaiTi', 'Songti SC', 'Noto Serif SC', 'Instrument Serif', serif",
+                              fontStyle: "italic",
+                              fontWeight: 500,
+                              letterSpacing: "0.02em",
+                            }
+                      }
+                    >
                       {mode === "profile"
                         ? authState?.user?.is_admin
                           ? "更新基础资料"
                           : "访客资料"
-                        : "进入评论身份"}
+                        : "登录"}
                     </h2>
-                    {mode === "profile" ? null : (
-                      <p className="mt-2 max-w-[28rem] text-sm leading-6 text-foreground/52">
-                        登录后评论会使用你的固定昵称和头像。邮箱只作为后台识别标识，不会公开显示。
-                      </p>
-                    )}
 
                     {mode === "profile" ? null : (
                       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                        {(authState?.oauth_providers ?? []).map((provider) => {
+                        {(["google", "github"] as const).map((provider) => {
                           const Icon = providerIcon(provider);
+                          const enabled = enabledOAuthProviderSet.has(provider);
                           return (
                             <button
                               key={provider}
                               type="button"
-                              onClick={() => void handleOAuthLogin(provider)}
-                              disabled={submitting}
-                              className="group relative overflow-hidden rounded-[1.35rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.8] px-4 py-4 text-left transition hover:border-[rgb(var(--shiro-accent-rgb)/0.26)] hover:bg-background/[0.9] disabled:opacity-60"
+                              onClick={enabled ? () => void handleOAuthLogin(provider) : undefined}
+                              disabled={submitting || !enabled}
+                              className={`group relative overflow-hidden rounded-[1.35rem] border px-4 py-4 text-left transition ${
+                                enabled
+                                  ? "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.8] hover:border-[rgb(var(--shiro-accent-rgb)/0.26)] hover:bg-background/[0.9] disabled:opacity-60"
+                                  : "border-[rgb(var(--shiro-border-rgb)/0.1)] bg-foreground/[0.04] opacity-55 cursor-not-allowed"
+                              }`}
                             >
-                              <div
-                                className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
-                                style={{
-                                  background:
-                                    "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))",
-                                }}
-                              />
+                              {enabled ? (
+                                <div
+                                  className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
+                                  style={{
+                                    background:
+                                      "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))",
+                                  }}
+                                />
+                              ) : null}
                               <div className="relative flex items-center gap-3">
-                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-white/80 text-foreground/78">
+                                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] ${
+                                  enabled ? "bg-white/80 text-foreground/78" : "bg-foreground/[0.06] text-foreground/32"
+                                }`}>
                                   <Icon className="h-4 w-4" />
                                 </span>
                                 <div>
-                                  <div className="text-sm font-semibold text-foreground">
+                                  <div className={`text-sm font-semibold ${enabled ? "text-foreground" : "text-foreground/42"}`}>
                                     {providerLabel(provider)}
                                   </div>
-                                  <div className="text-xs text-foreground/46">
-                                    使用第三方资料直接进入
+                                  <div className={`text-xs ${enabled ? "text-foreground/46" : "text-foreground/32"}`}>
+                                    {enabled
+                                      ? "使用第三方资料直接进入"
+                                      : `站长未开放 ${providerLabel(provider)} 登录`}
                                   </div>
                                 </div>
                               </div>

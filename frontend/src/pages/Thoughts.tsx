@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Repeat2, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CommentSection from "@/components/CommentSection";
+import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
-import {
-  formatPublishedDate,
-  splitContentParagraphs,
-} from "@/lib/api/utils";
+import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
+import { usePreviewChannel } from "@/lib/preview";
 import { readThoughtsApiV1SiteThoughtsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+
+const CommentSection = lazy(() => import("@/components/CommentSection"));
 
 interface Thought {
   id: string;
@@ -38,8 +38,10 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
 
   return {
     id: entry.slug,
-    content: entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
-    date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
+    content:
+      entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
+    date:
+      entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
     likes: entry.like_count ?? 0,
     comments: entry.comment_count ?? 0,
     reposts: entry.repost_count ?? 0,
@@ -48,36 +50,103 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
   };
 };
 
-const matchesSearchText = (fields: Array<string | null | undefined>, query: string) => {
+const buildPreviewThought = (preview: {
+  slug?: string;
+  title: string;
+  summary?: string;
+  body?: string;
+  published_at?: string | null;
+  mood?: string;
+  category?: string;
+}): Thought => {
+  const paragraphs = splitContentParagraphs(preview.body || "");
+
+  return {
+    id: preview.slug || "__preview-thought",
+    content:
+      preview.summary?.trim() || paragraphs[0] || preview.body || preview.title,
+    date: formatPublishedDate(preview.published_at) || "草稿",
+    likes: 0,
+    comments: 0,
+    reposts: 0,
+    mood: preview.mood ?? undefined,
+    category: preview.category || "",
+  };
+};
+
+const matchesSearchText = (
+  fields: Array<string | null | undefined>,
+  query: string,
+) => {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) {
     return true;
   }
 
-  return fields.some((field) => (field ?? "").toLowerCase().includes(normalizedQuery));
+  return fields.some((field) =>
+    (field ?? "").toLowerCase().includes(normalizedQuery),
+  );
 };
 
 const Thoughts = () => {
   const location = useLocation();
+  const previewStorageKey =
+    new URLSearchParams(location.search).get("previewStorageKey") || "";
   const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
   const errorTitle = config.errorTitle ?? "碎碎念加载失败";
   const retryLabel = config.retryLabel ?? "重试";
   const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
   const pageSize = clampPageSize(config.pageSize, 30);
   const allCategoryLabel = config.categories?.all ?? "全部";
-  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
+  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(
+    null,
+  );
   const searchPlaceholder = config.searchPlaceholder ?? "搜索碎碎念...";
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
+  const { data: previewData } = usePreviewChannel(previewStorageKey);
 
-  const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
+  const {
+    items,
+    status,
+    errorMessage,
+    hasMore,
+    isLoadingMore,
+    sentinelRef,
+    reload,
+  } = useInfiniteList({
     queryKey: ["site", "thoughts"],
-    queryFn: (p) => readThoughtsApiV1SiteThoughtsGet(p).then(r => r.data),
+    queryFn: async (p) => {
+      const data = (await readThoughtsApiV1SiteThoughtsGet(p)).data;
+
+      if (data && "items" in data && Array.isArray(data.items)) {
+        return {
+          items: data.items,
+          has_more: Boolean(data.has_more),
+        };
+      }
+
+      throw new Error("Invalid thoughts response");
+    },
     pageSize,
     mapItem: mapRemoteThought,
   });
+  const previewThought =
+    previewData?.type === "thoughts" ? buildPreviewThought(previewData) : null;
+  const displayItems = useMemo(() => {
+    if (!previewThought) {
+      return items;
+    }
+
+    return [
+      previewThought,
+      ...items.filter((item) => item.id !== previewThought.id),
+    ];
+  }, [items, previewThought]);
+  const viewStatus: typeof status =
+    previewThought && status !== "ready" ? "ready" : status;
 
   useEffect(() => {
     return () => {
@@ -90,22 +159,29 @@ const Thoughts = () => {
   const allCategories = useMemo(
     () => [
       allCategoryLabel,
-      ...Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "zh-CN")),
+      ...Array.from(
+        new Set(displayItems.map((item) => item.category).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b, "zh-CN")),
     ],
-    [allCategoryLabel, items],
+    [allCategoryLabel, displayItems],
   );
 
   const filtered = useMemo(() => {
-    return items.filter((thought) => {
-      const matchSearch = matchesSearchText([thought.content, thought.date, thought.mood, thought.category], search);
-      const matchCategory = activeCategory === allCategoryLabel || thought.category === activeCategory;
+    return displayItems.filter((thought) => {
+      const matchSearch = matchesSearchText(
+        [thought.content, thought.date, thought.mood, thought.category],
+        search,
+      );
+      const matchCategory =
+        activeCategory === allCategoryLabel ||
+        thought.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [activeCategory, allCategoryLabel, items, search]);
+  }, [activeCategory, allCategoryLabel, displayItems, search]);
 
   useEffect(() => {
-    const targetId = location.hash.slice(1);
-    if (status !== "ready" || !targetId) {
+    const targetId = previewThought?.id || location.hash.slice(1);
+    if (viewStatus !== "ready" || !targetId) {
       return;
     }
 
@@ -115,7 +191,7 @@ const Thoughts = () => {
         element.scrollIntoView({ block: "center" });
       });
     }
-  }, [items, location.hash, status]);
+  }, [location.hash, previewThought?.id, viewStatus]);
 
   return (
     <PageShell
@@ -123,8 +199,11 @@ const Thoughts = () => {
       title={config.title}
       description={config.description}
       metaDescription={config.metaDescription}
-      width={config.width}
+      width={
+        config.width === "narrow" ? "content" : (config.width ?? "content")
+      }
     >
+      {previewThought ? <PreviewModeBadge /> : null}
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
@@ -178,9 +257,12 @@ const Thoughts = () => {
       <div className="relative mt-8">
         <div className="absolute bottom-0 left-5 top-0 w-px bg-[rgb(var(--shiro-divider-rgb)/0.26)]" />
 
-        {status === "loading" &&
+        {viewStatus === "loading" &&
           Array.from({ length: 6 }, (_, index) => (
-            <div key={`thought-skeleton-${index}`} className="relative pb-10 pl-14 last:pb-0">
+            <div
+              key={`thought-skeleton-${index}`}
+              className="relative pb-10 pl-14 last:pb-0"
+            >
               <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-foreground/12 bg-background" />
               <div className="h-3 w-28 rounded-full bg-foreground/[0.05]" />
               <div className="mt-3 h-4 w-[88%] rounded-full bg-foreground/[0.04]" />
@@ -193,14 +275,18 @@ const Thoughts = () => {
             </div>
           ))}
 
-        {status === "error" && (
+        {viewStatus === "error" && (
           <div className="relative pb-10 pl-14">
             <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
               <span>刚刚</span>
             </div>
-            <p className="mt-2 text-[0.935rem] leading-7 text-foreground/45">{errorTitle}</p>
-            <p className="mt-2 text-sm leading-7 text-foreground/30">{errorMessage}</p>
+            <p className="mt-2 text-[0.935rem] leading-7 text-foreground/60">
+              {errorTitle}
+            </p>
+            <p className="mt-2 text-sm leading-7 text-foreground/30">
+              {errorMessage}
+            </p>
             <div className="mt-3">
               <button
                 type="button"
@@ -213,19 +299,20 @@ const Thoughts = () => {
           </div>
         )}
 
-        {(status === "empty" || (status === "ready" && filtered.length === 0)) && (
+        {(viewStatus === "empty" ||
+          (viewStatus === "ready" && filtered.length === 0)) && (
           <div className="relative pb-10 pl-14">
             <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
               <span>今天</span>
             </div>
-            <p className="mt-2 text-[0.935rem] leading-7 text-foreground/45">
+            <p className="mt-2 text-[0.935rem] leading-7 text-foreground/60">
               {config.emptyMessage ?? "没有找到匹配的碎碎念"}
             </p>
           </div>
         )}
 
-        {status === "ready" &&
+        {viewStatus === "ready" &&
           filtered.map((thought, index) => (
             <motion.div
               key={thought.id}
@@ -240,11 +327,19 @@ const Thoughts = () => {
               <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.32)] bg-background transition-colors group-hover:border-[rgb(var(--shiro-accent-rgb)/0.56)] group-hover:bg-[rgb(var(--shiro-accent-rgb)/0.12)]" />
 
               <div className="flex items-center gap-2 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
-                {thought.date && <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.84)]">{thought.date}</span>}
-                {thought.mood && <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">{thought.mood}</span>}
+                {thought.date && (
+                  <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.84)]">
+                    {thought.date}
+                  </span>
+                )}
+                {thought.mood && (
+                  <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+                    {thought.mood}
+                  </span>
+                )}
               </div>
 
-              <p className="mt-2 text-[0.935rem] leading-7 text-foreground/65 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
+              <p className="mt-2 text-[0.97rem] leading-7 text-foreground/71 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
                 {thought.content}
               </p>
 
@@ -261,13 +356,22 @@ const Thoughts = () => {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setExpandedCommentId(expandedCommentId === thought.id ? null : thought.id)}
+                  onClick={() =>
+                    setExpandedCommentId(
+                      expandedCommentId === thought.id ? null : thought.id,
+                    )
+                  }
                   className={`flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95] ${expandedCommentId === thought.id ? "text-[rgb(var(--shiro-accent-rgb)/0.76)]" : ""}`}
                 >
-                  <MessageCircle className={`h-3.5 w-3.5 ${expandedCommentId === thought.id ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
+                  <MessageCircle
+                    className={`h-3.5 w-3.5 ${expandedCommentId === thought.id ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
+                  />
                   {thought.comments}
                 </button>
-                <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]">
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]"
+                >
                   <Repeat2 className="h-3.5 w-3.5" />
                   {thought.reposts}
                 </button>
@@ -282,11 +386,13 @@ const Thoughts = () => {
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className="mt-4 overflow-hidden"
                   >
-                    <CommentSection
-                      contentType="thoughts"
-                      contentSlug={thought.id}
-                      expandable={false}
-                    />
+                    <Suspense fallback={null}>
+                      <CommentSection
+                        contentType="thoughts"
+                        contentSlug={thought.id}
+                        expandable={false}
+                      />
+                    </Suspense>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -294,9 +400,11 @@ const Thoughts = () => {
           ))}
       </div>
 
-      {status === "ready" && hasMore && (
+      {viewStatus === "ready" && hasMore && (
         <div ref={sentinelRef} className="py-8 text-center">
-          {isLoadingMore && <span className="text-xs text-foreground/25">{loadMoreLabel}</span>}
+          {isLoadingMore && (
+            <span className="text-xs text-foreground/25">{loadMoreLabel}</span>
+          )}
         </div>
       )}
     </PageShell>

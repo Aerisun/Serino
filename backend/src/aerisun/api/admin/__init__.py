@@ -12,8 +12,10 @@ def _build_admin_router() -> APIRouter:
     from .automation import router as automation_router
     from .content import build_crud_router
     from .content_meta import router as content_meta_router
+    from .diary import router as diary_router
     from .import_export import router as import_export_router
     from .moderation import router as moderation_router
+    from .proxy_config import router as proxy_config_router
     from .resume import router as resume_router
     from .schemas import ContentAdminRead, ContentCreate, ContentUpdate
     from .site_config import router as site_config_router
@@ -49,8 +51,10 @@ def _build_admin_router() -> APIRouter:
             )
         )
 
+    admin_router.include_router(diary_router)
     admin_router.include_router(site_config_router)
     admin_router.include_router(subscriptions_router)
+    admin_router.include_router(proxy_config_router)
     admin_router.include_router(resume_router)
     admin_router.include_router(social_router)
     admin_router.include_router(moderation_router)

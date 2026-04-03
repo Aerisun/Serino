@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from ipaddress import ip_address
 
 import httpx
 
@@ -29,22 +30,22 @@ _CACHE: dict[str, tuple[datetime, IpGeoResult]] = {}
 
 
 def _is_public_ip(ip: str) -> bool:
-    lowered = ip.lower()
-    if ip in {"unknown", "127.0.0.1", "::1"}:
+    normalized = (ip or "").strip()
+    if not normalized:
         return False
-    return not (
-        lowered.startswith("10.")
-        or lowered.startswith("192.168.")
-        or lowered.startswith("172.16.")
-        or lowered.startswith("172.17.")
-        or lowered.startswith("172.18.")
-        or lowered.startswith("172.19.")
-        or lowered.startswith("172.2")
-        or lowered.startswith("172.30.")
-        or lowered.startswith("172.31.")
-        or lowered.startswith("fc")
-        or lowered.startswith("fd")
-    )
+    if normalized.lower() == "unknown":
+        return False
+
+    # Common proxy header value format: "client, proxy1, proxy2"
+    candidate = normalized.split(",", 1)[0].strip()
+    if not candidate:
+        return False
+
+    try:
+        parsed = ip_address(candidate)
+    except ValueError:
+        return False
+    return parsed.is_global
 
 
 def lookup_ip_geolocation(ip: str) -> IpGeoResult:
@@ -59,7 +60,7 @@ def lookup_ip_geolocation(ip: str) -> IpGeoResult:
 
     result = IpGeoResult()
     try:
-        with httpx.Client(timeout=settings.ip_geo_timeout_seconds) as client:
+        with httpx.Client(timeout=settings.ip_geo_timeout_seconds, follow_redirects=True) as client:
             response = client.get(f"{settings.ip_geo_api_base_url}/{ip}")
             response.raise_for_status()
             payload = response.json()

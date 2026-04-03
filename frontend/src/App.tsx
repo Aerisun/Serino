@@ -4,12 +4,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@serino/theme";
 import { RuntimeConfigProvider } from "@/contexts/RuntimeConfigContext";
 import { SiteAuthProvider } from "@/contexts/site-auth";
+import { FrontendLanguageProvider } from "@/i18n";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
-import SearchModal from "@/components/SearchModal";
-import SubscribeModal from "@/components/SubscribeModal";
 import { useFeatureFlags } from "@/contexts/runtime-config";
+import { lazyWithPreload } from "@/lib/lazy";
 
 const Index = lazy(() => import("./pages/Index"));
 const Posts = lazy(() => import("./pages/Posts"));
@@ -24,12 +24,22 @@ const Guestbook = lazy(() => import("./pages/Guestbook"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const Preview = lazy(() => import("./pages/Preview"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const SearchModal = lazyWithPreload(() => import("@/components/SearchModal"));
+const SubscribeModal = lazyWithPreload(() => import("@/components/SubscribeModal"));
 
 function AppContent() {
   const featureFlags = useFeatureFlags();
   const [searchOpen, setSearchOpen] = useState(false);
   const [subscribeOpen, setSubscribeOpen] = useState(false);
 
+  const openSearch = useCallback(() => {
+    void SearchModal.preload();
+    setSearchOpen(true);
+  }, []);
+  const openSubscribe = useCallback(() => {
+    void SubscribeModal.preload();
+    setSubscribeOpen(true);
+  }, []);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const closeSubscribe = useCallback(() => setSubscribeOpen(false), []);
 
@@ -37,11 +47,12 @@ function AppContent() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
+        void SearchModal.preload();
         setSearchOpen((v) => !v);
       }
     };
-    const onOpenSearch = () => setSearchOpen(true);
-    const onOpenSubscribe = () => setSubscribeOpen(true);
+    const onOpenSearch = () => openSearch();
+    const onOpenSubscribe = () => openSubscribe();
     document.addEventListener("keydown", onKey);
     window.addEventListener("aerisun:open-search", onOpenSearch);
     window.addEventListener("aerisun:open-subscribe", onOpenSubscribe);
@@ -50,7 +61,7 @@ function AppContent() {
       window.removeEventListener("aerisun:open-search", onOpenSearch);
       window.removeEventListener("aerisun:open-subscribe", onOpenSubscribe);
     };
-  }, []);
+  }, [openSearch, openSubscribe]);
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -82,12 +93,16 @@ function AppContent() {
             </Routes>
           </Suspense>
         </ErrorBoundary>
-        <SearchModal open={searchOpen} onClose={closeSearch} />
-        <SubscribeModal
-          open={subscribeOpen}
-          onClose={closeSubscribe}
-          enabled={featureFlags.content_subscription}
-        />
+        <Suspense fallback={null}>
+          {searchOpen ? <SearchModal open={searchOpen} onClose={closeSearch} /> : null}
+          {subscribeOpen ? (
+            <SubscribeModal
+              open={subscribeOpen}
+              onClose={closeSubscribe}
+              enabled={featureFlags.content_subscription}
+            />
+          ) : null}
+        </Suspense>
       </SiteAuthProvider>
     </BrowserRouter>
   );
@@ -106,9 +121,11 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <RuntimeConfigProvider>
-        <AppContent />
-      </RuntimeConfigProvider>
+      <FrontendLanguageProvider>
+        <RuntimeConfigProvider>
+          <AppContent />
+        </RuntimeConfigProvider>
+      </FrontendLanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

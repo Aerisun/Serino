@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useListVisitorUsersApiV1AdminVisitorsUsersGet } from "@serino/api-client/admin";
-import type { SiteUserAdminRead } from "@serino/api-client/models";
-import type { ListVisitorUsersApiV1AdminVisitorsUsersGetParams } from "../../../../packages/api-client/src/generated/model/listVisitorUsersApiV1AdminVisitorsUsersGetParams";
+import type { ListVisitorUsersApiV1AdminVisitorsUsersGetParams, SiteUserAdminRead } from "@serino/api-client/models";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";

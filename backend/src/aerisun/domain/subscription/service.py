@@ -6,6 +6,7 @@ import smtplib
 from datetime import datetime
 from email.message import EmailMessage
 from string import Formatter
+from typing import Literal
 from uuid import uuid4
 
 import httpx
@@ -223,8 +224,11 @@ def update_subscription_admin_config(
     session: Session,
     payload: ContentSubscriptionConfigAdminUpdate,
 ) -> ContentSubscriptionConfigAdminRead:
+    from aerisun.domain.automation.events import emit_subscription_config_updated
+
     config = get_subscription_config_orm(session)
     updates = payload.model_dump(exclude_unset=True)
+    changed_fields = sorted(updates.keys())
     smtp_changed = _smtp_settings_will_change(config, updates)
     _apply_subscription_updates(config, updates)
     if smtp_changed:
@@ -233,6 +237,13 @@ def update_subscription_admin_config(
 
     session.commit()
     session.refresh(config)
+    emit_subscription_config_updated(
+        session,
+        changed_fields=changed_fields,
+        enabled=bool(config.enabled),
+        smtp_test_passed=bool(config.smtp_test_passed),
+        allowed_content_types=list(config.allowed_content_types or []),
+    )
     return get_subscription_admin_config(session)
 
 
@@ -247,6 +258,8 @@ def create_or_update_public_subscription(
     *,
     current_user: SiteUser | None = None,
 ) -> ContentSubscriptionPublicRead:
+    from aerisun.domain.automation.events import emit_subscription_created
+
     config = get_subscription_config_orm(session)
     if not (config.enabled and config.smtp_test_passed):
         raise ValidationError("订阅功能尚未开启")
@@ -298,6 +311,12 @@ def create_or_update_public_subscription(
 
     session.commit()
     session.refresh(subscriber)
+    emit_subscription_created(
+        session,
+        email=subscriber.email,
+        content_types=list(subscriber.content_types or []),
+        initiator_site_user_id=subscriber.initiator_site_user_id,
+    )
     return ContentSubscriptionPublicRead(
         email=subscriber.email,
         content_types=list(subscriber.content_types or []),
@@ -331,11 +350,14 @@ def unsubscribe_public_subscription(
     *,
     email: str,
 ) -> ContentSubscriptionPublicUnsubscribeResult:
+    from aerisun.domain.automation.events import emit_subscription_unsubscribed
+
     normalized_email = _normalize_email(email)
     subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
     if subscriber is not None and subscriber.is_active:
         subscriber.is_active = False
         session.commit()
+        emit_subscription_unsubscribed(session, email=normalized_email)
 
     return ContentSubscriptionPublicUnsubscribeResult(
         email=normalized_email,
@@ -590,7 +612,7 @@ def list_admin_subscribers(
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[ContentSubscriberAdminRead], int]:
-    filters = [ContentSubscriber.is_active.is_(True)]
+    filters: list[object] = []
 
     normalized_search = " ".join((search or "").strip().split())
     initiator_binding_exists = exists(
@@ -612,7 +634,11 @@ def list_admin_subscribers(
     stmt = (
         select(ContentSubscriber)
         .where(*filters)
-        .order_by(ContentSubscriber.updated_at.desc(), ContentSubscriber.created_at.desc())
+        .order_by(
+            ContentSubscriber.is_active.desc(),
+            ContentSubscriber.updated_at.desc(),
+            ContentSubscriber.created_at.desc(),
+        )
     )
     subscribers = list(session.scalars(stmt).all())
 
@@ -689,6 +715,100 @@ def list_admin_subscribers(
     start = max(0, (page - 1) * page_size)
     end = start + page_size
     return items[start:end], total
+
+
+def _build_admin_subscriber_read(
+    session: Session,
+    *,
+    subscriber: ContentSubscriber,
+) -> ContentSubscriberAdminRead:
+    matched_user = None
+    providers: list[str] = []
+    auth_mode: Literal["email", "binding", "unknown"] = "unknown"
+
+    if subscriber.initiator_site_user_id:
+        matched_user = session.scalars(select(SiteUser).where(SiteUser.id == subscriber.initiator_site_user_id)).first()
+        if matched_user is not None:
+            providers = sorted(
+                set(
+                    session.scalars(
+                        select(SiteUserOAuthAccount.provider).where(
+                            SiteUserOAuthAccount.site_user_id == matched_user.id
+                        )
+                    ).all()
+                )
+            )
+            auth_mode = "binding" if providers else "email"
+
+    sent_count, last_sent_at = session.execute(
+        select(
+            func.count(ContentNotificationDelivery.id),
+            func.max(ContentNotificationDelivery.sent_at),
+        ).where(
+            ContentNotificationDelivery.subscriber_email == subscriber.email,
+            ContentNotificationDelivery.status == "sent",
+        )
+    ).one()
+
+    return ContentSubscriberAdminRead(
+        email=subscriber.email,
+        is_active=bool(subscriber.is_active),
+        content_types=list(subscriber.content_types or []),
+        auth_mode=auth_mode,
+        initiator_email=matched_user.email if matched_user else None,
+        display_name=matched_user.display_name if matched_user else None,
+        avatar_url=matched_user.avatar_url if matched_user else None,
+        primary_auth_provider=matched_user.primary_auth_provider if matched_user else None,
+        oauth_providers=providers,
+        sent_count=int(sent_count or 0),
+        last_sent_at=last_sent_at,
+        created_at=subscriber.created_at,
+        updated_at=subscriber.updated_at,
+    )
+
+
+def set_admin_subscriber_active(
+    session: Session,
+    *,
+    email: str,
+    is_active: bool,
+) -> ContentSubscriberAdminRead:
+    normalized_email = _normalize_email(email)
+    subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
+    if subscriber is None:
+        raise ValidationError("订阅者不存在")
+
+    was_active = bool(subscriber.is_active)
+    subscriber.is_active = bool(is_active)
+    session.commit()
+
+    if was_active and not bool(is_active):
+        from aerisun.domain.automation.events import emit_subscription_unsubscribed
+
+        emit_subscription_unsubscribed(session, email=normalized_email)
+
+    session.refresh(subscriber)
+    return _build_admin_subscriber_read(session, subscriber=subscriber)
+
+
+def delete_admin_subscriber(
+    session: Session,
+    *,
+    email: str,
+) -> None:
+    normalized_email = _normalize_email(email)
+    subscriber = session.scalars(select(ContentSubscriber).where(ContentSubscriber.email == normalized_email)).first()
+    if subscriber is None:
+        raise ValidationError("订阅者不存在")
+
+    was_active = bool(subscriber.is_active)
+    session.delete(subscriber)
+    session.commit()
+
+    if was_active:
+        from aerisun.domain.automation.events import emit_subscription_unsubscribed
+
+        emit_subscription_unsubscribed(session, email=normalized_email)
 
 
 def list_subscriber_delivery_history(
@@ -827,6 +947,8 @@ def send_subscription_test_email(
     session: Session,
     payload: ContentSubscriptionConfigAdminUpdate,
     settings: Settings | None = None,
+    *,
+    persist_success: bool = False,
 ) -> ContentSubscriptionTestResult:
     current = get_subscription_config_orm(session)
     test_config = ContentSubscriptionConfig(
@@ -896,17 +1018,23 @@ def send_subscription_test_email(
         logger.warning("Subscription SMTP test email failed", exc_info=exc)
         raise _smtp_login_validation_error(test_config) from exc
 
-    # Persist the tested SMTP settings as available on success.
-    _apply_subscription_updates(current, updates)
-    current.smtp_test_passed = True
-    current.smtp_tested_at = utcnow()
-    session.commit()
-    session.refresh(current)
+    if persist_success:
+        # Persist the tested SMTP settings as available on success.
+        _apply_subscription_updates(current, updates)
+        current.smtp_test_passed = True
+        current.smtp_tested_at = utcnow()
+        session.commit()
+        session.refresh(current)
 
     return ContentSubscriptionTestResult(recipient=recipient)
 
 
 def dispatch_content_subscription_notifications(settings: Settings | None = None) -> dict[str, int]:
+    from aerisun.domain.automation.events import (
+        emit_subscription_notification_failed,
+        emit_subscription_notification_sent,
+    )
+
     active_settings = settings or get_settings()
     session_factory = get_session_factory()
     summary = {"created": 0, "sent": 0, "skipped": 0}
@@ -978,6 +1106,14 @@ def dispatch_content_subscription_notifications(settings: Settings | None = None
                     error_message=str(exc)[:1000],
                 )
                 session.commit()
+                emit_subscription_notification_failed(
+                    session,
+                    notification_id=item.id,
+                    content_type=item.content_type,
+                    content_slug=item.content_slug,
+                    recipient_count=len(recipients),
+                    error=str(exc)[:1000],
+                )
                 continue
 
             delivered_at = utcnow()
@@ -990,6 +1126,13 @@ def dispatch_content_subscription_notifications(settings: Settings | None = None
             )
             item.delivered_at = delivered_at
             session.commit()
+            emit_subscription_notification_sent(
+                session,
+                notification_id=item.id,
+                content_type=item.content_type,
+                content_slug=item.content_slug,
+                recipient_count=len(recipients),
+            )
             summary["sent"] += 1
 
     return summary

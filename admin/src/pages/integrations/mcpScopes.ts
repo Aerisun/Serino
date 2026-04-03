@@ -1,4 +1,8 @@
-export type McpKeyPreset = "readonly" | "basic_management" | "full_management" | "custom";
+export type McpKeyPreset =
+  | "readonly"
+  | "basic_management"
+  | "full_management"
+  | "custom";
 export type McpResolvedPreset = Exclude<McpKeyPreset, "custom">;
 
 export interface McpPresetDisplayState {
@@ -6,49 +10,76 @@ export interface McpPresetDisplayState {
   isCustom: boolean;
 }
 
+export const CONNECT_SCOPE = "agent:connect";
+
+const READ_SCOPES = [
+  "content:read",
+  "moderation:read",
+  "config:read",
+  "assets:read",
+  "subscriptions:read",
+  "visitors:read",
+  "auth:read",
+  "automation:read",
+  "system:read",
+  "network:read",
+] as const;
+
+const WRITE_SCOPES = [
+  "content:write",
+  "moderation:write",
+  "config:write",
+  "assets:write",
+  "subscriptions:write",
+  "visitors:write",
+  "auth:write",
+  "automation:write",
+  "system:write",
+  "network:write",
+] as const;
+
 export const MCP_SCOPE_PRESETS: Record<McpResolvedPreset, string[]> = {
-  readonly: [
-    "mcp:connect",
-    "mcp:content:read",
-    "mcp:moderation:read",
-    "mcp:config:read",
-    "mcp:assets:read",
-  ],
+  readonly: [CONNECT_SCOPE, ...READ_SCOPES],
   basic_management: [
-    "mcp:connect",
-    "mcp:content:read",
-    "mcp:content:write",
-    "mcp:moderation:read",
-    "mcp:moderation:write",
-    "mcp:config:read",
-    "mcp:assets:read",
+    CONNECT_SCOPE,
+    ...READ_SCOPES,
+    "content:write",
+    "moderation:write",
   ],
-  full_management: [
-    "mcp:connect",
-    "mcp:content:read",
-    "mcp:content:write",
-    "mcp:moderation:read",
-    "mcp:moderation:write",
-    "mcp:config:read",
-    "mcp:config:write",
-    "mcp:assets:read",
-    "mcp:assets:write",
-  ],
+  full_management: [CONNECT_SCOPE, ...READ_SCOPES, ...WRITE_SCOPES],
 };
 
-export const MCP_SCOPE_ORDER = Array.from(new Set(Object.values(MCP_SCOPE_PRESETS).flat()));
+export const MCP_SCOPE_ORDER = [
+  CONNECT_SCOPE,
+  ...READ_SCOPES,
+  ...WRITE_SCOPES,
+];
 export const MCP_SCOPE_SET = new Set(MCP_SCOPE_ORDER);
 export type McpScope = (typeof MCP_SCOPE_ORDER)[number];
-const BASIC_MANAGEMENT_EXTRA_SCOPES = ["mcp:content:write", "mcp:moderation:write"];
-const FULL_MANAGEMENT_EXTRA_SCOPES = ["mcp:config:write", "mcp:assets:write"];
+
+const BASIC_MANAGEMENT_EXTRA_SCOPES = ["content:write", "moderation:write"];
+const FULL_MANAGEMENT_EXTRA_SCOPES = WRITE_SCOPES.filter(
+  (scope) => !BASIC_MANAGEMENT_EXTRA_SCOPES.includes(scope),
+);
+
 const WRITE_TO_READ_SCOPE: Record<string, string> = {
-  "mcp:content:write": "mcp:content:read",
-  "mcp:moderation:write": "mcp:moderation:read",
-  "mcp:config:write": "mcp:config:read",
-  "mcp:assets:write": "mcp:assets:read",
+  "content:write": "content:read",
+  "moderation:write": "moderation:read",
+  "config:write": "config:read",
+  "assets:write": "assets:read",
+  "subscriptions:write": "subscriptions:read",
+  "visitors:write": "visitors:read",
+  "auth:write": "auth:read",
+  "automation:write": "automation:read",
+  "system:write": "system:read",
+  "network:write": "network:read",
 };
+
 const READ_TO_WRITE_SCOPE: Record<string, string> = Object.fromEntries(
-  Object.entries(WRITE_TO_READ_SCOPE).map(([writeScope, readScope]) => [readScope, writeScope]),
+  Object.entries(WRITE_TO_READ_SCOPE).map(([writeScope, readScope]) => [
+    readScope,
+    writeScope,
+  ]),
 );
 
 export function normalizeScopes(scopes: string[]) {
@@ -60,7 +91,9 @@ export function mcpScopesOnly(scopes: string[]) {
 }
 
 export function mergeMcpScopes(currentScopes: string[], nextMcpScopes: string[]) {
-  const preserved = currentScopes.filter((scope) => !MCP_SCOPE_SET.has(scope));
+  const preserved = currentScopes.filter(
+    (scope) => !MCP_SCOPE_SET.has(scope) && !scope.startsWith("mcp:"),
+  );
   return normalizeScopes([...preserved, ...nextMcpScopes]);
 }
 
@@ -76,9 +109,9 @@ export function normalizeMcpScopeSelection(scopes: string[]) {
     }
   }
 
-  const hasFunctionalScope = [...enabled].some((scope) => scope !== "mcp:connect");
+  const hasFunctionalScope = [...enabled].some((scope) => scope !== CONNECT_SCOPE);
   if (hasFunctionalScope) {
-    enabled.add("mcp:connect");
+    enabled.add(CONNECT_SCOPE);
   }
 
   return MCP_SCOPE_ORDER.filter((scope) => enabled.has(scope));
@@ -90,7 +123,7 @@ export function relatedWriteScope(scope: string) {
 
 export function detectMcpPreset(scopes: string[]): McpKeyPreset | null {
   const normalized = mcpScopesOnly(scopes);
-  if (!normalized.includes("mcp:connect")) {
+  if (!normalized.includes(CONNECT_SCOPE)) {
     return null;
   }
   for (const [preset, presetScopes] of Object.entries(MCP_SCOPE_PRESETS)) {

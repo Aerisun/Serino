@@ -21,7 +21,7 @@ from aerisun.domain.site_auth.schemas import (
 from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.waline.service import connect_waline_db, sync_site_user_comment_profile
 
-from .config_service import email_login_enabled, enabled_oauth_providers
+from .config_service import email_login_enabled, enabled_visitor_oauth_providers
 from .sessions import create_site_session
 from .shared import normalize_display_name, normalize_email
 
@@ -148,7 +148,6 @@ def resolve_admin_display_name(session: Session) -> str:
     for candidate in (
         site.name if site else "",
         site.title if site else "",
-        site.author if site else "",
     ):
         resolved = normalize_display_name(candidate)
         if resolved:
@@ -183,7 +182,6 @@ def resolve_admin_avatar_url(session: Session) -> str:
     for candidate in (
         site.hero_image_url if site else "",
         site.hero_poster_url if site else "",
-        site.og_image if site else "",
     ):
         resolved = str(candidate or "").strip()
         if resolved:
@@ -227,7 +225,7 @@ def get_auth_state(session: Session, user: SiteUser | None) -> SiteAuthStateRead
         authenticated=user is not None,
         user=user_to_read(session, user) if user else None,
         email_login_enabled=email_login_enabled(session),
-        oauth_providers=enabled_oauth_providers(session),
+        oauth_providers=enabled_visitor_oauth_providers(session),
     )
 
 
@@ -321,6 +319,8 @@ def update_site_user_profile(
     user: SiteUser,
     payload: SiteAuthProfileUpdateRequest,
 ) -> SiteAuthUserRead:
+    from aerisun.domain.automation.events import emit_site_user_profile_updated
+
     display_name = normalize_display_name(payload.display_name)
     avatar_url = (payload.avatar_url or "").strip()
     if not display_name:
@@ -338,4 +338,10 @@ def update_site_user_profile(
             avatar_url=user.avatar_url,
         )
     session.refresh(user)
+    emit_site_user_profile_updated(
+        session,
+        site_user_id=user.id,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+    )
     return user_to_read(session, user)

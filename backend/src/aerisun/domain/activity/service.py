@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 import time
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.activity import repository as repo
@@ -17,6 +19,7 @@ from aerisun.domain.activity.schemas import (
     RecentActivityItemRead,
     RecentActivityRead,
 )
+from aerisun.domain.site_config.models import SiteProfile
 from aerisun.domain.waline.service import list_all_waline_records, parse_comment_path
 
 DEFAULT_ACTIVITY_HEATMAP_TZ = "Asia/Shanghai"
@@ -40,6 +43,34 @@ def _trim_excerpt(value: str | None, limit: int = 72) -> str | None:
     if len(excerpt) <= limit:
         return excerpt
     return f"{excerpt[: limit - 1]}…"
+
+
+def _strip_markdown(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    text = value
+    text = re.sub(r"!\[[^\]]*\]\([^)]+\)", " ", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"`{1,3}([^`]*)`{1,3}", r"\1", text)
+    text = re.sub(r"^[>#*\-\s]+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"[_*~#]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or None
+
+
+def _pick_publish_excerpt(summary: str | None, body: str | None, *, limit: int = 56) -> str | None:
+    summary_text = _strip_markdown(summary)
+    if summary_text:
+        return _trim_excerpt(summary_text, limit=limit)
+
+    body_text = _strip_markdown(body)
+    return _trim_excerpt(body_text, limit=limit)
+
+
+def _get_site_owner_name(session: Session) -> str:
+    value = session.scalar(select(SiteProfile.name).limit(1))
+    return str(value or "").strip() or "站长"
 
 
 def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
@@ -66,6 +97,7 @@ def list_calendar_events(session: Session, from_date: date, to_date: date) -> Ca
 
 def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead:
     items: list[RecentActivityItemRead] = []
+    site_owner_name = _get_site_owner_name(session)
 
     # Collect all (content_type, slug) pairs for batch title resolution
     title_pairs: list[tuple[str, str]] = []
@@ -80,6 +112,8 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
     reactions = repo.find_recent_reactions(session, limit=limit)
     for item in reactions:
         title_pairs.append((item.content_type, item.content_slug))
+
+    published_content = repo.find_recent_published_content(session, limit=limit)
 
     # Batch resolve all titles in one pass
     titles = repo.batch_resolve_titles(session, title_pairs)
@@ -122,6 +156,21 @@ def list_recent_activity(session: Session, limit: int = 8) -> RecentActivityRead
                 excerpt="留下了一个赞" if item.reaction_type == "like" else item.reaction_type,
                 created_at=_normalize_timestamp(item.created_at),
                 href=f"/{item.content_type}/{item.content_slug}",
+            )
+        )
+
+    for published_at, kind, title, summary, body, href in published_content:
+        normalized_title = (title or "").strip()
+        target_title = normalized_title if kind in {"post", "diary"} else ""
+        items.append(
+            RecentActivityItemRead(
+                kind=f"publish_{kind}",
+                actor_name=site_owner_name,
+                actor_avatar=_avatar_for_name(site_owner_name),
+                target_title=target_title,
+                excerpt=_pick_publish_excerpt(summary, body),
+                created_at=_normalize_timestamp(published_at),
+                href=href,
             )
         )
 

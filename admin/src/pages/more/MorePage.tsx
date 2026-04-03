@@ -1,24 +1,44 @@
+import { lazy, Suspense } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { ExternalConfigSection } from "./ExternalConfigSection";
-import { FeatureTogglesSection } from "./FeatureTogglesSection";
+import { Navigate, useParams } from "react-router-dom";
 import { MoreSectionSwitch } from "./MoreSectionSwitch";
+import { SectionLoader } from "@/components/SectionLoader";
+import AdminNotFoundPage from "@/pages/AdminNotFoundPage";
+
+const ApiConfigSection = lazy(() =>
+  import("./ApiConfigSection").then((module) => ({
+    default: module.ApiConfigSection,
+  })),
+);
+const ExternalConfigSection = lazy(() =>
+  import("./ExternalConfigSection").then((module) => ({
+    default: module.ExternalConfigSection,
+  })),
+);
+const FeatureTogglesSection = lazy(() =>
+  import("./FeatureTogglesSection").then((module) => ({
+    default: module.FeatureTogglesSection,
+  })),
+);
+const ProxyConfigSection = lazy(() =>
+  import("./ProxyConfigSection").then((module) => ({
+    default: module.ProxyConfigSection,
+  })),
+);
 
 export default function MorePage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const { section } = useParams();
-  const validSections = ["feature-flags", "external-config"] as const;
+  const validSections = ["feature-flags", "mail-config", "api-config", "proxy-config"] as const;
 
-  if (!section || !validSections.includes(section as (typeof validSections)[number])) {
+  if (!section) {
     return <Navigate to="/more/feature-flags" replace />;
   }
 
-  const goToSection = (value: string) => {
-    navigate(`/more/${value}`);
-  };
+  if (!validSections.includes(section as (typeof validSections)[number])) {
+    return <AdminNotFoundPage />;
+  }
 
   return (
     <div>
@@ -27,14 +47,17 @@ export default function MorePage() {
         description={t("more.description")}
         secondary={<MoreSectionSwitch />}
       />
-      <Tabs value={section} onValueChange={goToSection}>
-        <TabsContent value="feature-flags">
-          <FeatureTogglesSection />
-        </TabsContent>
-        <TabsContent value="external-config">
+      <Suspense fallback={<SectionLoader label={t("common.loading")} />}>
+        {section === "mail-config" ? (
           <ExternalConfigSection />
-        </TabsContent>
-      </Tabs>
+        ) : section === "api-config" ? (
+          <ApiConfigSection />
+        ) : section === "proxy-config" ? (
+          <ProxyConfigSection />
+        ) : (
+          <FeatureTogglesSection />
+        )}
+      </Suspense>
     </div>
   );
 }

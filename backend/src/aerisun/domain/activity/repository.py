@@ -47,6 +47,36 @@ def find_content_events(session: Session) -> list[tuple[datetime, str, str, str,
     return items
 
 
+def find_recent_published_content(
+    session: Session, *, limit: int
+) -> list[tuple[datetime, str, str | None, str | None, str, str]]:
+    """Query recent public published content across all content models."""
+    items: list[tuple[datetime, str, str | None, str | None, str, str]] = []
+    mappings = [
+        (PostEntry, "post", "/posts/{slug}"),
+        (DiaryEntry, "diary", "/diary/{slug}"),
+        (ThoughtEntry, "thought", "/thoughts#{slug}"),
+        (ExcerptEntry, "excerpt", "/excerpts#{slug}"),
+    ]
+    for model, kind, href_template in mappings:
+        rows = session.scalars(
+            select(model)
+            .where(
+                model.status == "published",
+                model.visibility == "public",
+                model.published_at.is_not(None),
+            )
+            .order_by(desc(model.published_at))
+            .limit(limit)
+        ).all()
+        for row in rows:
+            assert row.published_at is not None
+            href = href_template.format(slug=row.slug)
+            items.append((row.published_at, kind, row.title, row.summary, row.body, href))
+    items.sort(key=lambda item: item[0], reverse=True)
+    return items[:limit]
+
+
 def batch_resolve_titles(session: Session, pairs: list[tuple[str, str]]) -> dict[tuple[str, str], str]:
     """Batch resolve {(content_type, slug): title}."""
     if not pairs:

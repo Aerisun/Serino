@@ -14,12 +14,17 @@ export interface BackupSyncConfig {
   transport_mode?: string;
   site_slug?: string;
   credential_ref?: string | null;
-  age_public_key_fingerprint?: string | null;
+  encrypt_runtime_data?: boolean;
   max_retries?: number;
   retry_backoff_seconds?: number;
+  max_retention_count?: number;
   last_scheduled_at?: string | null;
   last_synced_at?: string | null;
   last_error?: string | null;
+  recovery_key_ready?: boolean;
+  recovery_key_acknowledged?: boolean;
+  active_recovery_key_fingerprint?: string | null;
+  archived_recovery_key_count?: number;
   transport: BackupTransportConfig;
   created_at: string;
   updated_at: string;

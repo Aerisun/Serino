@@ -8,8 +8,4 @@
 export interface McpAdminConfigUpdate {
   /** Whether MCP public access is enabled */
   public_access?: boolean | null;
-  /** Selected preset key */
-  selected_preset?: string | null;
-  /** Explicitly enabled capability identifiers */
-  enabled_capability_ids?: string[] | null;
 }

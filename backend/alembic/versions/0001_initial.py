@@ -115,7 +115,6 @@ def upgrade() -> None:
         sa.Column("login_mode", sa.String(length=40), nullable=False, server_default="disable"),
         sa.Column("oauth_url", sa.String(length=500), nullable=True),
         sa.Column("avatar_strategy", sa.String(length=80), nullable=False, server_default="identicon"),
-        sa.Column("avatar_helper_copy", sa.Text(), nullable=False, server_default=""),
         sa.Column("migration_state", sa.String(length=40), nullable=False, server_default="not_started"),
         *_timestamps(),
         sa.PrimaryKeyConstraint("id"),

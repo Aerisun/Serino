@@ -7,9 +7,15 @@
 import * as zod from 'zod';
 
 /**
+ * @summary 获取站点 Web App Manifest
+ */
+export const ReadSiteManifestManifestWebmanifestGetResponse = zod.unknown()
+
+
+/**
  * @summary 获取站点配置
  */
-export const readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault = `custom`;
+export const readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault = `hitokoto`;
 
 export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
   "site": zod.object({
@@ -17,14 +23,11 @@ export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
   "title": zod.string().describe('Site title'),
   "bio": zod.string().describe('Short biography'),
   "role": zod.string().describe('Professional role'),
-  "footer_text": zod.string().describe('Footer text'),
-  "author": zod.string().describe('Default author name'),
-  "og_image": zod.string().describe('Open Graph image path'),
+  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
   "site_icon_url": zod.string().describe('Browser tab icon path'),
   "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster image path'),
-  "meta_description": zod.string().describe('Meta description for SEO'),
-  "copyright": zod.string().describe('Copyright notice'),
+  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
   "hero_actions": zod.array(zod.record(zod.string(), zod.unknown())).describe('Hero section action buttons'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
   "poem_source": zod.enum(['custom', 'hitokoto']).default(readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault).describe('Poem source mode'),
@@ -96,18 +99,11 @@ export const ReadCommunityConfigApiV1SiteCommunityConfigGetResponse = zod.object
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "login_mode": zod.string().describe('Authentication mode, fixed to login-required'),
-  "oauth_url": zod.union([zod.string(),zod.null()]).describe('OAuth endpoint URL'),
-  "oauth_providers": zod.array(zod.string()).describe('OAuth provider names'),
   "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Moderation mode'),
   "default_sorting": zod.string().describe('Default sort order'),
   "page_size": zod.number().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).default(readCommunityConfigApiV1SiteCommunityConfigGetResponseImageMaxBytesDefault).describe('Max image upload size in bytes'),
-  "avatar_presets": zod.array(zod.record(zod.string(), zod.unknown())).describe('Predefined avatar options'),
-  "guest_avatar_mode": zod.string().describe('Guest avatar mode'),
-  "draft_enabled": zod.boolean().describe('Draft saving enabled'),
-  "avatar_strategy": zod.string().describe('Avatar resolution strategy'),
   "avatar_helper_copy": zod.string().describe('Avatar helper text'),
   "migration_state": zod.string().describe('Migration progress state')
 })
@@ -137,7 +133,6 @@ export const readPoemPreviewApiV1SitePoemPreviewGetQueryStrictDefault = false;
 export const ReadPoemPreviewApiV1SitePoemPreviewGetQueryParams = zod.object({
   "mode": zod.union([zod.enum(['custom', 'hitokoto']),zod.null()]).optional(),
   "types": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "keywords": zod.union([zod.array(zod.string()),zod.null()]).optional(),
   "strict": zod.boolean().default(readPoemPreviewApiV1SitePoemPreviewGetQueryStrictDefault)
 })
 
@@ -146,6 +141,41 @@ export const ReadPoemPreviewApiV1SitePoemPreviewGetResponse = zod.object({
   "content": zod.string().describe('Poem content shown on the homepage'),
   "attribution": zod.union([zod.string(),zod.null()]).optional().describe('Optional source attribution')
 })
+
+
+/**
+ * @summary 获取外链预览元信息
+ */
+export const ReadLinkPreviewApiV1SiteLinkPreviewGetQueryParams = zod.object({
+  "url": zod.string().describe('需要预览的 http\/https 外链')
+})
+
+export const readLinkPreviewApiV1SiteLinkPreviewGetResponseAvailableDefault = true;
+
+export const ReadLinkPreviewApiV1SiteLinkPreviewGetResponse = zod.object({
+  "url": zod.string().describe('Original normalized URL'),
+  "resolved_url": zod.string().describe('Resolved URL after redirects or canonical resolution'),
+  "hostname": zod.string().describe('Resolved hostname'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('Resolved page title'),
+  "description": zod.union([zod.string(),zod.null()]).optional().describe('Resolved page description'),
+  "site_name": zod.union([zod.string(),zod.null()]).optional().describe('Resolved site name'),
+  "image_url": zod.union([zod.string(),zod.null()]).optional().describe('Preview image URL'),
+  "image_width": zod.union([zod.number(),zod.null()]).optional().describe('Preview image width if declared'),
+  "image_height": zod.union([zod.number(),zod.null()]).optional().describe('Preview image height if declared'),
+  "icon_url": zod.union([zod.string(),zod.null()]).optional().describe('Site icon URL'),
+  "available": zod.boolean().default(readLinkPreviewApiV1SiteLinkPreviewGetResponseAvailableDefault).describe('Whether preview metadata was successfully fetched'),
+  "error": zod.union([zod.string(),zod.null()]).optional().describe('Optional fetch error detail')
+})
+
+
+/**
+ * @summary 代理外链预览图片
+ */
+export const ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetQueryParams = zod.object({
+  "url": zod.string().describe('外链预览图片地址')
+})
+
+export const ReadLinkPreviewImageApiV1SiteLinkPreviewImageGetResponse = zod.unknown()
 
 
 /**
@@ -434,8 +464,7 @@ export const ReadFriendsApiV1SiteFriendsGetResponse = zod.object({
   "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
   "avatar": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
   "url": zod.string().describe('Friend site URL'),
-  "status": zod.string().describe('Link status'),
-  "order_index": zod.number().describe('Display order')
+  "status": zod.string().describe('Website status')
 })).describe('List of friend links')
 })
 
@@ -499,11 +528,11 @@ export const ReadRecentActivityApiV1SiteRecentActivityGetQueryParams = zod.objec
 
 export const ReadRecentActivityApiV1SiteRecentActivityGetResponse = zod.object({
   "items": zod.array(zod.object({
-  "kind": zod.string().describe('Activity type: comment, guestbook, or reaction'),
+  "kind": zod.string().describe('Activity type: comment, guestbook, reaction, or publish_\*'),
   "actor_name": zod.string().describe('Name of the person who performed the action'),
   "actor_avatar": zod.string().describe('Actor avatar URL'),
-  "target_title": zod.string().describe('Title of the target content'),
-  "excerpt": zod.union([zod.string(),zod.null()]).describe('Brief excerpt of the activity content'),
+  "target_title": zod.string().describe('Title of the target content, when applicable'),
+  "excerpt": zod.union([zod.string(),zod.null()]).describe('Brief excerpt or content preview'),
   "created_at": zod.string().datetime({}).describe('Activity timestamp'),
   "href": zod.string().describe('Frontend URL path to the related content')
 })).describe('List of recent activity items')
@@ -1081,6 +1110,56 @@ export const AgentUsageApiAgentUsageGetResponse = zod.object({
 
 
 /**
+ * @summary 触发工作流 Webhook 绑定
+ */
+export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostParams = zod.object({
+  "workflow_key": zod.string(),
+  "binding_id": zod.string()
+})
+
+export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostQueryParams = zod.object({
+  "token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostHeader = zod.object({
+  "x-workflow-token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostBody = zod.union([zod.record(zod.string(), zod.unknown()),zod.null()])
+
+export const postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseOkDefault = true;
+export const postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseAcceptedDefault = true;
+export const postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseSummaryDefault = ``;
+
+export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponse = zod.object({
+  "ok": zod.boolean().default(postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseOkDefault),
+  "run": zod.union([zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+}),zod.null()]).optional(),
+  "accepted": zod.boolean().default(postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseAcceptedDefault),
+  "summary": zod.string().default(postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseSummaryDefault)
+})
+
+
+/**
  * @summary 管理员登录
  */
 export const LoginApiV1AdminAuthLoginPostBody = zod.object({
@@ -1249,8 +1328,8 @@ export const createPostsBodyIsPinnedDefault = false;
 export const createPostsBodyPinOrderDefault = 0;
 
 export const CreatePostsBody = zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
+  "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -1457,8 +1536,8 @@ export const createDiaryBodyIsPinnedDefault = false;
 export const createDiaryBodyPinOrderDefault = 0;
 
 export const CreateDiaryBody = zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
+  "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -1665,8 +1744,8 @@ export const createThoughtsBodyIsPinnedDefault = false;
 export const createThoughtsBodyPinOrderDefault = 0;
 
 export const CreateThoughtsBody = zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
+  "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -1873,8 +1952,8 @@ export const createExcerptsBodyIsPinnedDefault = false;
 export const createExcerptsBodyPinOrderDefault = 0;
 
 export const CreateExcerptsBody = zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
+  "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -2017,6 +2096,24 @@ export const BulkStatusExcerptsResponse = zod.object({
 
 
 /**
+ * @summary 根据日记草稿生成诗句
+ */
+export const PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostBody = zod.object({
+  "body": zod.string().describe('日记 Markdown 草稿内容'),
+  "title": zod.union([zod.string(),zod.null()]).optional().describe('当前标题'),
+  "summary": zod.union([zod.string(),zod.null()]).optional().describe('当前摘要'),
+  "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('标签列表'),
+  "mood": zod.union([zod.string(),zod.null()]).optional().describe('心情 emoji 或说明'),
+  "weather": zod.union([zod.string(),zod.null()]).optional().describe('天气'),
+  "custom_requirement": zod.union([zod.string(),zod.null()]).optional().describe('用户补充的定制要求')
+})
+
+export const PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse = zod.object({
+  "poem": zod.string().describe('生成的诗句')
+})
+
+
+/**
  * @summary 获取站点资料
  */
 export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
@@ -2025,14 +2122,11 @@ export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
   "title": zod.string().describe('Site title'),
   "bio": zod.string().describe('Short biography'),
   "role": zod.string().describe('Professional role or tagline'),
-  "footer_text": zod.string().describe('Footer text'),
-  "author": zod.string().describe('Default author name'),
-  "og_image": zod.string().describe('Open Graph image path'),
+  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
   "site_icon_url": zod.string().describe('Browser tab icon path'),
   "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster image path'),
-  "meta_description": zod.string().describe('Meta description'),
-  "copyright": zod.string().describe('Copyright notice'),
+  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
   "hero_actions": zod.string().describe('Hero action buttons JSON'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).describe('Hero background video URL'),
   "poem_source": zod.enum(['custom', 'hitokoto']).describe('Poem source mode'),
@@ -2052,14 +2146,11 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
   "title": zod.union([zod.string(),zod.null()]).optional().describe('Site title'),
   "bio": zod.union([zod.string(),zod.null()]).optional().describe('Short biography'),
   "role": zod.union([zod.string(),zod.null()]).optional().describe('Professional role or tagline'),
-  "footer_text": zod.union([zod.string(),zod.null()]).optional().describe('Footer text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Default author name'),
-  "og_image": zod.union([zod.string(),zod.null()]).optional().describe('Open Graph image path'),
+  "og_image": zod.union([zod.string(),zod.null()]).optional().describe('Open Graph\/Twitter sharing image path'),
   "site_icon_url": zod.union([zod.string(),zod.null()]).optional().describe('Browser tab icon path'),
   "hero_image_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero image path'),
-  "hero_poster_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero video poster image path'),
-  "meta_description": zod.union([zod.string(),zod.null()]).optional().describe('Meta description for SEO'),
-  "copyright": zod.union([zod.string(),zod.null()]).optional().describe('Copyright notice'),
+  "hero_poster_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.union([zod.string(),zod.null()]).optional().describe('Regulatory filing or ICP notice'),
   "hero_actions": zod.union([zod.string(),zod.null()]).optional().describe('Hero action buttons JSON'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
   "poem_source": zod.union([zod.enum(['custom', 'hitokoto']),zod.null()]).optional().describe('Poem source mode'),
@@ -2074,14 +2165,11 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutResponse = zod.object({
   "title": zod.string().describe('Site title'),
   "bio": zod.string().describe('Short biography'),
   "role": zod.string().describe('Professional role or tagline'),
-  "footer_text": zod.string().describe('Footer text'),
-  "author": zod.string().describe('Default author name'),
-  "og_image": zod.string().describe('Open Graph image path'),
+  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
   "site_icon_url": zod.string().describe('Browser tab icon path'),
   "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster image path'),
-  "meta_description": zod.string().describe('Meta description'),
-  "copyright": zod.string().describe('Copyright notice'),
+  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
   "hero_actions": zod.string().describe('Hero action buttons JSON'),
   "hero_video_url": zod.union([zod.string(),zod.null()]).describe('Hero background video URL'),
   "poem_source": zod.enum(['custom', 'hitokoto']).describe('Poem source mode'),
@@ -2113,18 +2201,11 @@ export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = 
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "login_mode": zod.string().describe('Authentication mode, fixed to login-required'),
-  "oauth_url": zod.union([zod.string(),zod.null()]).describe('OAuth endpoint URL'),
-  "oauth_providers": zod.array(zod.string()).describe('Enabled OAuth providers'),
   "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Comment moderation mode'),
   "default_sorting": zod.string().describe('Default sort order'),
   "page_size": zod.number().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).default(getCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponseImageMaxBytesDefault).describe('Max upload image size in bytes'),
-  "avatar_presets": zod.array(zod.record(zod.string(), zod.unknown())).describe('Predefined avatar options'),
-  "guest_avatar_mode": zod.string().describe('Guest avatar mode'),
-  "draft_enabled": zod.boolean().describe('Draft saving enabled'),
-  "avatar_strategy": zod.string().describe('Avatar resolution strategy'),
   "avatar_helper_copy": zod.string().describe('Avatar helper text'),
   "migration_state": zod.string().describe('Waline migration state'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
@@ -2149,18 +2230,11 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = z
   "emoji_presets": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.union([zod.boolean(),zod.null()]).optional().describe('Enable emoji search'),
   "image_uploader": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow image uploads in comments'),
-  "login_mode": zod.union([zod.string(),zod.null()]).optional().describe('Authentication mode, fixed to login-required'),
-  "oauth_url": zod.union([zod.string(),zod.null()]).optional().describe('OAuth endpoint URL'),
-  "oauth_providers": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Enabled OAuth providers'),
   "anonymous_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow email login for commenting'),
   "moderation_mode": zod.union([zod.string(),zod.null()]).optional().describe('Comment moderation mode'),
   "default_sorting": zod.union([zod.string(),zod.null()]).optional().describe('Default comment sort order'),
   "page_size": zod.union([zod.number(),zod.null()]).optional().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).optional().describe('Max upload image size in bytes'),
-  "avatar_presets": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.null()]).optional().describe('Predefined avatar options'),
-  "guest_avatar_mode": zod.union([zod.string(),zod.null()]).optional().describe('Guest avatar display mode'),
-  "draft_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow saving comment drafts'),
-  "avatar_strategy": zod.union([zod.string(),zod.null()]).optional().describe('Avatar resolution strategy'),
   "avatar_helper_copy": zod.union([zod.string(),zod.null()]).optional().describe('Avatar selection helper text'),
   "migration_state": zod.union([zod.string(),zod.null()]).optional().describe('Waline migration state')
 })
@@ -2182,18 +2256,11 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
   "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "login_mode": zod.string().describe('Authentication mode, fixed to login-required'),
-  "oauth_url": zod.union([zod.string(),zod.null()]).describe('OAuth endpoint URL'),
-  "oauth_providers": zod.array(zod.string()).describe('Enabled OAuth providers'),
   "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Comment moderation mode'),
   "default_sorting": zod.string().describe('Default sort order'),
   "page_size": zod.number().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).default(updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponseImageMaxBytesDefault).describe('Max upload image size in bytes'),
-  "avatar_presets": zod.array(zod.record(zod.string(), zod.unknown())).describe('Predefined avatar options'),
-  "guest_avatar_mode": zod.string().describe('Guest avatar mode'),
-  "draft_enabled": zod.boolean().describe('Draft saving enabled'),
-  "avatar_strategy": zod.string().describe('Avatar resolution strategy'),
   "avatar_helper_copy": zod.string().describe('Avatar helper text'),
   "migration_state": zod.string().describe('Waline migration state'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
@@ -3014,6 +3081,12 @@ export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResp
 /**
  * @summary 测试内容订阅 SMTP 发信
  */
+export const testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostQueryPersistSuccessDefault = false;
+
+export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostQueryParams = zod.object({
+  "persist_success": zod.boolean().default(testContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostQueryPersistSuccessDefault)
+})
+
 export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostBody = zod.object({
   "enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether public subscription is enabled'),
   "smtp_auth_mode": zod.union([zod.enum(['password', 'microsoft_oauth2']),zod.null()]).optional().describe('SMTP authentication mode'),
@@ -3118,6 +3191,100 @@ export const ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmai
   "total": zod.number().describe('Total number of items matching the query'),
   "page": zod.number().describe('Current page number (1-based)'),
   "page_size": zod.number().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 启用或停用订阅者
+ */
+export const UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchParams = zod.object({
+  "email": zod.string()
+})
+
+export const UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchBody = zod.object({
+  "is_active": zod.boolean().describe('Whether subscription is active')
+})
+
+export const updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseSentCountDefault = 0;
+
+export const UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse = zod.object({
+  "email": zod.string().describe('Subscriber email'),
+  "is_active": zod.boolean().describe('Whether subscription is active'),
+  "content_types": zod.array(zod.string()).optional().describe('Subscribed content types'),
+  "auth_mode": zod.enum(['email', 'binding', 'unknown']).describe('Whether the initiating visitor is email-only, bound account user, or unknown'),
+  "initiator_email": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor email'),
+  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor display name'),
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor avatar'),
+  "primary_auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor primary auth provider'),
+  "oauth_providers": zod.array(zod.string()).optional().describe('Initiating visitor OAuth providers'),
+  "sent_count": zod.number().default(updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseSentCountDefault).describe('Number of successful deliveries'),
+  "last_sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last successful delivery time'),
+  "created_at": zod.string().datetime({}).describe('Creation time'),
+  "updated_at": zod.string().datetime({}).describe('Last update time')
+})
+
+
+/**
+ * @summary 删除订阅者
+ */
+export const DeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDeleteParams = zod.object({
+  "email": zod.string()
+})
+
+
+/**
+ * @summary 获取出站代理配置
+ */
+export const getProxyConfigApiV1AdminProxyConfigGetResponseProxyPortOneMax = 65535;
+
+export const getProxyConfigApiV1AdminProxyConfigGetResponseWebhookEnabledDefault = false;
+
+export const GetProxyConfigApiV1AdminProxyConfigGetResponse = zod.object({
+  "proxy_port": zod.union([zod.number().min(1).max(getProxyConfigApiV1AdminProxyConfigGetResponseProxyPortOneMax),zod.null()]).optional(),
+  "webhook_enabled": zod.boolean().default(getProxyConfigApiV1AdminProxyConfigGetResponseWebhookEnabledDefault)
+})
+
+
+/**
+ * @summary 更新出站代理配置
+ */
+export const putProxyConfigApiV1AdminProxyConfigPutBodyProxyPortOneMax = 65535;
+
+
+
+export const PutProxyConfigApiV1AdminProxyConfigPutBody = zod.object({
+  "proxy_port": zod.union([zod.number().min(1).max(putProxyConfigApiV1AdminProxyConfigPutBodyProxyPortOneMax),zod.null()]).optional(),
+  "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional()
+})
+
+export const putProxyConfigApiV1AdminProxyConfigPutResponseProxyPortOneMax = 65535;
+
+export const putProxyConfigApiV1AdminProxyConfigPutResponseWebhookEnabledDefault = false;
+
+export const PutProxyConfigApiV1AdminProxyConfigPutResponse = zod.object({
+  "proxy_port": zod.union([zod.number().min(1).max(putProxyConfigApiV1AdminProxyConfigPutResponseProxyPortOneMax),zod.null()]).optional(),
+  "webhook_enabled": zod.boolean().default(putProxyConfigApiV1AdminProxyConfigPutResponseWebhookEnabledDefault)
+})
+
+
+/**
+ * @summary 测试出站代理端口
+ */
+export const postProxyConfigTestApiV1AdminProxyConfigTestPostBodyProxyPortOneMax = 65535;
+
+
+
+export const PostProxyConfigTestApiV1AdminProxyConfigTestPostBody = zod.object({
+  "proxy_port": zod.union([zod.number().min(1).max(postProxyConfigTestApiV1AdminProxyConfigTestPostBodyProxyPortOneMax),zod.null()]).optional(),
+  "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional()
+})
+
+export const PostProxyConfigTestApiV1AdminProxyConfigTestPostResponse = zod.object({
+  "ok": zod.boolean(),
+  "proxy_url": zod.string(),
+  "summary": zod.string(),
+  "latency_ms": zod.union([zod.number(),zod.null()]).optional(),
+  "status_code": zod.union([zod.number(),zod.null()]).optional()
 })
 
 
@@ -3568,8 +3735,10 @@ export const ListFriendsResponse = zod.object({
   "url": zod.string().describe('Friend site URL'),
   "avatar_url": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
   "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "status": zod.string().describe('Link status'),
-  "order_index": zod.number().describe('Display order'),
+  "status": zod.string().describe('Website status'),
+  "rss_status": zod.string().describe('RSS status derived from the configured feed sources'),
+  "last_checked_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last website availability check timestamp'),
+  "last_error": zod.union([zod.string(),zod.null()]).describe('Last website availability error message'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })).describe('Page of result items'),
@@ -3583,15 +3752,13 @@ export const ListFriendsResponse = zod.object({
  * @summary 创建admin-social
  */
 export const createFriendsBodyStatusDefault = `active`;
-export const createFriendsBodyOrderIndexDefault = 0;
 
 export const CreateFriendsBody = zod.object({
   "name": zod.string().describe('Friend site display name'),
   "url": zod.string().describe('Friend site URL'),
   "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Avatar image URL'),
   "description": zod.union([zod.string(),zod.null()]).optional().describe('Short description of the friend site'),
-  "status": zod.string().default(createFriendsBodyStatusDefault).describe('Link status: active or inactive'),
-  "order_index": zod.number().default(createFriendsBodyOrderIndexDefault).describe('Display order (lower first)')
+  "status": zod.string().default(createFriendsBodyStatusDefault).describe('Website status: active, lost, or archived')
 })
 
 
@@ -3608,8 +3775,10 @@ export const GetFriendsResponse = zod.object({
   "url": zod.string().describe('Friend site URL'),
   "avatar_url": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
   "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "status": zod.string().describe('Link status'),
-  "order_index": zod.number().describe('Display order'),
+  "status": zod.string().describe('Website status'),
+  "rss_status": zod.string().describe('RSS status derived from the configured feed sources'),
+  "last_checked_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last website availability check timestamp'),
+  "last_error": zod.union([zod.string(),zod.null()]).describe('Last website availability error message'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -3627,8 +3796,7 @@ export const UpdateFriendsBody = zod.object({
   "url": zod.union([zod.string(),zod.null()]).optional().describe('Friend site URL'),
   "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Avatar image URL'),
   "description": zod.union([zod.string(),zod.null()]).optional().describe('Short description'),
-  "status": zod.union([zod.string(),zod.null()]).optional().describe('Link status'),
-  "order_index": zod.union([zod.number(),zod.null()]).optional().describe('Display order')
+  "status": zod.union([zod.string(),zod.null()]).optional().describe('Website status')
 })
 
 export const UpdateFriendsResponse = zod.object({
@@ -3637,8 +3805,10 @@ export const UpdateFriendsResponse = zod.object({
   "url": zod.string().describe('Friend site URL'),
   "avatar_url": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
   "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "status": zod.string().describe('Link status'),
-  "order_index": zod.number().describe('Display order'),
+  "status": zod.string().describe('Website status'),
+  "rss_status": zod.string().describe('RSS status derived from the configured feed sources'),
+  "last_checked_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last website availability check timestamp'),
+  "last_error": zod.union([zod.string(),zod.null()]).describe('Last website availability error message'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
 })
@@ -3675,6 +3845,16 @@ export const BulkStatusFriendsBody = zod.object({
 export const BulkStatusFriendsResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
+
+
+/**
+ * @summary 立即检查友链网站与 RSS
+ */
+export const CheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostParams = zod.object({
+  "friend_id": zod.string()
+})
+
+export const CheckFriendHealthApiV1AdminSocialFriendsFriendIdCheckPostResponse = zod.unknown()
 
 
 /**
@@ -3736,8 +3916,9 @@ export const ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetResponseItem 
   "id": zod.string().describe('Unique feed source identifier'),
   "friend_id": zod.string().describe('Associated friend ID'),
   "feed_url": zod.string().describe('RSS\/Atom feed URL'),
-  "last_fetched_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last successful fetch timestamp'),
+  "last_fetched_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last RSS fetch\/check timestamp'),
   "is_enabled": zod.boolean().describe('Whether actively crawled'),
+  "rss_status": zod.string().describe('Current RSS status for this source'),
   "etag": zod.union([zod.string(),zod.null()]).optional().describe('HTTP ETag for conditional requests'),
   "last_error": zod.union([zod.string(),zod.null()]).optional().describe('Last crawl error message'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
@@ -3778,8 +3959,9 @@ export const UpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutResponse = zod.object
   "id": zod.string().describe('Unique feed source identifier'),
   "friend_id": zod.string().describe('Associated friend ID'),
   "feed_url": zod.string().describe('RSS\/Atom feed URL'),
-  "last_fetched_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last successful fetch timestamp'),
+  "last_fetched_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last RSS fetch\/check timestamp'),
   "is_enabled": zod.boolean().describe('Whether actively crawled'),
+  "rss_status": zod.string().describe('Current RSS status for this source'),
   "etag": zod.union([zod.string(),zod.null()]).optional().describe('HTTP ETag for conditional requests'),
   "last_error": zod.union([zod.string(),zod.null()]).optional().describe('Last crawl error message'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
@@ -4259,10 +4441,15 @@ export const RestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostResponse =
 export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEnabledDefault = false;
 export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponsePausedDefault = false;
 export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseIntervalMinutesDefault = 60;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault = `receiver`;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault = `sftp`;
 export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSiteSlugDefault = `aerisun`;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEncryptRuntimeDataDefault = false;
 export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetriesDefault = 3;
 export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRetryBackoffSecondsDefault = 300;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetentionCountDefault = 0;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyReadyDefault = false;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyAcknowledgedDefault = false;
+export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseArchivedRecoveryKeyCountDefault = 0;
 
 export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zod.object({
   "id": zod.string(),
@@ -4272,15 +4459,19 @@ export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zo
   "transport_mode": zod.string().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault),
   "site_slug": zod.string().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSiteSlugDefault),
   "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetentionCountDefault),
   "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "recovery_key_ready": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyReadyDefault),
+  "recovery_key_acknowledged": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyAcknowledgedDefault),
+  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "archived_recovery_key_count": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseArchivedRecoveryKeyCountDefault),
   "transport": zod.object({
   "mode": zod.string(),
-  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
   "remote_host": zod.union([zod.string(),zod.null()]).optional(),
   "remote_port": zod.union([zod.number(),zod.null()]).optional(),
   "remote_path": zod.union([zod.string(),zod.null()]).optional(),
@@ -4297,10 +4488,12 @@ export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zo
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEnabledDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyPausedDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyIntervalMinutesDefault = 60;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyTransportModeDefault = `receiver`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyTransportModeDefault = `sftp`;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodySiteSlugDefault = `aerisun`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEncryptRuntimeDataDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetriesDefault = 3;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault = 300;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault = 0;
 
 export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBody = zod.object({
   "enabled": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEnabledDefault),
@@ -4308,24 +4501,29 @@ export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBody = zod
   "interval_minutes": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyIntervalMinutesDefault),
   "transport_mode": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyTransportModeDefault),
   "site_slug": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodySiteSlugDefault),
-  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
   "remote_host": zod.union([zod.string(),zod.null()]).optional(),
   "remote_port": zod.union([zod.number(),zod.null()]).optional(),
   "remote_path": zod.union([zod.string(),zod.null()]).optional(),
   "remote_username": zod.union([zod.string(),zod.null()]).optional(),
   "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetriesDefault),
-  "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault)
+  "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault)
 })
 
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEnabledDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponsePausedDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseIntervalMinutesDefault = 60;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault = `receiver`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault = `sftp`;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSiteSlugDefault = `aerisun`;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEncryptRuntimeDataDefault = false;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetriesDefault = 3;
 export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRetryBackoffSecondsDefault = 300;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetentionCountDefault = 0;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyReadyDefault = false;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyAcknowledgedDefault = false;
+export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseArchivedRecoveryKeyCountDefault = 0;
 
 export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse = zod.object({
   "id": zod.string(),
@@ -4335,15 +4533,19 @@ export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse =
   "transport_mode": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault),
   "site_slug": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSiteSlugDefault),
   "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetentionCountDefault),
   "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "recovery_key_ready": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyReadyDefault),
+  "recovery_key_acknowledged": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyAcknowledgedDefault),
+  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "archived_recovery_key_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseArchivedRecoveryKeyCountDefault),
   "transport": zod.object({
   "mode": zod.string(),
-  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
   "remote_host": zod.union([zod.string(),zod.null()]).optional(),
   "remote_port": zod.union([zod.number(),zod.null()]).optional(),
   "remote_path": zod.union([zod.string(),zod.null()]).optional(),
@@ -4351,6 +4553,125 @@ export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse =
 }),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 自动确认或生成本机备份密钥
+ */
+export const ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBodyCredentialRefDefault = `aerisun-backup-source`;
+export const ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBodySiteSlugDefault = `aerisun`;
+export const ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBodyForceDefault = false;
+
+export const EnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBody = zod.object({
+  "credential_ref": zod.string().default(ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBodyCredentialRefDefault),
+  "site_slug": zod.string().default(ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBodySiteSlugDefault),
+  "force": zod.boolean().default(ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostBodyForceDefault)
+})
+
+export const ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponseCreatedDefault = false;
+
+export const EnsureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponse = zod.object({
+  "credential_ref": zod.string(),
+  "site_slug": zod.string(),
+  "credential_dir": zod.string(),
+  "secrets_fingerprint": zod.string(),
+  "created": zod.boolean().default(ensureBackupCredentialsApiV1AdminSystemBackupSyncCredentialsEnsurePostResponseCreatedDefault),
+  "archived_fingerprints": zod.array(zod.string()).optional()
+})
+
+
+/**
+ * @summary 生成、导出或轮换恢复私钥
+ */
+export const exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodyCredentialRefDefault = `aerisun-backup-source`;
+export const exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodySiteSlugDefault = `aerisun`;
+export const exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodyPassphraseMin = 8;
+
+export const exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodyRotateDefault = false;
+
+export const ExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBody = zod.object({
+  "credential_ref": zod.string().default(exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodyCredentialRefDefault),
+  "site_slug": zod.string().default(exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodySiteSlugDefault),
+  "passphrase": zod.string().min(exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodyPassphraseMin),
+  "rotate": zod.boolean().default(exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostBodyRotateDefault)
+})
+
+export const exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponseRotatedDefault = false;
+
+export const ExportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponse = zod.object({
+  "credential_ref": zod.string(),
+  "site_slug": zod.string(),
+  "credential_dir": zod.string(),
+  "secrets_fingerprint": zod.string(),
+  "archived_fingerprints": zod.array(zod.string()).optional(),
+  "rotated": zod.boolean().default(exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPostResponseRotatedDefault),
+  "filename": zod.string(),
+  "private_key_pem": zod.string()
+})
+
+
+/**
+ * @summary 确认已复制或下载恢复私钥
+ */
+export const acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostBodyCredentialRefDefault = `aerisun-backup-source`;
+
+export const AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostBody = zod.object({
+  "credential_ref": zod.string().default(acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostBodyCredentialRefDefault)
+})
+
+export const acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponseCreatedDefault = false;
+
+export const AcknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponse = zod.object({
+  "credential_ref": zod.string(),
+  "site_slug": zod.string(),
+  "credential_dir": zod.string(),
+  "secrets_fingerprint": zod.string(),
+  "created": zod.boolean().default(acknowledgeBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyAcknowledgePostResponseCreatedDefault),
+  "archived_fingerprints": zod.array(zod.string()).optional()
+})
+
+
+/**
+ * @summary 测试备份配置
+ */
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEnabledDefault = false;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyPausedDefault = false;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyIntervalMinutesDefault = 60;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyTransportModeDefault = `sftp`;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodySiteSlugDefault = `aerisun`;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEncryptRuntimeDataDefault = false;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetriesDefault = 3;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyRetryBackoffSecondsDefault = 300;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetentionCountDefault = 0;
+
+export const TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBody = zod.object({
+  "enabled": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEnabledDefault),
+  "paused": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyPausedDefault),
+  "interval_minutes": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyIntervalMinutesDefault),
+  "transport_mode": zod.string().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyTransportModeDefault),
+  "site_slug": zod.string().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodySiteSlugDefault),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional(),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyEncryptRuntimeDataDefault),
+  "max_retries": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostBodyMaxRetentionCountDefault)
+})
+
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseRecoveryKeyReadyDefault = false;
+export const testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseRecoveryKeyAcknowledgedDefault = false;
+
+export const TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponse = zod.object({
+  "ok": zod.boolean(),
+  "summary": zod.string(),
+  "latency_ms": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path_preview": zod.string(),
+  "recovery_key_ready": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseRecoveryKeyReadyDefault),
+  "recovery_key_acknowledged": zod.boolean().default(testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostResponseRecoveryKeyAcknowledgedDefault)
 })
 
 
@@ -4436,10 +4757,15 @@ export const RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse
 export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEnabledDefault = false;
 export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponsePausedDefault = false;
 export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseIntervalMinutesDefault = 60;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault = `receiver`;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault = `sftp`;
 export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSiteSlugDefault = `aerisun`;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEncryptRuntimeDataDefault = false;
 export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetriesDefault = 3;
 export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRetryBackoffSecondsDefault = 300;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetentionCountDefault = 0;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyReadyDefault = false;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyAcknowledgedDefault = false;
+export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseArchivedRecoveryKeyCountDefault = 0;
 
 export const PauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = zod.object({
   "id": zod.string(),
@@ -4449,15 +4775,19 @@ export const PauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = zod.ob
   "transport_mode": zod.string().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault),
   "site_slug": zod.string().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSiteSlugDefault),
   "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetentionCountDefault),
   "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "recovery_key_ready": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyReadyDefault),
+  "recovery_key_acknowledged": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyAcknowledgedDefault),
+  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "archived_recovery_key_count": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseArchivedRecoveryKeyCountDefault),
   "transport": zod.object({
   "mode": zod.string(),
-  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
   "remote_host": zod.union([zod.string(),zod.null()]).optional(),
   "remote_port": zod.union([zod.number(),zod.null()]).optional(),
   "remote_path": zod.union([zod.string(),zod.null()]).optional(),
@@ -4474,10 +4804,15 @@ export const PauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = zod.ob
 export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEnabledDefault = false;
 export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponsePausedDefault = false;
 export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseIntervalMinutesDefault = 60;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault = `receiver`;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault = `sftp`;
 export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSiteSlugDefault = `aerisun`;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEncryptRuntimeDataDefault = false;
 export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetriesDefault = 3;
 export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRetryBackoffSecondsDefault = 300;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetentionCountDefault = 0;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyReadyDefault = false;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyAcknowledgedDefault = false;
+export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseArchivedRecoveryKeyCountDefault = 0;
 
 export const ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = zod.object({
   "id": zod.string(),
@@ -4487,15 +4822,19 @@ export const ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = zod.
   "transport_mode": zod.string().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault),
   "site_slug": zod.string().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSiteSlugDefault),
   "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "age_public_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEncryptRuntimeDataDefault),
   "max_retries": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetriesDefault),
   "retry_backoff_seconds": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetentionCountDefault),
   "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "recovery_key_ready": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyReadyDefault),
+  "recovery_key_acknowledged": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyAcknowledgedDefault),
+  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
+  "archived_recovery_key_count": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseArchivedRecoveryKeyCountDefault),
   "transport": zod.object({
   "mode": zod.string(),
-  "receiver_base_url": zod.union([zod.string(),zod.null()]).optional(),
   "remote_host": zod.union([zod.string(),zod.null()]).optional(),
   "remote_port": zod.union([zod.number(),zod.null()]).optional(),
   "remote_path": zod.union([zod.string(),zod.null()]).optional(),
@@ -4609,12 +4948,14 @@ export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.objec
   "top_pages": zod.array(zod.object({
   "url": zod.string(),
   "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemViewsDefault),
-  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemShareDefault)
+  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemShareDefault),
+  "title": zod.union([zod.string(),zod.null()]).optional()
 })).optional(),
   "distribution": zod.array(zod.object({
   "url": zod.string(),
   "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemViewsDefault),
-  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemShareDefault)
+  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemShareDefault),
+  "title": zod.union([zod.string(),zod.null()]).optional()
 })).optional(),
   "history": zod.array(zod.object({
   "date": zod.string().date(),
@@ -4630,7 +4971,8 @@ export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.objec
   "top_pages": zod.array(zod.object({
   "url": zod.string(),
   "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemViewsDefault),
-  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemShareDefault)
+  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemShareDefault),
+  "title": zod.union([zod.string(),zod.null()]).optional()
 })).optional(),
   "history": zod.array(zod.object({
   "date": zod.string().date(),
@@ -4731,6 +5073,7 @@ export const ListApiKeysApiV1AdminIntegrationsApiKeysGetResponseItem = zod.objec
   "key_name": zod.string(),
   "key_prefix": zod.string(),
   "key_suffix": zod.string(),
+  "enabled": zod.boolean(),
   "scopes": zod.array(zod.string()),
   "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
   "created_at": zod.string().datetime({}),
@@ -4757,7 +5100,8 @@ export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutParams = zod.objec
 
 export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutBody = zod.object({
   "key_name": zod.union([zod.string(),zod.null()]).optional(),
-  "scopes": zod.union([zod.array(zod.string()),zod.null()]).optional()
+  "scopes": zod.union([zod.array(zod.string()),zod.null()]).optional(),
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional()
 })
 
 export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse = zod.object({
@@ -4765,6 +5109,7 @@ export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse = zod.obj
   "key_name": zod.string(),
   "key_prefix": zod.string(),
   "key_suffix": zod.string(),
+  "enabled": zod.boolean(),
   "scopes": zod.array(zod.string()),
   "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
   "created_at": zod.string().datetime({}),
@@ -4957,9 +5302,7 @@ export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutQueryParams = zod.
 })
 
 export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutBody = zod.object({
-  "public_access": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether MCP public access is enabled'),
-  "selected_preset": zod.union([zod.string(),zod.null()]).optional().describe('Selected preset key'),
-  "enabled_capability_ids": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Explicitly enabled capability identifiers')
+  "public_access": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether MCP public access is enabled')
 })
 
 export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseIsCustomizedDefault = false;
@@ -5116,20 +5459,122 @@ export const PostModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse 
  * @summary 获取 Agent 工作流
  */
 export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseEnabledDefault = true;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault = true;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault = ``;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSchemaVersionDefault = 2;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionDefault = 2;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionMax = 10;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemIdMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemTypeMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelDefault = ``;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelMax = 160;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemIdMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceHandleOneMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetHandleOneMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelDefault = ``;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelMax = 160;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeDefault = `default`;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeMax = 80;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportXDefault = 0;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportYDefault = 0;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportZoomDefault = 1;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemIdMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemTypeMax = 120;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelDefault = ``;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelMax = 160;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemEnabledDefault = true;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeDefault = `risk_based`;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeMax = 80;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsDefault = 80;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsMax = 500;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyDefaultModelOneMax = 160;
+
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNodeCountDefault = 0;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryOperationCountDefault = 0;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryHighRiskOperationCountDefault = 0;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNarrativeDefault = ``;
 export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault = false;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault = ``;
+export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault = false;
 
 export const GetWorkflowsApiV1AdminAutomationWorkflowsGetResponseItem = zod.object({
   "key": zod.string(),
   "name": zod.string(),
   "description": zod.string(),
-  "trigger_event": zod.string(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
   "enabled": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseEnabledDefault),
-  "require_human_approval": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault),
+  "schema_version": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSchemaVersionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemTypeMax),
+  "label": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelDefault),
+  "type": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportXDefault),
+  "y": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportYDefault),
+  "zoom": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemTypeMax),
+  "label": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "summary": zod.object({
+  "trigger_labels": zod.array(zod.string()).optional(),
+  "node_count": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNodeCountDefault),
+  "operation_count": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryOperationCountDefault),
+  "high_risk_operation_count": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryHighRiskOperationCountDefault),
+  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
+  "narrative": zod.string().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNarrativeDefault)
+}).optional(),
+  "built_in": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
   "instructions": zod.string().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault),
-  "built_in": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault)
+  "require_human_approval": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault)
 })
 export const GetWorkflowsApiV1AdminAutomationWorkflowsGetResponse = zod.array(GetWorkflowsApiV1AdminAutomationWorkflowsGetResponseItem)
 
@@ -5147,14 +5592,61 @@ export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyNameMax = 120;
 export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionDefault = ``;
 export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionMax = 500;
 
-export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerEventMax = 120;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyEnabledDefault = true;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodySchemaVersionDefault = 2;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodySchemaVersionMax = 10;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneVersionDefault = 2;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneVersionMax = 10;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemIdMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemTypeMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemLabelDefault = ``;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemLabelMax = 160;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemIdMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemSourceMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTargetMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemLabelDefault = ``;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemLabelMax = 160;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTypeDefault = `default`;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTypeMax = 80;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneViewportXDefault = 0;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneViewportYDefault = 0;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneViewportZoomDefault = 1;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneApprovalModeDefault = `risk_based`;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneApprovalModeMax = 80;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneMaxStepsDefault = 80;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneMaxStepsMax = 500;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneDefaultModelOneMax = 160;
+
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerEventOneMax = 120;
 
 export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyTargetTypeOneMax = 80;
 
-export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyEnabledDefault = true;
-export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyRequireHumanApprovalDefault = true;
-export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsDefault = ``;
-export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsMax = 4000;
+export const postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsOneMax = 4000;
 
 
 
@@ -5162,165 +5654,1058 @@ export const PostWorkflowApiV1AdminAutomationWorkflowsPostBody = zod.object({
   "key": zod.string().min(postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyMin).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyMax).regex(postWorkflowApiV1AdminAutomationWorkflowsPostBodyKeyRegExp),
   "name": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyNameMax),
   "description": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyDescriptionDefault),
-  "trigger_event": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerEventMax),
-  "target_type": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTargetTypeOneMax),zod.null()]).optional(),
   "enabled": zod.boolean().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyEnabledDefault),
-  "require_human_approval": zod.boolean().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRequireHumanApprovalDefault),
-  "instructions": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsDefault)
+  "schema_version": zod.number().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodySchemaVersionMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodySchemaVersionDefault),
+  "graph": zod.union([zod.object({
+  "version": zod.number().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneVersionMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemLabelMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemLabelMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTypeMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneViewportXDefault),
+  "y": zod.number().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneViewportYDefault),
+  "zoom": zod.number().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyGraphOneViewportZoomDefault)
+}).optional()
+}),zod.null()]).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemLabelMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.union([zod.object({
+  "approval_mode": zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneApprovalModeMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneMaxStepsMax).default(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyRuntimePolicyOneDefaultModelOneMax),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "summary": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "trigger_event": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTriggerEventOneMax),zod.null()]).optional(),
+  "target_type": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyTargetTypeOneMax),zod.null()]).optional(),
+  "require_human_approval": zod.union([zod.boolean(),zod.null()]).optional(),
+  "instructions": zod.union([zod.string().max(postWorkflowApiV1AdminAutomationWorkflowsPostBodyInstructionsOneMax),zod.null()]).optional()
 })
 
 
 /**
- * @summary 获取 Agent 工作流草稿
+ * @summary 获取工作流 v2 目录
  */
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault = `global`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault = `active`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault = ``;
+export const GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryParams = zod.object({
+  "workflow_key": zod.union([zod.string(),zod.null()]).optional()
+})
 
-export const GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = zod.union([zod.object({
-  "id": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault),
-  "status": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault),
-  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault),
-  "ready_to_create": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault),
-  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
-  "questions": zod.array(zod.object({
-  "key": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault),
-  "prompt": zod.string(),
-  "options": zod.array(zod.object({
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemIconDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemRequiredDefault = true;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemRequiredDefault = true;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemRiskLevelDefault = `low`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerTypesItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemSystemValueDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupKeyDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupLabelDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupKeyDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupLabelDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemRiskLevelDefault = `low`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseApprovalTypesItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseVariableSourcesItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemBaseCapabilityDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemKindDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemWorkflowLocalDefault = false;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDomainDefault = `misc`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemSensitivityDefault = `business`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemLabelDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRiskLevelDefault = `low`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRequiresApprovalDefault = false;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemSurfaceModeDefault = `atomic`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemActionKeyDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDomainDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemBaseCapabilityDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemKindDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemWorkflowLocalDefault = false;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemLabelDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRiskLevelDefault = `low`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresApprovalDefault = false;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresRefDefault = false;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemLabelDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault = ``;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault = `low`;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault = false;
+export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault = false;
+
+export const GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse = zod.object({
+  "node_types": zod.array(zod.object({
+  "type": zod.string(),
   "label": zod.string(),
+  "category": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemDescriptionDefault),
+  "icon": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemIconDefault),
+  "default_config": zod.record(zod.string(), zod.unknown()).optional(),
+  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "input_ports": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "side": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemDescriptionDefault),
+  "match_values": zod.array(zod.string()).optional(),
+  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "required": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemRequiredDefault)
+})).optional(),
+  "output_ports": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "side": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemDescriptionDefault),
+  "match_values": zod.array(zod.string()).optional(),
+  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "required": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemRequiredDefault)
+})).optional(),
+  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemRiskLevelDefault)
+})).optional(),
+  "trigger_types": zod.array(zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerTypesItemDescriptionDefault),
+  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "example_config": zod.record(zod.string(), zod.unknown()).optional(),
+  "supports_target_types": zod.array(zod.string()).optional()
+})).optional(),
+  "trigger_events": zod.array(zod.object({
   "value": zod.string(),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault)
+  "label": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemDescriptionDefault),
+  "system_value": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemSystemValueDefault),
+  "group_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupKeyDefault),
+  "group_label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupLabelDefault),
+  "target_types": zod.array(zod.string()).optional(),
+  "payload_fields": zod.array(zod.record(zod.string(), zod.string())).optional(),
+  "example_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "parameters": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})).optional(),
+  "operation_catalog": zod.array(zod.object({
+  "key": zod.string(),
+  "operation_type": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemDescriptionDefault),
+  "group_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupKeyDefault),
+  "group_label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupLabelDefault),
+  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "invocation": zod.record(zod.string(), zod.unknown()).optional(),
+  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})).optional(),
+  "approval_types": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseApprovalTypesItemDescriptionDefault),
+  "config_schema": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "expression_catalog": zod.object({
+  "helpers": zod.array(zod.record(zod.string(), zod.string())).optional(),
+  "variables": zod.array(zod.record(zod.string(), zod.string())).optional(),
+  "examples": zod.array(zod.string()).optional()
+}).optional(),
+  "template_catalog": zod.array(zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "workflow": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "variable_sources": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseVariableSourcesItemDescriptionDefault),
+  "payload_schema": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "readonly_tools": zod.array(zod.object({
+  "key": zod.string(),
+  "base_capability": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemBaseCapabilityDefault),
+  "kind": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemKindDefault),
+  "workflow_local": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemWorkflowLocalDefault),
+  "domain": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDomainDefault),
+  "sensitivity": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemSensitivityDefault),
+  "label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemLabelDefault),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDescriptionDefault),
+  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "response_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
+  "requires_approval": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRequiresApprovalDefault),
+  "allowed_args": zod.array(zod.string()).optional(),
+  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
+  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
+  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
+})).optional(),
+  "workflow_local_action_surfaces": zod.array(zod.object({
+  "key": zod.string(),
+  "surface_mode": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemSurfaceModeDefault),
+  "action_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemActionKeyDefault),
+  "domain": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDomainDefault),
+  "base_capability": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemBaseCapabilityDefault),
+  "kind": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemKindDefault),
+  "workflow_local": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemWorkflowLocalDefault),
+  "label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemLabelDefault),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDescriptionDefault),
+  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
+  "allowed_args": zod.array(zod.string()).optional(),
+  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
+  "requires_approval": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresApprovalDefault),
+  "requires_ref": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresRefDefault),
+  "allowed_source_query_keys": zod.array(zod.string()).optional(),
+  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
+  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional(),
+  "entries": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemLabelDefault),
+  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault),
+  "action_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault),
+  "base_capability": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault),
+  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
+  "allowed_args": zod.array(zod.string()).optional(),
+  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
+  "requires_approval": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault),
+  "requires_ref": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault),
+  "allowed_source_query_keys": zod.array(zod.string()).optional(),
+  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
+  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
 })).optional()
-})).optional(),
-  "current_question": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault)
-})).optional(),
-  "working_document": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault),
+})).optional()
+})
+
+
+/**
+ * @summary 获取当前工作流的 Surface 草稿
+ */
+export const GetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetParams = zod.object({
+  "workflow_key": zod.string()
+})
+
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneStatusDefault = `active`;
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneSummaryDefault = ``;
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneReadyToApplyDefault = false;
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemReasonDefault = ``;
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemImpactDefault = ``;
+export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemHumanSummaryDefault = ``;
+
+export const GetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse = zod.union([zod.object({
+  "workflow_key": zod.string(),
+  "status": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneStatusDefault),
+  "summary": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneSummaryDefault),
+  "ready_to_apply": zod.boolean().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneReadyToApplyDefault),
   "messages": zod.array(zod.object({
   "role": zod.string(),
   "content": zod.string(),
   "created_at": zod.string().datetime({})
 })).optional(),
+  "patches": zod.array(zod.object({
+  "action": zod.string(),
+  "surface_kind": zod.string(),
+  "surface_key": zod.string(),
+  "reason": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemReasonDefault),
+  "impact": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemImpactDefault),
+  "human_summary": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemHumanSummaryDefault),
+  "spec": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "graph_mutation": zod.record(zod.string(), zod.unknown()).optional(),
+  "validation_issues": zod.array(zod.string()).optional(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 }),zod.null()])
 
 
 /**
- * @summary 继续 Agent 工作流对话
+ * @summary 清空当前工作流的 Surface 草稿
  */
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodyMessageMax = 4000;
-
-
-
-export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBody = zod.object({
-  "message": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodyMessageMax)
+export const DeleteWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftDeleteParams = zod.object({
+  "workflow_key": zod.string()
 })
 
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault = `global`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault = `active`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault = ``;
 
-export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = zod.object({
-  "id": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault),
-  "status": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault),
-  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault),
-  "ready_to_create": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault),
-  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
-  "questions": zod.array(zod.object({
-  "key": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault),
-  "prompt": zod.string(),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault)
-})).optional()
-})).optional(),
-  "current_question": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault)
-})).optional(),
-  "working_document": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault),
+/**
+ * @summary 继续当前工作流的 Surface 对话
+ */
+export const PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostParams = zod.object({
+  "workflow_key": zod.string()
+})
+
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostBodyMessageMax = 4000;
+
+
+
+export const PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostBody = zod.object({
+  "message": zod.string().min(1).max(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostBodyMessageMax)
+})
+
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseStatusDefault = `active`;
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseSummaryDefault = ``;
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseReadyToApplyDefault = false;
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemReasonDefault = ``;
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemImpactDefault = ``;
+export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemHumanSummaryDefault = ``;
+
+export const PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse = zod.object({
+  "workflow_key": zod.string(),
+  "status": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseStatusDefault),
+  "summary": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseSummaryDefault),
+  "ready_to_apply": zod.boolean().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseReadyToApplyDefault),
   "messages": zod.array(zod.object({
   "role": zod.string(),
   "content": zod.string(),
   "created_at": zod.string().datetime({})
 })).optional(),
+  "patches": zod.array(zod.object({
+  "action": zod.string(),
+  "surface_kind": zod.string(),
+  "surface_key": zod.string(),
+  "reason": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemReasonDefault),
+  "impact": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemImpactDefault),
+  "human_summary": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemHumanSummaryDefault),
+  "spec": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "graph_mutation": zod.record(zod.string(), zod.unknown()).optional(),
+  "validation_issues": zod.array(zod.string()).optional(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 })
 
 
 /**
- * @summary 流式继续 Agent 工作流对话
+ * @summary 应用当前工作流的 Surface 草稿
  */
-export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodyMessageMax = 4000;
-
-
-
-export const PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBody = zod.object({
-  "message": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodyMessageMax)
+export const PostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostParams = zod.object({
+  "workflow_key": zod.string()
 })
 
-export const PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse = zod.unknown()
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseOkDefault = true;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseSummaryDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowEnabledDefault = true;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSchemaVersionDefault = 2;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionDefault = 2;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionMax = 10;
 
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemIdMax = 120;
 
-/**
- * @summary 从草稿创建 Agent 工作流
- */
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyForceDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemTypeMax = 120;
 
-export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBody = zod.object({
-  "force": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyForceDefault)
-})
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelMax = 160;
 
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault = ``;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemIdMax = 120;
 
-export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = zod.object({
-  "ok": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault),
-  "summary": zod.string(),
-  "draft_cleared": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault),
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportXDefault = 0;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportYDefault = 0;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportZoomDefault = 1;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyDefaultModelOneMax = 160;
+
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNodeCountDefault = 0;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryOperationCountDefault = 0;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryHighRiskOperationCountDefault = 0;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNarrativeDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowBuiltInDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowInstructionsDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRequireHumanApprovalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemIconDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemRequiredDefault = true;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemRequiredDefault = true;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemRiskLevelDefault = `low`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerTypesItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemSystemValueDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupKeyDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupKeyDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemRiskLevelDefault = `low`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneApprovalTypesItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneVariableSourcesItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemBaseCapabilityDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemKindDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemWorkflowLocalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDomainDefault = `misc`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemSensitivityDefault = `business`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRiskLevelDefault = `low`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRequiresApprovalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemSurfaceModeDefault = `atomic`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemActionKeyDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDomainDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemBaseCapabilityDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemKindDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemWorkflowLocalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRiskLevelDefault = `low`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresApprovalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresRefDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemLabelDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault = ``;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault = `low`;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault = false;
+export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault = false;
+
+export const PostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse = zod.object({
+  "ok": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseOkDefault),
+  "summary": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseSummaryDefault),
   "workflow": zod.object({
   "key": zod.string(),
   "name": zod.string(),
   "description": zod.string(),
-  "trigger_event": zod.string(),
+  "enabled": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowEnabledDefault),
+  "schema_version": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSchemaVersionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "summary": zod.object({
+  "trigger_labels": zod.array(zod.string()).optional(),
+  "node_count": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNodeCountDefault),
+  "operation_count": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryOperationCountDefault),
+  "high_risk_operation_count": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryHighRiskOperationCountDefault),
+  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
+  "narrative": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNarrativeDefault)
+}).optional(),
+  "built_in": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowBuiltInDefault),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
   "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault),
-  "require_human_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault),
-  "instructions": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault),
-  "built_in": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault)
+  "instructions": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowInstructionsDefault),
+  "require_human_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRequireHumanApprovalDefault)
+}),
+  "catalog": zod.union([zod.object({
+  "node_types": zod.array(zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "category": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemDescriptionDefault),
+  "icon": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemIconDefault),
+  "default_config": zod.record(zod.string(), zod.unknown()).optional(),
+  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "input_ports": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "side": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemDescriptionDefault),
+  "match_values": zod.array(zod.string()).optional(),
+  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "required": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemRequiredDefault)
+})).optional(),
+  "output_ports": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "side": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemDescriptionDefault),
+  "match_values": zod.array(zod.string()).optional(),
+  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "required": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemRequiredDefault)
+})).optional(),
+  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemRiskLevelDefault)
+})).optional(),
+  "trigger_types": zod.array(zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerTypesItemDescriptionDefault),
+  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "example_config": zod.record(zod.string(), zod.unknown()).optional(),
+  "supports_target_types": zod.array(zod.string()).optional()
+})).optional(),
+  "trigger_events": zod.array(zod.object({
+  "value": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemDescriptionDefault),
+  "system_value": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemSystemValueDefault),
+  "group_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupKeyDefault),
+  "group_label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupLabelDefault),
+  "target_types": zod.array(zod.string()).optional(),
+  "payload_fields": zod.array(zod.record(zod.string(), zod.string())).optional(),
+  "example_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "parameters": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})).optional(),
+  "operation_catalog": zod.array(zod.object({
+  "key": zod.string(),
+  "operation_type": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemDescriptionDefault),
+  "group_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupKeyDefault),
+  "group_label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupLabelDefault),
+  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "invocation": zod.record(zod.string(), zod.unknown()).optional(),
+  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})).optional(),
+  "approval_types": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneApprovalTypesItemDescriptionDefault),
+  "config_schema": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "expression_catalog": zod.object({
+  "helpers": zod.array(zod.record(zod.string(), zod.string())).optional(),
+  "variables": zod.array(zod.record(zod.string(), zod.string())).optional(),
+  "examples": zod.array(zod.string()).optional()
+}).optional(),
+  "template_catalog": zod.array(zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "workflow": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "variable_sources": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneVariableSourcesItemDescriptionDefault),
+  "payload_schema": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "readonly_tools": zod.array(zod.object({
+  "key": zod.string(),
+  "base_capability": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemBaseCapabilityDefault),
+  "kind": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemKindDefault),
+  "workflow_local": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemWorkflowLocalDefault),
+  "domain": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDomainDefault),
+  "sensitivity": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemSensitivityDefault),
+  "label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemLabelDefault),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDescriptionDefault),
+  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "response_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
+  "requires_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRequiresApprovalDefault),
+  "allowed_args": zod.array(zod.string()).optional(),
+  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
+  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
+  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
+})).optional(),
+  "workflow_local_action_surfaces": zod.array(zod.object({
+  "key": zod.string(),
+  "surface_mode": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemSurfaceModeDefault),
+  "action_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemActionKeyDefault),
+  "domain": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDomainDefault),
+  "base_capability": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemBaseCapabilityDefault),
+  "kind": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemKindDefault),
+  "workflow_local": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemWorkflowLocalDefault),
+  "label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemLabelDefault),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDescriptionDefault),
+  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
+  "allowed_args": zod.array(zod.string()).optional(),
+  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
+  "requires_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresApprovalDefault),
+  "requires_ref": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresRefDefault),
+  "allowed_source_query_keys": zod.array(zod.string()).optional(),
+  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
+  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional(),
+  "entries": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemLabelDefault),
+  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault),
+  "action_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault),
+  "base_capability": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault),
+  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault),
+  "required_scopes": zod.array(zod.string()).optional(),
+  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
+  "allowed_args": zod.array(zod.string()).optional(),
+  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
+  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
+  "requires_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault),
+  "requires_ref": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault),
+  "allowed_source_query_keys": zod.array(zod.string()).optional(),
+  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
+  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
+})).optional()
+})).optional()
+}),zod.null()]).optional()
 })
+
+
+/**
+ * @summary 校验工作流定义
+ */
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyKeyMin = 3;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyKeyMax = 80;
+
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyKeyRegExp = new RegExp('^[a-z0-9][a-z0-9_-]\*$');
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyNameMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyDescriptionDefault = ``;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyDescriptionMax = 500;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyEnabledDefault = true;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodySchemaVersionDefault = 2;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodySchemaVersionMax = 10;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneVersionDefault = 2;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneVersionMax = 10;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemIdMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemTypeMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemLabelDefault = ``;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemLabelMax = 160;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemIdMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemSourceMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTargetMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemLabelDefault = ``;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemLabelMax = 160;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTypeDefault = `default`;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTypeMax = 80;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneViewportXDefault = 0;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneViewportYDefault = 0;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneViewportZoomDefault = 1;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneApprovalModeDefault = `risk_based`;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneApprovalModeMax = 80;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneMaxStepsDefault = 80;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneMaxStepsMax = 500;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneDefaultModelOneMax = 160;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerEventOneMax = 120;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTargetTypeOneMax = 80;
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyInstructionsOneMax = 4000;
+
+
+
+export const PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBody = zod.object({
+  "key": zod.string().min(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyKeyMin).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyKeyMax).regex(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyKeyRegExp),
+  "name": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyNameMax),
+  "description": zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyDescriptionMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyDescriptionDefault),
+  "enabled": zod.boolean().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyEnabledDefault),
+  "schema_version": zod.number().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodySchemaVersionMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodySchemaVersionDefault),
+  "graph": zod.union([zod.object({
+  "version": zod.number().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneVersionMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemLabelMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemLabelMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTypeMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneViewportXDefault),
+  "y": zod.number().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneViewportYDefault),
+  "zoom": zod.number().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyGraphOneViewportZoomDefault)
+}).optional()
+}),zod.null()]).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemLabelMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.union([zod.object({
+  "approval_mode": zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneApprovalModeMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneMaxStepsMax).default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyRuntimePolicyOneDefaultModelOneMax),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "summary": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "trigger_event": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTriggerEventOneMax),zod.null()]).optional(),
+  "target_type": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyTargetTypeOneMax),zod.null()]).optional(),
+  "require_human_approval": zod.union([zod.boolean(),zod.null()]).optional(),
+  "instructions": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyInstructionsOneMax),zod.null()]).optional()
+})
+
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseOkDefault = true;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemLevelDefault = `error`;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemCodeDefault = ``;
+export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemPathDefault = ``;
+
+export const PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse = zod.object({
+  "ok": zod.boolean().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseOkDefault),
+  "issues": zod.array(zod.object({
+  "level": zod.string().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemLevelDefault),
+  "code": zod.string().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemCodeDefault),
+  "message": zod.string(),
+  "path": zod.string().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemPathDefault),
+  "node_id": zod.union([zod.string(),zod.null()]).optional(),
+  "edge_id": zod.union([zod.string(),zod.null()]).optional()
+})).optional()
+})
+
+
+/**
+ * Derive the required output schema for an AI node based on its downstream connections.
+ * @summary 推导 AI 节点输出 Schema
+ */
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphVersionDefault = 2;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphVersionMax = 10;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemIdMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemTypeMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemLabelMax = 160;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemIdMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemSourceMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTargetMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemLabelMax = 160;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTypeDefault = `default`;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTypeMax = 80;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphViewportXDefault = 0;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphViewportYDefault = 0;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphViewportZoomDefault = 1;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyAiNodeIdMax = 120;
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyWorkflowKeyOneMax = 80;
+
+
+
+export const PostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBody = zod.object({
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphVersionMax).default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemTypeMax),
+  "label": zod.string().max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemLabelMax).default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemLabelMax).default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTypeMax).default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphViewportXDefault),
+  "y": zod.number().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphViewportYDefault),
+  "zoom": zod.number().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyGraphViewportZoomDefault)
+}).optional()
+}),
+  "ai_node_id": zod.string().min(1).max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyAiNodeIdMax),
+  "workflow_key": zod.union([zod.string().max(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostBodyWorkflowKeyOneMax),zod.null()]).optional()
+})
+
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextNodeIdDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextNodeTypeDefault = `ai.task`;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemKindDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSlotDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromNodeIdDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromNodeTypeDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromNodeLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSourceNodeLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSourceNodeTypeDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromPortIdDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromPortLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemUsageNoteDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSourceSummaryDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSlotNoteDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemNoteTitleDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemNoteSummaryDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemNoteOperatorNoteDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeIdDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeTypeDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeLabelDefaultOne = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeTypeDefaultOne = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetPortIdDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetPortLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemUsageNoteDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemRequirementNoteDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemSurfaceKeyDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemSurfaceLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemSurfaceDescriptionDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemFormatRequirementsDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemNoteTitleDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemNoteSummaryDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemNoteRequirementDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemKeyDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemDescriptionDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemDomainDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemSensitivityDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemNoteTitleDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemNoteSummaryDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemKeyDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemSurfaceKeyDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemEntryKeyDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemLabelDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemDescriptionDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemDomainDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemRiskLevelDefault = `medium`;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemNoteTitleDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemNoteSummaryDefault = ``;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextToolUsagePolicyModeDefault = `recommended`;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextToolUsagePolicyMinimumToolCallsDefault = 1;
+export const postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextOutputContractSummaryDefault = ``;
+
+export const PostDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponse = zod.object({
+  "output_schema": zod.record(zod.string(), zod.unknown()),
+  "source_nodes": zod.array(zod.string()).optional().describe('Node IDs that contributed to the schema'),
+  "contract_context": zod.object({
+  "node_id": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextNodeIdDefault),
+  "node_type": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextNodeTypeDefault),
+  "upstream_inputs": zod.array(zod.object({
+  "kind": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemKindDefault),
+  "slot": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSlotDefault),
+  "label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemLabelDefault),
+  "from_node_id": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromNodeIdDefault),
+  "from_node_type": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromNodeTypeDefault),
+  "from_node_label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromNodeLabelDefault),
+  "source": zod.object({
+  "node_label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSourceNodeLabelDefault),
+  "node_type": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSourceNodeTypeDefault)
+}).optional(),
+  "from_port": zod.object({
+  "id": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromPortIdDefault),
+  "label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemFromPortLabelDefault)
+}).optional(),
+  "provided_fields": zod.array(zod.string()).optional(),
+  "usage_note": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemUsageNoteDefault),
+  "source_summary": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSourceSummaryDefault),
+  "slot_note": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemSlotNoteDefault),
+  "note": zod.object({
+  "title": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemNoteTitleDefault),
+  "summary": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemNoteSummaryDefault),
+  "operator_note": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextUpstreamInputsItemNoteOperatorNoteDefault)
+}).optional()
+})).optional(),
+  "downstream_consumers": zod.array(zod.object({
+  "target_node_id": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeIdDefault),
+  "target_node_type": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeTypeDefault),
+  "target_node_label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeLabelDefault),
+  "target": zod.object({
+  "node_label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeLabelDefaultOne),
+  "node_type": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetNodeTypeDefaultOne)
+}).optional(),
+  "target_port": zod.object({
+  "id": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetPortIdDefault),
+  "label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemTargetPortLabelDefault)
+}).optional(),
+  "required_fields": zod.array(zod.string()).optional(),
+  "usage_note": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemUsageNoteDefault),
+  "requirement_note": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemRequirementNoteDefault),
+  "surface_key": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemSurfaceKeyDefault),
+  "surface_label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemSurfaceLabelDefault),
+  "surface_description": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemSurfaceDescriptionDefault),
+  "surface_hints": zod.array(zod.string()).optional(),
+  "format_requirements": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemFormatRequirementsDefault),
+  "note": zod.object({
+  "title": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemNoteTitleDefault),
+  "summary": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemNoteSummaryDefault),
+  "requirement": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextDownstreamConsumersItemNoteRequirementDefault),
+  "tips": zod.array(zod.string()).optional()
+}).optional()
+})).optional(),
+  "mounted_tools": zod.array(zod.object({
+  "key": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemKeyDefault),
+  "label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemLabelDefault),
+  "description": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemDescriptionDefault),
+  "domain": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemDomainDefault),
+  "sensitivity": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemSensitivityDefault),
+  "parameters_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "allowed_arguments": zod.array(zod.string()).optional(),
+  "fixed_arguments": zod.record(zod.string(), zod.unknown()).optional(),
+  "auto_bound_arguments": zod.array(zod.string()).optional(),
+  "usage_notes": zod.record(zod.string(), zod.array(zod.string())).optional(),
+  "note": zod.object({
+  "title": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemNoteTitleDefault),
+  "summary": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedToolsItemNoteSummaryDefault),
+  "tips": zod.array(zod.string()).optional()
+}).optional()
+})).optional(),
+  "mounted_actions": zod.array(zod.object({
+  "key": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemKeyDefault),
+  "surface_key": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemSurfaceKeyDefault),
+  "entry_key": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemEntryKeyDefault),
+  "label": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemLabelDefault),
+  "description": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemDescriptionDefault),
+  "domain": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemDomainDefault),
+  "risk_level": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemRiskLevelDefault),
+  "parameters_schema": zod.record(zod.string(), zod.unknown()).optional(),
+  "allowed_arguments": zod.array(zod.string()).optional(),
+  "fixed_arguments": zod.record(zod.string(), zod.unknown()).optional(),
+  "auto_bound_arguments": zod.array(zod.string()).optional(),
+  "usage_notes": zod.record(zod.string(), zod.array(zod.string())).optional(),
+  "note": zod.object({
+  "title": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemNoteTitleDefault),
+  "summary": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextMountedActionsItemNoteSummaryDefault),
+  "tips": zod.array(zod.string()).optional()
+}).optional()
+})).optional(),
+  "tool_usage_policy": zod.object({
+  "mode": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextToolUsagePolicyModeDefault),
+  "minimum_tool_calls": zod.number().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextToolUsagePolicyMinimumToolCallsDefault)
+}).optional(),
+  "output_contract": zod.object({
+  "summary": zod.string().default(postDeriveAiSchemaApiV1AdminAutomationWorkflowsDeriveAiSchemaPostResponseContractContextOutputContractSummaryDefault),
+  "field_keys": zod.array(zod.string()).optional()
+}).optional()
+}).optional()
 })
 
 
@@ -5335,6 +6720,54 @@ export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyNameOneMa
 
 export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyDescriptionOneMax = 500;
 
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodySchemaVersionOneMax = 10;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneVersionDefault = 2;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneVersionMax = 10;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemIdMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemTypeMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemLabelDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemLabelMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemIdMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemSourceMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTargetMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemSourceHandleOneMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTargetHandleOneMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemLabelDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemLabelMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTypeDefault = `default`;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTypeMax = 80;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneViewportXDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneViewportYDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneViewportZoomDefault = 1;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemIdMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemTypeMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemLabelDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemLabelMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemEnabledDefault = true;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneApprovalModeDefault = `risk_based`;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneApprovalModeMax = 80;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneAllowHighRiskWithoutApprovalDefault = false;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneMaxStepsDefault = 80;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneMaxStepsMax = 500;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneDefaultModelOneMax = 160;
+
 export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerEventOneMax = 120;
 
 export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTargetTypeOneMax = 80;
@@ -5346,28 +6779,174 @@ export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyInstructi
 export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBody = zod.object({
   "name": zod.union([zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyNameOneMax),zod.null()]).optional(),
   "description": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyDescriptionOneMax),zod.null()]).optional(),
-  "trigger_event": zod.union([zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerEventOneMax),zod.null()]).optional(),
-  "target_type": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTargetTypeOneMax),zod.null()]).optional(),
   "enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "schema_version": zod.union([zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodySchemaVersionOneMax),zod.null()]).optional(),
+  "graph": zod.union([zod.object({
+  "version": zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneVersionMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemIdMax),
+  "type": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemTypeMax),
+  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemIdMax),
+  "source": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemSourceMax),
+  "target": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemLabelDefault),
+  "type": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTypeMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneViewportXDefault),
+  "y": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneViewportYDefault),
+  "zoom": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyGraphOneViewportZoomDefault)
+}).optional()
+}),zod.null()]).optional(),
+  "trigger_bindings": zod.union([zod.array(zod.object({
+  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemIdMax),
+  "type": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemTypeMax),
+  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemLabelDefault),
+  "enabled": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerBindingsOneItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})),zod.null()]).optional(),
+  "runtime_policy": zod.union([zod.object({
+  "approval_mode": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneApprovalModeMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneMaxStepsMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyRuntimePolicyOneDefaultModelOneMax),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "summary": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
+  "trigger_event": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTriggerEventOneMax),zod.null()]).optional(),
+  "target_type": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyTargetTypeOneMax),zod.null()]).optional(),
   "require_human_approval": zod.union([zod.boolean(),zod.null()]).optional(),
   "instructions": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyInstructionsOneMax),zod.null()]).optional()
 })
 
 export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseEnabledDefault = true;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault = true;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSchemaVersionDefault = 2;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionDefault = 2;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionMax = 10;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemIdMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemTypeMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemIdMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceHandleOneMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetHandleOneMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeDefault = `default`;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeMax = 80;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportXDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportYDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportZoomDefault = 1;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemIdMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemTypeMax = 120;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemEnabledDefault = true;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeDefault = `risk_based`;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeMax = 80;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsDefault = 80;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsMax = 500;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyDefaultModelOneMax = 160;
+
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNodeCountDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryOperationCountDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryHighRiskOperationCountDefault = 0;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNarrativeDefault = ``;
 export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault = false;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault = ``;
+export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault = false;
 
 export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse = zod.object({
   "key": zod.string(),
   "name": zod.string(),
   "description": zod.string(),
-  "trigger_event": zod.string(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
   "enabled": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseEnabledDefault),
-  "require_human_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault),
+  "schema_version": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSchemaVersionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemTypeMax),
+  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelDefault),
+  "type": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportXDefault),
+  "y": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportYDefault),
+  "zoom": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemTypeMax),
+  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "summary": zod.object({
+  "trigger_labels": zod.array(zod.string()).optional(),
+  "node_count": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNodeCountDefault),
+  "operation_count": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryOperationCountDefault),
+  "high_risk_operation_count": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryHighRiskOperationCountDefault),
+  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
+  "narrative": zod.string().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNarrativeDefault)
+}).optional(),
+  "built_in": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
   "instructions": zod.string().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault),
-  "built_in": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault)
+  "require_human_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault)
 })
 
 
@@ -5376,6 +6955,174 @@ export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse = zo
  */
 export const DeleteWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyDeleteParams = zod.object({
   "workflow_key": zod.string()
+})
+
+
+/**
+ * @summary 手动触发工作流
+ */
+export const PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostParams = zod.object({
+  "workflow_key": zod.string()
+})
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTriggerBindingIdOneMax = 120;
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTriggerEventOneMax = 120;
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTargetTypeOneMax = 80;
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTargetIdOneMax = 120;
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyExecuteImmediatelyDefault = true;
+
+export const PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBody = zod.object({
+  "trigger_binding_id": zod.union([zod.string().max(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTriggerBindingIdOneMax),zod.null()]).optional(),
+  "trigger_event": zod.union([zod.string().max(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTriggerEventOneMax),zod.null()]).optional(),
+  "target_type": zod.union([zod.string().max(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTargetTypeOneMax),zod.null()]).optional(),
+  "target_id": zod.union([zod.string().max(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyTargetIdOneMax),zod.null()]).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "execute_immediately": zod.boolean().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyExecuteImmediatelyDefault)
+})
+
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationOkDefault = true;
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemLevelDefault = `error`;
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemCodeDefault = ``;
+export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemPathDefault = ``;
+
+export const PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse = zod.object({
+  "run": zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+}),
+  "steps": zod.array(zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "sequence_no": zod.number(),
+  "node_key": zod.string(),
+  "step_kind": zod.string(),
+  "status": zod.string(),
+  "narrative": zod.string(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})).optional(),
+  "validation": zod.object({
+  "ok": zod.boolean().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationOkDefault),
+  "issues": zod.array(zod.object({
+  "level": zod.string().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemLevelDefault),
+  "code": zod.string().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemCodeDefault),
+  "message": zod.string(),
+  "path": zod.string().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemPathDefault),
+  "node_id": zod.union([zod.string(),zod.null()]).optional(),
+  "edge_id": zod.union([zod.string(),zod.null()]).optional()
+})).optional()
+}).optional()
+})
+
+
+/**
+ * @summary 测试运行工作流
+ */
+export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostParams = zod.object({
+  "workflow_key": zod.string()
+})
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTriggerBindingIdOneMax = 120;
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTriggerEventOneMax = 120;
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTargetTypeOneMax = 80;
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTargetIdOneMax = 120;
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyExecuteImmediatelyDefault = true;
+
+export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBody = zod.object({
+  "trigger_binding_id": zod.union([zod.string().max(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTriggerBindingIdOneMax),zod.null()]).optional(),
+  "trigger_event": zod.union([zod.string().max(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTriggerEventOneMax),zod.null()]).optional(),
+  "target_type": zod.union([zod.string().max(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTargetTypeOneMax),zod.null()]).optional(),
+  "target_id": zod.union([zod.string().max(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyTargetIdOneMax),zod.null()]).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "execute_immediately": zod.boolean().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyExecuteImmediatelyDefault)
+})
+
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationOkDefault = true;
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemLevelDefault = `error`;
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemCodeDefault = ``;
+export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemPathDefault = ``;
+
+export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse = zod.object({
+  "run": zod.object({
+  "id": zod.string(),
+  "workflow_key": zod.string(),
+  "status": zod.string(),
+  "trigger_kind": zod.string(),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "target_id": zod.union([zod.string(),zod.null()]).optional(),
+  "thread_id": zod.string(),
+  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
+  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_code": zod.union([zod.string(),zod.null()]).optional(),
+  "error_message": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+}),
+  "steps": zod.array(zod.object({
+  "id": zod.string(),
+  "run_id": zod.string(),
+  "sequence_no": zod.number(),
+  "node_key": zod.string(),
+  "step_kind": zod.string(),
+  "status": zod.string(),
+  "narrative": zod.string(),
+  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})).optional(),
+  "validation": zod.object({
+  "ok": zod.boolean().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationOkDefault),
+  "issues": zod.array(zod.object({
+  "level": zod.string().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemLevelDefault),
+  "code": zod.string().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemCodeDefault),
+  "message": zod.string(),
+  "path": zod.string().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemPathDefault),
+  "node_id": zod.union([zod.string(),zod.null()]).optional(),
+  "edge_id": zod.union([zod.string(),zod.null()]).optional()
+})).optional()
+}).optional()
 })
 
 
@@ -5761,6 +7508,1221 @@ export const PostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdRepl
   "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 获取 Agent 工作流草稿
+ */
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault = `global`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault = `active`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStageDefault = `intent_collecting`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundaryRequiresPlatformExtensionDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundarySummaryDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneNameDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionDefault = 2;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionMax = 10;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemTypeMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeDefault = `default`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeMax = 80;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportXDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportYDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportZoomDefault = 1;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemTypeMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemEnabledDefault = true;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeMax = 80;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsDefault = 80;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsMax = 500;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyDefaultModelOneMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneNameDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionDefault = 2;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionMax = 10;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemTypeMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeDefault = `default`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeMax = 80;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportXDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportYDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportZoomDefault = 1;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemTypeMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemEnabledDefault = true;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeMax = 80;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsDefault = 80;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsMax = 500;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyDefaultModelOneMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneNameDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneDescriptionDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionDefault = 2;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionMax = 10;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemTypeMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeDefault = `default`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeMax = 80;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportXDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportYDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportZoomDefault = 1;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemIdMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemTypeMax = 120;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemEnabledDefault = true;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeMax = 80;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsDefault = 80;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsMax = 500;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyDefaultModelOneMax = 160;
+
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportStatusDefault = `idle`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportAttemptsDefault = 0;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportSummaryDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemLevelDefault = `error`;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemCodeDefault = ``;
+export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemPathDefault = ``;
+
+export const GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = zod.union([zod.object({
+  "id": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault),
+  "status": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault),
+  "stage": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStageDefault),
+  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault),
+  "ready_to_create": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault),
+  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
+  "boundary": zod.object({
+  "requires_platform_extension": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundaryRequiresPlatformExtensionDefault),
+  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundarySummaryDefault),
+  "missing_capabilities": zod.array(zod.string()).optional(),
+  "recommended_actions": zod.array(zod.string()).optional()
+}).optional(),
+  "questions": zod.array(zod.object({
+  "key": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault),
+  "prompt": zod.string(),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault)
+})).optional()
+})).optional(),
+  "current_question": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault)
+})).optional(),
+  "working_document": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault),
+  "sketch_preview": zod.union([zod.object({
+  "name": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneNameDefault),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemTypeMax),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportXDefault),
+  "y": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportYDefault),
+  "zoom": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional(),
+  "semantic_preview": zod.union([zod.object({
+  "name": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneNameDefault),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemTypeMax),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportXDefault),
+  "y": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportYDefault),
+  "zoom": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional(),
+  "graph_candidate": zod.union([zod.object({
+  "name": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneNameDefault),
+  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemTypeMax),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportXDefault),
+  "y": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportYDefault),
+  "zoom": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional(),
+  "compile_report": zod.object({
+  "status": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportStatusDefault),
+  "attempts": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportAttemptsDefault),
+  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportSummaryDefault),
+  "issues": zod.array(zod.object({
+  "level": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemLevelDefault),
+  "code": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemCodeDefault),
+  "message": zod.string(),
+  "path": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemPathDefault),
+  "node_id": zod.union([zod.string(),zod.null()]).optional(),
+  "edge_id": zod.union([zod.string(),zod.null()]).optional()
+})).optional()
+}).optional(),
+  "messages": zod.array(zod.object({
+  "role": zod.string(),
+  "content": zod.string(),
+  "created_at": zod.string().datetime({})
+})).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+}),zod.null()])
+
+
+/**
+ * @summary 继续 Agent 工作流对话
+ */
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodyMessageMax = 4000;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneNameDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphVersionDefault = 2;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphVersionMax = 10;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphViewportXDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphViewportYDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphViewportZoomDefault = 1;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyDefaultModelOneMax = 160;
+
+
+
+export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBody = zod.object({
+  "message": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodyMessageMax),
+  "sketch_workflow": zod.union([zod.object({
+  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneNameDefault),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostBodySketchWorkflowOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional()
+})
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault = `global`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault = `active`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStageDefault = `intent_collecting`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundaryRequiresPlatformExtensionDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundarySummaryDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneNameDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionDefault = 2;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionMax = 10;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportXDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportYDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportZoomDefault = 1;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyDefaultModelOneMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneNameDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionDefault = 2;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionMax = 10;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportXDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportYDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportZoomDefault = 1;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyDefaultModelOneMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneNameDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneDescriptionDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionDefault = 2;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionMax = 10;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportXDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportYDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportZoomDefault = 1;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyDefaultModelOneMax = 160;
+
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportStatusDefault = `idle`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportAttemptsDefault = 0;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportSummaryDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemLevelDefault = `error`;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemCodeDefault = ``;
+export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemPathDefault = ``;
+
+export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = zod.object({
+  "id": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault),
+  "status": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault),
+  "stage": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStageDefault),
+  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault),
+  "ready_to_create": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault),
+  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
+  "boundary": zod.object({
+  "requires_platform_extension": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundaryRequiresPlatformExtensionDefault),
+  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundarySummaryDefault),
+  "missing_capabilities": zod.array(zod.string()).optional(),
+  "recommended_actions": zod.array(zod.string()).optional()
+}).optional(),
+  "questions": zod.array(zod.object({
+  "key": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault),
+  "prompt": zod.string(),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault)
+})).optional()
+})).optional(),
+  "current_question": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault),
+  "options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault),
+  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault)
+})).optional(),
+  "working_document": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault),
+  "sketch_preview": zod.union([zod.object({
+  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneNameDefault),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional(),
+  "semantic_preview": zod.union([zod.object({
+  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneNameDefault),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional(),
+  "graph_candidate": zod.union([zod.object({
+  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneNameDefault),
+  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional(),
+  "compile_report": zod.object({
+  "status": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportStatusDefault),
+  "attempts": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportAttemptsDefault),
+  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportSummaryDefault),
+  "issues": zod.array(zod.object({
+  "level": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemLevelDefault),
+  "code": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemCodeDefault),
+  "message": zod.string(),
+  "path": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemPathDefault),
+  "node_id": zod.union([zod.string(),zod.null()]).optional(),
+  "edge_id": zod.union([zod.string(),zod.null()]).optional()
+})).optional()
+}).optional(),
+  "messages": zod.array(zod.object({
+  "role": zod.string(),
+  "content": zod.string(),
+  "created_at": zod.string().datetime({})
+})).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})
+
+
+/**
+ * @summary 流式继续 Agent 工作流对话
+ */
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodyMessageMax = 4000;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneNameDefault = ``;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneDescriptionDefault = ``;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphVersionDefault = 2;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphVersionMax = 10;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphViewportXDefault = 0;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphViewportYDefault = 0;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphViewportZoomDefault = 1;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyDefaultModelOneMax = 160;
+
+
+
+export const PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBody = zod.object({
+  "message": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodyMessageMax),
+  "sketch_workflow": zod.union([zod.object({
+  "name": zod.string().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneNameDefault),
+  "description": zod.string().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphVersionMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostBodySketchWorkflowOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional()
+})
+
+export const PostWorkflowDraftMessageStreamApiV1AdminAutomationWorkflowDraftMessagesStreamPostResponse = zod.unknown()
+
+
+/**
+ * @summary 从草稿创建 Agent 工作流
+ */
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyForceDefault = false;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneNameDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneDescriptionDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphVersionDefault = 2;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphVersionMax = 10;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphViewportXDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphViewportYDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphViewportZoomDefault = 1;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyDefaultModelOneMax = 160;
+
+
+
+export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBody = zod.object({
+  "force": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyForceDefault),
+  "refined_sketch_workflow": zod.union([zod.object({
+  "name": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneNameDefault),
+  "description": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneDescriptionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphVersionMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTypeMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostBodyRefinedSketchWorkflowOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "notes": zod.array(zod.string()).optional(),
+  "lock_state": zod.object({
+  "locked_nodes": zod.array(zod.string()).optional(),
+  "locked_edges": zod.array(zod.string()).optional(),
+  "locked_semantics": zod.array(zod.string()).optional()
+}).optional()
+}),zod.null()]).optional()
+})
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSchemaVersionDefault = 2;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionDefault = 2;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionMax = 10;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemIdMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemTypeMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemIdMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceHandleOneMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetHandleOneMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeDefault = `default`;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeMax = 80;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportXDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportYDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportZoomDefault = 1;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemIdMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemTypeMax = 120;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemEnabledDefault = true;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeDefault = `risk_based`;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeMax = 80;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsDefault = 80;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsMax = 500;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyDefaultModelOneMax = 160;
+
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNodeCountDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryOperationCountDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryHighRiskOperationCountDefault = 0;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNarrativeDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault = false;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault = ``;
+export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault = false;
+
+export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = zod.object({
+  "ok": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault),
+  "summary": zod.string(),
+  "draft_cleared": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault),
+  "workflow": zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault),
+  "schema_version": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSchemaVersionDefault),
+  "graph": zod.object({
+  "version": zod.number().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionDefault),
+  "nodes": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelDefault),
+  "position": zod.object({
+  "x": zod.number(),
+  "y": zod.number()
+}),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "edges": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemIdMax),
+  "source": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceMax),
+  "target": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetMax),
+  "source_handle": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
+  "target_handle": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
+  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelDefault),
+  "type": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "viewport": zod.object({
+  "x": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportXDefault),
+  "y": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportYDefault),
+  "zoom": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportZoomDefault)
+}).optional()
+}).optional(),
+  "trigger_bindings": zod.array(zod.object({
+  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemIdMax),
+  "type": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemTypeMax),
+  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelDefault),
+  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemEnabledDefault),
+  "config": zod.record(zod.string(), zod.unknown()).optional()
+})).optional(),
+  "runtime_policy": zod.object({
+  "approval_mode": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeDefault),
+  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault),
+  "max_steps": zod.number().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsDefault),
+  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
+  "default_model": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
+}).optional(),
+  "summary": zod.object({
+  "trigger_labels": zod.array(zod.string()).optional(),
+  "node_count": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNodeCountDefault),
+  "operation_count": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryOperationCountDefault),
+  "high_risk_operation_count": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryHighRiskOperationCountDefault),
+  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
+  "narrative": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNarrativeDefault)
+}).optional(),
+  "built_in": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault),
+  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
+  "target_type": zod.union([zod.string(),zod.null()]).optional(),
+  "instructions": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault),
+  "require_human_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault)
+})
 })
 
 

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMcpConfig, updateMcpConfig } from "@/api/endpoints/mcp";
+import { getMcpConfig, updateMcpConfig } from "@/pages/integrations/api";
 import { AdminSurface } from "@/components/AdminSurface";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
@@ -19,9 +20,19 @@ function ReadonlyField({
 }) {
   return (
     <div className="rounded-[var(--admin-radius-lg)] border border-border/60 bg-background/55 px-4 py-4">
-      <div className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <span>{label}</span>
+        {hint ? (
+          <LabelWithHelp
+            label={label}
+            title={label}
+            description={hint}
+            hideLabel
+            className="gap-0 normal-case tracking-normal"
+          />
+        ) : null}
+      </div>
       <code className="mt-3 block break-all rounded-md bg-muted/60 px-3 py-2 text-xs">{value}</code>
-      {hint ? <p className="mt-3 text-sm text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
@@ -60,16 +71,27 @@ export function McpSettingsSection() {
   return (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,7fr)]">
       <AdminSurface
-        eyebrow={t("integrations.tabs.settings")}
-        title={t("integrations.mcpAccess")}
-        description={t("integrations.mcpAccessDescription")}
+        eyebrow={t("integrations.mcp")}
+        title={t("integrations.mcpSettings")}
+        description={t("integrations.sectionDescriptions.mcpSettings")}
       >
         <div className="space-y-4">
           <AppleSwitch
             checked={config.public_access}
             onCheckedChange={(checked) => void togglePublicAccess(checked)}
-            label={config.public_access ? t("integrations.mcpEnabled") : t("integrations.mcpDisabled")}
-            description={t("integrations.mcpSettingsDescription")}
+            label={
+              <LabelWithHelp
+                label={t("integrations.mcpAccess")}
+                title={t("integrations.mcpAccess")}
+                description={t("integrations.mcpAccessDescription")}
+                className="gap-1.5"
+              />
+            }
+            switchLeading={
+              <span className="text-sm font-medium text-muted-foreground">
+                {config.public_access ? t("integrations.mcpEnabled") : t("integrations.mcpDisabled")}
+              </span>
+            }
             disabled={save.isPending}
           />
 
@@ -86,7 +108,7 @@ export function McpSettingsSection() {
         </div>
       </AdminSurface>
 
-      <McpApiKeysSection />
+      <McpApiKeysSection disabled={!config.public_access} />
     </div>
   );
 }

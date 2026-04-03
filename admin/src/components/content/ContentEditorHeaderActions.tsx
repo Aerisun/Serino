@@ -10,7 +10,7 @@ interface ContentEditorHeaderActionsProps {
   visibility: ContentVisibility;
   isSaving: boolean;
   onToggleVisibility: () => void;
-  onSaveDraft: () => void;
+  onExit: () => void;
   onConfirm: () => void;
   extraActions?: ReactNode;
 }
@@ -28,7 +28,7 @@ export function ContentEditorHeaderActions({
   visibility,
   isSaving,
   onToggleVisibility,
-  onSaveDraft,
+  onExit,
   onConfirm,
   extraActions,
 }: ContentEditorHeaderActionsProps) {
@@ -54,11 +54,11 @@ export function ContentEditorHeaderActions({
         type="button"
         variant="secondary"
         className={draftButtonClassName}
-        onClick={onSaveDraft}
+        onClick={onExit}
         disabled={isSaving}
       >
         <LogOut className="mr-2 h-4 w-4" />
-        {isSaving ? t("common.saving") : t("common.saveDraft")}
+        {isSaving ? t("common.saving") : t("common.exit")}
       </Button>
       <Button
         type="button"

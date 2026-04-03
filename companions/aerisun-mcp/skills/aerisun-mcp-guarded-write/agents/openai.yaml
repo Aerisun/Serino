@@ -1,0 +1,15 @@
+interface:
+  display_name: "Aerisun MCP Guarded Write"
+  short_description: "Perform Aerisun MCP writes under guardrails"
+  default_prompt: "Use $aerisun-mcp-guarded-write to perform a tightly scoped Aerisun MCP mutation with explicit safeguards."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "aerisun-mcp"
+      description: "Aerisun MCP server configured through the companion .env file"
+      transport: "streamable_http"
+      url: "${AERISUN_MCP_ENDPOINT}"
+
+policy:
+  allow_implicit_invocation: false

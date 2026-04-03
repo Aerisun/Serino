@@ -2,7 +2,11 @@ import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { useI18n } from "@/i18n";
 import { Settings2, ShieldCheck } from "lucide-react";
 
-export function McpSectionSwitch() {
+interface McpSectionSwitchProps {
+  permissionsDisabled?: boolean;
+}
+
+export function McpSectionSwitch({ permissionsDisabled = false }: McpSectionSwitchProps) {
   const { t } = useI18n();
 
   const items = [
@@ -19,8 +23,9 @@ export function McpSectionSwitch() {
       label: t("integrations.tabs.permissions"),
       description: t("integrations.sectionDescriptions.mcpPermissions"),
       icon: ShieldCheck,
+      disabled: permissionsDisabled,
     },
   ] as const;
 
-  return <AdminSectionTabs items={items} />;
+  return <AdminSectionTabs items={items} className="w-fit" />;
 }

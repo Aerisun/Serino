@@ -75,7 +75,9 @@ const Posts = () => {
 
   const allCategories = [
     allCategoryLabel,
-    ...Array.from(new Set(items.map((item) => item.category))),
+    ...Array.from(new Set(items.map((item) => item.category))).filter(
+      (category) => category !== fallbackCategoryLabel,
+    ),
   ];
 
   const filtered = items.filter((post) => {
@@ -201,7 +203,9 @@ const Posts = () => {
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.7)]">
                 <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">{post.date}</span>
-                <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">{post.category}</span>
+                {post.category !== fallbackCategoryLabel && (
+                  <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">{post.category}</span>
+                )}
                 {post.tags.map((tag) => (
                   <span key={tag} className="text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]">
                     /{tag}

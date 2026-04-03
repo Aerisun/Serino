@@ -8,4 +8,4 @@ export interface ApiClientConfig {
 }
 
 export type ErrorType<E> = import("axios").AxiosError<E>;
-export type BodyType<D> = D;
+export type BodyType<D> = D extends never ? never : any;

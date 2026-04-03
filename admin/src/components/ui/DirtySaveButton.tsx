@@ -21,11 +21,15 @@ export function PendingSaveBadge({ className }: { className?: string }) {
 interface DirtySaveButtonProps extends Omit<ButtonProps, "children" | "variant"> {
   dirty: boolean;
   saving?: boolean;
+  idleLabel?: string;
+  savingLabel?: string;
 }
 
 export function DirtySaveButton({
   dirty,
   saving = false,
+  idleLabel,
+  savingLabel,
   size = "sm",
   className,
   disabled,
@@ -43,7 +47,7 @@ export function DirtySaveButton({
       {...props}
     >
       {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-      {saving ? t("common.saving") : t("common.save")}
+      {saving ? (savingLabel ?? t("common.saving")) : (idleLabel ?? t("common.save"))}
     </Button>
   );
 }

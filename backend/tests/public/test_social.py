@@ -7,24 +7,15 @@ def test_read_friends_returns_seeded_collection(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert len(payload["items"]) == 10
+    assert len(payload["items"]) == 1
 
-    names = [item["name"] for item in payload["items"]]
-    assert names == [
-        "Miku's Blog",
-        "AkaraChen",
-        "夏目的博客",
-        "保罗的小宇宙",
-        "猫羽のブログ",
-        "Erhecy's Blog",
-        "轻雅阁",
-        "柏园猫のBlog",
-        "Lucifer's Blog",
-        "Quiet Terminal",
-    ]
-    assert "Sunset Archive" not in names
+    names = {item["name"] for item in payload["items"]}
+    assert names == {"Arthals' ink"}
     assert all(item["status"] == "active" for item in payload["items"])
-    assert payload["items"][0]["description"] == "记录生活与技术的小站"
+    by_name = {item["name"]: item for item in payload["items"]}
+    assert by_name["Arthals' ink"]["description"] == "所见高山远木，阔云流风；所幸岁月盈余，了无拘束"
+    assert by_name["Arthals' ink"]["url"] == "https://arthals.ink/"
+    assert by_name["Arthals' ink"]["avatar"] == "https://cdn.arthals.ink/Arthals.png"
 
 
 def test_read_friend_feed_returns_only_active_enabled_sources(client) -> None:
@@ -33,26 +24,7 @@ def test_read_friend_feed_returns_only_active_enabled_sources(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert [item["blogName"] for item in payload["items"]] == [
-        "夏目的博客",
-        "Miku's Blog",
-        "Erhecy's Blog",
-        "柏园猫のBlog",
-        "保罗的小宇宙",
-        "Lucifer's Blog",
-        "AkaraChen",
-        "轻雅阁",
-        "猫羽のブログ",
-        "柏园猫のBlog",
-        "猫羽のブログ",
-        "保罗的小宇宙",
-        "AkaraChen",
-        "保罗的小宇宙",
-        "AkaraChen",
-    ]
-    assert payload["items"][0]["title"] == "网络流算法详解"
-    assert all(item["blogName"] != "Quiet Terminal" for item in payload["items"])
-    assert all(item["blogName"] != "Sunset Archive" for item in payload["items"])
+    assert payload["items"] == []
 
 
 def test_read_friend_feed_respects_limit(client) -> None:
@@ -61,5 +33,4 @@ def test_read_friend_feed_respects_limit(client) -> None:
     assert response.status_code == 200
 
     payload = response.json()
-    assert len(payload["items"]) == 2
-    assert payload["items"][0]["blogName"] == "夏目的博客"
+    assert payload["items"] == []

@@ -3,9 +3,23 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from aerisun.core.schemas import ModelBase
+
+
+def _normalize_media_reference_value(
+    value: str | None,
+    *,
+    empty_as_none: bool = False,
+) -> str | None:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None if empty_as_none else ""
+    return text
 
 
 class SocialLinkRead(ModelBase):
@@ -26,17 +40,14 @@ class SiteProfileRead(ModelBase):
     title: str = Field(description="Site title")
     bio: str = Field(description="Short biography")
     role: str = Field(description="Professional role")
-    footer_text: str = Field(description="Footer text")
-    author: str = Field(description="Default author name")
-    og_image: str = Field(description="Open Graph image path")
+    og_image: str = Field(description="Open Graph/Twitter sharing image path")
     site_icon_url: str = Field(description="Browser tab icon path")
     hero_image_url: str = Field(description="Hero image path")
-    hero_poster_url: str = Field(description="Hero video poster image path")
-    meta_description: str = Field(description="Meta description for SEO")
-    copyright: str = Field(description="Copyright notice")
+    hero_poster_url: str = Field(description="Hero video poster and fallback background image path")
+    filing_info: str = Field(description="Regulatory filing or ICP notice")
     hero_actions: list[dict[str, object]] = Field(description="Hero section action buttons")
     hero_video_url: str | None = Field(default=None, description="Hero background video URL")
-    poem_source: Literal["custom", "hitokoto"] = Field(default="custom", description="Poem source mode")
+    poem_source: Literal["custom", "hitokoto"] = Field(default="hitokoto", description="Poem source mode")
     poem_hitokoto_types: list[str] = Field(default_factory=list, description="Hitokoto category codes")
     poem_hitokoto_keywords: list[str] = Field(default_factory=list, description="Hitokoto preferred keywords")
     feature_flags: dict[str, object] = Field(default_factory=dict, description="Feature toggle flags")
@@ -65,6 +76,21 @@ class SitePoemPreviewRead(ModelBase):
     mode: Literal["custom", "hitokoto"] = Field(description="Resolved poem source mode")
     content: str = Field(description="Poem content shown on the homepage")
     attribution: str | None = Field(default=None, description="Optional source attribution")
+
+
+class LinkPreviewRead(ModelBase):
+    url: str = Field(description="Original normalized URL")
+    resolved_url: str = Field(description="Resolved URL after redirects or canonical resolution")
+    hostname: str = Field(description="Resolved hostname")
+    title: str | None = Field(default=None, description="Resolved page title")
+    description: str | None = Field(default=None, description="Resolved page description")
+    site_name: str | None = Field(default=None, description="Resolved site name")
+    image_url: str | None = Field(default=None, description="Preview image URL")
+    image_width: int | None = Field(default=None, description="Preview image width if declared")
+    image_height: int | None = Field(default=None, description="Preview image height if declared")
+    icon_url: str | None = Field(default=None, description="Site icon URL")
+    available: bool = Field(default=True, description="Whether preview metadata was successfully fetched")
+    error: str | None = Field(default=None, description="Optional fetch error detail")
 
 
 class PageCopyRead(ModelBase):
@@ -103,18 +129,11 @@ class CommunityConfigRead(ModelBase):
     emoji_presets: list[str] = Field(description="Emoji preset CDN URLs")
     enable_enjoy_search: bool = Field(description="Emoji search enabled")
     image_uploader: bool = Field(description="Image uploads allowed")
-    login_mode: str = Field(description="Authentication mode, fixed to login-required")
-    oauth_url: str | None = Field(description="OAuth endpoint URL")
-    oauth_providers: list[str] = Field(description="OAuth provider names")
     anonymous_enabled: bool = Field(description="Whether email login is allowed for commenting")
     moderation_mode: str = Field(description="Moderation mode")
     default_sorting: str = Field(description="Default sort order")
     page_size: int = Field(description="Initial comments loaded per batch")
     image_max_bytes: int | None = Field(default=524288, description="Max image upload size in bytes")
-    avatar_presets: list[dict[str, Any]] = Field(description="Predefined avatar options")
-    guest_avatar_mode: str = Field(description="Guest avatar mode")
-    draft_enabled: bool = Field(description="Draft saving enabled")
-    avatar_strategy: str = Field(description="Avatar resolution strategy")
     avatar_helper_copy: str = Field(description="Avatar helper text")
     migration_state: str = Field(description="Migration progress state")
 
@@ -155,19 +174,27 @@ class SiteProfileCreate(BaseModel):
     title: str = Field(description="Site title shown in header and SEO")
     bio: str = Field(description="Short biography")
     role: str = Field(description="Professional role or tagline")
-    footer_text: str = Field(description="Text shown in site footer")
-    author: str = Field(default="", description="Default author name for meta tags")
-    og_image: str = Field(default="", description="Default Open Graph image path")
+    og_image: str = Field(default="", description="Default Open Graph/Twitter sharing image path")
     site_icon_url: str = Field(default="", description="Browser tab icon path")
     hero_image_url: str = Field(default="", description="Hero image path")
-    hero_poster_url: str = Field(default="", description="Hero video poster image path")
-    meta_description: str = Field(default="", description="Default meta description for SEO")
-    copyright: str = Field(default="All rights reserved", description="Copyright notice text")
+    hero_poster_url: str = Field(default="", description="Hero video poster and fallback background image path")
+    filing_info: str = Field(default="", description="Regulatory filing or ICP notice")
     hero_actions: str = Field(default="[]", description="JSON string of hero section action buttons")
     hero_video_url: str | None = Field(default=None, description="URL for hero background video")
-    poem_source: Literal["custom", "hitokoto"] = Field(default="custom", description="Poem source mode")
+    poem_source: Literal["custom", "hitokoto"] = Field(default="hitokoto", description="Poem source mode")
     poem_hitokoto_types: list[str] = Field(default_factory=list, description="Hitokoto category codes")
     poem_hitokoto_keywords: list[str] = Field(default_factory=list, description="Hitokoto preferred keywords")
+
+    @field_validator("og_image", "site_icon_url", "hero_image_url", "hero_poster_url", "hero_video_url", mode="before")
+    @classmethod
+    def validate_registered_media_urls(cls, value: str | None, info) -> str | None:
+        normalized = _normalize_media_reference_value(
+            value,
+            empty_as_none=info.field_name == "hero_video_url",
+        )
+        if info.field_name == "hero_video_url":
+            return normalized
+        return normalized or ""
 
 
 class SiteProfileUpdate(BaseModel):
@@ -175,20 +202,27 @@ class SiteProfileUpdate(BaseModel):
     title: str | None = Field(default=None, description="Site title")
     bio: str | None = Field(default=None, description="Short biography")
     role: str | None = Field(default=None, description="Professional role or tagline")
-    footer_text: str | None = Field(default=None, description="Footer text")
-    author: str | None = Field(default=None, description="Default author name")
-    og_image: str | None = Field(default=None, description="Open Graph image path")
+    og_image: str | None = Field(default=None, description="Open Graph/Twitter sharing image path")
     site_icon_url: str | None = Field(default=None, description="Browser tab icon path")
     hero_image_url: str | None = Field(default=None, description="Hero image path")
-    hero_poster_url: str | None = Field(default=None, description="Hero video poster image path")
-    meta_description: str | None = Field(default=None, description="Meta description for SEO")
-    copyright: str | None = Field(default=None, description="Copyright notice")
+    hero_poster_url: str | None = Field(
+        default=None, description="Hero video poster and fallback background image path"
+    )
+    filing_info: str | None = Field(default=None, description="Regulatory filing or ICP notice")
     hero_actions: str | None = Field(default=None, description="Hero action buttons JSON")
     hero_video_url: str | None = Field(default=None, description="Hero background video URL")
     poem_source: Literal["custom", "hitokoto"] | None = Field(default=None, description="Poem source mode")
     poem_hitokoto_types: list[str] | None = Field(default=None, description="Hitokoto category codes")
     poem_hitokoto_keywords: list[str] | None = Field(default=None, description="Hitokoto preferred keywords")
     feature_flags: dict[str, object] | None = Field(default=None, description="Feature toggle flags")
+
+    @field_validator("og_image", "site_icon_url", "hero_image_url", "hero_poster_url", "hero_video_url", mode="before")
+    @classmethod
+    def validate_registered_media_urls(cls, value: str | None, info) -> str | None:
+        return _normalize_media_reference_value(
+            value,
+            empty_as_none=True,
+        )
 
 
 class SiteProfileAdminRead(ModelBase):
@@ -197,14 +231,11 @@ class SiteProfileAdminRead(ModelBase):
     title: str = Field(description="Site title")
     bio: str = Field(description="Short biography")
     role: str = Field(description="Professional role or tagline")
-    footer_text: str = Field(description="Footer text")
-    author: str = Field(description="Default author name")
-    og_image: str = Field(description="Open Graph image path")
+    og_image: str = Field(description="Open Graph/Twitter sharing image path")
     site_icon_url: str = Field(description="Browser tab icon path")
     hero_image_url: str = Field(description="Hero image path")
-    hero_poster_url: str = Field(description="Hero video poster image path")
-    meta_description: str = Field(description="Meta description")
-    copyright: str = Field(description="Copyright notice")
+    hero_poster_url: str = Field(description="Hero video poster and fallback background image path")
+    filing_info: str = Field(description="Regulatory filing or ICP notice")
     hero_actions: str = Field(description="Hero action buttons JSON")
     hero_video_url: str | None = Field(description="Hero background video URL")
     poem_source: Literal["custom", "hitokoto"] = Field(description="Poem source mode")
@@ -372,18 +403,11 @@ class CommunityConfigUpdate(BaseModel):
     emoji_presets: list[str] | None = Field(default=None, description="Emoji preset CDN URLs")
     enable_enjoy_search: bool | None = Field(default=None, description="Enable emoji search")
     image_uploader: bool | None = Field(default=None, description="Allow image uploads in comments")
-    login_mode: str | None = Field(default=None, description="Authentication mode, fixed to login-required")
-    oauth_url: str | None = Field(default=None, description="OAuth endpoint URL")
-    oauth_providers: list[str] | None = Field(default=None, description="Enabled OAuth providers")
     anonymous_enabled: bool | None = Field(default=None, description="Allow email login for commenting")
     moderation_mode: str | None = Field(default=None, description="Comment moderation mode")
     default_sorting: str | None = Field(default=None, description="Default comment sort order")
     page_size: int | None = Field(default=None, description="Initial comments loaded per batch")
     image_max_bytes: int | None = Field(default=None, description="Max upload image size in bytes")
-    avatar_presets: list[dict[str, Any]] | None = Field(default=None, description="Predefined avatar options")
-    guest_avatar_mode: str | None = Field(default=None, description="Guest avatar display mode")
-    draft_enabled: bool | None = Field(default=None, description="Allow saving comment drafts")
-    avatar_strategy: str | None = Field(default=None, description="Avatar resolution strategy")
     avatar_helper_copy: str | None = Field(default=None, description="Avatar selection helper text")
     migration_state: str | None = Field(default=None, description="Waline migration state")
 
@@ -398,18 +422,11 @@ class CommunityConfigAdminRead(ModelBase):
     emoji_presets: list[str] = Field(description="Emoji preset CDN URLs")
     enable_enjoy_search: bool = Field(description="Emoji search enabled")
     image_uploader: bool = Field(description="Image uploads allowed")
-    login_mode: str = Field(description="Authentication mode, fixed to login-required")
-    oauth_url: str | None = Field(description="OAuth endpoint URL")
-    oauth_providers: list[str] = Field(description="Enabled OAuth providers")
     anonymous_enabled: bool = Field(description="Whether email login is allowed for commenting")
     moderation_mode: str = Field(description="Comment moderation mode")
     default_sorting: str = Field(description="Default sort order")
     page_size: int = Field(description="Initial comments loaded per batch")
     image_max_bytes: int | None = Field(default=524288, description="Max upload image size in bytes")
-    avatar_presets: list[dict[str, Any]] = Field(description="Predefined avatar options")
-    guest_avatar_mode: str = Field(description="Guest avatar mode")
-    draft_enabled: bool = Field(description="Draft saving enabled")
-    avatar_strategy: str = Field(description="Avatar resolution strategy")
     avatar_helper_copy: str = Field(description="Avatar helper text")
     migration_state: str = Field(description="Waline migration state")
     created_at: datetime = Field(description="Creation timestamp")
@@ -428,6 +445,11 @@ class ResumeBasicsCreate(BaseModel):
     email: str = Field(default="", description="Primary contact email")
     profile_image_url: str = Field(default="", description="Profile image URL")
 
+    @field_validator("profile_image_url", mode="before")
+    @classmethod
+    def validate_profile_image_url(cls, value: str | None) -> str:
+        return _normalize_media_reference_value(value) or ""
+
 
 class ResumeBasicsUpdate(BaseModel):
     title: str | None = Field(default=None, description="Resume page title")
@@ -435,6 +457,11 @@ class ResumeBasicsUpdate(BaseModel):
     location: str | None = Field(default=None, description="Current base location")
     email: str | None = Field(default=None, description="Primary contact email")
     profile_image_url: str | None = Field(default=None, description="Profile image URL")
+
+    @field_validator("profile_image_url", mode="before")
+    @classmethod
+    def validate_profile_image_url(cls, value: str | None) -> str | None:
+        return _normalize_media_reference_value(value, empty_as_none=True)
 
 
 class ResumeBasicsAdminRead(ModelBase):

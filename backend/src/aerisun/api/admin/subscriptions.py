@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -11,15 +11,18 @@ from aerisun.domain.ops.config_revisions import capture_config_resource, create_
 from aerisun.domain.subscription.schemas import (
     ContentNotificationDeliveryAdminRead,
     ContentSubscriberAdminRead,
+    ContentSubscriberAdminUpdate,
     ContentSubscriptionConfigAdminRead,
     ContentSubscriptionConfigAdminUpdate,
     ContentSubscriptionTestResult,
 )
 from aerisun.domain.subscription.service import (
+    delete_admin_subscriber,
     get_subscription_admin_config,
     list_admin_subscribers,
     list_subscriber_delivery_history,
     send_subscription_test_email,
+    set_admin_subscriber_active,
     update_subscription_admin_config,
 )
 
@@ -60,10 +63,11 @@ def update_content_subscription_config(
 @router.post("/config/test", response_model=ContentSubscriptionTestResult, summary="测试内容订阅 SMTP 发信")
 def test_content_subscription_config(
     payload: ContentSubscriptionConfigAdminUpdate,
+    persist_success: bool = Query(default=False),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> ContentSubscriptionTestResult:
-    return send_subscription_test_email(session, payload)
+    return send_subscription_test_email(session, payload, persist_success=persist_success)
 
 
 @router.get(
@@ -108,3 +112,34 @@ def list_content_subscriber_messages(
         page_size=page_size,
     )
     return build_paginated_response(items, total=total, page=page, page_size=page_size)
+
+
+@router.patch(
+    "/subscribers/{email}",
+    response_model=ContentSubscriberAdminRead,
+    summary="启用或停用订阅者",
+)
+def update_content_subscriber(
+    email: str,
+    payload: ContentSubscriberAdminUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ContentSubscriberAdminRead:
+    return set_admin_subscriber_active(
+        session,
+        email=email,
+        is_active=payload.is_active,
+    )
+
+
+@router.delete(
+    "/subscribers/{email}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除订阅者",
+)
+def delete_content_subscriber(
+    email: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    delete_admin_subscriber(session, email=email)

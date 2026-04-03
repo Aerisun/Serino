@@ -6,7 +6,6 @@ from aerisun.core.settings import get_settings
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.models import SiteAuthConfig
 from aerisun.domain.site_auth.schemas import SiteAuthConfigAdminRead, SiteAuthConfigAdminUpdate
-from aerisun.domain.site_config import repository as site_config_repo
 
 from .shared import (
     ALLOWED_ADMIN_AUTH_METHODS,
@@ -17,14 +16,8 @@ from .shared import (
 
 def build_default_site_auth_config(session: Session) -> dict[str, object]:
     settings = get_settings()
-    community_config = site_config_repo.find_community_config(session)
-    default_providers = (
-        list(community_config.oauth_providers)
-        if community_config and community_config.oauth_providers
-        else ["github", "google"]
-    )
     visitor_oauth_providers = normalize_string_list(
-        default_providers,
+        ["github", "google"],
         ALLOWED_OAUTH_PROVIDERS,
     )
     return {
@@ -54,8 +47,11 @@ def get_site_auth_admin_config(session: Session) -> SiteAuthConfigAdminRead:
 
 
 def update_site_auth_admin_config(session: Session, payload: SiteAuthConfigAdminUpdate) -> SiteAuthConfigAdminRead:
+    from aerisun.domain.automation.events import emit_site_auth_config_updated
+
     config = get_site_auth_config_orm(session)
     updates = payload.model_dump(exclude_unset=True)
+    changed_fields = sorted(updates.keys())
     if "visitor_oauth_providers" in updates:
         updates["visitor_oauth_providers"] = normalize_string_list(
             updates["visitor_oauth_providers"],
@@ -70,12 +66,25 @@ def update_site_auth_admin_config(session: Session, payload: SiteAuthConfigAdmin
         setattr(config, key, value)
     session.commit()
     session.refresh(config)
+    emit_site_auth_config_updated(
+        session,
+        changed_fields=changed_fields,
+        visitor_oauth_providers=list(config.visitor_oauth_providers or []),
+        admin_auth_methods=list(config.admin_auth_methods or []),
+        email_login_enabled=bool(config.email_login_enabled),
+        admin_email_enabled=bool(config.admin_email_enabled),
+    )
     return SiteAuthConfigAdminRead.model_validate(config)
+
+
+def enabled_visitor_oauth_providers(session: Session) -> list[str]:
+    config = get_site_auth_config_orm(session)
+    return normalize_string_list(config.visitor_oauth_providers, ALLOWED_OAUTH_PROVIDERS)
 
 
 def enabled_oauth_providers(session: Session) -> list[str]:
     config = get_site_auth_config_orm(session)
-    visitor = normalize_string_list(config.visitor_oauth_providers, ALLOWED_OAUTH_PROVIDERS)
+    visitor = enabled_visitor_oauth_providers(session)
     admin = [
         item
         for item in normalize_string_list(config.admin_auth_methods, ALLOWED_ADMIN_AUTH_METHODS)

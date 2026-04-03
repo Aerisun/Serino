@@ -30,6 +30,46 @@ API_KEY_PREFIX_LEN = 4
 API_KEY_SUFFIX_LEN = 3
 
 
+def _canonicalize_stored_api_key_scope(scope: str) -> str | None:
+    value = (scope or "").strip()
+    if not value:
+        return None
+    if value == "mcp:connect":
+        return "agent:connect"
+    if value.startswith("mcp:"):
+        return value.removeprefix("mcp:")
+    return value
+
+
+def _normalize_stored_api_key_scopes(scopes: list[str] | None) -> list[str]:
+    from aerisun.api.admin.scopes import ALL_SCOPES
+
+    normalized: list[str] = []
+    for scope in scopes or []:
+        value = _canonicalize_stored_api_key_scope(scope)
+        if value and value in ALL_SCOPES and value not in normalized:
+            normalized.append(value)
+    return sorted(normalized)
+
+
+def _repair_api_key_scope_storage(key: ApiKey) -> bool:
+    normalized = _normalize_stored_api_key_scopes(key.scopes)
+    if normalized == list(key.scopes or []):
+        return False
+    key.scopes = normalized
+    return True
+
+
+def repair_legacy_api_key_scopes(session: Session) -> int:
+    repaired = 0
+    for key in repo.find_all_api_keys(session):
+        if _repair_api_key_scope_storage(key):
+            repaired += 1
+    if repaired:
+        session.commit()
+    return repaired
+
+
 def get_admin_profile(admin: AdminUser) -> AdminUserRead:
     return AdminUserRead.model_validate(admin)
 
@@ -135,9 +175,16 @@ def validate_api_key(session: Session, token: str, required_scopes: tuple[str, .
     key = repo.find_api_key_by_prefix_and_suffix(session, prefix, suffix)
     if key is None or not bcrypt.checkpw(token.encode(), key.hashed_secret.encode()):
         raise AuthenticationFailed("Invalid API key")
+    repaired = _repair_api_key_scope_storage(key)
+    if not key.enabled:
+        if repaired:
+            session.commit()
+        raise PermissionDenied("API key is disabled")
 
     missing = [s for s in required_scopes if s not in key.scopes]
     if missing:
+        if repaired:
+            session.commit()
         raise PermissionDenied(f"Missing required scopes: {', '.join(missing)}")
     key.last_used_at = datetime.now(UTC)
     session.commit()
@@ -151,23 +198,23 @@ def validate_api_key(session: Session, token: str, required_scopes: tuple[str, .
 
 def list_api_keys(session: Session) -> list[ApiKeyAdminRead]:
     keys = repo.find_all_api_keys(session)
+    repaired = False
+    for key in keys:
+        repaired = _repair_api_key_scope_storage(key) or repaired
+    if repaired:
+        session.commit()
     return [ApiKeyAdminRead.model_validate(k) for k in keys]
 
 
 def _normalize_api_key_scopes(scopes: list[str]) -> list[str]:
     from aerisun.api.admin.scopes import ALL_SCOPES
 
-    aliases = {
-        "read": "system:read",
-        "write": "system:write",
-    }
-
     normalized: list[str] = []
     for scope in scopes:
         value = (scope or "").strip()
         if not value:
             continue
-        normalized.append(aliases.get(value, value))
+        normalized.append(value)
 
     unknown = sorted({s for s in normalized if s not in ALL_SCOPES})
     if unknown:
@@ -210,6 +257,7 @@ def update_api_key(session: Session, key_id: str, payload: ApiKeyUpdate) -> ApiK
     key = repo.find_api_key_by_id(session, key_id)
     if key is None:
         raise ResourceNotFound("API key not found")
+    _repair_api_key_scope_storage(key)
     updates = payload.model_dump(exclude_unset=True)
     if "scopes" in updates and updates["scopes"] is not None:
         updates["scopes"] = _normalize_api_key_scopes(updates["scopes"])

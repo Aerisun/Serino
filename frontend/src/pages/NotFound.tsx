@@ -6,16 +6,19 @@ import { usePageConfig } from "@/contexts/runtime-config";
 
 const NotFound = () => {
   const config = (usePageConfig().notFound as Record<string, unknown> | undefined) ?? {};
-  const badgeLabel = "404";
+  const badgeLabel = String(config.badgeLabel ?? "404");
   const homeLabel = String(config.homeLabel ?? "返回首页");
   const backLabel = String(config.backLabel ?? "返回上页");
-  const title = "这里没有什么都没有找到唉~";
+  const title = String(config.title ?? "这个页面没有留下来");
+  const description = String(config.description ?? "似乎已经离开了当前的路径。");
+  const metaTitle = String(config.metaTitle ?? title);
+  const metaDescription = String(config.metaDescription ?? description);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 text-foreground">
       <PageMeta
-        title={title}
-        description=""
+        title={metaTitle}
+        description={metaDescription}
       />
       <div
         className="absolute inset-0 opacity-70"
@@ -44,6 +47,11 @@ const NotFound = () => {
             <h1 className="text-3xl font-heading italic tracking-tight text-foreground sm:text-4xl">
               {title}
             </h1>
+            {description ? (
+              <p className="mt-3 max-w-md text-sm leading-6 text-foreground/44">
+                {description}
+              </p>
+            ) : null}
           </div>
         </div>
 

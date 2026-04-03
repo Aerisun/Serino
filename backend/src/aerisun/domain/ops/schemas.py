@@ -106,7 +106,6 @@ class BackupSnapshotRead(ModelBase):
 
 class BackupTransportConfig(ModelBase):
     mode: str
-    receiver_base_url: str | None = None
     remote_host: str | None = None
     remote_port: int | None = None
     remote_path: str | None = None
@@ -118,15 +117,20 @@ class BackupSyncConfig(ModelBase):
     enabled: bool = False
     paused: bool = False
     interval_minutes: int = 60
-    transport_mode: str = "receiver"
+    transport_mode: str = "sftp"
     site_slug: str = "aerisun"
     credential_ref: str | None = None
-    age_public_key_fingerprint: str | None = None
+    encrypt_runtime_data: bool = False
     max_retries: int = 3
     retry_backoff_seconds: int = 300
+    max_retention_count: int = 0
     last_scheduled_at: datetime | None = None
     last_synced_at: datetime | None = None
     last_error: str | None = None
+    recovery_key_ready: bool = False
+    recovery_key_acknowledged: bool = False
+    active_recovery_key_fingerprint: str | None = None
+    archived_recovery_key_count: int = 0
     transport: BackupTransportConfig
     created_at: datetime
     updated_at: datetime
@@ -136,17 +140,63 @@ class BackupSyncConfigUpdate(BaseModel):
     enabled: bool = False
     paused: bool = False
     interval_minutes: int = 60
-    transport_mode: str = "receiver"
+    transport_mode: str = "sftp"
     site_slug: str = "aerisun"
-    receiver_base_url: str | None = None
     remote_host: str | None = None
     remote_port: int | None = None
     remote_path: str | None = None
     remote_username: str | None = None
     credential_ref: str | None = None
-    age_public_key_fingerprint: str | None = None
+    encrypt_runtime_data: bool = False
     max_retries: int = 3
     retry_backoff_seconds: int = 300
+    max_retention_count: int = 0
+
+
+class BackupCredentialEnsureWrite(BaseModel):
+    credential_ref: str = "aerisun-backup-source"
+    site_slug: str = "aerisun"
+    force: bool = False
+
+
+class BackupCredentialEnsureRead(BaseModel):
+    credential_ref: str
+    site_slug: str
+    credential_dir: str
+    secrets_fingerprint: str
+    created: bool = False
+    archived_fingerprints: list[str] = Field(default_factory=list)
+
+
+class BackupCredentialExportWrite(BaseModel):
+    credential_ref: str = "aerisun-backup-source"
+    site_slug: str = "aerisun"
+    passphrase: str = Field(min_length=8)
+    rotate: bool = False
+
+
+class BackupCredentialExportRead(BaseModel):
+    credential_ref: str
+    site_slug: str
+    credential_dir: str
+    secrets_fingerprint: str
+    archived_fingerprints: list[str] = Field(default_factory=list)
+    rotated: bool = False
+    filename: str
+    private_key_pem: str
+
+
+class BackupCredentialAcknowledgeWrite(BaseModel):
+    credential_ref: str = "aerisun-backup-source"
+
+
+class BackupSyncConfigTestRead(BaseModel):
+    ok: bool
+    summary: str
+    latency_ms: int | None = None
+    remote_path_preview: str
+    recovery_key_ready: bool = False
+    recovery_key_acknowledged: bool = False
 
 
 class BackupQueueItemRead(ModelBase):
@@ -238,6 +288,7 @@ class TopPageMetric(BaseModel):
     url: str
     views: int = 0
     share: float = 0.0
+    title: str | None = None
 
 
 class DashboardTrafficMetrics(BaseModel):

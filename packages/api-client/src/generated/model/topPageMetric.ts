@@ -9,4 +9,5 @@ export interface TopPageMetric {
   url: string;
   views?: number;
   share?: number;
+  title?: string | null;
 }

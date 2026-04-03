@@ -8,7 +8,7 @@ when:
   interval_seconds: 60
 where:
   type: mcp
-  endpoint: /api/mcp/mcp
+  endpoint: /api/mcp
 docs_url: /api/agent/usage
 use_cases:
   - 审核新评论并判断是否需要人工介入

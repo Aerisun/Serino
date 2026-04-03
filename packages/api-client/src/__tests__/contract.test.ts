@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, existsSync } from "fs";
-import { resolve, basename } from "path";
+import { readdirSync } from "fs";
+import { basename } from "path";
 
 // Import generated Zod schemas
 import {
@@ -12,8 +12,7 @@ import {
   ListPostsResponse,
   ListSessionsEndpointApiV1AdminAuthSessionsGetResponse,
 } from "../generated/schemas.zod";
-
-const FIXTURES_DIR = resolve(__dirname, "fixtures");
+import { FIXTURES_DIR, fixturesDirectoryExists, loadFixture } from "./contract-helpers";
 
 // Map fixture file names to their corresponding Zod schemas
 const fixtureSchemaMap: Record<string, { schema: unknown; name: string }> = {
@@ -47,36 +46,8 @@ const fixtureSchemaMap: Record<string, { schema: unknown; name: string }> = {
   },
 };
 
-// ISO 8601 datetime without timezone (from SQLite) — append UTC marker
-// so Zod's .datetime() accepts it. This is a known SQLite limitation:
-// the database stores timezone-aware values but loses the offset on read.
-const NAIVE_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
-
-function normalizeDatetimes(value: unknown): unknown {
-  if (typeof value === "string" && NAIVE_DATETIME_RE.test(value)) {
-    return value + "Z";
-  }
-  if (Array.isArray(value)) {
-    return value.map(normalizeDatetimes);
-  }
-  if (value !== null && typeof value === "object") {
-    const obj: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      obj[k] = normalizeDatetimes(v);
-    }
-    return obj;
-  }
-  return value;
-}
-
-function loadFixture(filename: string): unknown {
-  const filepath = resolve(FIXTURES_DIR, filename);
-  const raw = JSON.parse(readFileSync(filepath, "utf-8"));
-  return normalizeDatetimes(raw);
-}
-
 describe("API Contract Validation", () => {
-  if (!existsSync(FIXTURES_DIR)) {
+  if (!fixturesDirectoryExists()) {
     it.skip("fixtures directory missing — run backend tests first", () => {});
     return;
   }

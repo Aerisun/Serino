@@ -23,7 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { canCompressImage, compressImageFile } from "@/lib/image-upload";
+import { canCompressImage, compressImageFile } from "@serino/utils";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
@@ -110,8 +111,7 @@ export function ResourceUploadField({
         if (fileRef.current) fileRef.current.value = "";
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || "资源上传失败";
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, "资源上传失败"));
       },
     },
   });

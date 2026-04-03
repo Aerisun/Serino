@@ -14,12 +14,15 @@ SESSION_TTL_HOURS = 24 * 30
 
 
 def create_site_session(session: Session, site_user_id: str, ttl_hours: int | None = None) -> str:
+    from aerisun.domain.automation.events import emit_site_user_session_created
+
     settings = get_settings()
     ttl = ttl_hours or getattr(settings, "public_session_ttl_hours", SESSION_TTL_HOURS)
     token = secrets.token_urlsafe(64)
     expires_at = datetime.now(UTC) + timedelta(hours=ttl)
     repo.create_session(session, site_user_id=site_user_id, token=token, expires_at=expires_at)
     session.commit()
+    emit_site_user_session_created(session, site_user_id=site_user_id)
     return token
 
 
@@ -40,8 +43,12 @@ def validate_site_session_token(session: Session, token: str) -> SiteUser:
 
 
 def destroy_site_session(session: Session, token: str) -> None:
+    from aerisun.domain.automation.events import emit_site_user_session_deleted
+
     existing = repo.find_session_by_token(session, token)
     if existing is None:
         return
+    site_user_id = existing.site_user_id
     repo.delete_session(session, existing)
     session.commit()
+    emit_site_user_session_deleted(session, site_user_id=site_user_id)

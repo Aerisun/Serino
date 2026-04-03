@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getGetWebhooksApiV1AdminAutomationWebhooksGetQueryKey,
   useDeleteWebhookApiV1AdminAutomationWebhooksSubscriptionIdDelete,
@@ -8,6 +8,7 @@ import {
   usePutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPut,
 } from "@serino/api-client/admin";
 import type { WebhookSubscriptionCreate, WebhookSubscriptionRead } from "@serino/api-client/models";
+import { getAgentWorkflows } from "@/pages/automation/api";
 import { PageHeader } from "@/components/PageHeader";
 import { AdminSurface } from "@/components/AdminSurface";
 import { DataTable } from "@/components/DataTable";
@@ -17,9 +18,10 @@ import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, CheckCircle2 } from "lucide-react";
-import { connectTelegramWebhook, testWebhookSubscription } from "@/api/endpoints/webhooks";
+import { connectTelegramWebhook, testWebhookSubscription } from "@/pages/automation/api";
 import { DeliveriesPanel } from "./DeliveriesPage";
 
 type WebhookView = "webhooks" | "deliveries";
@@ -159,6 +161,37 @@ function resolveWebhookStatusState(row: WebhookSubscriptionRow, lang: "zh" | "en
   };
 }
 
+function subscriptionToPayload(row: WebhookSubscriptionRead, status: string): WebhookSubscriptionCreate {
+  return {
+    name: row.name,
+    target_url: row.target_url,
+    event_types: [...(row.event_types ?? [])],
+    secret: row.secret ?? null,
+    timeout_seconds: row.timeout_seconds ?? DEFAULT_TIMEOUT_SECONDS,
+    max_attempts: row.max_attempts ?? DEFAULT_MAX_ATTEMPTS,
+    status,
+    headers: row.headers ?? {},
+  };
+}
+
+function collectLinkedWorkflowNames(
+  subscriptionId: string,
+  workflows: Array<{ key: string; name: string; graph: { nodes?: Array<{ type?: string; config?: Record<string, unknown> }> } }>,
+) {
+  return workflows
+    .filter((workflow) => {
+      const nodes = Array.isArray(workflow.graph?.nodes) ? workflow.graph.nodes : [];
+      return nodes.some((node) => {
+        if (node?.type !== "notification.webhook") return false;
+        const linkedIds = Array.isArray(node.config?.linked_subscription_ids)
+          ? node.config.linked_subscription_ids
+          : [];
+        return linkedIds.some((item) => String(item) === subscriptionId);
+      });
+    })
+    .map((workflow) => workflow.name || workflow.key);
+}
+
 function buildFieldHelp(lang: "zh" | "en") {
   if (lang === "zh") {
     return {
@@ -244,7 +277,21 @@ export function WebhooksPanel() {
   const [telegramConnectState, setTelegramConnectState] = useState<TelegramConnectState>(EMPTY_TELEGRAM_CONNECT_STATE);
   const telegramConnectRequestIdRef = useRef(0);
   const { data: raw, isLoading } = useGetWebhooksApiV1AdminAutomationWebhooksGet();
+  const { data: workflows } = useQuery({
+    queryKey: ["admin", "agent", "workflows"],
+    queryFn: getAgentWorkflows,
+  });
   const items = (raw?.data ?? []) as WebhookSubscriptionRow[];
+  const linkedWorkflowNamesBySubscriptionId = useMemo(() => {
+    const workflowList = (workflows ?? []) as Array<{
+      key: string;
+      name: string;
+      graph: { nodes?: Array<{ type?: string; config?: Record<string, unknown> }> };
+    }>;
+    return new Map(
+      items.map((row) => [row.id, collectLinkedWorkflowNames(row.id, workflowList)]),
+    );
+  }, [items, workflows]);
   const help = buildFieldHelp(lang);
 
   const resetTelegramConnectState = () => {
@@ -268,8 +315,7 @@ export function WebhooksPanel() {
         resetForm();
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -284,8 +330,7 @@ export function WebhooksPanel() {
         resetForm();
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -297,8 +342,7 @@ export function WebhooksPanel() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -633,7 +677,6 @@ export function WebhooksPanel() {
         <DataTable<WebhookSubscriptionRow>
           columns={[
             { header: t("common.name"), accessor: "name" },
-            { header: "Events", accessor: (row) => row.event_types.join(", ") || "-" },
             {
               header: t("automation.status"),
               accessor: (row) => {
@@ -660,8 +703,22 @@ export function WebhooksPanel() {
             },
             {
               header: t("common.actions"),
+              className: "w-[220px] text-center",
               accessor: (row) => (
-                <div className="flex gap-2">
+                <div className="flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      updateWebhook.mutate({
+                        subscriptionId: row.id,
+                        data: subscriptionToPayload(row, row.status === "active" ? "inactive" : "active"),
+                      })}
+                  >
+                    {row.status === "active"
+                      ? (lang === "zh" ? "停用" : "Disable")
+                      : (lang === "zh" ? "启用" : "Enable")}
+                  </Button>
                   <Button variant="ghost" size="icon" onClick={() => openEdit(row)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -674,6 +731,32 @@ export function WebhooksPanel() {
           ]}
           data={items}
           isLoading={isLoading}
+          renderExpandedRow={(row) => {
+            const names = linkedWorkflowNamesBySubscriptionId.get(row.id) ?? [];
+            return (
+              <div className="py-4">
+                <div className="text-sm font-medium text-foreground/90">
+                  {lang === "zh" ? "参与的工作流" : "Linked workflows"}
+                </div>
+                {names.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {names.map((name) => (
+                      <span
+                        key={name}
+                        className="inline-flex items-center rounded-full border border-border/70 bg-background px-3 py-1 text-sm text-foreground/90"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    {lang === "zh" ? "当前还没有工作流使用这个 Webhook。" : "No workflow is using this webhook yet."}
+                  </div>
+                )}
+              </div>
+            );
+          }}
         />
       </AdminSurface>
     </>

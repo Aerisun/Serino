@@ -14,15 +14,11 @@ import { toast } from "sonner";
 import {
   buildSubscriptionTestFailureMessage,
   sendSubscriptionTestEmail,
-} from "@/api/endpoints/subscriptions";
+} from "@/pages/visitors/api";
+import { ConfigSettingsCard } from "@/components/ConfigSettingsCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
-import {
-  DirtySaveButton,
-  PendingSaveBadge,
-} from "@/components/ui/DirtySaveButton";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import {
@@ -33,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type MailFieldKey =
   | "smtp_host"
@@ -362,6 +359,8 @@ export function ExternalConfigSection() {
       createSubscriptionForm(),
     );
   const [isTesting, setIsTesting] = useState(false);
+  const [isSavingWithCheck, setIsSavingWithCheck] = useState(false);
+  const [lastCheckOk, setLastCheckOk] = useState<boolean | null>(null);
   const smtpTestPassed = Boolean(
     (subscriptionConfig as { smtp_test_passed?: boolean } | undefined)
       ?.smtp_test_passed,
@@ -372,6 +371,7 @@ export function ExternalConfigSection() {
     const nextForm = createSubscriptionForm(subscriptionConfig);
     setForm(nextForm);
     setSavedForm(nextForm);
+    setLastCheckOk(Boolean(subscriptionConfig.smtp_test_passed));
   }, [subscriptionConfig]);
 
   const saveSubscription =
@@ -394,9 +394,7 @@ export function ExternalConfigSection() {
           toast.success(t("common.operationSuccess"));
         },
         onError: (error: any) => {
-          const msg =
-            error?.response?.data?.detail || t("common.operationFailed");
-          toast.error(msg);
+          toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
         },
       },
     });
@@ -476,16 +474,33 @@ export function ExternalConfigSection() {
   const canTestSend =
     baseMailReady &&
     (!form.smtp_username?.trim() || Boolean(form.smtp_password?.trim()));
+  const statusTone = isTesting || isSavingWithCheck
+    ? "checking"
+    : (smtpAvailableForCurrentForm || lastCheckOk === true)
+      ? "available"
+      : lastCheckOk === false
+        ? "invalid"
+        : "pending";
+  const statusLabel =
+    statusTone === "checking"
+      ? (lang === "zh" ? "检查中" : "Checking")
+      : statusTone === "available"
+        ? (lang === "zh" ? "可用" : "Available")
+        : statusTone === "invalid"
+          ? (lang === "zh" ? "无效" : "Invalid")
+          : (lang === "zh" ? "待测试" : "Pending");
 
   const handleFieldChange = (
     key: keyof ContentSubscriptionConfigAdminUpdate,
     value: string | number | boolean,
   ) => {
     setForm((current) => ({ ...current, [key]: value }));
+    setLastCheckOk(null);
   };
 
   const handleConnectionModeChange = (value: string) => {
     const mode = value as ConnectionMode;
+    setLastCheckOk(null);
     setForm((current) => {
       if (mode === "ssl") {
         return {
@@ -517,199 +532,188 @@ export function ExternalConfigSection() {
     });
   };
 
-  const handleSave = async () => {
-    await saveSubscription.mutateAsync({ data: buildFormPayload(form) });
-  };
-
-  const handleTestSend = async () => {
+  const runMailCheck = async (options?: { persistSuccess?: boolean }) => {
+    if (!canTestSend) {
+      setLastCheckOk(null);
+      return false;
+    }
     setIsTesting(true);
     try {
       const payload = buildFormPayload(form);
-      const result = await sendSubscriptionTestEmail(payload);
-      const testedAt = new Date().toISOString();
-      setForm(payload);
-      setSavedForm(payload);
-      queryClient.setQueryData(
-        subscriptionConfigQueryKey,
-        (current: unknown) => {
-          if (!current || typeof current !== "object") {
-            return current;
-          }
-          const currentResponse = current as { data?: Record<string, unknown> };
-          if (
-            !currentResponse.data ||
-            typeof currentResponse.data !== "object"
-          ) {
-            return current;
-          }
-          return {
-            ...currentResponse,
-            data: {
-              ...currentResponse.data,
-              ...payload,
-              smtp_test_passed: true,
-              smtp_tested_at: testedAt,
-            },
-          };
-        },
-      );
-      await queryClient.invalidateQueries({
-        queryKey: subscriptionConfigQueryKey,
-      });
+      const result = await sendSubscriptionTestEmail(payload, options);
+      setLastCheckOk(true);
+      if (options?.persistSuccess) {
+        await queryClient.invalidateQueries({
+          queryKey: subscriptionConfigQueryKey,
+        });
+      }
       toast.success(
         lang === "zh"
           ? `测试邮件已发送到 ${result.recipient}`
           : `Test email sent to ${result.recipient}`,
       );
+      return true;
     } catch (error) {
+      setLastCheckOk(false);
       toast.error(
         error instanceof Error
           ? error.message
           : buildSubscriptionTestFailureMessage(),
       );
+      return false;
     } finally {
       setIsTesting(false);
     }
   };
 
+  const handleSave = async () => {
+    setIsSavingWithCheck(true);
+    try {
+      await saveSubscription.mutateAsync({ data: buildFormPayload(form) });
+      if (canTestSend) {
+        await runMailCheck({ persistSuccess: true });
+      }
+    } finally {
+      setIsSavingWithCheck(false);
+    }
+  };
+
   return (
-    <div className="mt-4 space-y-5">
-      <Card className="max-w-4xl">
-        <CardHeader className="gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
-          <div>
-            <h3 className="text-lg font-semibold">{t("more.mailSettings")}</h3>
-          </div>
-          <div className="flex items-center gap-2 self-start">
-            {hasChanges ? <PendingSaveBadge /> : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={[
-                "gap-2",
-                smtpAvailableForCurrentForm
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/16"
-                  : "",
-              ].join(" ")}
-              onClick={() => void handleTestSend()}
-              disabled={!canTestSend || isTesting || saveSubscription.isPending}
-            >
-              {isTesting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {lang === "zh" ? "测试" : "Test"}
-            </Button>
-            <DirtySaveButton
-              dirty={hasChanges}
-              saving={saveSubscription.isPending}
-              onClick={() => void handleSave()}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-5 pt-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            {primaryFields.map((field) => (
-              <div key={field.key} className="space-y-2">
-                <LabelWithHelp
-                  htmlFor={field.key}
-                  label={renderLabel(
-                    field.label,
-                    lang,
-                    activeHelp[field.key].level,
-                  )}
-                  title={activeHelp[field.key].title}
-                  description={activeHelp[field.key].description}
-                  usageTitle={activeHelp[field.key].usageTitle}
-                  usageItems={activeHelp[field.key].usageItems}
-                />
-                <Input
-                  id={field.key}
-                  type={field.type}
-                  value={field.value}
-                  placeholder={field.placeholder}
-                  onChange={(event) =>
-                    handleFieldChange(
-                      field.key,
-                      field.key === "smtp_port"
-                        ? Number(event.target.value || 0)
-                        : event.target.value,
-                    )
-                  }
-                />
-              </div>
-            ))}
-          </div>
-
-          <CollapsibleSection
-            title={lang === "zh" ? "高级选项" : "Advanced Options"}
-            badge={lang === "zh" ? "可选" : "Optional"}
-          >
-            <div className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                {advancedFields.map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <LabelWithHelp
-                      htmlFor={field.key}
-                      label={renderLabel(
-                        field.label,
-                        lang,
-                        activeHelp[field.key].level,
-                      )}
-                      title={activeHelp[field.key].title}
-                      description={activeHelp[field.key].description}
-                      usageTitle={activeHelp[field.key].usageTitle}
-                      usageItems={activeHelp[field.key].usageItems}
-                    />
-                    <Input
-                      id={field.key}
-                      type={field.type}
-                      value={field.value}
-                      placeholder={field.placeholder}
-                      onChange={(event) =>
-                        handleFieldChange(field.key, event.target.value)
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                <LabelWithHelp
-                  htmlFor="connection_mode"
-                  label={renderLabel(
-                    lang === "zh" ? "连接方式" : "Connection Mode",
-                    lang,
-                    activeHelp.connection_mode.level,
-                  )}
-                  title={activeHelp.connection_mode.title}
-                  description={activeHelp.connection_mode.description}
-                  usageTitle={activeHelp.connection_mode.usageTitle}
-                  usageItems={activeHelp.connection_mode.usageItems}
-                />
-                <Select
-                  value={connectionMode}
-                  onValueChange={handleConnectionModeChange}
-                >
-                  <SelectTrigger id="connection_mode">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="starttls">STARTTLS (587)</SelectItem>
-                    <SelectItem value="ssl">SSL/TLS (465)</SelectItem>
-                    <SelectItem value="none">
-                      {lang === "zh"
-                        ? "不加密 / 按服务商自定义"
-                        : "No Encryption / Custom"}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+    <ConfigSettingsCard
+      eyebrow="Mail"
+      title={t("more.mailSettings")}
+      dirty={hasChanges}
+      saving={saveSubscription.isPending || isTesting || isSavingWithCheck}
+      saveDisabled={saveSubscription.isPending || isTesting || isSavingWithCheck}
+      onSave={() => void handleSave()}
+      statusIndicator={{
+        label: statusLabel,
+        tone: statusTone,
+      }}
+      testAction={(
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={[
+            "gap-2",
+            smtpAvailableForCurrentForm
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/16"
+              : "",
+          ].join(" ")}
+          onClick={() => void runMailCheck()}
+          disabled={!canTestSend || isTesting || saveSubscription.isPending || isSavingWithCheck}
+        >
+          {isTesting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          {lang === "zh" ? "测试" : "Test"}
+        </Button>
+      )}
+    >
+      <div className="space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          {primaryFields.map((field) => (
+            <div key={field.key} className="space-y-2">
+              <LabelWithHelp
+                htmlFor={field.key}
+                label={renderLabel(
+                  field.label,
+                  lang,
+                  activeHelp[field.key].level,
+                )}
+                title={activeHelp[field.key].title}
+                description={activeHelp[field.key].description}
+                usageTitle={activeHelp[field.key].usageTitle}
+                usageItems={activeHelp[field.key].usageItems}
+              />
+              <Input
+                id={field.key}
+                type={field.type}
+                value={field.value}
+                placeholder={field.placeholder}
+                onChange={(event) =>
+                  handleFieldChange(
+                    field.key,
+                    field.key === "smtp_port"
+                      ? Number(event.target.value || 0)
+                      : event.target.value,
+                  )
+                }
+              />
             </div>
-          </CollapsibleSection>
-        </CardContent>
-      </Card>
-    </div>
+          ))}
+        </div>
+
+        <CollapsibleSection
+          title={lang === "zh" ? "高级选项" : "Advanced Options"}
+          badge={lang === "zh" ? "可选" : "Optional"}
+        >
+          <div className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              {advancedFields.map((field) => (
+                <div key={field.key} className="space-y-2">
+                  <LabelWithHelp
+                    htmlFor={field.key}
+                    label={renderLabel(
+                      field.label,
+                      lang,
+                      activeHelp[field.key].level,
+                    )}
+                    title={activeHelp[field.key].title}
+                    description={activeHelp[field.key].description}
+                    usageTitle={activeHelp[field.key].usageTitle}
+                    usageItems={activeHelp[field.key].usageItems}
+                  />
+                  <Input
+                    id={field.key}
+                    type={field.type}
+                    value={field.value}
+                    placeholder={field.placeholder}
+                    onChange={(event) =>
+                      handleFieldChange(field.key, event.target.value)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <LabelWithHelp
+                htmlFor="connection_mode"
+                label={renderLabel(
+                  lang === "zh" ? "连接方式" : "Connection Mode",
+                  lang,
+                  activeHelp.connection_mode.level,
+                )}
+                title={activeHelp.connection_mode.title}
+                description={activeHelp.connection_mode.description}
+                usageTitle={activeHelp.connection_mode.usageTitle}
+                usageItems={activeHelp.connection_mode.usageItems}
+              />
+              <Select
+                value={connectionMode}
+                onValueChange={handleConnectionModeChange}
+              >
+                <SelectTrigger id="connection_mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="starttls">STARTTLS (587)</SelectItem>
+                  <SelectItem value="ssl">SSL/TLS (465)</SelectItem>
+                  <SelectItem value="none">
+                    {lang === "zh"
+                      ? "不加密 / 按服务商自定义"
+                      : "No Encryption / Custom"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CollapsibleSection>
+      </div>
+    </ConfigSettingsCard>
   );
 }

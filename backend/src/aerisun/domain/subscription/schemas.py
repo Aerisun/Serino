@@ -106,6 +106,10 @@ class ContentSubscriberAdminRead(ModelBase):
     updated_at: datetime = Field(description="Last update time")
 
 
+class ContentSubscriberAdminUpdate(BaseModel):
+    is_active: bool = Field(description="Whether subscription is active")
+
+
 class ContentNotificationDeliveryAdminRead(ModelBase):
     id: str = Field(description="Delivery id")
     subscriber_email: str = Field(description="Subscriber email")

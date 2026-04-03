@@ -14,8 +14,6 @@ export interface FriendRead {
   avatar: string | null;
   /** Friend site URL */
   url: string;
-  /** Link status */
+  /** Website status */
   status: string;
-  /** Display order */
-  order_index: number;
 }

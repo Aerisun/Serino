@@ -134,6 +134,65 @@ body {
   background-attachment: fixed;
 }
 
+/* Admin scrollbars: keep nested scroll areas, but make chrome less distracting. */
+.admin-scrollbars {
+  scrollbar-gutter: stable both-edges;
+}
+
+.admin-scrollbars * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--admin-border-strong) / 0.28) transparent;
+}
+
+.admin-scrollbars *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-scrollbars *::-webkit-scrollbar-thumb {
+  background: rgba(var(--admin-border-strong) / 0.22);
+  border-radius: 9999px;
+}
+
+.admin-scrollbars *::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--admin-border-strong) / 0.34);
+}
+
+.admin-scrollbars *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes apple-switch-ring-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.apple-switch-off-glow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 180%;
+  height: 320%;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 210deg,
+    rgba(66, 133, 244, 0.96),
+    rgba(52, 168, 83, 0.94),
+    rgba(251, 188, 5, 0.93),
+    rgba(234, 67, 53, 0.94),
+    rgba(66, 133, 244, 0.96)
+  );
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center;
+  animation: apple-switch-ring-spin 3s linear infinite;
+  filter: saturate(1.08) brightness(1.04);
+}
+
 /* ===== Login Page – Apple Liquid Glass ===== */
 
 .login-bg {

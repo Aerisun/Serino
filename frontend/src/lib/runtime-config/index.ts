@@ -25,14 +25,11 @@ type BackendSiteResponse = {
     title: string;
     bio: string;
     role: string;
-    author: string;
     og_image: string;
     site_icon_url?: string;
     hero_image_url: string;
     hero_poster_url: string;
-    meta_description: string;
-    copyright: string;
-    footer_text?: string;
+    filing_info?: string;
     hero_video_url?: string | null;
     poem_source?: "custom" | "hitokoto";
     poem_hitokoto_types?: string[];
@@ -145,13 +142,10 @@ export interface RuntimeConfigSnapshot {
     title: string;
     bio: string;
     role: string;
-    author: string;
     ogImage: string;
     siteIconUrl: string;
     heroImageUrl: string;
     heroPosterUrl: string;
-    metaDescription: string;
-    copyright: string;
     socialLinks: Array<{ name: string; href: string; iconKey: string; placement: "hero" | "footer" | "both" }>;
     poems: string[];
     poemSource: "custom" | "hitokoto";
@@ -160,7 +154,7 @@ export interface RuntimeConfigSnapshot {
     heroActions: Array<{ label: string; href: string; iconKey: string }>;
     heroVideoUrl?: string;
     navigation: NavItem[];
-    footer: { slogan: string; copyright: string };
+    footer: { filingInfo: string };
     featureFlags: Record<string, boolean>;
   };
   pages: Record<string, PageConfig>;
@@ -254,15 +248,12 @@ const normalizeSiteConfig = (
     title: payload.site.title,
     bio: payload.site.bio,
     role: payload.site.role,
-    author: payload.site.author,
     ogImage: payload.site.og_image,
     siteIconUrl: payload.site.site_icon_url ?? "",
     heroImageUrl: payload.site.hero_image_url,
     heroPosterUrl: payload.site.hero_poster_url,
-    metaDescription: payload.site.meta_description,
-    copyright: payload.site.copyright,
     poems: payload.poems.map((p) => p.content).filter(Boolean),
-    poemSource: payload.site.poem_source ?? "custom",
+    poemSource: payload.site.poem_source ?? "hitokoto",
     poemHitokotoTypes: payload.site.poem_hitokoto_types ?? [],
     poemHitokotoKeywords: payload.site.poem_hitokoto_keywords ?? [],
     socialLinks: payload.social_links.map((link) => ({
@@ -279,8 +270,7 @@ const normalizeSiteConfig = (
     heroVideoUrl: payload.site.hero_video_url ?? undefined,
     navigation,
     footer: {
-      slogan: payload.site.footer_text ?? "",
-      copyright: payload.site.copyright,
+      filingInfo: payload.site.filing_info ?? "",
     },
     featureFlags,
   };

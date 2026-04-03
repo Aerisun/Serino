@@ -9,9 +9,9 @@ import type { ContentCreateVisibility } from './contentCreateVisibility';
 
 export interface ContentCreate {
   /** URL-friendly unique identifier */
-  slug: string;
+  slug?: string | null;
   /** Display title */
-  title: string;
+  title?: string | null;
   /** Brief summary or excerpt */
   summary?: string | null;
   /** Full content body in Markdown */

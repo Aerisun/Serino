@@ -4,6 +4,7 @@ import { AdminSurface } from "@/components/AdminSurface";
 import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -16,7 +17,7 @@ export function DeadLettersPanel() {
   const replayDeadLetter = usePostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdReplayPost({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries(); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { toast.error(error?.response?.data?.detail || t("common.operationFailed")); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 

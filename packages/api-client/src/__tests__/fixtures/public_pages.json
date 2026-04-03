@@ -147,8 +147,19 @@
         "loadingLabel": "正在加载...",
         "loadMoreLabel": "加载更多",
         "retryLabel": "重试加载",
+        "refreshLabel": "刷新",
+        "refreshAriaLabel": "刷新友链动态",
+        "randomPickerLabel": "从最近 {days} 天里随机挑一篇",
+        "randomRefreshLabel": "换一篇",
+        "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
         "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
-        "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态"
+        "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
+        "randomRecentDays": 7,
+        "autoRefreshSeconds": 60,
+        "websiteHealthCheckEnabled": true,
+        "websiteHealthCheckIntervalMinutes": 360,
+        "rssHealthCheckEnabled": true,
+        "rssHealthCheckIntervalMinutes": 360
       }
     },
     {
@@ -193,7 +204,7 @@
       "extras": {
         "metaTitle": "页面未找到",
         "metaDescription": "你访问的页面不存在，或者已经被移动。",
-        "badgeLabel": "Shell mismatch",
+        "badgeLabel": "404",
         "homeLabel": "返回首页",
         "backLabel": "返回上页"
       }

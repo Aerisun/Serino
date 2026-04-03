@@ -10,7 +10,6 @@ from aerisun.core.settings import get_settings
 from aerisun.domain.agent.schemas import McpAdminConfigRead, McpAdminConfigUpdate
 from aerisun.domain.agent.service import build_agent_usage, build_mcp_admin_config, save_mcp_admin_config
 from aerisun.domain.content.feed_service import list_feed_definitions
-from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.iam.schemas import ApiKeyAdminRead, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyUpdate
 from aerisun.domain.iam.service import (
@@ -26,10 +25,19 @@ from aerisun.domain.iam.service import (
     update_api_key as _update_api_key,
 )
 from aerisun.domain.ops.backup_sync import (
+    acknowledge_backup_recovery_key as _acknowledge_backup_recovery_key,
+)
+from aerisun.domain.ops.backup_sync import (
+    ensure_backup_credentials as _ensure_backup_credentials,
+)
+from aerisun.domain.ops.backup_sync import (
     get_backup_sync_config as _get_backup_sync_config,
 )
 from aerisun.domain.ops.backup_sync import (
-    list_backup_snapshots_compat as _list_backup_snapshots_compat,
+    issue_backup_recovery_key as _issue_backup_recovery_key,
+)
+from aerisun.domain.ops.backup_sync import (
+    list_backup_snapshots as _list_backup_snapshots,
 )
 from aerisun.domain.ops.backup_sync import (
     list_backup_sync_commits as _list_backup_sync_commits,
@@ -47,13 +55,16 @@ from aerisun.domain.ops.backup_sync import (
     restore_backup_commit as _restore_backup_commit,
 )
 from aerisun.domain.ops.backup_sync import (
-    restore_backup_snapshot_compat as _restore_backup_snapshot_compat,
+    restore_backup_snapshot as _restore_backup_snapshot,
 )
 from aerisun.domain.ops.backup_sync import (
     resume_backup_sync as _resume_backup_sync,
 )
 from aerisun.domain.ops.backup_sync import (
     retry_backup_sync_run as _retry_backup_sync_run,
+)
+from aerisun.domain.ops.backup_sync import (
+    test_backup_sync_config as _test_backup_sync_config,
 )
 from aerisun.domain.ops.backup_sync import (
     trigger_backup_sync as _trigger_backup_sync,
@@ -65,10 +76,16 @@ from aerisun.domain.ops.config_revisions import capture_config_resource, create_
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     BackupCommitRead,
+    BackupCredentialAcknowledgeWrite,
+    BackupCredentialEnsureRead,
+    BackupCredentialEnsureWrite,
+    BackupCredentialExportRead,
+    BackupCredentialExportWrite,
     BackupQueueItemRead,
     BackupRunRead,
     BackupSnapshotRead,
     BackupSyncConfig,
+    BackupSyncConfigTestRead,
     BackupSyncConfigUpdate,
     ConfigRevisionDetailRead,
     ConfigRevisionListItemRead,
@@ -77,15 +94,12 @@ from aerisun.domain.ops.schemas import (
     SystemInfo,
     VisitorRecordRead,
 )
-from aerisun.domain.ops.service import create_backup_snapshot as _create_backup
 from aerisun.domain.ops.service import get_config_revision_detail as _get_config_revision_detail
 from aerisun.domain.ops.service import get_dashboard_stats as _get_dashboard_stats
 from aerisun.domain.ops.service import get_system_info as _get_system_info
 from aerisun.domain.ops.service import list_audit_logs as _list_audit_logs
-from aerisun.domain.ops.service import list_backups as _list_backups
 from aerisun.domain.ops.service import list_config_revisions as _list_config_revisions
 from aerisun.domain.ops.service import list_visitor_records as _list_visitor_records
-from aerisun.domain.ops.service import restore_backup as _restore_backup
 from aerisun.domain.ops.service import restore_config_revision as _restore_config_revision
 
 from .deps import get_current_admin
@@ -193,47 +207,6 @@ def update_mcp_config(
     return result
 
 
-@router.get("/api-keys", response_model=list[ApiKeyAdminRead], include_in_schema=False)
-def list_api_keys_legacy(
-    _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
-) -> Any:
-    return _list_api_keys(session)
-
-
-@router.post(
-    "/api-keys",
-    response_model=ApiKeyCreateResponse,
-    status_code=status.HTTP_201_CREATED,
-    include_in_schema=False,
-)
-def create_api_key_legacy(
-    payload: ApiKeyCreate,
-    _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
-) -> Any:
-    return _create_api_key(session, payload.key_name, payload.scopes)
-
-
-@router.put("/api-keys/{key_id}", include_in_schema=False)
-def update_api_key_legacy(
-    key_id: str,
-    payload: ApiKeyUpdate,
-    _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
-) -> Any:
-    return _update_api_key(session, key_id, payload)
-
-
-@router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT, include_in_schema=False)
-def delete_api_key_legacy(
-    key_id: str,
-    _admin: AdminUser = Depends(get_current_admin),
-    session: Session = Depends(get_session),
-) -> None:
-    _delete_api_key(session, key_id)
-
-
 @router.get("/audit-logs", response_model=PaginatedResponse[AuditLogRead], summary="获取审计日志")
 def list_audit_logs(
     page: int = Query(default=1, ge=1),
@@ -310,8 +283,7 @@ def list_backups(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    commits = _list_backup_snapshots_compat(session)
-    return commits or _list_backups(session)
+    return _list_backup_snapshots(session)
 
 
 @router.post("/backups", response_model=BackupSnapshotRead, status_code=status.HTTP_201_CREATED, summary="创建备份快照")
@@ -319,25 +291,22 @@ def trigger_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    try:
-        run = _trigger_backup_sync(session)
-        snapshots = _list_backup_snapshots_compat(session)
-        if snapshots:
-            return snapshots[0]
-        return BackupSnapshotRead(
-            id=run.id,
-            snapshot_type=run.trigger_kind or "manual",
-            status=run.status,
-            db_path="aerisun.db",
-            replica_url=None,
-            backup_path=None,
-            checksum=None,
-            completed_at=run.finished_at,
-            created_at=run.created_at,
-            updated_at=run.updated_at,
-        )
-    except Exception:
-        return _create_backup(session)
+    run = _trigger_backup_sync(session)
+    snapshots = _list_backup_snapshots(session)
+    if snapshots:
+        return snapshots[0]
+    return BackupSnapshotRead(
+        id=run.id,
+        snapshot_type=run.trigger_kind or "manual",
+        status=run.status,
+        db_path="aerisun.db",
+        replica_url=None,
+        backup_path=None,
+        checksum=None,
+        completed_at=run.finished_at,
+        created_at=run.created_at,
+        updated_at=run.updated_at,
+    )
 
 
 @router.post("/backups/{snapshot_id}/restore", response_model=BackupSnapshotRead, summary="从备份恢复")
@@ -346,10 +315,7 @@ def restore_backup(
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    try:
-        return _restore_backup_snapshot_compat(session, snapshot_id)
-    except ResourceNotFound:
-        return _restore_backup(session, snapshot_id)
+    return _restore_backup_snapshot(session, snapshot_id)
 
 
 @router.get("/backup-sync/config", response_model=BackupSyncConfig, summary="获取备份同步配置")
@@ -360,6 +326,48 @@ def get_backup_sync_config(
     return _get_backup_sync_config(session)
 
 
+@router.post(
+    "/backup-sync/credentials/ensure",
+    response_model=BackupCredentialEnsureRead,
+    summary="自动确认或生成本机备份密钥",
+)
+def ensure_backup_credentials(
+    payload: BackupCredentialEnsureWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+) -> BackupCredentialEnsureRead:
+    return _ensure_backup_credentials(
+        credential_ref=payload.credential_ref,
+        site_slug=payload.site_slug,
+        force=bool(payload.force),
+    )
+
+
+@router.post(
+    "/backup-sync/recovery-key/export",
+    response_model=BackupCredentialExportRead,
+    summary="生成、导出或轮换恢复私钥",
+)
+def export_backup_recovery_key(
+    payload: BackupCredentialExportWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupCredentialExportRead:
+    return _issue_backup_recovery_key(session, payload)
+
+
+@router.post(
+    "/backup-sync/recovery-key/acknowledge",
+    response_model=BackupCredentialEnsureRead,
+    summary="确认已复制或下载恢复私钥",
+)
+def acknowledge_backup_recovery_key(
+    payload: BackupCredentialAcknowledgeWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupCredentialEnsureRead:
+    return _acknowledge_backup_recovery_key(session, payload)
+
+
 @router.put("/backup-sync/config", response_model=BackupSyncConfig, summary="更新备份同步配置")
 def update_backup_sync_config(
     payload: BackupSyncConfigUpdate,
@@ -367,6 +375,15 @@ def update_backup_sync_config(
     session: Session = Depends(get_session),
 ) -> BackupSyncConfig:
     return _update_backup_sync_config(session, payload)
+
+
+@router.post("/backup-sync/config/test", response_model=BackupSyncConfigTestRead, summary="测试备份配置")
+def test_backup_sync_config(
+    payload: BackupSyncConfigUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupSyncConfigTestRead:
+    return _test_backup_sync_config(session, payload)
 
 
 @router.get("/backup-sync/queue", response_model=list[BackupQueueItemRead], summary="获取备份同步队列")

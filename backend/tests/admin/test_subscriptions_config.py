@@ -245,6 +245,66 @@ def test_admin_subscription_config_test_email_uses_payload_settings(client, admi
     config_response = client.get(f"{ADMIN_BASE}/config", headers=admin_headers)
     assert config_response.status_code == 200
     config_payload = config_response.json()
+    assert config_payload["smtp_host"] != "smtp.example.com"
+    assert config_payload["smtp_from_email"] != "no-reply@example.com"
+    assert config_payload["smtp_test_passed"] is False
+    assert config_payload["smtp_tested_at"] is None
+
+
+def test_admin_subscription_config_test_email_can_persist_success_when_requested(
+    client,
+    admin_headers,
+    monkeypatch,
+) -> None:
+    class FakeSMTP:
+        messages: ClassVar[list] = []
+
+        def __init__(self, host: str, port: int, timeout: int) -> None:
+            self.host = host
+            self.port = port
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def starttls(self) -> None:
+            return None
+
+        def ehlo(self) -> None:
+            return None
+
+        def login(self, username: str, password: str) -> None:
+            self.logged_in = (username, password)
+
+        def send_message(self, message) -> None:
+            FakeSMTP.messages.append(message)
+
+    monkeypatch.setattr("aerisun.domain.subscription.service.smtplib.SMTP", FakeSMTP)
+
+    response = client.post(
+        f"{ADMIN_BASE}/config/test?persist_success=true",
+        headers=admin_headers,
+        json={
+            "smtp_host": "smtp.example.com",
+            "smtp_port": 587,
+            "smtp_username": "mailer@example.com",
+            "smtp_password": "secret",
+            "smtp_from_email": "no-reply@example.com",
+            "smtp_from_name": "Aerisun Bot",
+            "smtp_reply_to": "hello@example.com",
+            "smtp_use_tls": True,
+            "smtp_use_ssl": False,
+        },
+    )
+
+    assert response.status_code == 200
+
+    config_response = client.get(f"{ADMIN_BASE}/config", headers=admin_headers)
+    assert config_response.status_code == 200
+    config_payload = config_response.json()
     assert config_payload["smtp_host"] == "smtp.example.com"
     assert config_payload["smtp_from_email"] == "no-reply@example.com"
     assert config_payload["smtp_test_passed"] is True
@@ -477,3 +537,61 @@ def test_admin_subscription_lists_subscriber_messages(client, admin_headers) -> 
     payload = response.json()
     assert payload["total"] >= 1
     assert any(item["content_title"] == "Daily Note" for item in payload["items"])
+
+
+def test_admin_can_toggle_subscriber_active_status(client, admin_headers) -> None:
+    with get_session_factory()() as session:
+        session.add(
+            ContentSubscriber(
+                email="toggle@example.com",
+                content_types=["posts"],
+                is_active=True,
+            )
+        )
+        session.commit()
+
+    pause_response = client.patch(
+        f"{ADMIN_BASE}/subscribers/toggle@example.com",
+        headers=admin_headers,
+        json={"is_active": False},
+    )
+    assert pause_response.status_code == 200
+    paused_payload = pause_response.json()
+    assert paused_payload["email"] == "toggle@example.com"
+    assert paused_payload["is_active"] is False
+
+    resume_response = client.patch(
+        f"{ADMIN_BASE}/subscribers/toggle@example.com",
+        headers=admin_headers,
+        json={"is_active": True},
+    )
+    assert resume_response.status_code == 200
+    resumed_payload = resume_response.json()
+    assert resumed_payload["email"] == "toggle@example.com"
+    assert resumed_payload["is_active"] is True
+
+
+def test_admin_can_delete_subscriber(client, admin_headers) -> None:
+    with get_session_factory()() as session:
+        session.add(
+            ContentSubscriber(
+                email="remove@example.com",
+                content_types=["posts"],
+                is_active=True,
+            )
+        )
+        session.commit()
+
+    delete_response = client.delete(
+        f"{ADMIN_BASE}/subscribers/remove@example.com",
+        headers=admin_headers,
+    )
+    assert delete_response.status_code == 204
+
+    list_response = client.get(
+        f"{ADMIN_BASE}/subscribers?search=remove@example.com",
+        headers=admin_headers,
+    )
+    assert list_response.status_code == 200
+    payload = list_response.json()
+    assert all(item["email"] != "remove@example.com" for item in payload["items"])

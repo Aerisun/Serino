@@ -17,6 +17,7 @@ import type {
   SiteAuthUserRead,
 } from "@serino/api-client/models";
 import type { AxiosError } from "axios";
+import { translateFrontendText } from "@/i18n";
 
 export type SiteAuthUser = SiteAuthUserRead;
 export type SiteAuthState = SiteAuthStateRead;
@@ -44,7 +45,7 @@ const resolveErrorMessage = (error: unknown) => {
     return error.message;
   }
 
-  return "请求失败";
+  return translateFrontendText("siteAuth.requestFailed");
 };
 
 async function withApiError<T>(request: Promise<{ data: T }>): Promise<T> {
@@ -68,7 +69,7 @@ async function requestSiteAuthJson<T>(path: string, init?: RequestInit): Promise
       },
     });
   } catch {
-    throw new Error("请求失败，请检查网络连接");
+    throw new Error(translateFrontendText("siteAuth.networkError"));
   }
 
   const payload = await response.json().catch(() => undefined);
@@ -79,7 +80,7 @@ async function requestSiteAuthJson<T>(path: string, init?: RequestInit): Promise
       "detail" in payload
         ? normalizeErrorMessage((payload as { detail?: unknown }).detail)
         : null;
-    throw new Error(detail || "请求失败");
+    throw new Error(detail || translateFrontendText("siteAuth.requestFailed"));
   }
 
   return payload as T;

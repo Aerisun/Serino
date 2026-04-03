@@ -8,7 +8,7 @@ from typing import Any
 from fastapi.encoders import jsonable_encoder
 from pydantic import AnyHttpUrl, BaseModel
 
-from aerisun.api.admin.scopes import MCP_CONNECT
+from aerisun.api.admin.scopes import AGENT_CONNECT
 from aerisun.core.db import get_session_factory
 from aerisun.domain.agent.capabilities.registry import (
     AgentCapabilityDefinition,
@@ -217,11 +217,12 @@ def build_mcp():
         "Aerisun",
         json_response=True,
         stateless_http=True,
+        streamable_http_path="/",
         token_verifier=AerisunMcpTokenVerifier(session_factory),
         auth=AuthSettings(
             issuer_url=AnyHttpUrl("https://aerisun.invalid"),
             resource_server_url=AnyHttpUrl("http://localhost"),
-            required_scopes=[MCP_CONNECT],
+            required_scopes=[AGENT_CONNECT],
         ),
     )
 

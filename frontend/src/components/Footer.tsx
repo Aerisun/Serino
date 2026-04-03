@@ -1,112 +1,124 @@
-import { Link } from "react-router-dom";
-import { SocialIcon } from "@/components/icons/SocialIcon";
+import { useMemo } from "react";
+import { ArrowUpRight, Monitor, Moon, Rss, Sun } from "lucide-react";
+import { useReadActivityHeatmapApiV1SiteActivityHeatmapGet } from "@serino/api-client/site";
+import { useTheme } from "@serino/theme";
 import { useSiteConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
+import { SocialIcon } from "@/components/icons/SocialIcon";
 
-interface InternalLinkItem {
-  label: string;
-  href: string;
-}
-
-const dedupeByHref = <T extends { href: string }>(items: T[]) =>
-  Array.from(new Map(items.map((item) => [item.href, item])).values());
-
-const pickByHref = <T extends { href: string }>(items: T[], hrefs: string[]) => {
-  const itemMap = new Map(items.map((item) => [item.href, item]));
-  return hrefs.flatMap((href) => {
-    const item = itemMap.get(href);
-    return item ? [item] : [];
-  });
+const parseLocalDate = (value: string) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
 };
+
+const themeIcons = {
+  light: Sun,
+  dark: Moon,
+  system: Monitor,
+} as const;
 
 const Footer = () => {
   const site = useSiteConfig();
-  const currentYear = new Date().getFullYear();
+  const { t } = useFrontendI18n();
+  const { theme, setTheme } = useTheme();
+  const { data: heatmapResponse } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet({
+    weeks: 52,
+    tz: "Asia/Shanghai",
+  });
+
+  const ownerName = site.name.trim() || site.title.trim() || "Aerisun";
+  const filingText = site.footer.filingInfo.trim();
   const footerSocialLinks = site.socialLinks.filter((link) => link.placement === "footer" || link.placement === "both");
+  const ThemeIcon = themeIcons[theme];
 
-  const internalLinks = dedupeByHref([
-    ...site.navigation.flatMap((item) =>
-      item.href ? [{ label: item.label, href: item.href }] : []
-    ),
-    ...site.navigation.flatMap((item) => item.children ?? []),
-    ...site.heroActions.map((item) => ({ label: item.label, href: item.href })),
-  ]);
+  const copyrightYears = useMemo(() => {
+    const weeks = heatmapResponse?.data?.weeks ?? [];
+    if (weeks.length === 0) {
+      return String(new Date().getFullYear());
+    }
 
-  const footerPrimaryLinks: InternalLinkItem[] = pickByHref(internalLinks, [
-    "/posts",
-    "/friends",
-    "/thoughts",
-    "/diary",
-    "/excerpts",
-    "/resume",
-    "/guestbook",
-    "/calendar",
-  ]);
+    const startDate = parseLocalDate(weeks[0].week_start);
+    const endDate = parseLocalDate(weeks[weeks.length - 1].week_start);
+    endDate.setDate(endDate.getDate() + 6);
+
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+    return startYear === endYear ? String(endYear) : `${startYear} - ${endYear}`;
+  }, [heatmapResponse?.data?.weeks]);
 
   return (
-    <footer className="mt-20 w-full">
+    <footer className="mt-16 w-full">
       <div className="mx-auto max-w-6xl px-6 lg:px-16">
-        <div className="shiro-accent-divider border-t border-foreground/[0.08] py-6 sm:py-7">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="min-w-0">
-                <Link
-                  to="/"
-                  className="inline-flex flex-col items-start no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  <span className="text-[1.9rem] font-heading italic tracking-tight text-foreground">
-                    {site.name}
-                  </span>
-                  <span className="mt-1 text-[11px] uppercase tracking-[0.24em] text-foreground/30">
-                    {site.role}
-                  </span>
-                </Link>
+        <div className="border-t border-[rgb(var(--shiro-divider-rgb)/0.28)] py-5">
+          <div className="flex max-w-6xl flex-col gap-2 text-[0.78rem] leading-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+              <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.9rem] font-medium text-foreground/46">
+                <span>{`© ${copyrightYears}`}</span>
+                <span className="text-foreground/18">·</span>
+                <span>{ownerName}</span>
+                {filingText ? (
+                  <>
+                    <span className="mx-0.5 text-foreground/20">|</span>
+                    <span>{filingText}</span>
+                  </>
+                ) : null}
+              </p>
 
-              </div>
-
-              <div className="flex items-center gap-1 sm:shrink-0">
-                {footerSocialLinks.map((link) => (
-                  <a
-                    key={`${link.name}-${link.href}`}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={link.name}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground/46 transition-colors duration-200 hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  >
-                    <SocialIcon iconKey={link.iconKey} className="h-4 w-4" />
-                  </a>
-                ))}
-              </div>
+              {footerSocialLinks.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+                  {footerSocialLinks.map((link) => (
+                    <a
+                      key={`${link.name}-${link.href}`}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.name}
+                      className="shiro-focus-ring inline-flex h-5 w-5 items-center justify-center rounded-full text-foreground/34 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                    >
+                      <SocialIcon iconKey={link.iconKey} className="h-3.5 w-3.5" />
+                    </a>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="flex flex-wrap items-center gap-y-2 text-sm">
-                {footerPrimaryLinks.map((link, index) => (
-                  <span key={link.href} className="text-foreground/48">
-                    <Link
-                      to={link.href}
-                      className="font-medium text-foreground/72 underline decoration-foreground/18 underline-offset-4 transition-colors duration-200 hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] hover:decoration-[rgb(var(--shiro-accent-rgb)/0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    >
-                      {link.label}
-                    </Link>
-                    {index < footerPrimaryLinks.length - 1 ? (
-                      <span className="mx-2 text-foreground/24">•</span>
-                    ) : null}
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+              <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-foreground/28">
+                <span>Powered by Aerisun /Serino</span>
+                <a
+                  href="https://github.com/Aerisun/Serino"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="前往 Serino GitHub 仓库"
+                  className="shiro-focus-ring inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-foreground/28 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                >
+                  <ArrowUpRight className="h-2.75 w-2.75" strokeWidth={1.8} />
+                </a>
+              </p>
 
-              <div className="text-xs leading-6 text-foreground/34 sm:text-right">
-                <p>
-                  <span>{`© ${currentYear}`}</span>
-                  <span className="mx-2 text-foreground/24">·</span>
-                  <span>{site.name}</span>
-                  <span className="mx-2 text-foreground/24">·</span>
-                  <span>{site.footer.copyright}</span>
-                </p>
-                {site.footer.slogan ? (
-                  <p className="text-foreground/24">{site.footer.slogan}</p>
-                ) : null}
+              <div className="flex items-center gap-2 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cycle = ["light", "dark", "system"] as const;
+                    const index = cycle.indexOf(theme);
+                    setTheme(cycle[(index + 1) % cycle.length]);
+                  }}
+                  className="shiro-focus-ring inline-flex h-5 w-5 items-center justify-center rounded-full text-foreground/30 transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                  aria-label={t("common.themeToggle")}
+                >
+                  <ThemeIcon className="h-3.25 w-3.25" strokeWidth={1.8} />
+                </button>
+
+                <a
+                  href="/rss.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="RSS 订阅"
+                  className="shiro-focus-ring inline-flex h-5 w-5 items-center justify-center rounded-full text-foreground/30 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                >
+                  <Rss className="h-3.25 w-3.25" strokeWidth={1.8} />
+                </a>
               </div>
             </div>
           </div>

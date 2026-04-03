@@ -2,8 +2,13 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/useAuth";
-import { changePassword, updateProfile, listSessions, revokeSession } from "@/api/endpoints/auth";
-import type { AdminSession } from "@/api/endpoints/auth";
+import {
+  changePasswordApiV1AdminAuthPasswordPut,
+  updateProfileEndpointApiV1AdminAuthProfilePut,
+  listSessionsEndpointApiV1AdminAuthSessionsGet,
+  revokeSessionApiV1AdminAuthSessionsSessionIdDelete,
+} from "@serino/api-client/admin";
+import type { AdminSessionRead } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
@@ -31,13 +36,13 @@ export default function SettingsPage() {
   // Sessions
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["admin-sessions"],
-    queryFn: listSessions,
+    queryFn: () => listSessionsEndpointApiV1AdminAuthSessionsGet().then((r) => r.data),
   });
 
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
 
   const revokeMutation = useMutation({
-    mutationFn: revokeSession,
+    mutationFn: (id: string) => revokeSessionApiV1AdminAuthSessionsSessionIdDelete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-sessions"] });
       toast.success(t("common.operationSuccess"));
@@ -49,7 +54,7 @@ export default function SettingsPage() {
   const handleProfileSave = async () => {
     setProfileSaving(true);
     try {
-      await updateProfile({ username });
+      await updateProfileEndpointApiV1AdminAuthProfilePut({ username });
       toast.success(t("common.operationSuccess"));
     } catch {
       toast.error(t("common.operationFailed"));
@@ -69,7 +74,7 @@ export default function SettingsPage() {
     }
     setPasswordSaving(true);
     try {
-      await changePassword({ current_password: currentPassword, new_password: newPassword });
+      await changePasswordApiV1AdminAuthPasswordPut({ current_password: currentPassword, new_password: newPassword });
       toast.success(t("common.operationSuccess"));
       setCurrentPassword("");
       setNewPassword("");
@@ -150,7 +155,7 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">{t("common.noData")}</p>
               ) : (
                 <div className="space-y-3">
-                  {sessions.map((s: AdminSession) => (
+                  {sessions.map((s: AdminSessionRead) => (
                     <div key={s.id} className="flex items-center justify-between rounded-lg admin-glass p-3">
                       <div className="flex items-center gap-3">
                         <Monitor className="h-5 w-5 text-muted-foreground" />

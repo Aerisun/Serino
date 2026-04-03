@@ -19,6 +19,7 @@ interface LabelWithHelpProps {
   usageTitle?: ReactNode;
   usageItems?: ReactNode[];
   className?: string;
+  hideLabel?: boolean;
 }
 
 const PANEL_MARGIN = 16;
@@ -36,6 +37,7 @@ export function LabelWithHelp({
   usageTitle,
   usageItems = [],
   className,
+  hideLabel = false,
 }: LabelWithHelpProps) {
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<{
@@ -160,7 +162,7 @@ export function LabelWithHelp({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      {!hideLabel ? <Label htmlFor={htmlFor}>{label}</Label> : null}
       <div className="relative">
         <button
           ref={triggerRef}

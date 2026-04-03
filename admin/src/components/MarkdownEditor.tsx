@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   Bold,
   Italic,
@@ -11,10 +11,11 @@ import {
   Eye,
   EyeOff,
   Upload,
+  Expand,
+  Minimize2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
 import { useUploadAssetEndpointApiV1AdminAssetsPost } from "@serino/api-client/admin";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/Button";
@@ -29,7 +30,8 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { canCompressImage, compressImageFile } from "@/lib/image-upload";
+import { canCompressImage, compressImageFile } from "@serino/utils";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 
 interface MarkdownEditorProps {
@@ -58,37 +60,59 @@ const ACTIONS: Record<string, InsertAction> = {
 export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300px" }: MarkdownEditorProps) {
   const { t } = useI18n();
   const [preview, setPreview] = useState(false);
+  const [autoExpand, setAutoExpand] = useState(true);
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const [imageUploadMode, setImageUploadMode] = useState<"compress" | "original">("compress");
   const [imageUploading, setImageUploading] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imageNote, setImageNote] = useState("");
-  const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(null);
+  const [editorHeight, setEditorHeight] = useState(minHeight);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const pendingImageSelectionRef = useRef<ImageSelection | null>(null);
   const pendingImageFileNameRef = useRef<string>("");
+  const minHeightPx = useMemo(() => {
+    const parsed = Number.parseFloat(minHeight);
+    return Number.isFinite(parsed) ? parsed : 300;
+  }, [minHeight]);
 
   const uploadAsset = useUploadAssetEndpointApiV1AdminAssetsPost();
 
+  useEffect(() => {
+    if (!autoExpand) {
+      setEditorHeight(minHeight);
+      return;
+    }
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+    textarea.style.height = "0px";
+    const nextHeight = Math.max(textarea.scrollHeight, minHeightPx);
+    setEditorHeight(`${nextHeight}px`);
+  }, [autoExpand, minHeight, minHeightPx, value]);
+
   const insertMarkdown = useCallback((action: string) => {
-    if (!textareaRef) return;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
     const { prefix, suffix, placeholder: ph } = ACTIONS[action];
-    const start = textareaRef.selectionStart;
-    const end = textareaRef.selectionEnd;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
     const selected = value.slice(start, end) || ph;
     const newValue = value.slice(0, start) + prefix + selected + suffix + value.slice(end);
     onChange(newValue);
     requestAnimationFrame(() => {
-      textareaRef.focus();
+      textarea.focus();
       const newCursorPos = start + prefix.length + selected.length;
-      textareaRef.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
     });
-  }, [textareaRef, value, onChange]);
+  }, [value, onChange]);
 
   const insertImageMarkdown = useCallback((imageUrl: string) => {
+    const textarea = textareaRef.current;
     const selection = pendingImageSelectionRef.current;
-    const start = selection?.start ?? textareaRef?.selectionStart ?? value.length;
-    const end = selection?.end ?? textareaRef?.selectionEnd ?? start;
+    const start = selection?.start ?? textarea?.selectionStart ?? value.length;
+    const end = selection?.end ?? textarea?.selectionEnd ?? start;
     const altText =
       selection?.altText ||
       pendingImageFileNameRef.current.replace(/\.[^.]+$/, "").trim() ||
@@ -98,18 +122,19 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     onChange(nextValue);
 
     requestAnimationFrame(() => {
-      textareaRef?.focus();
+      textarea?.focus();
       const nextCursor = start + markdown.length;
-      textareaRef?.setSelectionRange(nextCursor, nextCursor);
+      textarea?.setSelectionRange(nextCursor, nextCursor);
     });
 
     pendingImageSelectionRef.current = null;
     pendingImageFileNameRef.current = "";
-  }, [textareaRef, value, onChange]);
+  }, [value, onChange]);
 
   const openImageUploadDialog = useCallback(() => {
-    const start = textareaRef?.selectionStart ?? value.length;
-    const end = textareaRef?.selectionEnd ?? start;
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? value.length;
+    const end = textarea?.selectionEnd ?? start;
     pendingImageSelectionRef.current = {
       start,
       end,
@@ -119,7 +144,7 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     setImageNote("");
     setSelectedImageFile(null);
     setImageUploadOpen(true);
-  }, [textareaRef, value]);
+  }, [value]);
 
   const handleImageFileChange = useCallback(() => {
     const file = fileRef.current?.files?.[0] ?? null;
@@ -168,8 +193,7 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
       setImageNote("");
       if (fileRef.current) fileRef.current.value = "";
     } catch (error: any) {
-      const message = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     } finally {
       setImageUploading(false);
     }
@@ -207,6 +231,16 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
           </button>
         ))}
         <div className="ml-auto">
+          <button
+            type="button"
+            className="p-1.5 rounded hover:bg-accent transition-colors flex items-center gap-1 text-xs"
+            onClick={() => setAutoExpand((current) => !current)}
+            title={autoExpand ? t("common.collapse") : t("common.expand")}
+          >
+            {autoExpand ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+          </button>
+        </div>
+        <div>
           <button
             type="button"
             className="p-1.5 rounded hover:bg-accent transition-colors flex items-center gap-1 text-xs"
@@ -315,18 +349,18 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
       </Dialog>
       {preview ? (
         <div
-          className="prose prose-sm dark:prose-invert max-w-none p-4 overflow-auto"
-          style={{ minHeight }}
+          className={`prose prose-sm dark:prose-invert max-w-none p-4 ${autoExpand ? "overflow-visible" : "overflow-auto"}`}
+          style={autoExpand ? { minHeight } : { minHeight, maxHeight: minHeight }}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {value}
           </ReactMarkdown>
         </div>
       ) : (
         <textarea
-          ref={setTextareaRef}
-          className="w-full p-4 font-mono text-sm bg-transparent resize-y outline-none"
-          style={{ minHeight }}
+          ref={textareaRef}
+          className={`w-full p-4 font-mono text-sm bg-transparent outline-none ${autoExpand ? "resize-none overflow-hidden" : "resize-y overflow-auto"}`}
+          style={{ minHeight, height: autoExpand ? editorHeight : minHeight }}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -335,4 +369,3 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     </div>
   );
 }
-

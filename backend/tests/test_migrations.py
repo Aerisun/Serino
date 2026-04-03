@@ -74,14 +74,22 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     webhook_subscription_columns = _get_columns(str(db_path), "webhook_subscriptions")
     webhook_delivery_columns = _get_columns(str(db_path), "webhook_deliveries")
     webhook_dead_letter_columns = _get_columns(str(db_path), "webhook_dead_letters")
+    workflow_gate_state_columns = _get_columns(str(db_path), "workflow_gate_states")
+    workflow_gate_buffer_columns = _get_columns(str(db_path), "workflow_gate_buffer_items")
+    workflow_build_task_columns = _get_columns(str(db_path), "workflow_build_tasks")
+    workflow_build_task_step_columns = _get_columns(str(db_path), "workflow_build_task_steps")
     sync_run_columns = _get_columns(str(db_path), "sync_runs")
     backup_target_config_columns = _get_columns(str(db_path), "backup_target_configs")
     backup_queue_item_columns = _get_columns(str(db_path), "backup_queue_items")
     backup_commit_columns = _get_columns(str(db_path), "backup_commits")
+    backup_recovery_key_columns = _get_columns(str(db_path), "backup_recovery_keys")
+    api_key_columns = _get_columns(str(db_path), "api_keys")
 
     assert "config_revisions" in tables
     assert "hero_video_url" in site_profile_columns
     assert "site_icon_url" in site_profile_columns
+    assert "filing_info" in site_profile_columns
+    assert {"footer_text", "author", "meta_description", "copyright"} & site_profile_columns == set()
     assert {"category", "view_count"} <= posts_columns
     assert {"mood", "weather", "poem", "view_count"} <= diary_columns
     assert {"mood", "view_count"} <= thoughts_columns
@@ -94,15 +102,21 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
         "site_profile_id",
     } <= nav_item_columns
     assert {
-        "oauth_providers",
         "anonymous_enabled",
         "moderation_mode",
         "default_sorting",
         "page_size",
+        "avatar_helper_copy",
+    } <= community_config_columns
+    assert {
+        "login_mode",
+        "oauth_url",
+        "oauth_providers",
         "avatar_presets",
         "guest_avatar_mode",
         "draft_enabled",
-    } <= community_config_columns
+        "avatar_strategy",
+    } & community_config_columns == set()
     assert {"resource_key", "visibility", "category", "note", "scope"} <= assets_columns
     assert {
         "snapshot_date",
@@ -120,6 +134,11 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     assert {"name", "status", "target_url", "event_types"} <= webhook_subscription_columns
     assert {"subscription_id", "event_type", "event_id", "status", "attempt_count"} <= webhook_delivery_columns
     assert {"delivery_id", "reason", "event_type", "dead_lettered_at"} <= webhook_dead_letter_columns
+    assert {"workflow_key", "node_id", "status", "in_flight_run_id"} <= workflow_gate_state_columns
+    assert {"workflow_key", "node_id", "run_id", "status"} <= workflow_gate_buffer_columns
+    assert {"workflow_key", "task_type", "status", "summary"} <= workflow_build_task_columns
+    assert {"task_id", "name", "status", "detail"} <= workflow_build_task_step_columns
+    assert {"key_suffix", "mcp_config", "enabled"} <= api_key_columns
     assert {
         "job_name",
         "status",
@@ -136,7 +155,10 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
         "transport_mode",
         "site_slug",
         "credential_ref",
+        "encrypt_runtime_data",
     } <= backup_target_config_columns
+    assert "receiver_base_url" not in backup_target_config_columns
+    assert "age_public_key_fingerprint" not in backup_target_config_columns
     assert {
         "transport",
         "trigger_kind",
@@ -153,20 +175,29 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
         "manifest_digest",
         "datasets",
     } <= backup_commit_columns
+    assert {
+        "credential_ref",
+        "site_slug",
+        "status",
+        "secrets_fingerprint",
+        "encrypted_private_payload",
+        "acknowledged_at",
+    } <= backup_recovery_key_columns
+    assert "backup_snapshots" not in tables
+    assert "restore_points" not in tables
 
     if expect_data_updates:
         community_config_row = _get_row(str(db_path), "community_config")
         asset_row = _get_row(str(db_path), "assets")
 
         assert community_config_row is not None
-        assert json.loads(community_config_row["oauth_providers"]) == ["github", "google"]
         assert community_config_row["anonymous_enabled"] in (1, True)
         assert community_config_row["moderation_mode"] == "all_pending"
         assert community_config_row["default_sorting"] == "latest"
         assert community_config_row["page_size"] == 20
-        assert json.loads(community_config_row["avatar_presets"])[0]["key"] == "shiro"
-        assert community_config_row["guest_avatar_mode"] == "preset"
-        assert community_config_row["draft_enabled"] in (1, True)
+        assert (
+            community_config_row["avatar_helper_copy"] == "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。"
+        )
 
         assert asset_row is not None
         assert asset_row["resource_key"] == "internal/assets/general/asset1.png"
@@ -237,14 +268,11 @@ def test_0001_initial_is_static_historical_schema(tmp_path, monkeypatch) -> None
     assert {"category", "view_count", "is_pinned", "pin_order"} & posts_columns == set()
     assert {"resource_key", "visibility", "category", "note", "scope"} & assets_columns == set()
     assert {
-        "oauth_providers",
         "anonymous_enabled",
         "moderation_mode",
         "default_sorting",
         "page_size",
-        "avatar_presets",
-        "guest_avatar_mode",
-        "draft_enabled",
+        "avatar_helper_copy",
         "image_max_bytes",
     } & community_config_columns == set()
 
@@ -275,6 +303,7 @@ def test_run_database_migrations_upgrades_legacy_schema(tmp_path, monkeypatch) -
                 og_image TEXT NOT NULL DEFAULT '/images/hero_bg.jpeg',
                 meta_description TEXT NOT NULL DEFAULT '',
                 copyright TEXT NOT NULL DEFAULT 'All rights reserved',
+                filing_info TEXT NOT NULL DEFAULT '',
                 hero_actions TEXT NOT NULL DEFAULT '[]',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL

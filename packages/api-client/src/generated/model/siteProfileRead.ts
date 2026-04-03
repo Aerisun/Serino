@@ -17,22 +17,16 @@ export interface SiteProfileRead {
   bio: string;
   /** Professional role */
   role: string;
-  /** Footer text */
-  footer_text: string;
-  /** Default author name */
-  author: string;
-  /** Open Graph image path */
+  /** Open Graph/Twitter sharing image path */
   og_image: string;
   /** Browser tab icon path */
   site_icon_url: string;
   /** Hero image path */
   hero_image_url: string;
-  /** Hero video poster image path */
+  /** Hero video poster and fallback background image path */
   hero_poster_url: string;
-  /** Meta description for SEO */
-  meta_description: string;
-  /** Copyright notice */
-  copyright: string;
+  /** Regulatory filing or ICP notice */
+  filing_info: string;
   /** Hero section action buttons */
   hero_actions: SiteProfileReadHeroActionsItem[];
   /** Hero background video URL */
