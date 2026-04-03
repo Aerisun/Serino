@@ -1,6 +1,6 @@
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { useI18n } from "@/i18n";
-import { Cpu, Mail, Plug, Settings2 } from "lucide-react";
+import { Cpu, Database, Mail, Plug, Settings2 } from "lucide-react";
 
 export function MoreSectionSwitch() {
   const { t } = useI18n();
@@ -33,6 +33,13 @@ export function MoreSectionSwitch() {
       label: t("more.tabs.proxyConfig"),
       description: t("more.sectionDescriptions.proxyConfig"),
       icon: Plug,
+    },
+    {
+      value: "object-storage",
+      to: "/more/object-storage",
+      label: t("more.tabs.objectStorage"),
+      description: t("more.sectionDescriptions.objectStorage"),
+      icon: Database,
     },
   ] as const;
 

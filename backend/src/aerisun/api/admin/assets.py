@@ -7,12 +7,20 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
-from aerisun.domain.media.schemas import AssetAdminRead, AssetAdminUpdate
+from aerisun.domain.media.schemas import (
+    AssetAdminRead,
+    AssetAdminUpdate,
+    AssetUploadCompleteWrite,
+    AssetUploadPlanRead,
+    AssetUploadPlanWrite,
+)
 from aerisun.domain.media.service import (
     bulk_delete_assets,
+    complete_asset_upload,
     delete_asset,
     get_asset,
     list_assets,
+    prepare_asset_upload,
     update_asset,
     upload_asset,
 )
@@ -56,6 +64,24 @@ def upload_asset_endpoint(
         category=category,
         note=note,
     )
+
+
+@router.post("/init-upload", response_model=AssetUploadPlanRead, summary="初始化资源上传")
+def init_upload_asset_endpoint(
+    payload: AssetUploadPlanWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return prepare_asset_upload(session, payload)
+
+
+@router.post("/complete-upload", response_model=AssetAdminRead, summary="完成资源上传")
+def complete_upload_asset_endpoint(
+    payload: AssetUploadCompleteWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return complete_asset_upload(session, payload)
 
 
 @router.post("/bulk-delete", response_model=BulkActionResponse, summary="批量删除资源")

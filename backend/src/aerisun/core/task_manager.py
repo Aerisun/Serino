@@ -9,6 +9,7 @@ from aerisun.core.settings import Settings
 from aerisun.core.tasks import cleanup_expired_sessions
 from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.automation.service import dispatch_due_webhooks, execute_due_runs
+from aerisun.domain.media.object_storage import dispatch_due_asset_mirror_jobs, dispatch_due_remote_asset_delete_jobs
 from aerisun.domain.ops.backup_sync import dispatch_backup_sync
 from aerisun.domain.ops.service import record_daily_traffic_snapshot
 
@@ -90,6 +91,26 @@ class TaskManager:
             max_instances=1,
             coalesce=True,
         )
+        self._scheduler.add_job(
+            self._dispatch_asset_mirror_jobs,
+            trigger="interval",
+            seconds=15,
+            id="asset_mirror_dispatcher",
+            name="Asset mirror dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
+            self._dispatch_asset_remote_delete_jobs,
+            trigger="interval",
+            seconds=30,
+            id="asset_remote_delete_dispatcher",
+            name="Asset remote delete dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
         self._scheduler.start()
         logger.info("Background scheduler started")
 
@@ -114,6 +135,12 @@ class TaskManager:
 
     def _dispatch_backup_sync(self) -> None:
         dispatch_backup_sync()
+
+    def _dispatch_asset_mirror_jobs(self) -> None:
+        dispatch_due_asset_mirror_jobs()
+
+    def _dispatch_asset_remote_delete_jobs(self) -> None:
+        dispatch_due_remote_asset_delete_jobs()
 
     async def stop(self) -> None:
         for task in self._async_tasks:

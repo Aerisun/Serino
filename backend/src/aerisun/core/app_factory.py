@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from starlette.staticfiles import StaticFiles
 
 from aerisun.api import api_router
 from aerisun.api.exception_handlers import register_exception_handlers
 from aerisun.api.mcp import create_mcp_mount
+from aerisun.api.media import router as media_router
 from aerisun.api.seo import router as seo_router
 from aerisun.core.bootstrap import lifespan
 from aerisun.core.middleware import register_middleware
@@ -66,9 +65,7 @@ def create_app() -> FastAPI:
     if mcp_app is not None:
         app.mount("/api/mcp", mcp_app)
 
-    # Static media
-    media_dir = Path(settings.media_dir).expanduser().resolve()
-    media_dir.mkdir(parents=True, exist_ok=True)
-    app.mount("/media", StaticFiles(directory=str(media_dir)), name="media")
+    # Media gateway
+    app.include_router(media_router)
 
     return app

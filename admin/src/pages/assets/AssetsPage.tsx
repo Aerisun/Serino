@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListAssetsEndpointApiV1AdminAssetsGet as useListAssetsApiV1AdminAssetsGet,
-  useUploadAssetEndpointApiV1AdminAssetsPost as useUploadAssetApiV1AdminAssetsPost,
   useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete as useDeleteAssetApiV1AdminAssetsAssetIdDelete,
   useUpdateAssetEndpointApiV1AdminAssetsAssetIdPatch as useUpdateAssetApiV1AdminAssetsAssetIdPatch,
   getListAssetsEndpointApiV1AdminAssetsGetQueryKey as getListAssetsApiV1AdminAssetsGetQueryKey,
@@ -33,6 +32,7 @@ import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
+import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { toast } from "sonner";
 import type { AssetAdminRead } from "@serino/api-client/models";
 
@@ -55,6 +55,7 @@ export default function AssetsPage() {
   const [editCategory, setEditCategory] = useState("general");
   const [editNote, setEditNote] = useState("");
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,18 +72,6 @@ export default function AssetsPage() {
     scope,
   });
   const data = raw?.data && "items" in raw.data ? raw.data : undefined;
-
-  const upload = useUploadAssetApiV1AdminAssetsPost({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListAssetsApiV1AdminAssetsGetQueryKey() });
-        toast.success(t("common.operationSuccess"));
-      },
-      onError: (error: any) => {
-        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
-      },
-    },
-  });
 
   const del = useDeleteAssetApiV1AdminAssetsAssetIdDelete({
     mutation: {
@@ -176,17 +165,27 @@ export default function AssetsPage() {
         setIsCompressing(true);
         fileToUpload = await prepareImageUploadFile(selectedFile, { mode: uploadMode });
       }
-      await upload.mutateAsync({
-        data: { file: fileToUpload, visibility, scope, category, note: note.trim() || undefined } as any,
+      setIsUploading(true);
+      await uploadManagedAsset({
+        file: fileToUpload,
+        visibility,
+        scope,
+        category,
+        note: note.trim() || undefined,
       });
+      await queryClient.invalidateQueries({ queryKey: getListAssetsApiV1AdminAssetsGetQueryKey() });
+      toast.success(t("common.operationSuccess"));
       setUploadOpen(false);
       if (fileRef.current) fileRef.current.value = "";
       setSelectedFile(null);
       setNote("");
-    } catch {
-      toast.error(t("assets.compressFailed"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : extractApiErrorMessage(error, t("common.operationFailed")),
+      );
     } finally {
       setIsCompressing(false);
+      setIsUploading(false);
     }
   };
 
@@ -316,20 +315,20 @@ export default function AssetsPage() {
                   <Button
                     variant="outline"
                     onClick={() => fileRef.current?.click()}
-                    disabled={upload.isPending || isCompressing}
+                    disabled={isUploading || isCompressing}
                     className="h-10 w-full"
                   >
                     {t("common.uploadFile")}
                   </Button>
                   <Button
                     onClick={() => void handleUpload()}
-                    disabled={!selectedFile || upload.isPending || isCompressing}
+                    disabled={!selectedFile || isUploading || isCompressing}
                     className="h-10 w-full"
                   >
                     <Upload className="mr-2 h-4 w-4" />
                     {isCompressing
                       ? t("assets.compressing")
-                      : upload.isPending
+                      : isUploading
                         ? t("common.uploading")
                         : t("assets.upload")}
                   </Button>

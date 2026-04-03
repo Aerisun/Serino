@@ -54,6 +54,9 @@ import type {
   ApprovalDecisionWrite,
   AssetAdminRead,
   AssetAdminUpdate,
+  AssetUploadCompleteWrite,
+  AssetUploadPlanRead,
+  AssetUploadPlanWrite,
   BackupCommitRead,
   BackupCredentialAcknowledgeWrite,
   BackupCredentialEnsureRead,
@@ -10899,6 +10902,184 @@ export const useUploadAssetEndpointApiV1AdminAssetsPost = <TError = ErrorType<HT
         TContext
       > => {
       return useMutation(getUploadAssetEndpointApiV1AdminAssetsPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 初始化资源上传
+ */
+export type initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse200 = {
+  data: AssetUploadPlanRead
+  status: 200
+}
+
+export type initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponseSuccess = (initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse200) & {
+  headers: Headers;
+};
+export type initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponseError = (initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse422) & {
+  headers: Headers;
+};
+
+export type initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse = (initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponseSuccess | initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponseError)
+
+export const getInitUploadAssetEndpointApiV1AdminAssetsInitUploadPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/assets/init-upload`
+}
+
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPost = async (assetUploadPlanWrite: AssetUploadPlanWrite, options?: RequestInit): Promise<initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse> => {
+
+  return customInstance<initUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse>(getInitUploadAssetEndpointApiV1AdminAssetsInitUploadPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assetUploadPlanWrite,)
+  }
+);}
+
+
+
+
+export const getInitUploadAssetEndpointApiV1AdminAssetsInitUploadPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initUploadAssetEndpointApiV1AdminAssetsInitUploadPost>>, TError,{data: BodyType<AssetUploadPlanWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof initUploadAssetEndpointApiV1AdminAssetsInitUploadPost>>, TError,{data: BodyType<AssetUploadPlanWrite>}, TContext> => {
+
+const mutationKey = ['initUploadAssetEndpointApiV1AdminAssetsInitUploadPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof initUploadAssetEndpointApiV1AdminAssetsInitUploadPost>>, {data: BodyType<AssetUploadPlanWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  initUploadAssetEndpointApiV1AdminAssetsInitUploadPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostMutationResult = NonNullable<Awaited<ReturnType<typeof initUploadAssetEndpointApiV1AdminAssetsInitUploadPost>>>
+    export type InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostMutationBody = BodyType<AssetUploadPlanWrite>
+    export type InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 初始化资源上传
+ */
+export const useInitUploadAssetEndpointApiV1AdminAssetsInitUploadPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof initUploadAssetEndpointApiV1AdminAssetsInitUploadPost>>, TError,{data: BodyType<AssetUploadPlanWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof initUploadAssetEndpointApiV1AdminAssetsInitUploadPost>>,
+        TError,
+        {data: BodyType<AssetUploadPlanWrite>},
+        TContext
+      > => {
+      return useMutation(getInitUploadAssetEndpointApiV1AdminAssetsInitUploadPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 完成资源上传
+ */
+export type completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse200 = {
+  data: AssetAdminRead
+  status: 200
+}
+
+export type completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponseSuccess = (completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse200) & {
+  headers: Headers;
+};
+export type completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponseError = (completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse422) & {
+  headers: Headers;
+};
+
+export type completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse = (completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponseSuccess | completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponseError)
+
+export const getCompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/assets/complete-upload`
+}
+
+export const completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost = async (assetUploadCompleteWrite: AssetUploadCompleteWrite, options?: RequestInit): Promise<completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse> => {
+
+  return customInstance<completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse>(getCompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assetUploadCompleteWrite,)
+  }
+);}
+
+
+
+
+export const getCompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost>>, TError,{data: BodyType<AssetUploadCompleteWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost>>, TError,{data: BodyType<AssetUploadCompleteWrite>}, TContext> => {
+
+const mutationKey = ['completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost>>, {data: BodyType<AssetUploadCompleteWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostMutationResult = NonNullable<Awaited<ReturnType<typeof completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost>>>
+    export type CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostMutationBody = BodyType<AssetUploadCompleteWrite>
+    export type CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 完成资源上传
+ */
+export const useCompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost>>, TError,{data: BodyType<AssetUploadCompleteWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeUploadAssetEndpointApiV1AdminAssetsCompleteUploadPost>>,
+        TError,
+        {data: BodyType<AssetUploadCompleteWrite>},
+        TContext
+      > => {
+      return useMutation(getCompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 批量删除资源

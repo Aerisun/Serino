@@ -6648,6 +6648,125 @@
         ]
       }
     },
+    "/api/v1/admin/object-storage/config": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-object-storage"
+        ],
+        "summary": "获取 OSS 加速配置",
+        "operationId": "get_object_storage_config_api_v1_admin_object_storage_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectStorageConfigRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "admin",
+          "admin-object-storage"
+        ],
+        "summary": "更新 OSS 加速配置",
+        "operationId": "put_object_storage_config_api_v1_admin_object_storage_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObjectStorageConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectStorageConfigRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/object-storage/config/test": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-object-storage"
+        ],
+        "summary": "测试 OSS 加速配置",
+        "operationId": "post_object_storage_config_test_api_v1_admin_object_storage_config_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObjectStorageConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectStorageHealthRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/resume/basics/": {
       "get": {
         "tags": [
@@ -8427,6 +8546,100 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/admin/assets/init-upload": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-assets"
+        ],
+        "summary": "初始化资源上传",
+        "operationId": "init_upload_asset_endpoint_api_v1_admin_assets_init_upload_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetUploadPlanWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetUploadPlanRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/assets/complete-upload": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-assets"
+        ],
+        "summary": "完成资源上传",
+        "operationId": "complete_upload_asset_endpoint_api_v1_admin_assets_complete_upload_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetUploadCompleteWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/admin/assets/bulk-delete": {
@@ -12809,6 +13022,78 @@
           }
         }
       }
+    },
+    "/media/{resource_key}": {
+      "head": {
+        "summary": "托管资源访问网关",
+        "operationId": "serve_media_media__resource_key__head",
+        "parameters": [
+          {
+            "name": "resource_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Resource Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "托管资源访问网关",
+        "operationId": "serve_media_media__resource_key__get",
+        "parameters": [
+          {
+            "name": "resource_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Resource Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -16983,6 +17268,33 @@
             ],
             "title": "Sha256"
           },
+          "storage_provider": {
+            "type": "string",
+            "title": "Storage Provider"
+          },
+          "remote_status": {
+            "type": "string",
+            "title": "Remote Status"
+          },
+          "mirror_status": {
+            "type": "string",
+            "title": "Mirror Status"
+          },
+          "mirror_last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mirror Last Error"
+          },
+          "oss_acceleration_enabled_at_upload": {
+            "type": "boolean",
+            "title": "Oss Acceleration Enabled At Upload"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -17009,6 +17321,11 @@
           "mime_type",
           "byte_size",
           "sha256",
+          "storage_provider",
+          "remote_status",
+          "mirror_status",
+          "mirror_last_error",
+          "oss_acceleration_enabled_at_upload",
           "created_at",
           "updated_at"
         ],
@@ -17071,6 +17388,187 @@
         },
         "type": "object",
         "title": "AssetAdminUpdate"
+      },
+      "AssetUploadCompleteWrite": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "title": "Asset Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_id"
+        ],
+        "title": "AssetUploadCompleteWrite"
+      },
+      "AssetUploadPlanRead": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local",
+              "oss",
+              "existing"
+            ],
+            "title": "Mode"
+          },
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "resource_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Key"
+          },
+          "upload_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Url"
+          },
+          "upload_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "PUT"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Method"
+          },
+          "upload_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Upload Headers"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "asset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssetAdminRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "AssetUploadPlanRead"
+      },
+      "AssetUploadPlanWrite": {
+        "properties": {
+          "file_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "File Name"
+          },
+          "byte_size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Byte Size"
+          },
+          "sha256": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 32,
+            "title": "Sha256"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "internal",
+              "public"
+            ],
+            "title": "Visibility",
+            "default": "internal"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user"
+            ],
+            "title": "Scope",
+            "default": "user"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Category",
+            "default": "general"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_name",
+          "byte_size",
+          "sha256"
+        ],
+        "title": "AssetUploadPlanWrite"
       },
       "AuditLogRead": {
         "properties": {
@@ -23347,6 +23845,318 @@
           "authorization_url"
         ],
         "title": "OAuthStartResponse"
+      },
+      "ObjectStorageConfigRead": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "provider": {
+            "type": "string",
+            "const": "bitiful",
+            "title": "Provider"
+          },
+          "bucket": {
+            "type": "string",
+            "title": "Bucket"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "public_base_url": {
+            "type": "string",
+            "title": "Public Base Url"
+          },
+          "access_key": {
+            "type": "string",
+            "title": "Access Key"
+          },
+          "secret_key_configured": {
+            "type": "boolean",
+            "title": "Secret Key Configured"
+          },
+          "cdn_token_key_configured": {
+            "type": "boolean",
+            "title": "Cdn Token Key Configured"
+          },
+          "health_check_enabled": {
+            "type": "boolean",
+            "title": "Health Check Enabled"
+          },
+          "upload_expire_seconds": {
+            "type": "integer",
+            "title": "Upload Expire Seconds"
+          },
+          "public_download_expire_seconds": {
+            "type": "integer",
+            "title": "Public Download Expire Seconds"
+          },
+          "mirror_bandwidth_limit_bps": {
+            "type": "integer",
+            "title": "Mirror Bandwidth Limit Bps"
+          },
+          "mirror_retry_count": {
+            "type": "integer",
+            "title": "Mirror Retry Count"
+          },
+          "last_health_ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Health Ok"
+          },
+          "last_health_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Health Error"
+          },
+          "last_health_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Health Checked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "provider",
+          "bucket",
+          "endpoint",
+          "region",
+          "public_base_url",
+          "access_key",
+          "secret_key_configured",
+          "cdn_token_key_configured",
+          "health_check_enabled",
+          "upload_expire_seconds",
+          "public_download_expire_seconds",
+          "mirror_bandwidth_limit_bps",
+          "mirror_retry_count"
+        ],
+        "title": "ObjectStorageConfigRead"
+      },
+      "ObjectStorageConfigUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "bitiful"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "bucket": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bucket"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "public_base_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Base Url"
+          },
+          "access_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Key"
+          },
+          "secret_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret Key"
+          },
+          "cdn_token_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Token Key"
+          },
+          "health_check_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Check Enabled"
+          },
+          "upload_expire_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3600.0,
+                "minimum": 30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Expire Seconds"
+          },
+          "public_download_expire_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3600.0,
+                "minimum": 30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Download Expire Seconds"
+          },
+          "mirror_bandwidth_limit_bps": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 134217728.0,
+                "minimum": 65536.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mirror Bandwidth Limit Bps"
+          },
+          "mirror_retry_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mirror Retry Count"
+          }
+        },
+        "type": "object",
+        "title": "ObjectStorageConfigUpdate"
+      },
+      "ObjectStorageHealthRead": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "summary"
+        ],
+        "title": "ObjectStorageHealthRead"
       },
       "OutboundProxyConfigRead": {
         "properties": {

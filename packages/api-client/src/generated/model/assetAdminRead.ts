@@ -21,6 +21,11 @@ export interface AssetAdminRead {
   mime_type: string | null;
   byte_size: number | null;
   sha256: string | null;
+  storage_provider: string;
+  remote_status: string;
+  mirror_status: string;
+  mirror_last_error: string | null;
+  oss_acceleration_enabled_at_upload: boolean;
   created_at: string;
   updated_at: string;
 }

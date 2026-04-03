@@ -1166,10 +1166,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "more.tabs.mailConfig": "邮箱配置",
     "more.tabs.apiConfig": "API配置",
     "more.tabs.proxyConfig": "代理设置",
+    "more.tabs.objectStorage": "对象存储",
     "more.sectionDescriptions.featureFlags": "前台能力与订阅入口",
     "more.sectionDescriptions.mailConfig": "订阅邮件与 SMTP 发信设置",
     "more.sectionDescriptions.apiConfig": "大模型 API 接入配置",
     "more.sectionDescriptions.proxyConfig": "本机代理端口与 Webhook 出站路由",
+    "more.sectionDescriptions.objectStorage": "OSS 加速、媒体分发与本地镜像回源",
     "more.mailSettings": "邮件发送",
     "more.mailSettingsDescription": "配置订阅通知使用的 SMTP 发件账号。",
 
@@ -2385,6 +2387,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "more.tabs.mailConfig": "Mail Config",
     "more.tabs.apiConfig": "API Config",
     "more.tabs.proxyConfig": "Proxy Settings",
+    "more.tabs.objectStorage": "Object Storage",
     "more.sectionDescriptions.featureFlags":
       "Frontend capabilities and subscribe entry",
     "more.sectionDescriptions.mailConfig":
@@ -2392,6 +2395,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "more.sectionDescriptions.apiConfig": "Model API connection settings",
     "more.sectionDescriptions.proxyConfig":
       "Local proxy port and outbound webhook routing",
+    "more.sectionDescriptions.objectStorage":
+      "OSS acceleration, media delivery, and local mirror sync",
     "more.mailSettings": "Mail Delivery",
     "more.mailSettingsDescription":
       "Configure the SMTP sender used for subscription notifications.",

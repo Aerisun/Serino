@@ -3161,6 +3161,154 @@ export const PostProxyConfigTestApiV1AdminProxyConfigTestPostResponse = zod.obje
 
 
 /**
+ * @summary 获取 OSS 加速配置
+ */
+export const GetObjectStorageConfigApiV1AdminObjectStorageConfigGetResponse = zod.object({
+  "enabled": zod.boolean(),
+  "provider": zod.literal("bitiful"),
+  "bucket": zod.string(),
+  "endpoint": zod.string(),
+  "region": zod.string(),
+  "public_base_url": zod.string(),
+  "access_key": zod.string(),
+  "secret_key_configured": zod.boolean(),
+  "cdn_token_key_configured": zod.boolean(),
+  "health_check_enabled": zod.boolean(),
+  "upload_expire_seconds": zod.number(),
+  "public_download_expire_seconds": zod.number(),
+  "mirror_bandwidth_limit_bps": zod.number(),
+  "mirror_retry_count": zod.number(),
+  "last_health_ok": zod.union([zod.boolean(),zod.null()]).optional(),
+  "last_health_error": zod.union([zod.string(),zod.null()]).optional(),
+  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 更新 OSS 加速配置
+ */
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyBucketOneMax = 255;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyEndpointOneMax = 500;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyRegionOneMax = 120;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyPublicBaseUrlOneMax = 500;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyAccessKeyOneMax = 255;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodySecretKeyOneMax = 5000;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyCdnTokenKeyOneMax = 5000;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyUploadExpireSecondsOneMin = 30;
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyUploadExpireSecondsOneMax = 3600;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyPublicDownloadExpireSecondsOneMin = 30;
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyPublicDownloadExpireSecondsOneMax = 3600;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorBandwidthLimitBpsOneMin = 65536;
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorBandwidthLimitBpsOneMax = 134217728;
+
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorRetryCountOneMin = 0;
+export const putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorRetryCountOneMax = 10;
+
+
+
+export const PutObjectStorageConfigApiV1AdminObjectStorageConfigPutBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "provider": zod.union([zod.literal("bitiful"),zod.null()]).optional(),
+  "bucket": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyBucketOneMax),zod.null()]).optional(),
+  "endpoint": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyEndpointOneMax),zod.null()]).optional(),
+  "region": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyRegionOneMax),zod.null()]).optional(),
+  "public_base_url": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyPublicBaseUrlOneMax),zod.null()]).optional(),
+  "access_key": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyAccessKeyOneMax),zod.null()]).optional(),
+  "secret_key": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodySecretKeyOneMax),zod.null()]).optional(),
+  "cdn_token_key": zod.union([zod.string().max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyCdnTokenKeyOneMax),zod.null()]).optional(),
+  "health_check_enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "upload_expire_seconds": zod.union([zod.number().min(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyUploadExpireSecondsOneMin).max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyUploadExpireSecondsOneMax),zod.null()]).optional(),
+  "public_download_expire_seconds": zod.union([zod.number().min(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyPublicDownloadExpireSecondsOneMin).max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyPublicDownloadExpireSecondsOneMax),zod.null()]).optional(),
+  "mirror_bandwidth_limit_bps": zod.union([zod.number().min(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorBandwidthLimitBpsOneMin).max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorBandwidthLimitBpsOneMax),zod.null()]).optional(),
+  "mirror_retry_count": zod.union([zod.number().min(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorRetryCountOneMin).max(putObjectStorageConfigApiV1AdminObjectStorageConfigPutBodyMirrorRetryCountOneMax),zod.null()]).optional()
+})
+
+export const PutObjectStorageConfigApiV1AdminObjectStorageConfigPutResponse = zod.object({
+  "enabled": zod.boolean(),
+  "provider": zod.literal("bitiful"),
+  "bucket": zod.string(),
+  "endpoint": zod.string(),
+  "region": zod.string(),
+  "public_base_url": zod.string(),
+  "access_key": zod.string(),
+  "secret_key_configured": zod.boolean(),
+  "cdn_token_key_configured": zod.boolean(),
+  "health_check_enabled": zod.boolean(),
+  "upload_expire_seconds": zod.number(),
+  "public_download_expire_seconds": zod.number(),
+  "mirror_bandwidth_limit_bps": zod.number(),
+  "mirror_retry_count": zod.number(),
+  "last_health_ok": zod.union([zod.boolean(),zod.null()]).optional(),
+  "last_health_error": zod.union([zod.string(),zod.null()]).optional(),
+  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 测试 OSS 加速配置
+ */
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyBucketOneMax = 255;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyEndpointOneMax = 500;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyRegionOneMax = 120;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyPublicBaseUrlOneMax = 500;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyAccessKeyOneMax = 255;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodySecretKeyOneMax = 5000;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyCdnTokenKeyOneMax = 5000;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyUploadExpireSecondsOneMin = 30;
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyUploadExpireSecondsOneMax = 3600;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyPublicDownloadExpireSecondsOneMin = 30;
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyPublicDownloadExpireSecondsOneMax = 3600;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorBandwidthLimitBpsOneMin = 65536;
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorBandwidthLimitBpsOneMax = 134217728;
+
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorRetryCountOneMin = 0;
+export const postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorRetryCountOneMax = 10;
+
+
+
+export const PostObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBody = zod.object({
+  "enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "provider": zod.union([zod.literal("bitiful"),zod.null()]).optional(),
+  "bucket": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyBucketOneMax),zod.null()]).optional(),
+  "endpoint": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyEndpointOneMax),zod.null()]).optional(),
+  "region": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyRegionOneMax),zod.null()]).optional(),
+  "public_base_url": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyPublicBaseUrlOneMax),zod.null()]).optional(),
+  "access_key": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyAccessKeyOneMax),zod.null()]).optional(),
+  "secret_key": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodySecretKeyOneMax),zod.null()]).optional(),
+  "cdn_token_key": zod.union([zod.string().max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyCdnTokenKeyOneMax),zod.null()]).optional(),
+  "health_check_enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "upload_expire_seconds": zod.union([zod.number().min(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyUploadExpireSecondsOneMin).max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyUploadExpireSecondsOneMax),zod.null()]).optional(),
+  "public_download_expire_seconds": zod.union([zod.number().min(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyPublicDownloadExpireSecondsOneMin).max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyPublicDownloadExpireSecondsOneMax),zod.null()]).optional(),
+  "mirror_bandwidth_limit_bps": zod.union([zod.number().min(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorBandwidthLimitBpsOneMin).max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorBandwidthLimitBpsOneMax),zod.null()]).optional(),
+  "mirror_retry_count": zod.union([zod.number().min(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorRetryCountOneMin).max(postObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBodyMirrorRetryCountOneMax),zod.null()]).optional()
+})
+
+export const PostObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostResponse = zod.object({
+  "ok": zod.boolean(),
+  "summary": zod.string(),
+  "details": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
  * @summary 获取admin-resume列表
  */
 export const listBasicsQueryPageDefault = 1;
@@ -3734,6 +3882,11 @@ export const ListAssetsEndpointApiV1AdminAssetsGetResponse = zod.object({
   "mime_type": zod.union([zod.string(),zod.null()]),
   "byte_size": zod.union([zod.number(),zod.null()]),
   "sha256": zod.union([zod.string(),zod.null()]),
+  "storage_provider": zod.string(),
+  "remote_status": zod.string(),
+  "mirror_status": zod.string(),
+  "mirror_last_error": zod.union([zod.string(),zod.null()]),
+  "oss_acceleration_enabled_at_upload": zod.boolean(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 })).describe('Page of result items'),
@@ -3756,6 +3909,101 @@ export const UploadAssetEndpointApiV1AdminAssetsPostBody = zod.object({
   "scope": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyScopeDefault),
   "category": zod.string().default(uploadAssetEndpointApiV1AdminAssetsPostBodyCategoryDefault),
   "note": zod.union([zod.string(),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 初始化资源上传
+ */
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyFileNameMax = 255;
+
+
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodySha256Min = 32;
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodySha256Max = 128;
+
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyMimeTypeOneMax = 120;
+
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyVisibilityDefault = `internal`;
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyScopeDefault = `user`;
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryDefault = `general`;
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryMax = 80;
+
+export const initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyNoteOneMax = 500;
+
+
+
+export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostBody = zod.object({
+  "file_name": zod.string().min(1).max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyFileNameMax),
+  "byte_size": zod.number().min(1),
+  "sha256": zod.string().min(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodySha256Min).max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodySha256Max),
+  "mime_type": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyMimeTypeOneMax),zod.null()]).optional(),
+  "visibility": zod.enum(['internal', 'public']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyVisibilityDefault),
+  "scope": zod.enum(['system', 'user']).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyScopeDefault),
+  "category": zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryMax).default(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyCategoryDefault),
+  "note": zod.union([zod.string().max(initUploadAssetEndpointApiV1AdminAssetsInitUploadPostBodyNoteOneMax),zod.null()]).optional()
+})
+
+export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse = zod.object({
+  "mode": zod.enum(['local', 'oss', 'existing']),
+  "asset_id": zod.union([zod.string(),zod.null()]).optional(),
+  "resource_key": zod.union([zod.string(),zod.null()]).optional(),
+  "upload_url": zod.union([zod.string(),zod.null()]).optional(),
+  "upload_method": zod.union([zod.literal("PUT"),zod.null()]).optional(),
+  "upload_headers": zod.record(zod.string(), zod.string()).optional(),
+  "expires_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "asset": zod.union([zod.object({
+  "id": zod.string(),
+  "file_name": zod.string(),
+  "resource_key": zod.string(),
+  "visibility": zod.enum(['internal', 'public']),
+  "scope": zod.enum(['system', 'user']),
+  "category": zod.string(),
+  "note": zod.union([zod.string(),zod.null()]),
+  "storage_path": zod.string(),
+  "internal_url": zod.string(),
+  "public_url": zod.union([zod.string(),zod.null()]),
+  "mime_type": zod.union([zod.string(),zod.null()]),
+  "byte_size": zod.union([zod.number(),zod.null()]),
+  "sha256": zod.union([zod.string(),zod.null()]),
+  "storage_provider": zod.string(),
+  "remote_status": zod.string(),
+  "mirror_status": zod.string(),
+  "mirror_last_error": zod.union([zod.string(),zod.null()]),
+  "oss_acceleration_enabled_at_upload": zod.boolean(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary 完成资源上传
+ */
+export const CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostBody = zod.object({
+  "asset_id": zod.string()
+})
+
+export const CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse = zod.object({
+  "id": zod.string(),
+  "file_name": zod.string(),
+  "resource_key": zod.string(),
+  "visibility": zod.enum(['internal', 'public']),
+  "scope": zod.enum(['system', 'user']),
+  "category": zod.string(),
+  "note": zod.union([zod.string(),zod.null()]),
+  "storage_path": zod.string(),
+  "internal_url": zod.string(),
+  "public_url": zod.union([zod.string(),zod.null()]),
+  "mime_type": zod.union([zod.string(),zod.null()]),
+  "byte_size": zod.union([zod.number(),zod.null()]),
+  "sha256": zod.union([zod.string(),zod.null()]),
+  "storage_provider": zod.string(),
+  "remote_status": zod.string(),
+  "mirror_status": zod.string(),
+  "mirror_last_error": zod.union([zod.string(),zod.null()]),
+  "oss_acceleration_enabled_at_upload": zod.boolean(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
 })
 
 
@@ -3792,6 +4040,11 @@ export const GetAssetEndpointApiV1AdminAssetsAssetIdGetResponse = zod.object({
   "mime_type": zod.union([zod.string(),zod.null()]),
   "byte_size": zod.union([zod.number(),zod.null()]),
   "sha256": zod.union([zod.string(),zod.null()]),
+  "storage_provider": zod.string(),
+  "remote_status": zod.string(),
+  "mirror_status": zod.string(),
+  "mirror_last_error": zod.union([zod.string(),zod.null()]),
+  "oss_acceleration_enabled_at_upload": zod.boolean(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 })
@@ -3825,6 +4078,11 @@ export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse = zod.objec
   "mime_type": zod.union([zod.string(),zod.null()]),
   "byte_size": zod.union([zod.number(),zod.null()]),
   "sha256": zod.union([zod.string(),zod.null()]),
+  "storage_provider": zod.string(),
+  "remote_status": zod.string(),
+  "mirror_status": zod.string(),
+  "mirror_last_error": zod.union([zod.string(),zod.null()]),
+  "oss_acceleration_enabled_at_upload": zod.boolean(),
   "created_at": zod.string().datetime({}),
   "updated_at": zod.string().datetime({})
 })
@@ -8702,3 +8960,23 @@ export const FeedsAliasApiV1SiteFeedsXmlGetResponse = zod.unknown()
  * @summary Feed Alias
  */
 export const FeedAliasApiV1SiteFeedXmlGetResponse = zod.unknown()
+
+
+/**
+ * @summary 托管资源访问网关
+ */
+export const ServeMediaMediaResourceKeyHeadParams = zod.object({
+  "resource_key": zod.string()
+})
+
+export const ServeMediaMediaResourceKeyHeadResponse = zod.unknown()
+
+
+/**
+ * @summary 托管资源访问网关
+ */
+export const ServeMediaMediaResourceKeyGetParams = zod.object({
+  "resource_key": zod.string()
+})
+
+export const ServeMediaMediaResourceKeyGetResponse = zod.unknown()
