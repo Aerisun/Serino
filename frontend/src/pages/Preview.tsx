@@ -14,6 +14,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import EmbeddedResume from "@/components/EmbeddedResume";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
+import { formatDateInBeijing } from "@/lib/time";
 
 const estimateReadTime = (value: string, lang: FrontendLang, minuteLabel: string) =>
   `${Math.max(1, Math.ceil(value.length / 180)).toLocaleString(lang === "zh" ? "zh-CN" : "en-US")} ${minuteLabel}`;
@@ -58,7 +59,11 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
         <div className="mb-4 flex flex-wrap items-center gap-3 text-xs font-body text-foreground/25">
           <span>
             {data.published_at
-              ? new Date(data.published_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US")
+              ? formatDateInBeijing(
+                  data.published_at,
+                  lang === "zh" ? "zh-CN" : "en-US",
+                  { year: "numeric", month: "2-digit", day: "2-digit" },
+                )
               : t("common.draft")}
           </span>
           <span className="rounded-md border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-2 py-0.5 text-[rgb(var(--shiro-accent-rgb)/0.72)]">
@@ -126,10 +131,14 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLElement>(null);
   const dateStr = data.published_at
-    ? new Date(data.published_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US")
+    ? formatDateInBeijing(data.published_at, lang === "zh" ? "zh-CN" : "en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
     : t("common.draft");
   const weekday = data.published_at
-    ? new Date(data.published_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US", {
+    ? formatDateInBeijing(data.published_at, lang === "zh" ? "zh-CN" : "en-US", {
         weekday: "long",
       })
     : "";

@@ -25,6 +25,7 @@ import { Server, Database, HardDrive, Clock, Code, Monitor, Trash2 } from "lucid
 import { useI18n } from "@/i18n";
 import type { AdminSessionRead, SystemInfo } from "@serino/api-client/models";
 import { cn } from "@/lib/utils";
+import { formatDateTimeInBeijing } from "@/lib/time";
 
 type AdminConsoleMethod = "email" | "google" | "github";
 
@@ -53,7 +54,7 @@ function formatUptime(seconds: number): string {
 }
 
 function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString();
+  return formatDateTimeInBeijing(dateStr) || dateStr;
 }
 
 export default function SystemInfoPage() {

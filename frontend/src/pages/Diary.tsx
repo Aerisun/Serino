@@ -26,6 +26,7 @@ import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
+import { formatDateInBeijing, getBeijingDateParts } from "@/lib/time";
 import { readDiaryApiV1SiteDiaryGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
@@ -85,17 +86,14 @@ const weatherLabelKeys: Record<string, string> = {
 };
 
 const formatDayOfMonth = (value: string | null) => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return String(parsed.getDate()).padStart(2, "0");
+  const parts = value ? getBeijingDateParts(value) : null;
+  return parts ? String(parts.day).padStart(2, "0") : "";
 };
 
 const formatWeekday = (value: string | null, lang: FrontendLang) => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" }).format(parsed);
+  return value
+    ? formatDateInBeijing(value, lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" })
+    : "";
 };
 
 const mapRemoteDiaryEntry = (

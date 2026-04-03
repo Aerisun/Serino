@@ -3,6 +3,7 @@
  * These do NOT call any API endpoints.
  */
 import { translateFrontendText } from "@/i18n";
+import { formatDateInBeijing } from "@/lib/time";
 
 export const formatPublishedDate = (value: string | null | undefined) => {
   if (!value) return "";
@@ -12,11 +13,11 @@ export const formatPublishedDate = (value: string | null | undefined) => {
     return "";
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  return formatDateInBeijing(parsed, "zh-CN", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(parsed);
+  });
 };
 
 export const splitContentParagraphs = (value: string) =>
@@ -35,10 +36,10 @@ export const formatFriendFeedDate = (value: string | null | undefined) => {
     return "";
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  return formatDateInBeijing(parsed, "zh-CN", {
     month: "numeric",
     day: "numeric",
-  }).format(parsed);
+  });
 };
 
 export const formatRelativeUpdatedAt = (value: number | null | undefined, now = Date.now()) => {

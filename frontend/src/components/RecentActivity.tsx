@@ -6,6 +6,7 @@ import type { RecentActivityItemRead } from "@serino/api-client/models";
 import { useFrontendI18n } from "@/i18n";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useContainedWheelScroll } from "@/hooks/use-contained-wheel-scroll";
+import { formatDateInBeijing } from "@/lib/time";
 
 type ActivityType =
   | "comment"
@@ -56,12 +57,11 @@ const formatRelativeDate = (value: string, t: TranslateFn, lang: "zh" | "en") =>
     return t("recentActivity.daysAgo", { count: days });
   }
 
-  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", {
+  return formatDateInBeijing(parsed, lang === "zh" ? "zh-CN" : "en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   })
-    .format(parsed)
     .replaceAll("/", "-");
 };
 

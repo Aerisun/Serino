@@ -12,6 +12,7 @@ import structlog
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.core.time import beijing_today
 from aerisun.domain.activity.repository import batch_resolve_titles
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.media.models import Asset
@@ -306,7 +307,7 @@ def record_daily_traffic_snapshot(
     commit: bool = True,
 ) -> bool:
     """Persist one daily traffic snapshot from current Waline counters."""
-    target_date = snapshot_date or datetime.now(UTC).date()
+    target_date = snapshot_date or beijing_today()
     current_stats = list_counter_stats()
     changed = False
 
@@ -337,7 +338,7 @@ def _build_traffic_metrics(session: Session) -> DashboardTrafficMetrics:
     _seed_missing_traffic_history(session)
     record_daily_traffic_snapshot(session, commit=True)
 
-    end_date = datetime.now(UTC).date()
+    end_date = beijing_today()
     start_date = end_date - timedelta(days=_TRAFFIC_HISTORY_DAYS - 1)
     snapshots = repo.list_traffic_snapshots_between(session, start_date=start_date, end_date=end_date)
 

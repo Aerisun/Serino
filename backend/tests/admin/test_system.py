@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 
+import aerisun.domain.ops.service as ops_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.domain.ops.models import TrafficDailySnapshot, VisitRecord
@@ -13,6 +14,13 @@ from tests.admin.test_backup_sync import FakeBackupTransport, _write_backup_cred
 
 BASE = "/api/v1/admin/system"
 INTEGRATIONS_BASE = "/api/v1/admin/integrations"
+
+
+class _FixedDateTime(datetime):
+    @classmethod
+    def now(cls, tz=None):  # type: ignore[override]
+        current = cls(2026, 4, 1, 15, 45, tzinfo=UTC)
+        return current if tz is None else current.astimezone(tz)
 
 
 def _reset_waline_counters() -> None:
@@ -185,6 +193,41 @@ class TestDashboardStats:
         assert "status_text" in payload["recent_visits"][0]
         assert "location" in payload["recent_visits"][0]
         assert payload["last_visit_at"] is not None
+
+    def test_dashboard_stats_groups_visitor_history_by_beijing_day(self, client, admin_headers, monkeypatch):
+        monkeypatch.setattr(ops_service, "datetime", _FixedDateTime)
+        factory = get_session_factory()
+        with factory() as session:
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=datetime(2026, 3, 31, 16, 30, tzinfo=UTC),
+                        path="/posts/beijing-midnight",
+                        ip_address="203.0.113.31",
+                        user_agent="Mozilla/5.0",
+                        referer=None,
+                        status_code=200,
+                        duration_ms=50,
+                        is_bot=False,
+                    ),
+                    VisitRecord(
+                        visited_at=datetime(2026, 4, 1, 14, 30, tzinfo=UTC),
+                        path="/posts/beijing-midnight",
+                        ip_address="203.0.113.32",
+                        user_agent="Mozilla/5.0",
+                        referer=None,
+                        status_code=200,
+                        duration_ms=55,
+                        is_bot=False,
+                    ),
+                ]
+            )
+            session.commit()
+
+        resp = client.get(f"{BASE}/dashboard/stats", headers=admin_headers)
+        assert resp.status_code == 200
+        history_by_date = {item["date"]: item["views"] for item in resp.json()["visitors"]["history"]}
+        assert history_by_date["2026-04-01"] >= 2
 
     def test_list_visitor_records(self, client, admin_headers):
         factory = get_session_factory()

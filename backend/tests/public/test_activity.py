@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import aerisun.domain.activity.service as activity_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.domain.content.models import PostEntry
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -23,6 +24,29 @@ def test_read_calendar_returns_content_events(client) -> None:
     payload = response.json()
     assert payload["events"]
     assert payload["events"][0]["type"] in {"post", "diary", "excerpt"}
+
+
+def test_read_calendar_uses_beijing_date_boundary(client) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.add(
+            PostEntry(
+                slug="beijing-boundary-post",
+                title="Beijing Boundary",
+                body="Boundary body",
+                summary="Boundary summary",
+                status="published",
+                visibility="public",
+                published_at=datetime(2026, 3, 31, 16, 30, tzinfo=UTC),
+            )
+        )
+        session.commit()
+
+    response = client.get("/api/v1/site/calendar?from=2026-04-01&to=2026-04-01")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert any(item["title"] == "Beijing Boundary" and item["date"] == "2026-04-01" for item in payload["events"])
 
 
 def test_read_recent_activity_returns_items(client) -> None:

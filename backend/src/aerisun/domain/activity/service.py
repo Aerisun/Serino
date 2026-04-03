@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import BEIJING_TZ, beijing_date, normalize_utc_datetime
 from aerisun.domain.activity import repository as repo
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,
@@ -30,7 +31,7 @@ def _avatar_for_name(name: str) -> str:
 
 
 def _normalize_timestamp(value: datetime) -> datetime:
-    return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+    return normalize_utc_datetime(value)
 
 
 def _trim_excerpt(value: str | None, limit: int = 72) -> str | None:
@@ -76,7 +77,7 @@ def _get_site_owner_name(session: Session) -> str:
 def list_calendar_events(session: Session, from_date: date, to_date: date) -> CalendarRead:
     events = []
     for published_at, kind, title, slug, href in repo.find_content_events(session):
-        current = published_at.date()
+        current = beijing_date(published_at)
         if from_date <= current <= to_date:
             events.append(
                 CalendarEventRead(

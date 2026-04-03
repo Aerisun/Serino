@@ -10,6 +10,7 @@ import { useReadCalendarApiV1SiteCalendarGet } from "@serino/api-client/site";
 import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { getBeijingNowParts, normalizeDateKey } from "@/lib/time";
 
 interface CalendarEvent {
   date: string;
@@ -60,15 +61,6 @@ const formatDateKey = (value: Date) => {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-};
-
-const normalizeDateKey = (value: string) => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "";
-  }
-
-  return formatDateKey(parsed);
 };
 
 const normalizeType = (value: string): CalendarEvent["type"] | null => {
@@ -149,17 +141,17 @@ const CalendarPage = () => {
       label: config.excerptTypeLabel ?? t("calendar.excerptTypeLabel"),
     },
   } as const;
-  const today = new Date();
+  const today = getBeijingNowParts();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotionPreference();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
+  const [year, setYear] = useState(today.year);
+  const [month, setMonth] = useState(Math.max(today.month - 1, 0));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const MIN_YEAR = 2024;
   const MIN_MONTH = 0;
   const isAtMinMonth = year === MIN_YEAR && month <= MIN_MONTH;
-  const isAtMaxMonth = year === today.getFullYear() && month >= today.getMonth();
+  const isAtMaxMonth = year === today.year && month >= Math.max(today.month - 1, 0);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -194,7 +186,7 @@ const CalendarPage = () => {
     return map;
   }, [calendarEvents]);
 
-  const todayKey = formatDateKey(today);
+  const todayKey = `${String(today.year).padStart(4, "0")}-${String(today.month).padStart(2, "0")}-${String(today.day).padStart(2, "0")}`;
   const activeDate = selectedDate;
   const activeEvents = activeDate ? eventMap[activeDate] || [] : eventMap[todayKey] || [];
   const activeDayLabel = activeDate

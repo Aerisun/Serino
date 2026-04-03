@@ -2,6 +2,11 @@ import { useState, useEffect, type ReactNode } from "react";
 import { Calendar } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
+import {
+  datetimeLocalInBeijingToIso,
+  isValidBeijingDatetimeLocal,
+  isoToDatetimeLocalInBeijing,
+} from "@/lib/time";
 
 interface PublishTimeFooterProps {
   /** 发布时间值（ISO 字符串） */
@@ -20,40 +25,17 @@ interface PublishTimeFooterProps {
 
 // 验证时间格式
 const isValidDateFormat = (value: string): boolean => {
-  if (!value) return true;
-  
-  // 支持格式: "YYYY-MM-DD HH:mm" 或 ISO 8601
-  const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
-  if (!isoPattern.test(value)) return false;
-  
-  try {
-    const date = new Date(value);
-    return !isNaN(date.getTime());
-  } catch {
-    return false;
-  }
+  return isValidBeijingDatetimeLocal(value);
 };
 
 /** 将 ISO 字符串转换为 datetime-local 格式 */
 const isoToDatetimeLocal = (isoString: string | null): string => {
-  if (!isoString) return "";
-  try {
-    const date = new Date(isoString);
-    return date.toISOString().slice(0, 16);
-  } catch {
-    return "";
-  }
+  return isoToDatetimeLocalInBeijing(isoString);
 };
 
 /** 将 datetime-local 值转换为 ISO 字符串 */
 const datetimeLocalToIso = (value: string): string => {
-  if (!value) return "";
-  try {
-    const date = new Date(value);
-    return date.toISOString();
-  } catch {
-    return "";
-  }
+  return datetimeLocalInBeijingToIso(value);
 };
 
 export function PublishTimeFooter({

@@ -14,6 +14,7 @@ from aerisun.api.deps.site_auth import (
 )
 from aerisun.core.db import get_session
 from aerisun.core.schemas import HealthRead
+from aerisun.core.time import beijing_today
 from aerisun.domain.activity.schemas import ActivityHeatmapRead, CalendarRead, RecentActivityRead
 from aerisun.domain.activity.service import (
     DEFAULT_ACTIVITY_HEATMAP_TZ,
@@ -256,7 +257,7 @@ def read_calendar(
     to_date: str | None = Query(default=None, alias="to"),
     session: Session = Depends(get_session),
 ) -> CalendarRead:
-    today = datetime.now(UTC).date()
+    today = beijing_today()
     start = datetime.fromisoformat(from_date).date() if from_date else today - timedelta(days=180)
     end = datetime.fromisoformat(to_date).date() if to_date else today
     return list_calendar_events(session, start, end)

@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import uuid_str
+from aerisun.core.time import BEIJING_TZ, to_beijing_datetime
 from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
     ContentCategory,
@@ -289,7 +290,7 @@ def _format_display_date(value: datetime | None) -> str | None:
     if value is None:
         return None
 
-    reference = value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+    reference = to_beijing_datetime(value)
     return f"{reference.year} 年 {reference.month} 月 {reference.day} 日"
 
 
@@ -297,8 +298,8 @@ def _format_relative_date(value: datetime | None) -> str | None:
     if value is None:
         return None
 
-    reference = value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
-    now = datetime.now(UTC)
+    reference = to_beijing_datetime(value)
+    now = datetime.now(BEIJING_TZ)
     delta = now - reference
     total_seconds = max(0, int(delta.total_seconds()))
     total_days = delta.days

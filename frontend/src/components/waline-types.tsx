@@ -27,6 +27,7 @@ export interface CommunityGuestbookItem {
   created_at: string;
   avatar?: string | null;
   avatar_url?: string | null;
+  is_author?: boolean;
 }
 
 export interface DraftState {
@@ -223,6 +224,7 @@ export const formatTimestamp = (value: string) => {
   const locale = getFrontendLang() === "zh" ? "zh-CN" : "en-US";
 
   return new Intl.DateTimeFormat(locale, {
+    timeZone: "Asia/Shanghai",
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);

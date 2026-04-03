@@ -31,6 +31,7 @@ import {
   formatContentTypeTitleLabel,
   getContentTargetFromPath,
 } from "@/lib/contentPathLabel";
+import { formatDateTimeInBeijing } from "@/lib/time";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -118,16 +119,13 @@ function formatCompactNumber(value: number) {
 }
 
 function formatDateTime(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return parsed.toLocaleString([], {
+  const formatted = formatDateTimeInBeijing(value, "en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+  return formatted || value;
 }
 
 function formatShare(value?: number) {

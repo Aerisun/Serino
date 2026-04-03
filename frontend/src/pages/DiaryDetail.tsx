@@ -31,6 +31,7 @@ import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
+import { formatDateInBeijing } from "@/lib/time";
 import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -111,10 +112,9 @@ interface DiaryDetailPageConfig extends BaseViewPageConfig {
 }
 
 const formatWeekday = (value: string | null, lang: FrontendLang) => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" }).format(parsed);
+  return value
+    ? formatDateInBeijing(value, lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" })
+    : "";
 };
 
 const buildRemoteDiaryEntry = (entry: ContentEntryRead, lang: FrontendLang): DiaryData => ({
@@ -138,8 +138,8 @@ const buildPreviewDiaryEntry = (
 ): DiaryData => ({
   slug: preview.slug || "",
   date: formatPublishedDate(preview.published_at) || t("common.draft"),
-  isArchived: false,
   weekday: formatWeekday(preview.published_at ?? null, lang),
+  isArchived: false,
   weather: preview.weather as Weather | undefined,
   mood: preview.mood ?? undefined,
   title: preview.title,

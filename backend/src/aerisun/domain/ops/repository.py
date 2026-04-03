@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import beijing_date, beijing_day_bounds, beijing_today
 from aerisun.domain.ops.models import (
     AuditLog,
     BackupCommit,
@@ -336,7 +337,7 @@ def has_traffic_snapshot_for_date(session: Session, *, snapshot_date: date) -> b
 
 
 def default_traffic_history_start(days: int) -> date:
-    return datetime.now(UTC).date() - timedelta(days=max(days - 1, 0))
+    return beijing_today() - timedelta(days=max(days - 1, 0))
 
 
 def create_visit_record(
@@ -441,21 +442,20 @@ def list_visit_history_by_day(
     end_date: date,
     include_bots: bool = False,
 ) -> list[tuple[str, int]]:
-    query = (
-        session.query(
-            func.strftime("%Y-%m-%d", VisitRecord.visited_at),
-            func.count(VisitRecord.id),
-        )
-        .filter(
-            VisitRecord.visited_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
-            VisitRecord.visited_at < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC),
-        )
-        .group_by(func.strftime("%Y-%m-%d", VisitRecord.visited_at))
-        .order_by(func.strftime("%Y-%m-%d", VisitRecord.visited_at).asc())
+    start_at, _ = beijing_day_bounds(start_date)
+    _, end_at = beijing_day_bounds(end_date)
+    query = session.query(VisitRecord.visited_at).filter(
+        VisitRecord.visited_at >= start_at,
+        VisitRecord.visited_at < end_at,
     )
     if not include_bots:
         query = query.filter(VisitRecord.is_bot.is_(False))
-    return list(query.all())
+
+    counts: dict[str, int] = {}
+    for (visited_at,) in query.all():
+        key = beijing_date(visited_at).isoformat()
+        counts[key] = counts.get(key, 0) + 1
+    return sorted(counts.items(), key=lambda item: item[0])
 
 
 def get_latest_visit_timestamp(session: Session, *, include_bots: bool = False) -> datetime | None:

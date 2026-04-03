@@ -5,6 +5,7 @@ import { useTheme } from "@serino/theme";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { SocialIcon } from "@/components/icons/SocialIcon";
+import { getBeijingNowParts } from "@/lib/time";
 
 const parseLocalDate = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
@@ -34,7 +35,7 @@ const Footer = () => {
   const copyrightYears = useMemo(() => {
     const weeks = heatmapResponse?.data?.weeks ?? [];
     if (weeks.length === 0) {
-      return String(new Date().getFullYear());
+      return String(getBeijingNowParts().year);
     }
 
     const startDate = parseLocalDate(weeks[0].week_start);
