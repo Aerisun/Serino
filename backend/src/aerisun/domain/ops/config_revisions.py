@@ -19,6 +19,10 @@ from aerisun.domain.automation.settings import (
     get_agent_model_config as get_agent_model_config_read,
 )
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict
+from aerisun.domain.media.object_storage import (
+    get_object_storage_config_read,
+    restore_object_storage_config,
+)
 from aerisun.domain.ops.models import AuditLog, ConfigRevision
 from aerisun.domain.outbound_proxy.service import (
     get_outbound_proxy_config,
@@ -376,6 +380,8 @@ def is_tracked_config_request(path: str, method: str) -> bool:
         return method == "PUT"
     if path == "/api/v1/admin/proxy-config":
         return method == "PUT"
+    if path == "/api/v1/admin/object-storage/config":
+        return method == "PUT"
     if path == "/api/v1/admin/integrations/mcp-config":
         return method == "PUT"
     if path == "/api/v1/admin/automation/model-config":
@@ -706,6 +712,17 @@ def _restore_outbound_proxy_config(session: Session, snapshot: dict[str, Any]) -
     restore_outbound_proxy_config(session, snapshot)
 
 
+def _capture_object_storage_config(session: Session) -> dict[str, Any]:
+    payload = get_object_storage_config_read(session).model_dump()
+    payload["secret_key"] = None
+    payload["cdn_token_key"] = None
+    return canonicalize_snapshot(payload)
+
+
+def _restore_object_storage_config_snapshot(session: Session, snapshot: dict[str, Any]) -> None:
+    restore_object_storage_config(session, snapshot)
+
+
 def _capture_agent_model_config(session: Session) -> dict[str, Any]:
     config = get_agent_model_config_read(session)
     return canonicalize_snapshot(config.model_dump(exclude={"is_ready"}))
@@ -814,6 +831,14 @@ _CONFIG_RESOURCES: dict[str, ConfigResourceSpec] = {
         capture=_capture_outbound_proxy_config,
         restore=_restore_outbound_proxy_config,
         summarize=_static_summary("出站代理"),
+    ),
+    "integrations.object_storage": ConfigResourceSpec(
+        key="integrations.object_storage",
+        label="对象存储",
+        resource_version=RESOURCE_VERSION,
+        capture=_capture_object_storage_config,
+        restore=_restore_object_storage_config_snapshot,
+        summarize=_static_summary("对象存储"),
     ),
     "integrations.mcp_public_access": ConfigResourceSpec(
         key="integrations.mcp_public_access",
