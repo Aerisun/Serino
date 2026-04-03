@@ -2,12 +2,25 @@ from __future__ import annotations
 
 import hashlib
 import mimetypes
+import shutil
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.media.models import Asset
+
+
+def purge_managed_media_root() -> None:
+    media_dir = get_settings().media_dir.expanduser().resolve()
+    media_dir.mkdir(parents=True, exist_ok=True)
+    if media_dir == media_dir.parent:
+        raise RuntimeError(f"Refusing to purge unsafe media root: {media_dir}")
+    for child in media_dir.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
 
 
 def ensure_seed_content_asset(

@@ -18,6 +18,26 @@ from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import connect_waline_db
 
 
+def _assert_force_reseed_cleans_orphan_media(seed_fn, tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        seed_fn(force=True)
+
+        media_root = get_settings().media_dir.expanduser().resolve()
+        orphan = media_root / "internal/assets/general/orphan.txt"
+        orphan.parent.mkdir(parents=True, exist_ok=True)
+        orphan.write_text("orphan", encoding="utf-8")
+
+        seed_fn(force=True)
+
+        assert not orphan.exists()
+    finally:
+        teardown_runtime_state()
+
+
 def test_seed_reference_data_backfills_missing_activity_page(client) -> None:
     session_factory = get_session_factory()
     session = session_factory()
@@ -314,6 +334,10 @@ def test_seed_bootstrap_data_uses_updated_defaults(tmp_path, monkeypatch) -> Non
         teardown_runtime_state()
 
 
+def test_seed_bootstrap_data_force_reseed_cleans_media_root(tmp_path, monkeypatch) -> None:
+    _assert_force_reseed_cleans_orphan_media(seed_bootstrap_data, tmp_path, monkeypatch)
+
+
 def test_seed_development_data_uses_updated_defaults(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 
@@ -329,6 +353,10 @@ def test_seed_development_data_uses_updated_defaults(tmp_path, monkeypatch) -> N
         assert community.image_uploader is True
     finally:
         teardown_runtime_state()
+
+
+def test_seed_development_data_force_reseed_cleans_media_root(tmp_path, monkeypatch) -> None:
+    _assert_force_reseed_cleans_orphan_media(seed_development_data, tmp_path, monkeypatch)
 
 
 def test_seed_bootstrap_data_force_reseeds_config_history_and_system_audit(tmp_path, monkeypatch) -> None:

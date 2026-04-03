@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
+from aerisun.core.seed_steps.assets import purge_managed_media_root
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import (
     seed_content_entries,
@@ -2165,6 +2166,8 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
         if force and reseed_all_blocks:
             _clear_seed_data(session)
             clear_waline_seed_data()
+            session.commit()
+            purge_managed_media_root()
         elif incremental_force:
             _logger = logging.getLogger("aerisun.seed")
             if blocks_to_reseed:
