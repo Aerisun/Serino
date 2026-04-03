@@ -22,4 +22,6 @@ export interface GuestbookEntryRead {
   avatar?: string | null;
   /** Full avatar image URL */
   avatar_url?: string | null;
+  /** Whether the guestbook author is the site owner */
+  is_author?: boolean;
 }

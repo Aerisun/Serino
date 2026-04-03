@@ -441,7 +441,7 @@ const WalineSurface = ({
         mode: "compress",
         maxDimension: 1920,
         quality: 0.82,
-        minBytesToCompress: config?.image_max_bytes ?? 512 * 1024,
+        targetMaxBytes: config?.image_max_bytes ?? 512 * 1024,
       });
       const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost({ file: compressedFile } as never);
       const imageUrl = response.data.data?.url;

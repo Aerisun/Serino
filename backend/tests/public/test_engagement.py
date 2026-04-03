@@ -462,6 +462,18 @@ def test_comment_image_upload_rejects_when_disabled(client) -> None:
     assert "评论图片上传" in response.json()["detail"]
 
 
+def test_comment_image_upload_rejects_when_exceeding_configured_size_limit(client) -> None:
+    _update_community_config(image_uploader=True, image_max_bytes=1024)
+
+    response = client.post(
+        "/api/v1/site-interactions/comment-image",
+        files={"file": ("image.png", b"x" * 2048, "image/png")},
+    )
+
+    assert response.status_code == 413
+    assert "图片过大" in response.json()["detail"]
+
+
 def test_comment_image_upload_uses_user_asset_upload(client) -> None:
     _update_community_config(image_uploader=True)
 

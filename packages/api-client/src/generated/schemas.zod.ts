@@ -739,6 +739,8 @@ export const ReadGuestbookApiV1SiteInteractionsGuestbookGetQueryParams = zod.obj
   "page_size": zod.number().min(1).max(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeMax).default(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeDefault)
 })
 
+export const readGuestbookApiV1SiteInteractionsGuestbookGetResponseItemsItemIsAuthorDefault = false;
+
 export const ReadGuestbookApiV1SiteInteractionsGuestbookGetResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string().describe('Unique guestbook entry identifier'),
@@ -748,7 +750,8 @@ export const ReadGuestbookApiV1SiteInteractionsGuestbookGetResponse = zod.object
   "status": zod.string().describe('Moderation status'),
   "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
   "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL')
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
+  "is_author": zod.boolean().default(readGuestbookApiV1SiteInteractionsGuestbookGetResponseItemsItemIsAuthorDefault).describe('Whether the guestbook author is the site owner')
 })).describe('List of guestbook entries'),
   "total": zod.number().describe('Total number of public guestbook entries'),
   "page": zod.number().describe('Current page number'),
@@ -769,6 +772,8 @@ export const CreateGuestbookApiV1SiteInteractionsGuestbookPostBody = zod.object(
   "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
 })
 
+export const createGuestbookApiV1SiteInteractionsGuestbookPostResponseItemIsAuthorDefault = false;
+
 export const CreateGuestbookApiV1SiteInteractionsGuestbookPostResponse = zod.object({
   "item": zod.object({
   "id": zod.string().describe('Unique guestbook entry identifier'),
@@ -778,7 +783,8 @@ export const CreateGuestbookApiV1SiteInteractionsGuestbookPostResponse = zod.obj
   "status": zod.string().describe('Moderation status'),
   "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
   "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL')
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
+  "is_author": zod.boolean().default(createGuestbookApiV1SiteInteractionsGuestbookPostResponseItemIsAuthorDefault).describe('Whether the guestbook author is the site owner')
 }).describe('Created guestbook entry'),
   "accepted": zod.boolean().describe('Whether the entry was auto-approved')
 })

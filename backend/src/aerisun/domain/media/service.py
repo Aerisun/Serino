@@ -27,6 +27,7 @@ from aerisun.domain.media.object_storage import (
     sign_asset_download_url,
     upload_asset_bytes_to_remote,
 )
+from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.media.schemas import (
     AssetAdminRead,
     AssetAdminUpdate,
@@ -497,6 +498,11 @@ def save_comment_image(session: Session, content: bytes, filename: str, mime_typ
 
     if mime_type not in _ALLOWED_IMAGE_TYPES:
         raise DomainValidationError("不支持的图片格式")
+    community_config = site_config_repo.find_community_config(session)
+    configured_limit = int(community_config.image_max_bytes or 0) if community_config is not None else 0
+    effective_limit = configured_limit if configured_limit > 0 else _MAX_UPLOAD_BYTES
+    if len(content) > effective_limit:
+        raise PayloadTooLarge("图片过大，请压缩后重试")
     if len(content) > _MAX_UPLOAD_BYTES:
         raise PayloadTooLarge("图片过大，请压缩后重试")
 

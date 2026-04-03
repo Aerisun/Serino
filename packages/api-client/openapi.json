@@ -306,6 +306,22 @@
               "default": 0,
               "title": "Offset"
             }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
           }
         ],
         "responses": {
@@ -347,6 +363,22 @@
             "schema": {
               "type": "string",
               "title": "Slug"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
             }
           }
         ],
@@ -404,6 +436,22 @@
               "default": 0,
               "title": "Offset"
             }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
           }
         ],
         "responses": {
@@ -445,6 +493,22 @@
             "schema": {
               "type": "string",
               "title": "Slug"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
             }
           }
         ],
@@ -502,6 +566,22 @@
               "default": 0,
               "title": "Offset"
             }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
           }
         ],
         "responses": {
@@ -557,6 +637,22 @@
               "minimum": 0,
               "default": 0,
               "title": "Offset"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
             }
           }
         ],
@@ -23012,6 +23108,12 @@
             ],
             "title": "Avatar Url",
             "description": "Full avatar image URL"
+          },
+          "is_author": {
+            "type": "boolean",
+            "title": "Is Author",
+            "description": "Whether the guestbook author is the site owner",
+            "default": false
           }
         },
         "type": "object",
