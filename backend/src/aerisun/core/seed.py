@@ -12,29 +12,41 @@ import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference
 from aerisun.core.seed_steps.common import is_empty
-from aerisun.core.seed_steps.content import seed_missing_page_copies, seed_missing_page_options
+from aerisun.core.seed_steps.content import seed_missing_page_copies
 from aerisun.core.seed_steps.legacy import seed_dev_admin
 from aerisun.core.seed_steps.waline import clear_waline_seed_data
 from aerisun.core.settings import BACKEND_ROOT, get_settings
-from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
+from aerisun.domain.automation.models import (
+    AgentRun,
+    AgentRunApproval,
+    AgentRunStep,
+    WebhookDeadLetter,
+    WebhookDelivery,
+    WebhookSubscription,
+    WorkflowBuildTask,
+    WorkflowBuildTaskStep,
+    WorkflowGateBufferItem,
+    WorkflowGateState,
+)
+from aerisun.domain.content.models import ContentCategory, DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
-from aerisun.domain.iam.models import AdminUser
+from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.media.models import Asset
-from aerisun.domain.ops.models import TrafficDailySnapshot, VisitRecord
-from aerisun.domain.site_auth.models import SiteAuthConfig
+from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
+from aerisun.domain.ops.models import AuditLog, ConfigRevision, TrafficDailySnapshot, VisitRecord
+from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteAuthConfig, SiteUser, SiteUserOAuthAccount, SiteUserSession
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
     PageCopy,
-    PageDisplayOption,
     Poem,
     ResumeBasics,
-    ResumeExperience,
-    ResumeSkillGroup,
     SiteProfile,
     SocialLink,
 )
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
+from aerisun.domain.subscription.models import ContentSubscriptionConfig
 
 DEFAULT_HERO_VIDEO_URL = (
     "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
@@ -44,7 +56,7 @@ DEFAULT_HERO_VIDEO_URL = (
 DEFAULT_SITE_PROFILE = {
     "name": "uName",
     "title": "YourTitle",
-    "bio": "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。",
+    "bio": "你是一个什么样的灵魂呀，写到这里吧 ~",
     "role": "THIS IS · YOUR ROLE",
     "og_image": "__SEEDED_OG_IMAGE__",
     "site_icon_url": "__SEEDED_SITE_ICON__",
@@ -87,18 +99,14 @@ DEFAULT_POEMS = [
 DEFAULT_PAGE_COPIES = [
     {
         "page_key": "activity",
-        "label": None,
-        "nav_label": None,
-        "title": "友邻与最近动态",
+        "title": "站点动态",
         "subtitle": "展示朋友动态、最近活动和贡献热力图。",
-        "description": "首页活动区配置。",
         "search_placeholder": None,
         "empty_message": None,
-        "max_width": "max-w-4xl",
+        "max_width": None,
         "page_size": None,
-        "download_label": None,
         "extras": {
-            "dashboardLabel": "Dashboard",
+            "dashboardLabel": "Recently",
             "friendCircleTitle": "朋友圈",
             "friendCircleViewAllLabel": "查看全部",
             "friendCircleErrorTitle": "友邻动态加载失败",
@@ -109,9 +117,6 @@ DEFAULT_PAGE_COPIES = [
             "recentActivityRetryLabel": "重试",
             "recentActivityEmptyMessage": "暂时还没有公开的最近动态",
             "heatmapTitle": "Activity",
-            "heatmapLoadingLabel": "加载中",
-            "heatmapErrorLabel": "加载失败",
-            "heatmapTotalTemplate": "{total} contributions",
             "heatmapThisWeekLabel": "This week",
             "heatmapPeakWeekLabel": "Peak week",
             "heatmapAverageWeekLabel": "Avg / week",
@@ -119,19 +124,15 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "notFound",
-        "label": None,
-        "nav_label": None,
         "title": "这个页面没有留下来",
         "subtitle": "",
-        "description": "你访问的页面不存在，或者已经被移动。",
         "search_placeholder": None,
         "empty_message": None,
-        "max_width": "max-w-2xl",
+        "max_width": None,
         "page_size": None,
-        "download_label": None,
         "extras": {
             "metaTitle": "页面未找到",
-            "metaDescription": "你访问的页面不存在，或者已经被移动。",
+            "metaDescription": "",
             "badgeLabel": "404",
             "homeLabel": "返回首页",
             "backLabel": "返回上页",
@@ -139,16 +140,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "posts",
-        "label": "Blog",
-        "nav_label": "文章",
         "title": "文章",
-        "subtitle": "整理过的想法与实践记录。",
-        "description": "文章列表与文章详情页文案。",
+        "subtitle": "让思想与经历，在文字中缓缓流淌",
         "search_placeholder": "搜索文章...",
         "empty_message": "没有找到匹配的文章",
-        "max_width": "max-w-3xl",
-        "page_size": None,
-        "download_label": None,
+        "max_width": "max-w-4xl",
+        "page_size": 15,
         "extras": {
             "category_all_label": "全部",
             "category_fallback_label": "未分类",
@@ -164,16 +161,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "diary",
-        "label": None,
-        "nav_label": "日记",
         "title": "日记",
-        "subtitle": "每天一点点，记录生活的温度。",
-        "description": "日记页文案。",
+        "subtitle": "用细碎的文字，轻轻安放每一天的心情",
         "search_placeholder": None,
         "empty_message": "今天还没有新的日记",
-        "max_width": "max-w-2xl",
-        "page_size": None,
-        "download_label": None,
+        "max_width": "max-w-3xl",
+        "page_size": 15,
         "extras": {
             "errorTitle": "日记加载失败",
             "retryLabel": "重试",
@@ -188,20 +181,15 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "friends",
-        "label": None,
-        "nav_label": "友链",
         "title": "朋友们",
         "subtitle": "海内存知己，天涯若比邻。",
-        "description": "友链与 Friend Circle 页面文案。",
         "search_placeholder": None,
         "empty_message": "暂时没有友链内容",
         "max_width": "max-w-4xl",
         "page_size": 10,
-        "download_label": None,
         "extras": {
             "circle_title": "Friend Circle",
             "errorTitle": "友链页面加载失败",
-            "statusLabel": "状态",
             "loadingLabel": "正在加载...",
             "loadMoreLabel": "加载更多",
             "retryLabel": "重试加载",
@@ -212,8 +200,8 @@ DEFAULT_PAGE_COPIES = [
             "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
             "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
             "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
-            "randomRecentDays": 7,
-            "autoRefreshSeconds": 60,
+            "randomRecentDays": 66,
+            "autoRefreshSeconds": 666,
             "websiteHealthCheckEnabled": True,
             "websiteHealthCheckIntervalMinutes": 360,
             "rssHealthCheckEnabled": True,
@@ -222,16 +210,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "excerpts",
-        "label": None,
-        "nav_label": "文摘",
         "title": "文摘",
-        "subtitle": "摘录那些让我停下来想一想的文字。",
-        "description": "文摘页文案。",
+        "subtitle": "拾起片语只字，珍藏那些让心灵驻足的片刻",
         "search_placeholder": None,
         "empty_message": "还没有整理好的文摘",
-        "max_width": "max-w-3xl",
-        "page_size": None,
-        "download_label": None,
+        "max_width": "max-w-4xl",
+        "page_size": 15,
         "extras": {
             "modalCloseLabel": "关闭",
             "commentsOpenLabel": "查看评论",
@@ -243,16 +227,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "thoughts",
-        "label": None,
-        "nav_label": "碎碎念",
         "title": "碎碎念",
-        "subtitle": "一些不成文的想法，随手记下的片段。",
-        "description": "碎碎念页文案。",
+        "subtitle": "轻放心头微澜，任思绪悄然落在字里行间",
         "search_placeholder": None,
         "empty_message": "最近没有新的碎碎念",
-        "max_width": "max-w-2xl",
-        "page_size": None,
-        "download_label": None,
+        "max_width": "max-w-3xl",
+        "page_size": 15,
         "extras": {
             "errorTitle": "碎碎念加载失败",
             "retryLabel": "重试",
@@ -261,22 +241,13 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "guestbook",
-        "label": None,
-        "nav_label": "留言板",
         "title": "留言板",
-        "subtitle": "留下你的足迹，说点什么吧。",
-        "description": "留言板页文案。",
+        "subtitle": "有缘路过，不妨留一言片语",
         "search_placeholder": None,
         "empty_message": "还没有人留言",
         "max_width": "max-w-2xl",
         "page_size": None,
-        "download_label": None,
         "extras": {
-            "promptTitle": "留言提示",
-            "nameFieldLabel": "昵称",
-            "contentFieldLabel": "正文",
-            "submitFieldLabel": "按钮",
-            "namePlaceholder": "你的名字",
             "contentPlaceholder": "想说的话",
             "submitLabel": "提交留言",
             "submittingLabel": "提交留言",
@@ -285,31 +256,13 @@ DEFAULT_PAGE_COPIES = [
         },
     },
     {
-        "page_key": "resume",
-        "label": None,
-        "nav_label": "简历",
-        "title": "Felix",
-        "subtitle": "UI/UX Designer · Frontend Developer",
-        "description": "简历页配置。",
-        "search_placeholder": None,
-        "empty_message": None,
-        "max_width": "max-w-3xl",
-        "page_size": None,
-        "download_label": None,
-        "extras": {},
-    },
-    {
         "page_key": "calendar",
-        "label": None,
-        "nav_label": "日历",
         "title": "日历",
-        "subtitle": "记录每一天的痕迹。",
-        "description": "日历与活动投影页面文案。",
+        "subtitle": "把日子的光影，悄悄收进时光的口袋。",
         "search_placeholder": None,
         "empty_message": "日历里还没有内容",
         "max_width": "max-w-4xl",
         "page_size": None,
-        "download_label": None,
         "extras": {
             "weekdayLabels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
             "monthLabels": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
@@ -323,18 +276,6 @@ DEFAULT_PAGE_COPIES = [
             "excerptTypeLabel": "文摘",
         },
     },
-]
-
-DEFAULT_PAGE_OPTIONS = [
-    {"page_key": "activity", "is_enabled": True, "settings": {}},
-    {"page_key": "posts", "is_enabled": True, "settings": {"show_search": True}},
-    {"page_key": "diary", "is_enabled": True, "settings": {}},
-    {"page_key": "friends", "is_enabled": True, "settings": {"circle_page_size": 10}},
-    {"page_key": "excerpts", "is_enabled": True, "settings": {}},
-    {"page_key": "thoughts", "is_enabled": True, "settings": {}},
-    {"page_key": "guestbook", "is_enabled": True, "settings": {}},
-    {"page_key": "resume", "is_enabled": True, "settings": {"show_download": True}},
-    {"page_key": "calendar", "is_enabled": True, "settings": {}},
 ]
 
 DEFAULT_NAV_ITEMS = [
@@ -391,6 +332,21 @@ DEFAULT_NAV_ITEMS = [
         "_parent_label": "更多",
     },
 ]
+
+PRODUCTION_CONFIG_HISTORY_RESOURCES = (
+    "site.profile",
+    "site.community",
+    "site.navigation",
+    "site.social_links",
+    "site.poems",
+    "site.pages",
+    "visitors.auth",
+    "subscriptions.config",
+    "network.outbound_proxy",
+    "integrations.mcp_public_access",
+    "automation.model_config",
+    "automation.workflows",
+)
 
 
 def build_default_community_config() -> dict[str, object]:
@@ -481,7 +437,7 @@ def _normalize_community_server_url(current_url: str | None, default_url: str) -
     return normalized_current
 
 
-def _seed_community_config(session: Session) -> None:
+def _seed_community_config(session: Session, *, force: bool = False) -> None:
     default_config = build_default_community_config()
     config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
 
@@ -489,12 +445,17 @@ def _seed_community_config(session: Session) -> None:
         session.add(CommunityConfig(**default_config))
         return
 
+    if force:
+        for key, value in default_config.items():
+            setattr(config, key, value)
+        return
+
     default_server_url = str(default_config["server_url"]).strip()
     config.server_url = _normalize_community_server_url(config.server_url, default_server_url)
     config.surfaces = _merge_community_surfaces(config.surfaces, list(default_config["surfaces"]))
 
 
-def _seed_site_auth_config(session: Session) -> None:
+def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:
     from aerisun.domain.site_auth.service import build_default_site_auth_config
 
     default_config = build_default_site_auth_config(session)
@@ -503,12 +464,29 @@ def _seed_site_auth_config(session: Session) -> None:
         session.add(SiteAuthConfig(**default_config))
         return
 
+    if force:
+        config.email_login_enabled = bool(default_config["email_login_enabled"])
+        config.visitor_oauth_providers = list(default_config["visitor_oauth_providers"])
+        config.admin_auth_methods = list(default_config["admin_auth_methods"])
+        config.admin_console_auth_methods = list(default_config["admin_console_auth_methods"])
+        config.admin_email_enabled = bool(default_config["admin_email_enabled"])
+        config.admin_email_password_hash = default_config["admin_email_password_hash"]
+        config.google_client_id = str(default_config["google_client_id"])
+        config.google_client_secret = str(default_config["google_client_secret"])
+        config.github_client_id = str(default_config["github_client_id"])
+        config.github_client_secret = str(default_config["github_client_secret"])
+        return
+
     if config.visitor_oauth_providers is None:
         config.visitor_oauth_providers = list(default_config["visitor_oauth_providers"])
     if config.admin_auth_methods is None:
         config.admin_auth_methods = list(default_config["admin_auth_methods"])
+    if getattr(config, "admin_console_auth_methods", None) is None:
+        config.admin_console_auth_methods = list(default_config["admin_console_auth_methods"])
     if getattr(config, "admin_email_enabled", None) is None:
         config.admin_email_enabled = bool(default_config["admin_email_enabled"])
+    if getattr(config, "admin_email_password_hash", None) is None:
+        config.admin_email_password_hash = default_config["admin_email_password_hash"]
     if not config.google_client_id:
         config.google_client_id = str(default_config["google_client_id"])
     if not config.google_client_secret:
@@ -519,103 +497,138 @@ def _seed_site_auth_config(session: Session) -> None:
         config.github_client_secret = str(default_config["github_client_secret"])
 
 
+def _seed_subscription_config_from_settings(session: Session, *, force: bool = False) -> None:
+    settings = get_settings()
+    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    if config is None:
+        config = ContentSubscriptionConfig()
+        session.add(config)
+        session.flush()
+        force = True
+
+    if not force:
+        return
+
+    smtp_auth_mode = (settings.subscription_smtp_auth_mode or "password").strip().lower()
+    if smtp_auth_mode not in {"password", "microsoft_oauth2"}:
+        smtp_auth_mode = "password"
+
+    config.enabled = False
+    config.smtp_auth_mode = smtp_auth_mode or "password"
+    config.smtp_host = settings.subscription_smtp_host.strip()
+    config.smtp_port = int(settings.subscription_smtp_port or 587)
+    config.smtp_username = settings.subscription_smtp_username.strip()
+    config.smtp_password = settings.subscription_smtp_password.strip()
+    config.smtp_oauth_tenant = settings.subscription_smtp_oauth_tenant.strip() or "common"
+    config.smtp_oauth_client_id = settings.subscription_smtp_oauth_client_id.strip()
+    config.smtp_oauth_client_secret = settings.subscription_smtp_oauth_client_secret.strip()
+    config.smtp_oauth_refresh_token = settings.subscription_smtp_oauth_refresh_token.strip()
+    config.smtp_from_email = settings.subscription_smtp_from_email.strip()
+    config.smtp_from_name = settings.subscription_smtp_from_name.strip()
+    config.smtp_reply_to = settings.subscription_smtp_reply_to.strip()
+    config.smtp_use_tls = bool(settings.subscription_smtp_use_tls)
+    config.smtp_use_ssl = bool(settings.subscription_smtp_use_ssl)
+    config.smtp_test_passed = False
+    config.smtp_tested_at = None
+    config.allowed_content_types = ["posts", "diary", "thoughts", "excerpts"]
+    config.mail_subject_template = "[{site_name}] {content_title}"
+    config.mail_body_template = (
+        "{site_name} 有新的{content_type_label}内容发布。\n\n"
+        "{content_title}\n"
+        "{content_summary}\n\n"
+        "阅读链接：{content_url}\n"
+        "RSS：{feed_url}"
+    )
+
+
+def _seed_agent_model_config(session: Session, *, force: bool = False) -> None:
+    site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    if site is None:
+        return
+
+    feature_flags = dict(site.feature_flags or {})
+    if force or AGENT_MODEL_CONFIG_FLAG_KEY not in feature_flags:
+        feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = dict(DEFAULT_AGENT_MODEL_CONFIG)
+        site.feature_flags = feature_flags
+
+
+def _seed_config_history_and_audit(session: Session) -> None:
+    if not is_empty(session, ConfigRevision):
+        return
+
+    for resource_key in PRODUCTION_CONFIG_HISTORY_RESOURCES:
+        snapshot = capture_config_resource(session, resource_key)
+        create_config_revision(
+            session,
+            actor_id=None,
+            resource_key=resource_key,
+            operation="seed",
+            before_snapshot=None,
+            after_snapshot=snapshot,
+            summary_override=f"生产种子初始化：{resource_key}",
+            commit=False,
+        )
+
+
 DEFAULT_RESUME = {
-    "title": "Felix",
-    "subtitle": "UI/UX Designer · Frontend Developer",
+    "title": "YourName",
     "summary": """## Profile
-专注把视觉、节奏和交互组织成清晰、克制、可维护的产品体验。
+你的简介写在这里，介绍一下你自己吧 ~
 
 ## Experience
-### Personal Website & Design System
-**Aerisun** · 2024 - Now
+### what your experience
+**WhatRole** · 20XX - Now
 
-- 重构站点信息架构与前后台配置逻辑
-- 把展示页、后台和数据结构统一成一套可维护系统
-- 持续打磨内容型网站的版式、节奏和视觉完成度
+- yayaya
+- ummmmm
+- 👀👀👀👀👀👀
 
 ## Skills
-- React / TypeScript / Tailwind CSS
-- Design Systems / Motion / Information Architecture
-- FastAPI / SQLAlchemy / SQLite
+- ... / .... / ...
+- ......
+- 👍 👍🏻 👍🏼 👍🏽 👍🏾 👍🏿
 
 ## Selected Projects
-- 个人网站与内容系统
-- 管理后台体验优化
-- 简历模板与 Markdown 渲染方案""",
-    "download_label": "",
-    "template_key": "editorial",
-    "accent_tone": "amber",
-    "location": "上海 / Remote",
-    "availability": "可接受远程合作与品牌项目咨询",
-    "email": "felix@example.com",
-    "website": "https://aerisun.local/resume",
-    "profile_image_url": "__SEEDED_RESUME_AVATAR__",
-    "highlights": [
-        "8+ 年数字产品体验设计与前端落地经验",
-        "擅长内容型网站、品牌官网与设计系统",
-        "能独立完成视觉、交互、前端实现与交付规范",
-    ],
+- ........
+- 🤔🤔🤔🤔🤔🤔
+
+~只是一个随意的模板~
+""",
+    "location": " your-city",
+    "email": "your-email@example.com",
 }
-
-DEFAULT_SKILLS = [
-    {"category": "Frontend", "items": ["React", "TypeScript", "Vite", "Tailwind CSS"], "order_index": 0},
-    {
-        "category": "Design",
-        "items": ["UI 系统", "Glassmorphism", "Motion Design", "Information Architecture"],
-        "order_index": 1,
-    },
-    {"category": "Backend", "items": ["FastAPI", "SQLAlchemy", "SQLite", "Docker"], "order_index": 2},
-]
-
-DEFAULT_EXPERIENCES = [
-    {
-        "title": "个人网站与设计系统",
-        "company": "Aerisun",
-        "period": "2024 - Now",
-        "location": "Remote",
-        "employment_type": "独立项目",
-        "summary": "构建个人网站、设计令牌和可恢复的内容平台。",
-        "achievements": [
-            "重构站点信息架构，让内容展示和后台配置保持一致",
-            "统一设计 token 与组件风格，降低页面维护成本",
-            "为文章、简历、留言等页面建立可扩展模板策略",
-        ],
-        "tech_stack": ["React", "TypeScript", "Tailwind", "FastAPI"],
-        "order_index": 0,
-    },
-    {
-        "title": "前端与视觉实现",
-        "company": "Independent",
-        "period": "2022 - 2024",
-        "location": "上海",
-        "employment_type": "全职 / 合作",
-        "summary": "负责个人项目中的页面节奏、动效和交互组织。",
-        "achievements": [
-            "为多个项目输出高保真界面方案与交互规范",
-            "推动设计到代码的映射规则，减少实现偏差",
-            "优化响应式与细节动效，提升整体完成度",
-        ],
-        "tech_stack": ["Figma", "React", "Framer Motion"],
-        "order_index": 1,
-    },
-]
 
 
 def _clear_seed_data(session: Session) -> None:
     _logger = logging.getLogger("aerisun.seed")
     _logger.info("Force reseed: clearing existing seed data...")
     for model in [
+        ContentCategory,
         Comment,
         GuestbookEntry,
         Reaction,
+        ApiKey,
+        AgentRun,
+        AgentRunStep,
+        AgentRunApproval,
+        WorkflowGateState,
+        WorkflowGateBufferItem,
+        WorkflowBuildTask,
+        WorkflowBuildTaskStep,
+        WebhookSubscription,
+        WebhookDelivery,
+        WebhookDeadLetter,
+        SiteAdminIdentity,
+        SiteUserSession,
+        SiteUserOAuthAccount,
+        SiteUser,
+        SiteAuthConfig,
+        ContentSubscriptionConfig,
         FriendFeedItem,
         FriendFeedSource,
         Friend,
-        ResumeExperience,
-        ResumeSkillGroup,
         ResumeBasics,
         NavItem,
-        PageDisplayOption,
         PageCopy,
         Poem,
         SocialLink,
@@ -628,6 +641,8 @@ def _clear_seed_data(session: Session) -> None:
         Asset,
         TrafficDailySnapshot,
         VisitRecord,
+        ConfigRevision,
+        AuditLog,
         AdminUser,
     ]:
         count = session.query(model).delete()
@@ -736,19 +751,12 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
                 ]
             )
             session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
-            session.add_all([PageDisplayOption(**item) for item in DEFAULT_PAGE_OPTIONS])
 
             resume = ResumeBasics(**{**DEFAULT_RESUME, "profile_image_url": seeded_resume_avatar})
             session.add(resume)
             session.flush()
-            session.add_all([ResumeSkillGroup(resume_basics_id=resume.id, **group) for group in DEFAULT_SKILLS])
-            session.add_all(
-                [ResumeExperience(resume_basics_id=resume.id, **experience) for experience in DEFAULT_EXPERIENCES]
-            )
 
         seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
-        existing_page_option_keys = set(session.scalars(select(PageDisplayOption.page_key)).all())
-        seed_missing_page_options(session, DEFAULT_PAGE_OPTIONS, existing_page_option_keys)
 
         current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
         if current_site is not None:
@@ -805,8 +813,11 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
         if current_site is not None:
             _seed_nav_items(session, site_id=current_site.id)
 
-        _seed_community_config(session)
-        _seed_site_auth_config(session)
+        _seed_community_config(session, force=force)
+        _seed_site_auth_config(session, force=force)
+        _seed_subscription_config_from_settings(session, force=force)
+        _seed_agent_model_config(session, force=force)
+        _seed_config_history_and_audit(session)
         seed_dev_admin(session)
         session.commit()
     finally:

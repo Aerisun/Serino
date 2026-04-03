@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.domain.site_config.models import PageCopy, PageDisplayOption
+from aerisun.domain.site_config.models import PageCopy
 
 
 def seed_content_entries(session: Session, model, entries: list[dict]) -> None:  # type: ignore[no-untyped-def]
@@ -16,16 +16,12 @@ def seed_content_entries(session: Session, model, entries: list[dict]) -> None: 
 def merge_page_copy(existing: PageCopy, default_item: dict) -> bool:
     changed = False
     scalar_fields = (
-        "label",
-        "nav_label",
         "title",
         "subtitle",
-        "description",
         "search_placeholder",
         "empty_message",
         "max_width",
         "page_size",
-        "download_label",
     )
     for field in scalar_fields:
         current_value = getattr(existing, field)
@@ -60,12 +56,6 @@ def merge_page_copy(existing: PageCopy, default_item: dict) -> bool:
     if changed:
         existing.extras = existing_extras
     return changed
-
-
-def seed_missing_page_options(session: Session, default_page_options: list[dict], existing_keys: set[str]) -> None:
-    missing_items = [item for item in default_page_options if item["page_key"] not in existing_keys]
-    if missing_items:
-        session.add_all([PageDisplayOption(**item) for item in missing_items])
 
 
 def seed_missing_page_copies(session: Session, default_page_copies: list[dict]) -> None:

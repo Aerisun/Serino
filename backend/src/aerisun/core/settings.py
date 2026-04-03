@@ -121,6 +121,25 @@ class Settings(BaseSettings):
     subscription_smtp_use_tls: bool = True
     subscription_smtp_use_ssl: bool = False
 
+    # Development-only seed overrides (from .env.development.local)
+    dev_seed_subscription_enabled: bool = False
+    dev_seed_agent_model_enabled: bool = False
+    dev_seed_agent_model_provider: str = "openai_compatible"
+    dev_seed_agent_model_base_url: str = ""
+    dev_seed_agent_model: str = ""
+    dev_seed_agent_model_api_key: str = ""
+    dev_seed_agent_model_temperature: float = 0.2
+    dev_seed_agent_model_timeout_seconds: int = 20
+    dev_seed_agent_model_advisory_prompt: str = ""
+    dev_seed_webhook_name: str = ""
+    dev_seed_webhook_target_url: str = ""
+    dev_seed_webhook_secret: str = ""
+    dev_seed_webhook_event_types: str = ""
+    dev_seed_webhook_headers_json: str = ""
+    dev_seed_webhook_timeout_seconds: int = 10
+    dev_seed_webhook_max_attempts: int = 6
+    dev_seed_webhook_status: str = "active"
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "auto"

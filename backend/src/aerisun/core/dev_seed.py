@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import inspect
 import json
 import logging
+import os
+import sqlite3
 from collections import Counter
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,12 +17,13 @@ from sqlalchemy.orm import Session
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
+from aerisun.domain.automation.models import WebhookSubscription
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import (
     seed_content_entries,
     seed_missing_page_copies,
-    seed_missing_page_options,
 )
 from aerisun.core.seed_steps.legacy import (
     seed_dev_admin,
@@ -46,15 +52,13 @@ from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
     PageCopy,
-    PageDisplayOption,
     Poem,
     ResumeBasics,
-    ResumeExperience,
-    ResumeSkillGroup,
     SiteProfile,
     SocialLink,
 )
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
+from aerisun.domain.subscription.models import ContentSubscriptionConfig
 from aerisun.domain.waline.service import build_comment_path
 
 DEFAULT_HERO_VIDEO_URL = (
@@ -117,16 +121,12 @@ DEFAULT_POEMS = [
 DEFAULT_PAGE_COPIES = [
     {
         "page_key": "activity",
-        "label": None,
-        "nav_label": None,
         "title": "友邻与最近动态",
         "subtitle": "展示朋友动态、最近活动和贡献热力图。",
-        "description": "首页活动区配置。",
         "search_placeholder": None,
         "empty_message": None,
-        "max_width": "max-w-4xl",
+        "max_width": None,
         "page_size": None,
-        "download_label": None,
         "extras": {
             "dashboardLabel": "Dashboard",
             "friendCircleTitle": "朋友圈",
@@ -139,9 +139,6 @@ DEFAULT_PAGE_COPIES = [
             "recentActivityRetryLabel": "重试",
             "recentActivityEmptyMessage": "暂时还没有公开的最近动态",
             "heatmapTitle": "Activity",
-            "heatmapLoadingLabel": "加载中",
-            "heatmapErrorLabel": "加载失败",
-            "heatmapTotalTemplate": "{total} contributions",
             "heatmapThisWeekLabel": "This week",
             "heatmapPeakWeekLabel": "Peak week",
             "heatmapAverageWeekLabel": "Avg / week",
@@ -149,16 +146,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "notFound",
-        "label": None,
-        "nav_label": None,
         "title": "这个页面没有留下来",
         "subtitle": "似乎已经离开了当前的路径。",
-        "description": "你访问的页面不存在，或者已经被移动。",
         "search_placeholder": None,
         "empty_message": None,
-        "max_width": "max-w-2xl",
+        "max_width": None,
         "page_size": None,
-        "download_label": None,
         "extras": {
             "metaTitle": "页面未找到",
             "metaDescription": "你访问的页面不存在，或者已经被移动。",
@@ -169,16 +162,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "posts",
-        "label": "Blog",
-        "nav_label": "帖子",
         "title": "Posts",
-        "subtitle": "整理过的想法与实践记录。",
-        "description": "文章列表与文章详情页文案。",
+        "subtitle": "整理过的碎碎念与实践记录。",
         "search_placeholder": "搜索文章...",
         "empty_message": "没有找到匹配的文章",
         "max_width": "max-w-3xl",
-        "page_size": None,
-        "download_label": None,
+        "page_size": 15,
         "extras": {
             "category_all_label": "全部",
             "category_fallback_label": "未分类",
@@ -194,16 +183,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "diary",
-        "label": None,
-        "nav_label": "日记",
         "title": "日记",
         "subtitle": "每天一点点，记录生活的温度。",
-        "description": "日记页文案。",
         "search_placeholder": None,
         "empty_message": "今天还没有新的日记",
         "max_width": "max-w-2xl",
-        "page_size": None,
-        "download_label": None,
+        "page_size": 15,
         "extras": {
             "errorTitle": "日记加载失败",
             "retryLabel": "重试",
@@ -218,20 +203,15 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "friends",
-        "label": None,
-        "nav_label": "友链",
         "title": "朋友们",
         "subtitle": "海内存知己，天涯若比邻。",
-        "description": "友链与 Friend Circle 页面文案。",
         "search_placeholder": None,
         "empty_message": "暂时没有友链内容",
         "max_width": "max-w-4xl",
         "page_size": 10,
-        "download_label": None,
         "extras": {
             "circle_title": "Friend Circle",
             "errorTitle": "友链页面加载失败",
-            "statusLabel": "状态",
             "loadingLabel": "正在加载...",
             "loadMoreLabel": "加载更多",
             "retryLabel": "重试加载",
@@ -242,8 +222,8 @@ DEFAULT_PAGE_COPIES = [
             "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
             "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
             "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
-            "randomRecentDays": 7,
-            "autoRefreshSeconds": 60,
+            "randomRecentDays": 66,
+            "autoRefreshSeconds": 666,
             "websiteHealthCheckEnabled": True,
             "websiteHealthCheckIntervalMinutes": 360,
             "rssHealthCheckEnabled": True,
@@ -252,16 +232,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "excerpts",
-        "label": None,
-        "nav_label": "文摘",
         "title": "文摘",
-        "subtitle": "摘录那些让我停下来想一想的文字。",
-        "description": "文摘页文案。",
+        "subtitle": "整理那些让我停下来想一想的文摘。",
         "search_placeholder": None,
         "empty_message": "还没有整理好的文摘",
         "max_width": "max-w-3xl",
-        "page_size": None,
-        "download_label": None,
+        "page_size": 15,
         "extras": {
             "modalCloseLabel": "关闭",
             "commentsOpenLabel": "查看评论",
@@ -273,16 +249,12 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "thoughts",
-        "label": None,
-        "nav_label": "碎碎念",
         "title": "碎碎念",
-        "subtitle": "一些不成文的想法，随手记下的片段。",
-        "description": "碎碎念页文案。",
+        "subtitle": "一些不成文的碎碎念，随手记下的片段。",
         "search_placeholder": None,
         "empty_message": "最近没有新的碎碎念",
         "max_width": "max-w-2xl",
-        "page_size": None,
-        "download_label": None,
+        "page_size": 15,
         "extras": {
             "errorTitle": "碎碎念加载失败",
             "retryLabel": "重试",
@@ -291,22 +263,13 @@ DEFAULT_PAGE_COPIES = [
     },
     {
         "page_key": "guestbook",
-        "label": None,
-        "nav_label": "留言板",
         "title": "留言板",
         "subtitle": "留下你的足迹，说点什么吧。",
-        "description": "留言板页文案。",
         "search_placeholder": None,
         "empty_message": "还没有人留言",
         "max_width": "max-w-2xl",
         "page_size": None,
-        "download_label": None,
         "extras": {
-            "promptTitle": "留言提示",
-            "nameFieldLabel": "昵称",
-            "contentFieldLabel": "正文",
-            "submitFieldLabel": "按钮",
-            "namePlaceholder": "你的名字",
             "contentPlaceholder": "想说的话",
             "submitLabel": "提交留言",
             "submittingLabel": "提交留言",
@@ -315,31 +278,13 @@ DEFAULT_PAGE_COPIES = [
         },
     },
     {
-        "page_key": "resume",
-        "label": None,
-        "nav_label": "简历",
-        "title": "Felix",
-        "subtitle": "UI/UX Designer · Frontend Developer",
-        "description": "简历页配置。",
-        "search_placeholder": None,
-        "empty_message": None,
-        "max_width": "max-w-3xl",
-        "page_size": None,
-        "download_label": None,
-        "extras": {},
-    },
-    {
         "page_key": "calendar",
-        "label": None,
-        "nav_label": "日历",
         "title": "日历",
         "subtitle": "记录每一天的痕迹。",
-        "description": "日历与活动投影页面文案。",
         "search_placeholder": None,
         "empty_message": "日历里还没有内容",
         "max_width": "max-w-4xl",
         "page_size": None,
-        "download_label": None,
         "extras": {
             "weekdayLabels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
             "monthLabels": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
@@ -353,18 +298,6 @@ DEFAULT_PAGE_COPIES = [
             "excerptTypeLabel": "文摘",
         },
     },
-]
-
-DEFAULT_PAGE_OPTIONS = [
-    {"page_key": "activity", "is_enabled": True, "settings": {}},
-    {"page_key": "posts", "is_enabled": True, "settings": {"show_search": True}},
-    {"page_key": "diary", "is_enabled": True, "settings": {}},
-    {"page_key": "friends", "is_enabled": True, "settings": {"circle_page_size": 10}},
-    {"page_key": "excerpts", "is_enabled": True, "settings": {}},
-    {"page_key": "thoughts", "is_enabled": True, "settings": {}},
-    {"page_key": "guestbook", "is_enabled": True, "settings": {}},
-    {"page_key": "resume", "is_enabled": True, "settings": {"show_download": True}},
-    {"page_key": "calendar", "is_enabled": True, "settings": {}},
 ]
 
 DEFAULT_NAV_ITEMS = [
@@ -611,6 +544,16 @@ def _normalize_community_server_url(current_url: str | None, default_url: str) -
     return normalized_current
 
 
+def _is_blank_value(value: object) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, (list, tuple, set, dict)):
+        return len(value) == 0
+    return False
+
+
 def _seed_community_config(session: Session) -> None:
     default_config = build_default_community_config()
     config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
@@ -637,8 +580,12 @@ def _seed_site_auth_config(session: Session) -> None:
         config.visitor_oauth_providers = list(default_config["visitor_oauth_providers"])
     if config.admin_auth_methods is None:
         config.admin_auth_methods = list(default_config["admin_auth_methods"])
+    if getattr(config, "admin_console_auth_methods", None) is None:
+        config.admin_console_auth_methods = list(default_config["admin_console_auth_methods"])
     if getattr(config, "admin_email_enabled", None) is None:
         config.admin_email_enabled = bool(default_config["admin_email_enabled"])
+    if getattr(config, "admin_email_password_hash", None) is None:
+        config.admin_email_password_hash = default_config["admin_email_password_hash"]
     if not config.google_client_id:
         config.google_client_id = str(default_config["google_client_id"])
     if not config.google_client_secret:
@@ -649,9 +596,190 @@ def _seed_site_auth_config(session: Session) -> None:
         config.github_client_secret = str(default_config["github_client_secret"])
 
 
+def _seed_subscription_config_from_settings(session: Session) -> None:
+    settings = get_settings()
+    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    created = False
+    if config is None:
+        config = ContentSubscriptionConfig()
+        session.add(config)
+        session.flush()
+        created = True
+
+    has_secret_overrides = any(
+        [
+            settings.subscription_smtp_host.strip(),
+            settings.subscription_smtp_username.strip(),
+            settings.subscription_smtp_password.strip(),
+            settings.subscription_smtp_oauth_tenant.strip(),
+            settings.subscription_smtp_oauth_client_id.strip(),
+            settings.subscription_smtp_oauth_client_secret.strip(),
+            settings.subscription_smtp_oauth_refresh_token.strip(),
+            settings.subscription_smtp_from_email.strip(),
+            settings.subscription_smtp_from_name.strip(),
+            settings.subscription_smtp_reply_to.strip(),
+        ]
+    )
+
+    if not has_secret_overrides and not settings.dev_seed_subscription_enabled:
+        return
+
+    if created:
+        config.enabled = bool(settings.dev_seed_subscription_enabled)
+        config.smtp_auth_mode = (settings.subscription_smtp_auth_mode or "password").strip() or "password"
+        config.smtp_host = settings.subscription_smtp_host.strip()
+        config.smtp_port = int(settings.subscription_smtp_port or 587)
+        config.smtp_username = settings.subscription_smtp_username.strip()
+        config.smtp_password = settings.subscription_smtp_password.strip()
+        config.smtp_oauth_tenant = settings.subscription_smtp_oauth_tenant.strip() or "common"
+        config.smtp_oauth_client_id = settings.subscription_smtp_oauth_client_id.strip()
+        config.smtp_oauth_client_secret = settings.subscription_smtp_oauth_client_secret.strip()
+        config.smtp_oauth_refresh_token = settings.subscription_smtp_oauth_refresh_token.strip()
+        config.smtp_from_email = settings.subscription_smtp_from_email.strip()
+        config.smtp_from_name = settings.subscription_smtp_from_name.strip()
+        config.smtp_reply_to = settings.subscription_smtp_reply_to.strip()
+        config.smtp_use_tls = bool(settings.subscription_smtp_use_tls)
+        config.smtp_use_ssl = bool(settings.subscription_smtp_use_ssl)
+        config.smtp_test_passed = False
+        config.smtp_tested_at = None
+        return
+
+    def _fill_if_empty(field_name: str, value: str) -> bool:
+        normalized = value.strip()
+        if not normalized:
+            return False
+        if not _is_blank_value(getattr(config, field_name)):
+            return False
+        setattr(config, field_name, normalized)
+        return True
+
+    changed = False
+    changed = _fill_if_empty("smtp_host", settings.subscription_smtp_host) or changed
+    changed = _fill_if_empty("smtp_username", settings.subscription_smtp_username) or changed
+    changed = _fill_if_empty("smtp_password", settings.subscription_smtp_password) or changed
+    changed = _fill_if_empty("smtp_oauth_tenant", settings.subscription_smtp_oauth_tenant) or changed
+    changed = _fill_if_empty("smtp_oauth_client_id", settings.subscription_smtp_oauth_client_id) or changed
+    changed = _fill_if_empty("smtp_oauth_client_secret", settings.subscription_smtp_oauth_client_secret) or changed
+    changed = _fill_if_empty("smtp_oauth_refresh_token", settings.subscription_smtp_oauth_refresh_token) or changed
+    changed = _fill_if_empty("smtp_from_email", settings.subscription_smtp_from_email) or changed
+    changed = _fill_if_empty("smtp_from_name", settings.subscription_smtp_from_name) or changed
+    changed = _fill_if_empty("smtp_reply_to", settings.subscription_smtp_reply_to) or changed
+
+    if changed:
+        config.smtp_test_passed = False
+        config.smtp_tested_at = None
+
+
+def _seed_agent_model_config_from_settings(session: Session) -> None:
+    settings = get_settings()
+    provider = (settings.dev_seed_agent_model_provider or "openai_compatible").strip() or "openai_compatible"
+    base_url = settings.dev_seed_agent_model_base_url.strip()
+    model_name = settings.dev_seed_agent_model.strip()
+    api_key = settings.dev_seed_agent_model_api_key.strip()
+    advisory_prompt = settings.dev_seed_agent_model_advisory_prompt.strip()
+
+    should_apply = bool(
+        settings.dev_seed_agent_model_enabled or base_url or model_name or api_key or advisory_prompt
+    )
+    if not should_apply:
+        return
+
+    site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    if site is None:
+        return
+
+    feature_flags = dict(site.feature_flags or {})
+    current = feature_flags.get(AGENT_MODEL_CONFIG_FLAG_KEY)
+    current_data = current if isinstance(current, dict) else {}
+    merged = dict(DEFAULT_AGENT_MODEL_CONFIG)
+    merged.update(current_data)
+
+    if ("provider" not in current_data or _is_blank_value(current_data.get("provider"))) and provider:
+        merged["provider"] = provider
+    if ("base_url" not in current_data or _is_blank_value(current_data.get("base_url"))) and base_url:
+        merged["base_url"] = base_url
+    if ("model" not in current_data or _is_blank_value(current_data.get("model"))) and model_name:
+        merged["model"] = model_name
+    if ("api_key" not in current_data or _is_blank_value(current_data.get("api_key"))) and api_key:
+        merged["api_key"] = api_key
+    if ("advisory_prompt" not in current_data or _is_blank_value(current_data.get("advisory_prompt"))) and advisory_prompt:
+        merged["advisory_prompt"] = advisory_prompt
+
+    if "temperature" not in current_data or current_data.get("temperature") is None:
+        merged["temperature"] = float(settings.dev_seed_agent_model_temperature)
+    if "timeout_seconds" not in current_data or current_data.get("timeout_seconds") in (None, 0):
+        merged["timeout_seconds"] = max(int(settings.dev_seed_agent_model_timeout_seconds), 5)
+    if "enabled" not in current_data or current_data.get("enabled") is None:
+        merged["enabled"] = bool(settings.dev_seed_agent_model_enabled)
+        if not merged["enabled"] and base_url and model_name and api_key:
+            merged["enabled"] = True
+
+    feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = merged
+    site.feature_flags = feature_flags
+
+
+def _seed_webhook_subscription_from_settings(session: Session) -> None:
+    settings = get_settings()
+    target_url = settings.dev_seed_webhook_target_url.strip()
+    if not target_url:
+        return
+
+    name = settings.dev_seed_webhook_name.strip() or "dev-webhook"
+    secret = settings.dev_seed_webhook_secret.strip() or None
+    status = settings.dev_seed_webhook_status.strip() or "active"
+    timeout_seconds = max(int(settings.dev_seed_webhook_timeout_seconds or 10), 1)
+    max_attempts = max(int(settings.dev_seed_webhook_max_attempts or 6), 1)
+    event_types = [item.strip() for item in settings.dev_seed_webhook_event_types.split(",") if item.strip()]
+    if not event_types:
+        event_types = ["webhook.test"]
+
+    headers: dict[str, object] = {}
+    raw_headers = settings.dev_seed_webhook_headers_json.strip()
+    if raw_headers:
+        try:
+            parsed_headers = json.loads(raw_headers)
+            if isinstance(parsed_headers, dict):
+                headers = {str(key): value for key, value in parsed_headers.items()}
+        except json.JSONDecodeError:
+            logging.getLogger("aerisun.seed").warning(
+                "Ignored AERISUN_DEV_SEED_WEBHOOK_HEADERS_JSON because it is not valid JSON"
+            )
+
+    webhook = session.scalars(
+        select(WebhookSubscription).where(WebhookSubscription.name == name).order_by(WebhookSubscription.created_at.asc())
+    ).first()
+    if webhook is None:
+        webhook = WebhookSubscription(
+            name=name,
+            status=status,
+            target_url=target_url,
+            secret=secret,
+            event_types=event_types,
+            timeout_seconds=timeout_seconds,
+            max_attempts=max_attempts,
+            headers=headers,
+        )
+        session.add(webhook)
+        return
+
+    if _is_blank_value(webhook.status):
+        webhook.status = status
+    if _is_blank_value(webhook.target_url):
+        webhook.target_url = target_url
+    if secret is not None and _is_blank_value(webhook.secret):
+        webhook.secret = secret
+    if not webhook.event_types:
+        webhook.event_types = event_types
+    if not webhook.timeout_seconds:
+        webhook.timeout_seconds = timeout_seconds
+    if not webhook.max_attempts:
+        webhook.max_attempts = max_attempts
+    if headers and not webhook.headers:
+        webhook.headers = headers
+
+
 DEFAULT_RESUME = {
     "title": "Felix",
-    "subtitle": "UI/UX Designer · Frontend Developer",
     "summary": """## Profile
 专注把视觉、节奏和交互组织成清晰、克制、可维护的产品体验。
 
@@ -672,63 +800,10 @@ DEFAULT_RESUME = {
 - 个人网站与内容系统
 - 管理后台体验优化
 - 简历模板与 Markdown 渲染方案""",
-    "download_label": "",
-    "template_key": "editorial",
-    "accent_tone": "amber",
     "location": "上海 / Remote",
-    "availability": "可接受远程合作与品牌项目咨询",
     "email": "felix@example.com",
-    "website": "https://aerisun.local/resume",
     "profile_image_url": "__SEEDED_RESUME_AVATAR__",
-    "highlights": [
-        "8+ 年数字产品体验设计与前端落地经验",
-        "擅长内容型网站、品牌官网与设计系统",
-        "能独立完成视觉、交互、前端实现与交付规范",
-    ],
 }
-
-DEFAULT_SKILLS = [
-    {"category": "Frontend", "items": ["React", "TypeScript", "Vite", "Tailwind CSS"], "order_index": 0},
-    {
-        "category": "Design",
-        "items": ["UI 系统", "Glassmorphism", "Motion Design", "Information Architecture"],
-        "order_index": 1,
-    },
-    {"category": "Backend", "items": ["FastAPI", "SQLAlchemy", "SQLite", "Docker"], "order_index": 2},
-]
-
-DEFAULT_EXPERIENCES = [
-    {
-        "title": "个人网站与设计系统",
-        "company": "Aerisun",
-        "period": "2024 - Now",
-        "location": "Remote",
-        "employment_type": "独立项目",
-        "summary": "构建个人网站、设计令牌和可恢复的内容平台。",
-        "achievements": [
-            "重构站点信息架构，让内容展示和后台配置保持一致",
-            "统一设计 token 与组件风格，降低页面维护成本",
-            "为文章、简历、留言等页面建立可扩展模板策略",
-        ],
-        "tech_stack": ["React", "TypeScript", "Tailwind", "FastAPI"],
-        "order_index": 0,
-    },
-    {
-        "title": "前端与视觉实现",
-        "company": "Independent",
-        "period": "2022 - 2024",
-        "location": "上海",
-        "employment_type": "全职 / 合作",
-        "summary": "负责个人项目中的页面节奏、动效和交互组织。",
-        "achievements": [
-            "为多个项目输出高保真界面方案与交互规范",
-            "推动设计到代码的映射规则，减少实现偏差",
-            "优化响应式与细节动效，提升整体完成度",
-        ],
-        "tech_stack": ["Figma", "React", "Framer Motion"],
-        "order_index": 1,
-    },
-]
 
 DEFAULT_POSTS = [
     {
@@ -1738,6 +1813,207 @@ DEV_WALINE_COMMENTS = DEFAULT_WALINE_COMMENTS
 DEV_REACTIONS = DEFAULT_REACTIONS
 DEV_TRAFFIC_SNAPSHOTS = DEFAULT_TRAFFIC_SNAPSHOTS
 
+DEV_SEED_BLOCK_META_PREFIX = "dev_seed_block_fingerprint:"
+DEV_SEED_BASE_BLOCKS = ("core", "content", "admin")
+DEV_SEED_DEV_ONLY_BLOCKS = ("social", "engagement", "ops", "waline")
+
+
+def _active_seed_blocks(include_dev_data: bool) -> tuple[str, ...]:
+    if include_dev_data:
+        return (*DEV_SEED_BASE_BLOCKS, *DEV_SEED_DEV_ONLY_BLOCKS)
+    return DEV_SEED_BASE_BLOCKS
+
+
+def _seed_function_source(fn: object) -> str:
+    try:
+        return inspect.getsource(fn)  # type: ignore[arg-type]
+    except (OSError, TypeError):
+        return repr(fn)
+
+
+def _fingerprint_seed_block(*parts: object) -> str:
+    digest = hashlib.sha256()
+    for part in parts:
+        if callable(part):
+            payload = _seed_function_source(part)
+        else:
+            payload = repr(part)
+        digest.update(payload.encode("utf-8"))
+        digest.update(b"\0")
+    return digest.hexdigest()[:16]
+
+
+def _compute_seed_block_fingerprints(*, include_dev_data: bool) -> dict[str, str]:
+    fingerprints = {
+        "core": _fingerprint_seed_block(
+            DEFAULT_SITE_PROFILE,
+            DEFAULT_SOCIAL_LINKS,
+            DEFAULT_POEMS,
+            DEFAULT_PAGE_COPIES,
+            DEFAULT_NAV_ITEMS,
+            DEFAULT_RESUME,
+            DEFAULT_COMMENT_AVATAR_PRESETS,
+            _merge_community_surfaces,
+            _normalize_community_server_url,
+            _seed_community_config,
+            _seed_site_auth_config,
+            _seed_subscription_config_from_settings,
+            _seed_agent_model_config_from_settings,
+            _seed_webhook_subscription_from_settings,
+            seed_missing_page_copies,
+        ),
+        "content": _fingerprint_seed_block(
+            DEFAULT_POSTS,
+            DEFAULT_DIARY_ENTRIES,
+            DEFAULT_THOUGHTS,
+            DEFAULT_EXCERPTS,
+            seed_content_entries,
+        ),
+        "admin": _fingerprint_seed_block(seed_dev_admin),
+    }
+
+    if include_dev_data:
+        fingerprints.update(
+            {
+                "social": _fingerprint_seed_block(
+                    DEV_FRIENDS,
+                    DEV_FRIEND_FEED_SOURCES,
+                    DEV_FRIEND_FEED_ITEMS,
+                    seed_social_data,
+                ),
+                "engagement": _fingerprint_seed_block(
+                    DEV_REACTIONS,
+                    DEV_LEGACY_GUESTBOOK_ENTRIES,
+                    DEV_LEGACY_COMMENTS,
+                    seed_engagement_data,
+                    seed_legacy_guestbook_data,
+                    seed_legacy_comment_data,
+                ),
+                "ops": _fingerprint_seed_block(
+                    DEV_TRAFFIC_SNAPSHOTS,
+                    seed_traffic_snapshot_data,
+                    seed_visit_record_data,
+                ),
+                "waline": _fingerprint_seed_block(
+                    DEV_WALINE_COMMENTS,
+                    DEFAULT_WALINE_COUNTERS,
+                    seed_waline_comment_data,
+                    seed_waline_counter_data,
+                ),
+            }
+        )
+    return fingerprints
+
+
+def _seed_block_meta_key(block: str) -> str:
+    return f"{DEV_SEED_BLOCK_META_PREFIX}{block}"
+
+
+def _load_seed_block_fingerprints(db_path: Path, *, include_dev_data: bool) -> dict[str, str]:
+    if not db_path.exists():
+        return {}
+
+    connection = sqlite3.connect(str(db_path))
+    try:
+        tables = {
+            row[0]
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+        if "_aerisun_meta" not in tables:
+            return {}
+
+        stored: dict[str, str] = {}
+        for block in _active_seed_blocks(include_dev_data):
+            row = connection.execute(
+                "SELECT value FROM _aerisun_meta WHERE key = ?",
+                (_seed_block_meta_key(block),),
+            ).fetchone()
+            if row and row[0]:
+                stored[block] = str(row[0])
+        return stored
+    finally:
+        connection.close()
+
+
+def _store_seed_block_fingerprints(
+    db_path: Path,
+    *,
+    fingerprints: dict[str, str],
+    include_dev_data: bool,
+) -> None:
+    connection = sqlite3.connect(str(db_path))
+    try:
+        connection.execute("CREATE TABLE IF NOT EXISTS _aerisun_meta (key TEXT PRIMARY KEY, value TEXT)")
+        for block in _active_seed_blocks(include_dev_data):
+            connection.execute(
+                "INSERT OR REPLACE INTO _aerisun_meta (key, value) VALUES (?, ?)",
+                (_seed_block_meta_key(block), fingerprints.get(block, "")),
+            )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def _determine_incremental_reseed_blocks(
+    db_path: Path,
+    *,
+    current_fingerprints: dict[str, str],
+    include_dev_data: bool,
+) -> set[str]:
+    active_blocks = _active_seed_blocks(include_dev_data)
+    stored_fingerprints = _load_seed_block_fingerprints(db_path, include_dev_data=include_dev_data)
+    if not stored_fingerprints:
+        return set(active_blocks)
+    return {
+        block
+        for block in active_blocks
+        if stored_fingerprints.get(block) != current_fingerprints.get(block)
+    }
+
+
+def _clear_seed_models(session: Session, models: list[type], *, label: str) -> None:
+    _logger = logging.getLogger("aerisun.seed")
+    _logger.info("Incremental reseed: clearing block '%s'", label)
+    for model in models:
+        count = session.query(model).delete()
+        if count:
+            _logger.info("  Cleared %d rows from %s", count, model.__tablename__)
+    session.flush()
+
+
+def _clear_seed_block_data(session: Session, block: str) -> None:
+    if block == "core":
+        # Preserve sensitive/runtime tables (e.g., site_auth/subscription/workflow data).
+        _clear_seed_models(
+            session,
+            [
+                NavItem,
+                PageCopy,
+                CommunityConfig,
+            ],
+            label=block,
+        )
+        return
+
+    if block == "content":
+        _clear_seed_models(session, [PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry], label=block)
+        return
+
+    if block == "social":
+        _clear_seed_models(session, [FriendFeedItem, FriendFeedSource, Friend], label=block)
+        return
+
+    if block == "engagement":
+        _clear_seed_models(session, [Comment, GuestbookEntry, Reaction], label=block)
+        return
+
+    if block == "ops":
+        _clear_seed_models(session, [TrafficDailySnapshot, VisitRecord], label=block)
+        return
+
+    if block == "admin":
+        _clear_seed_models(session, [AdminUser], label=block)
+
 
 def _clear_seed_data(session: Session) -> None:
     """Delete all seed data to allow a clean reseed. Development only."""
@@ -1750,11 +2026,8 @@ def _clear_seed_data(session: Session) -> None:
         FriendFeedItem,
         FriendFeedSource,
         Friend,
-        ResumeExperience,
-        ResumeSkillGroup,
         ResumeBasics,
         NavItem,
-        PageDisplayOption,
         PageCopy,
         Poem,
         SocialLink,
@@ -1775,194 +2048,296 @@ def _clear_seed_data(session: Session) -> None:
     session.flush()
 
 
+def _has_rows(session: Session, model: type) -> bool:
+    return session.scalar(select(model.id).limit(1)) is not None
+
+
+def _should_preserve_content_block(session: Session) -> bool:
+    return any(
+        _has_rows(session, model)
+        for model in (
+            PostEntry,
+            DiaryEntry,
+            ThoughtEntry,
+            ExcerptEntry,
+        )
+    )
+
+
+def _should_preserve_social_block(session: Session) -> bool:
+    return any(
+        _has_rows(session, model)
+        for model in (
+            Friend,
+            FriendFeedSource,
+            FriendFeedItem,
+        )
+    )
+
+
+def _seed_core_reference_data(session: Session, *, frontend_public_dir: Path, frontend_public_images: Path) -> None:
+    seeded_og_image = ensure_seed_asset(
+        session,
+        source_path=frontend_public_images / "hero_bg.jpeg",
+        category="site-og",
+        note="站点默认 OG 分享图（seed 初始化）",
+    )
+    seeded_site_icon = ensure_seed_asset(
+        session,
+        source_path=frontend_public_dir / "favicon.svg",
+        category="site-icon",
+        note="站点默认标签页图标（seed 初始化）",
+    )
+    seeded_hero_image = ensure_seed_asset(
+        session,
+        source_path=frontend_public_images / "avatar.webp",
+        category="hero-image",
+        note="首页 Hero 默认视觉图（seed 初始化）",
+    )
+    seeded_hero_poster = ensure_seed_asset(
+        session,
+        source_path=frontend_public_images / "hero_bg.jpeg",
+        category="hero-poster",
+        note="首页 Hero 视频默认封面图（seed 初始化）",
+    )
+    seeded_resume_avatar = ensure_seed_asset(
+        session,
+        source_path=frontend_public_images / "avatar.webp",
+        category="resume-avatar",
+        note="简历默认头像（seed 初始化）",
+    )
+
+    if is_empty(session, SiteProfile):
+        site_payload = {
+            **DEFAULT_SITE_PROFILE,
+            "og_image": seeded_og_image,
+            "site_icon_url": seeded_site_icon,
+            "hero_image_url": seeded_hero_image,
+            "hero_poster_url": seeded_hero_poster,
+        }
+        site = SiteProfile(**site_payload)
+        session.add(site)
+        session.flush()
+
+        session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
+        session.add_all(
+            [
+                Poem(site_profile_id=site.id, order_index=index, content=text)
+                for index, text in enumerate(DEFAULT_POEMS)
+            ]
+        )
+        session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
+        resume_payload = {**DEFAULT_RESUME, "profile_image_url": seeded_resume_avatar}
+        resume = ResumeBasics(**resume_payload)
+        session.add(resume)
+        session.flush()
+
+    seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
+
+    current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    if current_site is not None:
+        current_site.og_image = ensure_system_asset_reference(
+            session,
+            source_value=current_site.og_image,
+            category="site-og",
+            note="站点分享图（系统资源归拢）",
+            public_root=frontend_public_dir,
+        )
+        current_site.site_icon_url = ensure_system_asset_reference(
+            session,
+            source_value=current_site.site_icon_url,
+            category="site-icon",
+            note="站点标签页图标（系统资源归拢）",
+            public_root=frontend_public_dir,
+        )
+        current_site.hero_image_url = ensure_system_asset_reference(
+            session,
+            source_value=current_site.hero_image_url,
+            category="hero-image",
+            note="首页 Hero 视觉图（系统资源归拢）",
+            public_root=frontend_public_dir,
+        )
+        current_site.hero_poster_url = ensure_system_asset_reference(
+            session,
+            source_value=current_site.hero_poster_url,
+            category="hero-poster",
+            note="首页 Hero 视频封面图（系统资源归拢）",
+            public_root=frontend_public_dir,
+        )
+        current_site.hero_video_url = (
+            ensure_system_asset_reference(
+                session,
+                source_value=current_site.hero_video_url,
+                category="hero-video",
+                note="首页 Hero 背景视频（系统资源归拢）",
+                public_root=frontend_public_dir,
+            )
+            or None
+        )
+
+    current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
+    if current_resume is not None:
+        current_resume.profile_image_url = ensure_system_asset_reference(
+            session,
+            source_value=current_resume.profile_image_url,
+            category="resume-avatar",
+            note="简历默认头像（系统资源归拢）",
+            public_root=frontend_public_dir,
+        )
+
+    if is_empty(session, NavItem):
+        site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+        if site is not None:
+            label_to_id: dict[str, str] = {}
+            for item_data in DEFAULT_NAV_ITEMS:
+                if "_parent_label" not in item_data:
+                    nav = NavItem(
+                        site_profile_id=site.id,
+                        label=item_data["label"],
+                        href=item_data["href"],
+                        page_key=item_data.get("page_key"),
+                        trigger=item_data.get("trigger", "none"),
+                        order_index=item_data["order_index"],
+                    )
+                    session.add(nav)
+                    session.flush()
+                    label_to_id[nav.label] = nav.id
+            for item_data in DEFAULT_NAV_ITEMS:
+                if "_parent_label" in item_data:
+                    nav = NavItem(
+                        site_profile_id=site.id,
+                        parent_id=label_to_id[item_data["_parent_label"]],
+                        label=item_data["label"],
+                        href=item_data["href"],
+                        page_key=item_data.get("page_key"),
+                        trigger=item_data.get("trigger", "none"),
+                        order_index=item_data["order_index"],
+                    )
+                    session.add(nav)
+
+    _seed_community_config(session)
+    _seed_site_auth_config(session)
+    _seed_subscription_config_from_settings(session)
+    _seed_agent_model_config_from_settings(session)
+    _seed_webhook_subscription_from_settings(session)
+
+
 def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) -> None:
     settings = get_settings()
     settings.ensure_directories()
     init_db()
+
+    # bootstrap.sh sets FORCE_RESEED=true when reseed is triggered by preflight checks.
+    incremental_force = force and os.environ.get("FORCE_RESEED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    reseed_all_blocks = not incremental_force
+    current_block_fingerprints = _compute_seed_block_fingerprints(include_dev_data=include_dev_data)
+    blocks_to_reseed: set[str] = set()
+    if incremental_force:
+        blocks_to_reseed = _determine_incremental_reseed_blocks(
+            settings.db_path,
+            current_fingerprints=current_block_fingerprints,
+            include_dev_data=include_dev_data,
+        )
+
     session = get_session_factory()()
     try:
-        if force:
+        if force and reseed_all_blocks:
             _clear_seed_data(session)
             clear_waline_seed_data()
+        elif incremental_force:
+            _logger = logging.getLogger("aerisun.seed")
+            if blocks_to_reseed:
+                _logger.info(
+                    "Force reseed: incremental blocks -> %s",
+                    ", ".join(sorted(blocks_to_reseed)),
+                )
+            else:
+                _logger.info("Force reseed: no changed seed blocks detected, skipping reseed")
+
+            preserved_blocks: set[str] = set()
+            if "content" in blocks_to_reseed and _should_preserve_content_block(session):
+                preserved_blocks.add("content")
+            if "social" in blocks_to_reseed and _should_preserve_social_block(session):
+                preserved_blocks.add("social")
+
+            if preserved_blocks:
+                _logger.info(
+                    "Incremental reseed: preserve existing blocks -> %s",
+                    ", ".join(sorted(preserved_blocks)),
+                )
+                blocks_to_reseed -= preserved_blocks
+
+            for block in _active_seed_blocks(include_dev_data):
+                if block == "waline":
+                    continue
+                if block in blocks_to_reseed:
+                    _clear_seed_block_data(session, block)
+
+            if include_dev_data and "waline" in blocks_to_reseed:
+                clear_waline_seed_data()
 
         frontend_public_dir = BACKEND_ROOT.parent / "frontend" / "public"
         frontend_public_images = frontend_public_dir / "images"
-        seeded_og_image = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "hero_bg.jpeg",
-            category="site-og",
-            note="站点默认 OG 分享图（seed 初始化）",
-        )
-        seeded_site_icon = ensure_seed_asset(
-            session,
-            source_path=frontend_public_dir / "favicon.svg",
-            category="site-icon",
-            note="站点默认标签页图标（seed 初始化）",
-        )
-        seeded_hero_image = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "avatar.webp",
-            category="hero-image",
-            note="首页 Hero 默认视觉图（seed 初始化）",
-        )
-        seeded_hero_poster = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "hero_bg.jpeg",
-            category="hero-poster",
-            note="首页 Hero 视频默认封面图（seed 初始化）",
-        )
-        seeded_resume_avatar = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "avatar.webp",
-            category="resume-avatar",
-            note="简历默认头像（seed 初始化）",
-        )
 
-        if is_empty(session, SiteProfile):
-            site_payload = {
-                **DEFAULT_SITE_PROFILE,
-                "og_image": seeded_og_image,
-                "site_icon_url": seeded_site_icon,
-                "hero_image_url": seeded_hero_image,
-                "hero_poster_url": seeded_hero_poster,
-            }
-            site = SiteProfile(**site_payload)
-            session.add(site)
-            session.flush()
+        run_core = reseed_all_blocks or "core" in blocks_to_reseed
+        run_content = reseed_all_blocks or "content" in blocks_to_reseed
+        run_social = include_dev_data and (reseed_all_blocks or "social" in blocks_to_reseed)
+        run_engagement = include_dev_data and (reseed_all_blocks or "engagement" in blocks_to_reseed)
+        run_ops = include_dev_data and (reseed_all_blocks or "ops" in blocks_to_reseed)
+        run_admin = reseed_all_blocks or "admin" in blocks_to_reseed
 
-            session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
-            session.add_all(
-                [
-                    Poem(site_profile_id=site.id, order_index=index, content=text)
-                    for index, text in enumerate(DEFAULT_POEMS)
-                ]
-            )
-            session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
-            session.add_all([PageDisplayOption(**item) for item in DEFAULT_PAGE_OPTIONS])
-            resume_payload = {**DEFAULT_RESUME, "profile_image_url": seeded_resume_avatar}
-            resume = ResumeBasics(**resume_payload)
-            session.add(resume)
-            session.flush()
-            session.add_all([ResumeSkillGroup(resume_basics_id=resume.id, **group) for group in DEFAULT_SKILLS])
-
-            session.add_all(
-                [ResumeExperience(resume_basics_id=resume.id, **experience) for experience in DEFAULT_EXPERIENCES]
-            )
-
-        seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
-        existing_page_option_keys = set(session.scalars(select(PageDisplayOption.page_key)).all())
-        seed_missing_page_options(session, DEFAULT_PAGE_OPTIONS, existing_page_option_keys)
-
-        current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-        if current_site is not None:
-            current_site.og_image = ensure_system_asset_reference(
+        if run_core:
+            _seed_core_reference_data(
                 session,
-                source_value=current_site.og_image,
-                category="site-og",
-                note="站点分享图（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.site_icon_url = ensure_system_asset_reference(
-                session,
-                source_value=current_site.site_icon_url,
-                category="site-icon",
-                note="站点标签页图标（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.hero_image_url = ensure_system_asset_reference(
-                session,
-                source_value=current_site.hero_image_url,
-                category="hero-image",
-                note="首页 Hero 视觉图（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.hero_poster_url = ensure_system_asset_reference(
-                session,
-                source_value=current_site.hero_poster_url,
-                category="hero-poster",
-                note="首页 Hero 视频封面图（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.hero_video_url = (
-                ensure_system_asset_reference(
-                    session,
-                    source_value=current_site.hero_video_url,
-                    category="hero-video",
-                    note="首页 Hero 背景视频（系统资源归拢）",
-                    public_root=frontend_public_dir,
-                )
-                or None
+                frontend_public_dir=frontend_public_dir,
+                frontend_public_images=frontend_public_images,
             )
 
-        current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
-        if current_resume is not None:
-            current_resume.profile_image_url = ensure_system_asset_reference(
-                session,
-                source_value=current_resume.profile_image_url,
-                category="resume-avatar",
-                note="简历默认头像（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
+        if run_content:
+            seed_content_entries(session, PostEntry, DEFAULT_POSTS)
+            seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
+            seed_content_entries(session, ThoughtEntry, DEFAULT_THOUGHTS)
+            seed_content_entries(session, ExcerptEntry, DEFAULT_EXCERPTS)
 
-        if is_empty(session, NavItem):
-            site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-            if site is not None:
-                label_to_id: dict[str, str] = {}
-                # First pass: top-level items
-                for item_data in DEFAULT_NAV_ITEMS:
-                    if "_parent_label" not in item_data:
-                        nav = NavItem(
-                            site_profile_id=site.id,
-                            label=item_data["label"],
-                            href=item_data["href"],
-                            page_key=item_data.get("page_key"),
-                            trigger=item_data.get("trigger", "none"),
-                            order_index=item_data["order_index"],
-                        )
-                        session.add(nav)
-                        session.flush()
-                        label_to_id[nav.label] = nav.id
-                # Second pass: children
-                for item_data in DEFAULT_NAV_ITEMS:
-                    if "_parent_label" in item_data:
-                        nav = NavItem(
-                            site_profile_id=site.id,
-                            parent_id=label_to_id[item_data["_parent_label"]],
-                            label=item_data["label"],
-                            href=item_data["href"],
-                            page_key=item_data.get("page_key"),
-                            trigger=item_data.get("trigger", "none"),
-                            order_index=item_data["order_index"],
-                        )
-                        session.add(nav)
-
-        _seed_community_config(session)
-        _seed_site_auth_config(session)
-
-        seed_content_entries(session, PostEntry, DEFAULT_POSTS)
-        seed_content_entries(session, DiaryEntry, DEFAULT_DIARY_ENTRIES)
-        seed_content_entries(session, ThoughtEntry, DEFAULT_THOUGHTS)
-        seed_content_entries(session, ExcerptEntry, DEFAULT_EXCERPTS)
-        if include_dev_data:
+        if run_social:
             seed_social_data(
                 session,
                 default_friends=DEV_FRIENDS,
                 default_friend_feed_sources=DEV_FRIEND_FEED_SOURCES,
                 default_friend_feed_items=DEV_FRIEND_FEED_ITEMS,
             )
+
+        if run_engagement:
             seed_engagement_data(session, default_reactions=DEV_REACTIONS)
-            seed_traffic_snapshot_data(session, default_traffic_snapshots=DEV_TRAFFIC_SNAPSHOTS)
-            seed_visit_record_data(session)
             seed_legacy_guestbook_data(session, default_guestbook_entries=DEV_LEGACY_GUESTBOOK_ENTRIES)
             seed_legacy_comment_data(session, default_legacy_comments=DEV_LEGACY_COMMENTS)
-        seed_dev_admin(session)
+
+        if run_ops:
+            seed_traffic_snapshot_data(session, default_traffic_snapshots=DEV_TRAFFIC_SNAPSHOTS)
+            seed_visit_record_data(session)
+
+        if run_admin:
+            seed_dev_admin(session)
+
         session.commit()
     finally:
         session.close()
 
-    if include_dev_data:
+    run_waline = include_dev_data and (reseed_all_blocks or "waline" in blocks_to_reseed)
+    if run_waline:
         seed_waline_comment_data(default_waline_comments=DEV_WALINE_COMMENTS)
         seed_waline_counter_data(default_waline_counters=DEFAULT_WALINE_COUNTERS)
+
+    _store_seed_block_fingerprints(
+        settings.db_path,
+        fingerprints=current_block_fingerprints,
+        include_dev_data=include_dev_data,
+    )
 
 
 def seed_development_data(*, force: bool = False) -> None:
