@@ -135,7 +135,10 @@ cleanup() {
     "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" \
     "${LOCAL_IMAGE_REGISTRY}/serino-waline:${SMOKE_TAG}" >/dev/null 2>&1 || true
   rm -f "${TMP_ENV_FILE}"
-  rm -rf "${TMP_STORE_DIR}"
+  if [[ -d "${TMP_STORE_DIR}" ]]; then
+    docker run --rm -v "${TMP_STORE_DIR}:/target" alpine sh -c 'chmod -R 0777 /target >/dev/null 2>&1 || true' >/dev/null 2>&1 || true
+  fi
+  rm -rf "${TMP_STORE_DIR}" || true
 }
 
 trap 'cleanup $?' EXIT INT TERM

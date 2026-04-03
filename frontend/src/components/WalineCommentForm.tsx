@@ -119,7 +119,6 @@ const WalineCommentForm = ({
   commentEmailLoginEnabled,
   hasLoginMethod,
   onOpenLogin,
-  onLogout,
   draft,
   onFieldChange,
   composerOpen,

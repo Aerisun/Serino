@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
-import { extractApiErrorMessage } from "@/lib/api-error";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";

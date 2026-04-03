@@ -414,6 +414,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     closeLogin,
     displayName,
     email,
+    invalidateSiteContentQueries,
     needsProfile,
     requiresAdminPassword,
     selectedAvatar,
