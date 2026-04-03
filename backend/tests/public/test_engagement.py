@@ -177,14 +177,14 @@ def test_read_guestbook_returns_seeded_entries(client) -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload["items"]) == 1
-    assert payload["total"] == 1
+    assert len(payload["items"]) == 2
+    assert payload["total"] == 2
     assert payload["page"] == 1
     assert payload["page_size"] == 20
     assert payload["has_more"] is False
-    assert payload["items"][0]["name"] == "Elena Torres"
-    assert payload["items"][0]["status"] == "approved"
-    assert payload["items"][0]["avatar_url"].startswith("https://api.dicebear.com/")
+    assert {item["name"] for item in payload["items"]} == {"Elena Torres", "纸鹤"}
+    assert all(item["status"] == "approved" for item in payload["items"])
+    assert all(item["avatar_url"].startswith("https://api.dicebear.com/") for item in payload["items"])
 
 
 def test_create_guestbook_accepts_pending_entry(client) -> None:

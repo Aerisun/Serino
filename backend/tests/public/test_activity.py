@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import aerisun.domain.activity.service as activity_service
+from aerisun.core.db import get_session_factory
+from aerisun.core.settings import get_settings
+from aerisun.domain.engagement.models import Reaction
+from aerisun.domain.waline.service import connect_waline_db
 
 
 class _FixedDateTime(datetime):
@@ -27,10 +31,35 @@ def test_read_recent_activity_returns_items(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["items"]
-    assert payload["items"][0]["kind"] in {"comment", "reply", "like", "guestbook"}
+    assert any(item["kind"].startswith("publish_") for item in payload["items"])
+    assert payload["items"][0]["kind"] in {"comment", "reply", "like", "guestbook"} or payload["items"][0][
+        "kind"
+    ].startswith("publish_")
+
+
+def test_read_recent_activity_falls_back_to_published_content_when_no_interactions(client) -> None:
+    settings = get_settings()
+    session_factory = get_session_factory()
+
+    with session_factory() as session:
+        session.query(Reaction).delete()
+        session.commit()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        connection.commit()
+
+    response = client.get("/api/v1/site/recent-activity")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"]
+    assert all(item["kind"].startswith("publish_") for item in payload["items"])
+    assert any((item["target_title"] or item["excerpt"]) for item in payload["items"])
 
 
 def test_read_activity_heatmap_returns_weeks(client) -> None:
+    activity_service._heatmap_cache.clear()
     response = client.get("/api/v1/site/activity-heatmap?weeks=12")
 
     assert response.status_code == 200
@@ -40,6 +69,7 @@ def test_read_activity_heatmap_returns_weeks(client) -> None:
 
 
 def test_read_activity_heatmap_includes_thoughts_and_likes_in_shanghai_timezone(client, monkeypatch) -> None:
+    activity_service._heatmap_cache.clear()
     monkeypatch.setattr(activity_service, "datetime", _FixedDateTime)
 
     response = client.get("/api/v1/site/activity-heatmap?weeks=12")
@@ -54,8 +84,10 @@ def test_read_activity_heatmap_includes_thoughts_and_likes_in_shanghai_timezone(
     assert payload["stats"]["peak_week"] == max(week["total"] for week in payload["weeks"])
     assert payload["stats"]["peak_week"] >= 15
     assert payload["weeks"][-1]["week_start"] == "2026-03-23"
-    assert payload["weeks"][-1]["total"] == 3
+    assert payload["weeks"][-1]["total"] == 0
     days = payload["weeks"][-1]["days"]
     assert len(days) == 7
-    assert sum(days) == 3
-    assert sorted(days) == [0, 0, 0, 0, 0, 0, 3]
+    assert sum(days) == 0
+    assert sorted(days) == [0, 0, 0, 0, 0, 0, 0]
+    assert payload["weeks"][-2]["week_start"] == "2026-03-16"
+    assert payload["weeks"][-2]["total"] == 18

@@ -22,11 +22,11 @@ class CalendarRead(ModelBase):
 
 
 class RecentActivityItemRead(ModelBase):
-    kind: str = Field(description="Activity type: comment, guestbook, or reaction")
+    kind: str = Field(description="Activity type: comment, guestbook, reaction, or publish_*")
     actor_name: str = Field(description="Name of the person who performed the action")
     actor_avatar: str = Field(description="Actor avatar URL")
-    target_title: str = Field(description="Title of the target content")
-    excerpt: str | None = Field(description="Brief excerpt of the activity content")
+    target_title: str = Field(description="Title of the target content, when applicable")
+    excerpt: str | None = Field(description="Brief excerpt or content preview")
     created_at: datetime = Field(description="Activity timestamp")
     href: str = Field(description="Frontend URL path to the related content")
 

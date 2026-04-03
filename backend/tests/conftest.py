@@ -3,52 +3,37 @@ from __future__ import annotations
 from collections.abc import Iterator
 from datetime import UTC
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
+
+from tests.support.asgi_client import SyncASGITransport
+from tests.support.runtime import (
+    configure_runtime_environment,
+    reset_runtime_state,
+    seed_runtime_data,
+    teardown_runtime_state,
+)
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    store_dir = tmp_path / "store"
-    data_dir = store_dir
-    media_dir = store_dir / "media"
-    secrets_dir = store_dir / "secrets"
-    db_path = store_dir / "aerisun.db"
-    waline_db_path = store_dir / "waline.db"
-
-    monkeypatch.setenv("AERISUN_STORE_DIR", str(store_dir))
-    monkeypatch.setenv("AERISUN_DATA_DIR", str(data_dir))
-    monkeypatch.setenv("AERISUN_MEDIA_DIR", str(media_dir))
-    monkeypatch.setenv("AERISUN_SECRETS_DIR", str(secrets_dir))
-    monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
-    monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
-    monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
-    monkeypatch.setenv("AERISUN_IP_GEO_ENABLED", "false")
-
-    from aerisun.core.db import get_engine, get_session_factory
-    from aerisun.core.rate_limit import limiter
-    from aerisun.core.settings import get_settings
-
-    limiter.enabled = False
-
-    get_settings.cache_clear()
-    get_engine.cache_clear()
-    get_session_factory.cache_clear()
-
-    from aerisun.core.seed import seed_reference_data
-
-    seed_reference_data()
+def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[httpx.Client]:
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    seed_runtime_data()
 
     from aerisun.core.app_factory import create_app
 
-    with TestClient(create_app()) as test_client:
+    test_client = httpx.Client(
+        transport=SyncASGITransport(create_app()),
+        base_url="http://testserver",
+        follow_redirects=True,
+    )
+    try:
         yield test_client
+    finally:
+        test_client.close()
 
-    engine = get_engine()
-    engine.dispose()
-    get_session_factory.cache_clear()
-    get_engine.cache_clear()
-    get_settings.cache_clear()
+    teardown_runtime_state()
 
 
 @pytest.fixture()
@@ -89,44 +74,17 @@ def admin_headers(client) -> dict[str, str]:
 
 @pytest.fixture()
 def seeded_session(tmp_path, monkeypatch: pytest.MonkeyPatch):
-    store_dir = tmp_path / "store"
-    data_dir = store_dir
-    media_dir = store_dir / "media"
-    secrets_dir = store_dir / "secrets"
-    db_path = store_dir / "aerisun.db"
-    waline_db_path = store_dir / "waline.db"
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    seed_runtime_data()
 
-    monkeypatch.setenv("AERISUN_STORE_DIR", str(store_dir))
-    monkeypatch.setenv("AERISUN_DATA_DIR", str(data_dir))
-    monkeypatch.setenv("AERISUN_MEDIA_DIR", str(media_dir))
-    monkeypatch.setenv("AERISUN_SECRETS_DIR", str(secrets_dir))
-    monkeypatch.setenv("AERISUN_DB_PATH", str(db_path))
-    monkeypatch.setenv("AERISUN_WALINE_DB_PATH", str(waline_db_path))
-    monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
-    monkeypatch.setenv("AERISUN_IP_GEO_ENABLED", "false")
-
-    from aerisun.core.db import get_engine, get_session_factory
-    from aerisun.core.rate_limit import limiter
-    from aerisun.core.seed import seed_reference_data
-    from aerisun.core.settings import get_settings
-
-    limiter.enabled = False
-
-    get_settings.cache_clear()
-    get_engine.cache_clear()
-    get_session_factory.cache_clear()
-
-    seed_reference_data()
+    from aerisun.core.db import get_session_factory
 
     factory = get_session_factory()
     with factory() as session:
         yield session
 
-    engine = get_engine()
-    engine.dispose()
-    get_session_factory.cache_clear()
-    get_engine.cache_clear()
-    get_settings.cache_clear()
+    teardown_runtime_state()
 
 
 @pytest.fixture()

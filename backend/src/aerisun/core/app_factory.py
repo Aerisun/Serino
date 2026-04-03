@@ -23,10 +23,17 @@ from aerisun.core.settings import get_settings
 def create_app() -> FastAPI:
     """Build and return a fully configured FastAPI application."""
     settings = get_settings()
-    mcp_server, mcp_app = create_mcp_mount()
+    mcp_server = None
+    mcp_app = None
+    if settings.environment != "test":
+        mcp_server, mcp_app = create_mcp_mount()
 
     @asynccontextmanager
     async def app_lifespan(app: FastAPI):
+        if settings.environment == "test":
+            yield
+            return
+
         async with lifespan(app), mcp_server.session_manager.run():
             yield
 
@@ -56,7 +63,8 @@ def create_app() -> FastAPI:
     app.include_router(seo_router, prefix="/api/v1/site")
 
     # MCP Streamable HTTP app (mounted)
-    app.mount("/api/mcp", mcp_app)
+    if mcp_app is not None:
+        app.mount("/api/mcp", mcp_app)
 
     # Static media
     media_dir = Path(settings.media_dir).expanduser().resolve()
