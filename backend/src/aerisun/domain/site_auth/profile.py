@@ -19,7 +19,7 @@ from aerisun.domain.site_auth.schemas import (
     SiteAuthUserRead,
 )
 from aerisun.domain.site_config import repository as site_config_repo
-from aerisun.domain.waline.service import connect_waline_db, sync_site_user_comment_profile
+from aerisun.domain.waline.service import sync_site_user_comment_profile
 
 from .config_service import (
     admin_console_auth_method_enabled,
@@ -161,28 +161,6 @@ def resolve_admin_display_name(session: Session) -> str:
 
 
 def resolve_admin_avatar_url(session: Session) -> str:
-    asset = session.query(Asset).filter(Asset.category == "hero-image").order_by(Asset.created_at.asc()).first()
-    if asset is not None:
-        resource_key = str(asset.resource_key or "").strip()
-        if resource_key:
-            return f"/media/{resource_key}"
-
-    with connect_waline_db() as connection:
-        row = connection.execute(
-            """
-            SELECT avatar
-            FROM wl_comment
-            WHERE avatar_key = ?
-            ORDER BY updatedAt DESC, id DESC
-            LIMIT 1
-            """,
-            (ADMIN_COMMENT_AVATAR_KEY,),
-        ).fetchone()
-        if row is not None:
-            avatar_url = str(row[0] or "").strip()
-            if avatar_url:
-                return avatar_url
-
     site = site_config_repo.find_site_profile(session)
     for candidate in (
         site.hero_image_url if site else "",
@@ -191,6 +169,12 @@ def resolve_admin_avatar_url(session: Session) -> str:
         resolved = str(candidate or "").strip()
         if resolved:
             return resolved
+
+    asset = session.query(Asset).filter(Asset.category == "hero-image").order_by(Asset.created_at.asc()).first()
+    if asset is not None:
+        resource_key = str(asset.resource_key or "").strip()
+        if resource_key:
+            return f"/media/{resource_key}"
     seed = avatar_seed(resolve_admin_display_name(session).lower(), 0)
     return avatar_url_for_seed(seed)
 

@@ -171,6 +171,7 @@ const WalineCommentList = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-foreground">{item.name}</span>
+                          {item.is_author ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
                           <StatusPill text={t("waline.list.pending")} tone="pending" />
                           <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
                         </div>
@@ -202,6 +203,7 @@ const WalineCommentList = ({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-foreground">{item.name}</span>
+                      {item.is_author ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
                       <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
                       {item.website ? (
                         <a

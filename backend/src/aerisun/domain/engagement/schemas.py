@@ -16,6 +16,7 @@ class GuestbookEntryRead(ModelBase):
     created_at: datetime = Field(description="Entry creation timestamp")
     avatar: str | None = Field(default=None, description="Avatar identifier or key")
     avatar_url: str | None = Field(default=None, description="Full avatar image URL")
+    is_author: bool = Field(default=False, description="Whether the guestbook author is the site owner")
 
 
 class GuestbookCreate(ModelBase):

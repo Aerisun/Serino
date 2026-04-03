@@ -3,7 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, Request, UploadFile
 from sqlalchemy.orm import Session
 
-from aerisun.api.deps.site_auth import get_current_site_user_optional
+from aerisun.api.deps.site_auth import (
+    get_current_site_session_optional,
+    get_current_site_user_optional,
+)
 from aerisun.api.public_schemas import CommentImageUploadResponse
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, limiter
@@ -26,7 +29,7 @@ from aerisun.domain.engagement.service import (
     read_public_reaction,
     register_public_reaction,
 )
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 
 base_router = APIRouter()
 router = APIRouter(prefix="/api/v1/site-interactions", tags=["site-interactions"])
@@ -48,8 +51,14 @@ def create_guestbook(
     payload: GuestbookCreate,
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> GuestbookCreateResponse:
-    return create_public_guestbook_entry(session, payload, current_user=current_user)
+    return create_public_guestbook_entry(
+        session,
+        payload,
+        current_user=current_user,
+        current_site_session=current_site_session,
+    )
 
 
 @base_router.get("/comments/{content_type}/{slug}", response_model=CommentCollectionRead, summary="获取内容评论")
@@ -72,8 +81,16 @@ def create_comment(
     payload: CommentCreate,
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> CommentCreateResponse:
-    return create_public_comment(session, content_type, slug, payload, current_user=current_user)
+    return create_public_comment(
+        session,
+        content_type,
+        slug,
+        payload,
+        current_user=current_user,
+        current_site_session=current_site_session,
+    )
 
 
 @base_router.post("/reactions", response_model=ReactionRead, summary="提交互动反应")

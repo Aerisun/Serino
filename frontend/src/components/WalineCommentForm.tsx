@@ -9,7 +9,6 @@ import {
   Send,
   Smile,
   Sparkles,
-  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { transition } from "@/config";
@@ -199,21 +198,8 @@ const WalineCommentForm = ({
                       <span className="font-semibold text-foreground">{authSession.display_name}</span>
                       <StatusPill text={authSession.is_admin ? t("waline.form.adminMode") : t("waline.form.loggedIn")} tone="author" />
                     </div>
-                    <p className="mt-1 text-xs text-foreground/45">
-                      {authSession.is_admin
-                        ? t("waline.form.adminSubmitHint", { name: authSession.display_name })
-                        : t("waline.form.userSubmitHint", { name: authSession.display_name })}
-                    </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.7] px-3.5 py-2 text-xs font-medium text-foreground/60 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] dark:bg-card/[0.82]"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  {t("waline.form.logout")}
-                </button>
               </div>
             ) : requiresAuthentication ? (
               <div className="flex flex-col items-center gap-4 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] px-4 py-5 text-center dark:bg-card/[0.82]">

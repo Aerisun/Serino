@@ -25,7 +25,7 @@ from aerisun.domain.engagement.schemas import (
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
 from aerisun.domain.site_auth import repository as site_auth_repo
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import get_admin_comment_identity, is_site_user_admin
 from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.waline.service import (
@@ -178,8 +178,10 @@ def _is_bound_admin_comment(
 def _build_authenticated_site_user_profile(
     session: Session,
     current_user: SiteUser,
+    *,
+    current_site_session: SiteUserSession | None = None,
 ) -> AuthenticatedCommentProfile:
-    if is_site_user_admin(session, current_user):
+    if is_site_user_admin(session, current_user, current_site_session):
         nick, avatar_key, avatar_url = get_admin_comment_identity(session)
         return AuthenticatedCommentProfile(
             nick=nick,
@@ -196,6 +198,20 @@ def _build_authenticated_site_user_profile(
         avatar_key=f"site-user-{current_user.id}",
         avatar_url=current_user.avatar_url,
     )
+
+
+def _resolve_public_admin_profile(
+    session: Session,
+    *,
+    fallback_name: str,
+    fallback_avatar_url: str,
+    is_author: bool,
+) -> tuple[str, str]:
+    if not is_author:
+        return fallback_name, fallback_avatar_url
+
+    nick, _avatar_key, avatar_url = get_admin_comment_identity(session)
+    return nick, avatar_url or fallback_avatar_url
 
 
 def _clean_display_name(name: str | None) -> str:
@@ -506,6 +522,33 @@ def _paginate_items(items: list, page: int, page_size: int) -> tuple[list, int, 
     return items[start:end], total, end < total
 
 
+def _guestbook_entry_from_waline(session: Session, item) -> GuestbookEntryRead:
+    is_author = _is_bound_admin_comment(
+        session,
+        email=item.mail,
+        avatar_key=item.avatar_key,
+    )
+    fallback_name = item.nick or "访客"
+    fallback_avatar_url = item.avatar_url or _avatar_for_name(fallback_name)
+    display_name, display_avatar_url = _resolve_public_admin_profile(
+        session,
+        fallback_name=fallback_name,
+        fallback_avatar_url=fallback_avatar_url,
+        is_author=is_author,
+    )
+    return GuestbookEntryRead(
+        id=str(item.id),
+        name=display_name,
+        website=item.link,
+        body=item.comment,
+        status=item.status,
+        created_at=item.created_at,
+        avatar=item.avatar_key or fallback_avatar_url,
+        avatar_url=display_avatar_url,
+        is_author=is_author,
+    )
+
+
 def list_public_guestbook_entries(
     session: Session,
     *,
@@ -516,19 +559,7 @@ def list_public_guestbook_entries(
     sorting = _resolve_comment_sorting(session)
     items = list_all_waline_records(status="approved", guestbook_only=True)
     mapped = _sort_guestbook_entries(
-        [
-            GuestbookEntryRead(
-                id=str(item.id),
-                name=item.nick or "访客",
-                website=item.link,
-                body=item.comment,
-                status=item.status,
-                created_at=item.created_at,
-                avatar=item.avatar_key or item.avatar_url or _avatar_for_name(item.nick or "访客"),
-                avatar_url=item.avatar_url or _avatar_for_name(item.nick or "访客"),
-            )
-            for item in items
-        ],
+        [_guestbook_entry_from_waline(session, item) for item in items],
         sorting,
     )
     paged_items, total, has_more = _paginate_items(mapped, page, page_size)
@@ -546,13 +577,18 @@ def create_public_guestbook_entry(
     payload: GuestbookCreate,
     *,
     current_user: SiteUser | None = None,
+    current_site_session: SiteUserSession | None = None,
 ) -> GuestbookCreateResponse:
     if not payload.body.strip():
         raise DomainValidationError("留言内容不能为空。")
 
     auth_profile = None
     if current_user is not None:
-        auth_profile = _build_authenticated_site_user_profile(session, current_user)
+        auth_profile = _build_authenticated_site_user_profile(
+            session,
+            current_user,
+            current_site_session=current_site_session,
+        )
     elif payload.auth_token:
         auth_profile = _load_authenticated_profile(session, payload.auth_token)
     _ensure_authenticated_comment_allowed(
@@ -607,6 +643,11 @@ def create_public_guestbook_entry(
             created_at=entry.created_at,
             avatar=entry.avatar_key or entry.avatar_url,
             avatar_url=entry.avatar_url,
+            is_author=_is_bound_admin_comment(
+                session,
+                email=entry.mail,
+                avatar_key=entry.avatar_key,
+            ),
         ),
         accepted=True,
     )
@@ -618,8 +659,19 @@ def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
         by_parent[item.pid].append(item)
 
     def convert(node) -> CommentRead:
-        author_name = (node.nick or "访客").strip() or "访客"
-        avatar = node.avatar_url or _avatar_for_name(author_name)
+        raw_author_name = (node.nick or "访客").strip() or "访客"
+        raw_avatar = node.avatar_url or _avatar_for_name(raw_author_name)
+        is_author = _is_bound_admin_comment(
+            session,
+            email=node.mail,
+            avatar_key=node.avatar_key,
+        )
+        author_name, avatar = _resolve_public_admin_profile(
+            session,
+            fallback_name=raw_author_name,
+            fallback_avatar_url=raw_avatar,
+            is_author=is_author,
+        )
         return CommentRead(
             id=str(node.id),
             parent_id=str(node.pid) if node.pid is not None else None,
@@ -631,11 +683,7 @@ def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
             avatar_url=avatar,
             like_count=node.like,
             liked=False,
-            is_author=_is_bound_admin_comment(
-                session,
-                email=node.mail,
-                avatar_key=node.avatar_key,
-            ),
+            is_author=is_author,
             replies=[convert(child) for child in by_parent.get(node.id, [])],
         )
 
@@ -679,6 +727,7 @@ def create_public_comment(
     payload: CommentCreate,
     *,
     current_user: SiteUser | None = None,
+    current_site_session: SiteUserSession | None = None,
 ) -> CommentCreateResponse:
     if not repo.content_exists(session, content_type, content_slug):
         raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
@@ -687,7 +736,11 @@ def create_public_comment(
 
     auth_profile = None
     if current_user is not None:
-        auth_profile = _build_authenticated_site_user_profile(session, current_user)
+        auth_profile = _build_authenticated_site_user_profile(
+            session,
+            current_user,
+            current_site_session=current_site_session,
+        )
     elif payload.auth_token:
         auth_profile = _load_authenticated_profile(session, payload.auth_token)
     _ensure_authenticated_comment_allowed(

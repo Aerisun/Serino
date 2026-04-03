@@ -231,8 +231,15 @@ def read_excerpts(
     limit: int = Query(default=40, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> ContentCollectionRead:
-    return list_public_excerpts(session, limit=limit, offset=offset)
+    return list_public_excerpts(
+        session,
+        limit=limit,
+        offset=offset,
+        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+    )
 
 
 @base_router.get("/friends", response_model=FriendCollectionRead, summary="获取友链列表")

@@ -353,6 +353,9 @@ export default function VisitorsPage() {
     : boundAdminProviders.has("email") && adminEmailPasswordSet
       ? "completed"
       : "incomplete";
+  const completedAdminIdentities = adminIdentities.filter(
+    (identity) => identity.provider !== "email" || emailAdminBindingStatus === "completed",
+  );
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
   const adminOrigin = window.location.origin;
   const frontendOrigin = normalizeOrigin(systemInfo?.site_url, adminOrigin);
@@ -1541,7 +1544,7 @@ export default function VisitorsPage() {
                     />
                   </div>
                 </div>
-                <Badge variant="outline">{adminIdentities.length} 个</Badge>
+                <Badge variant="outline">{completedAdminIdentities.length} 个</Badge>
               </div>
 
               <div className="space-y-3">
@@ -1549,8 +1552,8 @@ export default function VisitorsPage() {
                   <div className="rounded-2xl border border-dashed border-border/60 bg-background/35 px-4 py-4 text-sm text-muted-foreground">
                     正在加载管理员身份...
                   </div>
-                ) : adminIdentities.length ? (
-                  adminIdentities.map(
+                ) : completedAdminIdentities.length ? (
+                  completedAdminIdentities.map(
                     (identity: SiteAdminIdentityAdminRead) => (
                       <div
                         key={identity.id}
