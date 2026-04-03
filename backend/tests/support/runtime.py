@@ -67,10 +67,10 @@ def reset_runtime_state() -> None:
 
 
 def seed_runtime_data() -> None:
-    from aerisun.core.dev_seed import seed_reference_data
+    from aerisun.core.dev_seed import seed_development_data
     from aerisun.domain.automation.runtime_registry import get_automation_runtime
 
-    seed_reference_data()
+    seed_development_data()
     get_automation_runtime().start()
 
 

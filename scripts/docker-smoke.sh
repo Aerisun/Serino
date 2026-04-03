@@ -7,9 +7,7 @@ TMP_ENV_FILE="$(mktemp)"
 TMP_STORE_DIR="$(mktemp -d)"
 COMPOSE_PROJECT="serino-smoke-$(date +%s)"
 SMOKE_TAG="${AERISUN_SMOKE_IMAGE_TAG:-smoke}"
-LOCAL_API_IMAGE="${AERISUN_SMOKE_API_IMAGE:-serino-api-smoke}"
-LOCAL_WEB_IMAGE="${AERISUN_SMOKE_WEB_IMAGE:-serino-web-smoke}"
-LOCAL_WALINE_IMAGE="${AERISUN_SMOKE_WALINE_IMAGE:-serino-waline-smoke}"
+LOCAL_IMAGE_REGISTRY="${AERISUN_SMOKE_IMAGE_REGISTRY:-serino-smoke-local}"
 
 load_env_file() {
   local env_file="$1"
@@ -119,9 +117,9 @@ assert_not_404() {
 }
 
 build_local_images() {
-  docker build -t "${LOCAL_API_IMAGE}:${SMOKE_TAG}" ./backend
-  docker build -t "${LOCAL_WEB_IMAGE}:${SMOKE_TAG}" -f Dockerfile.caddy .
-  docker build -t "${LOCAL_WALINE_IMAGE}:${SMOKE_TAG}" -f Dockerfile.waline .
+  docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" ./backend
+  docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" -f Dockerfile.caddy .
+  docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-waline:${SMOKE_TAG}" -f Dockerfile.waline .
 }
 
 cleanup() {
@@ -133,9 +131,9 @@ cleanup() {
   fi
   compose -f docker-compose.release.yml down -v --remove-orphans >/dev/null 2>&1 || true
   docker image rm \
-    "${LOCAL_API_IMAGE}:${SMOKE_TAG}" \
-    "${LOCAL_WEB_IMAGE}:${SMOKE_TAG}" \
-    "${LOCAL_WALINE_IMAGE}:${SMOKE_TAG}" >/dev/null 2>&1 || true
+    "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" \
+    "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" \
+    "${LOCAL_IMAGE_REGISTRY}/serino-waline:${SMOKE_TAG}" >/dev/null 2>&1 || true
   rm -f "${TMP_ENV_FILE}"
   rm -rf "${TMP_STORE_DIR}"
 }
@@ -162,6 +160,8 @@ AERISUN_WALINE_SERVER_URL=${SITE_URL}${WALINE_BASE_PATH}
 AERISUN_CORS_ORIGINS=["${PUBLIC_ORIGIN}"]
 WALINE_SECURE_DOMAINS=${SITE_HOST},localhost,127.0.0.1
 WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef
+AERISUN_SEED_REFERENCE_DATA=true
+AERISUN_DATA_BACKFILL_ENABLED=true
 AERISUN_HTTP_PORT=${HTTP_PORT}
 AERISUN_HTTPS_PORT=${HTTPS_PORT}
 AERISUN_PORT=${BACKEND_PORT}
@@ -169,9 +169,9 @@ WALINE_PORT=${WALINE_PORT}
 AERISUN_SENTRY_DSN=
 VITE_SENTRY_DSN=
 AERISUN_STORE_BIND_DIR=${TMP_STORE_DIR}
-AERISUN_API_IMAGE=${LOCAL_API_IMAGE}
-AERISUN_WEB_IMAGE=${LOCAL_WEB_IMAGE}
-AERISUN_WALINE_IMAGE=${LOCAL_WALINE_IMAGE}
+AERISUN_IMAGE_PRIMARY_REGISTRY=${LOCAL_IMAGE_REGISTRY}
+AERISUN_IMAGE_FALLBACK_REGISTRY=docker.io/does-not-matter
+AERISUN_IMAGE_REGISTRY=${LOCAL_IMAGE_REGISTRY}
 AERISUN_IMAGE_TAG=${SMOKE_TAG}
 EOF
 

@@ -36,6 +36,26 @@ jobs:
       - name: Scan tracked secrets
         run: bash ./scripts/check-secrets-staged.sh --all
 
+  installer:
+    name: Installer
+    needs: [workspace-guards]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+      - name: Check installer shell syntax
+        run: |
+          find installer -type f \( -name '*.sh' -o -name 'aerisunctl' \) -print0 | xargs -0 -n1 bash -n
+          bash -n ./scripts/package-installer.sh
+      - name: Package installer assets
+        env:
+          AERISUN_RELEASE_TAG: v0.0.0
+          AERISUN_RELEASE_VERSION: 0.0.0
+          AERISUN_IMAGE_PRIMARY_REGISTRY: ${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}
+          AERISUN_IMAGE_FALLBACK_REGISTRY: docker.io/${{ env.DOCKERHUB_USERNAME }}
+        run: bash ./scripts/package-installer.sh
+
   backend:
     name: Backend (Python)
     runs-on: ubuntu-latest
@@ -199,7 +219,7 @@ jobs:
 
   docker-build:
     name: Docker Build (${{ matrix.title }})
-    needs: [backend, frontend, admin, contract]
+    needs: [backend, frontend, admin, contract, installer]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -413,3 +433,58 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image_name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
+
+  installer-release:
+    name: Installer Release Assets
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: [docker-publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Prepare release metadata
+        id: prep
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            release_tag="${{ inputs.release_tag }}"
+          else
+            release_tag="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ ! "${release_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Release tag must look like v1.2.3, got '${release_tag}'" >&2
+            exit 1
+          fi
+
+          version="${release_tag#v}"
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Package installer assets
+        env:
+          AERISUN_RELEASE_TAG: ${{ steps.prep.outputs.release_tag }}
+          AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
+          AERISUN_IMAGE_PRIMARY_REGISTRY: ${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}
+          AERISUN_IMAGE_FALLBACK_REGISTRY: docker.io/${{ env.DOCKERHUB_USERNAME }}
+        run: bash ./scripts/package-installer.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-release-assets
+          path: dist/installer
+
+      - name: Publish installer release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.release_tag }}
+          files: |
+            dist/installer/install.sh
+            dist/installer/aerisun-installer-bundle.tar.gz
+            dist/installer/aerisun-installer-manifest.env
+            dist/installer/docker-compose.release.yml
+            dist/installer/.env.production.local.example

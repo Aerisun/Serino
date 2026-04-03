@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.engagement.models import Comment, GuestbookEntry
+from aerisun.domain.iam.bootstrap import DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_USERNAME, add_admin_user
 from aerisun.domain.iam.models import AdminUser
 
 from .common import is_empty
@@ -46,5 +46,8 @@ def seed_dev_admin(session: Session) -> None:
         return
     if not is_empty(session, AdminUser):
         return
-    password_hash = bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode()
-    session.add(AdminUser(username="admin", password_hash=password_hash))
+    add_admin_user(
+        session,
+        username=DEFAULT_ADMIN_USERNAME,
+        password=DEFAULT_ADMIN_PASSWORD,
+    )

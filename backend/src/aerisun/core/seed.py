@@ -9,14 +9,15 @@ from sqlalchemy.orm import Session
 
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
+from aerisun.core.backfills.state import clear_data_migration_records, mark_bootstrap_seed_applied
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.seed_steps.assets import purge_managed_media_root
 from aerisun.core.seed_steps.common import is_empty
-from aerisun.core.seed_steps.content import seed_missing_page_copies
-from aerisun.core.seed_steps.legacy import seed_dev_admin
+from aerisun.core.seed_steps.content import insert_missing_page_copies, seed_missing_page_copies
 from aerisun.core.seed_steps.system_assets import normalize_core_system_asset_references, seed_core_system_asset_urls
 from aerisun.core.seed_steps.waline import clear_waline_seed_data
 from aerisun.core.settings import get_settings
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.automation.models import (
     AgentRun,
     AgentRunApproval,
@@ -29,20 +30,13 @@ from aerisun.domain.automation.models import (
     WorkflowGateBufferItem,
     WorkflowGateState,
 )
-from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.content.models import ContentCategory, DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.ops.models import AuditLog, ConfigRevision, TrafficDailySnapshot, VisitRecord
-from aerisun.domain.site_auth.models import (
-    SiteAdminIdentity,
-    SiteAuthConfig,
-    SiteUser,
-    SiteUserOAuthAccount,
-    SiteUserSession,
-)
+from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteAuthConfig, SiteUser, SiteUserOAuthAccount, SiteUserSession
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -53,6 +47,7 @@ from aerisun.domain.site_config.models import (
     SocialLink,
 )
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
+from aerisun.domain.site_auth.config_service import build_default_site_auth_config
 from aerisun.domain.subscription.models import ContentSubscriptionConfig
 
 DEFAULT_HERO_VIDEO_URL = (
@@ -455,6 +450,15 @@ def _seed_community_config(session: Session, *, force: bool = False) -> None:
     if force:
         for key, value in default_config.items():
             setattr(config, key, value)
+    return
+
+
+def backfill_community_config_defaults(session: Session) -> None:
+    default_config = build_default_community_config()
+    config = session.scalars(select(CommunityConfig).order_by(CommunityConfig.created_at.asc())).first()
+
+    if config is None:
+        session.add(CommunityConfig(**default_config))
         return
 
     default_server_url = str(default_config["server_url"]).strip()
@@ -463,8 +467,6 @@ def _seed_community_config(session: Session, *, force: bool = False) -> None:
 
 
 def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:
-    from aerisun.domain.site_auth.service import build_default_site_auth_config
-
     default_config = build_default_site_auth_config(session)
     config = session.scalars(select(SiteAuthConfig).order_by(SiteAuthConfig.created_at.asc())).first()
     if config is None:
@@ -482,6 +484,14 @@ def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:
         config.google_client_secret = str(default_config["google_client_secret"])
         config.github_client_id = str(default_config["github_client_id"])
         config.github_client_secret = str(default_config["github_client_secret"])
+    return
+
+
+def backfill_site_auth_config_defaults(session: Session) -> None:
+    default_config = build_default_site_auth_config(session)
+    config = session.scalars(select(SiteAuthConfig).order_by(SiteAuthConfig.created_at.asc())).first()
+    if config is None:
+        session.add(SiteAuthConfig(**default_config))
         return
 
     if config.visitor_oauth_providers is None:
@@ -506,9 +516,7 @@ def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:
 
 def _seed_subscription_config_from_settings(session: Session, *, force: bool = False) -> None:
     settings = get_settings()
-    config = session.scalars(
-        select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())
-    ).first()
+    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
     if config is None:
         config = ContentSubscriptionConfig()
         session.add(config)
@@ -550,6 +558,37 @@ def _seed_subscription_config_from_settings(session: Session, *, force: bool = F
     )
 
 
+def backfill_subscription_config_defaults(session: Session) -> None:
+    settings = get_settings()
+    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    if config is None:
+        _seed_subscription_config_from_settings(session, force=True)
+        return
+
+    smtp_auth_mode = (settings.subscription_smtp_auth_mode or "password").strip().lower()
+    if smtp_auth_mode not in {"password", "microsoft_oauth2"}:
+        smtp_auth_mode = "password"
+
+    if not (config.smtp_auth_mode or "").strip():
+        config.smtp_auth_mode = smtp_auth_mode or "password"
+    if not config.smtp_port:
+        config.smtp_port = int(settings.subscription_smtp_port or 587)
+    if not (config.smtp_oauth_tenant or "").strip():
+        config.smtp_oauth_tenant = settings.subscription_smtp_oauth_tenant.strip() or "common"
+    if not config.allowed_content_types:
+        config.allowed_content_types = ["posts", "diary", "thoughts", "excerpts"]
+    if not (config.mail_subject_template or "").strip():
+        config.mail_subject_template = "[{site_name}] {content_title}"
+    if not (config.mail_body_template or "").strip():
+        config.mail_body_template = (
+            "{site_name} 有新的{content_type_label}内容发布。\n\n"
+            "{content_title}\n"
+            "{content_summary}\n\n"
+            "阅读链接：{content_url}\n"
+            "RSS：{feed_url}"
+        )
+
+
 def _seed_agent_model_config(session: Session, *, force: bool = False) -> None:
     site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
     if site is None:
@@ -559,6 +598,16 @@ def _seed_agent_model_config(session: Session, *, force: bool = False) -> None:
     if force or AGENT_MODEL_CONFIG_FLAG_KEY not in feature_flags:
         feature_flags[AGENT_MODEL_CONFIG_FLAG_KEY] = dict(DEFAULT_AGENT_MODEL_CONFIG)
         site.feature_flags = feature_flags
+
+
+def backfill_agent_model_config_defaults(session: Session) -> None:
+    _seed_agent_model_config(session, force=False)
+
+
+def backfill_runtime_config_defaults(session: Session) -> None:
+    backfill_site_auth_config_defaults(session)
+    backfill_subscription_config_defaults(session)
+    backfill_agent_model_config_defaults(session)
 
 
 def _seed_config_history_and_audit(session: Session) -> None:
@@ -657,6 +706,7 @@ def _clear_seed_data(session: Session) -> None:
         count = session.query(model).delete()
         if count:
             _logger.info("  Cleared %d rows from %s", count, model.__tablename__)
+    clear_data_migration_records(session)
     session.flush()
 
 
@@ -697,6 +747,16 @@ def _seed_nav_items(session: Session, *, site_id: str) -> None:
         )
 
 
+def backfill_page_copy_defaults(session: Session) -> None:
+    seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
+
+
+def backfill_system_asset_references(session: Session) -> None:
+    current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
+    current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
+    normalize_core_system_asset_references(session, site=current_site, resume=current_resume)
+
+
 def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
     get_settings().ensure_directories()
     init_db()
@@ -730,19 +790,16 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
                     for index, text in enumerate(DEFAULT_POEMS)
                 ]
             )
-            session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
+            insert_missing_page_copies(session, DEFAULT_PAGE_COPIES)
 
             resume = ResumeBasics(**{**DEFAULT_RESUME, "profile_image_url": seeded_assets["profile_image_url"]})
             session.add(resume)
             session.flush()
 
-        seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
-
         current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
         current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
         normalize_core_system_asset_references(session, site=current_site, resume=current_resume)
 
-        current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
         if current_site is not None:
             _seed_nav_items(session, site_id=current_site.id)
 
@@ -751,7 +808,7 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
         _seed_subscription_config_from_settings(session, force=force)
         _seed_agent_model_config(session, force=force)
         _seed_config_history_and_audit(session)
-        seed_dev_admin(session)
+        mark_bootstrap_seed_applied(session)
         session.commit()
     finally:
         session.close()

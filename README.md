@@ -90,6 +90,33 @@ make check-secrets
 
 ## Docker 发布与部署
 
+- 面向终端用户的 Linux 一键安装命令：
+
+  ```bash
+  curl -fsSL https://install.aerisun.com/install.sh | bash
+  ```
+
+- v1 安装器面向可联网的主流 `systemd` Linux，安装时会：
+  - 自动安装 Docker / Compose（如果系统里还没有）
+  - 通过交互式向导收集域名或公网 IP
+  - 优先从腾讯云 TCR 拉镜像，失败时自动回退 Docker Hub
+  - 把服务安装到 `/opt/aerisun`
+  - 把数据目录固定到 `/var/lib/aerisun`
+  - 安装完成后提供 `aerisunctl status|logs|restart|upgrade`
+
+- 全新生产部署成功后，默认后台账号密码为：
+  - `admin`
+  - `admin123`
+
+- 生产安装与升级默认遵循三段式数据流程：
+  - 首装：`migration + bootstrap seed`
+  - 升级：`migration + data backfill`
+  - 开发：`dev seed`
+  - 首装只初始化站点基础配置、页面文案、导航和生产安全默认值
+  - 升级只执行已注册且未执行的 backfill，不会把 development 假数据灌进生产库
+  - 如需关闭首装 scaffold，可把 `.env.production.local` 里的 `AERISUN_SEED_REFERENCE_DATA` 改成 `false`
+  - 如需关闭升级回填，可把 `.env.production.local` 里的 `AERISUN_DATA_BACKFILL_ENABLED` 改成 `false`
+
 - 正式镜像同时发布到 Docker Hub 和腾讯云 TCR 个人版：
   - Docker Hub
     - `docker.io/aerisun/serino-api`
@@ -104,6 +131,12 @@ make check-secrets
   - `main` 和 Pull Request：只做镜像构建验证，不推送
   - `vX.Y.Z` tag：先跑 smoke，再向两个仓库同时发布 `1.2.3`、`1.2`、`1`、`latest`
   - `workflow_dispatch`：输入同一个 tag，可手动重发镜像
+  - `vX.Y.Z` tag 同时产出 installer 资产：
+    - `install.sh`
+    - `aerisun-installer-bundle.tar.gz`
+    - `aerisun-installer-manifest.env`
+    - `docker-compose.release.yml`
+    - `.env.production.local.example`
 
 - 发布作业依赖以下 GitHub 配置：
   - `vars.DOCKERHUB_USERNAME`
@@ -119,17 +152,22 @@ make check-secrets
   cp .env.production.local.example .env.production.local
   ```
 
-- 用户一键启动：
+- 手动一键启动：
 
   ```bash
   docker compose --env-file .env.production.local -f docker-compose.release.yml up -d
   ```
 
-- `docker-compose.release.yml` 默认从 Docker Hub 拉取；如果要切到腾讯云 TCR，可在 `.env.production.local` 里加入：
+- 手动部署时的镜像源契约：
 
   ```bash
+  AERISUN_IMAGE_PRIMARY_REGISTRY=${TCR_REGISTRY}/${TCR_NAMESPACE}
+  AERISUN_IMAGE_FALLBACK_REGISTRY=docker.io/aerisun
   AERISUN_IMAGE_REGISTRY=${TCR_REGISTRY}/${TCR_NAMESPACE}
+  AERISUN_IMAGE_TAG=latest
   ```
+
+- 安装器会自动维护 `AERISUN_IMAGE_PRIMARY_REGISTRY`、`AERISUN_IMAGE_FALLBACK_REGISTRY`、`AERISUN_IMAGE_REGISTRY` 和 `AERISUN_IMAGE_TAG`，通常不需要手动编辑。
 
 - 默认数据会落到当前目录下的 `./.aerisun-store/`，容器内仍然使用 `/srv/aerisun/store`
 

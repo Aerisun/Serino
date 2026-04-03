@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aerisun.core.db import get_session_factory
-from aerisun.core.dev_seed import seed_reference_data
+from aerisun.core.dev_seed import seed_development_data
 from aerisun.core.settings import get_settings
 from aerisun.domain.site_config.models import CommunityConfig
 
@@ -18,7 +18,7 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
     finally:
         session.close()
 
-    seed_reference_data()
+    seed_development_data()
 
     session = session_factory()
     try:

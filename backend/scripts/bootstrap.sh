@@ -22,7 +22,16 @@ _source_if_exists "${PROJECT_DIR}/.env"
 _source_if_exists "${PROJECT_DIR}/.env.${_env}"
 _source_if_exists "${PROJECT_DIR}/.env.${_env}.local"
 
-if [[ "$_env" == "development" ]]; then
+DB_MISSING_BEFORE_BOOTSTRAP="$(
+  uv run python -u - <<'PY'
+from aerisun.core.settings import get_settings
+
+settings = get_settings()
+print("true" if not settings.db_path.expanduser().resolve().exists() else "false")
+PY
+)"
+
+if [[ "$_env" == "development" || "$_env" == "test" ]]; then
   # 数据库预检：1、检测数据库结构有没有和迁移脚本不一致 2、检测种子数据的变化
   PREFLIGHT_JSON=$(uv run python -u - <<'PY'
 import json, os
@@ -60,7 +69,6 @@ PY
   if echo "$PREFLIGHT_JSON" | uv run python -c "import sys,json; sys.exit(0 if json.load(sys.stdin).get('reseed') else 1)"; then
     FORCE_RESEED=true
   fi
-# 生产环境不做预检
 else
   uv run python -u - <<'PY'
 from aerisun.core.settings import get_settings
@@ -71,7 +79,8 @@ fi
 # 运行 Alembic 数据库迁移，自动升级到最新版本
 uv run alembic upgrade head
 
-FORCE_RESEED="${FORCE_RESEED:-false}" uv run python -u - <<'PY'
+if [[ "$_env" == "development" || "$_env" == "test" ]]; then
+  FORCE_RESEED="${FORCE_RESEED:-false}" uv run python -u - <<'PY'
 import os
 from pathlib import Path
 from importlib import import_module
@@ -88,7 +97,7 @@ settings = get_settings()
 force_reseed = os.environ.get("FORCE_RESEED", "").lower() in {"true", "1"}
 seed_profile = normalize_seed_profile(os.environ.get(
     "AERISUN_SEED_PROFILE",
-    "dev-seed" if settings.environment == "development" and settings.seed_dev_data else "seed",
+    "dev-seed" if settings.seed_dev_data else "seed",
 ))
 seed_module = import_module(resolve_seed_module_name(seed_profile))
 seed_path = resolve_seed_path(Path(os.environ["BACKEND_DIR"]) / "src" / "aerisun" / "core", seed_profile=seed_profile)
@@ -107,5 +116,41 @@ if settings.seed_reference_data:
 else:
     log("已跳过种子数据初始化，因为未启用 AERISUN_SEED_REFERENCE_DATA。")
 PY
+else
+  AERISUN_BOOTSTRAP_FIRST_BOOT="${DB_MISSING_BEFORE_BOOTSTRAP}" uv run python -u - <<'PY'
+import os
+
+from aerisun.core.backfills.runner import run_pending_backfills
+from aerisun.core.bootstrap_admin import ensure_first_boot_default_admin
+from aerisun.core.seed import seed_bootstrap_data
+from aerisun.core.settings import get_settings
+
+
+def log(message: str) -> None:
+    print(message, flush=True)
+
+
+settings = get_settings()
+is_first_boot = os.environ.get("AERISUN_BOOTSTRAP_FIRST_BOOT", "").lower() in {"true", "1"}
+
+if is_first_boot and settings.seed_reference_data:
+    seed_bootstrap_data()
+    log("生产 bootstrap seed 已完成。")
+elif is_first_boot:
+    log("已跳过生产 bootstrap seed，因为未启用 AERISUN_SEED_REFERENCE_DATA。")
+elif settings.data_backfill_enabled:
+    applied = run_pending_backfills()
+    if applied:
+        log(f"已执行升级数据回填：{', '.join(applied)}")
+    else:
+        log("没有待执行的升级数据回填。")
+else:
+    log("已跳过升级数据回填，因为未启用 AERISUN_DATA_BACKFILL_ENABLED。")
+
+created = ensure_first_boot_default_admin(is_first_boot=is_first_boot)
+if created:
+    log("已创建生产环境首次默认管理员：admin")
+PY
+fi
 
 exec "${SCRIPT_DIR}/serve.sh"
