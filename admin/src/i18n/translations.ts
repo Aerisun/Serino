@@ -73,11 +73,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.overview": "概览",
     "nav.posts": "文章",
     "nav.diary": "日记",
-    "nav.thoughts": "想法",
-    "nav.excerpts": "摘录",
+    "nav.thoughts": "碎碎念",
+    "nav.excerpts": "文摘",
     "nav.contentCategories": "分类管理",
-    "nav.siteConfig": "站点配置",
-    "nav.more": "更多",
+    "nav.siteConfig": "基本配置",
+    "nav.more": "拓展配置",
     "nav.resume": "简历",
     "nav.friends": "友链",
     "nav.moderation": "审核",
@@ -85,13 +85,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.assets": "资源",
     "nav.integrations": "集成",
     "nav.apiKeys": "API 密钥",
-    "nav.mcp": "MCP 访问",
+    "nav.mcp": "MCP 服务",
     "nav.agentUsage": "Agent 使用说明",
     "nav.agent": "Agent",
     "nav.auditLog": "审计日志",
     "nav.backups": "备份",
     "nav.content": "内容",
-    "nav.configuration": "配置",
+    "nav.configuration": "站点配置",
+    "nav.management": "管理",
     "nav.system": "系统",
     "nav.admin": "管理",
     "nav.adminPanel": "Aerisun 管理面板",
@@ -100,7 +101,16 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // settings
     "settings.title": "设置",
-    "settings.description": "管理账户设置",
+    "settings.description": "",
+    "settings.adminInfo": "管理员信息",
+    "settings.allowEmailLogin": "允许使用邮箱登录",
+    "settings.allowGoogleLogin": "允许使用谷歌登录",
+    "settings.allowGithubLogin": "允许使用 GitHub 登录",
+    "settings.oauthLoginConfigLabel": "未配置？去访客里绑定",
+    "settings.oauthLoginConfigTitle": "先完成管理员身份绑定",
+    "settings.oauthLoginConfigDesc": "这些按钮控制前台管理员身份是否允许直接进入管理台。要先在“访客 -> 管理员认证”完成对应绑定；邮箱方式还需要先设置统一管理员密码。",
+    "settings.oauthLoginConfigStep1": "前往 访客 -> 管理员认证 -> 第 2 步“绑定管理员身份”。",
+    "settings.oauthLoginConfigStep2": "如需开启邮箱，还要在同页先保存统一管理员邮箱密码。",
     "settings.profile": "个人资料",
     "settings.password": "密码",
     "settings.sessions": "活跃会话",
@@ -125,8 +135,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "dashboard.description": "站点概览",
     "dashboard.posts": "文章",
     "dashboard.diaryEntries": "日记",
-    "dashboard.thoughts": "想法",
-    "dashboard.excerpts": "摘录",
+    "dashboard.thoughts": "碎碎念",
+    "dashboard.excerpts": "文摘",
     "dashboard.comments": "评论",
     "dashboard.guestbook": "留言簿",
     "dashboard.friends": "友链",
@@ -134,7 +144,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // posts
     "posts.title": "文章",
-    "posts.description": "管理博客文章",
+    "posts.description": "",
     "posts.newPost": "新建文章",
     "posts.editPost": "编辑文章",
     "posts.postTitle": "标题",
@@ -158,30 +168,30 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // diary
     "diary.title": "日记",
-    "diary.description": "管理日记",
+    "diary.description": "",
     "diary.newEntry": "新建日记",
     "diary.editEntry": "编辑日记",
     "diary.created": "创建时间",
     "diary.deleteConfirm": "确认删除？",
 
     // thoughts
-    "thoughts.title": "想法",
-    "thoughts.description": "管理短想法",
-    "thoughts.newThought": "新建想法",
-    "thoughts.editThought": "编辑想法",
+    "thoughts.title": "碎碎念",
+    "thoughts.description": "",
+    "thoughts.newThought": "新建碎碎念",
+    "thoughts.editThought": "编辑碎碎念",
     "thoughts.deleteConfirm": "确认删除？",
 
     // excerpts
-    "excerpts.title": "摘录",
-    "excerpts.description": "管理摘录",
-    "excerpts.newExcerpt": "新建摘录",
-    "excerpts.editExcerpt": "编辑摘录",
-    "excerpts.summary": "摘录内容",
+    "excerpts.title": "文摘",
+    "excerpts.description": "",
+    "excerpts.newExcerpt": "新建文摘",
+    "excerpts.editExcerpt": "编辑文摘",
+    "excerpts.summary": "文摘内容",
     "excerpts.deleteConfirm": "确认删除？",
 
     // contentCategories
     "contentCategories.title": "分类管理",
-    "contentCategories.description": "统一管理文章、日记、想法和摘录的分类。",
+    "contentCategories.description": "统一管理文章、日记、碎碎念和文摘的分类。",
     "contentCategories.sectionHint": "分类会出现在对应内容的编辑页下拉框里。",
     "contentCategories.countSuffix": "个分类",
     "contentCategories.empty": "当前还没有分类，先新建一个。",
@@ -190,8 +200,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "contentCategories.selectPlaceholder": "选择已有分类",
     "contentCategories.postPlaceholder": "选择文章分类",
     "contentCategories.diaryPlaceholder": "选择日记分类",
-    "contentCategories.thoughtPlaceholder": "选择想法分类",
-    "contentCategories.excerptPlaceholder": "选择摘录分类",
+    "contentCategories.thoughtPlaceholder": "选择碎碎念分类",
+    "contentCategories.excerptPlaceholder": "选择文摘分类",
     "contentCategories.createOption": "新建分类…",
     "contentCategories.createTitle": "新建分类",
     "contentCategories.editTitle": "编辑分类",
@@ -215,7 +225,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // siteConfig
     "siteConfig.title": "站点配置",
-    "siteConfig.description": "管理站点资料、页面设置和功能开关",
+    "siteConfig.description": "",
     "siteConfig.profile": "个人资料",
     "siteConfig.socialLinks": "社交链接",
     "siteConfig.poems": "诗句",
@@ -362,7 +372,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // friends
     "friends.title": "友链",
-    "friends.description": "管理友情链接",
+    "friends.description": "",
     "friends.name": "名称",
     "friends.url": "URL",
     "friends.avatar": "头像",
@@ -376,9 +386,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "friends.archiveAction": "归档",
     "friends.tabs.friends": "朋友们",
     "friends.tabs.moreConfig": "更多配置",
-    "friends.sectionDescriptions.friends": "管理友情链接与订阅源。",
-    "friends.sectionDescriptions.moreConfig":
-      "配置友链页随机文章、自动刷新与巡检策略。",
+    "friends.sectionDescriptions.friends": "管理友链与订阅源。",
+    "friends.sectionDescriptions.moreConfig": "友链页高级配置。",
     "friends.moreConfigTitle": "友链页更多配置",
     "friends.moreConfigDescription":
       "这里保存的是后端页面配置，前台友链页和后台巡检任务都会读取这些数值来控制随机文章、自动刷新和定时巡检。",
@@ -401,7 +410,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // moderation
     "moderation.title": "审核",
-    "moderation.description": "管理 Waline 评论和留言簿",
+    "moderation.description": "",
     "moderation.comments": "评论",
     "moderation.guestbook": "留言簿",
     "moderation.source": "来源",
@@ -431,7 +440,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "moderation.details": "详情",
     "moderation.thread": "评论链",
     "moderation.detail": "详情面板",
-    "moderation.noSelection": "选择一条评论后，这里会展示评论链和详情。",
+    "moderation.noSelection": "",
     "moderation.currentPage": "当前页",
     "moderation.approve": "通过",
     "moderation.reject": "拒绝",
@@ -442,7 +451,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // assets
     "assets.title": "资源",
-    "assets.description": "管理上传文件",
+    "assets.description": "管理站点的资源文件",
     "assets.upload": "上传",
     "assets.editTitle": "编辑资源",
     "assets.fileName": "文件名",
@@ -477,10 +486,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     // system
     "system.apiKeys": "API 密钥",
     "system.apiKeysDescription": "管理 API 密钥",
-    "system.auditLog": "审计日志",
+    "system.auditLog": "站点日志",
     "system.auditLogDescription": "配置历史与系统活动日志",
-    "system.backups": "备份",
-    "system.backupsDescription": "管理运行数据备份、失败队列与可恢复提交记录",
+    "system.backups": "备份管理",
+    "system.backupsDescription": "",
     "system.createKey": "创建密钥",
     "system.keyName": "密钥名称",
     "system.scopes": "权限范围",
@@ -557,7 +566,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.backupsTabs.records": "记录",
     "system.backupsTabs.recordsDescription": "队列、运行与可恢复提交",
     "system.backupBasicSettings": "基础设置",
-    "system.backupBasicSettingsDescription": "先设置恢复密钥才可以备份",
+    "system.backupBasicSettingsDescription":
+      "在高级选项里面先设置”恢复密钥“才可以备份",
     "system.backupAdvancedSettings": "高级设置",
     "system.backupAdvancedSettingsDescription":
       "这里包含凭据目录引用，以及不常改的重试和站点参数。",
@@ -611,10 +621,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.sshPortLabel": "SSH 端口",
     "system.sshPortDescription":
       "默认一般是 22，只有服务器改过端口时才需要调整。",
-    "system.remoteBackupRootLabel": "远端备份根目录",
+    "system.remoteBackupRootLabel": "远端备份目录",
     "system.remoteBackupRootDescription":
-      "这里填备份在服务器上的父目录。系统会在下面继续创建站点目录。",
-    "system.remotePathPreviewTitle": "最终目录示例",
+      "填写备份在服务器上的最终目录。系统会直接使用该路径，不再自动拼接站点目录。",
+    "system.remotePathPreviewTitle": "实际写入目录",
     "system.sshUsernameLabel": "SSH 用户名",
     "system.sshUsernameDescription":
       "这里是登录 SFTP 服务器的 SSH 用户名，不是本地备份密钥目录名。",
@@ -676,9 +686,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.mcpPermissions": "MCP 权限配置",
     "integrations.tabs.settings": "MCP 设置",
     "integrations.tabs.permissions": "MCP 权限配置",
-    "integrations.sectionDescriptions.mcpSettings": "入口、鉴权与开关",
-    "integrations.sectionDescriptions.mcpPermissions":
-      "API Key scopes 与档位切换",
+    "integrations.sectionDescriptions.mcpSettings": "",
+    "integrations.sectionDescriptions.mcpPermissions": "MCP API 权限精细化配置",
     "integrations.usageUrl": "Usage URL",
     "integrations.usageUrlHint":
       "让外部 AI 先访问这个地址获取按权限裁剪后的调用说明。",
@@ -703,7 +712,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "integrations.skillMapsHint":
       "本地 skill maps 只负责描述何时调用、去哪里调、以及工作流场景。",
     "integrations.noSkillMaps": "还没有 skill maps。",
-    "integrations.mcpDescription": "统一管理 MCP 接入设置与权限能力目录。",
+    "integrations.mcpDescription": "统一管理 MCP 接入设置及其限权能力",
     "integrations.mcpKeys": "MCP 访问密钥",
     "integrations.mcpKeysDescription":
       "给远端模型创建和管理可访问 MCP 的 API 密钥。",
@@ -773,7 +782,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.webhooks": "Webhooks",
     "nav.deliveries": "投递记录",
     "nav.deadLetters": "死信队列",
-    "agent.description": "集中管理 Agent。",
+    "agent.description":
+      "🤯🤔 勉强可以使用，正在学习 claude-code 源码进行稳定性完善",
     "automation.runs": "运行记录",
     "automation.runsDescription": "查看工作流运行状态、触发来源和目标对象。",
     "automation.approvals": "审批",
@@ -951,9 +961,9 @@ export const translations: Record<Lang, Record<string, string>> = {
       "站点产生公共页面访问后，会在这里显示趋势。",
 
     // systemInfo
-    "nav.systemInfo": "系统信息",
-    "systemInfo.title": "系统信息",
-    "systemInfo.description": "查看服务器运行状态",
+    "nav.systemInfo": "关于系统",
+    "systemInfo.title": "关于系统",
+    "systemInfo.description": "查看服务器运行状态，并管理管理员账号与会话",
     "systemInfo.version": "版本",
     "systemInfo.python": "Python 版本",
     "systemInfo.dbSize": "数据库大小",
@@ -1087,7 +1097,7 @@ export const translations: Record<Lang, Record<string, string>> = {
       "控制前台订阅按钮是否显示，并配置用于发送四类公开内容更新通知的 SMTP 参数。",
     "siteConfig.contentSubscriptionEnabled": "开启订阅入口",
     "siteConfig.contentSubscriptionEnabledDesc":
-      "开启后，前台导航会显示订阅按钮，访客可填写邮箱订阅公开文章、日记、想法和摘录。",
+      "开启后，前台导航会显示订阅按钮，访客可填写邮箱订阅公开文章、日记、碎碎念和文摘。",
     "siteConfig.contentSubscriptionSubscribers": "当前订阅人数",
     "siteConfig.contentSubscriptionConfigHint":
       "下面填写实际发信配置。建议先保存 SMTP 后再对外开启订阅入口。",
@@ -1113,7 +1123,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.contentSubscriptionPlaceholderHelpContentType":
       "{content_type}：内容类型标识（posts / diary / thoughts / excerpts）",
     "siteConfig.contentSubscriptionPlaceholderHelpContentTypeLabel":
-      "{content_type_label}：内容类型中文名称（文章 / 日记 / 想法 / 摘录）",
+      "{content_type_label}：内容类型中文名称（文章 / 日记 / 碎碎念 / 文摘）",
     "siteConfig.contentSubscriptionPlaceholderHelpContentTitle":
       "{content_title}：内容标题",
     "siteConfig.contentSubscriptionPlaceholderHelpContentSummary":
@@ -1151,7 +1161,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // more
     "more.description":
-      "把运行期开关和常用配置拆开管理，邮箱、API 与代理都统一放在这里。",
+      "",
     "more.tabs.featureFlags": "功能开关",
     "more.tabs.mailConfig": "邮箱配置",
     "more.tabs.apiConfig": "API配置",
@@ -1267,8 +1277,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.thoughts": "Thoughts",
     "nav.excerpts": "Excerpts",
     "nav.contentCategories": "Categories",
-    "nav.siteConfig": "Site Config",
-    "nav.more": "More",
+    "nav.siteConfig": "Basic Config",
+    "nav.more": "Extended Config",
     "nav.resume": "Resume",
     "nav.friends": "Friends",
     "nav.moderation": "Moderation",
@@ -1276,12 +1286,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.assets": "Assets",
     "nav.integrations": "Integrations",
     "nav.apiKeys": "API Keys",
-    "nav.mcp": "Agent Access",
+    "nav.mcp": "MCP Service",
     "nav.agentUsage": "Agent Usage",
     "nav.auditLog": "Audit Log",
     "nav.backups": "Backups",
     "nav.content": "Content",
-    "nav.configuration": "Config",
+    "nav.configuration": "Site Config",
+    "nav.management": "Management",
     "nav.system": "System",
     "nav.admin": "Admin",
     "nav.adminPanel": "Aerisun Admin Panel",
@@ -1291,6 +1302,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     // settings
     "settings.title": "Settings",
     "settings.description": "Manage account settings",
+    "settings.adminInfo": "Admin Info",
+    "settings.allowEmailLogin": "Allow Email Login",
+    "settings.allowGoogleLogin": "Allow Google Login",
+    "settings.allowGithubLogin": "Allow GitHub Login",
+    "settings.oauthLoginConfigLabel": "Not configured? Bind in Visitors",
+    "settings.oauthLoginConfigTitle": "Bind admin identity first",
+    "settings.oauthLoginConfigDesc": "These buttons control whether an elevated site admin identity can enter the admin console directly. Bind the matching identity first in Visitors; email also requires the shared admin email password to be configured.",
+    "settings.oauthLoginConfigStep1": "Go to Visitors -> Admin Authentication -> Step 2 Bind Admin Identity.",
+    "settings.oauthLoginConfigStep2": "For email, also save the shared admin email password on that page first.",
     "settings.profile": "Profile",
     "settings.password": "Password",
     "settings.sessions": "Sessions",
@@ -1825,10 +1845,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     "system.sshPortLabel": "SSH Port",
     "system.sshPortDescription":
       "The default is usually 22. Change it only when your server uses a custom SSH port.",
-    "system.remoteBackupRootLabel": "Remote Backup Root",
+    "system.remoteBackupRootLabel": "Remote Backup Directory",
     "system.remoteBackupRootDescription":
-      "This is the parent directory on the server where backups live. The system will create the site directory underneath it.",
-    "system.remotePathPreviewTitle": "Final Directory Example",
+      "Enter the final directory on the server for backups. The system uses this path directly and no longer appends a site directory.",
+    "system.remotePathPreviewTitle": "Effective Remote Directory",
     "system.sshUsernameLabel": "SSH Username",
     "system.sshUsernameDescription":
       "This is the username for logging into the SFTP server. It is not the local backup key directory name.",
@@ -2151,9 +2171,9 @@ export const translations: Record<Lang, Record<string, string>> = {
       "There are no recent content updates yet.",
 
     // systemInfo
-    "nav.systemInfo": "System Info",
-    "systemInfo.title": "System Information",
-    "systemInfo.description": "View server status",
+    "nav.systemInfo": "About System",
+    "systemInfo.title": "About System",
+    "systemInfo.description": "View server status and manage admin account sessions",
     "systemInfo.version": "Version",
     "systemInfo.python": "Python Version",
     "systemInfo.dbSize": "Database Size",

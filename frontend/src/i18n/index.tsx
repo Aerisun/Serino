@@ -4,11 +4,25 @@ import { frontendTranslations, type FrontendLang } from "./translations";
 export const FRONTEND_LANGUAGE_STORAGE_KEY = "aerisun-frontend-lang";
 
 export function resolveInitialLang(): FrontendLang {
-  if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("en")) {
-    return "en";
-  }
   return "zh";
 }
+
+function normalizeStoredFrontendLang() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const stored = localStorage.getItem(FRONTEND_LANGUAGE_STORAGE_KEY);
+    if (stored === "en") {
+      localStorage.setItem(FRONTEND_LANGUAGE_STORAGE_KEY, "zh");
+    }
+  } catch {
+    // Ignore storage access failures and keep runtime fallback.
+  }
+}
+
+normalizeStoredFrontendLang();
 
 export function getFrontendLang(): FrontendLang {
   if (typeof window !== "undefined") {
