@@ -6,7 +6,6 @@ openspec
 .claude
 .codex
 .playwright-cli
-.env.local
 .env.*.local
 **/node_modules
 **/dist

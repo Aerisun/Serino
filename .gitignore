@@ -52,10 +52,8 @@ venv/
 /.codex
 /.playwright-cli
 
-# Local env overrides (worktree-specific ports)
-.env.local
+# Local env overrides (worktree-specific ports + secrets)
 .env.*.local
-.env.release
 
 # Companion local secret env files
 companions/**/.env
