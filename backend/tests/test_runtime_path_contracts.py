@@ -42,8 +42,6 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "AERISUN_FRONTEND_DIST_DIR: ${AERISUN_FRONTEND_DIST_DIR:-/srv/aerisun/frontend}" in compose_text
     assert "AERISUN_ADMIN_DIST_DIR: ${AERISUN_ADMIN_DIST_DIR:-/srv/aerisun/admin}" in compose_text
     assert '- "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"' in compose_text
-    assert "image: litestream/litestream:latest" in compose_text
-
     assert "{$AERISUN_PORT:8000}" in caddy_text
     assert "{$AERISUN_API_BASE_PATH:/api}" in caddy_text
     assert "{$AERISUN_ADMIN_BASE_PATH:/admin/}" in caddy_text
@@ -77,3 +75,26 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
     assert "AERISUN_ADMIN_UPSTREAM" not in production_text
     assert ".env.local" in dockerignore_text
     assert ".env.*.local" in dockerignore_text
+
+
+def test_legacy_backend_process_scripts_are_removed():
+    assert not (PROJECT_ROOT / "backend/scripts/dev-backend.sh").exists()
+    assert not (PROJECT_ROOT / "backend/scripts/dev-waline.sh").exists()
+    assert not (PROJECT_ROOT / "backend/scripts/process-env.sh").exists()
+    assert not (PROJECT_ROOT / "backend/scripts/backup.sh").exists()
+    assert not (PROJECT_ROOT / "backend/scripts/restore.sh").exists()
+    assert not (PROJECT_ROOT / "backend/litestream.yml.template").exists()
+
+    tracked_texts = [
+        read_project_file("README.md"),
+        read_project_file("Makefile"),
+        read_project_file("scripts/dev-start.sh"),
+        read_project_file("scripts/dev-smoke.sh"),
+        read_project_file("scripts/sync-orval.sh"),
+        read_project_file("backend/scripts/bootstrap.sh"),
+    ]
+
+    for text in tracked_texts:
+        assert "dev-backend.sh" not in text
+        assert "dev-waline.sh" not in text
+        assert "process-env.sh" not in text

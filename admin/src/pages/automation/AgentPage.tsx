@@ -1,27 +1,49 @@
+import { lazy, Suspense } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { useI18n } from "@/i18n";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { AgentActivitySection } from "./AgentActivitySection";
-import { AgentModelConfigSection } from "./AgentModelConfigSection";
+import { Navigate, useParams } from "react-router-dom";
 import { AgentSectionSwitch } from "./AgentSectionSwitch";
-import { AgentWebhooksSection } from "./AgentWebhooksSection";
-import { AgentWorkflowsSection } from "./AgentWorkflowsSection";
+import { SectionLoader } from "@/components/SectionLoader";
+import AdminNotFoundPage from "@/pages/AdminNotFoundPage";
 
-const validSections = ["model-config", "workflows", "activity", "webhooks"] as const;
+const AgentActivitySection = lazy(() =>
+  import("./AgentActivitySection").then((module) => ({
+    default: module.AgentActivitySection,
+  })),
+);
+const AgentWebhooksSection = lazy(() =>
+  import("./AgentWebhooksSection").then((module) => ({
+    default: module.AgentWebhooksSection,
+  })),
+);
+const AgentWorkflowsSection = lazy(() =>
+  import("./AgentWorkflowsSection").then((module) => ({
+    default: module.AgentWorkflowsSection,
+  })),
+);
+
+const validSections = ["workflows", "activity", "webhooks"] as const;
 
 export default function AgentPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const { section } = useParams();
 
-  if (!section || !validSections.includes(section as (typeof validSections)[number])) {
+  if (!section) {
     return <Navigate to="/agent/workflows" replace />;
   }
 
-  const goToSection = (value: string) => {
-    navigate(`/agent/${value}`);
-  };
+  if (!validSections.includes(section as (typeof validSections)[number])) {
+    return <AdminNotFoundPage />;
+  }
+
+  const sectionContent =
+    section === "activity" ? (
+      <AgentActivitySection />
+    ) : section === "webhooks" ? (
+      <AgentWebhooksSection />
+    ) : (
+      <AgentWorkflowsSection />
+    );
 
   return (
     <div>
@@ -30,20 +52,9 @@ export default function AgentPage() {
         description={t("agent.description")}
         secondary={<AgentSectionSwitch />}
       />
-      <Tabs value={section} onValueChange={goToSection}>
-        <TabsContent value="model-config">
-          <AgentModelConfigSection />
-        </TabsContent>
-        <TabsContent value="workflows">
-          <AgentWorkflowsSection />
-        </TabsContent>
-        <TabsContent value="activity">
-          <AgentActivitySection />
-        </TabsContent>
-        <TabsContent value="webhooks">
-          <AgentWebhooksSection />
-        </TabsContent>
-      </Tabs>
+      <Suspense fallback={<SectionLoader label={t("common.loading")} />}>
+        {sectionContent}
+      </Suspense>
     </div>
   );
 }

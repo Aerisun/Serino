@@ -1,13 +1,16 @@
+import { useMemo } from "react";
 import { useGetDeliveriesApiV1AdminAutomationDeliveriesGet, usePostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPost } from "@serino/api-client/admin";
 import type { WebhookDeliveryRead } from "@serino/api-client/models";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { getAgentWorkflows } from "@/pages/automation/api";
 import { PageHeader } from "@/components/PageHeader";
 import { AdminSurface } from "@/components/AdminSurface";
 import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { formatDate } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const HTTP_ERROR_PATTERN = /http\s+(\d{3})/i;
@@ -81,17 +84,30 @@ function toDisplayTime(row: WebhookDeliveryRead) {
   return row.last_attempt_at ?? row.delivered_at ?? row.created_at;
 }
 
+function workflowKeyFromDelivery(row: WebhookDeliveryRead) {
+  const payload = row.payload && typeof row.payload === "object" ? row.payload : {};
+  return String((payload as Record<string, unknown>).workflow_key || "").trim();
+}
+
 export function DeliveriesPanel() {
   const { lang, t } = useI18n();
   const queryClient = useQueryClient();
   const { data: deliveriesRaw, isLoading: deliveriesLoading } = useGetDeliveriesApiV1AdminAutomationDeliveriesGet();
+  const { data: workflows } = useQuery({
+    queryKey: ["admin", "agent", "workflows"],
+    queryFn: getAgentWorkflows,
+  });
   const deliveries = (deliveriesRaw?.data ?? []) as WebhookDeliveryRead[];
   const timeHeader = lang === "zh" ? "时间" : "Time";
+  const workflowNameMap = useMemo(
+    () => new Map((workflows ?? []).map((item) => [item.key, item.name])),
+    [workflows],
+  );
 
   const retryDelivery = usePostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPost({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries(); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { toast.error(error?.response?.data?.detail || t("common.operationFailed")); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 
@@ -99,7 +115,19 @@ export function DeliveriesPanel() {
     <AdminSurface eyebrow="Deliveries" title={t("automation.deliveries")} description={t("automation.deliveriesDescription")}>
       <DataTable<WebhookDeliveryRead>
         columns={[
-          { header: "Event", accessor: "event_type" },
+          {
+            header: t("automation.workflow"),
+            accessor: (row) => {
+              const workflowKey = workflowKeyFromDelivery(row);
+              const workflowName = workflowNameMap.get(workflowKey) || workflowKey || row.event_type || "-";
+              return (
+                <span className="inline-block max-w-[260px] truncate" title={workflowName}>
+                  {workflowName}
+                </span>
+              );
+            },
+            className: "min-w-[220px]",
+          },
           {
             header: t("automation.status"),
             accessor: (row) => {

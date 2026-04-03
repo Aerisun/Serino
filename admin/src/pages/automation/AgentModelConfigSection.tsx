@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Send } from "lucide-react";
-import { AdminSurface } from "@/components/AdminSurface";
-import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
-import { Badge } from "@/components/ui/Badge";
+import { ConfigSettingsCard } from "@/components/ConfigSettingsCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -13,19 +11,25 @@ import {
   getAgentModelConfig,
   testAgentModelConfig,
   updateAgentModelConfig,
-} from "@/api/endpoints/agent";
+} from "@/pages/automation/api";
 import { useI18n } from "@/i18n";
+import {
+  getPersistedConfigCheckStatus,
+  setPersistedConfigCheckStatus,
+} from "@/lib/storage";
 import { toast } from "sonner";
 
 const MODEL_CONFIG_QUERY_KEY = ["admin", "agent", "model-config"] as const;
+const MODEL_CONFIG_STATUS_STORAGE_KEY = "agent-model-config";
 
 const COPY = {
   zh: {
-    eyebrow: "Config",
+    eyebrow: "API",
     title: "大模型 API 配置",
-    description: "只保留运行时真正要用的最小接入项。",
-    ready: "可测试",
-    incomplete: "配置未完成",
+    pending: "待测试",
+    available: "可用",
+    invalid: "无效",
+    checking: "检查中",
     baseUrl: "Base URL",
     model: "Model",
     apiKey: "API Key",
@@ -41,11 +45,12 @@ const COPY = {
     testSuccess: "模型接口可用",
   },
   en: {
-    eyebrow: "Config",
+    eyebrow: "API",
     title: "Model API Config",
-    description: "Keep only the minimal fields the runtime actually needs.",
-    ready: "Ready to test",
-    incomplete: "Config incomplete",
+    pending: "Pending",
+    available: "Available",
+    invalid: "Invalid",
+    checking: "Checking",
     baseUrl: "Base URL",
     model: "Model",
     apiKey: "API Key",
@@ -103,13 +108,22 @@ export function AgentModelConfigSection() {
   });
   const [form, setForm] = useState(EMPTY_FORM);
   const [apiKeyEdited, setApiKeyEdited] = useState(false);
+  const [lastCheckOk, setLastCheckOk] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!data) {
       return;
     }
-    setForm(toVisibleForm(data));
+    const nextForm = toVisibleForm(data);
+    const nextPayload = buildPayload(nextForm, data);
+    setForm(nextForm);
     setApiKeyEdited(false);
+    setLastCheckOk(
+      getPersistedConfigCheckStatus(
+        MODEL_CONFIG_STATUS_STORAGE_KEY,
+        JSON.stringify(nextPayload),
+      ),
+    );
   }, [data]);
 
   const save = useMutation({
@@ -125,14 +139,26 @@ export function AgentModelConfigSection() {
 
   const test = useMutation({
     mutationFn: testAgentModelConfig,
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
+      setLastCheckOk(result.ok);
+      setPersistedConfigCheckStatus(
+        MODEL_CONFIG_STATUS_STORAGE_KEY,
+        JSON.stringify(variables),
+        result.ok,
+      );
       if (result.ok) {
         toast.success(`${copy.testSuccess}: ${result.model}`);
         return;
       }
       toast.error(result.summary || "模型接口测试失败，请检查配置");
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
+      setLastCheckOk(false);
+      setPersistedConfigCheckStatus(
+        MODEL_CONFIG_STATUS_STORAGE_KEY,
+        JSON.stringify(variables),
+        false,
+      );
       toast.error(error.message);
     },
   });
@@ -156,51 +182,79 @@ export function AgentModelConfigSection() {
   const isEmpty = !form.base_url.trim() && !form.model.trim() && !form.api_key.trim();
   const canSave = isReady || isEmpty;
   const payload = buildPayload(form, data);
+  const isChecking = test.isPending;
+  const statusTone = isChecking
+    ? "checking"
+    : lastCheckOk === true && !hasChanges
+      ? "available"
+      : lastCheckOk === false
+        ? "invalid"
+        : "pending";
+  const statusLabel =
+    statusTone === "checking"
+      ? copy.checking
+      : statusTone === "available"
+        ? copy.available
+        : statusTone === "invalid"
+          ? copy.invalid
+          : copy.pending;
   const updateField = (key: keyof typeof EMPTY_FORM, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
     if (key === "api_key") {
       setApiKeyEdited(true);
     }
+    setLastCheckOk(null);
+  };
+
+  const runConnectionCheck = async (nextPayload = payload) => {
+    if (!nextPayload.base_url || !nextPayload.model || !nextPayload.api_key) {
+      setLastCheckOk(null);
+      return false;
+    }
+    const result = await test.mutateAsync(nextPayload);
+    return Boolean(result.ok);
+  };
+
+  const handleSave = async () => {
+    await save.mutateAsync(payload);
+    if (isReady) {
+      await runConnectionCheck(payload);
+      return;
+    }
+    setLastCheckOk(null);
   };
 
   return (
-    <AdminSurface
+    <ConfigSettingsCard
       eyebrow={copy.eyebrow}
       title={copy.title}
-      description={copy.description}
-      actions={(
-        <>
-          {hasChanges ? <PendingSaveBadge /> : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => test.mutate(payload)}
-            disabled={!isReady || test.isPending || save.isPending}
-          >
-            {test.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            {test.isPending ? copy.testing : copy.test}
-          </Button>
-          <DirtySaveButton
-            dirty={hasChanges}
-            saving={save.isPending}
-            disabled={!canSave || test.isPending}
-            onClick={() => save.mutate(payload)}
-          />
-        </>
+      dirty={hasChanges}
+      saving={save.isPending || test.isPending}
+      saveDisabled={!canSave || test.isPending}
+      onSave={() => void handleSave()}
+      statusIndicator={{
+        label: statusLabel,
+        tone: statusTone,
+      }}
+      testAction={(
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => void runConnectionCheck(payload)}
+          disabled={!isReady || test.isPending || save.isPending}
+        >
+          {test.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          {test.isPending ? copy.testing : copy.test}
+        </Button>
       )}
     >
       <div className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={isReady ? "success" : "secondary"}>
-            {isReady ? copy.ready : copy.incomplete}
-          </Badge>
-        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>{copy.model}</Label>
@@ -251,6 +305,6 @@ export function AgentModelConfigSection() {
           </div>
         </div>
       </div>
-    </AdminSurface>
+    </ConfigSettingsCard>
   );
 }

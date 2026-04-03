@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from functools import lru_cache
 
 import yaml
 from sqlalchemy.orm import Session
 
 from aerisun.agent_skillmaps import SKILLMAPS_DIR
-from aerisun.api.admin.scopes import MCP_CONNECT, MCP_CONTENT_READ, MCP_CONTENT_WRITE
+from aerisun.api.admin.scopes import AGENT_CONNECT, CONTENT_READ, CONTENT_WRITE
 from aerisun.domain.agent.mcp_introspection import list_registered_mcp_capabilities
 from aerisun.domain.agent.mcp_settings import (
     filter_capabilities_for_scopes,
@@ -34,6 +33,7 @@ from aerisun.domain.agent.schemas import (
 )
 from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.iam.models import ApiKey
+from aerisun.domain.iam.service import repair_legacy_api_key_scopes
 
 
 def _normalize_base_url(site_url: str) -> str:
@@ -60,7 +60,7 @@ def _build_usage_endpoints(base_url: str) -> list[AgentUsageEndpointRead]:
         ),
         AgentUsageEndpointRead(
             id="mcp_streamable_http",
-            url=_absolute_url(base_url, "/api/mcp/mcp"),
+            url=_absolute_url(base_url, "/api/mcp"),
             method="POST",
             description="Primary MCP streamable-http endpoint",
             required_headers=["Authorization: Bearer <API_KEY>", "Content-Type: application/json"],
@@ -87,7 +87,7 @@ def _build_usage_endpoints(base_url: str) -> list[AgentUsageEndpointRead]:
 
 def _build_quickstart(base_url: str) -> AgentUsageQuickstartRead:
     usage_url = _absolute_url(base_url, "/api/agent/usage")
-    mcp_url = _absolute_url(base_url, "/api/mcp/mcp")
+    mcp_url = _absolute_url(base_url, "/api/mcp")
     return AgentUsageQuickstartRead(
         summary="Validate auth, confirm capabilities, and execute one safe MCP read call.",
         environment={
@@ -148,7 +148,7 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
             description="List recent admin content to select target IDs for further actions.",
             available=list_available,
             risk_level="low",
-            required_scopes=[MCP_CONNECT, MCP_CONTENT_READ],
+            required_scopes=[AGENT_CONNECT, CONTENT_READ],
             steps=[
                 _playbook_step(
                     1,
@@ -190,7 +190,7 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
             description="Delete a selected content item by ID.",
             available=delete_available,
             risk_level="high",
-            required_scopes=[MCP_CONNECT, MCP_CONTENT_WRITE],
+            required_scopes=[AGENT_CONNECT, CONTENT_WRITE],
             steps=[
                 _playbook_step(
                     1,
@@ -226,7 +226,7 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
             description="Set a selected content item status to archived.",
             available=archive_available,
             risk_level="medium",
-            required_scopes=[MCP_CONNECT, MCP_CONTENT_WRITE],
+            required_scopes=[AGENT_CONNECT, CONTENT_WRITE],
             steps=[
                 _playbook_step(
                     1,
@@ -288,7 +288,7 @@ def _build_troubleshooting(missing_scopes: list[str]) -> list[AgentUsageTroubles
             symptom="MCP access is disabled or scope denied",
             likely_causes=[
                 "mcp_public_access is disabled",
-                "API key lacks mcp:connect",
+                "API key lacks agent:connect",
                 "Tool requires write scope but key is read-only",
             ],
             fixes=[
@@ -381,13 +381,15 @@ def _build_mcp_templates() -> list[AgentUsageMcpTemplateRead]:
     ]
 
 
-@lru_cache(maxsize=8)
-def build_workflow_planning_usage_context(site_url: str) -> dict[str, object]:
-    base_url = _normalize_base_url(site_url)
-    all_capabilities = list_registered_mcp_capabilities()
-    tool_names = {item.name for item in all_capabilities if item.kind == "tool"}
-
+def build_workflow_planning_usage_context(session: Session, site_url: str) -> dict[str, object]:
+    usage = build_agent_usage(session, site_url, None)
     return {
+        "usage_document": {
+            "schema_version": usage.schema_version,
+            "generated_at": usage.generated_at.isoformat(),
+            "objective": usage.objective,
+        },
+        "capabilities": [item.model_dump(mode="json") for item in [*usage.mcp.tools, *usage.mcp.resources]],
         "endpoints": [
             {
                 "id": item.id,
@@ -395,13 +397,14 @@ def build_workflow_planning_usage_context(site_url: str) -> dict[str, object]:
                 "url": item.url,
                 "description": item.description,
             }
-            for item in _build_usage_endpoints(base_url)
+            for item in usage.endpoints
         ],
         "playbooks": [
             {
                 "id": item.id,
                 "title": item.title,
                 "description": item.description,
+                "available": item.available,
                 "required_scopes": item.required_scopes,
                 "steps": [
                     {
@@ -413,9 +416,11 @@ def build_workflow_planning_usage_context(site_url: str) -> dict[str, object]:
                     for step in item.steps
                 ],
             }
-            for item in _build_playbooks(base_url, tool_names)
+            for item in usage.playbooks
         ],
-        "mcp_templates": [item.model_dump(mode="json") for item in _build_mcp_templates()],
+        "mcp_templates": [item.model_dump(mode="json") for item in usage.mcp.call_templates],
+        "scope_guide": usage.scope_guide.model_dump(mode="json"),
+        "usage_hints": list(usage.mcp.usage_hints or []),
     }
 
 
@@ -478,14 +483,14 @@ def build_agent_usage(
     tools, resources = _visible_capabilities(session, available_scopes, api_key=api_key)
     tool_names = {item.name for item in tools}
     available_scope_list = list(available_scopes) if available_scopes is not None else []
-    recommended_scopes = [MCP_CONNECT]
+    recommended_scopes = [AGENT_CONNECT]
     for cap in [*tools, *resources]:
         for scope in cap.required_scopes or []:
             if scope not in recommended_scopes:
                 recommended_scopes.append(scope)
 
     missing_scopes = [scope for scope in recommended_scopes if scope not in set(available_scope_list)]
-    mcp_endpoint = _absolute_url(base_url, "/api/mcp/mcp")
+    mcp_endpoint = _absolute_url(base_url, "/api/mcp")
 
     return AgentUsageRead(
         schema_version="2026-03-usage-v2",
@@ -493,7 +498,8 @@ def build_agent_usage(
         name="Aerisun Agent Usage",
         objective=(
             "Provide executable MCP and REST guidance so an agent can discover capabilities, "
-            "read content, delete content, and archive content with minimal trial-and-error."
+            "inspect site state, manage content and configuration, operate automation workflows, "
+            "and perform platform administration with minimal trial-and-error."
         ),
         auth=AgentUsageAuthRead(
             type="bearer",
@@ -502,12 +508,12 @@ def build_agent_usage(
             example="Authorization: Bearer <API_KEY>",
             notes=[
                 "Use API key tokens from admin integrations API keys, not admin session tokens.",
-                "Always send the auth header to /api/agent/usage, /api/mcp-meta, and /api/mcp/mcp.",
+                "Always send the auth header to /api/agent/usage, /api/mcp-meta, and /api/mcp.",
             ],
         ),
         endpoints=_build_usage_endpoints(base_url),
         scope_guide=AgentUsageScopeGuideRead(
-            required_for_connection=[MCP_CONNECT],
+            required_for_connection=[AGENT_CONNECT],
             available_on_current_key=available_scope_list,
             recommended_for_full_management=recommended_scopes,
             missing_recommended_scopes=missing_scopes,
@@ -517,7 +523,7 @@ def build_agent_usage(
         mcp=AgentUsageMcpRead(
             endpoint=mcp_endpoint,
             transport="streamable-http",
-            required_scopes=[MCP_CONNECT],
+            required_scopes=[AGENT_CONNECT],
             available_scopes=available_scope_list,
             tools=tools,
             resources=resources,
@@ -526,6 +532,8 @@ def build_agent_usage(
                 "Call list_tools once after initialize and cache tool signatures for the session.",
                 "Use list_admin_content to collect IDs before destructive actions.",
                 "Prefer update_admin_content(status=archived) over delete for reversible workflows.",
+                "Use export_content before import_content or other bulk content changes.",
+                "Use validate_agent_workflow before trigger_workflow_run or enabling a new workflow.",
             ],
         ),
         troubleshooting=_build_troubleshooting(missing_scopes),
@@ -535,6 +543,7 @@ def build_agent_usage(
 
 def build_mcp_admin_config(session: Session, site_url: str, api_key_id: str | None = None) -> McpAdminConfigRead:
     base_url = _normalize_base_url(site_url)
+    repair_legacy_api_key_scopes(session)
     all_capabilities = list_registered_mcp_capabilities()
     api_key = session.get(ApiKey, api_key_id) if api_key_id else None
     if api_key_id and api_key is None:
@@ -550,7 +559,7 @@ def build_mcp_admin_config(session: Session, site_url: str, api_key_id: str | No
         available_scopes=list(api_key.scopes or []) if api_key is not None else [],
     )
     enabled_ids = set(resolved.enabled_capability_ids)
-    recommended_scopes = [MCP_CONNECT]
+    recommended_scopes = [AGENT_CONNECT]
     for capability in scoped_capabilities:
         if capability.id not in enabled_ids:
             continue
@@ -568,9 +577,9 @@ def build_mcp_admin_config(session: Session, site_url: str, api_key_id: str | No
         enabled_capability_count=len(enabled_ids),
         available_capability_count=len(all_capabilities),
         usage_url=_absolute_url(base_url, "/api/agent/usage"),
-        endpoint=_absolute_url(base_url, "/api/mcp/mcp"),
+        endpoint=_absolute_url(base_url, "/api/mcp"),
         transport="streamable-http",
-        required_scopes=[MCP_CONNECT],
+        required_scopes=[AGENT_CONNECT],
         recommended_scopes=recommended_scopes,
         presets=resolved.presets,
         capabilities=[
@@ -600,8 +609,6 @@ def save_mcp_admin_config(
     update_mcp_flags(
         session,
         public_access=payload.public_access,
-        selected_preset=payload.selected_preset,
-        enabled_capability_ids=payload.enabled_capability_ids,
         capabilities=capabilities,
         api_key=api_key,
     )

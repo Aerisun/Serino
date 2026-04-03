@@ -10,6 +10,8 @@ from aerisun.domain.content.schemas import (  # noqa: F401
     ContentCreate,
     ContentUpdate,
     ImportResult,
+    PoemGenerationRequest,
+    PoemGenerationResponse,
     SearchResponse,
     SearchResultItem,
     TagInfo,

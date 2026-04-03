@@ -1,12 +1,9 @@
 import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { useI18n } from "@/i18n";
-import { ClipboardList, GitBranch, Globe, Settings2 } from "lucide-react";
+import { ClipboardList, GitBranch, Globe } from "lucide-react";
 
 const COPY = {
   zh: {
-    modelConfig: {
-      label: "模型 API",
-    },
     workflows: {
       label: "工作流",
     },
@@ -18,9 +15,6 @@ const COPY = {
     },
   },
   en: {
-    modelConfig: {
-      label: "Model API",
-    },
     workflows: {
       label: "Workflows",
     },
@@ -38,12 +32,6 @@ export function AgentSectionSwitch() {
   const copy = COPY[lang];
 
   const items = [
-    {
-      value: "model-config",
-      to: "/agent/model-config",
-      label: copy.modelConfig.label,
-      icon: Settings2,
-    },
     {
       value: "workflows",
       to: "/agent/workflows",
@@ -64,5 +52,5 @@ export function AgentSectionSwitch() {
     },
   ] as const;
 
-  return <AdminSectionTabs items={items} />;
+  return <AdminSectionTabs items={items} className="w-fit" />;
 }

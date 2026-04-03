@@ -37,7 +37,7 @@ def test_admin_profile_update_flows_to_public_site(seeded_session, admin_user) -
         name="Flow Test",
         title="Updated Through Admin",
         bio="Profile changes should be visible to the public site.",
-        footer_text="Round-trip footer",
+        filing_info="京ICP备2022002869号-2",
         site_icon_url="/media/internal/assets/site-icon/flow-icon.svg",
     )
 
@@ -49,10 +49,11 @@ def test_admin_profile_update_flows_to_public_site(seeded_session, admin_user) -
     assert payload.site.name == update_payload.name
     assert payload.site.title == update_payload.title
     assert payload.site.bio == update_payload.bio
-    assert payload.site.footer_text == update_payload.footer_text
+    assert payload.site.filing_info == update_payload.filing_info
     assert payload.site.site_icon_url == update_payload.site_icon_url
     assert profile.title == update_payload.title
     assert profile.bio == update_payload.bio
+    assert profile.filing_info == update_payload.filing_info
 
 
 def test_admin_can_create_nav_item_without_site_profile_id_and_public_site_reads_it(seeded_session, admin_user) -> None:

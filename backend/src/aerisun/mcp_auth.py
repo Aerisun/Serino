@@ -3,9 +3,8 @@ from __future__ import annotations
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from sqlalchemy.orm import Session
 
-from aerisun.api.admin.scopes import MCP_CONNECT
-from aerisun.domain.iam.service import validate_api_key
-from aerisun.domain.site_config.service import mcp_public_access_enabled
+from aerisun.api.admin.scopes import AGENT_CONNECT
+from aerisun.domain.iam.mcp_access import verify_mcp_api_key
 
 
 class AerisunMcpTokenVerifier(TokenVerifier):
@@ -15,9 +14,7 @@ class AerisunMcpTokenVerifier(TokenVerifier):
     async def verify_token(self, token: str) -> AccessToken | None:
         session: Session = self._session_factory()
         try:
-            if not mcp_public_access_enabled(session):
-                return None
-            key = validate_api_key(session, token, (MCP_CONNECT,))
+            key = verify_mcp_api_key(session, token, (AGENT_CONNECT,))
             return AccessToken(
                 token=token,
                 client_id=key.id,

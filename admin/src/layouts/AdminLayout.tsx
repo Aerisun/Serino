@@ -192,7 +192,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-background via-background/95 to-muted/35">
+    <div className="admin-scrollbars flex h-dvh min-h-screen overflow-hidden bg-gradient-to-br from-background via-background/95 to-muted/35">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -248,8 +248,8 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto overscroll-contain bg-gradient-to-br from-background via-background/90 to-muted/30">
-        <div className="h-14 admin-glass-topbar flex items-center justify-between px-6">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-gradient-to-br from-background via-background/90 to-muted/30">
+        <div className="h-14 shrink-0 admin-glass-topbar flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -287,8 +287,10 @@ export default function AdminLayout() {
             </Button>
           </div>
         </div>
-        <div className="p-4 md:p-6 overflow-x-auto">
-          <Outlet />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="min-w-0 p-4 md:p-6">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>

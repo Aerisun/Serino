@@ -6,19 +6,31 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 from aerisun.api.admin.scopes import (
-    MCP_ASSETS_READ,
-    MCP_ASSETS_WRITE,
-    MCP_CONFIG_READ,
-    MCP_CONFIG_WRITE,
-    MCP_CONNECT,
-    MCP_CONTENT_READ,
-    MCP_CONTENT_WRITE,
-    MCP_MODERATION_READ,
-    MCP_MODERATION_WRITE,
+    AGENT_CONNECT,
+    ASSETS_READ,
+    ASSETS_WRITE,
+    AUTH_READ,
+    AUTH_WRITE,
+    AUTOMATION_READ,
+    AUTOMATION_WRITE,
+    CONFIG_READ,
+    CONFIG_WRITE,
+    CONTENT_READ,
+    CONTENT_WRITE,
+    MODERATION_READ,
+    MODERATION_WRITE,
+    NETWORK_READ,
+    NETWORK_WRITE,
+    SUBSCRIPTIONS_READ,
+    SUBSCRIPTIONS_WRITE,
+    SYSTEM_READ,
+    SYSTEM_WRITE,
+    VISITORS_READ,
+    VISITORS_WRITE,
 )
 from aerisun.domain.agent.capability_ids import build_capability_id
 from aerisun.domain.agent.schemas import AgentUsageCapabilityRead, McpPresetRead
-from aerisun.domain.exceptions import ResourceNotFound, ValidationError
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.site_config import repository as site_repo
 
 if TYPE_CHECKING:
@@ -26,7 +38,6 @@ if TYPE_CHECKING:
 
 CUSTOM_MCP_PRESET = "custom"
 DEFAULT_MCP_PRESET = "readonly"
-MCP_CONFIG_FLAG_KEY = "mcp_config"
 
 
 @dataclass(slots=True)
@@ -87,7 +98,7 @@ def build_mcp_presets(capabilities: list[AgentUsageCapabilityRead]) -> list[McpP
     readonly_ids = _capability_ids_without_write_scopes(capabilities)
     basic_management_ids = _capability_ids_for_allowed_scopes(
         capabilities,
-        allowed_scopes={MCP_CONTENT_WRITE, MCP_MODERATION_WRITE},
+        allowed_scopes={CONTENT_WRITE, MODERATION_WRITE},
     )
     full_ids = [item.id for item in capabilities]
 
@@ -113,57 +124,31 @@ def build_mcp_presets(capabilities: list[AgentUsageCapabilityRead]) -> list[McpP
     ]
 
 
-def normalize_enabled_capability_ids(
-    raw_ids: list[str] | None,
-    capabilities: list[AgentUsageCapabilityRead],
-    *,
-    default_ids: list[str] | None = None,
-) -> list[str]:
-    allowed = {item.id for item in capabilities}
-    seed_ids = raw_ids if raw_ids is not None else (default_ids if default_ids is not None else [])
-    normalized: list[str] = []
-    for item in seed_ids:
-        if isinstance(item, str) and item in allowed and item not in normalized:
-            normalized.append(item)
-    return normalized
-
-
-def _default_preset_for_scopes(available_scopes: list[str] | None) -> str:
-    scopes = set(available_scopes or [])
-    if {
-        MCP_CONTENT_WRITE,
-        MCP_MODERATION_WRITE,
-        MCP_CONFIG_WRITE,
-        MCP_ASSETS_WRITE,
-    }.issubset(scopes):
-        return "full_management"
-    if {MCP_CONTENT_WRITE, MCP_MODERATION_WRITE}.issubset(scopes):
-        return "basic_management"
-    return DEFAULT_MCP_PRESET
-
-
-def _resolve_selected_preset(
-    raw_selected_preset: object,
-    presets: list[McpPresetRead],
-    available_scopes: list[str] | None,
-) -> str:
-    preset_map = _preset_map(presets)
-    key = str(raw_selected_preset or "").strip()
-    if key in preset_map:
-        return key
-    return _default_preset_for_scopes(available_scopes)
-
-
 def _scope_preset(scopes: set[str]) -> str:
     readonly = {
-        MCP_CONNECT,
-        MCP_CONTENT_READ,
-        MCP_MODERATION_READ,
-        MCP_CONFIG_READ,
-        MCP_ASSETS_READ,
+        AGENT_CONNECT,
+        CONTENT_READ,
+        MODERATION_READ,
+        CONFIG_READ,
+        ASSETS_READ,
+        SUBSCRIPTIONS_READ,
+        VISITORS_READ,
+        AUTH_READ,
+        AUTOMATION_READ,
+        SYSTEM_READ,
+        NETWORK_READ,
     }
-    basic = readonly | {MCP_CONTENT_WRITE, MCP_MODERATION_WRITE}
-    full = basic | {MCP_CONFIG_WRITE, MCP_ASSETS_WRITE}
+    basic = readonly | {CONTENT_WRITE, MODERATION_WRITE}
+    full = basic | {
+        CONFIG_WRITE,
+        ASSETS_WRITE,
+        SUBSCRIPTIONS_WRITE,
+        VISITORS_WRITE,
+        AUTH_WRITE,
+        AUTOMATION_WRITE,
+        SYSTEM_WRITE,
+        NETWORK_WRITE,
+    }
     if scopes == full:
         return "full_management"
     if scopes == basic:
@@ -203,14 +188,9 @@ def update_mcp_flags(
     session: Session,
     *,
     public_access: bool | None,
-    selected_preset: str | None,
-    enabled_capability_ids: list[str] | None,
     capabilities: list[AgentUsageCapabilityRead],
     api_key: ApiKey | None = None,
 ) -> McpResolvedConfig:
-    if selected_preset is not None or enabled_capability_ids is not None:
-        raise ValidationError("API key MCP config has been removed; update API key scopes instead")
-
     profile, feature_flags = _read_site_feature_flags(session)
     current = resolve_mcp_config(
         session,
