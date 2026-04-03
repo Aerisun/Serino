@@ -17,6 +17,34 @@ pnpm install --frozen-lockfile
 cd backend && uv sync --dev
 ```
 
+### 开发密钥文件（推荐）
+
+为了避免把 SMTP / OAuth / AI / Webhook 等敏感信息写进种子文件，请使用本地密钥文件：
+
+```bash
+cp .env.development.local.example .env.development.local
+```
+
+`.env.development.local` 已被 gitignore，填写真实值后：
+- `make dev` / `make dev-pseed` 会自动加载这些变量
+- 开发种子会在本地数据库里初始化/补空相关配置，不会覆盖后台已手动保存的密钥（仅 development）
+
+建议在本机启用提交前密钥防护（只需一次）：
+
+```bash
+make install-git-hooks
+```
+
+启用后，提交时会自动阻止：
+- 把 `.env.local` / `.env.*.local` / `companions/**/.env` 提交进 git
+- 新增内容中出现明显密钥模式（私钥头、常见 API Key 前缀、可疑 secret/password/token 赋值）
+
+手动全仓检查：
+
+```bash
+make check-secrets
+```
+
 ### 启动服务
 
 - 进入项目根目录一键启动开发：

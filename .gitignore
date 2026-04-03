@@ -56,3 +56,6 @@ venv/
 .env.local
 .env.*.local
 .env.release
+
+# Companion local secret env files
+companions/**/.env

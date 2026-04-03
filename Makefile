@@ -1,4 +1,4 @@
-.PHONY: dev dev-pseed dev-smoke dev-stop docker-dev docker-prod docker-smoke setup-ports
+.PHONY: dev dev-pseed dev-smoke dev-stop check-secrets install-git-hooks docker-dev docker-prod docker-smoke setup-ports
 
 # ── 本地开发（不走 Docker）──────────────────────────────
 dev: 
@@ -14,6 +14,12 @@ dev-smoke:
 
 dev-stop:
 	@bash ./scripts/dev-stop.sh
+
+check-secrets:
+	@bash ./scripts/check-secrets-staged.sh --all
+
+install-git-hooks:
+	@bash ./scripts/install-git-hooks.sh
 
 # ── Docker 开发 ─────────────────────────────────────────
 docker-dev:
