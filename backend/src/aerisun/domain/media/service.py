@@ -21,6 +21,7 @@ from aerisun.domain.media.object_storage import (
     build_resource_key_from_digest,
     get_or_create_object_storage_config,
     queue_asset_mirror,
+    record_completed_remote_asset_delete,
     queue_remote_asset_delete,
     should_use_direct_upload,
     sign_asset_download_url,
@@ -427,6 +428,17 @@ def delete_asset(session: Session, asset_id: str) -> None:
     asset = repo.find_asset_by_id(session, asset_id)
     if asset is None:
         raise ResourceNotFound("Asset not found")
+    _delete_asset_record(session, asset)
+    session.commit()
+    emit_asset_deleted(
+        session,
+        asset_id=asset.id,
+        resource_key=asset.resource_key,
+        file_name=asset.file_name,
+    )
+
+
+def _delete_asset_record(session: Session, asset: Asset) -> None:
     snapshot = {
         "asset_id": asset.id,
         "resource_key": asset.resource_key,
@@ -441,6 +453,10 @@ def delete_asset(session: Session, asset_id: str) -> None:
         if provider is not None:
             try:
                 provider.delete_object(object_key=remote_object_key)
+                record_completed_remote_asset_delete(
+                    session,
+                    object_key=remote_object_key,
+                )
             except Exception as exc:
                 logger.exception("Failed to delete remote asset object %s", remote_object_key)
                 queue_remote_asset_delete(
@@ -455,14 +471,16 @@ def delete_asset(session: Session, asset_id: str) -> None:
                 error="远端对象删除已转入补偿队列：当前 OSS 不可用",
             )
     repo.delete_asset(session, asset)
-    session.commit()
-    emit_asset_deleted(session, **snapshot)
+    return snapshot
 
 
 def bulk_delete_assets(session: Session, ids: list[str]) -> int:
     from aerisun.domain.automation.events import emit_asset_bulk_deleted
 
-    affected = repo.delete_assets_by_ids(session, ids)
+    assets = [asset for asset_id in ids if (asset := repo.find_asset_by_id(session, asset_id)) is not None]
+    for asset in assets:
+        _delete_asset_record(session, asset)
+    affected = len(assets)
     session.commit()
     emit_asset_bulk_deleted(session, ids=ids, affected=affected)
     return affected

@@ -23,4 +23,6 @@ export interface ObjectStorageConfigRead {
   last_health_ok?: boolean | null;
   last_health_error?: string | null;
   last_health_checked_at?: string | null;
+  remote_sync_scanned_count?: number | null;
+  remote_sync_enqueued_count?: number | null;
 }

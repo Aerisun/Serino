@@ -82,6 +82,8 @@ class ObjectStorageConfigRead(ModelBase):
     last_health_ok: bool | None = None
     last_health_error: str | None = None
     last_health_checked_at: datetime | None = None
+    remote_sync_scanned_count: int | None = None
+    remote_sync_enqueued_count: int | None = None
 
 
 class ObjectStorageConfigUpdate(BaseModel):
@@ -105,3 +107,19 @@ class ObjectStorageHealthRead(ModelBase):
     ok: bool
     summary: str
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ObjectStorageSyncRecordRead(ModelBase):
+    id: str
+    record_type: Literal["mirror", "remote_delete", "remote_upload"]
+    status: str
+    object_key: str
+    asset_id: str | None = None
+    asset_file_name: str | None = None
+    asset_resource_key: str | None = None
+    retry_count: int
+    last_error: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime

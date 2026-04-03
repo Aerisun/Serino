@@ -17,13 +17,20 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.media import repository as repo
-from aerisun.domain.media.models import Asset, AssetMirrorQueueItem, AssetRemoteDeleteQueueItem, ObjectStorageConfig
+from aerisun.domain.media.models import (
+    Asset,
+    AssetMirrorQueueItem,
+    AssetRemoteDeleteQueueItem,
+    AssetRemoteUploadQueueItem,
+    ObjectStorageConfig,
+)
 from aerisun.domain.media.schemas import (
     AssetAdminRead,
     AssetUploadPlanWrite,
     ObjectStorageConfigRead,
     ObjectStorageConfigUpdate,
     ObjectStorageHealthRead,
+    ObjectStorageSyncRecordRead,
 )
 
 logger = logging.getLogger(__name__)
@@ -178,7 +185,12 @@ def get_or_create_object_storage_config(session: Session) -> ObjectStorageConfig
     return config
 
 
-def _config_to_read(config: ObjectStorageConfig) -> ObjectStorageConfigRead:
+def _config_to_read(
+    config: ObjectStorageConfig,
+    *,
+    remote_sync_scanned_count: int | None = None,
+    remote_sync_enqueued_count: int | None = None,
+) -> ObjectStorageConfigRead:
     return ObjectStorageConfigRead(
         enabled=config.enabled,
         provider=str(config.provider or "bitiful").strip() or "bitiful",
@@ -197,6 +209,8 @@ def _config_to_read(config: ObjectStorageConfig) -> ObjectStorageConfigRead:
         last_health_ok=config.last_health_ok,
         last_health_error=config.last_health_error,
         last_health_checked_at=config.last_health_checked_at,
+        remote_sync_scanned_count=remote_sync_scanned_count,
+        remote_sync_enqueued_count=remote_sync_enqueued_count,
     )
 
 
@@ -243,6 +257,27 @@ def update_object_storage_config(session: Session, payload: ObjectStorageConfigU
     session.commit()
     session.refresh(config)
     return _config_to_read(config)
+
+
+def refresh_object_storage_health_status(session: Session) -> ObjectStorageConfigRead:
+    config = get_or_create_object_storage_config(session)
+    now = utcnow()
+    health = test_object_storage_config(session)
+    remote_sync_scanned_count = 0
+    remote_sync_enqueued_count = 0
+
+    config.last_health_ok = health.ok
+    config.last_health_error = None if health.ok else health.summary
+    config.last_health_checked_at = now
+    if config.enabled and health.ok:
+        remote_sync_scanned_count, remote_sync_enqueued_count = enqueue_missing_remote_assets(session)
+    session.commit()
+    session.refresh(config)
+    return _config_to_read(
+        config,
+        remote_sync_scanned_count=remote_sync_scanned_count,
+        remote_sync_enqueued_count=remote_sync_enqueued_count,
+    )
 
 
 def build_object_storage_provider(session: Session) -> BitifulObjectStorageProvider | None:
@@ -301,20 +336,18 @@ def test_object_storage_config(
                 if value is None:
                     continue
                 setattr(config, key, value)
-            if payload.enabled is None:
-                config.enabled = True
+        config.enabled = True
         provider = build_object_storage_provider(session)
         if provider is None:
-            health = ObjectStorageHealthRead(ok=False, summary="OSS 配置未启用或依赖不可用")
+            health = ObjectStorageHealthRead(ok=False, summary="OSS 配置无效或依赖不可用")
         else:
             health = provider.is_healthy()
         return health
     finally:
-        if payload is not None:
-            for key, value in snapshot.items():
-                setattr(config, key, value)
-            config.secret_key = original_secret
-            session.flush()
+        for key, value in snapshot.items():
+            setattr(config, key, value)
+        config.secret_key = original_secret
+        session.flush()
 
 
 def object_storage_available_for_acceleration(session: Session) -> bool:
@@ -330,6 +363,95 @@ def object_storage_available_for_acceleration(session: Session) -> bool:
     config.last_health_checked_at = utcnow()
     session.commit()
     return health.ok
+
+
+def list_object_storage_sync_records(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    q: str | None = None,
+) -> dict[str, object]:
+    pattern = (q or "").strip().lower()
+    asset_by_id = {asset.id: asset for asset in session.query(Asset).all()}
+    records: list[ObjectStorageSyncRecordRead] = []
+
+    for item in repo.list_mirror_queue_items(session):
+        asset = asset_by_id.get(item.asset_id)
+        record = ObjectStorageSyncRecordRead(
+            id=item.id,
+            record_type="mirror",
+            status=item.status,
+            object_key=item.object_key,
+            asset_id=item.asset_id,
+            asset_file_name=asset.file_name if asset is not None else None,
+            asset_resource_key=asset.resource_key if asset is not None else None,
+            retry_count=item.retry_count,
+            last_error=item.last_error,
+            started_at=item.started_at,
+            finished_at=item.finished_at,
+            created_at=item.created_at,
+            updated_at=item.updated_at,
+        )
+        records.append(record)
+
+    for item in repo.list_remote_delete_queue_items(session):
+        records.append(
+            ObjectStorageSyncRecordRead(
+                id=item.id,
+                record_type="remote_delete",
+                status=item.status,
+                object_key=item.object_key,
+                retry_count=item.retry_count,
+                last_error=item.last_error,
+                started_at=item.started_at,
+                finished_at=item.finished_at,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+            )
+        )
+
+    for item in repo.list_remote_upload_queue_items(session):
+        asset = asset_by_id.get(item.asset_id)
+        records.append(
+            ObjectStorageSyncRecordRead(
+                id=item.id,
+                record_type="remote_upload",
+                status=item.status,
+                object_key=item.object_key,
+                asset_id=item.asset_id,
+                asset_file_name=asset.file_name if asset is not None else None,
+                asset_resource_key=asset.resource_key if asset is not None else None,
+                retry_count=item.retry_count,
+                last_error=item.last_error,
+                started_at=item.started_at,
+                finished_at=item.finished_at,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+            )
+        )
+
+    if pattern:
+        records = [
+            record
+            for record in records
+            if pattern in record.object_key.lower()
+            or pattern in (record.asset_file_name or "").lower()
+            or pattern in record.status.lower()
+            or pattern in record.record_type.lower()
+        ]
+
+    records.sort(key=lambda item: (item.updated_at, item.created_at), reverse=True)
+    total = len(records)
+    start = max(page - 1, 0) * page_size
+    end = start + page_size
+    items = records[start:end]
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 def should_use_direct_upload(session: Session) -> bool:
@@ -354,6 +476,45 @@ def queue_asset_mirror(session: Session, asset: Asset) -> AssetMirrorQueueItem:
     return item
 
 
+def queue_asset_remote_upload(session: Session, asset: Asset) -> tuple[AssetRemoteUploadQueueItem | None, bool]:
+    local_path = Path(asset.storage_path)
+    if not local_path.exists() or not local_path.is_file():
+        return None, False
+    existing = repo.find_active_remote_upload_queue_item_for_asset(session, asset.id)
+    if existing is not None:
+        return existing, False
+    object_key = str(asset.remote_object_key or asset.resource_key).strip()
+    if not object_key:
+        return None, False
+    item = repo.create_remote_upload_queue_item(
+        session,
+        asset_id=asset.id,
+        object_key=object_key,
+        status="queued",
+        retry_count=0,
+        next_retry_at=utcnow(),
+    )
+    asset.remote_object_key = object_key
+    asset.remote_status = "queued"
+    session.flush()
+    return item, True
+
+
+def enqueue_missing_remote_assets(session: Session) -> tuple[int, int]:
+    scanned = 0
+    enqueued = 0
+    for asset in repo.list_assets_missing_remote_sync(session):
+        local_path = Path(asset.storage_path)
+        if not local_path.exists() or not local_path.is_file():
+            continue
+        scanned += 1
+        _queue_item, created = queue_asset_remote_upload(session, asset)
+        if created:
+            enqueued += 1
+    session.flush()
+    return scanned, enqueued
+
+
 def queue_remote_asset_delete(
     session: Session,
     *,
@@ -374,6 +535,26 @@ def queue_remote_asset_delete(
         retry_count=0,
         next_retry_at=utcnow(),
         last_error=error,
+    )
+    session.flush()
+    return item
+
+
+def record_completed_remote_asset_delete(
+    session: Session,
+    *,
+    object_key: str,
+) -> AssetRemoteDeleteQueueItem:
+    now = utcnow()
+    item = repo.create_remote_delete_queue_item(
+        session,
+        object_key=object_key.strip(),
+        status="completed",
+        retry_count=0,
+        next_retry_at=now,
+        started_at=now,
+        finished_at=now,
+        last_error=None,
     )
     session.flush()
     return item
@@ -425,6 +606,45 @@ def dispatch_due_remote_asset_delete_jobs() -> None:
     except Exception as exc:  # pragma: no cover - failure path exercised via tests
         logger.exception("Remote asset delete job failed")
         _mark_remote_asset_delete_failed(queue_item_id=queue_item_id, error=str(exc))
+
+
+def dispatch_due_remote_asset_upload_jobs() -> None:
+    session_factory = get_session_factory()
+    now = utcnow()
+    with session_factory() as session:
+        if repo.find_running_remote_upload_queue_item(session) is not None:
+            return
+        queue_item = repo.find_due_remote_upload_queue_item(session, now=now)
+        if queue_item is None:
+            return
+        queue_item.status = "running"
+        queue_item.started_at = now
+        queue_item.last_error = None
+        asset = repo.find_asset_by_id(session, queue_item.asset_id)
+        if asset is not None:
+            asset.remote_status = "running"
+        session.commit()
+        queue_item_id = queue_item.id
+
+    try:
+        _execute_remote_asset_upload(queue_item_id=queue_item_id)
+    except Exception as exc:  # pragma: no cover - failure path exercised via tests
+        logger.exception("Remote asset upload job failed")
+        _mark_remote_asset_upload_failed(queue_item_id=queue_item_id, error=str(exc))
+
+
+def reconcile_object_storage_remote_sync() -> int:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        config = get_or_create_object_storage_config(session)
+        if not config.enabled:
+            return 0
+        provider = build_object_storage_maintenance_provider(session)
+        if provider is None:
+            return 0
+        _scanned, enqueued = enqueue_missing_remote_assets(session)
+        session.commit()
+        return enqueued
 
 
 def _execute_asset_mirror(*, queue_item_id: str) -> None:
@@ -488,6 +708,72 @@ def _mark_asset_mirror_failed(*, queue_item_id: str, error: str) -> None:
         if asset is not None:
             asset.mirror_status = "failed" if queue_item.status == "failed" else "retrying"
             asset.mirror_last_error = error
+        session.commit()
+
+
+def _execute_remote_asset_upload(*, queue_item_id: str) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        queue_item = repo.get_remote_upload_queue_item(session, queue_item_id)
+        if queue_item is None:
+            raise ResourceNotFound("Remote upload queue item not found")
+        asset = repo.find_asset_by_id(session, queue_item.asset_id)
+        if asset is None:
+            raise ResourceNotFound("Asset not found")
+        local_path = Path(asset.storage_path)
+        if not local_path.exists() or not local_path.is_file():
+            raise ResourceNotFound("Local asset file not found")
+        provider = build_object_storage_maintenance_provider(session)
+        if provider is None:
+            raise ValidationError("OSS 当前不可用，无法执行远端同步")
+        object_key = str(asset.remote_object_key or asset.resource_key).strip()
+        mime_type = asset.mime_type
+        content = local_path.read_bytes()
+
+    head = provider.upload_bytes(
+        object_key=object_key,
+        data=content,
+        content_type=mime_type,
+    )
+
+    with session_factory() as session:
+        queue_item = repo.get_remote_upload_queue_item(session, queue_item_id)
+        asset = repo.find_asset_by_id(session, queue_item.asset_id if queue_item is not None else "")
+        now = utcnow()
+        if queue_item is not None:
+            queue_item.status = "completed"
+            queue_item.finished_at = now
+            queue_item.last_error = None
+        if asset is not None:
+            asset.storage_provider = "bitiful"
+            asset.remote_object_key = object_key
+            asset.remote_status = "available"
+            asset.remote_uploaded_at = now
+            asset.remote_etag = head.etag
+            asset.byte_size = asset.byte_size or head.content_length or len(content)
+            asset.mime_type = asset.mime_type or head.content_type or mime_type
+            asset.oss_acceleration_enabled_at_upload = True
+        session.commit()
+
+
+def _mark_remote_asset_upload_failed(*, queue_item_id: str, error: str) -> None:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        queue_item = repo.get_remote_upload_queue_item(session, queue_item_id)
+        if queue_item is None:
+            return
+        asset = repo.find_asset_by_id(session, queue_item.asset_id)
+        config = get_or_create_object_storage_config(session)
+        queue_item.retry_count += 1
+        queue_item.last_error = error
+        queue_item.finished_at = utcnow()
+        if queue_item.retry_count > int(config.mirror_retry_count):
+            queue_item.status = "failed"
+        else:
+            queue_item.status = "retrying"
+            queue_item.next_retry_at = utcnow() + timedelta(seconds=30 * queue_item.retry_count)
+        if asset is not None:
+            asset.remote_status = "failed" if queue_item.status == "failed" else "retrying"
         session.commit()
 
 

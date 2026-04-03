@@ -80,3 +80,17 @@ class AssetRemoteDeleteQueueItem(Base, TimestampMixin):
     last_error: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AssetRemoteUploadQueueItem(Base, TimestampMixin):
+    __tablename__ = "asset_remote_upload_queue_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    asset_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    object_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    next_retry_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

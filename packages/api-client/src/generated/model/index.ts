@@ -283,6 +283,8 @@ export * from './objectStorageConfigRead';
 export * from './objectStorageConfigUpdate';
 export * from './objectStorageHealthRead';
 export * from './objectStorageHealthReadDetails';
+export * from './objectStorageSyncRecordRead';
+export * from './objectStorageSyncRecordReadRecordType';
 export * from './outboundProxyConfigRead';
 export * from './outboundProxyConfigUpdate';
 export * from './outboundProxyHealthRead';

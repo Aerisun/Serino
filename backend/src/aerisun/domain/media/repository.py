@@ -5,7 +5,13 @@ from datetime import datetime
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from aerisun.domain.media.models import Asset, AssetMirrorQueueItem, AssetRemoteDeleteQueueItem, ObjectStorageConfig
+from aerisun.domain.media.models import (
+    Asset,
+    AssetMirrorQueueItem,
+    AssetRemoteDeleteQueueItem,
+    AssetRemoteUploadQueueItem,
+    ObjectStorageConfig,
+)
 
 
 def find_assets_paginated(
@@ -166,3 +172,84 @@ def find_due_remote_delete_queue_item(session: Session, *, now: datetime) -> Ass
 
 def get_remote_delete_queue_item(session: Session, queue_item_id: str) -> AssetRemoteDeleteQueueItem | None:
     return session.get(AssetRemoteDeleteQueueItem, queue_item_id)
+
+
+def find_active_remote_upload_queue_item_for_asset(session: Session, asset_id: str) -> AssetRemoteUploadQueueItem | None:
+    return (
+        session.query(AssetRemoteUploadQueueItem)
+        .filter(
+            AssetRemoteUploadQueueItem.asset_id == asset_id,
+            AssetRemoteUploadQueueItem.status.in_(("queued", "running", "retrying")),
+        )
+        .order_by(AssetRemoteUploadQueueItem.created_at.desc())
+        .first()
+    )
+
+
+def create_remote_upload_queue_item(session: Session, **kwargs) -> AssetRemoteUploadQueueItem:
+    item = AssetRemoteUploadQueueItem(**kwargs)
+    session.add(item)
+    return item
+
+
+def find_running_remote_upload_queue_item(session: Session) -> AssetRemoteUploadQueueItem | None:
+    return (
+        session.query(AssetRemoteUploadQueueItem)
+        .filter(AssetRemoteUploadQueueItem.status == "running")
+        .order_by(AssetRemoteUploadQueueItem.started_at.asc(), AssetRemoteUploadQueueItem.created_at.asc())
+        .first()
+    )
+
+
+def find_due_remote_upload_queue_item(session: Session, *, now: datetime) -> AssetRemoteUploadQueueItem | None:
+    return (
+        session.query(AssetRemoteUploadQueueItem)
+        .filter(
+            AssetRemoteUploadQueueItem.status.in_(("queued", "retrying")),
+            AssetRemoteUploadQueueItem.next_retry_at <= now,
+        )
+        .order_by(AssetRemoteUploadQueueItem.next_retry_at.asc(), AssetRemoteUploadQueueItem.created_at.asc())
+        .first()
+    )
+
+
+def get_remote_upload_queue_item(session: Session, queue_item_id: str) -> AssetRemoteUploadQueueItem | None:
+    return session.get(AssetRemoteUploadQueueItem, queue_item_id)
+
+
+def list_mirror_queue_items(session: Session) -> list[AssetMirrorQueueItem]:
+    return list(
+        session.query(AssetMirrorQueueItem)
+        .order_by(AssetMirrorQueueItem.updated_at.desc(), AssetMirrorQueueItem.created_at.desc())
+        .all()
+    )
+
+
+def list_remote_delete_queue_items(session: Session) -> list[AssetRemoteDeleteQueueItem]:
+    return list(
+        session.query(AssetRemoteDeleteQueueItem)
+        .order_by(AssetRemoteDeleteQueueItem.updated_at.desc(), AssetRemoteDeleteQueueItem.created_at.desc())
+        .all()
+    )
+
+
+def list_remote_upload_queue_items(session: Session) -> list[AssetRemoteUploadQueueItem]:
+    return list(
+        session.query(AssetRemoteUploadQueueItem)
+        .order_by(AssetRemoteUploadQueueItem.updated_at.desc(), AssetRemoteUploadQueueItem.created_at.desc())
+        .all()
+    )
+
+
+def list_assets_missing_remote_sync(session: Session) -> list[Asset]:
+    return list(
+        session.query(Asset)
+        .filter(
+            or_(
+                Asset.remote_status.in_(("none", "failed", "retrying", "queued")),
+                Asset.remote_object_key.is_(None),
+            )
+        )
+        .order_by(Asset.created_at.asc())
+        .all()
+    )

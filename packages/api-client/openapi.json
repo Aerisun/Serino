@@ -6767,6 +6767,95 @@
         ]
       }
     },
+    "/api/v1/admin/object-storage/sync-records": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-object-storage"
+        ],
+        "summary": "获取 OSS 同步记录",
+        "operationId": "get_object_storage_sync_records_api_v1_admin_object_storage_sync_records_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/ObjectStorageSyncRecordRead"
+                        }
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  },
+                  "title": "Response Get Object Storage Sync Records Api V1 Admin Object Storage Sync Records Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/resume/basics/": {
       "get": {
         "tags": [
@@ -23938,6 +24027,28 @@
               }
             ],
             "title": "Last Health Checked At"
+          },
+          "remote_sync_scanned_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Sync Scanned Count"
+          },
+          "remote_sync_enqueued_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Sync Enqueued Count"
           }
         },
         "type": "object",
@@ -24157,6 +24268,124 @@
           "summary"
         ],
         "title": "ObjectStorageHealthRead"
+      },
+      "ObjectStorageSyncRecordRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "record_type": {
+            "type": "string",
+            "enum": [
+              "mirror",
+              "remote_delete",
+              "remote_upload"
+            ],
+            "title": "Record Type"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "object_key": {
+            "type": "string",
+            "title": "Object Key"
+          },
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "asset_file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset File Name"
+          },
+          "asset_resource_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Resource Key"
+          },
+          "retry_count": {
+            "type": "integer",
+            "title": "Retry Count"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "record_type",
+          "status",
+          "object_key",
+          "retry_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ObjectStorageSyncRecordRead"
       },
       "OutboundProxyConfigRead": {
         "properties": {

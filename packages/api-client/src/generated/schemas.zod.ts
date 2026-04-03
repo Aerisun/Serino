@@ -3180,7 +3180,9 @@ export const GetObjectStorageConfigApiV1AdminObjectStorageConfigGetResponse = zo
   "mirror_retry_count": zod.number(),
   "last_health_ok": zod.union([zod.boolean(),zod.null()]).optional(),
   "last_health_error": zod.union([zod.string(),zod.null()]).optional(),
-  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
+  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "remote_sync_scanned_count": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_sync_enqueued_count": zod.union([zod.number(),zod.null()]).optional()
 })
 
 
@@ -3249,7 +3251,9 @@ export const PutObjectStorageConfigApiV1AdminObjectStorageConfigPutResponse = zo
   "mirror_retry_count": zod.number(),
   "last_health_ok": zod.union([zod.boolean(),zod.null()]).optional(),
   "last_health_error": zod.union([zod.string(),zod.null()]).optional(),
-  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
+  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "remote_sync_scanned_count": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_sync_enqueued_count": zod.union([zod.number(),zod.null()]).optional()
 })
 
 
@@ -3306,6 +3310,35 @@ export const PostObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostRes
   "summary": zod.string(),
   "details": zod.record(zod.string(), zod.unknown()).optional()
 })
+
+
+/**
+ * @summary 获取 OSS 同步记录
+ */
+export const getObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetQueryPageDefault = 1;
+export const getObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetQueryPageSizeDefault = 20;
+
+export const GetObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetQueryParams = zod.object({
+  "page": zod.number().default(getObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetQueryPageDefault),
+  "page_size": zod.number().default(getObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetQueryPageSizeDefault),
+  "q": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const GetObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetResponse = zod.record(zod.string(), zod.union([zod.array(zod.object({
+  "id": zod.string(),
+  "record_type": zod.enum(['mirror', 'remote_delete', 'remote_upload']),
+  "status": zod.string(),
+  "object_key": zod.string(),
+  "asset_id": zod.union([zod.string(),zod.null()]).optional(),
+  "asset_file_name": zod.union([zod.string(),zod.null()]).optional(),
+  "asset_resource_key": zod.union([zod.string(),zod.null()]).optional(),
+  "retry_count": zod.number(),
+  "last_error": zod.union([zod.string(),zod.null()]).optional(),
+  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
+  "created_at": zod.string().datetime({}),
+  "updated_at": zod.string().datetime({})
+})),zod.number()]))
 
 
 /**

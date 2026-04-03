@@ -86,6 +86,7 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     backup_recovery_key_columns = _get_columns(str(db_path), "backup_recovery_keys")
     api_key_columns = _get_columns(str(db_path), "api_keys")
     asset_remote_delete_queue_columns = _get_columns(str(db_path), "asset_remote_delete_queue_items")
+    asset_remote_upload_queue_columns = _get_columns(str(db_path), "asset_remote_upload_queue_items")
 
     assert "config_revisions" in tables
     assert "page_display_options" not in tables
@@ -180,6 +181,16 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
         "started_at",
         "finished_at",
     } <= asset_remote_delete_queue_columns
+    assert {
+        "asset_id",
+        "object_key",
+        "status",
+        "retry_count",
+        "next_retry_at",
+        "last_error",
+        "started_at",
+        "finished_at",
+    } <= asset_remote_upload_queue_columns
     assert {
         "transport",
         "trigger_kind",

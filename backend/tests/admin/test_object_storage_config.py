@@ -33,7 +33,18 @@ def test_object_storage_config_get_returns_default_shape(client, admin_headers):
     assert payload["mirror_retry_count"] == 3
 
 
-def test_object_storage_config_put_persists_and_creates_masked_revision(client, admin_headers):
+def test_object_storage_config_put_persists_and_creates_masked_revision(client, admin_headers, monkeypatch):
+    from aerisun.domain.media import object_storage as object_storage_module
+
+    class _Provider:
+        def is_healthy(self):
+            return object_storage_module.ObjectStorageHealthRead(
+                ok=True,
+                summary="OSS health ok",
+                details={"bucket": "asset-bucket"},
+            )
+
+    monkeypatch.setattr(object_storage_module, "build_object_storage_provider", lambda session: _Provider())
     response = client.put(
         OBJECT_STORAGE_BASE,
         headers=admin_headers,
@@ -61,6 +72,8 @@ def test_object_storage_config_put_persists_and_creates_masked_revision(client, 
     assert payload["bucket"] == "asset-bucket"
     assert payload["secret_key_configured"] is True
     assert payload["cdn_token_key_configured"] is True
+    assert payload["last_health_ok"] is True
+    assert isinstance(payload["remote_sync_enqueued_count"], int)
     assert "secret_key" not in payload
     assert "cdn_token_key" not in payload
 
@@ -70,6 +83,7 @@ def test_object_storage_config_put_persists_and_creates_masked_revision(client, 
     assert current_payload["bucket"] == "asset-bucket"
     assert current_payload["secret_key_configured"] is True
     assert current_payload["cdn_token_key_configured"] is True
+    assert current_payload["last_health_ok"] is True
 
     revisions = _list_revisions(client, admin_headers, resource_key="integrations.object_storage")
     assert revisions
@@ -116,7 +130,18 @@ def test_object_storage_config_test_endpoint_uses_transient_payload(client, admi
     assert current_payload["secret_key_configured"] is False
 
 
-def test_object_storage_config_revision_restore_keeps_secret_flags(client, admin_headers):
+def test_object_storage_config_revision_restore_keeps_secret_flags(client, admin_headers, monkeypatch):
+    from aerisun.domain.media import object_storage as object_storage_module
+
+    class _Provider:
+        def is_healthy(self):
+            return object_storage_module.ObjectStorageHealthRead(
+                ok=True,
+                summary="OSS health ok",
+                details={},
+            )
+
+    monkeypatch.setattr(object_storage_module, "build_object_storage_provider", lambda session: _Provider())
     first = client.put(
         OBJECT_STORAGE_BASE,
         headers=admin_headers,
@@ -153,3 +178,185 @@ def test_object_storage_config_revision_restore_keeps_secret_flags(client, admin
     assert payload["bucket"] == "bucket-one"
     assert payload["secret_key_configured"] is True
     assert payload["cdn_token_key_configured"] is True
+
+
+def test_object_storage_config_put_marks_invalid_when_health_check_fails(client, admin_headers, monkeypatch):
+    from aerisun.domain.media import object_storage as object_storage_module
+
+    monkeypatch.setattr(object_storage_module, "build_object_storage_provider", lambda session: None)
+
+    response = client.put(
+        OBJECT_STORAGE_BASE,
+        headers=admin_headers,
+        json={
+            "enabled": True,
+            "provider": "bitiful",
+            "bucket": "broken-bucket",
+            "endpoint": "https://broken.example.com",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["enabled"] is True
+    assert payload["last_health_ok"] is False
+    assert "无效" in (payload["last_health_error"] or "") or "不可用" in (payload["last_health_error"] or "")
+
+
+def test_object_storage_config_put_tests_successfully_even_when_disabled(client, admin_headers, monkeypatch):
+    from aerisun.domain.media import object_storage as object_storage_module
+
+    class _Provider:
+        def is_healthy(self):
+            return object_storage_module.ObjectStorageHealthRead(
+                ok=True,
+                summary="OSS health ok",
+                details={"bucket": "asset-bucket"},
+            )
+
+    monkeypatch.setattr(object_storage_module, "build_object_storage_provider", lambda session: _Provider())
+
+    response = client.put(
+        OBJECT_STORAGE_BASE,
+        headers=admin_headers,
+        json={
+            "enabled": False,
+            "provider": "bitiful",
+            "bucket": "asset-bucket",
+            "endpoint": "https://s3.bitiful.net",
+            "region": "cn-east-1",
+            "access_key": "ak-test",
+            "secret_key": "secret-value",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["enabled"] is False
+    assert payload["last_health_ok"] is True
+    assert payload["last_health_error"] is None
+    assert payload["remote_sync_enqueued_count"] == 0
+
+
+def test_object_storage_config_put_enqueues_local_only_assets_when_enabled(
+    client,
+    admin_headers,
+    monkeypatch,
+    seeded_session,
+    tmp_path,
+):
+    from aerisun.domain.media import object_storage as object_storage_module
+    from aerisun.domain.media.models import Asset, AssetRemoteUploadQueueItem
+
+    local_file = tmp_path / "media" / "internal" / "assets" / "general" / "backfill.png"
+    local_file.parent.mkdir(parents=True, exist_ok=True)
+    local_file.write_bytes(b"backfill-bytes")
+
+    seeded_session.add(
+        Asset(
+            file_name="backfill.png",
+            resource_key="internal/assets/general/backfill.png",
+            visibility="internal",
+            scope="user",
+            category="general",
+            storage_path=str(local_file),
+            storage_provider="local",
+            remote_status="none",
+            mirror_status="completed",
+        )
+    )
+    seeded_session.commit()
+
+    class _Provider:
+        def is_healthy(self):
+            return object_storage_module.ObjectStorageHealthRead(
+                ok=True,
+                summary="OSS health ok",
+                details={},
+            )
+
+    monkeypatch.setattr(object_storage_module, "build_object_storage_provider", lambda session: _Provider())
+
+    response = client.put(
+        OBJECT_STORAGE_BASE,
+        headers=admin_headers,
+        json={
+            "enabled": True,
+            "provider": "bitiful",
+            "bucket": "asset-bucket",
+            "endpoint": "https://s3.bitiful.net",
+            "region": "cn-east-1",
+            "access_key": "ak-test",
+            "secret_key": "secret-value",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["enabled"] is True
+    assert payload["last_health_ok"] is True
+    assert payload["remote_sync_scanned_count"] >= 1
+    assert payload["remote_sync_enqueued_count"] >= 1
+
+    queued = seeded_session.query(AssetRemoteUploadQueueItem).all()
+    assert any(item.object_key == "internal/assets/general/backfill.png" for item in queued)
+    target = next(item for item in queued if item.object_key == "internal/assets/general/backfill.png")
+    assert target.status == "queued"
+
+
+def test_object_storage_sync_records_endpoint_returns_mirror_and_delete_records(client, admin_headers, seeded_session):
+    from aerisun.domain.media.models import (
+        Asset,
+        AssetMirrorQueueItem,
+        AssetRemoteDeleteQueueItem,
+        AssetRemoteUploadQueueItem,
+    )
+
+    asset = Asset(
+        file_name="test.png",
+        resource_key="internal/assets/test/test.png",
+        visibility="internal",
+        scope="user",
+        category="test",
+        storage_path="/tmp/test.png",
+        storage_provider="bitiful",
+        remote_object_key="internal/assets/test/test.png",
+        remote_status="available",
+        mirror_status="queued",
+    )
+    seeded_session.add(asset)
+    seeded_session.flush()
+    seeded_session.add(
+        AssetMirrorQueueItem(
+            asset_id=asset.id,
+            object_key=asset.resource_key,
+            status="queued",
+            retry_count=1,
+        )
+    )
+    seeded_session.add(
+        AssetRemoteDeleteQueueItem(
+            object_key="public/assets/old/cleanup.png",
+            status="retrying",
+            retry_count=2,
+            last_error="delete failed",
+        )
+    )
+    seeded_session.add(
+        AssetRemoteUploadQueueItem(
+            asset_id=asset.id,
+            object_key=asset.resource_key,
+            status="queued",
+            retry_count=0,
+        )
+    )
+    seeded_session.commit()
+
+    response = client.get("/api/v1/admin/object-storage/sync-records", headers=admin_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 3
+    record_types = {item["record_type"] for item in payload["items"]}
+    assert "mirror" in record_types
+    assert "remote_delete" in record_types
+    assert "remote_upload" in record_types

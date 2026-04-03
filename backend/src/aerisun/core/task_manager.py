@@ -9,7 +9,12 @@ from aerisun.core.settings import Settings
 from aerisun.core.tasks import cleanup_expired_sessions
 from aerisun.domain.automation.runtime_registry import get_automation_runtime
 from aerisun.domain.automation.service import dispatch_due_webhooks, execute_due_runs
-from aerisun.domain.media.object_storage import dispatch_due_asset_mirror_jobs, dispatch_due_remote_asset_delete_jobs
+from aerisun.domain.media.object_storage import (
+    dispatch_due_asset_mirror_jobs,
+    dispatch_due_remote_asset_delete_jobs,
+    dispatch_due_remote_asset_upload_jobs,
+    reconcile_object_storage_remote_sync,
+)
 from aerisun.domain.ops.backup_sync import dispatch_backup_sync
 from aerisun.domain.ops.service import record_daily_traffic_snapshot
 
@@ -111,6 +116,26 @@ class TaskManager:
             max_instances=1,
             coalesce=True,
         )
+        self._scheduler.add_job(
+            self._dispatch_asset_remote_upload_jobs,
+            trigger="interval",
+            seconds=20,
+            id="asset_remote_upload_dispatcher",
+            name="Asset remote upload dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
+            self._reconcile_object_storage_remote_sync,
+            trigger="interval",
+            seconds=60,
+            id="asset_remote_sync_reconcile_dispatcher",
+            name="Asset remote sync reconcile dispatcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
         self._scheduler.start()
         logger.info("Background scheduler started")
 
@@ -141,6 +166,12 @@ class TaskManager:
 
     def _dispatch_asset_remote_delete_jobs(self) -> None:
         dispatch_due_remote_asset_delete_jobs()
+
+    def _dispatch_asset_remote_upload_jobs(self) -> None:
+        dispatch_due_remote_asset_upload_jobs()
+
+    def _reconcile_object_storage_remote_sync(self) -> None:
+        reconcile_object_storage_remote_sync()
 
     async def stop(self) -> None:
         for task in self._async_tasks:
