@@ -2,7 +2,6 @@ import { useRef, useState, type ReactNode } from "react";
 import {
   deleteAssetEndpointApiV1AdminAssetsAssetIdDelete,
   listAssetsEndpointApiV1AdminAssetsGet,
-  useUploadAssetEndpointApiV1AdminAssetsPost,
 } from "@serino/api-client/admin";
 import type { AssetAdminRead } from "@serino/api-client/models";
 import { Button } from "@/components/ui/Button";
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { canCompressImage, compressImageFile } from "@serino/utils";
-import { extractApiErrorMessage } from "@/lib/api-error";
+import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
@@ -54,6 +53,7 @@ export function ResourceUploadField({
   const [open, setOpen] = useState(false);
   const [uploadMode, setUploadMode] = useState<"compress" | "original">("compress");
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const visibility = "internal";
@@ -91,31 +91,6 @@ export function ResourceUploadField({
     );
   };
 
-  const upload = useUploadAssetEndpointApiV1AdminAssetsPost({
-    mutation: {
-      onSuccess: async (response) => {
-        const asset = response.data as { internal_url?: string };
-        if (!asset.internal_url) {
-          toast.error("资源上传失败");
-          return;
-        }
-        try {
-          await cleanupCategoryAssets(asset.internal_url);
-        } catch {
-          toast.error("新资源已上传，但旧资源清理失败");
-        }
-        onChange(asset.internal_url);
-        toast.success("资源上传成功");
-        setOpen(false);
-        setSelectedFile(null);
-        if (fileRef.current) fileRef.current.value = "";
-      },
-      onError: (error: any) => {
-        toast.error(extractApiErrorMessage(error, "资源上传失败"));
-      },
-    },
-  });
-
   const handleFileChange = () => {
     const file = fileRef.current?.files?.[0] ?? null;
     setSelectedFile(file);
@@ -135,19 +110,33 @@ export function ResourceUploadField({
         setIsCompressing(true);
         fileToUpload = await compressImageFile(file);
       }
-      upload.mutate({
-        data: {
-          file: fileToUpload,
-          visibility,
-          scope,
-          category,
-          note: fixedNote,
-        } as any,
+      setIsUploading(true);
+      const asset = await uploadManagedAsset({
+        file: fileToUpload,
+        visibility,
+        scope,
+        category,
+        note: fixedNote,
       });
-    } catch {
-      toast.error("压缩失败，请改用原样上传或重试");
+      if (!asset.internal_url) {
+        toast.error("资源上传失败");
+        return;
+      }
+      try {
+        await cleanupCategoryAssets(asset.internal_url);
+      } catch {
+        toast.error("新资源已上传，但旧资源清理失败");
+      }
+      onChange(asset.internal_url);
+      toast.success("资源上传成功");
+      setOpen(false);
+      setSelectedFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "压缩失败，请改用原样上传或重试");
     } finally {
       setIsCompressing(false);
+      setIsUploading(false);
     }
   };
 
@@ -243,9 +232,9 @@ export function ResourceUploadField({
               <Button
                 type="button"
                 onClick={() => void handleUpload()}
-                disabled={upload.isPending || isCompressing || !selectedFile}
+                disabled={isUploading || isCompressing || !selectedFile}
               >
-                {isCompressing ? "压缩中..." : upload.isPending ? "上传中..." : "确认上传"}
+                {isCompressing ? "压缩中..." : isUploading ? "上传中..." : "确认上传"}
               </Button>
             </div>
           </div>

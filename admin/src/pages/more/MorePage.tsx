@@ -26,11 +26,16 @@ const ProxyConfigSection = lazy(() =>
     default: module.ProxyConfigSection,
   })),
 );
+const ObjectStorageSection = lazy(() =>
+  import("./ObjectStorageSection").then((module) => ({
+    default: module.ObjectStorageSection,
+  })),
+);
 
 export default function MorePage() {
   const { t } = useI18n();
   const { section } = useParams();
-  const validSections = ["feature-flags", "mail-config", "api-config", "proxy-config"] as const;
+  const validSections = ["feature-flags", "mail-config", "api-config", "proxy-config", "object-storage"] as const;
 
   if (!section) {
     return <Navigate to="/more/feature-flags" replace />;
@@ -52,6 +57,8 @@ export default function MorePage() {
           <ExternalConfigSection />
         ) : section === "api-config" ? (
           <ApiConfigSection />
+        ) : section === "object-storage" ? (
+          <ObjectStorageSection />
         ) : section === "proxy-config" ? (
           <ProxyConfigSection />
         ) : (

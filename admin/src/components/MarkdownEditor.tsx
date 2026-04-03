@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useUploadAssetEndpointApiV1AdminAssetsPost } from "@serino/api-client/admin";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/Button";
 import {
@@ -31,6 +30,7 @@ import { Label } from "@/components/ui/Label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { canCompressImage, compressImageFile } from "@serino/utils";
+import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 
@@ -75,8 +75,6 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     const parsed = Number.parseFloat(minHeight);
     return Number.isFinite(parsed) ? parsed : 300;
   }, [minHeight]);
-
-  const uploadAsset = useUploadAssetEndpointApiV1AdminAssetsPost();
 
   useEffect(() => {
     if (!autoExpand) {
@@ -170,17 +168,13 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
       }
 
       pendingImageFileNameRef.current = file.name;
-      const response = await uploadAsset.mutateAsync({
-        data: {
-          file: fileToUpload,
-          visibility: "internal",
-          scope: "user",
-          category: FIXED_IMAGE_CATEGORY,
-          note: imageNote.trim() || undefined,
-        } as any,
+      const asset = await uploadManagedAsset({
+        file: fileToUpload,
+        visibility: "internal",
+        scope: "user",
+        category: FIXED_IMAGE_CATEGORY,
+        note: imageNote.trim() || undefined,
       });
-
-      const asset = response.data as { internal_url?: string };
       if (!asset.internal_url) {
         toast.error("资源上传失败");
         return;
@@ -197,7 +191,7 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     } finally {
       setImageUploading(false);
     }
-  }, [imageNote, imageUploadMode, insertImageMarkdown, selectedImageFile, t, uploadAsset]);
+  }, [imageNote, imageUploadMode, insertImageMarkdown, selectedImageFile, t]);
 
   const toolbarButtons = [
     { action: "bold", icon: Bold },
@@ -339,9 +333,9 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
               <Button
                 type="button"
                 onClick={() => void handleImageUpload()}
-                disabled={imageUploading || uploadAsset.isPending || !selectedImageFile}
+                disabled={imageUploading || !selectedImageFile}
               >
-                {imageUploading ? t("assets.compressing") : uploadAsset.isPending ? t("common.uploading") : t("common.confirm")}
+                {imageUploading ? t("assets.compressing") : t("common.confirm")}
               </Button>
             </div>
           </div>
