@@ -63,7 +63,7 @@ make check-secrets
 
   `make dev-pseed` 会使用 `backend/src/aerisun/core/seed.py`，并在开发环境下随文件修改触发重新灌入，方便单独调试生产初始化逻辑。
 
-  启动完成后的默认可用地址（多工作树以当前工作树自动生成的 `.env.local` 为准）：
+  启动完成后的默认可用地址（多工作树以当前工作树自动生成的 `.env.development.local` 为准）：
   - 前台：`http://127.0.0.1:8080/`
   - 后台：`http://127.0.0.1:3001/admin/`
   - 默认管理账号密码（针对空数据库创建）：`admin` / `admin123`
@@ -103,13 +103,13 @@ make check-secrets
 - 部署前先复制发布环境文件：
 
   ```bash
-  cp .env.release.example .env.release
+  cp .env.production.local.example .env.production.local
   ```
 
 - 用户一键启动：
 
   ```bash
-  docker compose --env-file .env.release -f docker-compose.release.yml up -d
+  docker compose --env-file .env.production.local -f docker-compose.release.yml up -d
   ```
 
 - 默认数据会落到当前目录下的 `./.aerisun-store/`，容器内仍然使用 `/srv/aerisun/store`

@@ -17,12 +17,11 @@ PROJECT_ROOT = BACKEND_ROOT.parent
 def _resolve_env_files() -> tuple[Path, ...]:
     """Build the env-file loading chain (later overrides earlier).
 
-    Order: .env → .env.{env} → .env.local → .env.{env}.local
-    Mirrors Vite's native ``loadEnv`` resolution.
+    Order: .env → .env.{env} → .env.{env}.local
     """
     env = os.environ.get("AERISUN_ENVIRONMENT", "development")
     files: list[Path] = [PROJECT_ROOT / ".env"]
-    for name in (f".env.{env}", ".env.local", f".env.{env}.local"):
+    for name in (f".env.{env}", f".env.{env}.local"):
         p = PROJECT_ROOT / name
         if p.exists():
             files.append(p)

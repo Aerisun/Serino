@@ -19,7 +19,6 @@ source_runtime_env_chain() {
   local env_name="${AERISUN_ENVIRONMENT:-development}"
   source_env_file "${PROJECT_DIR}/.env"
   source_env_file "${PROJECT_DIR}/.env.${env_name}"
-  source_env_file "${PROJECT_DIR}/.env.local"
   source_env_file "${PROJECT_DIR}/.env.${env_name}.local"
 }
 
@@ -47,8 +46,8 @@ wait_for_backend_ready() {
   done
 }
 
-if [[ ! -f "${PROJECT_DIR}/.env.local" ]]; then
-  echo "ERROR: .env.local is missing. Run 'make setup-ports' first." >&2
+if [[ ! -f "${PROJECT_DIR}/.env.development.local" ]]; then
+  echo "ERROR: .env.development.local is missing. Run 'make setup-ports' first." >&2
   exit 1
 fi
 

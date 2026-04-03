@@ -15,13 +15,11 @@ _env="${AERISUN_ENVIRONMENT:-development}"
 
 # Docker 里不是靠读文件，而是直接通过 docker-compose.yml 里的 environment: 把变量传进去
 # 先读 .env，里面有通用配置
-# 再读 .env.development，覆盖开发环境专用配置
-# 再读 .env.local，覆盖本机个性化配置
-# 再读 .env.development.local，优先级最高
+# 再读 .env.{env}，覆盖环境专用配置
+# 再读 .env.{env}.local，覆盖本机个性化配置（含 setup-ports.sh 自动生成的端口）
 _source_if_exists() { [[ -f "$1" ]] && { set -a; source "$1"; set +a; } || true; }
 _source_if_exists "${PROJECT_DIR}/.env"
 _source_if_exists "${PROJECT_DIR}/.env.${_env}"
-_source_if_exists "${PROJECT_DIR}/.env.local"
 _source_if_exists "${PROJECT_DIR}/.env.${_env}.local"
 
 if [[ "$_env" == "development" ]]; then

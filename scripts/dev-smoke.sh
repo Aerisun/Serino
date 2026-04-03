@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-ENV_FILE="${PROJECT_DIR}/.env.local"
+ENV_FILE="${PROJECT_DIR}/.env.development.local"
 DEV_DIR="${PROJECT_DIR}/.dev"
 LOG_FILE="${DEV_DIR}/dev-smoke.log"
 
@@ -38,7 +38,6 @@ load_env_ports() {
   local env_name="${AERISUN_ENVIRONMENT:-development}"
   source_env_file "${PROJECT_DIR}/.env"
   source_env_file "${PROJECT_DIR}/.env.${env_name}"
-  source_env_file "${PROJECT_DIR}/.env.local"
   source_env_file "${PROJECT_DIR}/.env.${env_name}.local"
   backend_port="${BACKEND_PORT:-${AERISUN_PORT:-8000}}"
   frontend_port="${FRONTEND_PORT:-${AERISUN_FRONTEND_PORT:-5173}}"

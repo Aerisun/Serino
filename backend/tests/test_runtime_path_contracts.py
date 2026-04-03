@@ -73,7 +73,6 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
 
     assert "AERISUN_FRONTEND_UPSTREAM" not in production_text
     assert "AERISUN_ADMIN_UPSTREAM" not in production_text
-    assert ".env.local" in dockerignore_text
     assert ".env.*.local" in dockerignore_text
 
 
