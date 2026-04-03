@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
+from aerisun.core.backfills.state import clear_data_migration_records
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.time import beijing_today
 from aerisun.domain.automation.models import WebhookSubscription
@@ -2046,6 +2047,7 @@ def _clear_seed_data(session: Session) -> None:
         count = session.query(model).delete()
         if count:
             _logger.info("  Cleared %d rows from %s", count, model.__tablename__)
+    clear_data_migration_records(session)
     session.flush()
 
 

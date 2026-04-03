@@ -3,11 +3,11 @@ from __future__ import annotations
 import getpass
 import sys
 
-import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session_factory, init_db
 from aerisun.core.settings import get_settings
+from aerisun.domain.iam.bootstrap import add_admin_user, hash_admin_password
 from aerisun.domain.iam.models import AdminUser
 
 
@@ -32,8 +32,6 @@ def create_admin() -> None:
         print("Passwords do not match.", file=sys.stderr)
         sys.exit(1)
 
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
     session_factory = get_session_factory()
     session: Session = session_factory()
     try:
@@ -42,8 +40,7 @@ def create_admin() -> None:
             print(f"User '{username}' already exists.", file=sys.stderr)
             sys.exit(1)
 
-        user = AdminUser(username=username, password_hash=hashed)
-        session.add(user)
+        add_admin_user(session, username=username, password=password)
         session.commit()
         print(f"Admin user '{username}' created successfully.")
     finally:
@@ -79,7 +76,7 @@ def reset_password() -> None:
             print("Passwords do not match.", file=sys.stderr)
             sys.exit(1)
 
-        user.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        user.password_hash = hash_admin_password(password)
         session.commit()
         print(f"Password for '{username}' has been reset successfully.")
     finally:

@@ -67,3 +67,11 @@ def seed_missing_page_copies(session: Session, default_page_copies: list[dict]) 
             session.add(PageCopy(**item))
             continue
         merge_page_copy(page_copy, item)
+
+
+def insert_missing_page_copies(session: Session, default_page_copies: list[dict]) -> None:
+    existing_keys = set(session.scalars(select(PageCopy.page_key)).all())
+    for item in default_page_copies:
+        if item["page_key"] in existing_keys:
+            continue
+        session.add(PageCopy(**item))
