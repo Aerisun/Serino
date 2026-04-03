@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ArchiveBadge from "@/components/ArchiveBadge";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
@@ -19,6 +20,7 @@ interface Post {
   title: string;
   excerpt: string;
   date: string;
+  isArchived: boolean;
   category: string;
   tags: string[];
   views: number;
@@ -37,6 +39,7 @@ const mapRemotePost = (entry: ContentEntryRead): Post => ({
   title: entry.title,
   excerpt: entry.summary ?? entry.body,
   date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
+  isArchived: entry.status === "archived",
   category: entry.category || entry.tags[0] || "",
   tags: entry.tags,
   views: entry.view_count ?? 0,
@@ -197,9 +200,12 @@ const Posts = () => {
                 duration: config.motion.duration,
               })}
             >
-              <h2 className="text-base font-medium leading-snug text-foreground/90 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-lg">
-                {post.title}
-              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                {post.isArchived ? <ArchiveBadge /> : null}
+                <h2 className="min-w-0 text-base font-medium leading-snug text-foreground/90 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-lg">
+                  {post.title}
+                </h2>
+              </div>
               <p className="mt-2 line-clamp-1 text-sm leading-relaxed text-foreground/35 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]">
                 {post.excerpt}
               </p>

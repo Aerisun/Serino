@@ -17,6 +17,7 @@ import {
   Sun,
   Wind,
 } from "lucide-react";
+import ArchiveBadge from "@/components/ArchiveBadge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
@@ -91,6 +92,7 @@ interface DiaryData {
   slug: string;
   date: string;
   weekday: string;
+  isArchived: boolean;
   weather?: Weather;
   mood?: string;
   title: string;
@@ -119,6 +121,7 @@ const buildRemoteDiaryEntry = (entry: ContentEntryRead, lang: FrontendLang): Dia
   slug: entry.slug,
   date: formatPublishedDate(entry.published_at) || "",
   weekday: formatWeekday(entry.published_at, lang),
+  isArchived: entry.status === "archived",
   weather: entry.weather as Weather | undefined,
   mood: entry.mood ?? undefined,
   title: entry.title,
@@ -135,6 +138,7 @@ const buildPreviewDiaryEntry = (
 ): DiaryData => ({
   slug: preview.slug || "",
   date: formatPublishedDate(preview.published_at) || t("common.draft"),
+  isArchived: false,
   weekday: formatWeekday(preview.published_at ?? null, lang),
   weather: preview.weather as Weather | undefined,
   mood: preview.mood ?? undefined,
@@ -297,10 +301,13 @@ const DiaryDetail = () => {
             >
               <div className="mb-4 flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-body uppercase tracking-wider text-[rgb(var(--shiro-accent-rgb)/0.54)]">
-                    {entry.weekday ? `${entry.weekday} · ` : ""}
-                    {entry.date}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-body uppercase tracking-wider text-[rgb(var(--shiro-accent-rgb)/0.54)]">
+                    {entry.isArchived ? <ArchiveBadge /> : null}
+                    <span>
+                      {entry.weekday ? `${entry.weekday} · ` : ""}
+                      {entry.date}
+                    </span>
+                  </div>
                   <h1 className="mt-2 text-xl sm:text-2xl font-heading italic tracking-tight text-foreground/90">
                     {entry.title}
                   </h1>

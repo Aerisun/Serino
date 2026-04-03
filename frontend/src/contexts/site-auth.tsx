@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -82,6 +83,7 @@ function providerIcon(provider: string) {
 export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const prefersReducedMotion = useReducedMotionPreference();
   const { t } = useFrontendI18n();
+  const queryClient = useQueryClient();
   const [authState, setAuthState] = useState<SiteAuthState | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -126,6 +128,15 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const invalidateSiteContentQueries = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const [firstKey] = query.queryKey;
+        return firstKey === "site" || (typeof firstKey === "string" && firstKey.startsWith("/api/v1/site/"));
+      },
+    });
+  }, [queryClient]);
 
   const resetForm = useCallback(() => {
     setError(null);
@@ -390,6 +401,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         oauth_providers: current?.oauth_providers ?? [],
         user: result.user,
       }));
+      await invalidateSiteContentQueries();
       closeLogin();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("siteAuth.loginFailed"));
@@ -491,7 +503,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       oauth_providers: current?.oauth_providers ?? [],
       user: null,
     }));
-  }, []);
+    await invalidateSiteContentQueries();
+  }, [invalidateSiteContentQueries]);
 
   const dialogEmailLoginEnabled =
     Boolean(authState?.email_login_enabled) && allowEmailLoginInDialog;

@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, FileText, Tag } from "lucide-react";
+import ArchiveBadge from "@/components/ArchiveBadge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
@@ -28,6 +29,7 @@ interface PostData {
   slug: string;
   title: string;
   date: string;
+  isArchived: boolean;
   category: string;
   tags: string[];
   likes: number;
@@ -79,6 +81,7 @@ const buildRemotePost = (
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
+  isArchived: entry.status === "archived",
   category: entry.category || fallbackCategoryLabel,
   tags: entry.tags,
   likes: entry.like_count ?? 0,
@@ -98,6 +101,7 @@ const buildPreviewPost = (
   slug: preview.slug || "",
   title: preview.title,
   date: formatPublishedDate(preview.published_at) || draftLabel,
+  isArchived: false,
   category: preview.category || fallbackCategoryLabel,
   tags: preview.tags || [],
   likes: 0,
@@ -232,6 +236,7 @@ const PostDetail = () => {
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="mb-4 flex flex-wrap items-center gap-3 text-xs font-body text-foreground/25">
+                {post.isArchived ? <ArchiveBadge /> : null}
                 <span>{post.date}</span>
                 <span className="rounded-md border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-2 py-0.5 text-[rgb(var(--shiro-accent-rgb)/0.72)]">
                   {post.category}

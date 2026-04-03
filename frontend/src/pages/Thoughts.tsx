@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Repeat2, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import ArchiveBadge from "@/components/ArchiveBadge";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
@@ -21,6 +22,7 @@ interface Thought {
   id: string;
   content: string;
   date: string;
+  isArchived: boolean;
   likes: number;
   comments: number;
   reposts: number;
@@ -43,6 +45,7 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
       entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
     date:
       entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
+    isArchived: entry.status === "archived",
     likes: entry.like_count ?? 0,
     comments: entry.comment_count ?? 0,
     reposts: entry.repost_count ?? 0,
@@ -67,6 +70,7 @@ const buildPreviewThought = (preview: {
     content:
       preview.summary?.trim() || paragraphs[0] || preview.body || preview.title,
     date: formatPublishedDate(preview.published_at) || draftLabel,
+    isArchived: false,
     likes: 0,
     comments: 0,
     reposts: 0,
@@ -328,7 +332,8 @@ const Thoughts = () => {
             >
               <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.32)] bg-background transition-colors group-hover:border-[rgb(var(--shiro-accent-rgb)/0.56)] group-hover:bg-[rgb(var(--shiro-accent-rgb)/0.12)]" />
 
-              <div className="flex items-center gap-2 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+                {thought.isArchived ? <ArchiveBadge /> : null}
                 {thought.date && (
                   <span className="transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.84)]">
                     {thought.date}

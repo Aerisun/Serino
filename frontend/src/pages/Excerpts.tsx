@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, Search, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import ArchiveBadge from "@/components/ArchiveBadge";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
@@ -25,6 +26,7 @@ interface Excerpt {
   content: string;
   category: string;
   date: string;
+  isArchived: boolean;
   comments: number;
 }
 
@@ -46,6 +48,7 @@ const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
     content: entry.body,
     category: entry.category || "",
     date: formatPublishedDate(entry.published_at) || "",
+    isArchived: entry.status === "archived",
     comments: entry.comment_count ?? 0,
   };
 };
@@ -66,6 +69,7 @@ const buildPreviewExcerpt = (preview: {
   content: preview.body || "",
   category: preview.category || "",
   date: formatPublishedDate(preview.published_at) || draftLabel,
+  isArchived: false,
   comments: 0,
 });
 
@@ -360,6 +364,7 @@ const Excerpts = () => {
               })}
             >
               <div className="mb-3 flex items-center gap-2">
+                {excerpt.isArchived ? <ArchiveBadge /> : null}
                 <BookOpen className="h-3.5 w-3.5 text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.52)]" />
                 <span
                   className="truncate text-[10px] font-body tracking-wider text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
@@ -425,7 +430,8 @@ const Excerpts = () => {
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="mb-4 flex items-center gap-2">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {selected.isArchived ? <ArchiveBadge /> : null}
                 <BookOpen className="h-4 w-4 text-foreground/25 transition-colors" />
                 <span
                   className="text-xs font-body text-foreground/30 transition-colors"

@@ -8,6 +8,10 @@ from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from aerisun.api.deps.site_auth import (
+    get_current_site_session_optional,
+    get_current_site_user_optional,
+)
 from aerisun.core.db import get_session
 from aerisun.core.schemas import HealthRead
 from aerisun.domain.activity.schemas import ActivityHeatmapRead, CalendarRead, RecentActivityRead
@@ -43,12 +47,22 @@ from aerisun.domain.site_config.service import (
     get_site_link_preview,
     get_site_poem_preview,
 )
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.service import is_site_user_admin
 from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead
 from aerisun.domain.social.service import list_public_friend_feed, list_public_friends
 
 base_router = APIRouter()
 public_router = APIRouter(tags=["site"])
 router = APIRouter(prefix="/api/v1/site", tags=["site"])
+
+
+def _can_view_archived_content(
+    session: Session,
+    current_user: SiteUser | None,
+    current_site_session: SiteUserSession | None,
+) -> bool:
+    return current_user is not None and is_site_user_admin(session, current_user, current_site_session)
 
 
 @public_router.get("/manifest.webmanifest", summary="获取站点 Web App Manifest")
@@ -140,13 +154,29 @@ def read_posts(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> ContentCollectionRead:
-    return list_public_posts(session, limit=limit, offset=offset)
+    return list_public_posts(
+        session,
+        limit=limit,
+        offset=offset,
+        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+    )
 
 
 @base_router.get("/posts/{slug}", response_model=ContentEntryRead, summary="获取单篇文章")
-def read_post(slug: str, session: Session = Depends(get_session)) -> ContentEntryRead:
-    return get_public_post(session, slug)
+def read_post(
+    slug: str,
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
+) -> ContentEntryRead:
+    return get_public_post(
+        session,
+        slug,
+        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+    )
 
 
 @base_router.get("/diary", response_model=ContentCollectionRead, summary="获取日记列表")
@@ -154,13 +184,29 @@ def read_diary(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> ContentCollectionRead:
-    return list_public_diary_entries(session, limit=limit, offset=offset)
+    return list_public_diary_entries(
+        session,
+        limit=limit,
+        offset=offset,
+        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+    )
 
 
 @base_router.get("/diary/{slug}", response_model=ContentEntryRead, summary="获取单篇日记")
-def read_diary_entry(slug: str, session: Session = Depends(get_session)) -> ContentEntryRead:
-    return get_public_diary_entry(session, slug)
+def read_diary_entry(
+    slug: str,
+    session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
+) -> ContentEntryRead:
+    return get_public_diary_entry(
+        session,
+        slug,
+        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+    )
 
 
 @base_router.get("/thoughts", response_model=ContentCollectionRead, summary="获取碎碎念列表")
@@ -168,8 +214,15 @@ def read_thoughts(
     limit: int = Query(default=40, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> ContentCollectionRead:
-    return list_public_thoughts(session, limit=limit, offset=offset)
+    return list_public_thoughts(
+        session,
+        limit=limit,
+        offset=offset,
+        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+    )
 
 
 @base_router.get("/excerpts", response_model=ContentCollectionRead, summary="获取文摘列表")

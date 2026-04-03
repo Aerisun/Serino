@@ -391,8 +391,16 @@ def _list_entries(
     content_type: str,
     limit: int,
     offset: int = 0,
+    *,
+    include_archived: bool = False,
 ) -> ContentCollectionRead:
-    items, total = repo.find_published(session, model, limit=limit, offset=offset)
+    items, total = repo.find_published(
+        session,
+        model,
+        limit=limit,
+        offset=offset,
+        include_archived=include_archived,
+    )
     slugs = [item.slug for item in items]
     engagement_stats = _engagement_stats_by_slug(content_type, slugs)
     return ContentCollectionRead(
@@ -402,36 +410,67 @@ def _list_entries(
     )
 
 
-def _get_by_slug(session: Session, model: type[ContentModel], content_type: str, slug: str) -> ContentEntryRead:
-    item = repo.find_by_slug(session, model, slug)
+def _get_by_slug(
+    session: Session,
+    model: type[ContentModel],
+    content_type: str,
+    slug: str,
+    *,
+    include_archived: bool = False,
+) -> ContentEntryRead:
+    item = repo.find_by_slug(session, model, slug, include_archived=include_archived)
     if item is None:
         raise ResourceNotFound(f"{model.__name__} with slug '{slug}' was not found")
     engagement_stats = _engagement_stats_by_slug(content_type, [item.slug])
     return _to_entry(item, content_type, engagement_stats)
 
 
-def list_public_posts(session: Session, limit: int = 20, offset: int = 0) -> ContentCollectionRead:
-    return _list_entries(session, PostEntry, "posts", limit, offset)
+def list_public_posts(
+    session: Session,
+    limit: int = 20,
+    offset: int = 0,
+    *,
+    include_archived: bool = False,
+) -> ContentCollectionRead:
+    return _list_entries(session, PostEntry, "posts", limit, offset, include_archived=include_archived)
 
 
-def get_public_post(session: Session, slug: str) -> ContentEntryRead:
-    return _get_by_slug(session, PostEntry, "posts", slug)
+def get_public_post(session: Session, slug: str, *, include_archived: bool = False) -> ContentEntryRead:
+    return _get_by_slug(session, PostEntry, "posts", slug, include_archived=include_archived)
 
 
-def list_public_diary_entries(session: Session, limit: int = 20, offset: int = 0) -> ContentCollectionRead:
-    return _list_entries(session, DiaryEntry, "diary", limit, offset)
+def list_public_diary_entries(
+    session: Session,
+    limit: int = 20,
+    offset: int = 0,
+    *,
+    include_archived: bool = False,
+) -> ContentCollectionRead:
+    return _list_entries(session, DiaryEntry, "diary", limit, offset, include_archived=include_archived)
 
 
-def get_public_diary_entry(session: Session, slug: str) -> ContentEntryRead:
-    return _get_by_slug(session, DiaryEntry, "diary", slug)
+def get_public_diary_entry(session: Session, slug: str, *, include_archived: bool = False) -> ContentEntryRead:
+    return _get_by_slug(session, DiaryEntry, "diary", slug, include_archived=include_archived)
 
 
-def list_public_thoughts(session: Session, limit: int = 40, offset: int = 0) -> ContentCollectionRead:
-    return _list_entries(session, ThoughtEntry, "thoughts", limit, offset)
+def list_public_thoughts(
+    session: Session,
+    limit: int = 40,
+    offset: int = 0,
+    *,
+    include_archived: bool = False,
+) -> ContentCollectionRead:
+    return _list_entries(session, ThoughtEntry, "thoughts", limit, offset, include_archived=include_archived)
 
 
-def list_public_excerpts(session: Session, limit: int = 40, offset: int = 0) -> ContentCollectionRead:
-    return _list_entries(session, ExcerptEntry, "excerpts", limit, offset)
+def list_public_excerpts(
+    session: Session,
+    limit: int = 40,
+    offset: int = 0,
+    *,
+    include_archived: bool = False,
+) -> ContentCollectionRead:
+    return _list_entries(session, ExcerptEntry, "excerpts", limit, offset, include_archived=include_archived)
 
 
 def aggregate_tags(session: Session) -> list:

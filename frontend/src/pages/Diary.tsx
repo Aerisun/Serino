@@ -18,6 +18,7 @@ import {
   Sun,
   Wind,
 } from "lucide-react";
+import ArchiveBadge from "@/components/ArchiveBadge";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
@@ -35,6 +36,7 @@ interface DiaryEntry {
   date: string;
   day: string;
   weekday: string;
+  isArchived: boolean;
   weather?: string;
   weatherLabel: string;
   mood?: string;
@@ -110,6 +112,7 @@ const mapRemoteDiaryEntry = (
     date: formatPublishedDate(entry.published_at) || "",
     day: formatDayOfMonth(entry.published_at),
     weekday: formatWeekday(entry.published_at, lang),
+    isArchived: entry.status === "archived",
     weather: entry.weather ?? undefined,
     weatherLabel:
       entry.weather && weatherLabelKeys[entry.weather]
@@ -293,7 +296,8 @@ const Diary = () => {
 
                         <div className="h-8 w-px bg-foreground/[0.08] transition-colors group-hover:bg-[rgb(var(--shiro-divider-rgb)/0.34)]" />
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {entry.isArchived ? <ArchiveBadge /> : null}
                           {WeatherIcon ? <WeatherIcon className="h-4 w-4 text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.5)]" /> : null}
                           {entry.weatherLabel ? (
                             <span className="text-xs font-body text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.7)]">{entry.weatherLabel}</span>

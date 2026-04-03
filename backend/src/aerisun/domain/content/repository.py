@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TypeVar
 
-from sqlalchemy import Select, desc, func, or_, select
+from sqlalchemy import Select, and_, desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from aerisun.domain.content.models import (
@@ -24,26 +24,46 @@ CONTENT_MODELS: dict[str, type] = {
 }
 
 
-def _public_filter(model: type[ContentModel]) -> Select:
-    """Base query for published+public content, ordered by published_at desc."""
+def _public_filter(model: type[ContentModel], *, include_archived: bool = False) -> Select:
+    """Base query for public content, with optional owner-only archived items."""
+    visibility_filter = and_(model.status == "published", model.visibility == "public")
+    if include_archived:
+        visibility_filter = or_(
+            visibility_filter,
+            and_(model.status == "archived", model.visibility == "private"),
+        )
     return (
         select(model)
-        .where(model.status == "published", model.visibility == "public")
+        .where(visibility_filter)
         .order_by(desc(model.published_at), desc(model.created_at))
     )
 
-
-def find_published(session: Session, model: type[ContentModel], *, limit: int, offset: int = 0) -> tuple[list, int]:
-    """Paginated query for published public content. Returns (items, total)."""
-    base = _public_filter(model)
+def find_published(
+    session: Session,
+    model: type[ContentModel],
+    *,
+    limit: int,
+    offset: int = 0,
+    include_archived: bool = False,
+) -> tuple[list, int]:
+    """Paginated query for public content. Returns (items, total)."""
+    base = _public_filter(model, include_archived=include_archived)
     total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
     items = list(session.scalars(base.offset(offset).limit(limit)).all())
     return items, total
 
 
-def find_by_slug(session: Session, model: type[ContentModel], slug: str):
-    """Find a single published public item by slug. Returns model or None."""
-    return session.scalars(_public_filter(model).where(model.slug == slug).limit(1)).first()
+def find_by_slug(
+    session: Session,
+    model: type[ContentModel],
+    slug: str,
+    *,
+    include_archived: bool = False,
+):
+    """Find a single public item by slug. Returns model or None."""
+    return session.scalars(
+        _public_filter(model, include_archived=include_archived).where(model.slug == slug).limit(1)
+    ).first()
 
 
 def search_across_models(session: Session, query_str: str, *, limit: int) -> list[tuple]:
