@@ -61,7 +61,7 @@ def test_read_site_manifest_uses_configured_site_icon(client) -> None:
     assert payload["name"] == "Aerisun"
     assert payload["short_name"] == "Felix"
     assert payload["description"] == "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。"
-    assert payload["icons"][0]["src"] == "/media/internal/assets/site-icon/90db1b781930.svg"
+    assert payload["icons"][0]["src"] == "/media/internal/assets/site-icon/4cc8bfdd4830.svg"
 
 
 @respx.mock
