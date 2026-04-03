@@ -1,4 +1,4 @@
-import { useRef, type ReactNode, type WheelEvent } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export interface AdminSegmentedFilterItem {
@@ -31,18 +31,25 @@ export function AdminSegmentedFilter({
 }: AdminSegmentedFilterProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
+  useEffect(() => {
     const node = scrollRef.current;
     if (!node) return;
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
-    node.scrollBy({ left: event.deltaY, behavior: "auto" });
-  };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      node.scrollBy({ left: event.deltaY, behavior: "auto" });
+    };
+
+    node.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      node.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
 
   return (
     <div
       ref={scrollRef}
-      onWheel={handleWheel}
       className={cn(
         "admin-glass overflow-x-auto overflow-y-hidden rounded-[var(--admin-radius-lg)] p-1 shadow-[var(--admin-shadow-xs)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         placement === "below-header" && "-mt-2",

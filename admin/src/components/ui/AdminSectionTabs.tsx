@@ -1,4 +1,4 @@
-import { useRef, type ReactNode, type WheelEvent } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -118,19 +118,26 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isValueTabs = "onValueChange" in props;
 
-  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
+  useEffect(() => {
     const node = scrollRef.current;
     if (!node) return;
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
-    node.scrollBy({ left: event.deltaY, behavior: "auto" });
-  };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      node.scrollBy({ left: event.deltaY, behavior: "auto" });
+    };
+
+    node.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      node.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
 
   return (
     <div className={cn("relative w-fit max-w-full", className)}>
       <div
         ref={scrollRef}
-        onWheel={handleWheel}
         className="admin-glass overflow-x-auto overflow-y-hidden rounded-[var(--admin-radius-xl)] p-2 shadow-[var(--admin-shadow-sm)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div
