@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
 import { formatPostCount } from "@/lib/format";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { readPostsApiV1SitePostsGet } from "@serino/api-client/site";
@@ -36,25 +37,26 @@ const mapRemotePost = (entry: ContentEntryRead): Post => ({
   title: entry.title,
   excerpt: entry.summary ?? entry.body,
   date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
-  category: entry.category || entry.tags[0] || "内容",
+  category: entry.category || entry.tags[0] || "",
   tags: entry.tags,
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,
 });
 
 const Posts = () => {
+  const { t } = useFrontendI18n();
   const config = usePageConfig().posts as unknown as PostsPageConfig;
-  const allCategoryLabel = config.categories?.all ?? "全部";
-  const fallbackCategoryLabel = config.categories?.fallback ?? "未分类";
-  const searchPlaceholder = config.searchPlaceholder ?? "搜索文章...";
-  const errorTitle = config.errorTitle ?? "文章加载失败";
-  const retryLabel = config.retryLabel ?? "重试";
-  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
+  const allCategoryLabel = config.categories?.all ?? t("posts.allCategory");
+  const fallbackCategoryLabel = config.categories?.fallback ?? t("posts.fallbackCategory");
+  const searchPlaceholder = config.searchPlaceholder ?? t("posts.searchPlaceholder");
+  const errorTitle = config.errorTitle ?? t("posts.errorTitle");
+  const retryLabel = config.retryLabel ?? t("common.retry");
+  const loadMoreLabel = config.loadMoreLabel ?? t("posts.loadingMore");
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
-  const pageSize = clampPageSize(config.pageSize, 20);
+  const pageSize = clampPageSize(config.pageSize, 15);
   const navigate = useNavigate();
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
@@ -179,7 +181,7 @@ const Posts = () => {
 
         {(status === "empty" || (status === "ready" && filtered.length === 0)) && (
           <p className="py-16 text-center text-sm text-foreground/25">
-            {config.emptyMessage ?? "没有找到匹配的文章"}
+            {config.emptyMessage ?? t("posts.emptyMessage")}
           </p>
         )}
 

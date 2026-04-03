@@ -6,6 +6,7 @@ import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
@@ -58,14 +59,14 @@ const buildPreviewThought = (preview: {
   published_at?: string | null;
   mood?: string;
   category?: string;
-}): Thought => {
+}, draftLabel: string): Thought => {
   const paragraphs = splitContentParagraphs(preview.body || "");
 
   return {
     id: preview.slug || "__preview-thought",
     content:
       preview.summary?.trim() || paragraphs[0] || preview.body || preview.title,
-    date: formatPublishedDate(preview.published_at) || "草稿",
+    date: formatPublishedDate(preview.published_at) || draftLabel,
     likes: 0,
     comments: 0,
     reposts: 0,
@@ -89,19 +90,20 @@ const matchesSearchText = (
 };
 
 const Thoughts = () => {
+  const { t, lang } = useFrontendI18n();
   const location = useLocation();
   const previewStorageKey =
     new URLSearchParams(location.search).get("previewStorageKey") || "";
   const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
-  const errorTitle = config.errorTitle ?? "碎碎念加载失败";
-  const retryLabel = config.retryLabel ?? "重试";
-  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
-  const pageSize = clampPageSize(config.pageSize, 30);
-  const allCategoryLabel = config.categories?.all ?? "全部";
+  const errorTitle = config.errorTitle ?? t("thoughts.errorTitle");
+  const retryLabel = config.retryLabel ?? t("common.retry");
+  const loadMoreLabel = config.loadMoreLabel ?? t("thoughts.loadingMore");
+  const pageSize = clampPageSize(config.pageSize, 15);
+  const allCategoryLabel = config.categories?.all ?? t("thoughts.allCategory");
   const [expandedCommentId, setExpandedCommentId] = useState<string | null>(
     null,
   );
-  const searchPlaceholder = config.searchPlaceholder ?? "搜索碎碎念...";
+  const searchPlaceholder = config.searchPlaceholder ?? t("thoughts.searchPlaceholder");
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -128,13 +130,13 @@ const Thoughts = () => {
         };
       }
 
-      throw new Error("Invalid thoughts response");
+      throw new Error(t("thoughts.invalidResponse"));
     },
     pageSize,
     mapItem: mapRemoteThought,
   });
   const previewThought =
-    previewData?.type === "thoughts" ? buildPreviewThought(previewData) : null;
+    previewData?.type === "thoughts" ? buildPreviewThought(previewData, t("common.draft")) : null;
   const displayItems = useMemo(() => {
     if (!previewThought) {
       return items;
@@ -161,9 +163,9 @@ const Thoughts = () => {
       allCategoryLabel,
       ...Array.from(
         new Set(displayItems.map((item) => item.category).filter(Boolean)),
-      ).sort((a, b) => a.localeCompare(b, "zh-CN")),
+      ).sort((a, b) => a.localeCompare(b, lang === "zh" ? "zh-CN" : "en-US")),
     ],
-    [allCategoryLabel, displayItems],
+    [allCategoryLabel, displayItems, lang],
   );
 
   const filtered = useMemo(() => {
@@ -279,7 +281,7 @@ const Thoughts = () => {
           <div className="relative pb-10 pl-14">
             <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
-              <span>刚刚</span>
+              <span>{t("recentActivity.justNow")}</span>
             </div>
             <p className="mt-2 text-[0.935rem] leading-7 text-foreground/60">
               {errorTitle}
@@ -304,10 +306,10 @@ const Thoughts = () => {
           <div className="relative pb-10 pl-14">
             <div className="absolute left-[14px] top-1.5 h-3 w-3 rounded-full border-2 border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background" />
             <div className="flex items-center gap-2 text-xs text-foreground/25">
-              <span>今天</span>
+              <span>{t("common.today")}</span>
             </div>
             <p className="mt-2 text-[0.935rem] leading-7 text-foreground/60">
-              {config.emptyMessage ?? "没有找到匹配的碎碎念"}
+              {config.emptyMessage ?? t("thoughts.emptyMessage")}
             </p>
           </div>
         )}

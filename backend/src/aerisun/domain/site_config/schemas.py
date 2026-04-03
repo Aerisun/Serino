@@ -95,17 +95,12 @@ class LinkPreviewRead(ModelBase):
 
 class PageCopyRead(ModelBase):
     page_key: str = Field(description="Page identifier key")
-    label: str | None = Field(description="Sidebar label")
-    nav_label: str | None = Field(description="Navigation label override")
     title: str = Field(description="Page title")
     subtitle: str = Field(description="Page subtitle")
-    description: str | None = Field(description="Page description")
     search_placeholder: str | None = Field(description="Search placeholder text")
     empty_message: str | None = Field(description="Empty state message")
     max_width: str | None = Field(description="Max page width CSS value")
     page_size: int | None = Field(description="Items per page")
-    download_label: str | None = Field(description="Download button label")
-    enabled: bool = Field(description="Whether the page is enabled")
     extras: dict[str, object] = Field(description="Additional configuration")
 
 
@@ -136,24 +131,6 @@ class CommunityConfigRead(ModelBase):
     image_max_bytes: int | None = Field(default=524288, description="Max image upload size in bytes")
     avatar_helper_copy: str = Field(description="Avatar helper text")
     migration_state: str = Field(description="Migration progress state")
-
-
-class ResumeSkillGroupRead(ModelBase):
-    category: str = Field(description="Skill category name")
-    items: list[str] = Field(description="Skill names in this category")
-    order_index: int = Field(description="Display order")
-
-
-class ResumeExperienceRead(ModelBase):
-    title: str = Field(description="Job title")
-    company: str = Field(description="Company name")
-    period: str = Field(description="Employment period")
-    location: str = Field(default="", description="Experience location")
-    employment_type: str = Field(default="", description="Employment type")
-    summary: str = Field(description="Role description")
-    achievements: list[str] = Field(default_factory=list, description="Achievement bullet points")
-    tech_stack: list[str] = Field(default_factory=list, description="Technologies used")
-    order_index: int = Field(description="Display order")
 
 
 class ResumeRead(ModelBase):
@@ -312,72 +289,35 @@ class PoemAdminRead(ModelBase):
 
 class PageCopyCreate(BaseModel):
     page_key: str = Field(description="Unique page identifier key")
-    label: str | None = Field(default=None, description="Sidebar or menu label")
-    nav_label: str | None = Field(default=None, description="Navigation menu label override")
     title: str = Field(description="Page title heading")
     subtitle: str = Field(description="Page subtitle text")
-    description: str | None = Field(default=None, description="Page meta description")
     search_placeholder: str | None = Field(default=None, description="Search input placeholder text")
     empty_message: str | None = Field(default=None, description="Message shown when no content exists")
     max_width: str | None = Field(default=None, description="Maximum page width CSS value")
-    page_size: int | None = Field(default=None, description="Default items per page")
-    download_label: str | None = Field(default=None, description="Download button label text")
+    page_size: int | None = Field(default=None, ge=1, le=30, description="Default items per page")
     extras: dict[str, Any] = Field(default_factory=dict, description="Additional page-specific configuration")
 
 
 class PageCopyUpdate(BaseModel):
-    label: str | None = Field(default=None, description="Sidebar label")
-    nav_label: str | None = Field(default=None, description="Navigation label override")
     title: str | None = Field(default=None, description="Page title heading")
     subtitle: str | None = Field(default=None, description="Page subtitle text")
-    description: str | None = Field(default=None, description="Page meta description")
     search_placeholder: str | None = Field(default=None, description="Search placeholder")
     empty_message: str | None = Field(default=None, description="Empty state message")
     max_width: str | None = Field(default=None, description="Maximum page width")
-    page_size: int | None = Field(default=None, description="Default items per page")
-    download_label: str | None = Field(default=None, description="Download button label")
+    page_size: int | None = Field(default=None, ge=1, le=30, description="Default items per page")
     extras: dict[str, Any] | None = Field(default=None, description="Additional configuration")
 
 
 class PageCopyAdminRead(ModelBase):
     id: str = Field(description="Unique page copy identifier")
     page_key: str = Field(description="Page identifier key")
-    label: str | None = Field(description="Sidebar label")
-    nav_label: str | None = Field(description="Navigation label override")
     title: str = Field(description="Page title heading")
     subtitle: str = Field(description="Page subtitle text")
-    description: str | None = Field(description="Page meta description")
     search_placeholder: str | None = Field(description="Search placeholder")
     empty_message: str | None = Field(description="Empty state message")
     max_width: str | None = Field(description="Maximum page width")
     page_size: int | None = Field(description="Default items per page")
-    download_label: str | None = Field(description="Download button label")
     extras: dict[str, Any] = Field(description="Additional configuration")
-    created_at: datetime = Field(description="Creation timestamp")
-    updated_at: datetime = Field(description="Last update timestamp")
-
-
-# ---------------------------------------------------------------------------
-# Admin: PageDisplayOption
-# ---------------------------------------------------------------------------
-
-
-class PageDisplayOptionCreate(BaseModel):
-    page_key: str = Field(description="Page identifier key")
-    is_enabled: bool = Field(default=True, description="Whether the page is enabled")
-    settings: dict[str, Any] = Field(default_factory=dict, description="Page display settings")
-
-
-class PageDisplayOptionUpdate(BaseModel):
-    is_enabled: bool | None = Field(default=None, description="Whether the page is enabled")
-    settings: dict[str, Any] | None = Field(default=None, description="Page display settings")
-
-
-class PageDisplayOptionAdminRead(ModelBase):
-    id: str = Field(description="Unique display option identifier")
-    page_key: str = Field(description="Page identifier key")
-    is_enabled: bool = Field(description="Whether the page is enabled")
-    settings: dict[str, Any] = Field(description="Page display settings")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
 
@@ -471,70 +411,6 @@ class ResumeBasicsAdminRead(ModelBase):
     location: str = Field(description="Current base location")
     email: str = Field(description="Primary contact email")
     profile_image_url: str = Field(description="Profile image URL")
-    created_at: datetime = Field(description="Creation timestamp")
-    updated_at: datetime = Field(description="Last update timestamp")
-
-
-class ResumeSkillGroupCreate(BaseModel):
-    resume_basics_id: str | None = Field(default=None, description="Associated resume basics ID")
-    category: str = Field(description="Skill category name")
-    items: list[str] = Field(default_factory=list, description="List of skill names")
-    order_index: int = Field(default=0, description="Display order (lower first)")
-
-
-class ResumeSkillGroupUpdate(BaseModel):
-    category: str | None = Field(default=None, description="Skill category name")
-    items: list[str] | None = Field(default=None, description="List of skill names")
-    order_index: int | None = Field(default=None, description="Display order")
-
-
-class ResumeSkillGroupAdminRead(ModelBase):
-    id: str = Field(description="Unique skill group identifier")
-    resume_basics_id: str = Field(description="Associated resume basics ID")
-    category: str = Field(description="Skill category name")
-    items: list[str] = Field(description="List of skill names")
-    order_index: int = Field(description="Display order")
-    created_at: datetime = Field(description="Creation timestamp")
-    updated_at: datetime = Field(description="Last update timestamp")
-
-
-class ResumeExperienceCreate(BaseModel):
-    resume_basics_id: str | None = Field(default=None, description="Associated resume basics ID")
-    title: str = Field(description="Job title or role")
-    company: str = Field(description="Company or organization name")
-    period: str = Field(description="Employment period (e.g. 2020-2023)")
-    location: str = Field(default="", description="Experience location")
-    employment_type: str = Field(default="", description="Employment type")
-    summary: str = Field(description="Role description and achievements")
-    achievements: list[str] = Field(default_factory=list, description="Achievement bullet points")
-    tech_stack: list[str] = Field(default_factory=list, description="Technologies used")
-    order_index: int = Field(default=0, description="Display order (lower first)")
-
-
-class ResumeExperienceUpdate(BaseModel):
-    title: str | None = Field(default=None, description="Job title")
-    company: str | None = Field(default=None, description="Company name")
-    period: str | None = Field(default=None, description="Employment period")
-    location: str | None = Field(default=None, description="Experience location")
-    employment_type: str | None = Field(default=None, description="Employment type")
-    summary: str | None = Field(default=None, description="Role description")
-    achievements: list[str] | None = Field(default=None, description="Achievement bullet points")
-    tech_stack: list[str] | None = Field(default=None, description="Technologies used")
-    order_index: int | None = Field(default=None, description="Display order")
-
-
-class ResumeExperienceAdminRead(ModelBase):
-    id: str = Field(description="Unique experience identifier")
-    resume_basics_id: str = Field(description="Associated resume basics ID")
-    title: str = Field(description="Job title")
-    company: str = Field(description="Company name")
-    period: str = Field(description="Employment period")
-    location: str = Field(description="Experience location")
-    employment_type: str = Field(description="Employment type")
-    summary: str = Field(description="Role description")
-    achievements: list[str] = Field(description="Achievement bullet points")
-    tech_stack: list[str] = Field(description="Technologies used")
-    order_index: int = Field(description="Display order")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
 

@@ -636,25 +636,18 @@ def get_site_poem_preview(
 
 def get_page_copy(session: Session) -> PageCollectionRead:
     copies = repo.find_all_page_copies(session)
-    options = repo.find_all_page_display_options(session)
 
     items = []
     for page in copies:
-        option = options.get(page.page_key)
         items.append(
             PageCopyRead(
                 page_key=page.page_key,
-                label=page.label,
-                nav_label=page.nav_label,
                 title=page.title,
                 subtitle=page.subtitle,
-                description=page.description,
                 search_placeholder=page.search_placeholder,
                 empty_message=page.empty_message,
                 max_width=page.max_width,
                 page_size=page.page_size,
-                download_label=page.download_label,
-                enabled=True if option is None else option.is_enabled,
                 extras=page.extras,
             )
         )
@@ -798,28 +791,4 @@ def attach_site_profile_id(session: Session, data: dict) -> dict:
     profile = _get_site_profile_orm(session)
     if not data.get("site_profile_id"):
         data["site_profile_id"] = profile.id
-    return data
-
-
-def get_resume_basics_admin(session: Session):
-    """Return primary ResumeBasics, raising ResourceNotFound if missing."""
-    from aerisun.domain.site_config.models import ResumeBasics
-
-    basics = session.query(ResumeBasics).order_by(ResumeBasics.created_at.asc()).first()
-    if basics is None:
-        raise ResourceNotFound("Resume basics not configured")
-    return basics
-
-
-def resume_scoped_query(session: Session, model):
-    """Return a query scoped to the primary ResumeBasics."""
-    basics = get_resume_basics_admin(session)
-    return session.query(model).filter(model.resume_basics_id == basics.id)
-
-
-def attach_resume_basics_id(session: Session, data: dict) -> dict:
-    """Ensure data dict includes the primary resume_basics_id."""
-    basics = get_resume_basics_admin(session)
-    if not data.get("resume_basics_id"):
-        data["resume_basics_id"] = basics.id
     return data

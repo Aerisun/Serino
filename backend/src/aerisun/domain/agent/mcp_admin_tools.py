@@ -33,11 +33,8 @@ from aerisun.domain.ops.schemas import BackupSyncConfigUpdate
 from aerisun.domain.site_config.models import (
     NavItem,
     PageCopy,
-    PageDisplayOption,
     Poem,
     ResumeBasics,
-    ResumeExperience,
-    ResumeSkillGroup,
     SocialLink,
 )
 from aerisun.domain.site_config.schemas import (
@@ -49,33 +46,22 @@ from aerisun.domain.site_config.schemas import (
     PageCopyAdminRead,
     PageCopyCreate,
     PageCopyUpdate,
-    PageDisplayOptionAdminRead,
-    PageDisplayOptionCreate,
-    PageDisplayOptionUpdate,
     PoemAdminRead,
     PoemCreate,
     PoemUpdate,
     ResumeBasicsAdminRead,
     ResumeBasicsCreate,
     ResumeBasicsUpdate,
-    ResumeExperienceAdminRead,
-    ResumeExperienceCreate,
-    ResumeExperienceUpdate,
-    ResumeSkillGroupAdminRead,
-    ResumeSkillGroupCreate,
-    ResumeSkillGroupUpdate,
     SiteProfileUpdate,
     SocialLinkAdminRead,
     SocialLinkCreate,
     SocialLinkUpdate,
 )
 from aerisun.domain.site_config.service import (
-    attach_resume_basics_id,
     attach_site_profile_id,
     get_community_config_admin,
     get_site_profile_admin,
     reorder_nav_items_admin,
-    resume_scoped_query,
     site_profile_scoped_query,
     update_community_config_admin,
     update_site_profile_admin,
@@ -103,11 +89,8 @@ GenericAdminRecordResource = Literal[
     "social_links",
     "poems",
     "page_copy",
-    "display_options",
     "nav_items",
     "resume_basics",
-    "resume_skills",
-    "resume_experiences",
 ]
 
 
@@ -565,12 +548,6 @@ ADMIN_RECORD_TARGETS: dict[str, AdminCrudTarget] = {
         update_schema=PageCopyUpdate,
         read_schema=PageCopyAdminRead,
     ),
-    "display_options": AdminCrudTarget(
-        model=PageDisplayOption,
-        create_schema=PageDisplayOptionCreate,
-        update_schema=PageDisplayOptionUpdate,
-        read_schema=PageDisplayOptionAdminRead,
-    ),
     "nav_items": AdminCrudTarget(
         model=NavItem,
         create_schema=NavItemCreate,
@@ -584,22 +561,6 @@ ADMIN_RECORD_TARGETS: dict[str, AdminCrudTarget] = {
         create_schema=ResumeBasicsCreate,
         update_schema=ResumeBasicsUpdate,
         read_schema=ResumeBasicsAdminRead,
-    ),
-    "resume_skills": AdminCrudTarget(
-        model=ResumeSkillGroup,
-        create_schema=ResumeSkillGroupCreate,
-        update_schema=ResumeSkillGroupUpdate,
-        read_schema=ResumeSkillGroupAdminRead,
-        base_query_factory=lambda session: resume_scoped_query(session, ResumeSkillGroup),
-        prepare_create_data=attach_resume_basics_id,
-    ),
-    "resume_experiences": AdminCrudTarget(
-        model=ResumeExperience,
-        create_schema=ResumeExperienceCreate,
-        update_schema=ResumeExperienceUpdate,
-        read_schema=ResumeExperienceAdminRead,
-        base_query_factory=lambda session: resume_scoped_query(session, ResumeExperience),
-        prepare_create_data=attach_resume_basics_id,
     ),
 }
 
@@ -791,31 +752,6 @@ def delete_page_copy_item(session: Session, *, item_id: str) -> dict[str, str]:
     return delete_admin_record(session, resource="page_copy", item_id=item_id)
 
 
-def create_page_display_option_item(session: Session, *, payload: PageDisplayOptionCreate) -> dict[str, Any]:
-    return _create_record_item_with_resource(
-        session,
-        resource="display_options",
-        payload=payload,
-        schema=PageDisplayOptionCreate,
-    )
-
-
-def update_page_display_option_item(
-    session: Session, *, item_id: str, payload: PageDisplayOptionUpdate
-) -> dict[str, Any]:
-    return _update_record_item_with_resource(
-        session,
-        resource="display_options",
-        item_id=item_id,
-        payload=payload,
-        schema=PageDisplayOptionUpdate,
-    )
-
-
-def delete_page_display_option_item(session: Session, *, item_id: str) -> dict[str, str]:
-    return delete_admin_record(session, resource="display_options", item_id=item_id)
-
-
 def create_nav_item(session: Session, *, payload: NavItemCreate) -> dict[str, Any]:
     return _create_record_item_with_resource(
         session,
@@ -868,54 +804,6 @@ def update_resume_basics_item(session: Session, *, item_id: str, payload: Resume
 
 def delete_resume_basics_item(session: Session, *, item_id: str) -> dict[str, str]:
     return delete_admin_record(session, resource="resume_basics", item_id=item_id)
-
-
-def create_resume_skill_group_item(session: Session, *, payload: ResumeSkillGroupCreate) -> dict[str, Any]:
-    return _create_record_item_with_resource(
-        session,
-        resource="resume_skills",
-        payload=payload,
-        schema=ResumeSkillGroupCreate,
-    )
-
-
-def update_resume_skill_group_item(
-    session: Session, *, item_id: str, payload: ResumeSkillGroupUpdate
-) -> dict[str, Any]:
-    return _update_record_item_with_resource(
-        session,
-        resource="resume_skills",
-        item_id=item_id,
-        payload=payload,
-        schema=ResumeSkillGroupUpdate,
-    )
-
-
-def delete_resume_skill_group_item(session: Session, *, item_id: str) -> dict[str, str]:
-    return delete_admin_record(session, resource="resume_skills", item_id=item_id)
-
-
-def create_resume_experience_item(session: Session, *, payload: ResumeExperienceCreate) -> dict[str, Any]:
-    return _create_record_item_with_resource(
-        session,
-        resource="resume_experiences",
-        payload=payload,
-        schema=ResumeExperienceCreate,
-    )
-
-
-def update_resume_experience_item(session: Session, *, item_id: str, payload: ResumeExperienceUpdate) -> dict[str, Any]:
-    return _update_record_item_with_resource(
-        session,
-        resource="resume_experiences",
-        item_id=item_id,
-        payload=payload,
-        schema=ResumeExperienceUpdate,
-    )
-
-
-def delete_resume_experience_item(session: Session, *, item_id: str) -> dict[str, str]:
-    return delete_admin_record(session, resource="resume_experiences", item_id=item_id)
 
 
 def reorder_admin_nav_records(session: Session, *, items: list[dict[str, Any]]) -> list[dict[str, Any]]:

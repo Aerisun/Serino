@@ -21,6 +21,7 @@ import {
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
@@ -64,21 +65,21 @@ const weatherIcons: Record<string, WeatherIconComponent> = {
   windy: Wind,
 };
 
-const weatherLabels: Record<string, string> = {
-  sunny: "晴",
-  cloudy: "多云",
-  fog: "雾",
-  haze: "霾",
-  light_rain: "小雨",
-  shower: "阵雨",
-  rainy: "雨",
-  heavy_rain: "大雨",
-  light_snow: "小雪",
-  snowy: "雪",
-  heavy_snow: "大雪",
-  sleet: "雨夹雪",
-  stormy: "雷阵雨",
-  windy: "大风",
+const weatherLabelKeys: Record<string, string> = {
+  sunny: "diary.weather.sunny",
+  cloudy: "diary.weather.cloudy",
+  fog: "diary.weather.fog",
+  haze: "diary.weather.haze",
+  light_rain: "diary.weather.lightRain",
+  shower: "diary.weather.shower",
+  rainy: "diary.weather.rainy",
+  heavy_rain: "diary.weather.heavyRain",
+  light_snow: "diary.weather.lightSnow",
+  snowy: "diary.weather.snowy",
+  heavy_snow: "diary.weather.heavySnow",
+  sleet: "diary.weather.sleet",
+  stormy: "diary.weather.stormy",
+  windy: "diary.weather.windy",
 };
 
 const formatDayOfMonth = (value: string | null) => {
@@ -88,14 +89,19 @@ const formatDayOfMonth = (value: string | null) => {
   return String(parsed.getDate()).padStart(2, "0");
 };
 
-const formatWeekday = (value: string | null) => {
+const formatWeekday = (value: string | null, lang: FrontendLang) => {
   if (!value) return "";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
-  return new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(parsed);
+  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" }).format(parsed);
 };
 
-const mapRemoteDiaryEntry = (entry: ContentEntryRead, index: number): DiaryEntry => {
+const mapRemoteDiaryEntry = (
+  entry: ContentEntryRead,
+  index: number,
+  t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
+  lang: FrontendLang,
+): DiaryEntry => {
   const paragraphs = splitContentParagraphs(entry.body);
 
   return {
@@ -103,9 +109,12 @@ const mapRemoteDiaryEntry = (entry: ContentEntryRead, index: number): DiaryEntry
     slug: entry.slug,
     date: formatPublishedDate(entry.published_at) || "",
     day: formatDayOfMonth(entry.published_at),
-    weekday: formatWeekday(entry.published_at),
+    weekday: formatWeekday(entry.published_at, lang),
     weather: entry.weather ?? undefined,
-    weatherLabel: (entry.weather && weatherLabels[entry.weather]) || "",
+    weatherLabel:
+      entry.weather && weatherLabelKeys[entry.weather]
+        ? t(weatherLabelKeys[entry.weather])
+        : "",
     mood: entry.mood ?? undefined,
     content: entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
     poem: entry.poem?.trim() || undefined,
@@ -122,15 +131,16 @@ const matchesSearchText = (fields: Array<string | null | undefined>, query: stri
 };
 
 const Diary = () => {
+  const { t, lang } = useFrontendI18n();
   const config = usePageConfig().diary as unknown as DiaryPageConfig;
-  const errorTitle = config.errorTitle ?? "日记加载失败";
-  const retryLabel = config.retryLabel ?? "重试";
-  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
-  const detailCtaLabel = config.detailCtaLabel ?? "查看详情";
-  const searchPlaceholder = config.searchPlaceholder ?? "搜索日记...";
+  const errorTitle = config.errorTitle ?? t("diary.errorTitle");
+  const retryLabel = config.retryLabel ?? t("common.retry");
+  const loadMoreLabel = config.loadMoreLabel ?? t("diary.loadingMore");
+  const detailCtaLabel = config.detailCtaLabel ?? t("diary.detailCta");
+  const searchPlaceholder = config.searchPlaceholder ?? t("diary.searchPlaceholder");
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const pageSize = clampPageSize(config.pageSize, 20);
+  const pageSize = clampPageSize(config.pageSize, 15);
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,10 +157,10 @@ const Diary = () => {
         };
       }
 
-      throw new Error("Invalid diary response");
+      throw new Error(t("diary.invalidResponse"));
     },
     pageSize,
-    mapItem: mapRemoteDiaryEntry,
+    mapItem: (entry, index) => mapRemoteDiaryEntry(entry, index, t, lang),
   });
 
   useEffect(() => {
@@ -239,7 +249,7 @@ const Diary = () => {
         {(status === "empty" || (status === "ready" && filtered.length === 0)) && (
           <div className="liquid-glass rounded-2xl px-5 py-4">
             <p className="text-sm font-body leading-relaxed text-foreground/35">
-              {config.emptyMessage ?? "没有找到匹配的日记"}
+              {config.emptyMessage ?? t("diary.emptyMessage")}
             </p>
           </div>
         )}

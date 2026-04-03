@@ -20,6 +20,7 @@ type ProfileFieldKey =
   | "name"
   | "title"
   | "role"
+  | "footer_text"
   | "filing_info"
   | "hero_image_url"
   | "hero_poster_url"
@@ -44,6 +45,7 @@ const PROFILE_FORM_FIELDS = [
   "name",
   "title",
   "role",
+  "footer_text",
   "filing_info",
   "hero_image_url",
   "hero_poster_url",
@@ -59,6 +61,7 @@ function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormSt
     title: profile?.title ?? "",
     bio: profile?.bio ?? "",
     role: profile?.role ?? "",
+    footer_text: profile?.footer_text ?? "",
     filing_info: profile?.filing_info ?? "",
     og_image: profile?.og_image ?? "",
     site_icon_url: profile?.site_icon_url ?? "",
@@ -71,7 +74,7 @@ function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormSt
 const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpCopy>> = {
   zh: {
     name: {
-      label: "您的昵称",
+      label: "主页显示名",
       title: "更偏“你是谁”的名字字段",
       description: "适合填写人物名或最常见的对外称呼，比如 Felix。它主要影响首页和页脚里直接面对访客的名字显示。",
       usageTitle: "会影响这些位置",
@@ -82,7 +85,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       ],
     },
     title: {
-      label: "站点标题",
+      label: "站点品牌标题",
       title: "更偏“这个站点叫什么”的标题字段",
       description: "适合填写品牌名、项目名或站名，比如 Aerisun。现在它会优先作为浏览器标题和分享标题使用。",
       usageTitle: "会影响这些位置",
@@ -101,6 +104,15 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       usageItems: [
         "首页 Hero 顶部的小字标签",
         "页脚名称下方的身份说明",
+      ],
+    },
+    footer_text: {
+      label: "页脚补充文案",
+      title: "页脚最底部的一句短文案",
+      description: "适合放一句签名、构建说明或简短态度表达，不建议写太长。",
+      usageTitle: "会影响这些位置",
+      usageItems: [
+        "全站页脚底部的补充说明",
       ],
     },
     filing_info: {
@@ -127,12 +139,11 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_poster_url: {
       label: "首页视频封面图",
       title: "背景视频开始播放前显示的静态封面",
-      description: "建议使用与视频风格一致的静帧。它既是视频播放前的封面，也是视频不可用时的首屏静态兜底图。",
+      description: "建议使用与视频风格一致的静帧，避免首屏在慢网速下出现空白感。",
       usageTitle: "会影响这些位置",
       usageItems: [
         "首页背景视频的 poster 封面",
         "视频加载前的首屏观感",
-        "首页背景视频缺失或报错时的背景图",
       ],
       placeholder: "上传或填写首页视频封面图地址",
       note: "首页 Hero 视频封面图",
@@ -140,7 +151,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_video_url: {
       label: "首页背景视频",
       title: "首页首屏铺满背景的视频资源",
-      description: "如果填写这里，首页会优先显示视频背景；如果视频缺失或加载失败，会回退到“首页视频封面图”。",
+      description: "如果填写这里，首页会优先显示视频背景；如果视频缺失或加载失败，会回退到下面的静态背景图。",
       usageTitle: "会影响这些位置",
       usageItems: [
         "首页首屏背景媒体",
@@ -150,16 +161,18 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       note: "首页 Hero 背景视频",
     },
     og_image: {
-      label: "分享图",
-      title: "站点对外分享时使用的图片",
-      description: "仅用于 Open Graph / Twitter 等分享场景，不再作为首页背景或 Hero 视觉兜底图。",
+      label: "分享图 / 首页背景兜底图",
+      title: "分享用图，同时也是首页背景的静态兜底",
+      description: "这个字段不只是 SEO 图片。当前也会在首页背景视频不可用时作为静态背景图使用，并在 Hero 视觉图为空时参与兜底。",
       usageTitle: "会影响这些位置",
       usageItems: [
         "Open Graph 分享图",
         "Twitter 分享图",
+        "首页背景视频缺失或报错时的背景图",
+        "Hero 翻转视觉图为空时的图片兜底",
       ],
-      placeholder: "上传或填写分享图地址",
-      note: "站点分享图",
+      placeholder: "上传或填写分享图 / 首页背景兜底图地址",
+      note: "站点分享图与首页背景兜底图",
     },
     site_icon_url: {
       label: "浏览器标签图标",
@@ -218,6 +231,15 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
         "The role line under the name in the footer",
       ],
     },
+    footer_text: {
+      label: "Footer Supporting Copy",
+      title: "The short line at the bottom of the footer",
+      description: "Good for a signature, build note, or a short tone-setting sentence.",
+      usageTitle: "Used in",
+      usageItems: [
+        "The footer support line across the site",
+      ],
+    },
     filing_info: {
       label: "Filing Info",
       title: "The filing or regulatory line shown in the first footer row",
@@ -242,12 +264,11 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_poster_url: {
       label: "Homepage Video Poster",
       title: "The still image shown before the background video plays",
-      description: "Use a frame that matches the mood of the video. It is also used as the static fallback background when the video is missing or fails.",
+      description: "Use a frame that matches the mood of the video so the hero feels stable on slower connections.",
       usageTitle: "Used in",
       usageItems: [
         "The homepage background video poster",
         "The first visual state before the video starts",
-        "The homepage background when the video is missing or fails",
       ],
       placeholder: "Upload or paste the homepage video poster URL",
       note: "Homepage hero video poster",
@@ -255,7 +276,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_video_url: {
       label: "Homepage Background Video",
       title: "The full-bleed video asset for the homepage hero",
-      description: "If set, the homepage uses this video first. If it is missing or fails, it falls back to the Homepage Video Poster.",
+      description: "If set, the homepage uses this video first. If it is missing or fails, the fallback background image below is used instead.",
       usageTitle: "Used in",
       usageItems: [
         "The homepage hero background",
@@ -265,16 +286,18 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       note: "Homepage hero background video",
     },
     og_image: {
-      label: "Share Image",
-      title: "The image used for external sharing cards",
-      description: "Used only for Open Graph/Twitter sharing surfaces, not as homepage or hero fallback media.",
+      label: "Share Image / Background Fallback",
+      title: "The sharing image and static hero fallback",
+      description: "This is not only for SEO. It also becomes the homepage fallback background when the hero video is unavailable, and it can back up the hero image when needed.",
       usageTitle: "Used in",
       usageItems: [
         "Open Graph share image",
         "Twitter share image",
+        "Homepage background when the hero video is missing or fails",
+        "Hero image fallback when the flip image is empty",
       ],
-      placeholder: "Upload or paste the share image URL",
-      note: "Site share image",
+      placeholder: "Upload or paste the share image / fallback background URL",
+      note: "Site share image and homepage fallback background",
     },
     site_icon_url: {
       label: "Browser Tab Icon",
@@ -372,7 +395,7 @@ export function ProfileTab() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-        {(["name", "title", "role"] as const).map((key) => (
+        {(["name", "title", "role", "footer_text", "filing_info"] as const).map((key) => (
           <div key={key} className="space-y-2">
             {renderHelpLabel(key)}
             <Input
@@ -381,21 +404,6 @@ export function ProfileTab() {
             />
           </div>
         ))}
-        <div className="space-y-2">
-          {renderHelpLabel("bio")}
-          <Textarea
-            value={form.bio}
-            onChange={(e) => updateField("bio", e.target.value)}
-            rows={4}
-          />
-        </div>
-        <div className="space-y-2">
-          {renderHelpLabel("filing_info")}
-          <Input
-            value={form.filing_info}
-            onChange={(e) => updateField("filing_info", e.target.value)}
-          />
-        </div>
         <ResourceUploadField
           label={renderHelpLabel("hero_image_url")}
           value={form.hero_image_url}
@@ -446,6 +454,14 @@ export function ProfileTab() {
           uniqueByCategory
           onChange={(value) => updateField("site_icon_url", value)}
         />
+        <div className="space-y-2">
+          {renderHelpLabel("bio")}
+          <Textarea
+            value={form.bio}
+            onChange={(e) => updateField("bio", e.target.value)}
+            rows={4}
+          />
+        </div>
       </CardContent>
     </Card>
   );

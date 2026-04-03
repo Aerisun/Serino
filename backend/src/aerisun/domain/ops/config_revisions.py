@@ -30,7 +30,6 @@ from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
     PageCopy,
-    PageDisplayOption,
     Poem,
     SiteProfile,
     SocialLink,
@@ -366,8 +365,6 @@ def is_tracked_config_request(path: str, method: str) -> bool:
         return True
     if path.startswith("/api/v1/admin/site-config/page-copy"):
         return True
-    if path.startswith("/api/v1/admin/site-config/display-options"):
-        return True
     if path.startswith("/api/v1/admin/site-config/nav-items"):
         return True
     if path == "/api/v1/admin/visitors/config":
@@ -575,48 +572,42 @@ def _restore_navigation(session: Session, snapshot: list[dict[str, Any]]) -> Non
 
 def _capture_pages(session: Session) -> dict[str, Any]:
     copies = session.query(PageCopy).order_by(PageCopy.page_key.asc()).all()
-    options = session.query(PageDisplayOption).order_by(PageDisplayOption.page_key.asc()).all()
     return canonicalize_snapshot(
         {
             "page_copy": [
                 {
                     "id": item.id,
                     "page_key": item.page_key,
-                    "label": item.label,
-                    "nav_label": item.nav_label,
                     "title": item.title,
                     "subtitle": item.subtitle,
-                    "description": item.description,
                     "search_placeholder": item.search_placeholder,
                     "empty_message": item.empty_message,
                     "max_width": item.max_width,
                     "page_size": item.page_size,
-                    "download_label": item.download_label,
                     "extras": dict(item.extras or {}),
                 }
                 for item in copies
-            ],
-            "display_options": [
-                {
-                    "id": item.id,
-                    "page_key": item.page_key,
-                    "is_enabled": item.is_enabled,
-                    "settings": dict(item.settings or {}),
-                }
-                for item in options
             ],
         }
     )
 
 
 def _restore_pages(session: Session, snapshot: dict[str, Any]) -> None:
-    session.query(PageDisplayOption).delete(synchronize_session=False)
     session.query(PageCopy).delete(synchronize_session=False)
     session.flush()
+    allowed_page_copy_fields = {
+        "id",
+        "page_key",
+        "title",
+        "subtitle",
+        "search_placeholder",
+        "empty_message",
+        "max_width",
+        "page_size",
+        "extras",
+    }
     for item in snapshot.get("page_copy", []):
-        session.add(PageCopy(**item))
-    for item in snapshot.get("display_options", []):
-        session.add(PageDisplayOption(**item))
+        session.add(PageCopy(**{key: value for key, value in item.items() if key in allowed_page_copy_fields}))
     session.flush()
 
 
@@ -627,7 +618,9 @@ def _capture_visitors_auth(session: Session) -> dict[str, Any]:
             "email_login_enabled": config.email_login_enabled,
             "visitor_oauth_providers": list(config.visitor_oauth_providers or []),
             "admin_auth_methods": list(config.admin_auth_methods or []),
+            "admin_console_auth_methods": list(config.admin_console_auth_methods or []),
             "admin_email_enabled": config.admin_email_enabled,
+            "admin_email_password_hash": config.admin_email_password_hash,
             "google_client_id": config.google_client_id,
             "google_client_secret": config.google_client_secret,
             "github_client_id": config.github_client_id,

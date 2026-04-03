@@ -65,13 +65,10 @@ type BackendPageCopyItem = {
   page_key: string;
   title: string;
   subtitle: string;
-  description?: string | null;
   search_placeholder?: string | null;
   empty_message?: string | null;
   max_width?: string | null;
   page_size?: number | null;
-  download_label?: string | null;
-  nav_label?: string | null;
   extras?: Record<string, unknown>;
 };
 
@@ -108,29 +105,6 @@ export interface PageMotionConfig {
   stagger: number;
 }
 
-export interface ResumeExperienceConfig {
-  role: string;
-  org: string;
-  period: string;
-  location?: string;
-  employmentType?: string;
-  desc: string;
-  achievements?: string[];
-  techStack?: string[];
-}
-
-export interface ResumeSkillGroupConfig {
-  category: string;
-  items: string[];
-}
-
-export interface ResumeContactConfig {
-  location?: string;
-  availability?: string;
-  email?: string;
-  website?: string;
-}
-
 export interface PageConfig {
   [key: string]: unknown;
 }
@@ -164,13 +138,14 @@ export interface RuntimeConfigSnapshot {
 // Default motion configs (code constants — not personal data)
 // ---------------------------------------------------------------------------
 const DEFAULT_MOTION: PageMotionConfig = { duration: 0.4, delay: 0.06, stagger: 0.04 };
+const PAGE_COPY_SIZE_MAX = 30;
 
 const PAGE_DEFAULTS: Record<string, { width?: PageWidth; pageSize?: number; motion?: PageMotionConfig }> = {
-  posts:    { width: "content", motion: DEFAULT_MOTION },
-  diary:    { width: "narrow",  motion: DEFAULT_MOTION },
+  posts:    { width: "content", pageSize: 15, motion: DEFAULT_MOTION },
+  diary:    { width: "narrow",  pageSize: 15, motion: DEFAULT_MOTION },
   friends:  { width: "wide",    pageSize: 10, motion: { duration: 0.4, delay: 0.08, stagger: 0.04 } },
-  excerpts: { width: "content", motion: DEFAULT_MOTION },
-  thoughts: { width: "narrow",  motion: { duration: 0.4, delay: 0.08, stagger: 0.04 } },
+  excerpts: { width: "content", pageSize: 15, motion: DEFAULT_MOTION },
+  thoughts: { width: "narrow",  pageSize: 15, motion: { duration: 0.4, delay: 0.08, stagger: 0.04 } },
   guestbook:{ width: "narrow",  motion: { duration: 0.45, delay: 0.06, stagger: 0.04 } },
   resume:   { width: "content", motion: { duration: 0.45, delay: 0.06, stagger: 0.04 } },
   calendar: { width: "wide",    motion: { duration: 0.5, delay: 0.08, stagger: 0.05 } },
@@ -291,7 +266,7 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
 
     const page: PageConfig = {
       title: item.title,
-      description: item.subtitle ?? item.description ?? undefined,
+      description: item.subtitle || undefined,
       metaDescription:
         typeof item.extras?.metaDescription === "string" ? item.extras.metaDescription : undefined,
       metaTitle:
@@ -299,8 +274,7 @@ const normalizePagesConfig = (payload: BackendPagesResponse): Record<string, Pag
       searchPlaceholder: item.search_placeholder ?? undefined,
       emptyMessage: item.empty_message ?? undefined,
       width: widthFromApi ?? defaults?.width,
-      pageSize: clampPageSize(item.page_size, defaults?.pageSize ?? 20),
-      downloadLabel: item.download_label ?? undefined,
+      pageSize: Math.min(clampPageSize(item.page_size, defaults?.pageSize ?? 20), PAGE_COPY_SIZE_MAX),
       motion: defaults?.motion ?? DEFAULT_MOTION,
     };
 

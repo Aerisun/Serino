@@ -43,3 +43,17 @@ def test_resume_avatar_links_are_not_restricted(client, admin_headers) -> None:
 
     assert response.status_code == 200
     assert response.json()["profile_image_url"] == "https://example.com/avatar.png"
+
+
+def test_page_copy_rejects_page_size_above_thirty(client, admin_headers) -> None:
+    listing = client.get("/api/v1/admin/site-config/page-copy/", headers=admin_headers)
+    assert listing.status_code == 200
+    posts_copy = next(item for item in listing.json()["items"] if item["page_key"] == "posts")
+
+    response = client.put(
+        f"/api/v1/admin/site-config/page-copy/{posts_copy['id']}",
+        headers=admin_headers,
+        json={"page_size": 31},
+    )
+
+    assert response.status_code == 422

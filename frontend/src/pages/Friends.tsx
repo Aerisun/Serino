@@ -4,6 +4,7 @@ import { ChevronDown, RefreshCw } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
 import { formatSiteCount } from "@/lib/format";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { clampPageSize } from "@/lib/page-size";
@@ -100,28 +101,29 @@ const readPositiveConfigNumber = (value: unknown, fallback: number) => {
 };
 
 const Friends = () => {
+  const { t } = useFrontendI18n();
   const config = usePageConfig().friends as unknown as FriendsPageConfig;
-  const circleTitle = config.circleTitle ?? "Friend Circle";
-  const loadingLabel = config.loadingLabel ?? "正在加载...";
-  const loadMoreLabel = config.loadMoreLabel ?? "加载更多";
-  const retryLabel = config.retryLabel ?? "重试";
-  const errorTitle = config.errorTitle ?? "友链页面加载失败";
-  const refreshLabel = config.refreshLabel ?? "刷新";
-  const refreshAriaLabel = config.refreshAriaLabel ?? "刷新友链动态";
-  const summaryTemplate = config.summaryTemplate ?? "{sites} 个站点 · 共 {articles} 条动态";
+  const circleTitle = config.circleTitle ?? t("friends.circleTitle");
+  const loadingLabel = config.loadingLabel ?? t("common.loading");
+  const loadMoreLabel = config.loadMoreLabel ?? t("friends.loadMore");
+  const retryLabel = config.retryLabel ?? t("common.retry");
+  const errorTitle = config.errorTitle ?? t("friends.errorTitle");
+  const refreshLabel = config.refreshLabel ?? t("friendCircle.refresh");
+  const refreshAriaLabel = config.refreshAriaLabel ?? t("friendCircle.refreshAria");
+  const summaryTemplate = config.summaryTemplate ?? t("friends.summaryTemplate");
   const footerSummaryTemplate =
-    config.footerSummaryTemplate ?? "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态";
-  const randomRecentDays = readPositiveConfigNumber(config.randomRecentDays, 7);
+    config.footerSummaryTemplate ?? t("friends.footerSummaryTemplate");
+  const randomRecentDays = readPositiveConfigNumber(config.randomRecentDays, 66);
   const randomPickerLabel = interpolateTemplate(
-    config.randomPickerLabel ?? "从最近 {days} 天里随机挑一篇",
+    config.randomPickerLabel ?? t("friends.randomPickerTemplate"),
     { days: randomRecentDays },
   );
-  const randomRefreshLabel = config.randomRefreshLabel ?? "换一篇";
+  const randomRefreshLabel = config.randomRefreshLabel ?? t("friends.randomRefresh");
   const randomEmptyMessage = interpolateTemplate(
-    config.randomEmptyTemplate ?? "最近 {days} 天还没有可展示的友链文章",
+    config.randomEmptyTemplate ?? t("friends.randomEmptyTemplate"),
     { days: randomRecentDays },
   );
-  const autoRefreshSeconds = readPositiveConfigNumber(config.autoRefreshSeconds, 60);
+  const autoRefreshSeconds = readPositiveConfigNumber(config.autoRefreshSeconds, 666);
   const autoRefreshMs = autoRefreshSeconds > 0 ? autoRefreshSeconds * 1000 : false;
   const pageSize = clampPageSize(config.pageSize, 10);
   const [visibleCount, setVisibleCount] = useState(pageSize);
@@ -179,7 +181,7 @@ const Friends = () => {
         ? "ready"
         : "empty";
   const errorMessage = isError
-    ? ((friendsErr ?? feedErr) instanceof Error ? (friendsErr ?? feedErr)!.message : "友链页面加载失败")
+    ? ((friendsErr ?? feedErr) instanceof Error ? (friendsErr ?? feedErr)!.message : t("friends.errorTitle"))
     : "";
   const updatedLabel = formatRelativeUpdatedAt(feedUpdatedAt, relativeNow);
   const recentEligiblePosts = useMemo(

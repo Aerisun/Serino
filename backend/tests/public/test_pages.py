@@ -21,8 +21,6 @@ def test_read_pages_returns_seeded_page_copy(client) -> None:
     assert items["notFound"]["extras"]["metaTitle"] == "页面未找到"
     assert items["posts"]["title"] == "Posts"
     assert items["friends"]["page_size"] == 10
-    assert items["friends"]["extras"]["statusLabel"] == "状态"
-    assert items["guestbook"]["extras"]["namePlaceholder"] == "你的名字"
     assert items["guestbook"]["extras"]["submitLabel"] == "提交留言"
     assert items["friends"]["extras"]["loadingLabel"] == "正在加载..."
     assert items["friends"]["extras"]["loadMoreLabel"] == "加载更多"
@@ -31,8 +29,8 @@ def test_read_pages_returns_seeded_page_copy(client) -> None:
     assert items["calendar"]["extras"]["weekdayLabels"][0] == "周一"
     assert items["calendar"]["extras"]["loadingLabel"] == "正在加载日历"
     assert items["excerpts"]["extras"]["modalCloseLabel"] == "关闭"
-    assert items["resume"]["download_label"] is None
-    assert "enabled" in items["posts"]
+    assert "resume" not in items
+    assert "enabled" not in items["posts"]
 
 
 def test_public_content_includes_presentation_fields(client) -> None:

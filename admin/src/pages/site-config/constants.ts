@@ -7,7 +7,6 @@ export const PAGE_KEYS = [
   "excerpts",
   "thoughts",
   "guestbook",
-  "resume",
   "calendar",
 ];
 
@@ -121,8 +120,8 @@ export const PAGE_KEY_LABELS: LangLabels = {
   posts: { zh: "文章", en: "Posts" },
   diary: { zh: "日记", en: "Diary" },
   friends: { zh: "友链", en: "Friends" },
-  excerpts: { zh: "摘录", en: "Excerpts" },
-  thoughts: { zh: "想法", en: "Thoughts" },
+  excerpts: { zh: "文摘", en: "Excerpts" },
+  thoughts: { zh: "碎碎念", en: "Thoughts" },
   guestbook: { zh: "留言簿", en: "Guestbook" },
   resume: { zh: "简历", en: "Resume" },
   calendar: { zh: "日历", en: "Calendar" },

@@ -126,7 +126,7 @@ def test_navigation_delete_restore_recreates_item(client, admin_headers) -> None
     assert any(item["id"] == item_id for item in nav_items.json()["items"])
 
 
-def test_page_copy_and_display_options_share_site_pages_resource(client, admin_headers) -> None:
+def test_page_copy_updates_create_site_pages_revision(client, admin_headers) -> None:
     pages = client.get(f"{SITE_CONFIG_BASE}/page-copy/", headers=admin_headers)
     assert pages.status_code == 200
     first_page = pages.json()["items"][0]
@@ -140,18 +140,6 @@ def test_page_copy_and_display_options_share_site_pages_resource(client, admin_h
 
     first_revision = _list_revisions(client, admin_headers, resource_key="site.pages")[0]
     assert first_revision["resource_key"] == "site.pages"
-
-    create_option = client.post(
-        f"{SITE_CONFIG_BASE}/display-options/",
-        headers=admin_headers,
-        json={"page_key": "config-revision-extra-page", "is_enabled": False, "settings": {"maxItems": 3}},
-    )
-    assert create_option.status_code == 201
-
-    revisions = _list_revisions(client, admin_headers, resource_key="site.pages")
-    assert len(revisions) >= 2
-    assert revisions[0]["resource_key"] == "site.pages"
-    assert revisions[1]["resource_key"] == "site.pages"
 
 
 def test_sensitive_config_previews_are_masked_and_restore_works(client, admin_headers) -> None:

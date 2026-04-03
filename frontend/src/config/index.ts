@@ -12,5 +12,4 @@ export type {
 export type {
   PageWidth,
   PageMotionConfig,
-  ResumeExperienceConfig,
 } from "./pages";

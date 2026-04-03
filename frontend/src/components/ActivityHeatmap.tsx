@@ -82,13 +82,11 @@ const ActivityHeatmap = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const { resolvedTheme } = useTheme();
   const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
-  const title = String(config.heatmapTitle ?? "Activity");
-  const _loadingLabel = String(config.heatmapLoadingLabel ?? t("common.loading"));
-  const _errorLabel = String(config.heatmapErrorLabel ?? t("list.loadFailed"));
+  const title = String(config.heatmapTitle ?? t("heatmap.title"));
   const stats = [
-    { key: "thisWeek", label: String(config.heatmapThisWeekLabel ?? "This week") },
-    { key: "peakWeek", label: String(config.heatmapPeakWeekLabel ?? "Peak week") },
-    { key: "averageWeek", label: String(config.heatmapAverageWeekLabel ?? "Avg / week") },
+    { key: "thisWeek", label: String(config.heatmapThisWeekLabel ?? t("heatmap.thisWeek")) },
+    { key: "peakWeek", label: String(config.heatmapPeakWeekLabel ?? t("heatmap.peakWeek")) },
+    { key: "averageWeek", label: String(config.heatmapAverageWeekLabel ?? t("heatmap.avgPerWeek")) },
   ] as const;
   const isDark = resolvedTheme === "dark";
 

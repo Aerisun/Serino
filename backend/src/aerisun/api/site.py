@@ -163,7 +163,7 @@ def read_diary_entry(slug: str, session: Session = Depends(get_session)) -> Cont
     return get_public_diary_entry(session, slug)
 
 
-@base_router.get("/thoughts", response_model=ContentCollectionRead, summary="获取想法列表")
+@base_router.get("/thoughts", response_model=ContentCollectionRead, summary="获取碎碎念列表")
 def read_thoughts(
     limit: int = Query(default=40, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -172,7 +172,7 @@ def read_thoughts(
     return list_public_thoughts(session, limit=limit, offset=offset)
 
 
-@base_router.get("/excerpts", response_model=ContentCollectionRead, summary="获取摘录列表")
+@base_router.get("/excerpts", response_model=ContentCollectionRead, summary="获取文摘列表")
 def read_excerpts(
     limit: int = Query(default=40, ge=1, le=100),
     offset: int = Query(default=0, ge=0),

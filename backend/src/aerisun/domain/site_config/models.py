@@ -86,26 +86,13 @@ class PageCopy(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     page_key: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
-    label: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    nav_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     subtitle: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     search_placeholder: Mapped[str | None] = mapped_column(String(200), nullable=True)
     empty_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     max_width: Mapped[str | None] = mapped_column(String(40), nullable=True)
     page_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    download_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
     extras: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-
-
-class PageDisplayOption(Base, TimestampMixin):
-    __tablename__ = "page_display_options"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    page_key: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
-    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
 class CommunityConfig(Base, TimestampMixin):
@@ -134,48 +121,7 @@ class ResumeBasics(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
-    subtitle: Mapped[str] = mapped_column(String(160), nullable=False, default="")
     summary: Mapped[str] = mapped_column(Text, nullable=False)
-    download_label: Mapped[str] = mapped_column(String(80), nullable=False, default="")
-    template_key: Mapped[str] = mapped_column(String(80), nullable=False, default="editorial")
-    accent_tone: Mapped[str] = mapped_column(String(80), nullable=False, default="amber")
     location: Mapped[str] = mapped_column(String(160), nullable=False, default="")
-    availability: Mapped[str] = mapped_column(String(160), nullable=False, default="")
     email: Mapped[str] = mapped_column(String(160), nullable=False, default="")
-    website: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     profile_image_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
-    highlights: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
-
-
-class ResumeSkillGroup(Base, TimestampMixin):
-    __tablename__ = "resume_skills"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    resume_basics_id: Mapped[str] = mapped_column(
-        String(36),
-        ForeignKey("resume_basics.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    category: Mapped[str] = mapped_column(String(120), nullable=False)
-    items: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
-    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-
-class ResumeExperience(Base, TimestampMixin):
-    __tablename__ = "resume_experiences"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    resume_basics_id: Mapped[str] = mapped_column(
-        String(36),
-        ForeignKey("resume_basics.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    title: Mapped[str] = mapped_column(String(160), nullable=False)
-    company: Mapped[str] = mapped_column(String(160), nullable=False)
-    period: Mapped[str] = mapped_column(String(120), nullable=False)
-    location: Mapped[str] = mapped_column(String(160), nullable=False, default="")
-    employment_type: Mapped[str] = mapped_column(String(80), nullable=False, default="")
-    summary: Mapped[str] = mapped_column(Text, nullable=False)
-    achievements: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
-    tech_stack: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
-    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

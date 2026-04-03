@@ -6,6 +6,7 @@ import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
 import { usePreviewChannel } from "@/lib/preview";
@@ -57,14 +58,14 @@ const buildPreviewExcerpt = (preview: {
   published_at?: string | null;
   author_name?: string;
   source?: string;
-}): Excerpt => ({
+}, draftLabel: string): Excerpt => ({
   id: preview.slug || "__preview-excerpt",
   title: preview.title,
   author: preview.author_name || "",
   source: preview.source || "",
   content: preview.body || "",
   category: preview.category || "",
-  date: formatPublishedDate(preview.published_at) || "草稿",
+  date: formatPublishedDate(preview.published_at) || draftLabel,
   comments: 0,
 });
 
@@ -86,21 +87,22 @@ const hasCjkCharacters = (value: string) =>
   /[\u3400-\u9FFF\uF900-\uFAFF]/.test(value);
 
 const Excerpts = () => {
+  const { t, lang } = useFrontendI18n();
   const location = useLocation();
   const previewStorageKey =
     new URLSearchParams(location.search).get("previewStorageKey") || "";
   const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
-  const errorTitle = config.errorTitle ?? "文摘加载失败";
-  const retryLabel = config.retryLabel ?? "重试";
-  const loadMoreLabel = config.loadMoreLabel ?? "加载更多...";
-  const closeLabel = config.modalCloseLabel ?? "关闭";
-  const commentsOpenLabel = config.commentsOpenLabel ?? "查看评论";
-  const commentsCloseLabel = config.commentsCloseLabel ?? "收起评论";
-  const allCategoryLabel = config.categories?.all ?? "全部";
+  const errorTitle = config.errorTitle ?? t("excerpts.errorTitle");
+  const retryLabel = config.retryLabel ?? t("common.retry");
+  const loadMoreLabel = config.loadMoreLabel ?? t("excerpts.loadingMore");
+  const closeLabel = config.modalCloseLabel ?? t("excerpts.close");
+  const commentsOpenLabel = config.commentsOpenLabel ?? t("excerpts.commentsOpen");
+  const commentsCloseLabel = config.commentsCloseLabel ?? t("excerpts.commentsClose");
+  const allCategoryLabel = config.categories?.all ?? t("excerpts.allCategory");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const pageSize = clampPageSize(config.pageSize, 40);
+  const pageSize = clampPageSize(config.pageSize, 15);
   const [showModalComments, setShowModalComments] = useState(false);
-  const searchPlaceholder = config.searchPlaceholder ?? "搜索文摘...";
+  const searchPlaceholder = config.searchPlaceholder ?? t("excerpts.searchPlaceholder");
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -128,13 +130,13 @@ const Excerpts = () => {
         };
       }
 
-      throw new Error("Invalid excerpts response");
+      throw new Error(t("excerpts.invalidResponse"));
     },
     pageSize,
     mapItem: mapRemoteExcerpt,
   });
   const previewExcerpt =
-    previewData?.type === "excerpts" ? buildPreviewExcerpt(previewData) : null;
+    previewData?.type === "excerpts" ? buildPreviewExcerpt(previewData, t("common.draft")) : null;
   const displayItems = useMemo(() => {
     if (!previewExcerpt) {
       return items;
@@ -161,9 +163,9 @@ const Excerpts = () => {
       allCategoryLabel,
       ...Array.from(
         new Set(displayItems.map((item) => item.category).filter(Boolean)),
-      ).sort((a, b) => a.localeCompare(b, "zh-CN")),
+      ).sort((a, b) => a.localeCompare(b, lang === "zh" ? "zh-CN" : "en-US")),
     ],
-    [allCategoryLabel, displayItems],
+    [allCategoryLabel, displayItems, lang],
   );
 
   const filtered = useMemo(() => {
@@ -338,7 +340,7 @@ const Excerpts = () => {
               </span>
             </div>
             <h3 className="text-base font-body font-medium leading-snug text-foreground/70">
-              {config.emptyMessage ?? "没有找到匹配的文摘"}
+              {config.emptyMessage ?? t("excerpts.emptyMessage")}
             </h3>
           </div>
         )}

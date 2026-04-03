@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
-from aerisun.domain.site_config.models import NavItem, PageCopy, PageDisplayOption, Poem, SocialLink
+from aerisun.domain.site_config.models import NavItem, PageCopy, Poem, SocialLink
 from aerisun.domain.site_config.service import (
     attach_site_profile_id,
     get_community_config_admin,
@@ -31,9 +31,6 @@ from .schemas import (
     PageCopyAdminRead,
     PageCopyCreate,
     PageCopyUpdate,
-    PageDisplayOptionAdminRead,
-    PageDisplayOptionCreate,
-    PageDisplayOptionUpdate,
     PoemAdminRead,
     PoemCreate,
     PoemUpdate,
@@ -140,21 +137,9 @@ page_copy_router = build_crud_router(
     capture_before=lambda session: capture_config_resource(session, "site.pages"),
 )
 
-display_options_router = build_crud_router(
-    PageDisplayOption,
-    create_schema=PageDisplayOptionCreate,
-    update_schema=PageDisplayOptionUpdate,
-    read_schema=PageDisplayOptionAdminRead,
-    prefix="/display-options",
-    tag="admin-site-config",
-    config_resource_key="site.pages",
-    capture_before=lambda session: capture_config_resource(session, "site.pages"),
-)
-
 router.include_router(social_links_router)
 router.include_router(poems_router)
 router.include_router(page_copy_router)
-router.include_router(display_options_router)
 
 
 @router.put("/nav-items/reorder", response_model=list[NavItemAdminRead], summary="重排导航项顺序")

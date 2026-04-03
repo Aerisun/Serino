@@ -60,6 +60,7 @@ def _upgrade_to_revision(revision: str) -> None:
 def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     tables = _get_tables(str(db_path))
     site_profile_columns = _get_columns(str(db_path), "site_profile")
+    page_copy_columns = _get_columns(str(db_path), "page_copy")
     posts_columns = _get_columns(str(db_path), "posts")
     diary_columns = _get_columns(str(db_path), "diary_entries")
     thoughts_columns = _get_columns(str(db_path), "thoughts")
@@ -86,9 +87,11 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     api_key_columns = _get_columns(str(db_path), "api_keys")
 
     assert "config_revisions" in tables
+    assert "page_display_options" not in tables
     assert "hero_video_url" in site_profile_columns
     assert "site_icon_url" in site_profile_columns
     assert "filing_info" in site_profile_columns
+    assert {"label", "nav_label", "description", "download_label"} & page_copy_columns == set()
     assert {"footer_text", "author", "meta_description", "copyright"} & site_profile_columns == set()
     assert {"category", "view_count"} <= posts_columns
     assert {"mood", "weather", "poem", "view_count"} <= diary_columns

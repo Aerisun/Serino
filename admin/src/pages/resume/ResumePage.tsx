@@ -40,22 +40,16 @@ const EMPTY_FORM: BasicsForm = {
 function toApiPayload(form: BasicsForm): ResumeBasicsCreate {
   return {
     title: form.title,
-    subtitle: "",
     summary: form.summary,
-    download_label: "",
-    template_key: "editorial",
-    accent_tone: "amber",
     location: form.location,
-    availability: "",
     email: form.email,
-    website: "",
     profile_image_url: form.profile_image_url,
-    highlights: [],
   };
 }
 
 function mutationError(error: unknown) {
-  const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+  const detail = (error as { response?: { data?: { detail?: string } } })
+    ?.response?.data?.detail;
   return detail || "操作失败";
 }
 
@@ -110,10 +104,16 @@ export default function ResumePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const previewWindowRef = useRef<Window | null>(null);
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
-  const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(/\/+$/, "");
+  const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(
+    /\/+$/,
+    "",
+  );
   const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
   const storageKey = "aerisun-preview-resume";
-  const previewPayload = useMemo<ResumePreviewPayload>(() => ({ type: "resume", ...form }), [form]);
+  const previewPayload = useMemo<ResumePreviewPayload>(
+    () => ({ type: "resume", ...form }),
+    [form],
+  );
 
   useEffect(() => {
     if (!previewOpen) return;
@@ -125,7 +125,10 @@ export default function ResumePage() {
     }
 
     localStorage.setItem(storageKey, JSON.stringify(previewPayload));
-    previewWindow.postMessage({ type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload }, frontendOrigin);
+    previewWindow.postMessage(
+      { type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload },
+      frontendOrigin,
+    );
   }, [frontendOrigin, previewOpen, previewPayload]);
 
   useEffect(() => {
@@ -138,7 +141,7 @@ export default function ResumePage() {
       localStorage.setItem(storageKey, JSON.stringify(previewPayload));
       (event.source as WindowProxy).postMessage(
         { type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload },
-        event.origin
+        event.origin,
       );
     };
 
@@ -150,14 +153,20 @@ export default function ResumePage() {
     const existingWindow = previewWindowRef.current;
     if (existingWindow && !existingWindow.closed) {
       localStorage.setItem(storageKey, JSON.stringify(previewPayload));
-      existingWindow.postMessage({ type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload }, frontendOrigin);
+      existingWindow.postMessage(
+        { type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload },
+        frontendOrigin,
+      );
       existingWindow.focus();
       setPreviewOpen(true);
       return;
     }
 
     localStorage.setItem(storageKey, JSON.stringify(previewPayload));
-    const previewWindow = window.open(`${frontendUrl}/preview?storageKey=${encodeURIComponent(storageKey)}`, "_blank");
+    const previewWindow = window.open(
+      `${frontendUrl}/preview?storageKey=${encodeURIComponent(storageKey)}`,
+      "_blank",
+    );
     previewWindowRef.current = previewWindow;
     setPreviewOpen(Boolean(previewWindow));
 
@@ -168,7 +177,10 @@ export default function ResumePage() {
           return;
         }
 
-        previewWindow.postMessage({ type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload }, frontendOrigin);
+        previewWindow.postMessage(
+          { type: PREVIEW_DATA_MESSAGE, storageKey, payload: previewPayload },
+          frontendOrigin,
+        );
       }, 250);
     }
   };
@@ -176,11 +188,15 @@ export default function ResumePage() {
   return (
     <div>
       <PageHeader
-        title="Markdown 简历"
-        description="去掉 PDF 下载，收成一套固定版式。后台只保留必要信息和 Markdown 正文。"
+        title="简历"
+        description=""
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="preview-glow-button" onClick={openPreview}>
+            <Button
+              variant="outline"
+              className="preview-glow-button"
+              onClick={openPreview}
+            >
               <ExternalLink className="mr-2 h-4 w-4" />
               真实页面预览
             </Button>
@@ -203,15 +219,30 @@ export default function ResumePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>姓名 / 页面标题</Label>
-                <Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+                <Input
+                  value={form.title}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, title: e.target.value }))
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <Label>所在地</Label>
-                <Input value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
+                <Input
+                  value={form.location}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, location: e.target.value }))
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <Label>邮箱</Label>
-                <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+                <Input
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, email: e.target.value }))
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <ResourceUploadField
@@ -222,13 +253,15 @@ export default function ResumePage() {
                   placeholder="上传或填写头像地址"
                   note="简历默认头像"
                   uniqueByCategory
-                  onChange={(value) => setForm((p) => ({ ...p, profile_image_url: value }))}
+                  onChange={(value) =>
+                    setForm((p) => ({ ...p, profile_image_url: value }))
+                  }
                 />
               </div>
             </div>
 
             <div className="mt-5 space-y-2">
-              <Label>Markdown 简历正文</Label>
+              <Label>简历正文</Label>
               <MarkdownEditor
                 value={form.summary}
                 onChange={(value) => setForm((p) => ({ ...p, summary: value }))}

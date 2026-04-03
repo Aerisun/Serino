@@ -3,18 +3,8 @@ import PageShell from "@/components/PageShell";
 import { usePageConfig } from "@/contexts/runtime-config";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
-interface GuestbookPageConfig extends BaseViewPageConfig {
-  promptTitle?: string;
-  nameFieldLabel?: string;
-  contentFieldLabel?: string;
-  submitFieldLabel?: string;
-  namePlaceholder?: string;
-  contentPlaceholder?: string;
-  submitLabel?: string;
-}
-
 const Guestbook = () => {
-  const config = usePageConfig().guestbook as unknown as GuestbookPageConfig;
+  const config = usePageConfig().guestbook as BaseViewPageConfig;
 
   return (
     <PageShell

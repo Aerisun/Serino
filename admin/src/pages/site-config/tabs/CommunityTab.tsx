@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { Card, CardContent } from "@/components/ui/Card";
 import { HintBanner } from "@/components/ui/HintBanner";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
@@ -119,18 +120,34 @@ export function CommunityTab() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const renderInlineSwitchLabel = (label: string, description: string) => (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{label}</span>
+      <LabelWithHelp
+        hideLabel
+        label={label}
+        title={label}
+        description={description}
+      />
+    </span>
+  );
+
   return (
     <Card className="mt-4">
       <CardContent className="space-y-6 pt-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold">{t("siteConfig.community")}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("siteConfig.sectionDescriptions.community")}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("siteConfig.commentAutoSaveHint")}
-            </p>
+            <div className="inline-flex items-center gap-1.5">
+              <h3 className="text-lg font-semibold">{t("siteConfig.community")}</h3>
+              <LabelWithHelp
+                hideLabel
+                label={t("siteConfig.community")}
+                title={t("siteConfig.community")}
+                description={t("siteConfig.sectionDescriptions.community")}
+                usageTitle="提示"
+                usageItems={[t("siteConfig.commentAutoSaveHint")]}
+              />
+            </div>
           </div>
         </div>
 
@@ -195,24 +212,30 @@ export function CommunityTab() {
             onCheckedChange={(checked) =>
               updateField("email_login_enabled", checked)
             }
-            label={t("siteConfig.commentAnonymousEnabled")}
-            description={t("siteConfig.commentAnonymousEnabledDesc")}
+            label={renderInlineSwitchLabel(
+              t("siteConfig.commentAnonymousEnabled"),
+              t("siteConfig.commentAnonymousEnabledDesc"),
+            )}
           />
           <AppleSwitch
             checked={form.image_uploader}
             onCheckedChange={(checked) =>
               updateField("image_uploader", checked)
             }
-            label={t("siteConfig.commentImageUploader")}
-            description={t("siteConfig.commentImageUploaderDesc")}
+            label={renderInlineSwitchLabel(
+              t("siteConfig.commentImageUploader"),
+              t("siteConfig.commentImageUploaderDesc"),
+            )}
           />
           <AppleSwitch
             checked={form.enable_enjoy_search}
             onCheckedChange={(checked) =>
               updateField("enable_enjoy_search", checked)
             }
-            label={t("siteConfig.commentEnableEnjoySearch")}
-            description={t("siteConfig.commentEnableEnjoySearchDesc")}
+            label={renderInlineSwitchLabel(
+              t("siteConfig.commentEnableEnjoySearch"),
+              t("siteConfig.commentEnableEnjoySearchDesc"),
+            )}
           />
         </div>
 
@@ -222,7 +245,6 @@ export function CommunityTab() {
         >
           <div className="space-y-4">
             <HintBanner>{t("siteConfig.advancedSettingsHint")}</HintBanner>
-            <HintBanner>{t("siteConfig.commentAutoSaveHint")}</HintBanner>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
@@ -249,31 +271,31 @@ export function CommunityTab() {
             </div>
 
             <div className="space-y-1">
-              <Label>{t("siteConfig.commentSurfaces")}</Label>
+              <LabelWithHelp
+                label={t("siteConfig.commentSurfaces")}
+                title={t("siteConfig.commentSurfaces")}
+                description={t("siteConfig.commentSurfacesHint")}
+              />
               <Textarea
                 value={form.surfaces}
                 onChange={(e) => updateField("surfaces", e.target.value)}
                 rows={8}
                 className="font-mono text-xs"
               />
-              <p className="text-xs text-muted-foreground">
-                {t("siteConfig.commentSurfacesHint")}
-              </p>
             </div>
 
             <div className="space-y-1">
-              <Label>
-                {t("siteConfig.commentHelperCopy")} ({t("common.optional")})
-              </Label>
+              <LabelWithHelp
+                label={`${t("siteConfig.commentHelperCopy")} (${t("common.optional")})`}
+                title={t("siteConfig.commentHelperCopy")}
+                description={t("siteConfig.commentHelperHint")}
+              />
               <Textarea
                 value={form.helper_copy}
                 onChange={(e) => updateField("helper_copy", e.target.value)}
                 rows={4}
                 placeholder={t("siteConfig.commentHelperHint")}
               />
-              <p className="text-xs text-muted-foreground">
-                {t("siteConfig.commentHelperHint")}
-              </p>
             </div>
           </div>
         </CollapsibleSection>
