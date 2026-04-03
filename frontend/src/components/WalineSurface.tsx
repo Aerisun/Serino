@@ -13,17 +13,18 @@ import {
   type CommunityConfig,
   type CommunitySurface,
 } from "@/lib/community-config";
+import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { compressImageFile } from "@serino/utils";
+import { prepareImageUploadFile } from "@serino/utils";
 import WalineCommentForm from "./WalineCommentForm";
 import WalineCommentList from "./WalineCommentList";
 import {
   buildAvatarPresets,
   buildDefaultAvatarPreset,
   collectAvatarUsage,
-  EMOJI_GROUPS,
+  getLocalizedEmojiGroups,
   insertTextAtSelection,
   normalizeName,
   PROFILE_STORAGE_PREFIX,
@@ -55,17 +56,18 @@ const WalineSurface = ({
   communityConfig,
 }: WalineSurfaceProps) => {
   const prefersReducedMotion = useReducedMotionPreference();
+  const { t } = useFrontendI18n();
   const isGuestbook = surface === "guestbook";
   const pageConfig = usePageConfig();
   const guestbookPageConfig = (pageConfig.guestbook as Record<string, unknown> | undefined) ?? {};
   const guestbookBodyPlaceholder = String(
-    guestbookPageConfig.contentPlaceholder ?? "写下一句问候、反馈或交换友链时想说的话",
+    guestbookPageConfig.contentPlaceholder ?? t("waline.surface.guestbookBodyPlaceholder"),
   );
-  const guestbookSubmitLabel = String(guestbookPageConfig.submitLabel ?? "发表留言");
-  const guestbookSubmittingLabel = String(guestbookPageConfig.submittingLabel ?? "提交中...");
-  const guestbookLoadingLabel = String(guestbookPageConfig.loadingLabel ?? "留言板正在更新...");
-  const guestbookRetryLabel = String(guestbookPageConfig.retryLabel ?? "重试加载");
-  const guestbookEmptyMessage = String(guestbookPageConfig.emptyMessage ?? "还没有公开留言，第一条就写在这里。");
+  const guestbookSubmitLabel = String(guestbookPageConfig.submitLabel ?? t("waline.surface.guestbookSubmit"));
+  const guestbookSubmittingLabel = String(guestbookPageConfig.submittingLabel ?? t("waline.surface.guestbookSubmitting"));
+  const guestbookLoadingLabel = String(guestbookPageConfig.loadingLabel ?? t("waline.surface.guestbookLoading"));
+  const guestbookRetryLabel = String(guestbookPageConfig.retryLabel ?? t("waline.surface.guestbookRetry"));
+  const guestbookEmptyMessage = String(guestbookPageConfig.emptyMessage ?? t("waline.surface.guestbookEmpty"));
   const storageKey = `${PROFILE_STORAGE_PREFIX}${surface}:${slug ?? "guestbook"}`;
   const storedDraft = readStoredDraft(storageKey);
   const {
@@ -149,10 +151,10 @@ const WalineSurface = ({
   );
   const loginMethodLabels = useMemo(
     () => [
-      ...(commentEmailLoginEnabled ? ["邮箱"] : []),
+      ...(commentEmailLoginEnabled ? [t("waline.surface.loginMethodEmail")] : []),
       ...oauthProviderLabels,
     ],
-    [commentEmailLoginEnabled, oauthProviderLabels],
+    [commentEmailLoginEnabled, oauthProviderLabels, t],
   );
   const hasLoginMethod = loginMethodLabels.length > 0;
   const authSession = useMemo(
@@ -212,7 +214,7 @@ const WalineSurface = ({
 
   const loadEntries = useCallback(async (requestedPageCount = 1) => {
     if (!isGuestbook && !slug) {
-      setLoadError("当前内容缺少评论路径，暂时无法加载评论。");
+      setLoadError(t("waline.surface.missingPath"));
       setLoadingEntries(false);
       setLoadingMoreEntries(false);
       return;
@@ -283,12 +285,12 @@ const WalineSurface = ({
       setLoadedPageCount(loadedPages || 1);
       setHasMoreEntries(hasMore);
     } catch (error) {
-      setLoadError(resolveApiError(error));
+      setLoadError(resolveApiError(error, t("waline.common.requestFailed")));
     } finally {
       setLoadingEntries(false);
       setLoadingMoreEntries(false);
     }
-  }, [initialPageSize, isGuestbook, resolvedConfig.default_sorting, slug, surface]);
+  }, [initialPageSize, isGuestbook, resolvedConfig.default_sorting, slug, surface, t]);
 
   useEffect(() => {
     void loadEntries(1);
@@ -391,13 +393,14 @@ const WalineSurface = ({
   }, [draft.body]);
 
   const deferredEmojiQuery = useDeferredValue(emojiQuery.trim().toLowerCase());
+  const localizedEmojiGroups = useMemo(() => getLocalizedEmojiGroups(t), [t]);
 
   const filteredEmojiGroups = useMemo(() => {
     const query = deferredEmojiQuery;
     if (!query) {
-      return EMOJI_GROUPS;
+      return localizedEmojiGroups;
     }
-    return EMOJI_GROUPS
+    return localizedEmojiGroups
       .map((group) => ({
         ...group,
         items: group.items.filter((choice) => {
@@ -410,7 +413,7 @@ const WalineSurface = ({
         }),
       }))
       .filter((group) => group.items.length > 0);
-  }, [deferredEmojiQuery]);
+  }, [deferredEmojiQuery, localizedEmojiGroups]);
 
   const handleEmojiInsert = useCallback((emoji: string) => {
     if (!emojiSelectionEnabled) {
@@ -422,7 +425,7 @@ const WalineSurface = ({
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!imageUploadsEnabled) {
-      setSubmitError("当前站点已关闭评论图片上传。");
+      setSubmitError(t("waline.surface.imageUploadDisabled"));
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
@@ -434,7 +437,8 @@ const WalineSurface = ({
     setSubmitNotice(null);
 
     try {
-      const compressedFile = await compressImageFile(file, {
+      const compressedFile = await prepareImageUploadFile(file, {
+        mode: "compress",
         maxDimension: 1920,
         quality: 0.82,
         minBytesToCompress: config?.image_max_bytes ?? 512 * 1024,
@@ -442,20 +446,20 @@ const WalineSurface = ({
       const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost({ file: compressedFile } as never);
       const imageUrl = response.data.data?.url;
       if (!imageUrl) {
-        throw new Error("图片上传成功，但没有返回可用地址。");
+        throw new Error(t("waline.surface.imageUploadMissingUrl"));
       }
       const alt = file.name.replace(/\.[^.]+$/, "").trim() || "image";
       const prefix = draft.body.trim() ? "\n" : "";
       insertIntoBody(`${prefix}![${alt}](${imageUrl})\n`);
     } catch (error) {
-      setSubmitError(resolveApiError(error));
+      setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
     } finally {
       setImageUploading(false);
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
     }
-  }, [config?.image_max_bytes, draft.body, imageUploadsEnabled, insertIntoBody]);
+  }, [config?.image_max_bytes, draft.body, imageUploadsEnabled, insertIntoBody, t]);
 
   const handleLogout = useCallback(() => {
     setAuthError(null);
@@ -464,7 +468,7 @@ const WalineSurface = ({
 
   const handleSubmit = useCallback(async () => {
     if (requiresAuthentication && !authSession) {
-      setSubmitError(isGuestbook ? "当前站点要求登录后才能留言。" : "当前站点要求登录后才能发表评论。");
+      setSubmitError(isGuestbook ? t("waline.surface.loginRequiredGuestbook") : t("waline.surface.loginRequiredComment"));
       return;
     }
 
@@ -474,19 +478,19 @@ const WalineSurface = ({
     const avatarKey = authSession ? `oauth-${authSession.objectId}` : draft.avatarKey;
 
     if (!authSession && !authorName) {
-      setSubmitError("请先填写昵称。");
+      setSubmitError(t("waline.surface.nicknameRequired"));
       return;
     }
     if (!authSession && !authorEmail) {
-      setSubmitError("请填写邮箱，昵称会和邮箱绑定。");
+      setSubmitError(t("waline.surface.emailRequired"));
       return;
     }
     if (!draft.body.trim()) {
-      setSubmitError(isGuestbook ? "留言内容不能为空。" : "评论内容不能为空。");
+      setSubmitError(isGuestbook ? t("waline.surface.guestbookBodyRequired") : t("waline.surface.commentBodyRequired"));
       return;
     }
     if (!authSession && !avatarKey) {
-      setSubmitError("请先选择一个头像。");
+      setSubmitError(t("waline.surface.avatarRequired"));
       return;
     }
 
@@ -522,16 +526,16 @@ const WalineSurface = ({
       setDraft((current) => ({ ...current, body: "" }));
       setReplyTarget(null);
       setComposerOpen(false);
-      setSubmitNotice("已经收到，审核通过后会出现在当前页面。");
+      setSubmitNotice(t("waline.surface.submitNotice"));
       startTransition(() => {
         void loadEntries(loadedPageCount);
       });
     } catch (error) {
-      setSubmitError(resolveApiError(error));
+      setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
     } finally {
       setSubmitting(false);
     }
-  }, [authSession, draft, isGuestbook, loadEntries, loadedPageCount, requiresAuthentication, replyTarget, slug, surface]);
+  }, [authSession, draft, isGuestbook, loadEntries, loadedPageCount, requiresAuthentication, replyTarget, slug, surface, t]);
 
   const selectedPreset = avatarPresets.find((preset) => preset.key === draft.avatarKey) ?? avatarPresets[0] ?? null;
   const toggleAvatarPicker = useCallback(() => {
@@ -549,7 +553,7 @@ const WalineSurface = ({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2 text-[0.72rem] font-medium uppercase tracking-[0.22em] text-foreground/42">
             <Sparkles className="h-3.5 w-3.5" />
-            {isGuestbook ? "Guestbook" : "Comments"}
+            {isGuestbook ? t("waline.surface.sectionGuestbook") : t("waline.surface.sectionComments")}
           </div>
           <button
             type="button"
@@ -557,7 +561,13 @@ const WalineSurface = ({
             className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-4 py-2 text-sm font-medium text-foreground/60 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.82]"
           >
             <PencilLine className="h-4 w-4" />
-            {composerOpen ? (replyTarget ? "收起回复框" : "收起编辑区") : replyTarget ? "写回复" : isGuestbook ? "写留言" : "写评论"}
+            {composerOpen
+              ? (replyTarget ? t("waline.surface.collapseReplyBox") : t("waline.surface.collapseEditor"))
+              : replyTarget
+                ? t("waline.surface.writeReply")
+                : isGuestbook
+                  ? t("waline.surface.writeGuestbook")
+                  : t("waline.surface.writeComment")}
           </button>
         </div>
 

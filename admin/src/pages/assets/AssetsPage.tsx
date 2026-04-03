@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Upload, Trash2, Copy, ExternalLink, Link as LinkIcon, Pencil } from "lucide-react";
-import { canCompressImage, compressImageFile } from "@serino/utils";
+import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
@@ -174,7 +174,7 @@ export default function AssetsPage() {
           return;
         }
         setIsCompressing(true);
-        fileToUpload = await compressImageFile(selectedFile);
+        fileToUpload = await prepareImageUploadFile(selectedFile, { mode: uploadMode });
       }
       await upload.mutateAsync({
         data: { file: fileToUpload, visibility, scope, category, note: note.trim() || undefined } as any,

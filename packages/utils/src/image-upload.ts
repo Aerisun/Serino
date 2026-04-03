@@ -6,6 +6,12 @@ export interface CompressImageOptions {
   minBytesToCompress?: number;
 }
 
+export type UploadImageMode = "compress" | "original";
+
+export interface PrepareImageUploadFileOptions extends CompressImageOptions {
+  mode?: UploadImageMode;
+}
+
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -78,4 +84,17 @@ export async function compressImageFile(
     type: outputType,
     lastModified: Date.now(),
   });
+}
+
+export async function prepareImageUploadFile(
+  file: File,
+  options: PrepareImageUploadFileOptions = {},
+): Promise<File> {
+  const { mode = "original", ...compressOptions } = options;
+
+  if (mode !== "compress") {
+    return file;
+  }
+
+  return compressImageFile(file, compressOptions);
 }

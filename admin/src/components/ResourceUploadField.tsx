@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { canCompressImage, compressImageFile } from "@serino/utils";
+import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
@@ -133,7 +133,7 @@ export function ResourceUploadField({
           return;
         }
         setIsCompressing(true);
-        fileToUpload = await compressImageFile(file);
+        fileToUpload = await prepareImageUploadFile(file, { mode: uploadMode });
       }
       upload.mutate({
         data: {

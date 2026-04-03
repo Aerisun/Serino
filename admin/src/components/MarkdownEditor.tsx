@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { canCompressImage, compressImageFile } from "@serino/utils";
+import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 
@@ -166,7 +166,7 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
           return;
         }
         setImageUploading(true);
-        fileToUpload = await compressImageFile(file);
+        fileToUpload = await prepareImageUploadFile(file, { mode: imageUploadMode });
       }
 
       pendingImageFileNameRef.current = file.name;
