@@ -3,13 +3,13 @@ from __future__ import annotations
 import re
 import time
 from collections import defaultdict
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.core.time import BEIJING_TZ, beijing_date, normalize_utc_datetime
+from aerisun.core.time import beijing_date, normalize_utc_datetime
 from aerisun.domain.activity import repository as repo
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,

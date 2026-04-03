@@ -32,11 +32,8 @@ def _public_filter(model: type[ContentModel], *, include_archived: bool = False)
             visibility_filter,
             and_(model.status == "archived", model.visibility == "private"),
         )
-    return (
-        select(model)
-        .where(visibility_filter)
-        .order_by(desc(model.published_at), desc(model.created_at))
-    )
+    return select(model).where(visibility_filter).order_by(desc(model.published_at), desc(model.created_at))
+
 
 def find_published(
     session: Session,

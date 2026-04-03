@@ -21,13 +21,12 @@ from aerisun.domain.media.object_storage import (
     build_resource_key_from_digest,
     get_or_create_object_storage_config,
     queue_asset_mirror,
-    record_completed_remote_asset_delete,
     queue_remote_asset_delete,
+    record_completed_remote_asset_delete,
     should_use_direct_upload,
     sign_asset_download_url,
     upload_asset_bytes_to_remote,
 )
-from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.media.schemas import (
     AssetAdminRead,
     AssetAdminUpdate,
@@ -35,6 +34,7 @@ from aerisun.domain.media.schemas import (
     AssetUploadPlanRead,
     AssetUploadPlanWrite,
 )
+from aerisun.domain.site_config import repository as site_config_repo
 
 logger = logging.getLogger(__name__)
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
@@ -185,7 +185,11 @@ def upload_asset(
         storage_path = Path(existing.storage_path)
         if not storage_path.exists():
             provider = build_object_storage_provider(session)
-            if provider is not None and existing.storage_provider == "bitiful" and existing.remote_status == "available":
+            if (
+                provider is not None
+                and existing.storage_provider == "bitiful"
+                and existing.remote_status == "available"
+            ):
                 queue_asset_mirror(session, existing)
                 session.commit()
                 session.refresh(existing)

@@ -647,6 +647,15 @@ def _seed_subscription_config_from_settings(session: Session) -> None:
         config.smtp_use_ssl = bool(settings.subscription_smtp_use_ssl)
         config.smtp_test_passed = False
         config.smtp_tested_at = None
+        config.allowed_content_types = ["posts", "diary", "thoughts", "excerpts"]
+        config.mail_subject_template = "[{site_name}] {content_title}"
+        config.mail_body_template = (
+            "{site_name} 有新的{content_type_label}内容发布。\n\n"
+            "{content_title}\n"
+            "{content_summary}\n\n"
+            "阅读链接：{content_url}\n"
+            "RSS：{feed_url}"
+        )
         return
 
     def _fill_if_empty(field_name: str, value: str) -> bool:
@@ -669,6 +678,21 @@ def _seed_subscription_config_from_settings(session: Session) -> None:
     changed = _fill_if_empty("smtp_from_email", settings.subscription_smtp_from_email) or changed
     changed = _fill_if_empty("smtp_from_name", settings.subscription_smtp_from_name) or changed
     changed = _fill_if_empty("smtp_reply_to", settings.subscription_smtp_reply_to) or changed
+    if not config.allowed_content_types:
+        config.allowed_content_types = ["posts", "diary", "thoughts", "excerpts"]
+        changed = True
+    if not (config.mail_subject_template or "").strip():
+        config.mail_subject_template = "[{site_name}] {content_title}"
+        changed = True
+    if not (config.mail_body_template or "").strip():
+        config.mail_body_template = (
+            "{site_name} 有新的{content_type_label}内容发布。\n\n"
+            "{content_title}\n"
+            "{content_summary}\n\n"
+            "阅读链接：{content_url}\n"
+            "RSS：{feed_url}"
+        )
+        changed = True
 
     if changed:
         config.smtp_test_passed = False

@@ -93,17 +93,25 @@ def seed_core_system_asset_urls(session: Session) -> dict[str, str]:
     return seeded_urls
 
 
+def _normalize_system_asset_value(session: Session, *, field_name: str, source_value: str | None) -> str:
+    spec = _CORE_SYSTEM_ASSET_SPEC_BY_FIELD[field_name]
+    return ensure_system_asset_reference(
+        session,
+        source_value=str(source_value or "").strip(),
+        category=spec.category,
+        note=spec.reference_note,
+        source_roots=(
+            get_system_asset_root(),
+            Path(__file__).resolve().parents[5] / "frontend" / "public",
+        ),
+    )
+
+
 def normalize_core_system_asset_references(session: Session, *, site: object | None, resume: object | None) -> None:
-    source_roots = (get_system_asset_root(),)
     if site is not None:
         for field_name in ("og_image", "site_icon_url", "hero_image_url", "hero_poster_url", "hero_video_url"):
-            spec = _CORE_SYSTEM_ASSET_SPEC_BY_FIELD[field_name]
-            normalized = ensure_system_asset_reference(
-                session,
-                source_value=getattr(site, field_name),
-                category=spec.category,
-                note=spec.reference_note,
-                source_roots=source_roots,
+            normalized = _normalize_system_asset_value(
+                session, field_name=field_name, source_value=getattr(site, field_name)
             )
             if field_name == "hero_video_url":
                 setattr(site, field_name, normalized or None)
@@ -111,11 +119,8 @@ def normalize_core_system_asset_references(session: Session, *, site: object | N
                 setattr(site, field_name, normalized)
 
     if resume is not None:
-        spec = _CORE_SYSTEM_ASSET_SPEC_BY_FIELD["profile_image_url"]
-        resume.profile_image_url = ensure_system_asset_reference(
+        resume.profile_image_url = _normalize_system_asset_value(
             session,
+            field_name="profile_image_url",
             source_value=resume.profile_image_url,
-            category=spec.category,
-            note=spec.reference_note,
-            source_roots=source_roots,
         )

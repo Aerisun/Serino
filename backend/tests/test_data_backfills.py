@@ -8,6 +8,7 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.seed import seed_bootstrap_data
 from aerisun.core.settings import get_settings
 from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY
+from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.models import AuditLog, ConfigRevision
 from aerisun.domain.site_auth.models import SiteAuthConfig
 from aerisun.domain.site_config.models import CommunityConfig, PageCopy, ResumeBasics, SiteProfile
@@ -56,13 +57,15 @@ def test_run_pending_backfills_applies_registered_repairs_once(tmp_path, monkeyp
             resume = session.query(ResumeBasics).one()
             auth = session.query(SiteAuthConfig).one()
             subscription = session.query(ContentSubscriptionConfig).one()
+            original_og_image = site.og_image
+            original_resume_image = resume.profile_image_url
 
             friends_page.title = "Custom Friends"
             friends_page.extras = {"circle_title": "Custom Circle"}
             community.server_url = "http://localhost:8360/"
             community.surfaces = list((community.surfaces or [])[:3])
-            site.og_image = "/images/hero_bg.jpeg"
-            resume.profile_image_url = "/images/avatar.webp"
+            site.og_image = original_og_image
+            resume.profile_image_url = original_resume_image
             flags = dict(site.feature_flags or {})
             flags.pop(AGENT_MODEL_CONFIG_FLAG_KEY, None)
             site.feature_flags = flags
@@ -71,6 +74,14 @@ def test_run_pending_backfills_applies_registered_repairs_once(tmp_path, monkeyp
             subscription.allowed_content_types = []
             subscription.mail_subject_template = ""
             subscription.mail_body_template = ""
+            session.query(Asset).filter(
+                Asset.resource_key.in_(
+                    [
+                        original_og_image.removeprefix("/media/"),
+                        original_resume_image.removeprefix("/media/"),
+                    ]
+                )
+            ).delete(synchronize_session=False)
             session.commit()
 
         applied = run_pending_backfills()
@@ -94,9 +105,23 @@ def test_run_pending_backfills_applies_registered_repairs_once(tmp_path, monkeyp
             assert friends_page.extras["circle_title"] == "Custom Circle"
             assert friends_page.extras["refreshLabel"] == "刷新"
             assert community.server_url == get_settings().waline_server_url
-            assert [item["key"] for item in community.surfaces] == ["posts", "diary", "guestbook", "thoughts", "excerpts"]
-            assert site.og_image.startswith("/media/internal/assets/site-og/")
-            assert resume.profile_image_url.startswith("/media/internal/assets/resume-avatar/")
+            assert [item["key"] for item in community.surfaces] == [
+                "posts",
+                "diary",
+                "guestbook",
+                "thoughts",
+                "excerpts",
+            ]
+            assert site.og_image == original_og_image
+            assert resume.profile_image_url == original_resume_image
+            assert (
+                session.query(Asset).filter(Asset.resource_key == original_og_image.removeprefix("/media/")).count()
+                == 1
+            )
+            assert (
+                session.query(Asset).filter(Asset.resource_key == original_resume_image.removeprefix("/media/")).count()
+                == 1
+            )
             assert AGENT_MODEL_CONFIG_FLAG_KEY in dict(site.feature_flags or {})
             assert auth.admin_auth_methods == []
             assert auth.admin_console_auth_methods == []
@@ -123,12 +148,15 @@ def test_run_pending_backfills_records_config_revisions_and_audit(tmp_path, monk
             site = session.query(SiteProfile).one()
             auth = session.query(SiteAuthConfig).one()
             subscription = session.query(ContentSubscriptionConfig).one()
+            original_og_image = site.og_image
 
             extras = dict(not_found_page.extras or {})
             extras["badgeLabel"] = "Shell mismatch"
             not_found_page.extras = extras
             community.server_url = "http://localhost:8360/"
-            site.og_image = "/images/hero_bg.jpeg"
+            session.query(Asset).filter(Asset.resource_key == original_og_image.removeprefix("/media/")).delete(
+                synchronize_session=False
+            )
             auth.admin_console_auth_methods = None
             auth.admin_auth_methods = None
             subscription.allowed_content_types = []
@@ -147,7 +175,6 @@ def test_run_pending_backfills_records_config_revisions_and_audit(tmp_path, monk
             "site.pages",
             "site.community",
             "subscriptions.config",
-            "site.profile",
         }
         assert all(item.summary.startswith("升级数据回填：") for item in revisions)
         assert len(audits) == 4

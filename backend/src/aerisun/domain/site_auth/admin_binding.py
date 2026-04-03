@@ -9,8 +9,10 @@ from aerisun.domain.site_auth.schemas import SiteAdminEmailIdentityBindRequest, 
 
 from .config_service import (
     admin_console_auth_method_enabled,
-    get_admin_login_options as _get_admin_login_options,
     get_site_auth_config_orm,
+)
+from .config_service import (
+    get_admin_login_options as _get_admin_login_options,
 )
 from .profile import build_avatar_candidates, suggest_display_name
 from .shared import ALLOWED_ADMIN_AUTH_METHODS, normalize_email, normalize_string_list

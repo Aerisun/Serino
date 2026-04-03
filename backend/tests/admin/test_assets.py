@@ -8,7 +8,12 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.domain.media import object_storage as media_object_storage
 from aerisun.domain.media import repository as media_repo
-from aerisun.domain.media.models import Asset, AssetMirrorQueueItem, AssetRemoteDeleteQueueItem, AssetRemoteUploadQueueItem
+from aerisun.domain.media.models import (
+    Asset,
+    AssetMirrorQueueItem,
+    AssetRemoteDeleteQueueItem,
+    AssetRemoteUploadQueueItem,
+)
 
 BASE = "/api/v1/admin/assets"
 

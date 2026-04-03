@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import logging
 
-from aerisun.core.db import get_session_factory
 from aerisun.core.backfills.registry import REGISTERED_BACKFILLS
-from aerisun.core.backfills.state import ensure_data_migration_table, list_applied_data_migrations, record_data_migration
+from aerisun.core.backfills.state import (
+    ensure_data_migration_table,
+    list_applied_data_migrations,
+    record_data_migration,
+)
 from aerisun.core.backfills.utils import (
     capture_resource_snapshots,
     create_backfill_audit_log,
     create_backfill_config_revisions,
 )
+from aerisun.core.db import get_session_factory
 
 logger = logging.getLogger("aerisun.backfill")
 

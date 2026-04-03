@@ -17,7 +17,6 @@ from aerisun.core.seed_steps.content import insert_missing_page_copies, seed_mis
 from aerisun.core.seed_steps.system_assets import normalize_core_system_asset_references, seed_core_system_asset_urls
 from aerisun.core.seed_steps.waline import clear_waline_seed_data
 from aerisun.core.settings import get_settings
-from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.automation.models import (
     AgentRun,
     AgentRunApproval,
@@ -30,13 +29,21 @@ from aerisun.domain.automation.models import (
     WorkflowGateBufferItem,
     WorkflowGateState,
 )
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.content.models import ContentCategory, DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.ops.models import AuditLog, ConfigRevision, TrafficDailySnapshot, VisitRecord
-from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteAuthConfig, SiteUser, SiteUserOAuthAccount, SiteUserSession
+from aerisun.domain.site_auth.config_service import build_default_site_auth_config
+from aerisun.domain.site_auth.models import (
+    SiteAdminIdentity,
+    SiteAuthConfig,
+    SiteUser,
+    SiteUserOAuthAccount,
+    SiteUserSession,
+)
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -47,7 +54,6 @@ from aerisun.domain.site_config.models import (
     SocialLink,
 )
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
-from aerisun.domain.site_auth.config_service import build_default_site_auth_config
 from aerisun.domain.subscription.models import ContentSubscriptionConfig
 
 DEFAULT_HERO_VIDEO_URL = (
@@ -516,7 +522,9 @@ def backfill_site_auth_config_defaults(session: Session) -> None:
 
 def _seed_subscription_config_from_settings(session: Session, *, force: bool = False) -> None:
     settings = get_settings()
-    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    config = session.scalars(
+        select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())
+    ).first()
     if config is None:
         config = ContentSubscriptionConfig()
         session.add(config)
@@ -560,7 +568,9 @@ def _seed_subscription_config_from_settings(session: Session, *, force: bool = F
 
 def backfill_subscription_config_defaults(session: Session) -> None:
     settings = get_settings()
-    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    config = session.scalars(
+        select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())
+    ).first()
     if config is None:
         _seed_subscription_config_from_settings(session, force=True)
         return
@@ -797,9 +807,6 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
             session.flush()
 
         current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-        current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
-        normalize_core_system_asset_references(session, site=current_site, resume=current_resume)
-
         if current_site is not None:
             _seed_nav_items(session, site_id=current_site.id)
 

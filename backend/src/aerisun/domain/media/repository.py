@@ -174,7 +174,9 @@ def get_remote_delete_queue_item(session: Session, queue_item_id: str) -> AssetR
     return session.get(AssetRemoteDeleteQueueItem, queue_item_id)
 
 
-def find_active_remote_upload_queue_item_for_asset(session: Session, asset_id: str) -> AssetRemoteUploadQueueItem | None:
+def find_active_remote_upload_queue_item_for_asset(
+    session: Session, asset_id: str
+) -> AssetRemoteUploadQueueItem | None:
     return (
         session.query(AssetRemoteUploadQueueItem)
         .filter(

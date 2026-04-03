@@ -22,11 +22,12 @@ class BackfillSpec:
 
 
 def _spec(module: object) -> BackfillSpec:
+    module_exports = module  # typed as runtime-export module object
     return BackfillSpec(
-        migration_key=getattr(module, "migration_key"),
-        summary=getattr(module, "summary"),
-        apply=getattr(module, "apply"),
-        resource_keys=tuple(getattr(module, "resource_keys", ())),
+        migration_key=module_exports.migration_key,
+        summary=module_exports.summary,
+        apply=module_exports.apply,
+        resource_keys=tuple(getattr(module_exports, "resource_keys", ())),
     )
 
 

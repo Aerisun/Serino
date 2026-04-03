@@ -5,9 +5,9 @@ from aerisun.core.db_preflight import compute_seed_fingerprint, run_preflight, s
 from aerisun.core.dev_seed import seed_development_data
 from aerisun.core.seed_profile import resolve_seed_path
 from aerisun.core.settings import get_settings
+from aerisun.domain.ops.models import TrafficDailySnapshot
 from aerisun.domain.site_config.models import CommunityConfig
 from aerisun.domain.social.models import Friend
-from aerisun.domain.ops.models import TrafficDailySnapshot
 from aerisun.domain.waline.service import connect_waline_db
 
 

@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Response
+from fastapi.params import Depends as DependsMarker
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -31,6 +32,8 @@ from aerisun.domain.content.service import (
     list_public_posts,
     list_public_thoughts,
 )
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.service import is_site_user_admin
 from aerisun.domain.site_config.schemas import (
     CommunityConfigRead,
     LinkPreviewRead,
@@ -48,8 +51,6 @@ from aerisun.domain.site_config.service import (
     get_site_link_preview,
     get_site_poem_preview,
 )
-from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
-from aerisun.domain.site_auth.service import is_site_user_admin
 from aerisun.domain.social.schemas import FriendCollectionRead, FriendFeedCollectionRead
 from aerisun.domain.social.service import list_public_friend_feed, list_public_friends
 
@@ -63,6 +64,10 @@ def _can_view_archived_content(
     current_user: SiteUser | None,
     current_site_session: SiteUserSession | None,
 ) -> bool:
+    if isinstance(current_user, DependsMarker) or not isinstance(current_user, SiteUser):
+        return False
+    if isinstance(current_site_session, DependsMarker) or not isinstance(current_site_session, SiteUserSession):
+        current_site_session = None
     return current_user is not None and is_site_user_admin(session, current_user, current_site_session)
 
 

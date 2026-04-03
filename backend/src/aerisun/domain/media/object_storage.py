@@ -166,7 +166,9 @@ class BitifulObjectStorageProvider:
     def is_healthy(self) -> ObjectStorageHealthRead:
         try:
             self._client.head_bucket(Bucket=self._bucket)
-            return ObjectStorageHealthRead(ok=True, summary="OSS 配置可用，桶访问正常", details={"bucket": self._bucket})
+            return ObjectStorageHealthRead(
+                ok=True, summary="OSS 配置可用，桶访问正常", details={"bucket": self._bucket}
+            )
         except Exception as exc:  # pragma: no cover - exercised via monkeypatch
             return ObjectStorageHealthRead(
                 ok=False,

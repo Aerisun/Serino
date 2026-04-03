@@ -3,7 +3,6 @@ from __future__ import annotations
 import bcrypt
 import pytest
 
-
 LIST_CASES = [
     ("posts", "/api/v1/site/posts"),
     ("diary", "/api/v1/site/diary"),
