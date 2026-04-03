@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useListAssetsEndpointApiV1AdminAssetsGet as useListAssetsApiV1AdminAssetsGet,
   useDeleteAssetEndpointApiV1AdminAssetsAssetIdDelete as useDeleteAssetApiV1AdminAssetsAssetIdDelete,
@@ -27,12 +27,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { Upload, Trash2, Copy, ExternalLink, Link as LinkIcon, Pencil } from "lucide-react";
+import { Upload, Trash2, Copy, ExternalLink, Link as LinkIcon, Pencil, Zap } from "lucide-react";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
+import {
+  getObjectStorageConfig,
+  listObjectStorageSyncRecords,
+  type ObjectStorageSyncRecordRead,
+} from "@/pages/more/objectStorageApi";
 import { toast } from "sonner";
 import type { AssetAdminRead } from "@serino/api-client/models";
 
@@ -40,6 +45,7 @@ export default function AssetsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"user" | "system" | "oss_sync">("user");
   const [scope, setScope] = useState<"user" | "system">("user");
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
@@ -59,6 +65,7 @@ export default function AssetsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSyncView = viewMode === "oss_sync";
 
   useEffect(() => {
     return () => {
@@ -69,9 +76,20 @@ export default function AssetsPage() {
   const { data: raw, isLoading } = useListAssetsApiV1AdminAssetsGet({
     page,
     q: searchDebounced || undefined,
-    scope,
+    scope: isSyncView ? undefined : viewMode,
   });
   const data = raw?.data && "items" in raw.data ? raw.data : undefined;
+  const { data: objectStorageConfig } = useQuery({
+    queryKey: ["admin", "object-storage-config"],
+    queryFn: getObjectStorageConfig,
+    refetchOnWindowFocus: false,
+  });
+  const { data: syncRecords, isLoading: isSyncRecordsLoading } = useQuery({
+    queryKey: ["admin", "object-storage-sync-records", page, searchDebounced],
+    queryFn: () => listObjectStorageSyncRecords({ page, q: searchDebounced }),
+    enabled: isSyncView,
+    refetchOnWindowFocus: false,
+  });
 
   const del = useDeleteAssetApiV1AdminAssetsAssetIdDelete({
     mutation: {
@@ -118,6 +136,31 @@ export default function AssetsPage() {
       setSearchDebounced(value.trim());
       setPage(1);
     }, 300);
+  };
+
+  const handleViewModeChange = (value: "user" | "system" | "oss_sync") => {
+    setViewMode(value);
+    if (value !== "oss_sync") {
+      setScope(value);
+    }
+    setPage(1);
+  };
+
+  const formatSyncStatus = (status: string) => {
+    switch (status) {
+      case "queued":
+        return t("assets.syncStatusQueued");
+      case "running":
+        return t("assets.syncStatusRunning");
+      case "retrying":
+        return t("assets.syncStatusRetrying");
+      case "completed":
+        return t("assets.syncStatusCompleted");
+      case "failed":
+        return t("assets.syncStatusFailed");
+      default:
+        return status;
+    }
   };
 
   const openEditDialog = (asset: AssetAdminRead) => {
@@ -195,21 +238,30 @@ export default function AssetsPage() {
         title={t("assets.title")}
         description={t("assets.description")}
         actions={
-          <Button onClick={() => setUploadOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" /> {t("assets.upload")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {objectStorageConfig?.enabled && objectStorageConfig.last_health_ok ? (
+              <div className="inline-flex h-10 items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 text-sm font-medium text-amber-700 dark:text-amber-300">
+                <Zap className="h-4 w-4" />
+                {t("assets.ossAccelerationEnabled")}
+              </div>
+            ) : null}
+            <Button onClick={() => setUploadOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" /> {t("assets.upload")}
+            </Button>
+          </div>
         }
       />
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full">
           <div className="w-[180px]">
-            <Select value={scope} onValueChange={(value) => { setScope(value as "user" | "system"); setPage(1); }}>
+            <Select value={viewMode} onValueChange={(value) => handleViewModeChange(value as "user" | "system" | "oss_sync")}>
               <SelectTrigger>
                 <SelectValue placeholder={t("assets.scope")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="user">{t("assets.scopeUser")}</SelectItem>
                 <SelectItem value="system">{t("assets.scopeSystem")}</SelectItem>
+                <SelectItem value="oss_sync">{t("assets.scopeOssSync")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -417,6 +469,67 @@ export default function AssetsPage() {
         </DialogContent>
       </Dialog>
       <div className="border rounded-lg">
+        {isSyncView ? (
+          <DataTable<ObjectStorageSyncRecordRead>
+            columns={[
+              {
+                header: t("assets.syncType"),
+                accessor: (row) =>
+                  row.record_type === "mirror"
+                    ? t("assets.syncTypeMirror")
+                    : row.record_type === "remote_upload"
+                      ? t("assets.syncTypeRemoteUpload")
+                      : t("assets.syncTypeRemoteDelete"),
+              },
+              {
+                header: t("assets.fileName"),
+                accessor: (row) => row.asset_file_name || row.object_key,
+              },
+              {
+                header: t("assets.resourceKey"),
+                accessor: (row) => (
+                  <div className="max-w-[320px] break-all text-xs text-foreground/80">
+                    {row.asset_resource_key || row.object_key}
+                  </div>
+                ),
+              },
+              {
+                header: t("assets.syncStatus"),
+                accessor: (row) => formatSyncStatus(row.status),
+              },
+              {
+                header: t("assets.syncRetries"),
+                accessor: (row) => row.retry_count,
+              },
+            ]}
+            data={syncRecords?.items ?? []}
+            total={syncRecords?.total ?? 0}
+            page={page}
+            pageSize={syncRecords?.page_size ?? 20}
+            onPageChange={setPage}
+            isLoading={isSyncRecordsLoading}
+            renderExpandedRow={(row) => (
+              <div className="grid gap-3 px-4 py-3 text-sm sm:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {t("assets.uploadedAt")}
+                  </div>
+                  <div className="rounded-md bg-background/60 px-3 py-2 text-foreground/80">
+                    {formatDate(row.created_at)}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {t("assets.updatedAt")}
+                  </div>
+                  <div className="rounded-md bg-background/60 px-3 py-2 text-foreground/80">
+                    {formatDate(row.updated_at)}
+                  </div>
+                </div>
+              </div>
+            )}
+          />
+        ) : (
         <DataTable<AssetAdminRead>
           columns={[
             {
@@ -537,6 +650,7 @@ export default function AssetsPage() {
             </div>
           )}
         />
+        )}
       </div>
     </div>
   );

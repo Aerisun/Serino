@@ -18,6 +18,8 @@ export interface ObjectStorageConfigRead {
   last_health_ok?: boolean | null;
   last_health_error?: string | null;
   last_health_checked_at?: string | null;
+  remote_sync_scanned_count?: number | null;
+  remote_sync_enqueued_count?: number | null;
 }
 
 export interface ObjectStorageConfigUpdate {
@@ -41,6 +43,29 @@ export interface ObjectStorageHealthRead {
   ok: boolean;
   summary: string;
   details: Record<string, unknown>;
+}
+
+export interface ObjectStorageSyncRecordRead {
+  id: string;
+  record_type: "mirror" | "remote_delete" | "remote_upload";
+  status: string;
+  object_key: string;
+  asset_id?: string | null;
+  asset_file_name?: string | null;
+  asset_resource_key?: string | null;
+  retry_count: number;
+  last_error?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ObjectStorageSyncRecordListRead {
+  items: ObjectStorageSyncRecordRead[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 function getHeaders() {
@@ -90,4 +115,19 @@ export function testObjectStorageConfig(data: ObjectStorageConfigUpdate): Promis
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export function listObjectStorageSyncRecords(params: {
+  page: number;
+  page_size?: number;
+  q?: string;
+}): Promise<ObjectStorageSyncRecordListRead> {
+  const search = new URLSearchParams({
+    page: String(params.page),
+    page_size: String(params.page_size ?? 20),
+  });
+  if (params.q?.trim()) {
+    search.set("q", params.q.trim());
+  }
+  return requestJson<ObjectStorageSyncRecordListRead>(`/api/v1/admin/object-storage/sync-records?${search.toString()}`);
 }
