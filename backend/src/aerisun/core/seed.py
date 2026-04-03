@@ -10,13 +10,13 @@ from sqlalchemy.orm import Session
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
 from aerisun.core.db import get_session_factory, init_db
-from aerisun.core.seed_steps.assets import ensure_seed_asset, ensure_system_asset_reference, purge_managed_media_root
+from aerisun.core.seed_steps.assets import purge_managed_media_root
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import seed_missing_page_copies
 from aerisun.core.seed_steps.legacy import seed_dev_admin
+from aerisun.core.seed_steps.system_assets import normalize_core_system_asset_references, seed_core_system_asset_urls
 from aerisun.core.seed_steps.waline import clear_waline_seed_data
-from aerisun.core.settings import BACKEND_ROOT, get_settings
-from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
+from aerisun.core.settings import get_settings
 from aerisun.domain.automation.models import (
     AgentRun,
     AgentRunApproval,
@@ -29,13 +29,20 @@ from aerisun.domain.automation.models import (
     WorkflowGateBufferItem,
     WorkflowGateState,
 )
+from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.content.models import ContentCategory, DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
 from aerisun.domain.iam.models import AdminUser, ApiKey
 from aerisun.domain.media.models import Asset
 from aerisun.domain.ops.config_revisions import capture_config_resource, create_config_revision
 from aerisun.domain.ops.models import AuditLog, ConfigRevision, TrafficDailySnapshot, VisitRecord
-from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteAuthConfig, SiteUser, SiteUserOAuthAccount, SiteUserSession
+from aerisun.domain.site_auth.models import (
+    SiteAdminIdentity,
+    SiteAuthConfig,
+    SiteUser,
+    SiteUserOAuthAccount,
+    SiteUserSession,
+)
 from aerisun.domain.site_config.models import (
     CommunityConfig,
     NavItem,
@@ -499,7 +506,9 @@ def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:
 
 def _seed_subscription_config_from_settings(session: Session, *, force: bool = False) -> None:
     settings = get_settings()
-    config = session.scalars(select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())).first()
+    config = session.scalars(
+        select(ContentSubscriptionConfig).order_by(ContentSubscriptionConfig.created_at.asc())
+    ).first()
     if config is None:
         config = ContentSubscriptionConfig()
         session.add(config)
@@ -699,47 +708,16 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
             session.commit()
             purge_managed_media_root()
 
-        frontend_public_dir = BACKEND_ROOT.parent / "frontend" / "public"
-        frontend_public_images = frontend_public_dir / "images"
-        seeded_og_image = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "hero_bg.jpeg",
-            category="site-og",
-            note="站点默认 OG 分享图（生产初始化）",
-        )
-        seeded_site_icon = ensure_seed_asset(
-            session,
-            source_path=frontend_public_dir / "favicon.svg",
-            category="site-icon",
-            note="站点默认标签页图标（生产初始化）",
-        )
-        seeded_hero_image = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "avatar.webp",
-            category="hero-image",
-            note="首页 Hero 默认视觉图（生产初始化）",
-        )
-        seeded_hero_poster = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "hero_bg.jpeg",
-            category="hero-poster",
-            note="首页 Hero 视频默认封面图（生产初始化）",
-        )
-        seeded_resume_avatar = ensure_seed_asset(
-            session,
-            source_path=frontend_public_images / "avatar.webp",
-            category="resume-avatar",
-            note="简历默认头像（生产初始化）",
-        )
+        seeded_assets = seed_core_system_asset_urls(session)
 
         if is_empty(session, SiteProfile):
             site = SiteProfile(
                 **{
                     **DEFAULT_SITE_PROFILE,
-                    "og_image": seeded_og_image,
-                    "site_icon_url": seeded_site_icon,
-                    "hero_image_url": seeded_hero_image,
-                    "hero_poster_url": seeded_hero_poster,
+                    "og_image": seeded_assets["og_image"],
+                    "site_icon_url": seeded_assets["site_icon_url"],
+                    "hero_image_url": seeded_assets["hero_image_url"],
+                    "hero_poster_url": seeded_assets["hero_poster_url"],
                 }
             )
             session.add(site)
@@ -754,62 +732,15 @@ def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
             )
             session.add_all([PageCopy(**item) for item in DEFAULT_PAGE_COPIES])
 
-            resume = ResumeBasics(**{**DEFAULT_RESUME, "profile_image_url": seeded_resume_avatar})
+            resume = ResumeBasics(**{**DEFAULT_RESUME, "profile_image_url": seeded_assets["profile_image_url"]})
             session.add(resume)
             session.flush()
 
         seed_missing_page_copies(session, DEFAULT_PAGE_COPIES)
 
         current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-        if current_site is not None:
-            current_site.og_image = ensure_system_asset_reference(
-                session,
-                source_value=current_site.og_image,
-                category="site-og",
-                note="站点分享图（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.site_icon_url = ensure_system_asset_reference(
-                session,
-                source_value=current_site.site_icon_url,
-                category="site-icon",
-                note="站点标签页图标（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.hero_image_url = ensure_system_asset_reference(
-                session,
-                source_value=current_site.hero_image_url,
-                category="hero-image",
-                note="首页 Hero 视觉图（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.hero_poster_url = ensure_system_asset_reference(
-                session,
-                source_value=current_site.hero_poster_url,
-                category="hero-poster",
-                note="首页 Hero 视频封面图（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
-            current_site.hero_video_url = (
-                ensure_system_asset_reference(
-                    session,
-                    source_value=current_site.hero_video_url,
-                    category="hero-video",
-                    note="首页 Hero 背景视频（系统资源归拢）",
-                    public_root=frontend_public_dir,
-                )
-                or None
-            )
-
         current_resume = session.scalars(select(ResumeBasics).order_by(ResumeBasics.created_at.asc())).first()
-        if current_resume is not None:
-            current_resume.profile_image_url = ensure_system_asset_reference(
-                session,
-                source_value=current_resume.profile_image_url,
-                category="resume-avatar",
-                note="简历默认头像（系统资源归拢）",
-                public_root=frontend_public_dir,
-            )
+        normalize_core_system_asset_references(session, site=current_site, resume=current_resume)
 
         current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
         if current_site is not None:

@@ -138,7 +138,7 @@ def ensure_system_asset_reference(
     source_value: str | None,
     category: str,
     note: str | None = None,
-    public_root: Path | None = None,
+    source_roots: list[Path] | tuple[Path, ...] | None = None,
     timeout_seconds: float = 20.0,
 ) -> str:
     value = str(source_value or "").strip()
@@ -182,14 +182,20 @@ def ensure_system_asset_reference(
         session.flush()
         return f"/media/{asset.resource_key}"
 
-    if value.startswith("/") and public_root is not None:
-        root = public_root.expanduser().resolve()
-        candidate = (root / value.lstrip("/")).resolve()
-        try:
-            candidate.relative_to(root)
-        except ValueError:
-            candidate = root / "__invalid__"
-        if candidate.exists() and candidate.is_file():
-            return ensure_seed_asset(session, source_path=candidate, category=category, note=note)
+    if value.startswith("/"):
+        candidate_roots: list[Path] = []
+        for root in source_roots or ():
+            resolved_root = root.expanduser().resolve()
+            if resolved_root not in candidate_roots:
+                candidate_roots.append(resolved_root)
+
+        for root in candidate_roots:
+            candidate = (root / value.lstrip("/")).resolve()
+            try:
+                candidate.relative_to(root)
+            except ValueError:
+                continue
+            if candidate.exists() and candidate.is_file():
+                return ensure_seed_asset(session, source_path=candidate, category=category, note=note)
 
     return value
