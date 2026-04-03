@@ -7,4 +7,5 @@
 
 export interface AdminEmailLoginRequest {
   email: string;
+  password: string;
 }

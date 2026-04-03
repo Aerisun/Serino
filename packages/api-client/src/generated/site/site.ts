@@ -1477,7 +1477,7 @@ export function useReadDiaryEntryApiV1SiteDiarySlugGet<TData = Awaited<ReturnTyp
 
 
 /**
- * @summary 获取想法列表
+ * @summary 获取碎碎念列表
  */
 export type readThoughtsApiV1SiteThoughtsGetResponse200 = {
   data: ContentCollectionRead
@@ -1582,7 +1582,7 @@ export function useReadThoughtsApiV1SiteThoughtsGet<TData = Awaited<ReturnType<t
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary 获取想法列表
+ * @summary 获取碎碎念列表
  */
 
 export function useReadThoughtsApiV1SiteThoughtsGet<TData = Awaited<ReturnType<typeof readThoughtsApiV1SiteThoughtsGet>>, TError = ErrorType<HTTPValidationError>>(
@@ -1601,7 +1601,7 @@ export function useReadThoughtsApiV1SiteThoughtsGet<TData = Awaited<ReturnType<t
 
 
 /**
- * @summary 获取摘录列表
+ * @summary 获取文摘列表
  */
 export type readExcerptsApiV1SiteExcerptsGetResponse200 = {
   data: ContentCollectionRead
@@ -1706,7 +1706,7 @@ export function useReadExcerptsApiV1SiteExcerptsGet<TData = Awaited<ReturnType<t
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary 获取摘录列表
+ * @summary 获取文摘列表
  */
 
 export function useReadExcerptsApiV1SiteExcerptsGet<TData = Awaited<ReturnType<typeof readExcerptsApiV1SiteExcerptsGet>>, TError = ErrorType<HTTPValidationError>>(

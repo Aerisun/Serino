@@ -9,16 +9,10 @@ import type { PageCopyCreateExtras } from './pageCopyCreateExtras';
 export interface PageCopyCreate {
   /** Unique page identifier key */
   page_key: string;
-  /** Sidebar or menu label */
-  label?: string | null;
-  /** Navigation menu label override */
-  nav_label?: string | null;
   /** Page title heading */
   title: string;
   /** Page subtitle text */
   subtitle: string;
-  /** Page meta description */
-  description?: string | null;
   /** Search input placeholder text */
   search_placeholder?: string | null;
   /** Message shown when no content exists */
@@ -27,8 +21,6 @@ export interface PageCopyCreate {
   max_width?: string | null;
   /** Default items per page */
   page_size?: number | null;
-  /** Download button label text */
-  download_label?: string | null;
   /** Additional page-specific configuration */
   extras?: PageCopyCreateExtras;
 }

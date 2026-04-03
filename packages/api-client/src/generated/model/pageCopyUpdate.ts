@@ -7,16 +7,10 @@
 import type { PageCopyUpdateExtras } from './pageCopyUpdateExtras';
 
 export interface PageCopyUpdate {
-  /** Sidebar label */
-  label?: string | null;
-  /** Navigation label override */
-  nav_label?: string | null;
   /** Page title heading */
   title?: string | null;
   /** Page subtitle text */
   subtitle?: string | null;
-  /** Page meta description */
-  description?: string | null;
   /** Search placeholder */
   search_placeholder?: string | null;
   /** Empty state message */
@@ -25,8 +19,6 @@ export interface PageCopyUpdate {
   max_width?: string | null;
   /** Default items per page */
   page_size?: number | null;
-  /** Download button label */
-  download_label?: string | null;
   /** Additional configuration */
   extras?: PageCopyUpdateExtras;
 }

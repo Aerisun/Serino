@@ -12,4 +12,6 @@ export interface EmailLoginRequest {
   display_name?: string | null;
   /** Optional avatar URL for first login */
   avatar_url?: string | null;
+  /** Shared admin email password when elevation is needed */
+  admin_password?: string | null;
 }

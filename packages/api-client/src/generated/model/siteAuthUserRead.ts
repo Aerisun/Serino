@@ -20,8 +20,10 @@ export interface SiteAuthUserRead {
   effective_avatar_url: string;
   /** Primary auth provider */
   primary_auth_provider: string;
-  /** Whether the current site user is using admin identity */
+  /** Whether the current site session is admin-elevated */
   is_admin?: boolean;
+  /** Whether the current admin-elevated site session can enter the admin console */
+  can_access_admin_console?: boolean;
   /** Last login time */
   last_login_at?: string | null;
 }

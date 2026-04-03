@@ -64,17 +64,12 @@ export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
 export const ReadPageCopyApiV1SitePagesGetResponse = zod.object({
   "items": zod.array(zod.object({
   "page_key": zod.string().describe('Page identifier key'),
-  "label": zod.union([zod.string(),zod.null()]).describe('Sidebar label'),
-  "nav_label": zod.union([zod.string(),zod.null()]).describe('Navigation label override'),
   "title": zod.string().describe('Page title'),
   "subtitle": zod.string().describe('Page subtitle'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Page description'),
   "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder text'),
   "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
   "max_width": zod.union([zod.string(),zod.null()]).describe('Max page width CSS value'),
   "page_size": zod.union([zod.number(),zod.null()]).describe('Items per page'),
-  "download_label": zod.union([zod.string(),zod.null()]).describe('Download button label'),
-  "enabled": zod.boolean().describe('Whether the page is enabled'),
   "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration')
 })).describe('List of page configurations')
 })
@@ -347,7 +342,7 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
 
 
 /**
- * @summary 获取想法列表
+ * @summary 获取碎碎念列表
  */
 export const readThoughtsApiV1SiteThoughtsGetQueryLimitDefault = 40;
 export const readThoughtsApiV1SiteThoughtsGetQueryLimitMax = 100;
@@ -397,7 +392,7 @@ export const ReadThoughtsApiV1SiteThoughtsGetResponse = zod.object({
 
 
 /**
- * @summary 获取摘录列表
+ * @summary 获取文摘列表
  */
 export const readExcerptsApiV1SiteExcerptsGetQueryLimitDefault = 40;
 export const readExcerptsApiV1SiteExcerptsGetQueryLimitMax = 100;
@@ -581,6 +576,7 @@ export const HealthzApiV1SiteHealthzGetResponse = zod.object({
  * @summary 获取当前站点用户状态
  */
 export const readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault = false;
+export const readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneCanAccessAdminConsoleDefault = false;
 export const readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault = true;
 
 export const ReadSiteAuthStateApiV1SiteAuthMeGetResponse = zod.object({
@@ -593,7 +589,8 @@ export const ReadSiteAuthStateApiV1SiteAuthMeGetResponse = zod.object({
   "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
   "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
   "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "is_admin": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault).describe('Whether the current site session is admin-elevated'),
+  "can_access_admin_console": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneCanAccessAdminConsoleDefault).describe('Whether the current admin-elevated site session can enter the admin console'),
   "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
 }),zod.null()]).optional().describe('Current site user'),
   "email_login_enabled": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault).describe('Whether email login is enabled'),
@@ -610,6 +607,7 @@ export const UpdateMyProfileApiV1SiteAuthMePatchBody = zod.object({
 })
 
 export const updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault = false;
+export const updateMyProfileApiV1SiteAuthMePatchResponseCanAccessAdminConsoleDefault = false;
 
 export const UpdateMyProfileApiV1SiteAuthMePatchResponse = zod.object({
   "id": zod.string().describe('Public site user id'),
@@ -619,7 +617,8 @@ export const UpdateMyProfileApiV1SiteAuthMePatchResponse = zod.object({
   "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
   "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
   "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "is_admin": zod.boolean().default(updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault).describe('Whether the current site session is admin-elevated'),
+  "can_access_admin_console": zod.boolean().default(updateMyProfileApiV1SiteAuthMePatchResponseCanAccessAdminConsoleDefault).describe('Whether the current admin-elevated site session can enter the admin console'),
   "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
 })
 
@@ -654,17 +653,21 @@ export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetResponse = zod.
 export const EmailLoginApiV1SiteAuthEmailPostBody = zod.object({
   "email": zod.string().describe('Email identifier'),
   "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Optional display name for first login'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Optional avatar URL for first login')
+  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Optional avatar URL for first login'),
+  "admin_password": zod.union([zod.string(),zod.null()]).optional().describe('Shared admin email password when elevation is needed')
 })
 
 export const emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault = false;
+export const emailLoginApiV1SiteAuthEmailPostResponseRequiresAdminPasswordDefault = false;
 export const emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault = false;
+export const emailLoginApiV1SiteAuthEmailPostResponseUserOneCanAccessAdminConsoleDefault = false;
 export const emailLoginApiV1SiteAuthEmailPostResponseAvatarBatchDefault = 0;
 export const emailLoginApiV1SiteAuthEmailPostResponseAvatarTotalBatchesDefault = 1;
 
 export const EmailLoginApiV1SiteAuthEmailPostResponse = zod.object({
   "authenticated": zod.boolean().describe('Whether a login session was created'),
   "requires_profile": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault).describe('Whether first-login profile setup is required'),
+  "requires_admin_password": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresAdminPasswordDefault).describe('Whether admin email login requires the shared admin password before creating a session'),
   "user": zod.union([zod.object({
   "id": zod.string().describe('Public site user id'),
   "email": zod.string().describe('Login identifier email'),
@@ -673,7 +676,8 @@ export const EmailLoginApiV1SiteAuthEmailPostResponse = zod.object({
   "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
   "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
   "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault).describe('Whether the current site user is using admin identity'),
+  "is_admin": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault).describe('Whether the current site session is admin-elevated'),
+  "can_access_admin_console": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseUserOneCanAccessAdminConsoleDefault).describe('Whether the current admin-elevated site session can enter the admin console'),
   "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
 }),zod.null()]).optional().describe('Current site user when authenticated'),
   "suggested_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Suggested display name for first login'),
@@ -1188,7 +1192,8 @@ export const LoginOptionsApiV1AdminAuthOptionsGetResponse = zod.object({
  * @summary 通过管理员邮箱登录
  */
 export const LoginWithBoundEmailApiV1AdminAuthEmailPostBody = zod.object({
-  "email": zod.string()
+  "email": zod.string(),
+  "password": zod.string()
 })
 
 export const LoginWithBoundEmailApiV1AdminAuthEmailPostResponse = zod.object({
@@ -2552,16 +2557,12 @@ export const ListPageCopyResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string().describe('Unique page copy identifier'),
   "page_key": zod.string().describe('Page identifier key'),
-  "label": zod.union([zod.string(),zod.null()]).describe('Sidebar label'),
-  "nav_label": zod.union([zod.string(),zod.null()]).describe('Navigation label override'),
   "title": zod.string().describe('Page title heading'),
   "subtitle": zod.string().describe('Page subtitle text'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Page meta description'),
   "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder'),
   "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
   "max_width": zod.union([zod.string(),zod.null()]).describe('Maximum page width'),
   "page_size": zod.union([zod.number(),zod.null()]).describe('Default items per page'),
-  "download_label": zod.union([zod.string(),zod.null()]).describe('Download button label'),
   "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -2575,18 +2576,18 @@ export const ListPageCopyResponse = zod.object({
 /**
  * @summary 创建admin-site-config
  */
+export const createPageCopyBodyPageSizeOneMax = 30;
+
+
+
 export const CreatePageCopyBody = zod.object({
   "page_key": zod.string().describe('Unique page identifier key'),
-  "label": zod.union([zod.string(),zod.null()]).optional().describe('Sidebar or menu label'),
-  "nav_label": zod.union([zod.string(),zod.null()]).optional().describe('Navigation menu label override'),
   "title": zod.string().describe('Page title heading'),
   "subtitle": zod.string().describe('Page subtitle text'),
-  "description": zod.union([zod.string(),zod.null()]).optional().describe('Page meta description'),
   "search_placeholder": zod.union([zod.string(),zod.null()]).optional().describe('Search input placeholder text'),
   "empty_message": zod.union([zod.string(),zod.null()]).optional().describe('Message shown when no content exists'),
   "max_width": zod.union([zod.string(),zod.null()]).optional().describe('Maximum page width CSS value'),
-  "page_size": zod.union([zod.number(),zod.null()]).optional().describe('Default items per page'),
-  "download_label": zod.union([zod.string(),zod.null()]).optional().describe('Download button label text'),
+  "page_size": zod.union([zod.number().min(1).max(createPageCopyBodyPageSizeOneMax),zod.null()]).optional().describe('Default items per page'),
   "extras": zod.record(zod.string(), zod.unknown()).optional().describe('Additional page-specific configuration')
 })
 
@@ -2601,16 +2602,12 @@ export const GetPageCopyParams = zod.object({
 export const GetPageCopyResponse = zod.object({
   "id": zod.string().describe('Unique page copy identifier'),
   "page_key": zod.string().describe('Page identifier key'),
-  "label": zod.union([zod.string(),zod.null()]).describe('Sidebar label'),
-  "nav_label": zod.union([zod.string(),zod.null()]).describe('Navigation label override'),
   "title": zod.string().describe('Page title heading'),
   "subtitle": zod.string().describe('Page subtitle text'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Page meta description'),
   "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder'),
   "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
   "max_width": zod.union([zod.string(),zod.null()]).describe('Maximum page width'),
   "page_size": zod.union([zod.number(),zod.null()]).describe('Default items per page'),
-  "download_label": zod.union([zod.string(),zod.null()]).describe('Download button label'),
   "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -2624,33 +2621,29 @@ export const UpdatePageCopyParams = zod.object({
   "item_id": zod.string()
 })
 
+export const updatePageCopyBodyPageSizeOneMax = 30;
+
+
+
 export const UpdatePageCopyBody = zod.object({
-  "label": zod.union([zod.string(),zod.null()]).optional().describe('Sidebar label'),
-  "nav_label": zod.union([zod.string(),zod.null()]).optional().describe('Navigation label override'),
   "title": zod.union([zod.string(),zod.null()]).optional().describe('Page title heading'),
   "subtitle": zod.union([zod.string(),zod.null()]).optional().describe('Page subtitle text'),
-  "description": zod.union([zod.string(),zod.null()]).optional().describe('Page meta description'),
   "search_placeholder": zod.union([zod.string(),zod.null()]).optional().describe('Search placeholder'),
   "empty_message": zod.union([zod.string(),zod.null()]).optional().describe('Empty state message'),
   "max_width": zod.union([zod.string(),zod.null()]).optional().describe('Maximum page width'),
-  "page_size": zod.union([zod.number(),zod.null()]).optional().describe('Default items per page'),
-  "download_label": zod.union([zod.string(),zod.null()]).optional().describe('Download button label'),
+  "page_size": zod.union([zod.number().min(1).max(updatePageCopyBodyPageSizeOneMax),zod.null()]).optional().describe('Default items per page'),
   "extras": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional().describe('Additional configuration')
 })
 
 export const UpdatePageCopyResponse = zod.object({
   "id": zod.string().describe('Unique page copy identifier'),
   "page_key": zod.string().describe('Page identifier key'),
-  "label": zod.union([zod.string(),zod.null()]).describe('Sidebar label'),
-  "nav_label": zod.union([zod.string(),zod.null()]).describe('Navigation label override'),
   "title": zod.string().describe('Page title heading'),
   "subtitle": zod.string().describe('Page subtitle text'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Page meta description'),
   "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder'),
   "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
   "max_width": zod.union([zod.string(),zod.null()]).describe('Maximum page width'),
   "page_size": zod.union([zod.number(),zod.null()]).describe('Default items per page'),
-  "download_label": zod.union([zod.string(),zod.null()]).describe('Download button label'),
   "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration'),
   "created_at": zod.string().datetime({}).describe('Creation timestamp'),
   "updated_at": zod.string().datetime({}).describe('Last update timestamp')
@@ -2686,127 +2679,6 @@ export const BulkStatusPageCopyBody = zod.object({
 })
 
 export const BulkStatusPageCopyResponse = zod.object({
-  "affected": zod.number().describe('Number of items affected by the operation')
-})
-
-
-/**
- * @summary 获取admin-site-config列表
- */
-export const listDisplayOptionsQueryPageDefault = 1;
-
-export const listDisplayOptionsQueryPageSizeDefault = 20;
-export const listDisplayOptionsQueryPageSizeMax = 100;
-
-export const listDisplayOptionsQuerySortByDefault = `created_at`;
-export const listDisplayOptionsQuerySortOrderDefault = `desc`;
-
-export const ListDisplayOptionsQueryParams = zod.object({
-  "page": zod.number().min(1).default(listDisplayOptionsQueryPageDefault),
-  "page_size": zod.number().min(1).max(listDisplayOptionsQueryPageSizeMax).default(listDisplayOptionsQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
-  "visibility": zod.union([zod.string(),zod.null()]).optional(),
-  "tag": zod.union([zod.string(),zod.null()]).optional(),
-  "search": zod.union([zod.string(),zod.null()]).optional(),
-  "sort_by": zod.string().default(listDisplayOptionsQuerySortByDefault),
-  "sort_order": zod.string().default(listDisplayOptionsQuerySortOrderDefault)
-})
-
-export const ListDisplayOptionsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique display option identifier'),
-  "page_key": zod.string().describe('Page identifier key'),
-  "is_enabled": zod.boolean().describe('Whether the page is enabled'),
-  "settings": zod.record(zod.string(), zod.unknown()).describe('Page display settings'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
-})
-
-
-/**
- * @summary 创建admin-site-config
- */
-export const createDisplayOptionsBodyIsEnabledDefault = true;
-
-export const CreateDisplayOptionsBody = zod.object({
-  "page_key": zod.string().describe('Page identifier key'),
-  "is_enabled": zod.boolean().default(createDisplayOptionsBodyIsEnabledDefault).describe('Whether the page is enabled'),
-  "settings": zod.record(zod.string(), zod.unknown()).optional().describe('Page display settings')
-})
-
-
-/**
- * @summary 获取单条admin-site-config
- */
-export const GetDisplayOptionsParams = zod.object({
-  "item_id": zod.string()
-})
-
-export const GetDisplayOptionsResponse = zod.object({
-  "id": zod.string().describe('Unique display option identifier'),
-  "page_key": zod.string().describe('Page identifier key'),
-  "is_enabled": zod.boolean().describe('Whether the page is enabled'),
-  "settings": zod.record(zod.string(), zod.unknown()).describe('Page display settings'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 更新admin-site-config
- */
-export const UpdateDisplayOptionsParams = zod.object({
-  "item_id": zod.string()
-})
-
-export const UpdateDisplayOptionsBody = zod.object({
-  "is_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether the page is enabled'),
-  "settings": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional().describe('Page display settings')
-})
-
-export const UpdateDisplayOptionsResponse = zod.object({
-  "id": zod.string().describe('Unique display option identifier'),
-  "page_key": zod.string().describe('Page identifier key'),
-  "is_enabled": zod.boolean().describe('Whether the page is enabled'),
-  "settings": zod.record(zod.string(), zod.unknown()).describe('Page display settings'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 删除admin-site-config
- */
-export const DeleteDisplayOptionsParams = zod.object({
-  "item_id": zod.string()
-})
-
-
-/**
- * @summary 批量删除admin-site-config
- */
-export const BulkDeleteDisplayOptionsBody = zod.object({
-  "ids": zod.array(zod.string()).describe('List of item IDs to delete')
-})
-
-export const BulkDeleteDisplayOptionsResponse = zod.object({
-  "affected": zod.number().describe('Number of items affected by the operation')
-})
-
-
-/**
- * @summary 批量更新admin-site-config状态
- */
-export const BulkStatusDisplayOptionsBody = zod.object({
-  "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
-})
-
-export const BulkStatusDisplayOptionsResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
 
@@ -3418,290 +3290,6 @@ export const BulkStatusBasicsBody = zod.object({
 })
 
 export const BulkStatusBasicsResponse = zod.object({
-  "affected": zod.number().describe('Number of items affected by the operation')
-})
-
-
-/**
- * @summary 获取admin-resume列表
- */
-export const listSkillsQueryPageDefault = 1;
-
-export const listSkillsQueryPageSizeDefault = 20;
-export const listSkillsQueryPageSizeMax = 100;
-
-export const listSkillsQuerySortByDefault = `created_at`;
-export const listSkillsQuerySortOrderDefault = `desc`;
-
-export const ListSkillsQueryParams = zod.object({
-  "page": zod.number().min(1).default(listSkillsQueryPageDefault),
-  "page_size": zod.number().min(1).max(listSkillsQueryPageSizeMax).default(listSkillsQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
-  "visibility": zod.union([zod.string(),zod.null()]).optional(),
-  "tag": zod.union([zod.string(),zod.null()]).optional(),
-  "search": zod.union([zod.string(),zod.null()]).optional(),
-  "sort_by": zod.string().default(listSkillsQuerySortByDefault),
-  "sort_order": zod.string().default(listSkillsQuerySortOrderDefault)
-})
-
-export const ListSkillsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique skill group identifier'),
-  "resume_basics_id": zod.string().describe('Associated resume basics ID'),
-  "category": zod.string().describe('Skill category name'),
-  "items": zod.array(zod.string()).describe('List of skill names'),
-  "order_index": zod.number().describe('Display order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
-})
-
-
-/**
- * @summary 创建admin-resume
- */
-export const createSkillsBodyOrderIndexDefault = 0;
-
-export const CreateSkillsBody = zod.object({
-  "resume_basics_id": zod.union([zod.string(),zod.null()]).optional().describe('Associated resume basics ID'),
-  "category": zod.string().describe('Skill category name'),
-  "items": zod.array(zod.string()).optional().describe('List of skill names'),
-  "order_index": zod.number().default(createSkillsBodyOrderIndexDefault).describe('Display order (lower first)')
-})
-
-
-/**
- * @summary 获取单条admin-resume
- */
-export const GetSkillsParams = zod.object({
-  "item_id": zod.string()
-})
-
-export const GetSkillsResponse = zod.object({
-  "id": zod.string().describe('Unique skill group identifier'),
-  "resume_basics_id": zod.string().describe('Associated resume basics ID'),
-  "category": zod.string().describe('Skill category name'),
-  "items": zod.array(zod.string()).describe('List of skill names'),
-  "order_index": zod.number().describe('Display order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 更新admin-resume
- */
-export const UpdateSkillsParams = zod.object({
-  "item_id": zod.string()
-})
-
-export const UpdateSkillsBody = zod.object({
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Skill category name'),
-  "items": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of skill names'),
-  "order_index": zod.union([zod.number(),zod.null()]).optional().describe('Display order')
-})
-
-export const UpdateSkillsResponse = zod.object({
-  "id": zod.string().describe('Unique skill group identifier'),
-  "resume_basics_id": zod.string().describe('Associated resume basics ID'),
-  "category": zod.string().describe('Skill category name'),
-  "items": zod.array(zod.string()).describe('List of skill names'),
-  "order_index": zod.number().describe('Display order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 删除admin-resume
- */
-export const DeleteSkillsParams = zod.object({
-  "item_id": zod.string()
-})
-
-
-/**
- * @summary 批量删除admin-resume
- */
-export const BulkDeleteSkillsBody = zod.object({
-  "ids": zod.array(zod.string()).describe('List of item IDs to delete')
-})
-
-export const BulkDeleteSkillsResponse = zod.object({
-  "affected": zod.number().describe('Number of items affected by the operation')
-})
-
-
-/**
- * @summary 批量更新admin-resume状态
- */
-export const BulkStatusSkillsBody = zod.object({
-  "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
-})
-
-export const BulkStatusSkillsResponse = zod.object({
-  "affected": zod.number().describe('Number of items affected by the operation')
-})
-
-
-/**
- * @summary 获取admin-resume列表
- */
-export const listExperiencesQueryPageDefault = 1;
-
-export const listExperiencesQueryPageSizeDefault = 20;
-export const listExperiencesQueryPageSizeMax = 100;
-
-export const listExperiencesQuerySortByDefault = `created_at`;
-export const listExperiencesQuerySortOrderDefault = `desc`;
-
-export const ListExperiencesQueryParams = zod.object({
-  "page": zod.number().min(1).default(listExperiencesQueryPageDefault),
-  "page_size": zod.number().min(1).max(listExperiencesQueryPageSizeMax).default(listExperiencesQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
-  "visibility": zod.union([zod.string(),zod.null()]).optional(),
-  "tag": zod.union([zod.string(),zod.null()]).optional(),
-  "search": zod.union([zod.string(),zod.null()]).optional(),
-  "sort_by": zod.string().default(listExperiencesQuerySortByDefault),
-  "sort_order": zod.string().default(listExperiencesQuerySortOrderDefault)
-})
-
-export const ListExperiencesResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique experience identifier'),
-  "resume_basics_id": zod.string().describe('Associated resume basics ID'),
-  "title": zod.string().describe('Job title'),
-  "company": zod.string().describe('Company name'),
-  "period": zod.string().describe('Employment period'),
-  "location": zod.string().describe('Experience location'),
-  "employment_type": zod.string().describe('Employment type'),
-  "summary": zod.string().describe('Role description'),
-  "achievements": zod.array(zod.string()).describe('Achievement bullet points'),
-  "tech_stack": zod.array(zod.string()).describe('Technologies used'),
-  "order_index": zod.number().describe('Display order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
-})
-
-
-/**
- * @summary 创建admin-resume
- */
-export const createExperiencesBodyLocationDefault = ``;
-export const createExperiencesBodyEmploymentTypeDefault = ``;
-export const createExperiencesBodyOrderIndexDefault = 0;
-
-export const CreateExperiencesBody = zod.object({
-  "resume_basics_id": zod.union([zod.string(),zod.null()]).optional().describe('Associated resume basics ID'),
-  "title": zod.string().describe('Job title or role'),
-  "company": zod.string().describe('Company or organization name'),
-  "period": zod.string().describe('Employment period (e.g. 2020-2023)'),
-  "location": zod.string().default(createExperiencesBodyLocationDefault).describe('Experience location'),
-  "employment_type": zod.string().default(createExperiencesBodyEmploymentTypeDefault).describe('Employment type'),
-  "summary": zod.string().describe('Role description and achievements'),
-  "achievements": zod.array(zod.string()).optional().describe('Achievement bullet points'),
-  "tech_stack": zod.array(zod.string()).optional().describe('Technologies used'),
-  "order_index": zod.number().default(createExperiencesBodyOrderIndexDefault).describe('Display order (lower first)')
-})
-
-
-/**
- * @summary 获取单条admin-resume
- */
-export const GetExperiencesParams = zod.object({
-  "item_id": zod.string()
-})
-
-export const GetExperiencesResponse = zod.object({
-  "id": zod.string().describe('Unique experience identifier'),
-  "resume_basics_id": zod.string().describe('Associated resume basics ID'),
-  "title": zod.string().describe('Job title'),
-  "company": zod.string().describe('Company name'),
-  "period": zod.string().describe('Employment period'),
-  "location": zod.string().describe('Experience location'),
-  "employment_type": zod.string().describe('Employment type'),
-  "summary": zod.string().describe('Role description'),
-  "achievements": zod.array(zod.string()).describe('Achievement bullet points'),
-  "tech_stack": zod.array(zod.string()).describe('Technologies used'),
-  "order_index": zod.number().describe('Display order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 更新admin-resume
- */
-export const UpdateExperiencesParams = zod.object({
-  "item_id": zod.string()
-})
-
-export const UpdateExperiencesBody = zod.object({
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Job title'),
-  "company": zod.union([zod.string(),zod.null()]).optional().describe('Company name'),
-  "period": zod.union([zod.string(),zod.null()]).optional().describe('Employment period'),
-  "location": zod.union([zod.string(),zod.null()]).optional().describe('Experience location'),
-  "employment_type": zod.union([zod.string(),zod.null()]).optional().describe('Employment type'),
-  "summary": zod.union([zod.string(),zod.null()]).optional().describe('Role description'),
-  "achievements": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Achievement bullet points'),
-  "tech_stack": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Technologies used'),
-  "order_index": zod.union([zod.number(),zod.null()]).optional().describe('Display order')
-})
-
-export const UpdateExperiencesResponse = zod.object({
-  "id": zod.string().describe('Unique experience identifier'),
-  "resume_basics_id": zod.string().describe('Associated resume basics ID'),
-  "title": zod.string().describe('Job title'),
-  "company": zod.string().describe('Company name'),
-  "period": zod.string().describe('Employment period'),
-  "location": zod.string().describe('Experience location'),
-  "employment_type": zod.string().describe('Employment type'),
-  "summary": zod.string().describe('Role description'),
-  "achievements": zod.array(zod.string()).describe('Achievement bullet points'),
-  "tech_stack": zod.array(zod.string()).describe('Technologies used'),
-  "order_index": zod.number().describe('Display order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})
-
-
-/**
- * @summary 删除admin-resume
- */
-export const DeleteExperiencesParams = zod.object({
-  "item_id": zod.string()
-})
-
-
-/**
- * @summary 批量删除admin-resume
- */
-export const BulkDeleteExperiencesBody = zod.object({
-  "ids": zod.array(zod.string()).describe('List of item IDs to delete')
-})
-
-export const BulkDeleteExperiencesResponse = zod.object({
-  "affected": zod.number().describe('Number of items affected by the operation')
-})
-
-
-/**
- * @summary 批量更新admin-resume状态
- */
-export const BulkStatusExperiencesBody = zod.object({
-  "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
-})
-
-export const BulkStatusExperiencesResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
 
@@ -8853,7 +8441,9 @@ export const GetVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = zod.objec
   "email_login_enabled": zod.boolean().describe('Whether email login is enabled'),
   "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_console_auth_methods": zod.array(zod.string()).optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
   "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
+  "admin_email_password_set": zod.boolean().describe('Whether the shared admin email password has been configured'),
   "google_client_id": zod.string().describe('Google OAuth client id'),
   "google_client_secret": zod.string().describe('Google OAuth client secret'),
   "github_client_id": zod.string().describe('GitHub OAuth client id'),
@@ -8870,7 +8460,9 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutBody = zod.object
   "email_login_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email login remains enabled'),
   "visitor_oauth_providers": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_console_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
   "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login'),
+  "admin_email_password": zod.union([zod.string(),zod.null()]).optional().describe('Shared admin email password used by all bound admin email identities'),
   "google_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client id'),
   "google_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client secret'),
   "github_client_id": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client id'),
@@ -8882,7 +8474,9 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.ob
   "email_login_enabled": zod.boolean().describe('Whether email login is enabled'),
   "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
   "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_console_auth_methods": zod.array(zod.string()).optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
   "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
+  "admin_email_password_set": zod.boolean().describe('Whether the shared admin email password has been configured'),
   "google_client_id": zod.string().describe('Google OAuth client id'),
   "google_client_secret": zod.string().describe('Google OAuth client secret'),
   "github_client_id": zod.string().describe('GitHub OAuth client id'),

@@ -12,8 +12,12 @@ export interface SiteAuthConfigAdminUpdate {
   visitor_oauth_providers?: string[] | null;
   /** Auth methods reserved for admin-side usage */
   admin_auth_methods?: string[] | null;
+  /** Admin-elevated auth methods that are allowed to enter the admin console */
+  admin_console_auth_methods?: string[] | null;
   /** Whether email can be used as admin login */
   admin_email_enabled?: boolean | null;
+  /** Shared admin email password used by all bound admin email identities */
+  admin_email_password?: string | null;
   /** Google OAuth client id */
   google_client_id?: string | null;
   /** Google OAuth client secret */

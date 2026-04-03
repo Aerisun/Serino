@@ -11,16 +11,10 @@ export interface PageCopyAdminRead {
   id: string;
   /** Page identifier key */
   page_key: string;
-  /** Sidebar label */
-  label: string | null;
-  /** Navigation label override */
-  nav_label: string | null;
   /** Page title heading */
   title: string;
   /** Page subtitle text */
   subtitle: string;
-  /** Page meta description */
-  description: string | null;
   /** Search placeholder */
   search_placeholder: string | null;
   /** Empty state message */
@@ -29,8 +23,6 @@ export interface PageCopyAdminRead {
   max_width: string | null;
   /** Default items per page */
   page_size: number | null;
-  /** Download button label */
-  download_label: string | null;
   /** Additional configuration */
   extras: PageCopyAdminReadExtras;
   /** Creation timestamp */

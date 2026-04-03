@@ -9,16 +9,10 @@ import type { PageCopyReadExtras } from './pageCopyReadExtras';
 export interface PageCopyRead {
   /** Page identifier key */
   page_key: string;
-  /** Sidebar label */
-  label: string | null;
-  /** Navigation label override */
-  nav_label: string | null;
   /** Page title */
   title: string;
   /** Page subtitle */
   subtitle: string;
-  /** Page description */
-  description: string | null;
   /** Search placeholder text */
   search_placeholder: string | null;
   /** Empty state message */
@@ -27,10 +21,6 @@ export interface PageCopyRead {
   max_width: string | null;
   /** Items per page */
   page_size: number | null;
-  /** Download button label */
-  download_label: string | null;
-  /** Whether the page is enabled */
-  enabled: boolean;
   /** Additional configuration */
   extras: PageCopyReadExtras;
 }

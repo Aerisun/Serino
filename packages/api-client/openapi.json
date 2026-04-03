@@ -477,7 +477,7 @@
         "tags": [
           "site"
         ],
-        "summary": "获取想法列表",
+        "summary": "获取碎碎念列表",
         "operationId": "read_thoughts_api_v1_site_thoughts_get",
         "parameters": [
           {
@@ -533,7 +533,7 @@
         "tags": [
           "site"
         ],
-        "summary": "获取摘录列表",
+        "summary": "获取文摘列表",
         "operationId": "read_excerpts_api_v1_site_excerpts_get",
         "parameters": [
           {
@@ -5646,441 +5646,6 @@
         ]
       }
     },
-    "/api/v1/admin/site-config/display-options/": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "获取admin-site-config列表",
-        "operationId": "list_display-options",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Page Size"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "name": "visibility",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Visibility"
-            }
-          },
-          {
-            "name": "tag",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tag"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "sort_by",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "created_at",
-              "title": "Sort By"
-            }
-          },
-          {
-            "name": "sort_order",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "desc",
-              "title": "Sort Order"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_PageDisplayOptionAdminRead_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "创建admin-site-config",
-        "operationId": "create_display-options",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PageDisplayOptionCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageDisplayOptionAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/site-config/display-options/{item_id}": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "获取单条admin-site-config",
-        "operationId": "get_display-options",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageDisplayOptionAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "更新admin-site-config",
-        "operationId": "update_display-options",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PageDisplayOptionUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageDisplayOptionAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "删除admin-site-config",
-        "operationId": "delete_display-options",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/site-config/display-options/bulk-delete": {
-      "post": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "批量删除admin-site-config",
-        "operationId": "bulk_delete_display-options",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkDeleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkActionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/admin/site-config/display-options/bulk-status": {
-      "post": {
-        "tags": [
-          "admin",
-          "admin-site-config",
-          "admin-site-config"
-        ],
-        "summary": "批量更新admin-site-config状态",
-        "operationId": "bulk_status_display-options",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkActionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
     "/api/v1/admin/site-config/nav-items/reorder": {
       "put": {
         "tags": [
@@ -7479,876 +7044,6 @@
         ],
         "summary": "批量更新admin-resume状态",
         "operationId": "bulk_status_basics",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkActionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/admin/resume/skills/": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "获取admin-resume列表",
-        "operationId": "list_skills",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Page Size"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "name": "visibility",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Visibility"
-            }
-          },
-          {
-            "name": "tag",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tag"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "sort_by",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "created_at",
-              "title": "Sort By"
-            }
-          },
-          {
-            "name": "sort_order",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "desc",
-              "title": "Sort Order"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_ResumeSkillGroupAdminRead_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "创建admin-resume",
-        "operationId": "create_skills",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResumeSkillGroupCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResumeSkillGroupAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/resume/skills/{item_id}": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "获取单条admin-resume",
-        "operationId": "get_skills",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResumeSkillGroupAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "更新admin-resume",
-        "operationId": "update_skills",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResumeSkillGroupUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResumeSkillGroupAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "删除admin-resume",
-        "operationId": "delete_skills",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/resume/skills/bulk-delete": {
-      "post": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "批量删除admin-resume",
-        "operationId": "bulk_delete_skills",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkDeleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkActionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/admin/resume/skills/bulk-status": {
-      "post": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "批量更新admin-resume状态",
-        "operationId": "bulk_status_skills",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkActionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/admin/resume/experiences/": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "获取admin-resume列表",
-        "operationId": "list_experiences",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Page Size"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "name": "visibility",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Visibility"
-            }
-          },
-          {
-            "name": "tag",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tag"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "sort_by",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "created_at",
-              "title": "Sort By"
-            }
-          },
-          {
-            "name": "sort_order",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "desc",
-              "title": "Sort Order"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_ResumeExperienceAdminRead_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "创建admin-resume",
-        "operationId": "create_experiences",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResumeExperienceCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResumeExperienceAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/resume/experiences/{item_id}": {
-      "get": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "获取单条admin-resume",
-        "operationId": "get_experiences",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResumeExperienceAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "更新admin-resume",
-        "operationId": "update_experiences",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResumeExperienceUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResumeExperienceAdminRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "删除admin-resume",
-        "operationId": "delete_experiences",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/resume/experiences/bulk-delete": {
-      "post": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "批量删除admin-resume",
-        "operationId": "bulk_delete_experiences",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkDeleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkActionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/admin/resume/experiences/bulk-status": {
-      "post": {
-        "tags": [
-          "admin",
-          "admin-resume",
-          "admin-resume"
-        ],
-        "summary": "批量更新admin-resume状态",
-        "operationId": "bulk_status_experiences",
         "requestBody": {
           "content": {
             "application/json": {
@@ -14465,11 +13160,16 @@
           "email": {
             "type": "string",
             "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
           }
         },
         "type": "object",
         "required": [
-          "email"
+          "email",
+          "password"
         ],
         "title": "AdminEmailLoginRequest"
       },
@@ -22635,6 +21335,18 @@
             ],
             "title": "Avatar Url",
             "description": "Optional avatar URL for first login"
+          },
+          "admin_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Password",
+            "description": "Shared admin email password when elevation is needed"
           }
         },
         "type": "object",
@@ -22654,6 +21366,12 @@
             "type": "boolean",
             "title": "Requires Profile",
             "description": "Whether first-login profile setup is required",
+            "default": false
+          },
+          "requires_admin_password": {
+            "type": "boolean",
+            "title": "Requires Admin Password",
+            "description": "Whether admin email login requires the shared admin password before creating a session",
             "default": false
           },
           "user": {
@@ -24758,30 +23476,6 @@
             "title": "Page Key",
             "description": "Page identifier key"
           },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Sidebar label"
-          },
-          "nav_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nav Label",
-            "description": "Navigation label override"
-          },
           "title": {
             "type": "string",
             "title": "Title",
@@ -24791,18 +23485,6 @@
             "type": "string",
             "title": "Subtitle",
             "description": "Page subtitle text"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Page meta description"
           },
           "search_placeholder": {
             "anyOf": [
@@ -24852,18 +23534,6 @@
             "title": "Page Size",
             "description": "Default items per page"
           },
-          "download_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Download Label",
-            "description": "Download button label"
-          },
           "extras": {
             "additionalProperties": true,
             "type": "object",
@@ -24887,16 +23557,12 @@
         "required": [
           "id",
           "page_key",
-          "label",
-          "nav_label",
           "title",
           "subtitle",
-          "description",
           "search_placeholder",
           "empty_message",
           "max_width",
           "page_size",
-          "download_label",
           "extras",
           "created_at",
           "updated_at"
@@ -24910,30 +23576,6 @@
             "title": "Page Key",
             "description": "Unique page identifier key"
           },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Sidebar or menu label"
-          },
-          "nav_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nav Label",
-            "description": "Navigation menu label override"
-          },
           "title": {
             "type": "string",
             "title": "Title",
@@ -24943,18 +23585,6 @@
             "type": "string",
             "title": "Subtitle",
             "description": "Page subtitle text"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Page meta description"
           },
           "search_placeholder": {
             "anyOf": [
@@ -24995,7 +23625,9 @@
           "page_size": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "maximum": 30.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -25003,18 +23635,6 @@
             ],
             "title": "Page Size",
             "description": "Default items per page"
-          },
-          "download_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Download Label",
-            "description": "Download button label text"
           },
           "extras": {
             "additionalProperties": true,
@@ -25038,30 +23658,6 @@
             "title": "Page Key",
             "description": "Page identifier key"
           },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Sidebar label"
-          },
-          "nav_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nav Label",
-            "description": "Navigation label override"
-          },
           "title": {
             "type": "string",
             "title": "Title",
@@ -25071,18 +23667,6 @@
             "type": "string",
             "title": "Subtitle",
             "description": "Page subtitle"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Page description"
           },
           "search_placeholder": {
             "anyOf": [
@@ -25132,23 +23716,6 @@
             "title": "Page Size",
             "description": "Items per page"
           },
-          "download_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Download Label",
-            "description": "Download button label"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "description": "Whether the page is enabled"
-          },
           "extras": {
             "additionalProperties": true,
             "type": "object",
@@ -25159,47 +23726,18 @@
         "type": "object",
         "required": [
           "page_key",
-          "label",
-          "nav_label",
           "title",
           "subtitle",
-          "description",
           "search_placeholder",
           "empty_message",
           "max_width",
           "page_size",
-          "download_label",
-          "enabled",
           "extras"
         ],
         "title": "PageCopyRead"
       },
       "PageCopyUpdate": {
         "properties": {
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Sidebar label"
-          },
-          "nav_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nav Label",
-            "description": "Navigation label override"
-          },
           "title": {
             "anyOf": [
               {
@@ -25223,18 +23761,6 @@
             ],
             "title": "Subtitle",
             "description": "Page subtitle text"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Page meta description"
           },
           "search_placeholder": {
             "anyOf": [
@@ -25275,7 +23801,9 @@
           "page_size": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "maximum": 30.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -25283,18 +23811,6 @@
             ],
             "title": "Page Size",
             "description": "Default items per page"
-          },
-          "download_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Download Label",
-            "description": "Download button label"
           },
           "extras": {
             "anyOf": [
@@ -25312,110 +23828,6 @@
         },
         "type": "object",
         "title": "PageCopyUpdate"
-      },
-      "PageDisplayOptionAdminRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "Unique display option identifier"
-          },
-          "page_key": {
-            "type": "string",
-            "title": "Page Key",
-            "description": "Page identifier key"
-          },
-          "is_enabled": {
-            "type": "boolean",
-            "title": "Is Enabled",
-            "description": "Whether the page is enabled"
-          },
-          "settings": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Settings",
-            "description": "Page display settings"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "page_key",
-          "is_enabled",
-          "settings",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "PageDisplayOptionAdminRead"
-      },
-      "PageDisplayOptionCreate": {
-        "properties": {
-          "page_key": {
-            "type": "string",
-            "title": "Page Key",
-            "description": "Page identifier key"
-          },
-          "is_enabled": {
-            "type": "boolean",
-            "title": "Is Enabled",
-            "description": "Whether the page is enabled",
-            "default": true
-          },
-          "settings": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Settings",
-            "description": "Page display settings"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_key"
-        ],
-        "title": "PageDisplayOptionCreate"
-      },
-      "PageDisplayOptionUpdate": {
-        "properties": {
-          "is_enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Enabled",
-            "description": "Whether the page is enabled"
-          },
-          "settings": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settings",
-            "description": "Page display settings"
-          }
-        },
-        "type": "object",
-        "title": "PageDisplayOptionUpdate"
       },
       "PaginatedResponse_AssetAdminRead_": {
         "properties": {
@@ -25802,41 +24214,6 @@
         ],
         "title": "PaginatedResponse[PageCopyAdminRead]"
       },
-      "PaginatedResponse_PageDisplayOptionAdminRead_": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PageDisplayOptionAdminRead"
-            },
-            "type": "array",
-            "title": "Items",
-            "description": "Page of result items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total",
-            "description": "Total number of items matching the query"
-          },
-          "page": {
-            "type": "integer",
-            "title": "Page",
-            "description": "Current page number (1-based)"
-          },
-          "page_size": {
-            "type": "integer",
-            "title": "Page Size",
-            "description": "Number of items per page"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "title": "PaginatedResponse[PageDisplayOptionAdminRead]"
-      },
       "PaginatedResponse_PoemAdminRead_": {
         "properties": {
           "items": {
@@ -25906,76 +24283,6 @@
           "page_size"
         ],
         "title": "PaginatedResponse[ResumeBasicsAdminRead]"
-      },
-      "PaginatedResponse_ResumeExperienceAdminRead_": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ResumeExperienceAdminRead"
-            },
-            "type": "array",
-            "title": "Items",
-            "description": "Page of result items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total",
-            "description": "Total number of items matching the query"
-          },
-          "page": {
-            "type": "integer",
-            "title": "Page",
-            "description": "Current page number (1-based)"
-          },
-          "page_size": {
-            "type": "integer",
-            "title": "Page Size",
-            "description": "Number of items per page"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "title": "PaginatedResponse[ResumeExperienceAdminRead]"
-      },
-      "PaginatedResponse_ResumeSkillGroupAdminRead_": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ResumeSkillGroupAdminRead"
-            },
-            "type": "array",
-            "title": "Items",
-            "description": "Page of result items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total",
-            "description": "Total number of items matching the query"
-          },
-          "page": {
-            "type": "integer",
-            "title": "Page",
-            "description": "Current page number (1-based)"
-          },
-          "page_size": {
-            "type": "integer",
-            "title": "Page Size",
-            "description": "Number of items per page"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "title": "PaginatedResponse[ResumeSkillGroupAdminRead]"
       },
       "PaginatedResponse_SiteUserAdminRead_": {
         "properties": {
@@ -26672,298 +24979,6 @@
         "type": "object",
         "title": "ResumeBasicsUpdate"
       },
-      "ResumeExperienceAdminRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "Unique experience identifier"
-          },
-          "resume_basics_id": {
-            "type": "string",
-            "title": "Resume Basics Id",
-            "description": "Associated resume basics ID"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title",
-            "description": "Job title"
-          },
-          "company": {
-            "type": "string",
-            "title": "Company",
-            "description": "Company name"
-          },
-          "period": {
-            "type": "string",
-            "title": "Period",
-            "description": "Employment period"
-          },
-          "location": {
-            "type": "string",
-            "title": "Location",
-            "description": "Experience location"
-          },
-          "employment_type": {
-            "type": "string",
-            "title": "Employment Type",
-            "description": "Employment type"
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary",
-            "description": "Role description"
-          },
-          "achievements": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Achievements",
-            "description": "Achievement bullet points"
-          },
-          "tech_stack": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tech Stack",
-            "description": "Technologies used"
-          },
-          "order_index": {
-            "type": "integer",
-            "title": "Order Index",
-            "description": "Display order"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "resume_basics_id",
-          "title",
-          "company",
-          "period",
-          "location",
-          "employment_type",
-          "summary",
-          "achievements",
-          "tech_stack",
-          "order_index",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "ResumeExperienceAdminRead"
-      },
-      "ResumeExperienceCreate": {
-        "properties": {
-          "resume_basics_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Resume Basics Id",
-            "description": "Associated resume basics ID"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title",
-            "description": "Job title or role"
-          },
-          "company": {
-            "type": "string",
-            "title": "Company",
-            "description": "Company or organization name"
-          },
-          "period": {
-            "type": "string",
-            "title": "Period",
-            "description": "Employment period (e.g. 2020-2023)"
-          },
-          "location": {
-            "type": "string",
-            "title": "Location",
-            "description": "Experience location",
-            "default": ""
-          },
-          "employment_type": {
-            "type": "string",
-            "title": "Employment Type",
-            "description": "Employment type",
-            "default": ""
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary",
-            "description": "Role description and achievements"
-          },
-          "achievements": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Achievements",
-            "description": "Achievement bullet points"
-          },
-          "tech_stack": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tech Stack",
-            "description": "Technologies used"
-          },
-          "order_index": {
-            "type": "integer",
-            "title": "Order Index",
-            "description": "Display order (lower first)",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "required": [
-          "title",
-          "company",
-          "period",
-          "summary"
-        ],
-        "title": "ResumeExperienceCreate"
-      },
-      "ResumeExperienceUpdate": {
-        "properties": {
-          "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title",
-            "description": "Job title"
-          },
-          "company": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company",
-            "description": "Company name"
-          },
-          "period": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Period",
-            "description": "Employment period"
-          },
-          "location": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Location",
-            "description": "Experience location"
-          },
-          "employment_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Employment Type",
-            "description": "Employment type"
-          },
-          "summary": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Summary",
-            "description": "Role description"
-          },
-          "achievements": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Achievements",
-            "description": "Achievement bullet points"
-          },
-          "tech_stack": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tech Stack",
-            "description": "Technologies used"
-          },
-          "order_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Order Index",
-            "description": "Display order"
-          }
-        },
-        "type": "object",
-        "title": "ResumeExperienceUpdate"
-      },
       "ResumeRead": {
         "properties": {
           "title": {
@@ -27001,146 +25016,6 @@
           "summary"
         ],
         "title": "ResumeRead"
-      },
-      "ResumeSkillGroupAdminRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "Unique skill group identifier"
-          },
-          "resume_basics_id": {
-            "type": "string",
-            "title": "Resume Basics Id",
-            "description": "Associated resume basics ID"
-          },
-          "category": {
-            "type": "string",
-            "title": "Category",
-            "description": "Skill category name"
-          },
-          "items": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Items",
-            "description": "List of skill names"
-          },
-          "order_index": {
-            "type": "integer",
-            "title": "Order Index",
-            "description": "Display order"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "resume_basics_id",
-          "category",
-          "items",
-          "order_index",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "ResumeSkillGroupAdminRead"
-      },
-      "ResumeSkillGroupCreate": {
-        "properties": {
-          "resume_basics_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Resume Basics Id",
-            "description": "Associated resume basics ID"
-          },
-          "category": {
-            "type": "string",
-            "title": "Category",
-            "description": "Skill category name"
-          },
-          "items": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Items",
-            "description": "List of skill names"
-          },
-          "order_index": {
-            "type": "integer",
-            "title": "Order Index",
-            "description": "Display order (lower first)",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "required": [
-          "category"
-        ],
-        "title": "ResumeSkillGroupCreate"
-      },
-      "ResumeSkillGroupUpdate": {
-        "properties": {
-          "category": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category",
-            "description": "Skill category name"
-          },
-          "items": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Items",
-            "description": "List of skill names"
-          },
-          "order_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Order Index",
-            "description": "Display order"
-          }
-        },
-        "type": "object",
-        "title": "ResumeSkillGroupUpdate"
       },
       "SearchResponse": {
         "properties": {
@@ -27387,10 +25262,23 @@
             "title": "Admin Auth Methods",
             "description": "Auth methods reserved for admin-side usage"
           },
+          "admin_console_auth_methods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Admin Console Auth Methods",
+            "description": "Admin-elevated auth methods that are allowed to enter the admin console"
+          },
           "admin_email_enabled": {
             "type": "boolean",
             "title": "Admin Email Enabled",
             "description": "Whether email can be used as an admin identity"
+          },
+          "admin_email_password_set": {
+            "type": "boolean",
+            "title": "Admin Email Password Set",
+            "description": "Whether the shared admin email password has been configured"
           },
           "google_client_id": {
             "type": "string",
@@ -27430,6 +25318,7 @@
           "id",
           "email_login_enabled",
           "admin_email_enabled",
+          "admin_email_password_set",
           "google_client_id",
           "google_client_secret",
           "github_client_id",
@@ -27483,6 +25372,21 @@
             "title": "Admin Auth Methods",
             "description": "Auth methods reserved for admin-side usage"
           },
+          "admin_console_auth_methods": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Console Auth Methods",
+            "description": "Admin-elevated auth methods that are allowed to enter the admin console"
+          },
           "admin_email_enabled": {
             "anyOf": [
               {
@@ -27494,6 +25398,18 @@
             ],
             "title": "Admin Email Enabled",
             "description": "Whether email can be used as admin login"
+          },
+          "admin_email_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Email Password",
+            "description": "Shared admin email password used by all bound admin email identities"
           },
           "google_client_id": {
             "anyOf": [
@@ -27646,7 +25562,13 @@
           "is_admin": {
             "type": "boolean",
             "title": "Is Admin",
-            "description": "Whether the current site user is using admin identity",
+            "description": "Whether the current site session is admin-elevated",
+            "default": false
+          },
+          "can_access_admin_console": {
+            "type": "boolean",
+            "title": "Can Access Admin Console",
+            "description": "Whether the current admin-elevated site session can enter the admin console",
             "default": false
           },
           "last_login_at": {
