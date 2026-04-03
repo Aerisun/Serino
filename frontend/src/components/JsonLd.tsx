@@ -14,6 +14,7 @@ const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdPro
   const site = useSiteConfig()
 
   useEffect(() => {
+    const publisherName = site.name || site.title
     const script = document.createElement("script")
     script.type = "application/ld+json"
     script.id = "json-ld-blogposting"
@@ -25,11 +26,11 @@ const JsonLd = ({ title, description, slug, type, publishedAt, tags }: JsonLdPro
       description: description?.slice(0, 160) || "",
       author: {
         "@type": "Person",
-        name: site.author || site.name,
+        name: publisherName,
       },
       publisher: {
         "@type": "Person",
-        name: site.author || site.name,
+        name: publisherName,
       },
       mainEntityOfPage: {
         "@type": "WebPage",

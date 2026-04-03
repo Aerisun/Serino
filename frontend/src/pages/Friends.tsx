@@ -11,7 +11,7 @@ import {
   useReadFriendFeedApiV1SiteFriendFeedGet,
   useReadFriendsApiV1SiteFriendsGet,
 } from "@serino/api-client/site";
-import { formatFriendFeedDate } from "@/lib/api/utils";
+import { formatFriendFeedDate, formatRelativeUpdatedAt } from "@/lib/api/utils";
 import type { FriendRead, FriendFeedItemRead } from "@serino/api-client/models";
 
 interface Friend {
@@ -27,23 +27,31 @@ interface CirclePost {
   title: string;
   date: string;
   url: string;
+  summary: string;
+  publishedAtMs: number | null;
 }
 
 interface FriendsPageConfig extends BaseViewPageConfig {
   pageSize?: number;
   circleTitle?: string;
-  statusLabel?: string;
   loadMoreLabel?: string;
+  refreshLabel?: string;
+  refreshAriaLabel?: string;
   summaryTemplate?: string;
   footerSummaryTemplate?: string;
+  randomPickerLabel?: string;
+  randomRefreshLabel?: string;
+  randomEmptyTemplate?: string;
+  randomRecentDays?: number;
+  autoRefreshSeconds?: number;
 }
 
-const interpolateSummary = (
+const interpolateTemplate = (
   template: string,
-  values: Record<string, number>,
+  values: Record<string, number | string>,
 ) =>
-  template.replace(/\{(sites|articles)\}/g, (_, key: "sites" | "articles") =>
-    String(values[key]),
+  template.replace(/\{([a-z_]+)\}/gi, (_, key: string) =>
+    key in values ? String(values[key]) : "",
   );
 
 const toFriend = (value: FriendRead): Friend => ({
@@ -59,27 +67,73 @@ const toCirclePost = (value: FriendFeedItemRead): CirclePost => ({
   date: formatFriendFeedDate(value.publishedAt),
   url: value.url,
   avatar: value.avatar?.trim() ?? "",
+  summary: value.summary?.trim() ?? "",
+  publishedAtMs: value.publishedAt ? new Date(value.publishedAt).getTime() : null,
 });
+
+const pickRandomRecentPost = (
+  items: CirclePost[],
+  recentDays: number,
+  excludedKey?: string | null,
+) => {
+  const now = Date.now();
+  const maxAgeMs = Math.max(1, recentDays) * 24 * 60 * 60 * 1000;
+  const eligible = items.filter(
+    (item) => item.publishedAtMs != null && now - item.publishedAtMs <= maxAgeMs,
+  );
+
+  if (eligible.length === 0) {
+    return null;
+  }
+
+  const candidates =
+    excludedKey && eligible.length > 1
+      ? eligible.filter((item) => `${item.blogName}-${item.title}-${item.url}` !== excludedKey)
+      : eligible;
+  const pool = candidates.length > 0 ? candidates : eligible;
+  return pool[Math.floor(Math.random() * pool.length)] ?? null;
+};
+
+const readPositiveConfigNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
 
 const Friends = () => {
   const config = usePageConfig().friends as unknown as FriendsPageConfig;
   const circleTitle = config.circleTitle ?? "Friend Circle";
-  const statusLabel = config.statusLabel ?? "状态";
   const loadingLabel = config.loadingLabel ?? "正在加载...";
   const loadMoreLabel = config.loadMoreLabel ?? "加载更多";
   const retryLabel = config.retryLabel ?? "重试";
   const errorTitle = config.errorTitle ?? "友链页面加载失败";
+  const refreshLabel = config.refreshLabel ?? "刷新";
+  const refreshAriaLabel = config.refreshAriaLabel ?? "刷新友链动态";
   const summaryTemplate = config.summaryTemplate ?? "{sites} 个站点 · 共 {articles} 条动态";
   const footerSummaryTemplate =
     config.footerSummaryTemplate ?? "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态";
+  const randomRecentDays = readPositiveConfigNumber(config.randomRecentDays, 7);
+  const randomPickerLabel = interpolateTemplate(
+    config.randomPickerLabel ?? "从最近 {days} 天里随机挑一篇",
+    { days: randomRecentDays },
+  );
+  const randomRefreshLabel = config.randomRefreshLabel ?? "换一篇";
+  const randomEmptyMessage = interpolateTemplate(
+    config.randomEmptyTemplate ?? "最近 {days} 天还没有可展示的友链文章",
+    { days: randomRecentDays },
+  );
+  const autoRefreshSeconds = readPositiveConfigNumber(config.autoRefreshSeconds, 60);
+  const autoRefreshMs = autoRefreshSeconds > 0 ? autoRefreshSeconds * 1000 : false;
   const pageSize = clampPageSize(config.pageSize, 10);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [relativeNow, setRelativeNow] = useState(() => Date.now());
+  const [randomPostKey, setRandomPostKey] = useState<string | null>(null);
   const loadMoreTimerRef = useRef<number | null>(null);
 
   const {
     data: friendsResponse,
     isLoading: friendsLoading,
+    isFetching: friendsFetching,
     isError: friendsError,
     error: friendsErr,
     refetch: refetchFriends,
@@ -87,10 +141,20 @@ const Friends = () => {
   const {
     data: feedResponse,
     isLoading: feedLoading,
+    isFetching: feedFetching,
+    dataUpdatedAt: feedUpdatedAt,
     isError: feedError,
     error: feedErr,
     refetch: refetchFeed,
-  } = useReadFriendFeedApiV1SiteFriendFeedGet();
+  } = useReadFriendFeedApiV1SiteFriendFeedGet(
+    { limit: 200 },
+    {
+      query: {
+        refetchInterval: autoRefreshMs,
+        refetchOnWindowFocus: false,
+      },
+    },
+  );
 
   const friends = useMemo(
     () => (friendsResponse?.data?.items ?? []).map(toFriend).filter((item) => Boolean(item.name)),
@@ -105,6 +169,7 @@ const Friends = () => {
   );
 
   const isLoading = friendsLoading || feedLoading;
+  const isRefreshing = friendsFetching || feedFetching;
   const isError = friendsError || feedError;
   const status: "loading" | "ready" | "empty" | "error" = isLoading
     ? "loading"
@@ -116,11 +181,47 @@ const Friends = () => {
   const errorMessage = isError
     ? ((friendsErr ?? feedErr) instanceof Error ? (friendsErr ?? feedErr)!.message : "友链页面加载失败")
     : "";
+  const updatedLabel = formatRelativeUpdatedAt(feedUpdatedAt, relativeNow);
+  const recentEligiblePosts = useMemo(
+    () =>
+      allCirclePosts.filter(
+        (item) =>
+          item.publishedAtMs != null &&
+          Date.now() - item.publishedAtMs <= randomRecentDays * 24 * 60 * 60 * 1000,
+      ),
+    [allCirclePosts, randomRecentDays],
+  );
+  const selectedRandomPost = useMemo(
+    () =>
+      randomPostKey
+        ? allCirclePosts.find((item) => `${item.blogName}-${item.title}-${item.url}` === randomPostKey) ?? null
+        : null,
+    [allCirclePosts, randomPostKey],
+  );
 
   const refetchAll = () => {
-    void refetchFriends();
-    void refetchFeed();
+    void Promise.all([refetchFriends(), refetchFeed()]);
   };
+
+  const refreshRandomPost = (excludedKey?: string | null) => {
+    const next = pickRandomRecentPost(allCirclePosts, randomRecentDays, excludedKey);
+    setRandomPostKey(next ? `${next.blogName}-${next.title}-${next.url}` : null);
+  };
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setRelativeNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const next = pickRandomRecentPost(allCirclePosts, randomRecentDays);
+    setRandomPostKey(next ? `${next.blogName}-${next.title}-${next.url}` : null);
+  }, [allCirclePosts, feedUpdatedAt, randomRecentDays]);
 
   useEffect(() => {
     return () => {
@@ -250,17 +351,96 @@ const Friends = () => {
           <h2 className="text-2xl font-heading italic tracking-tight text-foreground transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-3xl">
             {circleTitle}
           </h2>
-          <div className="flex items-center gap-1.5 text-xs font-body text-foreground/25">
-            <RefreshCw className={`h-3 w-3 ${status === "loading" ? "animate-spin" : ""}`} />
-            {statusLabel}
+          <div className="flex items-center gap-3">
+            <div className="text-xs font-body text-foreground/25">
+              {updatedLabel}
+            </div>
+            <button
+              type="button"
+              onClick={refetchAll}
+              disabled={isRefreshing}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-body text-foreground/38 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)] disabled:opacity-60"
+              aria-label={refreshAriaLabel}
+              title={refreshAriaLabel}
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+              {refreshLabel}
+            </button>
           </div>
         </div>
         <p className="mb-8 text-xs font-body text-foreground/20">
-          {interpolateSummary(summaryTemplate, {
+          {interpolateTemplate(summaryTemplate, {
             sites: friends.length,
             articles: allCirclePosts.length,
           })}
         </p>
+
+        <div className="mb-8 flex items-start gap-4 border-t border-foreground/[0.06] py-4">
+          <div className="min-w-0 flex-1">
+            <p className="mb-2 text-[12px] font-body tracking-[0.08em] text-foreground/24">
+              {randomPickerLabel}
+            </p>
+            {selectedRandomPost ? (
+              <a
+                href={selectedRandomPost.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block min-w-0 rounded-2xl border border-foreground/[0.06] bg-[rgb(var(--shiro-panel-rgb)/0.16)] px-4 py-4 transition-[border-color,background-color,color] hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 h-10 w-10 shrink-0 overflow-hidden rounded-full bg-foreground/[0.06]">
+                    {selectedRandomPost.avatar ? (
+                      <img
+                        src={selectedRandomPost.avatar}
+                        alt={selectedRandomPost.blogName}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3">
+                      <span className="truncate text-[12px] font-semibold tracking-[0.04em] text-foreground/52">
+                        {selectedRandomPost.blogName}
+                      </span>
+                      {selectedRandomPost.date ? (
+                        <span className="text-[11px] font-body tracking-[0.08em] text-foreground/24">
+                          {selectedRandomPost.date}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1.5 line-clamp-1 text-[17px] font-body font-medium leading-snug text-foreground/84">
+                      {selectedRandomPost.title}
+                    </p>
+                    {selectedRandomPost.summary ? (
+                      <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-foreground/42">
+                        {selectedRandomPost.summary}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </a>
+            ) : (
+              <p className="text-sm text-foreground/32">{randomEmptyMessage}</p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              refreshRandomPost(
+                selectedRandomPost
+                  ? `${selectedRandomPost.blogName}-${selectedRandomPost.title}-${selectedRandomPost.url}`
+                  : null,
+              )
+            }
+            disabled={recentEligiblePosts.length === 0}
+            className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-body text-foreground/38 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.88)] disabled:opacity-60"
+          >
+            <RefreshCw className="h-3 w-3" />
+            {randomRefreshLabel}
+          </button>
+        </div>
       </motion.div>
 
       {status === "loading" && visiblePosts.length === 0 ? (
@@ -321,7 +501,7 @@ const Friends = () => {
               </div>
 
               <span className="mt-1 shrink-0 text-[11px] font-body tabular-nums text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.48)]">
-                {post.date ? `📅 ${post.date}` : ""}
+                {post.date}
               </span>
             </motion.a>
           ))}
@@ -382,7 +562,7 @@ const Friends = () => {
 
       {!hasMore && status === "ready" && (
         <p className="mt-8 text-center text-xs font-body text-foreground/15">
-          {interpolateSummary(footerSummaryTemplate, {
+          {interpolateTemplate(footerSummaryTemplate, {
             sites: friends.length,
             articles: allCirclePosts.length,
           })}

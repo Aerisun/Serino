@@ -47,14 +47,14 @@ class TaskManager:
         )
 
         if self._settings.feed_crawl_enabled:
-            from aerisun.domain.social.crawler import crawl_all_feeds
+            from aerisun.domain.social.monitor import dispatch_due_social_checks
 
             self._scheduler.add_job(
-                crawl_all_feeds,
+                dispatch_due_social_checks,
                 trigger="interval",
-                hours=self._settings.feed_crawl_interval_hours,
-                id="feed_crawler",
-                name="Friend feed crawler",
+                minutes=1,
+                id="friend_health_dispatcher",
+                name="Friend health dispatcher",
                 replace_existing=True,
                 max_instances=1,
                 coalesce=True,

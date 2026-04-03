@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { frontendTranslations, type FrontendLang } from "@/i18n/translations";
+import { getFrontendLang } from "@/i18n";
 
 interface Props {
   children: ReactNode;
@@ -9,6 +11,14 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
+  private copy(lang: FrontendLang) {
+    return {
+      title: frontendTranslations[lang]["errorBoundary.title"],
+      description: frontendTranslations[lang]["errorBoundary.description"],
+      reload: frontendTranslations[lang]["errorBoundary.reload"],
+    };
+  }
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -27,18 +37,17 @@ class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError) {
+      const copy = this.copy(getFrontendLang());
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h1 className="mb-4 text-2xl font-bold">出了点问题</h1>
-            <p className="mb-6 text-gray-600 dark:text-gray-400">
-              发生了一个意外错误。
-            </p>
+            <h1 className="mb-4 text-2xl font-bold">{copy.title}</h1>
+            <p className="mb-6 text-gray-600 dark:text-gray-400">{copy.description}</p>
             <button
               className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
               onClick={() => window.location.reload()}
             >
-              重新加载页面
+              {copy.reload}
             </button>
           </div>
         </div>

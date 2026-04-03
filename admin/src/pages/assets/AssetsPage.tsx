@@ -29,9 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Upload, Trash2, Copy, ExternalLink, Link as LinkIcon, Pencil } from "lucide-react";
-import { canCompressImage, compressImageFile } from "@/lib/image-upload";
+import { canCompressImage, compressImageFile } from "@serino/utils";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import type { AssetAdminRead } from "@serino/api-client/models";
 
@@ -78,8 +79,7 @@ export default function AssetsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -91,8 +91,7 @@ export default function AssetsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -104,8 +103,7 @@ export default function AssetsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });

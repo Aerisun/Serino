@@ -85,9 +85,14 @@ def _build_resource_key(
 
 
 def _resource_urls(resource_key: str, visibility: str) -> tuple[str, str | None]:
-    asset_url = f"/media/{resource_key}"
-    public_url = asset_url if visibility == "public" else None
-    return asset_url, public_url
+    internal_url = f"/media/{resource_key}"
+    public_url = None
+
+    if visibility == "public":
+        site_url = (get_settings().site_url or "").rstrip("/")
+        public_url = f"{site_url}{internal_url}" if site_url else internal_url
+
+    return internal_url, public_url
 
 
 def _asset_to_read(asset: Asset) -> AssetAdminRead:
@@ -138,6 +143,8 @@ def upload_asset(
     category: str = "general",
     note: str | None = None,
 ) -> AssetAdminRead:
+    from aerisun.domain.automation.events import emit_asset_uploaded
+
     settings = get_settings()
     media_dir = settings.media_dir.expanduser().resolve()
     media_dir.mkdir(parents=True, exist_ok=True)
@@ -176,10 +183,21 @@ def upload_asset(
     )
     session.commit()
     session.refresh(asset)
+    emit_asset_uploaded(
+        session,
+        asset_id=asset.id,
+        resource_key=asset.resource_key,
+        visibility=asset.visibility,
+        scope=asset.scope,
+        category=asset.category,
+        file_name=asset.file_name,
+    )
     return _asset_to_read(asset)
 
 
 def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> AssetAdminRead:
+    from aerisun.domain.automation.events import emit_asset_updated
+
     asset = repo.find_asset_by_id(session, asset_id)
     if asset is None:
         raise ResourceNotFound("Asset not found")
@@ -233,6 +251,14 @@ def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> 
     asset.note = next_note
     session.commit()
     session.refresh(asset)
+    emit_asset_updated(
+        session,
+        asset_id=asset.id,
+        resource_key=asset.resource_key,
+        visibility=asset.visibility,
+        scope=asset.scope,
+        category=asset.category,
+    )
     return _asset_to_read(asset)
 
 
@@ -244,24 +270,37 @@ def get_asset(session: Session, asset_id: str) -> AssetAdminRead:
 
 
 def delete_asset(session: Session, asset_id: str) -> None:
+    from aerisun.domain.automation.events import emit_asset_deleted
+
     asset = repo.find_asset_by_id(session, asset_id)
     if asset is None:
         raise ResourceNotFound("Asset not found")
+    snapshot = {
+        "asset_id": asset.id,
+        "resource_key": asset.resource_key,
+        "file_name": asset.file_name,
+    }
     path = Path(asset.storage_path)
     if path.exists():
         path.unlink()
     repo.delete_asset(session, asset)
     session.commit()
+    emit_asset_deleted(session, **snapshot)
 
 
 def bulk_delete_assets(session: Session, ids: list[str]) -> int:
+    from aerisun.domain.automation.events import emit_asset_bulk_deleted
+
     affected = repo.delete_assets_by_ids(session, ids)
     session.commit()
+    emit_asset_bulk_deleted(session, ids=ids, affected=affected)
     return affected
 
 
 def save_comment_image(session: Session, content: bytes, filename: str, mime_type: str | None) -> str:
     """Save a comment image as a user asset and return its public URL path."""
+    from aerisun.domain.automation.events import emit_comment_image_saved
+
     if mime_type not in _ALLOWED_IMAGE_TYPES:
         raise DomainValidationError("不支持的图片格式")
     if len(content) > _MAX_UPLOAD_BYTES:
@@ -275,5 +314,11 @@ def save_comment_image(session: Session, content: bytes, filename: str, mime_typ
         visibility="internal",
         scope="user",
         category="comment",
+    )
+    emit_comment_image_saved(
+        session,
+        asset_id=asset.id,
+        resource_key=asset.resource_key,
+        file_name=asset.file_name,
     )
     return asset.internal_url

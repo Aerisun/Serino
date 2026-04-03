@@ -2,13 +2,6 @@ import type { CommunityConfigAdminRead } from "@serino/api-client/models";
 import type { CommunityConfigUpdate } from "@serino/api-client/models";
 import type { CommunitySurfaceUpdate } from "@serino/api-client/models";
 
-export interface CommunityAvatarPreset {
-  key: string;
-  label: string;
-  avatar_url: string;
-  note?: string | null;
-}
-
 export interface CommunityConfigFormState {
   provider: string;
   server_url: string;
@@ -19,18 +12,12 @@ export interface CommunityConfigFormState {
   emoji_presets: string;
   enable_enjoy_search: boolean;
   image_uploader: boolean;
-  login_mode: string;
-  oauth_url: string;
-  avatar_strategy: string;
   helper_copy: string;
-  oauth_providers: string;
   email_login_enabled: boolean;
   moderation_mode: string;
   default_sorting: string;
   page_size: string;
   image_max_bytes: string;
-  avatar_presets: CommunityAvatarPreset[];
-  guest_avatar_mode: string;
 }
 
 const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceUpdate[] = [
@@ -43,12 +30,9 @@ const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceUpdate[] = [
 
 const DEFAULT_META = ["nick", "mail"];
 const DEFAULT_REQUIRED_META = ["nick"];
-const DEFAULT_EMOJI_PRESETS = ["apple", "weibo", "qq", "bilibili", "twemoji", "github"];
-const DEFAULT_OAUTH_PROVIDERS = ["github", "google"];
-const DEFAULT_AVATAR_PRESETS: CommunityAvatarPreset[] = [];
+const DEFAULT_EMOJI_PRESETS = ["twemoji", "qq", "bilibili"];
 const DEFAULT_MODERATION_MODE = "all_pending";
 const DEFAULT_DEFAULT_SORTING = "latest";
-const DEFAULT_GUEST_AVATAR_MODE = "preset";
 
 const splitList = (value: string) =>
   value
@@ -85,43 +69,6 @@ const parseSurfaceList = (value: string): CommunitySurfaceUpdate[] => {
   });
 };
 
-const parseAvatarPresets = (value: unknown): CommunityAvatarPreset[] => {
-  if (Array.isArray(value)) {
-    return value.map((item, index) => {
-      if (!item || typeof item !== "object") {
-        throw new Error(`Avatar preset #${index + 1} is invalid`);
-      }
-
-      const record = item as Record<string, unknown>;
-      const key = String(record.key ?? record.id ?? "").trim();
-      const label = String(record.label ?? record.name ?? "").trim();
-      const avatarUrl = String(record.avatar_url ?? record.src ?? "").trim();
-      if (!key || !label || !avatarUrl) {
-        throw new Error(`Avatar preset #${index + 1} must include key, label and avatar_url`);
-      }
-
-      return {
-        key,
-        label,
-        avatar_url: avatarUrl,
-        note: typeof record.note === "string" ? record.note : null,
-      };
-    });
-  }
-
-  const raw = String(value ?? "").trim();
-  if (!raw) {
-    return DEFAULT_AVATAR_PRESETS;
-  }
-
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) {
-    throw new Error("Avatar presets must be a JSON array");
-  }
-
-  return parseAvatarPresets(parsed);
-};
-
 export const createCommunityForm = (config?: CommunityConfigAdminRead | null): CommunityConfigFormState => ({
   provider: config?.provider ?? "waline",
   server_url: config?.server_url ?? "",
@@ -132,18 +79,12 @@ export const createCommunityForm = (config?: CommunityConfigAdminRead | null): C
   emoji_presets: joinList(config?.emoji_presets ?? DEFAULT_EMOJI_PRESETS),
   enable_enjoy_search: config?.enable_enjoy_search ?? true,
   image_uploader: config?.image_uploader ?? false,
-  login_mode: "force",
-  oauth_url: config?.oauth_url ?? "",
-  avatar_strategy: config?.avatar_strategy ?? "identicon",
   helper_copy: config?.avatar_helper_copy ?? "",
-  oauth_providers: joinList(config?.oauth_providers ?? DEFAULT_OAUTH_PROVIDERS),
   email_login_enabled: config?.anonymous_enabled ?? true,
   moderation_mode: config?.moderation_mode ?? DEFAULT_MODERATION_MODE,
   default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
   page_size: String(config?.page_size ?? 20),
   image_max_bytes: String(config?.image_max_bytes ?? 524288),
-  avatar_presets: parseAvatarPresets(config?.avatar_presets ?? DEFAULT_AVATAR_PRESETS),
-  guest_avatar_mode: config?.guest_avatar_mode ?? DEFAULT_GUEST_AVATAR_MODE,
 });
 
 export const communityFormToUpdate = (form: CommunityConfigFormState): CommunityConfigUpdate => ({
@@ -156,16 +97,10 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   emoji_presets: splitList(form.emoji_presets),
   enable_enjoy_search: form.enable_enjoy_search,
   image_uploader: form.image_uploader,
-  login_mode: "force",
-  oauth_url: form.oauth_url.trim() || null,
-  oauth_providers: splitList(form.oauth_providers),
   anonymous_enabled: form.email_login_enabled,
   moderation_mode: form.moderation_mode.trim() || DEFAULT_MODERATION_MODE,
   default_sorting: form.default_sorting.trim() || DEFAULT_DEFAULT_SORTING,
   page_size: Math.max(1, Number.parseInt(form.page_size, 10) || 20),
   image_max_bytes: Math.max(0, Number.parseInt(form.image_max_bytes, 10) || 524288),
-  avatar_presets: parseAvatarPresets(form.avatar_presets),
-  guest_avatar_mode: form.guest_avatar_mode.trim() || DEFAULT_GUEST_AVATAR_MODE,
-  avatar_strategy: form.avatar_strategy.trim() || "identicon",
   avatar_helper_copy: form.helper_copy.trim() || null,
 });

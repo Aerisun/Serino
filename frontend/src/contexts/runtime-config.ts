@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import { API_BASE_PATH, API_BASE_URL, ApiError } from "@/lib/api";
+import { translateFrontendText } from "@/i18n";
 import type { RuntimeConfigSnapshot } from "@/lib/runtime-config";
 
 interface RuntimeConfigContextValue {
@@ -10,15 +11,17 @@ export const RuntimeConfigContext = createContext<RuntimeConfigContextValue | nu
 
 export function describeRuntimeConfigError(error: Error | null) {
   if (!error) {
-    return "站点配置未加载";
+    return translateFrontendText("runtime.notLoaded");
   }
 
   if (error instanceof ApiError) {
-    return `接口请求失败（HTTP ${error.status}）`;
+    return translateFrontendText("runtime.apiFailed", { status: error.status });
   }
 
   if (error.message === "Failed to fetch") {
-    return `无法访问接口 ${API_BASE_URL || API_BASE_PATH}`;
+    return translateFrontendText("runtime.unreachable", {
+      target: API_BASE_URL || API_BASE_PATH,
+    });
   }
 
   return error.message;

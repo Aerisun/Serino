@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/Label";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { Textarea } from "@/components/ui/Textarea";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
 const FEATURE_FLAGS = ["toc", "reading_progress"] as const;
@@ -141,8 +142,7 @@ export function FeatureTogglesSection() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -156,8 +156,7 @@ export function FeatureTogglesSection() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -193,7 +192,6 @@ export function FeatureTogglesSection() {
     title: profile?.title ?? "",
     bio: profile?.bio ?? "",
     role: profile?.role ?? "",
-    footer_text: profile?.footer_text ?? "",
     hero_video_url: profile?.hero_video_url ?? "",
     feature_flags: nextFeatureFlags,
   });

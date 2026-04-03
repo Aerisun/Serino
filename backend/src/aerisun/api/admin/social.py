@@ -3,12 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from aerisun.core.db import get_session
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.social.models import Friend
 from aerisun.domain.social.service import (
+    check_friend_now,
     create_friend_feed_admin,
     delete_friend_feed_admin,
     list_friend_feeds_admin,
@@ -38,9 +39,19 @@ friends_router = build_crud_router(
     read_schema=FriendAdminRead,
     prefix="/friends",
     tag="admin-social",
+    base_query_factory=lambda session: session.query(Friend).options(selectinload(Friend.feed_sources)),
 )
 
 router.include_router(friends_router)
+
+
+@router.post("/friends/{friend_id}/check", summary="立即检查友链网站与 RSS")
+def check_friend_health(
+    friend_id: str,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> Any:
+    return check_friend_now(session, friend_id)
 
 
 @router.post("/feeds/crawl", response_model=FeedCrawlAllResultRead, summary="手动触发全量抓取")

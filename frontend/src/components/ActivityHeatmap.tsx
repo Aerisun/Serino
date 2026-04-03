@@ -9,6 +9,7 @@ import type {
 } from "@serino/api-client/models";
 import { CalendarDays } from "lucide-react";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { useFrontendI18n } from "@/i18n";
 import { usePageConfig } from "@/contexts/runtime-config";
 
 interface WeeklyData {
@@ -74,6 +75,7 @@ const buildMonthMarkers = (weeks: WeeklyData[]) => {
 };
 
 const ActivityHeatmap = () => {
+  const { t } = useFrontendI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
@@ -81,8 +83,8 @@ const ActivityHeatmap = () => {
   const { resolvedTheme } = useTheme();
   const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
   const title = String(config.heatmapTitle ?? "Activity");
-  const _loadingLabel = String(config.heatmapLoadingLabel ?? "加载中");
-  const _errorLabel = String(config.heatmapErrorLabel ?? "加载失败");
+  const _loadingLabel = String(config.heatmapLoadingLabel ?? t("common.loading"));
+  const _errorLabel = String(config.heatmapErrorLabel ?? t("list.loadFailed"));
   const stats = [
     { key: "thisWeek", label: String(config.heatmapThisWeekLabel ?? "This week") },
     { key: "peakWeek", label: String(config.heatmapPeakWeekLabel ?? "Peak week") },
@@ -208,10 +210,10 @@ const ActivityHeatmap = () => {
         <Link
           to="/calendar"
           className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1.5 text-xs font-body font-medium text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)] transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.9)] dark:bg-card/[0.82]"
-          aria-label="前往日历页面"
+          aria-label={t("heatmap.calendarAria")}
         >
           <CalendarDays className="h-3.5 w-3.5" />
-          日历
+          {t("heatmap.calendar")}
         </Link>
       </div>
 
@@ -436,7 +438,7 @@ const ActivityHeatmap = () => {
                 color: tokenRgb("--shiro-accent-rgb", ACCENT_FALLBACK, 0.66),
               }}
             >
-              重试
+              {t("heatmap.retry")}
             </button>
           </div>
         )}

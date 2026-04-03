@@ -12,6 +12,7 @@ import { ResourceUploadField } from "@/components/ResourceUploadField";
 import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import type { SiteProfileAdminRead } from "@serino/api-client/models";
 
@@ -19,7 +20,7 @@ type ProfileFieldKey =
   | "name"
   | "title"
   | "role"
-  | "footer_text"
+  | "filing_info"
   | "hero_image_url"
   | "hero_poster_url"
   | "hero_video_url"
@@ -43,7 +44,7 @@ const PROFILE_FORM_FIELDS = [
   "name",
   "title",
   "role",
-  "footer_text",
+  "filing_info",
   "hero_image_url",
   "hero_poster_url",
   "hero_video_url",
@@ -58,7 +59,7 @@ function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormSt
     title: profile?.title ?? "",
     bio: profile?.bio ?? "",
     role: profile?.role ?? "",
-    footer_text: profile?.footer_text ?? "",
+    filing_info: profile?.filing_info ?? "",
     og_image: profile?.og_image ?? "",
     site_icon_url: profile?.site_icon_url ?? "",
     hero_image_url: profile?.hero_image_url ?? "",
@@ -70,7 +71,7 @@ function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormSt
 const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpCopy>> = {
   zh: {
     name: {
-      label: "主页显示名",
+      label: "您的昵称",
       title: "更偏“你是谁”的名字字段",
       description: "适合填写人物名或最常见的对外称呼，比如 Felix。它主要影响首页和页脚里直接面对访客的名字显示。",
       usageTitle: "会影响这些位置",
@@ -81,7 +82,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       ],
     },
     title: {
-      label: "站点品牌标题",
+      label: "站点标题",
       title: "更偏“这个站点叫什么”的标题字段",
       description: "适合填写品牌名、项目名或站名，比如 Aerisun。现在它会优先作为浏览器标题和分享标题使用。",
       usageTitle: "会影响这些位置",
@@ -102,13 +103,13 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
         "页脚名称下方的身份说明",
       ],
     },
-    footer_text: {
-      label: "页脚补充文案",
-      title: "页脚最底部的一句短文案",
-      description: "适合放一句签名、构建说明或简短态度表达，不建议写太长。",
+    filing_info: {
+      label: "备案信息",
+      title: "页脚第一行展示的备案或登记信息",
+      description: "适合填写 ICP / 公安备案 / 站点登记号等信息。会显示在页脚第一行的作者名后面。",
       usageTitle: "会影响这些位置",
       usageItems: [
-        "全站页脚底部的补充说明",
+        "全站页脚第一行中的备案信息",
       ],
     },
     hero_image_url: {
@@ -126,11 +127,12 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_poster_url: {
       label: "首页视频封面图",
       title: "背景视频开始播放前显示的静态封面",
-      description: "建议使用与视频风格一致的静帧，避免首屏在慢网速下出现空白感。",
+      description: "建议使用与视频风格一致的静帧。它既是视频播放前的封面，也是视频不可用时的首屏静态兜底图。",
       usageTitle: "会影响这些位置",
       usageItems: [
         "首页背景视频的 poster 封面",
         "视频加载前的首屏观感",
+        "首页背景视频缺失或报错时的背景图",
       ],
       placeholder: "上传或填写首页视频封面图地址",
       note: "首页 Hero 视频封面图",
@@ -138,7 +140,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_video_url: {
       label: "首页背景视频",
       title: "首页首屏铺满背景的视频资源",
-      description: "如果填写这里，首页会优先显示视频背景；如果视频缺失或加载失败，会回退到下面的静态背景图。",
+      description: "如果填写这里，首页会优先显示视频背景；如果视频缺失或加载失败，会回退到“首页视频封面图”。",
       usageTitle: "会影响这些位置",
       usageItems: [
         "首页首屏背景媒体",
@@ -148,18 +150,16 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       note: "首页 Hero 背景视频",
     },
     og_image: {
-      label: "分享图 / 首页背景兜底图",
-      title: "分享用图，同时也是首页背景的静态兜底",
-      description: "这个字段不只是 SEO 图片。当前也会在首页背景视频不可用时作为静态背景图使用，并在 Hero 视觉图为空时参与兜底。",
+      label: "分享图",
+      title: "站点对外分享时使用的图片",
+      description: "仅用于 Open Graph / Twitter 等分享场景，不再作为首页背景或 Hero 视觉兜底图。",
       usageTitle: "会影响这些位置",
       usageItems: [
         "Open Graph 分享图",
         "Twitter 分享图",
-        "首页背景视频缺失或报错时的背景图",
-        "Hero 翻转视觉图为空时的图片兜底",
       ],
-      placeholder: "上传或填写分享图 / 首页背景兜底图地址",
-      note: "站点分享图与首页背景兜底图",
+      placeholder: "上传或填写分享图地址",
+      note: "站点分享图",
     },
     site_icon_url: {
       label: "浏览器标签图标",
@@ -193,7 +193,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       usageItems: [
         "The name on the front of the homepage hero coin",
         "The main name in the footer",
-        "Image alt text and a few author fallbacks",
+        "Metadata author tags and structured data fallbacks",
       ],
     },
     title: {
@@ -218,13 +218,13 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
         "The role line under the name in the footer",
       ],
     },
-    footer_text: {
-      label: "Footer Supporting Copy",
-      title: "The short line at the bottom of the footer",
-      description: "Good for a signature, build note, or a short tone-setting sentence.",
+    filing_info: {
+      label: "Filing Info",
+      title: "The filing or regulatory line shown in the first footer row",
+      description: "Use this for ICP, registration, or filing text that should appear after the site owner name in the footer.",
       usageTitle: "Used in",
       usageItems: [
-        "The footer support line across the site",
+        "The filing segment in the first footer row",
       ],
     },
     hero_image_url: {
@@ -242,11 +242,12 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_poster_url: {
       label: "Homepage Video Poster",
       title: "The still image shown before the background video plays",
-      description: "Use a frame that matches the mood of the video so the hero feels stable on slower connections.",
+      description: "Use a frame that matches the mood of the video. It is also used as the static fallback background when the video is missing or fails.",
       usageTitle: "Used in",
       usageItems: [
         "The homepage background video poster",
         "The first visual state before the video starts",
+        "The homepage background when the video is missing or fails",
       ],
       placeholder: "Upload or paste the homepage video poster URL",
       note: "Homepage hero video poster",
@@ -254,7 +255,7 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
     hero_video_url: {
       label: "Homepage Background Video",
       title: "The full-bleed video asset for the homepage hero",
-      description: "If set, the homepage uses this video first. If it is missing or fails, the fallback background image below is used instead.",
+      description: "If set, the homepage uses this video first. If it is missing or fails, it falls back to the Homepage Video Poster.",
       usageTitle: "Used in",
       usageItems: [
         "The homepage hero background",
@@ -264,18 +265,16 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       note: "Homepage hero background video",
     },
     og_image: {
-      label: "Share Image / Background Fallback",
-      title: "The sharing image and static hero fallback",
-      description: "This is not only for SEO. It also becomes the homepage fallback background when the hero video is unavailable, and it can back up the hero image when needed.",
+      label: "Share Image",
+      title: "The image used for external sharing cards",
+      description: "Used only for Open Graph/Twitter sharing surfaces, not as homepage or hero fallback media.",
       usageTitle: "Used in",
       usageItems: [
         "Open Graph share image",
         "Twitter share image",
-        "Homepage background when the hero video is missing or fails",
-        "Hero image fallback when the flip image is empty",
       ],
-      placeholder: "Upload or paste the share image / fallback background URL",
-      note: "Site share image and homepage fallback background",
+      placeholder: "Upload or paste the share image URL",
+      note: "Site share image",
     },
     site_icon_url: {
       label: "Browser Tab Icon",
@@ -332,9 +331,7 @@ export function ProfileTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -375,7 +372,7 @@ export function ProfileTab() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-        {(["name", "title", "role", "footer_text"] as const).map((key) => (
+        {(["name", "title", "role"] as const).map((key) => (
           <div key={key} className="space-y-2">
             {renderHelpLabel(key)}
             <Input
@@ -384,6 +381,21 @@ export function ProfileTab() {
             />
           </div>
         ))}
+        <div className="space-y-2">
+          {renderHelpLabel("bio")}
+          <Textarea
+            value={form.bio}
+            onChange={(e) => updateField("bio", e.target.value)}
+            rows={4}
+          />
+        </div>
+        <div className="space-y-2">
+          {renderHelpLabel("filing_info")}
+          <Input
+            value={form.filing_info}
+            onChange={(e) => updateField("filing_info", e.target.value)}
+          />
+        </div>
         <ResourceUploadField
           label={renderHelpLabel("hero_image_url")}
           value={form.hero_image_url}
@@ -407,7 +419,7 @@ export function ProfileTab() {
         <ResourceUploadField
           label={renderHelpLabel("hero_video_url")}
           value={form.hero_video_url}
-          category="hero-media"
+          category="hero-video"
           accept="image/*,video/*"
           placeholder={copy.hero_video_url.placeholder}
           note={copy.hero_video_url.note}
@@ -417,7 +429,7 @@ export function ProfileTab() {
         <ResourceUploadField
           label={renderHelpLabel("og_image")}
           value={form.og_image}
-          category="og-image"
+          category="site-og"
           accept="image/*"
           placeholder={copy.og_image.placeholder}
           note={copy.og_image.note}
@@ -434,14 +446,6 @@ export function ProfileTab() {
           uniqueByCategory
           onChange={(value) => updateField("site_icon_url", value)}
         />
-        <div className="space-y-2">
-          {renderHelpLabel("bio")}
-          <Textarea
-            value={form.bio}
-            onChange={(e) => updateField("bio", e.target.value)}
-            rows={4}
-          />
-        </div>
       </CardContent>
     </Card>
   );

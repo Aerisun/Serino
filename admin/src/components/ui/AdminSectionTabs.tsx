@@ -127,7 +127,7 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative w-fit max-w-full", className)}>
       <div
         ref={scrollRef}
         onWheel={handleWheel}

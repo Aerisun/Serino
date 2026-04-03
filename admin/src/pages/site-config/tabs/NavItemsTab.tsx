@@ -8,6 +8,7 @@ import {
   getListNavItemsQueryKey,
 } from "@serino/api-client/admin";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -57,8 +58,7 @@ export function NavItemsTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -73,8 +73,7 @@ export function NavItemsTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -86,8 +85,7 @@ export function NavItemsTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });

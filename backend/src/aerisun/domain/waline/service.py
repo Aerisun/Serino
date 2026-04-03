@@ -159,6 +159,10 @@ def connect_waline_db(db_path: Path | None = None) -> Iterator[sqlite3.Connectio
     ensure_waline_schema(connection)
     try:
         yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
     finally:
         connection.close()
 

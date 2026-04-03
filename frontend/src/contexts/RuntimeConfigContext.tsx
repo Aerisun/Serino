@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { RuntimeConfigContext, describeRuntimeConfigError } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
 import { loadRuntimeConfig, type RuntimeConfigSnapshot } from "@/lib/runtime-config";
 
 export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
+  const { t } = useFrontendI18n();
   const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,14 +40,14 @@ export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <div className="space-y-1">
-          <p className="text-sm text-foreground/60">无法加载站点配置</p>
+          <p className="text-sm text-foreground/60">{t("runtime.configLoadFailed")}</p>
           <p className="text-xs text-foreground/40">{message}</p>
         </div>
         <button
           onClick={load}
           className="rounded-full px-5 py-2 text-sm font-medium liquid-glass text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
         >
-          重试
+          {t("common.retry")}
         </button>
       </div>
     );

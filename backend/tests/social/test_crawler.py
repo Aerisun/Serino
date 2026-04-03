@@ -199,6 +199,29 @@ def test_crawl_single_source_success(client):
 
 
 @respx.mock
+def test_crawl_single_source_trims_whitespace_urls(client):
+    from aerisun.core.db import get_session_factory
+    from aerisun.core.settings import get_settings
+
+    factory = get_session_factory()
+    settings = get_settings()
+    with factory() as session:
+        friend, source = _setup_friend_and_source(session)
+        friend.url = "  https://blog.example.com  "
+        source.feed_url = "  https://blog.example.com/rss.xml  "
+        session.flush()
+
+        respx.get("https://blog.example.com/rss.xml").mock(return_value=httpx.Response(200, text=SAMPLE_RSS))
+
+        result = crawl_single_source(session, source, friend, settings)
+        session.commit()
+
+        assert result["status"] == "ok"
+        assert source.feed_url == "https://blog.example.com/rss.xml"
+        assert friend.url == "https://blog.example.com"
+
+
+@respx.mock
 def test_crawl_single_source_304(client):
     from aerisun.core.db import get_session_factory
     from aerisun.core.settings import get_settings
@@ -244,6 +267,43 @@ def test_crawl_single_source_auto_discovery(client):
 
         assert result["feed_url_updated"] is True
         assert result["inserted"] >= 1
+
+
+@respx.mock
+def test_crawl_single_source_auto_discovers_when_response_is_html(client, monkeypatch):
+    from aerisun.core.db import get_session_factory
+    from aerisun.core.settings import get_settings
+    from aerisun.domain.social import crawler as crawler_module
+
+    factory = get_session_factory()
+    settings = get_settings()
+    with factory() as session:
+        friend, source = _setup_friend_and_source(session)
+        source.feed_url = "https://blog.example.com"
+        session.flush()
+        monkeypatch.setattr(
+            crawler_module,
+            "_check_feed",
+            lambda _blog_url, _client: ("rss", "https://blog.example.com/rss.xml"),
+        )
+
+        respx.get("https://blog.example.com").mock(
+            return_value=httpx.Response(200, headers={"content-type": "text/html"}, text="<html>home</html>")
+        )
+        respx.get("https://blog.example.com/rss.xml").mock(
+            return_value=httpx.Response(
+                200,
+                headers={"content-type": "application/rss+xml"},
+                text=SAMPLE_RSS,
+            )
+        )
+
+        result = crawl_single_source(session, source, friend, settings)
+        session.commit()
+
+        assert result["feed_url_updated"] is True
+        assert result["status"] == "ok"
+        assert source.feed_url == "https://blog.example.com/rss.xml"
 
 
 @respx.mock

@@ -52,6 +52,8 @@ def upsert_admin_identity(
     email: str,
     provider_display_name: str | None = None,
 ) -> SiteAdminIdentityAdminRead:
+    from aerisun.domain.automation.events import emit_site_admin_identity_created
+
     normalized_provider = provider.strip().lower()
     normalized_identifier = " ".join((identifier or "").strip().split())
     normalized_email = normalize_email(email)
@@ -73,6 +75,7 @@ def upsert_admin_identity(
             site_user_id=site_user.id,
             provider=normalized_provider,
         )
+    created = identity is None
     if identity is None:
         identity = repo.create_admin_identity(
             session,
@@ -92,6 +95,14 @@ def upsert_admin_identity(
 
     session.commit()
     session.refresh(identity)
+    if created:
+        emit_site_admin_identity_created(
+            session,
+            identity_id=identity.id,
+            site_user_id=identity.site_user_id,
+            provider=identity.provider,
+            email=identity.email,
+        )
     user = repo.find_user_by_id(session, identity.site_user_id)
     if user is None:
         raise ValidationError("管理员绑定的站点用户不存在。")
@@ -191,11 +202,20 @@ def bind_site_admin_identity_from_current_user(
 
 
 def delete_site_admin_identity(session: Session, identity_id: str) -> None:
+    from aerisun.domain.automation.events import emit_site_admin_identity_deleted
+
     identity = repo.find_admin_identity_by_id(session, identity_id)
     if identity is None:
         raise ValidationError("管理员身份不存在。")
+    snapshot = {
+        "identity_id": identity.id,
+        "site_user_id": identity.site_user_id,
+        "provider": identity.provider,
+        "email": identity.email,
+    }
     repo.delete_admin_identity(session, identity)
     session.commit()
+    emit_site_admin_identity_deleted(session, **snapshot)
 
 
 def get_admin_login_options(session: Session) -> dict[str, object]:

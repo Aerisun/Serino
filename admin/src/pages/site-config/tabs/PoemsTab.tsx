@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/Dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import type {
   PoemAdminRead,
@@ -53,7 +54,6 @@ type PoemSourceMode = "custom" | "hitokoto";
 type PoemSettingsForm = {
   poem_source: PoemSourceMode;
   poem_hitokoto_types: string[];
-  poem_hitokoto_keywords: string[];
 };
 
 type PoemPreviewPayload = {
@@ -65,16 +65,9 @@ type PoemPreviewPayload = {
 const createPoemSettingsForm = (
   profile?: SiteProfileAdminRead | null,
 ): PoemSettingsForm => ({
-  poem_source: profile?.poem_source ?? "custom",
+  poem_source: profile?.poem_source ?? "hitokoto",
   poem_hitokoto_types: [...(profile?.poem_hitokoto_types ?? [])],
-  poem_hitokoto_keywords: [...(profile?.poem_hitokoto_keywords ?? [])],
 });
-
-const parseKeywords = (value: string) =>
-  value
-    .split(/[,\n，]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
 
 function buildPoemPreviewUrl(
   settings: PoemSettingsForm,
@@ -88,9 +81,6 @@ function buildPoemPreviewUrl(
 
   params.set("mode", settings.poem_source);
   activeTypes.forEach((type) => params.append("types", type));
-  settings.poem_hitokoto_keywords.forEach((keyword) =>
-    params.append("keywords", keyword),
-  );
   if (strict) {
     params.set("strict", "true");
   }
@@ -131,7 +121,6 @@ export function PoemsTab() {
   const [form, setForm] = useState({ content: "", order_index: 0 });
   const [testingPoem, setTestingPoem] = useState("");
   const [isTestingPoem, setIsTestingPoem] = useState(false);
-  const [keywordDraft, setKeywordDraft] = useState("");
   const [settingsForm, setSettingsForm] = useState<PoemSettingsForm>(
     createPoemSettingsForm(),
   );
@@ -152,9 +141,7 @@ export function PoemsTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -169,9 +156,7 @@ export function PoemsTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -183,9 +168,7 @@ export function PoemsTab() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -213,12 +196,9 @@ export function PoemsTab() {
           savedSettingsForm ??
           createPoemSettingsForm(profile);
         setSettingsForm(fallback);
-        setKeywordDraft(fallback.poem_hitokoto_keywords.join(", "));
         rollbackSettingsRef.current = null;
         submittedSettingsRef.current = null;
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -241,10 +221,6 @@ export function PoemsTab() {
     }
   }, [profile, savedSettingsForm]);
 
-  useEffect(() => {
-    setKeywordDraft(settingsForm.poem_hitokoto_keywords.join(", "));
-  }, [settingsForm.poem_hitokoto_keywords]);
-
   const poemSource = settingsForm.poem_source;
   const selectedTypes = settingsForm.poem_hitokoto_types;
   const effectiveSelectedTypes =
@@ -254,7 +230,12 @@ export function PoemsTab() {
     rollbackSettingsRef.current = settingsForm;
     submittedSettingsRef.current = nextSettings;
     setSettingsForm(nextSettings);
-    saveProfile.mutate({ data: nextSettings });
+    saveProfile.mutate({
+      data: {
+        ...nextSettings,
+        poem_hitokoto_keywords: [],
+      },
+    });
   }
 
   function updatePoemSettings(next: Partial<PoemSettingsForm>) {
@@ -262,8 +243,6 @@ export function PoemsTab() {
       poem_source: next.poem_source ?? settingsForm.poem_source,
       poem_hitokoto_types:
         next.poem_hitokoto_types ?? settingsForm.poem_hitokoto_types,
-      poem_hitokoto_keywords:
-        next.poem_hitokoto_keywords ?? settingsForm.poem_hitokoto_keywords,
     });
   }
 
@@ -396,33 +375,6 @@ export function PoemsTab() {
                     <span>{t(option.labelKey)}</span>
                   </label>
                 ))}
-              </div>
-            </div>
-
-            <div className="max-w-2xl space-y-3">
-              <div className="text-sm font-semibold">
-                {t("siteConfig.poemKeywordPreference")}
-              </div>
-              <Textarea
-                value={keywordDraft}
-                onChange={(e) => setKeywordDraft(e.target.value)}
-                rows={2}
-                placeholder={t("siteConfig.poemKeywordPreferencePlaceholder")}
-              />
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    updatePoemSettings({
-                      poem_hitokoto_keywords: parseKeywords(keywordDraft),
-                    })
-                  }
-                  disabled={saveProfile.isPending}
-                >
-                  {saveProfile.isPending
-                    ? t("common.saving")
-                    : t("siteConfig.poemKeywordSave")}
-                </Button>
               </div>
             </div>
           </div>

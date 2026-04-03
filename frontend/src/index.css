@@ -268,9 +268,22 @@
     @apply border-border;
   }
 
-  html, body {
+  html, body, #root {
     overflow-x: hidden;
     overscroll-behavior-x: none;
+  }
+
+  html,
+  body,
+  [data-home-scroll] {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  [data-home-scroll]::-webkit-scrollbar {
+    display: none;
   }
 
   body {

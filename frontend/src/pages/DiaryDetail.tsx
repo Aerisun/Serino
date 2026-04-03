@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
@@ -20,18 +20,21 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
-import CommentSection from "@/components/CommentSection";
 
 import PageMeta from "@/components/PageMeta";
-import CodeHighlighter from "@/components/CodeHighlighter";
 import JsonLd from "@/components/JsonLd";
-import TableOfContents from "@/components/TableOfContents";
+import PreviewModeBadge from "@/components/PreviewModeBadge";
+import LazyOnVisible from "@/components/LazyOnVisible";
+import ArticleEnhancements from "@/components/ArticleEnhancements";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
+import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+
+const CommentSection = lazy(() => import("@/components/CommentSection"));
 
 type Weather =
   | "sunny"
@@ -124,8 +127,22 @@ const buildRemoteDiaryEntry = (entry: ContentEntryRead): DiaryData => ({
   comments: entry.comment_count ?? null,
 });
 
+const buildPreviewDiaryEntry = (preview: ContentPreviewData): DiaryData => ({
+  slug: preview.slug || "",
+  date: formatPublishedDate(preview.published_at) || "草稿",
+  weekday: formatWeekday(preview.published_at ?? null),
+  weather: preview.weather as Weather | undefined,
+  mood: preview.mood ?? undefined,
+  title: preview.title,
+  body: preview.body || "",
+  poem: preview.poem ?? undefined,
+  likes: 0,
+  comments: 0,
+});
+
 const DiaryDetail = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const diaryConfig = (usePageConfig().diary ?? {}) as DiaryDetailPageConfig;
@@ -138,22 +155,55 @@ const DiaryDetail = () => {
   const errorTitle = diaryConfig.errorTitle ?? "日记加载失败";
   const retryLabel = diaryConfig.retryLabel ?? "重试";
   const articleRef = useRef<HTMLDivElement>(null);
+  const previewStorageKey = searchParams.get("previewStorageKey") || "";
 
   const slug = id ? decodeURIComponent(id) : "";
-  const { data: response, isLoading, isError, error, refetch } = useReadDiaryEntryApiV1SiteDiarySlugGet(slug, { query: { enabled: !!id } });
+  const { data: previewData, isLoading: isPreviewLoading } =
+    usePreviewChannel(previewStorageKey);
+  const {
+    data: response,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useReadDiaryEntryApiV1SiteDiarySlugGet(slug, {
+    query: { enabled: !!id },
+  });
 
-  const entry = response?.data ? buildRemoteDiaryEntry(response.data) : null;
-  const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
-  const status: "loading" | "ready" | "empty" | "error" = isLoading
-    ? "loading"
-    : isError
-      ? is404 ? "empty" : "error"
-      : entry ? "ready" : "empty";
+  const previewEntry =
+    previewData?.type === "diary" ? buildPreviewDiaryEntry(previewData) : null;
+  const entry =
+    previewEntry ??
+    (response?.data ? buildRemoteDiaryEntry(response.data) : null);
+  const is404 =
+    isError &&
+    error != null &&
+    typeof error === "object" &&
+    "response" in error &&
+    (error as { response?: { status?: number } }).response?.status === 404;
+  const status: "loading" | "ready" | "empty" | "error" = previewEntry
+    ? "ready"
+    : isLoading
+      ? "loading"
+      : isError
+        ? is404
+          ? "empty"
+          : "error"
+        : entry
+          ? "ready"
+          : "empty";
+  const pageStatus: "loading" | "ready" | "empty" | "error" =
+    isPreviewLoading && !previewEntry ? "loading" : status;
   const errorMessage = isError
     ? is404
       ? detailMissingDescription
-      : error instanceof Error ? error.message : errorTitle
-    : !id ? "缺少日记标识" : "";
+      : error instanceof Error
+        ? error.message
+        : errorTitle
+    : !id
+      ? "缺少日记标识"
+      : "";
+  const showArticleEnhancements = Boolean(entry) && featureFlags.toc;
 
   const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
   const weatherLabel = entry?.weather ? weatherLabels[entry.weather] : "";
@@ -161,8 +211,13 @@ const DiaryDetail = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
-        title={entry?.title ?? (status === "error" ? errorTitle : detailMissingTitle)}
-        description={entry?.body.slice(0, 150) ?? (errorMessage || detailMissingDescription)}
+        title={
+          entry?.title ?? (status === "error" ? errorTitle : detailMissingTitle)
+        }
+        description={
+          entry?.body.slice(0, 150) ??
+          (errorMessage || detailMissingDescription)
+        }
       />
       {entry && (
         <JsonLd
@@ -174,8 +229,9 @@ const DiaryDetail = () => {
       )}
       <FallingPetals />
       <Navbar />
+      {previewEntry ? <PreviewModeBadge /> : null}
 
-      <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
+      <main className="mx-auto max-w-5xl px-6 pt-28 pb-20 lg:px-8">
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
@@ -188,10 +244,10 @@ const DiaryDetail = () => {
           {detailBackLabel}
         </motion.button>
 
-        {status === "loading" ? (
+        {pageStatus === "loading" ? (
           <>
             <motion.div
-              className="mb-10 rounded-2xl liquid-glass border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
+              className="mb-8 rounded-2xl liquid-glass border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -211,7 +267,11 @@ const DiaryDetail = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              transition={{
+                duration: 0.5,
+                delay: 0.1,
+                ease: [0.16, 1, 0.3, 1],
+              }}
             >
               {Array.from({ length: 4 }, (_, index) => (
                 <div key={`diary-line-${index}`} className="mb-6">
@@ -224,7 +284,7 @@ const DiaryDetail = () => {
         ) : entry ? (
           <>
             <motion.div
-              className="liquid-glass mb-10 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
+              className="liquid-glass mb-8 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -240,11 +300,15 @@ const DiaryDetail = () => {
                   </h1>
                 </div>
                 <div className="ml-4 flex shrink-0 items-center gap-2">
-                  {entry.mood ? <span className="text-2xl">{entry.mood}</span> : null}
+                  {entry.mood ? (
+                    <span className="text-2xl">{entry.mood}</span>
+                  ) : null}
                   {WeatherIcon ? (
                     <div className="flex items-center gap-1 rounded-lg border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.24)] px-2.5 py-1">
                       <WeatherIcon className="h-3.5 w-3.5 text-[rgb(var(--shiro-accent-rgb)/0.7)]" />
-                      <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb)/0.68)]">{weatherLabel}</span>
+                      <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb)/0.68)]">
+                        {weatherLabel}
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -255,13 +319,25 @@ const DiaryDetail = () => {
               ref={articleRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              transition={{
+                duration: 0.5,
+                delay: 0.1,
+                ease: [0.16, 1, 0.3, 1],
+              }}
             >
-              <MarkdownRenderer content={entry.body} />
+              <MarkdownRenderer
+                content={entry.body}
+                className="detail-markdown"
+              />
             </motion.div>
 
-            <CodeHighlighter containerRef={articleRef} content={[entry.body]} />
-            {featureFlags.toc && <TableOfContents containerRef={articleRef} content={[entry.body]} />}
+            {showArticleEnhancements ? (
+              <ArticleEnhancements
+                containerRef={articleRef}
+                content={entry.body}
+                enableToc={featureFlags.toc}
+              />
+            ) : null}
 
             {entry.poem && (
               <motion.div
@@ -270,18 +346,27 @@ const DiaryDetail = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
               >
-                <p className="text-sm font-heading italic tracking-wide text-[rgb(var(--shiro-accent-rgb)/0.5)]">{entry.poem}</p>
+                <p className="text-sm font-heading italic tracking-wide text-[rgb(var(--shiro-accent-rgb)/0.5)]">
+                  {entry.poem}
+                </p>
               </motion.div>
             )}
 
             <div className="mt-10 text-center">
-              <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">{detailEndLabel}</p>
+              <p className="text-xs font-body text-[rgb(var(--shiro-accent-rgb)/0.42)]">
+                {detailEndLabel}
+              </p>
             </div>
 
-            <CommentSection
-              contentType="diary"
-              contentSlug={entry.slug}
-            />
+            <LazyOnVisible
+              fallback={
+                <div className="mt-12 h-24 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.12)] bg-foreground/[0.02]" />
+              }
+            >
+              <Suspense fallback={null}>
+                <CommentSection contentType="diary" contentSlug={entry.slug} />
+              </Suspense>
+            </LazyOnVisible>
           </>
         ) : (
           <motion.div
@@ -291,17 +376,21 @@ const DiaryDetail = () => {
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <p className="text-sm font-body text-foreground/40">
-              {status === "error" ? errorTitle : detailMissingTitle}
+              {pageStatus === "error" ? errorTitle : detailMissingTitle}
             </p>
             <p className="mt-2 text-xs font-body text-foreground/25">
               {errorMessage || detailMissingDescription}
             </p>
             <button
               type="button"
-              onClick={status === "error" ? () => refetch() : () => navigate("/diary")}
+              onClick={
+                pageStatus === "error"
+                  ? () => refetch()
+                  : () => navigate("/diary")
+              }
               className="mt-4 text-xs font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]"
             >
-              {status === "error" ? retryLabel : detailListLabel}
+              {pageStatus === "error" ? retryLabel : detailListLabel}
             </button>
           </motion.div>
         )}

@@ -15,6 +15,7 @@ import { DataTable } from "@/components/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import type { SocialLinkAdminRead } from "@serino/api-client/models";
 import { optionLabel, SOCIAL_SOFTWARE_LABELS, SOCIAL_SOFTWARE_OPTIONS } from "../constants";
@@ -27,33 +28,33 @@ export function SocialLinksTab() {
   const data = raw?.data;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", href: "", icon_key: "", placement: "both", order_index: 0 });
+  const [form, setForm] = useState({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
 
   const profileId = profileRaw?.data?.id ?? "";
 
   const create = useCreateSocialLinks({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSocialLinksQueryKey() }); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 
   const update = useUpdateSocialLinks({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSocialLinksQueryKey() }); setEditingId(null); setOpen(false); resetForm(); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 
   const del = useDeleteSocialLinks({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSocialLinksQueryKey() }); toast.success(t("common.operationSuccess")); },
-      onError: (error: any) => { const msg = error?.response?.data?.detail || t("common.operationFailed"); toast.error(msg); },
+      onError: (error: any) => { toast.error(extractApiErrorMessage(error, t("common.operationFailed"))); },
     },
   });
 
   function resetForm() {
-    setForm({ name: "", href: "", icon_key: "", placement: "both", order_index: 0 });
+    setForm({ name: "", href: "", icon_key: "", placement: "hero", order_index: 0 });
   }
 
   function startEdit(link: SocialLinkAdminRead) {
@@ -74,6 +75,15 @@ export function SocialLinksTab() {
     name: t("siteConfig.name"),
     href: t("siteConfig.href"),
   };
+
+  const placementOptions = [
+    { value: "hero", label: t("siteConfig.heroPlacement") },
+    { value: "footer", label: t("siteConfig.footerPlacement") },
+    { value: "both", label: t("siteConfig.bothPlacement") },
+  ] as const;
+
+  const placementLabel = (value: string) =>
+    placementOptions.find((option) => option.value === value)?.label ?? value;
 
   return (
     <div className="mt-4">
@@ -106,7 +116,21 @@ export function SocialLinksTab() {
                 <Label>{t("common.order")}</Label>
                 <Input type="number" value={form.order_index} onChange={(e) => setForm((p) => ({ ...p, order_index: parseInt(e.target.value) || 0 }))} />
               </div>
-              <Button onClick={() => editingId ? update.mutate({ itemId: editingId, data: { ...form, placement: form.placement || "both" } }) : create.mutate({ data: { ...form, site_profile_id: profileId, placement: form.placement || "both" } })} disabled={create.isPending || update.isPending || !form.icon_key || !form.href}>
+              <div className="space-y-1">
+                <Label>{t("siteConfig.placement")}</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.placement}
+                  onChange={(e) => setForm((p) => ({ ...p, placement: e.target.value }))}
+                >
+                  {placementOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={() => editingId ? update.mutate({ itemId: editingId, data: { ...form, placement: form.placement || "hero" } }) : create.mutate({ data: { ...form, site_profile_id: profileId, placement: form.placement || "hero" } })} disabled={create.isPending || update.isPending || !form.icon_key || !form.href}>
                 {editingId ? t("common.save") : t("common.create")}
               </Button>
             </div>
@@ -118,6 +142,7 @@ export function SocialLinksTab() {
           columns={[
             { header: t("siteConfig.software"), accessor: "name" },
             { header: t("siteConfig.url"), accessor: "href" },
+            { header: t("siteConfig.placement"), accessor: (row) => placementLabel(row.placement) },
             { header: t("common.order"), accessor: "order_index" as any },
             { header: "", accessor: (row) => (
               <div className="flex gap-1">

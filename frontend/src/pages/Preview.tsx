@@ -1,20 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Clock, Eye, MessageCircle, Tag } from "lucide-react";
-import { PREVIEW_REQUEST_MESSAGE, isPreviewDataMessage } from "@serino/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import BackToTop from "@/components/BackToTop";
-import CodeHighlighter from "@/components/CodeHighlighter";
 import PageShell from "@/components/PageShell";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import EmbeddedResume from "@/components/EmbeddedResume";
-
-const _STORAGE_KEY_PREFIX = "aerisun-preview-";
+import PreviewModeBadge from "@/components/PreviewModeBadge";
+import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 
 const estimateReadTime = (value: string) =>
   `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
@@ -36,26 +34,7 @@ const weatherIcons: Record<string, string> = {
   windy: "💨",
 };
 
-interface PreviewData {
-  type: "posts" | "diary" | "resume";
-  slug?: string;
-  title: string;
-  summary?: string;
-  body?: string;
-  tags?: string[];
-  status?: string;
-  category?: string;
-  mood?: string;
-  weather?: string;
-  poem?: string;
-  published_at?: string | null;
-  created_at?: string;
-  location?: string;
-  email?: string;
-  profile_image_url?: string;
-}
-
-function PostPreview({ data }: { data: PreviewData }) {
+function PostPreview({ data }: { data: ContentPreviewData }) {
   const featureFlags = useFeatureFlags();
   const pages = usePageConfig();
   const postsConfig = (pages.posts ?? {}) as {
@@ -124,7 +103,6 @@ function PostPreview({ data }: { data: PreviewData }) {
         <MarkdownRenderer content={data.body || ""} />
       </motion.article>
 
-      <CodeHighlighter containerRef={articleRef} content={[data.body || ""]} />
       {featureFlags.toc && (
         <TableOfContents
           containerRef={articleRef}
@@ -141,7 +119,7 @@ function PostPreview({ data }: { data: PreviewData }) {
   );
 }
 
-function DiaryPreview({ data }: { data: PreviewData }) {
+function DiaryPreview({ data }: { data: ContentPreviewData }) {
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLElement>(null);
   const dateStr = data.published_at
@@ -192,7 +170,6 @@ function DiaryPreview({ data }: { data: PreviewData }) {
         <MarkdownRenderer content={data.body || ""} />
       </motion.article>
 
-      <CodeHighlighter containerRef={articleRef} content={[data.body || ""]} />
       {featureFlags.toc && (
         <TableOfContents
           containerRef={articleRef}
@@ -216,7 +193,7 @@ function DiaryPreview({ data }: { data: PreviewData }) {
   );
 }
 
-function ResumePreview({ data }: { data: PreviewData }) {
+function ResumePreview({ data }: { data: ContentPreviewData }) {
   return (
     <PageShell
       eyebrow=""
@@ -247,72 +224,19 @@ function ResumePreview({ data }: { data: PreviewData }) {
 
 export default function Preview() {
   const [params] = useSearchParams();
-  const [data, setData] = useState<PreviewData | null>(null);
-
   const storageKey = params.get("storageKey") || "";
+  const { data, isLoading } = usePreviewChannel(storageKey);
 
-  // Read initial data and listen for updates
-  useEffect(() => {
-    if (!storageKey) return;
-
-    const read = () => {
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (raw) setData(JSON.parse(raw));
-      } catch {
-        /* ignore */
-      }
-    };
-
-    read();
-
-    // Listen for localStorage updates from admin window
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === storageKey && e.newValue) {
-        try {
-          setData(JSON.parse(e.newValue));
-        } catch {
-          /* ignore */
-        }
-      }
-    };
-
-    const onMessage = (event: MessageEvent) => {
-      if (window.opener && event.source !== window.opener) {
-        return;
-      }
-      if (!isPreviewDataMessage<PreviewData>(event.data)) return;
-      if (event.data.storageKey !== storageKey) return;
-      setData(event.data.payload);
-    };
-
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("message", onMessage);
-
-    if (window.opener) {
-      window.opener.postMessage(
-        {
-          type: PREVIEW_REQUEST_MESSAGE,
-          storageKey,
-        },
-        "*",
-      );
-    }
-
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("message", onMessage);
-    };
-  }, [storageKey]);
-
-  if (!data) {
+  if (isLoading || !data) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <FallingPetals />
         <Navbar />
         <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
           <p className="text-sm font-body text-foreground/40">
-            {storageKey ? "正在加载预览数据..." : "缺少预览参数"}
+            {storageKey && isLoading
+              ? "正在加载预览数据..."
+              : "缺少预览参数"}
           </p>
         </main>
         <Footer />
@@ -323,17 +247,7 @@ export default function Preview() {
   if (data.type === "resume") {
     return (
       <>
-        <div className="pointer-events-none fixed left-4 top-4 z-[9999] sm:left-6 sm:top-6">
-          <div
-            className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-[rgba(36,28,12,0.78)] px-4 py-2 text-xs font-medium text-amber-100 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-md sm:text-sm"
-            aria-label="预览模式，此内容尚未发布"
-            title="预览模式，此内容尚未发布"
-          >
-            <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.9)]" />
-            <span>预览模式</span>
-          </div>
-        </div>
-
+        <PreviewModeBadge />
         <ResumePreview data={data} />
       </>
     );
@@ -344,17 +258,7 @@ export default function Preview() {
       <FallingPetals />
       <Navbar />
 
-      {/* Preview badge */}
-      <div className="pointer-events-none fixed left-4 top-4 z-[9999] sm:left-6 sm:top-6">
-        <div
-          className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/30 bg-[rgba(36,28,12,0.78)] px-4 py-2 text-xs font-medium text-amber-100 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-md sm:text-sm"
-          aria-label="预览模式，此内容尚未发布"
-          title="预览模式，此内容尚未发布"
-        >
-          <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.9)]" />
-          <span>预览模式</span>
-        </div>
-      </div>
+      <PreviewModeBadge />
 
       <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
         {data.type === "diary" ? (

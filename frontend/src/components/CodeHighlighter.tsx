@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react"
+import { getFrontendLang } from "@/i18n"
+import { frontendTranslations } from "@/i18n/translations"
 
 // Import Prism core and languages
 import Prism from "prismjs"
@@ -42,15 +44,19 @@ const CodeHighlighter = ({ containerRef, content }: CodeHighlighterProps) => {
         pre.style.position = "relative"
         const btn = document.createElement("button")
         btn.className = "code-copy-btn"
-        btn.textContent = "复制"
+        const lang = getFrontendLang()
+        const copyLabel = frontendTranslations[lang]["code.copy"]
+        const copiedLabel = frontendTranslations[lang]["code.copied"]
+        const failedLabel = frontendTranslations[lang]["code.failed"]
+        btn.textContent = copyLabel
         btn.addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(block.textContent || "")
-            btn.textContent = "已复制"
-            setTimeout(() => { btn.textContent = "复制" }, 2000)
+            btn.textContent = copiedLabel
+            setTimeout(() => { btn.textContent = copyLabel }, 2000)
           } catch {
-            btn.textContent = "失败"
-            setTimeout(() => { btn.textContent = "复制" }, 2000)
+            btn.textContent = failedLabel
+            setTimeout(() => { btn.textContent = copyLabel }, 2000)
           }
         })
         pre.appendChild(btn)

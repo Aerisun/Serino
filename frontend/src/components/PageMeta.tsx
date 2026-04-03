@@ -15,15 +15,26 @@ const setMeta = (selector: string, value: string, attr = "content") => {
   }
 };
 
-const ensureHeadLink = (rel: string, fallbackHref: string) => {
+const ensureHeadLink = (rel: string) => {
   let element = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
   if (!element) {
     element = document.createElement("link");
     element.rel = rel;
-    element.href = fallbackHref;
     document.head.appendChild(element);
   }
   return element;
+};
+
+const syncHeadLink = (rel: string, href: string) => {
+  const normalizedHref = href.trim();
+  const existing = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+
+  if (!normalizedHref) {
+    existing?.remove();
+    return;
+  }
+
+  ensureHeadLink(rel).href = normalizedHref;
 };
 
 const PageMeta = ({
@@ -32,16 +43,17 @@ const PageMeta = ({
   image,
 }: PageMetaProps) => {
   const site = useSiteConfig();
-  const resolvedDescription = description ?? site.metaDescription;
+  const resolvedDescription = description ?? site.bio;
   const resolvedImage = image ?? site.ogImage;
   const resolvedSiteTitle = site.title || site.name;
+  const resolvedAuthor = site.name || site.title;
   const resolvedPageTitle = buildPageTitle(resolvedSiteTitle, title);
 
   useEffect(() => {
     document.title = resolvedPageTitle;
 
     setMeta('meta[name="description"]', resolvedDescription);
-    setMeta('meta[name="author"]', site.author);
+    setMeta('meta[name="author"]', resolvedAuthor);
     setMeta('meta[property="og:title"]', resolvedPageTitle);
     setMeta('meta[property="og:description"]', resolvedDescription);
     setMeta('meta[property="og:image"]', resolvedImage);
@@ -49,10 +61,10 @@ const PageMeta = ({
     setMeta('meta[name="twitter:title"]', resolvedPageTitle);
     setMeta('meta[name="twitter:description"]', resolvedDescription);
     setMeta('meta[name="twitter:image"]', resolvedImage);
-    const resolvedIcon = site.siteIconUrl || "/favicon.svg";
-    ensureHeadLink("icon", "/favicon.svg").href = resolvedIcon;
-    ensureHeadLink("shortcut icon", "/favicon.ico").href = resolvedIcon;
-  }, [resolvedDescription, resolvedImage, resolvedPageTitle, resolvedSiteTitle, site.author, site.siteIconUrl]);
+    const resolvedIcon = site.siteIconUrl || "";
+    syncHeadLink("icon", resolvedIcon);
+    syncHeadLink("shortcut icon", resolvedIcon);
+  }, [resolvedAuthor, resolvedDescription, resolvedImage, resolvedPageTitle, resolvedSiteTitle, site.siteIconUrl]);
 
   return null;
 };

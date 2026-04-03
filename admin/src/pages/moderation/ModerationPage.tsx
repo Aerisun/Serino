@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
 import type { Components } from "react-markdown";
 import {
   listCommentsApiV1AdminModerationCommentsGet,
@@ -20,11 +19,20 @@ import type {
   CommentAdminRead,
   ContentAdminRead,
   GuestbookAdminRead,
+  ListCommentsApiV1AdminModerationCommentsGetParams,
+  ListGuestbookApiV1AdminModerationGuestbookGetParams,
   ModerateAction,
+  PaginatedResponseCommentAdminRead,
+  PaginatedResponseGuestbookAdminRead,
 } from "@serino/api-client/models";
-import type { ListCommentsApiV1AdminModerationCommentsGetParams } from "../../../../packages/api-client/src/generated/model/listCommentsApiV1AdminModerationCommentsGetParams";
-import type { ListGuestbookApiV1AdminModerationGuestbookGetParams } from "../../../../packages/api-client/src/generated/model/listGuestbookApiV1AdminModerationGuestbookGetParams";
 import { cn, formatDate } from "@/lib/utils";
+import {
+  formatContentTypeTitleLabel,
+  getContentPathType,
+  getContentSlugSearchTerms,
+  normalizeContentSlugForMatch,
+  type ContentPathType,
+} from "@/lib/contentPathLabel";
 import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -53,6 +61,7 @@ import {
   X,
 } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 
 import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
@@ -71,51 +80,15 @@ const envApiBaseUrl =
 /* slug → title cache, populated by useContentTitles */
 type TitleMap = Map<string, string>;
 
-type ContentLookupType = "posts" | "diary" | "thoughts" | "excerpts";
-
-const MODERATION_CONTENT_TYPE_MAP: Record<string, ContentLookupType> = {
-  post: "posts",
-  posts: "posts",
-  diary: "diary",
-  thought: "thoughts",
-  thoughts: "thoughts",
-  excerpt: "excerpts",
-  excerpts: "excerpts",
-};
-
-function safeDecodePathSegment(value: string) {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
 function normalizeModerationSlugForMatch(slug: string) {
-  return safeDecodePathSegment(slug).trim().replace(/\s+/g, "-").toLowerCase();
+  return normalizeContentSlugForMatch(slug);
 }
 
 function getModerationSlugSearchTerms(slug: string) {
-  const decoded = safeDecodePathSegment(slug).trim();
-  const hyphenated = decoded.replace(/\s+/g, "-");
-  const spaced = decoded.replace(/[-_]+/g, " ");
-
-  return Array.from(
-    new Set([slug.trim(), decoded, hyphenated, spaced].filter(Boolean)),
-  );
+  return getContentSlugSearchTerms(slug);
 }
 
-function formatModerationSlugFallback(slug: string) {
-  const formatted = safeDecodePathSegment(slug).trim().replace(/[-_]+/g, " ");
-  return formatted || slug;
-}
-
-function getModerationContentType(contentType: string | undefined) {
-  if (!contentType) return null;
-  return MODERATION_CONTENT_TYPE_MAP[contentType] ?? null;
-}
-
-function getTitleCacheKey(contentType: ContentLookupType, slug: string) {
+function getTitleCacheKey(contentType: ContentPathType, slug: string) {
   return `${contentType}/${normalizeModerationSlugForMatch(slug)}`;
 }
 
@@ -124,7 +97,7 @@ function getModerationContentTarget(item: ModerationRecord) {
     return null;
   }
 
-  const contentType = getModerationContentType(item.content_type);
+  const contentType = getContentPathType(item.content_type);
   if (!contentType) {
     return null;
   }
@@ -136,16 +109,16 @@ function getModerationContentTarget(item: ModerationRecord) {
 }
 
 const contentListFns: Record<
-  ContentLookupType,
+  ContentPathType,
   (p: {
     search: string;
     page_size: number;
   }) => Promise<{ data?: { items?: ContentAdminRead[] } }>
 > = {
-  posts: (p) => listPosts(p) as any,
-  diary: (p) => listDiary(p) as any,
-  thoughts: (p) => listThoughts(p) as any,
-  excerpts: (p) => listExcerpts(p) as any,
+  posts: (p) => listPosts(p) as Promise<{ data?: { items?: ContentAdminRead[] } }>,
+  diary: (p) => listDiary(p) as Promise<{ data?: { items?: ContentAdminRead[] } }>,
+  thoughts: (p) => listThoughts(p) as Promise<{ data?: { items?: ContentAdminRead[] } }>,
+  excerpts: (p) => listExcerpts(p) as Promise<{ data?: { items?: ContentAdminRead[] } }>,
 };
 
 /** Fetch titles for all unique (type, slug) pairs in the current page of items. */
@@ -154,7 +127,7 @@ function useContentTitles(items: ModerationRecord[]): TitleMap {
   const cacheRef = useRef<TitleMap>(new Map());
 
   useEffect(() => {
-    const targetsByType = new Map<ContentLookupType, Map<string, string>>();
+    const targetsByType = new Map<ContentPathType, Map<string, string>>();
 
     for (const item of items) {
       const target = getModerationContentTarget(item);
@@ -285,7 +258,11 @@ const moderationPreviewComponents: Components = {
       {children}
     </pre>
   ),
-  code: ({ inline, children, ...props }: any) =>
+  code: ({
+    inline,
+    children,
+    ...props
+  }: ComponentProps<"code"> & { inline?: boolean; children?: ReactNode }) =>
     inline ? (
       <code
         className="rounded-md bg-background/80 px-1.5 py-0.5 text-[0.9em] text-foreground"
@@ -327,7 +304,6 @@ function ModerationBodyPreview({ content }: { content: string }) {
       <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/85 [&>:first-child]:mt-0 [&>:last-child]:mb-0">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeHighlight]}
           components={moderationPreviewComponents}
         >
           {content}
@@ -371,7 +347,13 @@ function getModerationPath(
   if (target) {
     const category = optionLabel(PAGE_KEY_LABELS, target.contentType, lang);
     const title = titleMap?.get(getTitleCacheKey(target.contentType, target.slug));
-    return `${category} / ${title ?? formatModerationSlugFallback(target.slug)}`;
+    return formatContentTypeTitleLabel({
+      contentType: target.contentType,
+      contentTypeLabel: category,
+      title,
+      slug: target.slug,
+      separator: " / ",
+    });
   }
 
   if ("website" in item) {
@@ -599,17 +581,17 @@ function ModerationStats({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex max-w-full items-center justify-start gap-2 overflow-x-auto whitespace-nowrap pb-0.5 xl:ml-auto xl:justify-end">
       {cards.map((card) => (
         <span
           key={card.label}
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+            "inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
             card.className,
           )}
         >
-          <span className="text-muted-foreground/80">{card.label}</span>
-          <span className="font-semibold tabular-nums">{card.value}</span>
+          <span className="text-muted-foreground/95">{card.label}</span>
+          <span className="text-base font-semibold tabular-nums">{card.value}</span>
         </span>
       ))}
     </div>
@@ -893,12 +875,12 @@ function ModerationQueue({
   kind: ModerationKind;
   loadItems: (
     params: ModerationListParams,
-  ) => Promise<any>;
+  ) => Promise<{ data?: PaginatedResponseCommentAdminRead | PaginatedResponseGuestbookAdminRead }>;
   moderateItem: (
     id: string,
     payload: ModerateAction,
-  ) => Promise<any>;
-  queryKeyFn: (params?: any) => readonly unknown[];
+  ) => Promise<{ data?: ModerationRecord }>;
+  queryKeyFn: (params?: ModerationListParams) => readonly unknown[];
 }) {
   const { t, lang } = useI18n();
   const queryClient = useQueryClient();
@@ -946,9 +928,8 @@ function ModerationQueue({
       setDeleteTargetId(null);
       toast.success(t("common.operationSuccess"));
     },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || t("common.operationFailed");
-      toast.error(msg);
+    onError: (error: unknown) => {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     },
   });
 
@@ -1341,10 +1322,14 @@ export default function ModerationPage() {
         <ModerationQueue
           kind="comments"
           loadItems={(params) =>
-            listCommentsApiV1AdminModerationCommentsGet(params) as Promise<any>
+            listCommentsApiV1AdminModerationCommentsGet(params) as Promise<{
+              data?: PaginatedResponseCommentAdminRead;
+            }>
           }
           moderateItem={(id, payload) =>
-            moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost(id, payload) as Promise<any>
+            moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost(id, payload) as Promise<{
+              data?: CommentAdminRead;
+            }>
           }
           queryKeyFn={(params?) => getListCommentsApiV1AdminModerationCommentsGetQueryKey(params)}
         />
@@ -1353,10 +1338,14 @@ export default function ModerationPage() {
         <ModerationQueue
           kind="guestbook"
           loadItems={(params) =>
-            listGuestbookApiV1AdminModerationGuestbookGet(params) as Promise<any>
+            listGuestbookApiV1AdminModerationGuestbookGet(params) as Promise<{
+              data?: PaginatedResponseGuestbookAdminRead;
+            }>
           }
           moderateItem={(id, payload) =>
-            moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(id, payload) as Promise<any>
+            moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost(id, payload) as Promise<{
+              data?: GuestbookAdminRead;
+            }>
           }
           queryKeyFn={(params?) => getListGuestbookApiV1AdminModerationGuestbookGetQueryKey(params)}
         />

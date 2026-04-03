@@ -46,8 +46,8 @@ class ContentCollectionRead(ModelBase):
 
 
 class ContentCreate(BaseModel):
-    slug: str = Field(description="URL-friendly unique identifier")
-    title: str = Field(description="Display title")
+    slug: str | None = Field(default=None, description="URL-friendly unique identifier")
+    title: str | None = Field(default=None, description="Display title")
     summary: str | None = Field(default=None, description="Brief summary or excerpt")
     body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(default_factory=list, description="List of tag names")
@@ -112,6 +112,20 @@ class ContentAdminRead(ModelBase):
     view_count: int = Field(default=0, description="Total page views")
     is_pinned: bool = Field(default=False, description="Whether pinned to top")
     pin_order: int = Field(default=0, description="Sort order among pinned items")
+
+
+class PoemGenerationRequest(BaseModel):
+    body: str = Field(description="日记 Markdown 草稿内容")
+    title: str | None = Field(default=None, description="当前标题")
+    summary: str | None = Field(default=None, description="当前摘要")
+    tags: list[str] | None = Field(default=None, description="标签列表")
+    mood: str | None = Field(default=None, description="心情 emoji 或说明")
+    weather: str | None = Field(default=None, description="天气")
+    custom_requirement: str | None = Field(default=None, description="用户补充的定制要求")
+
+
+class PoemGenerationResponse(BaseModel):
+    poem: str = Field(description="生成的诗句")
 
 
 # Search

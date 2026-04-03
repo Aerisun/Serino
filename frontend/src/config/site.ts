@@ -32,7 +32,6 @@ export interface SiteConfig {
   description: string;
   bio: string;
   role: string;
-  author: string;
   ogImage: string;
   poems: string[];
   poemSource: "custom" | "hitokoto";
@@ -43,8 +42,7 @@ export interface SiteConfig {
   navigation: SiteNavItem[];
   footer: {
     since: number;
-    copyright: string;
-    slogan: string;
+    filingInfo: string;
   };
 }
 

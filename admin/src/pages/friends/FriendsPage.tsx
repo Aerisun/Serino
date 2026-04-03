@@ -6,16 +6,16 @@ import {
   useUpdateFriends,
   useDeleteFriends,
   getListFriendsQueryKey,
-  useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet,
   useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost,
-  useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut,
-  useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete,
-  getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey,
 } from "@serino/api-client/admin";
+import { checkFriendHealth } from "@/pages/friends/api";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
+import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
+import { AdminSectionTabs } from "@/components/ui/AdminSectionTabs";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import {
@@ -25,20 +25,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import { Plus, Trash2, Pencil, Rss } from "lucide-react";
+import { Plus, Trash2, Pencil, Settings2, Users, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
-import type {
-  FriendAdminRead,
-  FriendFeedSourceAdminRead,
-} from "@serino/api-client/models";
+import type { FriendAdminRead } from "@serino/api-client/models";
+import { FeedSourcesSection } from "./FeedSourcesSection";
+import { FriendsMoreConfigSection } from "./FriendsMoreConfigSection";
 
 const EMPTY_FRIENDS: FriendAdminRead[] = [];
+
+type FriendsSection = "friends" | "more-config";
 
 export default function FriendsPage() {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
+  const [section, setSection] = useState<FriendsSection>("friends");
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingFriend, setEditingFriend] = useState<FriendAdminRead | null>(
@@ -50,10 +53,8 @@ export default function FriendsPage() {
     url: "",
     avatar_url: "",
     description: "",
-    status: "active",
-    order_index: 0,
   };
-  const emptyFeedDraft = { feed_url: "", is_enabled: true };
+  const emptyFeedDraft = { feed_url: "" };
   const [form, setForm] = useState(emptyForm);
   const [createFeedDrafts, setCreateFeedDrafts] = useState([emptyFeedDraft]);
 
@@ -69,9 +70,7 @@ export default function FriendsPage() {
         queryClient.invalidateQueries({ queryKey: getListFriendsQueryKey() });
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -79,9 +78,7 @@ export default function FriendsPage() {
   const createFeed = useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost({
     mutation: {
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -95,9 +92,7 @@ export default function FriendsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -109,9 +104,7 @@ export default function FriendsPage() {
         toast.success(t("common.operationSuccess"));
       },
       onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });
@@ -123,8 +116,6 @@ export default function FriendsPage() {
       url: friend.url,
       avatar_url: friend.avatar_url ?? "",
       description: friend.description ?? "",
-      status: friend.status,
-      order_index: friend.order_index,
     });
     setEditOpen(true);
   }
@@ -140,8 +131,8 @@ export default function FriendsPage() {
 
   function updateCreateFeedDraft(
     index: number,
-    key: "feed_url" | "is_enabled",
-    value: string | boolean,
+    key: "feed_url",
+    value: string,
   ) {
     setCreateFeedDrafts((prev) =>
       prev.map((draft, draftIndex) =>
@@ -156,8 +147,42 @@ export default function FriendsPage() {
     );
   }
 
-  async function handleCreateFriend() {
-    const created = await create.mutateAsync({ data: form });
+  const createDirty =
+    Object.values(form).some((value) => value.trim().length > 0) ||
+    createFeedDrafts.some((draft) => draft.feed_url.trim().length > 0);
+  const createValid = form.name.trim().length > 0 && form.url.trim().length > 0;
+  const editDirty = editingFriend
+    ? form.name !== editingFriend.name ||
+      form.url !== editingFriend.url ||
+      form.avatar_url !== (editingFriend.avatar_url ?? "") ||
+      form.description !== (editingFriend.description ?? "")
+    : false;
+  const editConfirmDirty = editDirty || editingFriend?.status === "archived";
+  const editValid = form.name.trim().length > 0 && form.url.trim().length > 0;
+
+  async function runImmediateCheck(friendId: string) {
+    try {
+      await checkFriendHealth(friendId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("common.operationFailed");
+      toast.error(message);
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: getListFriendsQueryKey() });
+    }
+  }
+
+  function buildFriendPayload(status: "active" | "archived") {
+    return {
+      name: form.name.trim(),
+      url: form.url.trim(),
+      avatar_url: form.avatar_url.trim() || null,
+      description: form.description.trim() || null,
+      status,
+    };
+  }
+
+  async function handleCreateFriend(status: "active" | "archived" = "active") {
+    const created = await create.mutateAsync({ data: buildFriendPayload(status) });
     const friend = created.data;
 
     if (!friend) {
@@ -167,7 +192,6 @@ export default function FriendsPage() {
     const feedDrafts = createFeedDrafts
       .map((draft) => ({
         feed_url: draft.feed_url.trim(),
-        is_enabled: draft.is_enabled,
       }))
       .filter((draft) => draft.feed_url.length > 0);
 
@@ -177,16 +201,42 @@ export default function FriendsPage() {
         data: {
           friend_id: friend.id,
           feed_url: draft.feed_url,
-          is_enabled: draft.is_enabled,
+          is_enabled: true,
         },
       });
     }
 
+    if (status === "active") {
+      await runImmediateCheck(friend.id);
+    }
+
     setCreateOpen(false);
     resetCreateDialog();
-    setEditingFriend(friend);
-    setEditOpen(true);
     toast.success(t("common.operationSuccess"));
+  }
+
+  async function handleUpdateFriend(status: "active" | "archived" = "active") {
+    if (!editingFriend) return;
+    await update.mutateAsync({
+      itemId: editingFriend.id,
+      data: buildFriendPayload(status),
+    });
+    if (status === "active") {
+      await runImmediateCheck(editingFriend.id);
+    }
+  }
+
+  async function toggleFriendVisibility(friend: FriendAdminRead) {
+    const nextStatus = friend.status === "archived" ? "active" : "archived";
+    await update.mutateAsync({
+      itemId: friend.id,
+      data: {
+        status: nextStatus,
+      },
+    });
+    if (nextStatus === "active") {
+      await runImmediateCheck(friend.id);
+    }
   }
 
   const fieldLabels: Record<string, string> = {
@@ -198,7 +248,7 @@ export default function FriendsPage() {
 
   function FriendFormFields() {
     return (
-      <div className="space-y-3">
+      <div className="mx-auto w-full max-w-xl space-y-3">
         {(["name", "url", "avatar_url", "description"] as const).map((k) => (
           <div key={k} className="space-y-1">
             <Label>{fieldLabels[k]}</Label>
@@ -208,117 +258,198 @@ export default function FriendsPage() {
             />
           </div>
         ))}
-        <div className="space-y-1">
-          <Label>{t("common.status")}</Label>
-          <select
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={form.status}
-            onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-          >
-            <option value="active">{t("friends.active")}</option>
-            <option value="archived">{t("friends.archived")}</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label>{t("common.order")}</Label>
-          <Input
-            type="number"
-            value={form.order_index}
-            onChange={(e) =>
-              setForm((p) => ({
-                ...p,
-                order_index: parseInt(e.target.value) || 0,
-              }))
-            }
-          />
-        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <PageHeader
-        title={t("friends.title")}
+      <PageHeader 
+        title={t("friends.title")} 
         description={t("friends.description")}
-        actions={
-          <Dialog
-            open={createOpen}
-            onOpenChange={(v) => {
-              setCreateOpen(v);
-              if (!v) resetCreateDialog();
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" /> {t("friends.addFriend")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
-              <div className="flex max-h-[calc(80vh-3rem)] flex-col gap-4 overflow-y-auto pr-1">
-                <DialogHeader>
-                  <DialogTitle>{t("friends.newFriend")}</DialogTitle>
-                </DialogHeader>
-                <FriendFormFields />
-                <div className="border-t pt-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="flex items-center gap-2 text-sm font-semibold">
-                      <Rss className="h-4 w-4" /> {t("friends.feedSources")}
-                    </h3>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={addCreateFeedDraft}
-                      type="button"
-                    >
-                      <Plus className="h-3 w-3 mr-1" /> {t("friends.addFeed")}
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {createFeedDrafts.map((draft, index) => (
-                      <div key={index} className="flex gap-2 items-end">
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs">{t("friends.feedUrl")}</Label>
-                          <Input
-                            value={draft.feed_url}
-                            onChange={(e) =>
-                              updateCreateFeedDraft(index, "feed_url", e.target.value)
-                            }
-                            placeholder="https://example.com/feed.xml"
-                          />
-                        </div>
-                        <label className="flex items-center gap-1 text-sm pb-2">
-                          <input
-                            type="checkbox"
-                            checked={draft.is_enabled}
-                            onChange={(e) =>
-                              updateCreateFeedDraft(index, "is_enabled", e.target.checked)
-                            }
-                          />
-                          {t("siteConfig.enabled")}
-                        </label>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          type="button"
-                          onClick={() => removeCreateFeedDraft(index)}
-                          disabled={createFeedDrafts.length === 1}
-                        >
-                          {t("common.delete")}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Button onClick={() => void handleCreateFriend()} disabled={create.isPending}>
-                  {t("common.create")}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+        secondary={
+          <AdminSectionTabs
+            value={section}
+            onValueChange={(value) => setSection(value as FriendsSection)}
+            items={[
+              {
+                value: "friends",
+                label: t("friends.tabs.friends"),
+                description: t("friends.sectionDescriptions.friends"),
+                icon: Users,
+              },
+              {
+                value: "more-config",
+                label: t("friends.tabs.moreConfig"),
+                description: t("friends.sectionDescriptions.moreConfig"),
+                icon: Settings2,
+              },
+            ]}
+          />
         }
       />
+
+      {section === "friends" ? (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Dialog
+              open={createOpen}
+              onOpenChange={(v) => {
+                setCreateOpen(v);
+                if (!v) resetCreateDialog();
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" /> {t("friends.addFriend")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent
+                hideCloseButton
+                className="max-w-2xl max-h-[80vh] overflow-hidden"
+              >
+                <div className="flex max-h-[calc(80vh-3rem)] flex-col gap-4 overflow-y-auto pr-1">
+                  <DialogHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+                    <DialogTitle>{t("friends.newFriend")}</DialogTitle>
+                    <div className="flex items-center gap-2 self-start">
+                      {createDirty ? <PendingSaveBadge /> : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!createValid || create.isPending}
+                        onClick={() => void handleCreateFriend("archived")}
+                      >
+                        {t("common.saveDraft")}
+                      </Button>
+                      <DirtySaveButton
+                        dirty={createDirty}
+                        saving={create.isPending}
+                        idleLabel={t("common.confirm")}
+                        disabled={!createValid}
+                        onClick={() => void handleCreateFriend("active")}
+                      />
+                    </div>
+                  </DialogHeader>
+                  <FriendFormFields />
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="flex items-center gap-2 text-sm font-semibold">
+                        <Rss className="h-4 w-4" /> {t("friends.feedSources")}
+                      </h3>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={addCreateFeedDraft}
+                        type="button"
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> {t("friends.addFeed")}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {createFeedDrafts.map((draft, index) => (
+                        <div
+                          key={index}
+                          className="mx-auto flex w-full max-w-xl gap-2 items-end"
+                        >
+                          <div className="flex-1">
+                            <Input
+                              value={draft.feed_url}
+                              onChange={(e) =>
+                                updateCreateFeedDraft(index, "feed_url", e.target.value)
+                              }
+                              placeholder="https://example.com/feed.xml"
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            type="button"
+                            onClick={() => removeCreateFeedDraft(index)}
+                            disabled={createFeedDrafts.length === 1}
+                          >
+                            {t("common.delete")}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <DataTable<FriendAdminRead>
+                columns={[
+                  { header: t("friends.name"), accessor: "name" },
+                  {
+                    header: t("friends.websiteStatus"),
+                    accessor: (row) => <StatusBadge status={row.status} />,
+                  },
+                  {
+                    header: t("friends.rssStatus"),
+                    accessor: (row) => <StatusBadge status={row.rss_status} />,
+                  },
+                  {
+                    header: t("siteConfig.updated"),
+                    accessor: (row) => formatDate(row.updated_at),
+                  },
+                  {
+                    header: "",
+                    accessor: (row) => (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFriendVisibility(row);
+                          }}
+                        >
+                          {row.status === "archived"
+                            ? t("friends.show")
+                            : t("friends.archiveAction")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEdit(row);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            del.mutate({ itemId: row.id });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]}
+                data={items}
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                isLoading={isLoading}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <FriendsMoreConfigSection />
+      )}
 
       {/* Edit dialog */}
       <Dialog
@@ -328,287 +459,30 @@ export default function FriendsPage() {
           if (!v) setEditingFriend(null);
         }}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+        <DialogContent
+          hideCloseButton
+          className="max-w-2xl max-h-[80vh] overflow-hidden"
+        >
           <div className="flex max-h-[calc(80vh-3rem)] flex-col gap-4 overflow-y-auto pr-1">
-            <DialogHeader>
+            <DialogHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
               <DialogTitle>{t("friends.editFriend")}</DialogTitle>
+              <div className="flex items-center gap-2 self-start">
+                {editDirty ? <PendingSaveBadge /> : null}
+                <DirtySaveButton
+                  dirty={editConfirmDirty}
+                  saving={update.isPending}
+                  idleLabel={t("common.confirm")}
+                  disabled={!editValid}
+                  onClick={() => void handleUpdateFriend("active")}
+                />
+              </div>
             </DialogHeader>
             <FriendFormFields />
-            <Button
-              onClick={() =>
-                update.mutate({ itemId: editingFriend!.id, data: form })
-              }
-              disabled={update.isPending}
-            >
-              {t("common.save")}
-            </Button>
 
             {editingFriend && <FeedSourcesSection friendId={editingFriend.id} />}
           </div>
         </DialogContent>
       </Dialog>
-
-      <div className="border rounded-lg">
-        <DataTable<FriendAdminRead>
-          columns={[
-            { header: t("friends.name"), accessor: "name" },
-            {
-              header: t("common.status"),
-              accessor: (row) => <StatusBadge status={row.status} />,
-            },
-            {
-              header: t("siteConfig.updated"),
-              accessor: (row) => formatDate(row.updated_at),
-            },
-            {
-              header: "",
-              accessor: (row) => (
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startEdit(row);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      del.mutate({ itemId: row.id });
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ),
-            },
-          ]}
-          data={items}
-          total={total}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          isLoading={isLoading}
-        />
-      </div>
-    </div>
-  );
-}
-
-function FeedSourcesSection({ friendId }: { friendId: string }) {
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const { data: feedsRaw, isLoading } =
-    useListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGet(friendId);
-  const feeds = feedsRaw?.data;
-  const [addOpen, setAddOpen] = useState(false);
-  const [feedForm, setFeedForm] = useState({ feed_url: "", is_enabled: true });
-  const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
-
-  const createFeed =
-    useCreateFriendFeedApiV1AdminSocialFriendsFriendIdFeedsPost({
-      mutation: {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey:
-              getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(
-                friendId,
-              ),
-          });
-          setAddOpen(false);
-          setFeedForm({ feed_url: "", is_enabled: true });
-          toast.success(t("common.operationSuccess"));
-        },
-        onError: (error: any) => {
-          const msg =
-            error?.response?.data?.detail || t("common.operationFailed");
-          toast.error(msg);
-        },
-      },
-    });
-
-  const updateFeed = useUpdateFriendFeedApiV1AdminSocialFeedsFeedIdPut({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey:
-            getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(
-              friendId,
-            ),
-        });
-        setEditingFeedId(null);
-        toast.success(t("common.operationSuccess"));
-      },
-      onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
-      },
-    },
-  });
-
-  const delFeed = useDeleteFriendFeedApiV1AdminSocialFeedsFeedIdDelete({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey:
-            getListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetQueryKey(
-              friendId,
-            ),
-        });
-        toast.success(t("common.operationSuccess"));
-      },
-      onError: (error: any) => {
-        const msg =
-          error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(msg);
-      },
-    },
-  });
-
-  function startEditFeed(feed: FriendFeedSourceAdminRead) {
-    setEditingFeedId(feed.id);
-    setFeedForm({ feed_url: feed.feed_url, is_enabled: feed.is_enabled });
-  }
-
-  return (
-    <div className="border-t pt-4 mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Rss className="h-4 w-4" /> {t("friends.feedSources")}
-        </h3>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setAddOpen(!addOpen)}
-        >
-          <Plus className="h-3 w-3 mr-1" /> {t("friends.addFeed")}
-        </Button>
-      </div>
-
-      {addOpen && (
-        <div className="flex gap-2 mb-3 items-end">
-          <div className="flex-1 space-y-1">
-            <Label className="text-xs">{t("friends.feedUrl")}</Label>
-            <Input
-              value={feedForm.feed_url}
-              onChange={(e) =>
-                setFeedForm((p) => ({ ...p, feed_url: e.target.value }))
-              }
-              placeholder="https://example.com/feed.xml"
-            />
-          </div>
-          <label className="flex items-center gap-1 text-sm pb-2">
-            <input
-              type="checkbox"
-              checked={feedForm.is_enabled}
-              onChange={(e) =>
-                setFeedForm((p) => ({ ...p, is_enabled: e.target.checked }))
-              }
-            />
-            {t("siteConfig.enabled")}
-          </label>
-          <Button
-            size="sm"
-            onClick={() =>
-              createFeed.mutate({
-                friendId,
-                data: {
-                  friend_id: friendId,
-                  feed_url: feedForm.feed_url,
-                  is_enabled: feedForm.is_enabled,
-                },
-              })
-            }
-            disabled={createFeed.isPending}
-          >
-            {t("common.add")}
-          </Button>
-        </div>
-      )}
-
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">
-          {t("friends.loadingFeeds")}
-        </p>
-      )}
-      {feeds && feeds.length === 0 && (
-        <p className="text-sm text-muted-foreground">{t("friends.noFeeds")}</p>
-      )}
-      {feeds?.map((feed) => (
-        <div
-          key={feed.id}
-          className="flex items-center gap-2 py-2 border-b last:border-0"
-        >
-          {editingFeedId === feed.id ? (
-            <>
-              <Input
-                className="flex-1"
-                value={feedForm.feed_url}
-                onChange={(e) =>
-                  setFeedForm((p) => ({ ...p, feed_url: e.target.value }))
-                }
-              />
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  checked={feedForm.is_enabled}
-                  onChange={(e) =>
-                    setFeedForm((p) => ({ ...p, is_enabled: e.target.checked }))
-                  }
-                />
-                {t("siteConfig.enabled")}
-              </label>
-              <Button
-                size="sm"
-                onClick={() =>
-                  updateFeed.mutate({
-                    feedId: editingFeedId!,
-                    data: {
-                      feed_url: feedForm.feed_url,
-                      is_enabled: feedForm.is_enabled,
-                    },
-                  })
-                }
-                disabled={updateFeed.isPending}
-              >
-                {t("common.save")}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setEditingFeedId(null)}
-              >
-                {t("common.cancel")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <span className="flex-1 text-sm truncate">{feed.feed_url}</span>
-              <StatusBadge status={feed.is_enabled ? "active" : "inactive"} />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => startEditFeed(feed)}
-              >
-                <Pencil className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => delFeed.mutate({ feedId: feed.id })}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </>
-          )}
-        </div>
-      ))}
     </div>
   );
 }

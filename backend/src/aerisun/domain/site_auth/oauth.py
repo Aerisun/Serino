@@ -15,7 +15,7 @@ from aerisun.domain.exceptions import AuthenticationFailed, ValidationError
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.schemas import OAuthProviderCallbackResult
 
-from .config_service import enabled_oauth_providers, oauth_credentials
+from .config_service import enabled_visitor_oauth_providers, oauth_credentials
 from .profile import build_avatar_candidates, suggest_display_name
 from .sessions import create_site_session
 from .shared import ALLOWED_OAUTH_PROVIDERS, normalize_display_name, normalize_email, normalize_return_to
@@ -61,7 +61,7 @@ def build_oauth_authorization_url(
     normalized = provider.strip().lower()
     state = secrets.token_urlsafe(24)
 
-    if normalized not in enabled_oauth_providers(session):
+    if normalized not in enabled_visitor_oauth_providers(session):
         raise ValidationError("当前站点未启用该登录方式。")
 
     if normalized == "github":

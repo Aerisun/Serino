@@ -44,6 +44,15 @@ POSSIBLE_FEEDS = [
 ]
 
 
+def _looks_like_feed_payload(content_type: str | None, body: str) -> bool:
+    normalized_type = (content_type or "").lower()
+    if "xml" in normalized_type or "rss" in normalized_type or "atom" in normalized_type:
+        return True
+
+    text_head = body[:1000].lower()
+    return "<rss" in text_head or "<feed" in text_head or "<rdf:rdf" in text_head
+
+
 def _build_headers(settings: Settings) -> dict[str, str]:
     return {
         "User-Agent": settings.feed_crawl_user_agent,
@@ -131,6 +140,7 @@ def _check_feed(
 
     Returns ('none', blog_url) if no feed is found.
     """
+    blog_url = blog_url.strip()
     for feed_type, path in POSSIBLE_FEEDS:
         feed_url = blog_url.rstrip("/") + path
         try:
@@ -249,13 +259,35 @@ def crawl_single_source(
         "feed_url_updated": False,
     }
 
+    normalized_feed_url = (source.feed_url or "").strip()
+    if normalized_feed_url != source.feed_url:
+        source.feed_url = normalized_feed_url
+
+    normalized_blog_url = (friend.url or "").strip()
+    if normalized_blog_url != friend.url:
+        friend.url = normalized_blog_url
+
+    if not normalized_feed_url:
+        source.last_fetched_at = utcnow()
+        source.last_error = "feed url is blank"
+        result["status"] = "error"
+        result["error"] = source.last_error
+        return result
+
+    if not normalized_blog_url:
+        source.last_fetched_at = utcnow()
+        source.last_error = "friend website url is blank"
+        result["status"] = "error"
+        result["error"] = source.last_error
+        return result
+
     with httpx.Client(headers=headers, timeout=timeout, follow_redirects=True) as client:
         # --- 1. Try fetching with ETag ---
         extra_headers: dict[str, str] = {}
         if source.etag:
             extra_headers["If-None-Match"] = source.etag
 
-        feed_url = source.feed_url
+        feed_url = normalized_feed_url
         content: str | None = None
         new_etag: str | None = None
         fetch_error: str | None = None
@@ -268,8 +300,12 @@ def crawl_single_source(
                 result["status"] = "not_modified"
                 return result
             if resp.status_code == 200:
-                content = resp.text
-                new_etag = resp.headers.get("etag")
+                candidate = resp.text
+                if _looks_like_feed_payload(resp.headers.get("content-type"), candidate):
+                    content = candidate
+                    new_etag = resp.headers.get("etag")
+                else:
+                    fetch_error = "response is not a feed"
             else:
                 fetch_error = f"HTTP {resp.status_code}"
         except httpx.HTTPError as e:
@@ -281,9 +317,9 @@ def crawl_single_source(
                 "Feed fetch failed for %s (%s), trying auto-discovery on %s",
                 friend.name,
                 fetch_error,
-                friend.url,
+                normalized_blog_url,
             )
-            feed_type, discovered_url = _check_feed(friend.url, client)
+            feed_type, discovered_url = _check_feed(normalized_blog_url, client)
             if feed_type != "none" and discovered_url != feed_url:
                 try:
                     resp = client.get(discovered_url)
@@ -328,7 +364,7 @@ def crawl_single_source(
             link = getattr(entry, "link", "")
             if not link:
                 continue
-            link = _replace_non_domain(link, friend.url)
+            link = _replace_non_domain(link, normalized_blog_url)
 
             published_at: datetime | None = None
             if hasattr(entry, "published"):

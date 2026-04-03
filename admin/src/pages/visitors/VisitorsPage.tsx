@@ -861,7 +861,7 @@ export default function VisitorsPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-sm leading-6 text-muted-foreground">
-              绑定后的前台账号在前端评论或留言时，会使用主页显示名作为名字、Hero 翻转视觉图作为头像。
+              绑定后的前台账号在前端评论或留言时，会使用您的昵称作为名字、Hero 翻转视觉图作为头像。
             </p>
 
             <section className="space-y-3">

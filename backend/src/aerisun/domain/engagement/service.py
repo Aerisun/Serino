@@ -276,13 +276,10 @@ def _load_authenticated_profile(session: Session, token: str) -> AuthenticatedCo
     )
 
 
-def _load_avatar_presets(session: Session) -> list[dict[str, str]]:
-    config = site_config_repo.find_community_config(session)
-    raw_presets = config.avatar_presets if config and config.avatar_presets else DEFAULT_COMMENT_AVATAR_PRESETS
-
+def _load_avatar_presets() -> list[dict[str, str]]:
     presets: list[dict[str, str]] = []
     seen_keys: set[str] = set()
-    for index, item in enumerate(raw_presets):
+    for index, item in enumerate(DEFAULT_COMMENT_AVATAR_PRESETS):
         if not isinstance(item, dict):
             continue
         key = str(item.get("key") or item.get("id") or f"preset-{index + 1}").strip()
@@ -456,7 +453,7 @@ def _resolve_avatar_selection(
         if record_identity_key == author_identity_key and record.avatar_key and record.avatar_url:
             return record.avatar_key, record.avatar_url
 
-    presets = _load_avatar_presets(session)
+    presets = _load_avatar_presets()
     preset_by_key = {preset["key"]: preset for preset in presets}
     candidate_by_key = {candidate["key"]: candidate for candidate in _build_avatar_candidates(author_identity_key)}
     occupied_by_others = {

@@ -5,6 +5,7 @@ import { BellRing, ChevronDown, LogOut, Menu, PencilLine, Search, Sparkles, X } 
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { transition } from "@/config";
+import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
@@ -22,9 +23,6 @@ const getItemIsActive = (item: NavItem, pathname: string) =>
   isPathActive(item.href, pathname) ||
   item.children?.some((child) => isPathActive(child.href, pathname)) ||
   false;
-
-const _authProviderLabel = (provider: string) =>
-  provider === "google" ? "Google" : provider === "github" ? "GitHub" : "邮箱识别";
 
 const NavDropdown = ({
   item,
@@ -239,6 +237,7 @@ interface NavbarProps {
 }
 
 const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
+  const { t } = useFrontendI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const site = useSiteConfig();
@@ -352,7 +351,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
               <div className="fixed inset-0 z-[1000] md:hidden">
                 <motion.button
                   type="button"
-                  aria-label="关闭导航菜单"
+                  aria-label={t("navbar.closeMenu")}
                   className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -506,7 +505,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                         className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                       >
                         <PencilLine className="h-4 w-4" />
-                        修改资料
+                        {t("navbar.editProfile")}
                       </button>
                       <button
                         type="button"
@@ -514,7 +513,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                         className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                       >
                         <LogOut className="h-4 w-4" />
-                        退出登录
+                        {t("navbar.logout")}
                       </button>
                     </motion.div>
                   ) : null}
@@ -534,13 +533,13 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 <span className="absolute inset-0 rounded-full border border-white/10 bg-[linear-gradient(135deg,rgb(66_133_244/0.22),rgb(234_67_53/0.12),rgb(251_188_5/0.12),rgb(52_168_83/0.22))] opacity-80" />
                 <span className="absolute -inset-x-2 top-1/2 h-6 -translate-y-1/2 bg-[radial-gradient(circle,_rgb(255_255_255/0.28),_transparent_58%)] opacity-0 blur-md transition-opacity group-hover:opacity-100" />
                 <Sparkles className="relative h-4 w-4" />
-                <span className="relative hidden sm:inline">登录</span>
+                <span className="relative hidden sm:inline">{t("navbar.login")}</span>
               </button>
             )}
           </div>
           <button
             type="button"
-            aria-label="打开导航菜单"
+            aria-label={t("navbar.openMenu")}
             aria-expanded={mobileOpen}
             aria-controls="mobile-navigation"
             onClick={() => setMobileOpen((v) => !v)}
@@ -600,8 +599,8 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-subscribe"))}
             className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95 ${subscriptionAvailable ? "" : "opacity-60"}`}
-            aria-label={subscriptionAvailable ? "订阅更新" : "邮箱订阅敬请期待"}
-            title={subscriptionAvailable ? "订阅更新" : "邮箱订阅暂不可用，敬请期待"}
+            aria-label={subscriptionAvailable ? t("navbar.subscribe") : t("navbar.subscribeDisabled")}
+            title={subscriptionAvailable ? t("navbar.subscribe") : t("navbar.subscribeDisabled")}
           >
             <BellRing className="h-4 w-4" />
           </button>
@@ -609,7 +608,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-search"))}
             className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95`}
-            aria-label="搜索"
+            aria-label={t("navbar.search")}
           >
             <Search className="h-4 w-4" />
           </button>

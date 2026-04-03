@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, Search, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CommentSection from "@/components/CommentSection";
+import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
+import { usePreviewChannel } from "@/lib/preview";
 import { readExcerptsApiV1SiteExcerptsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
+
+const CommentSection = lazy(() => import("@/components/CommentSection"));
 
 interface Excerpt {
   id: string;
@@ -46,17 +49,46 @@ const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
   };
 };
 
-const matchesSearchText = (fields: Array<string | null | undefined>, query: string) => {
+const buildPreviewExcerpt = (preview: {
+  slug?: string;
+  title: string;
+  body?: string;
+  category?: string;
+  published_at?: string | null;
+  author_name?: string;
+  source?: string;
+}): Excerpt => ({
+  id: preview.slug || "__preview-excerpt",
+  title: preview.title,
+  author: preview.author_name || "",
+  source: preview.source || "",
+  content: preview.body || "",
+  category: preview.category || "",
+  date: formatPublishedDate(preview.published_at) || "草稿",
+  comments: 0,
+});
+
+const matchesSearchText = (
+  fields: Array<string | null | undefined>,
+  query: string,
+) => {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) {
     return true;
   }
 
-  return fields.some((field) => (field ?? "").toLowerCase().includes(normalizedQuery));
+  return fields.some((field) =>
+    (field ?? "").toLowerCase().includes(normalizedQuery),
+  );
 };
+
+const hasCjkCharacters = (value: string) =>
+  /[\u3400-\u9FFF\uF900-\uFAFF]/.test(value);
 
 const Excerpts = () => {
   const location = useLocation();
+  const previewStorageKey =
+    new URLSearchParams(location.search).get("previewStorageKey") || "";
   const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
   const errorTitle = config.errorTitle ?? "文摘加载失败";
   const retryLabel = config.retryLabel ?? "重试";
@@ -72,14 +104,49 @@ const Excerpts = () => {
   const [search, setSearch] = useState("");
   const [rawSearch, setRawSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewOpenedRef = useRef<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
+  const { data: previewData } = usePreviewChannel(previewStorageKey);
 
-  const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
+  const {
+    items,
+    status,
+    errorMessage,
+    hasMore,
+    isLoadingMore,
+    sentinelRef,
+    reload,
+  } = useInfiniteList({
     queryKey: ["site", "excerpts"],
-    queryFn: (p) => readExcerptsApiV1SiteExcerptsGet(p).then(r => r.data),
+    queryFn: async (p) => {
+      const data = (await readExcerptsApiV1SiteExcerptsGet(p)).data;
+
+      if (data && "items" in data && Array.isArray(data.items)) {
+        return {
+          items: data.items,
+          has_more: Boolean(data.has_more),
+        };
+      }
+
+      throw new Error("Invalid excerpts response");
+    },
     pageSize,
     mapItem: mapRemoteExcerpt,
   });
+  const previewExcerpt =
+    previewData?.type === "excerpts" ? buildPreviewExcerpt(previewData) : null;
+  const displayItems = useMemo(() => {
+    if (!previewExcerpt) {
+      return items;
+    }
+
+    return [
+      previewExcerpt,
+      ...items.filter((item) => item.id !== previewExcerpt.id),
+    ];
+  }, [items, previewExcerpt]);
+  const viewStatus: typeof status =
+    previewExcerpt && status !== "ready" ? "ready" : status;
 
   useEffect(() => {
     return () => {
@@ -92,43 +159,66 @@ const Excerpts = () => {
   const allCategories = useMemo(
     () => [
       allCategoryLabel,
-      ...Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "zh-CN")),
+      ...Array.from(
+        new Set(displayItems.map((item) => item.category).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b, "zh-CN")),
     ],
-    [allCategoryLabel, items],
+    [allCategoryLabel, displayItems],
   );
 
   const filtered = useMemo(() => {
-    return items.filter((excerpt) => {
+    return displayItems.filter((excerpt) => {
       const matchSearch = matchesSearchText(
-        [excerpt.title, excerpt.author, excerpt.source, excerpt.content, excerpt.category],
+        [
+          excerpt.title,
+          excerpt.author,
+          excerpt.source,
+          excerpt.content,
+          excerpt.category,
+        ],
         search,
       );
-      const matchCategory = activeCategory === allCategoryLabel || excerpt.category === activeCategory;
+      const matchCategory =
+        activeCategory === allCategoryLabel ||
+        excerpt.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [activeCategory, allCategoryLabel, items, search]);
+  }, [activeCategory, allCategoryLabel, displayItems, search]);
 
   const selected = useMemo(
-    () => items.find((excerpt) => excerpt.id === selectedId) ?? null,
-    [items, selectedId],
+    () => displayItems.find((excerpt) => excerpt.id === selectedId) ?? null,
+    [displayItems, selectedId],
   );
-  const formatSourceLine = (excerpt: Excerpt) => [excerpt.source, excerpt.author].filter(Boolean).join(" · ");
+  const formatSourceLine = (excerpt: Excerpt) =>
+    [excerpt.source, excerpt.author].filter(Boolean).join(" · ");
+  const excerptCjkFontFamily =
+    "'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', 'Songti SC', 'STSong', 'SimSun', serif";
+  const excerptLatinFontFamily =
+    "'Times New Roman', Times, 'Nimbus Roman No9 L', serif";
+  const getExcerptFontFamily = (value: string) =>
+    hasCjkCharacters(value) ? excerptCjkFontFamily : excerptLatinFontFamily;
 
   useEffect(() => {
     setShowModalComments(false);
   }, [selectedId]);
 
   useEffect(() => {
+    if (previewExcerpt && previewOpenedRef.current !== previewExcerpt.id) {
+      previewOpenedRef.current = previewExcerpt.id;
+      setSelectedId(previewExcerpt.id);
+      return;
+    }
+
     const targetId = location.hash.slice(1);
     if (!targetId) {
       return;
     }
 
-    const matched = items.find((excerpt) => excerpt.id === targetId);
+    const matched = displayItems.find((excerpt) => excerpt.id === targetId);
     if (matched) {
       setSelectedId(matched.id);
     }
-  }, [items, location.hash]);
+  }, [displayItems, location.hash, previewExcerpt]);
 
   return (
     <PageShell
@@ -136,8 +226,11 @@ const Excerpts = () => {
       title={config.title}
       description={config.description}
       metaDescription={config.metaDescription}
-      width={config.width}
+      width={
+        config.width === "narrow" ? "content" : (config.width ?? "content")
+      }
     >
+      {previewExcerpt ? <PreviewModeBadge /> : null}
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
@@ -189,9 +282,12 @@ const Excerpts = () => {
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {status === "loading" &&
+        {viewStatus === "loading" &&
           Array.from({ length: 6 }, (_, index) => (
-            <div key={`excerpt-skeleton-${index}`} className="liquid-glass rounded-2xl p-5">
+            <div
+              key={`excerpt-skeleton-${index}`}
+              className="liquid-glass rounded-2xl p-5"
+            >
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-3.5 w-3.5 rounded-full bg-foreground/[0.04]" />
                 <div className="h-3 w-28 rounded-full bg-foreground/[0.04]" />
@@ -206,7 +302,7 @@ const Excerpts = () => {
             </div>
           ))}
 
-        {status === "error" && (
+        {viewStatus === "error" && (
           <div className="liquid-glass rounded-2xl p-5 sm:col-span-2">
             <div className="mb-3 flex items-center gap-2">
               <BookOpen className="h-3.5 w-3.5 text-foreground/20 transition-colors" />
@@ -232,7 +328,8 @@ const Excerpts = () => {
           </div>
         )}
 
-        {(status === "empty" || (status === "ready" && filtered.length === 0)) && (
+        {(viewStatus === "empty" ||
+          (viewStatus === "ready" && filtered.length === 0)) && (
           <div className="liquid-glass rounded-2xl p-5 sm:col-span-2">
             <div className="mb-3 flex items-center gap-2">
               <BookOpen className="h-3.5 w-3.5 text-foreground/20" />
@@ -246,7 +343,7 @@ const Excerpts = () => {
           </div>
         )}
 
-        {status === "ready" &&
+        {viewStatus === "ready" &&
           filtered.map((excerpt, index) => (
             <motion.button
               key={excerpt.id}
@@ -262,16 +359,20 @@ const Excerpts = () => {
             >
               <div className="mb-3 flex items-center gap-2">
                 <BookOpen className="h-3.5 w-3.5 text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.52)]" />
-                <span className="truncate text-[10px] font-body uppercase tracking-wider text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]">
+                <span
+                  className="truncate text-[10px] font-body tracking-wider text-foreground/25 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.72)]"
+                  style={{
+                    fontFamily: getExcerptFontFamily(formatSourceLine(excerpt)),
+                  }}
+                >
                   {formatSourceLine(excerpt)}
                 </span>
               </div>
 
-              <h3 className="text-base font-body font-medium leading-snug text-foreground/80 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)]">
-                {excerpt.title}
-              </h3>
-
-              <p className="mt-2 line-clamp-3 text-[12px] font-body leading-relaxed text-foreground/30 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]">
+              <p
+                className="mt-1 line-clamp-3 indent-[2em] text-[14.5px] font-body leading-relaxed text-foreground/54 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.78)]"
+                style={{ fontFamily: getExcerptFontFamily(excerpt.content) }}
+              >
                 {excerpt.content}
               </p>
 
@@ -284,9 +385,11 @@ const Excerpts = () => {
           ))}
       </div>
 
-      {status === "ready" && hasMore && (
+      {viewStatus === "ready" && hasMore && (
         <div ref={sentinelRef} className="py-8 text-center">
-          {isLoadingMore && <span className="text-xs text-foreground/25">{loadMoreLabel}</span>}
+          {isLoadingMore && (
+            <span className="text-xs text-foreground/25">{loadMoreLabel}</span>
+          )}
         </div>
       )}
 
@@ -322,20 +425,30 @@ const Excerpts = () => {
 
               <div className="mb-4 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-foreground/25 transition-colors" />
-                <span className="text-xs font-body text-foreground/30 transition-colors">
+                <span
+                  className="text-xs font-body text-foreground/30 transition-colors"
+                  style={{ fontFamily: getExcerptFontFamily(selected.source) }}
+                >
                   {selected.source}
                 </span>
               </div>
-              <h2 className="mt-4 text-xl font-heading italic leading-snug text-foreground transition-colors">
-                {selected.title}
-              </h2>
-              <p className="mt-1 text-xs font-body text-foreground/25 transition-colors">
-                {[selected.author, selected.date].filter(Boolean).join(" · ")}
+              <p className="mt-0.5 text-xs font-body text-foreground/30 transition-colors">
+                {selected.author ? (
+                  <span
+                    style={{
+                      fontFamily: getExcerptFontFamily(selected.author),
+                    }}
+                  >
+                    {selected.author}
+                  </span>
+                ) : null}
+                {selected.author && selected.date ? " · " : null}
+                {selected.date ? <span>{selected.date}</span> : null}
               </p>
               <div className="my-5 border-t border-foreground/[0.06] transition-colors" />
               <p
-                className="text-[0.935rem] font-body leading-8 text-foreground/60 transition-colors"
-                style={{ fontFamily: "'Instrument Serif', serif" }}
+                className="indent-[2em] text-[0.935rem] font-body leading-8 text-foreground/74 transition-colors"
+                style={{ fontFamily: getExcerptFontFamily(selected.content) }}
               >
                 {selected.content}
               </p>
@@ -355,8 +468,12 @@ const Excerpts = () => {
                       : "text-foreground/30 hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
                   }`}
                 >
-                  <MessageCircle className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
-                  {showModalComments ? commentsCloseLabel : `${commentsOpenLabel} · ${selected.comments}`}
+                  <MessageCircle
+                    className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
+                  />
+                  {showModalComments
+                    ? commentsCloseLabel
+                    : `${commentsOpenLabel} · ${selected.comments}`}
                 </button>
 
                 <AnimatePresence>
@@ -368,11 +485,13 @@ const Excerpts = () => {
                       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                       className="mt-3 overflow-hidden"
                     >
-                      <CommentSection
-                        contentType="excerpts"
-                        contentSlug={selected.id}
-                        expandable={false}
-                      />
+                      <Suspense fallback={null}>
+                        <CommentSection
+                          contentType="excerpts"
+                          contentSlug={selected.id}
+                          expandable={false}
+                        />
+                      </Suspense>
                     </motion.div>
                   )}
                 </AnimatePresence>

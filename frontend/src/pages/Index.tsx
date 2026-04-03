@@ -10,23 +10,24 @@ const Index = () => {
   const { resolvedTheme } = useTheme();
   const site = useSiteConfig();
   const videoUrl = site.heroVideoUrl;
+  const posterUrl = site.heroPosterUrl;
   const [videoFailed, setVideoFailed] = useState(false);
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
   const heroOverlayClass = "bg-black/12";
   const showVideo = Boolean(videoUrl) && !videoFailed;
-  const showImageFallback = Boolean(site.ogImage) && !showVideo;
+  const showImageFallback = Boolean(posterUrl) && !showVideo;
 
   return (
     <div
       data-home-scroll
-      className="h-[100svh] overflow-x-hidden overflow-y-auto"
+      className="scrollbar-hide h-[100svh] overflow-x-hidden overflow-y-auto"
     >
-      <PageMeta description={site.metaDescription} />
+      <PageMeta description={site.bio} />
       <Navbar glassVariant="hero" />
       <div className="relative min-h-screen flex flex-col overflow-hidden">
         {showImageFallback && (
           <img
-            src={site.ogImage}
+            src={posterUrl}
             alt={site.title || site.name}
             className="absolute inset-0 h-full w-full object-cover z-0"
             loading="eager"
@@ -41,8 +42,8 @@ const Index = () => {
           loop
           muted
           playsInline
-          preload="auto"
-          poster={site.heroPosterUrl || site.ogImage}
+          preload="metadata"
+          poster={posterUrl}
           onError={() => setVideoFailed(true)}
         >
           <source src={videoUrl} type="video/mp4" />

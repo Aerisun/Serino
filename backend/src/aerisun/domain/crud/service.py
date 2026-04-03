@@ -16,6 +16,12 @@ from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
 CONTENT_PUBLICATION_MODELS = (PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry)
+CONTENT_TYPE_BY_MODEL = {
+    PostEntry: "posts",
+    DiaryEntry: "diary",
+    ThoughtEntry: "thoughts",
+    ExcerptEntry: "excerpts",
+}
 
 
 def _is_published_public(obj: Any) -> bool:
@@ -40,6 +46,20 @@ def _dispatch_content_subscriptions_if_needed(
     from aerisun.domain.subscription.service import dispatch_content_subscription_notifications
 
     dispatch_content_subscription_notifications()
+
+
+def _content_type_for_model(model: type[Base]) -> str:
+    return CONTENT_TYPE_BY_MODEL.get(model, getattr(model, "__tablename__", model.__name__.lower()))
+
+
+def _content_snapshot(obj: Any) -> dict[str, Any]:
+    return {
+        "item_id": str(getattr(obj, "id", "") or ""),
+        "slug": str(getattr(obj, "slug", "") or ""),
+        "title": str(getattr(obj, "title", "") or ""),
+        "status": getattr(obj, "status", None),
+        "visibility": getattr(obj, "visibility", None),
+    }
 
 
 def list_items(
@@ -100,8 +120,29 @@ def create_item(
     read_schema: type[BaseModel],
     prepare_data: Callable[[Session, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> BaseModel:
+    from aerisun.domain.automation.events import emit_content_created, emit_content_published
+
     data = payload.model_dump()
     obj = repo.create_one(session, model, data, prepare_data=prepare_data)
+    snapshot = _content_snapshot(obj)
+    content_type = _content_type_for_model(model)
+    emit_content_created(
+        session,
+        content_type=content_type,
+        item_id=snapshot["item_id"],
+        slug=snapshot["slug"],
+        title=snapshot["title"],
+        status=snapshot["status"],
+        visibility=snapshot["visibility"],
+    )
+    if snapshot["status"] == "published" and snapshot["visibility"] == "public":
+        emit_content_published(
+            session,
+            content_type=content_type,
+            item_id=snapshot["item_id"],
+            slug=snapshot["slug"],
+            title=snapshot["title"],
+        )
     _dispatch_content_subscriptions_if_needed(model, obj=obj)
     return read_schema.model_validate(obj)
 
@@ -116,13 +157,67 @@ def update_item(
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
     prepare_data: Callable[[Session, Any, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> BaseModel:
+    from aerisun.domain.automation.events import (
+        emit_content_archived,
+        emit_content_published,
+        emit_content_updated,
+        emit_content_visibility_changed,
+    )
+
     data = payload.model_dump(exclude_unset=True)
     obj = repo.find_by_id(session, model, item_id, base_query_factory=base_query_factory)
     if obj is None:
         raise ResourceNotFound("Not found")
+    previous = _content_snapshot(obj)
     if prepare_data is not None:
         data = prepare_data(session, obj, data)
     obj = repo.update_one(session, obj, data)
+    current = _content_snapshot(obj)
+    content_type = _content_type_for_model(model)
+    changed_fields = [
+        key
+        for key in data
+        if key in {"slug", "title", "summary", "body", "status", "visibility", "tags", "published_at"}
+    ]
+    emit_content_updated(
+        session,
+        content_type=content_type,
+        item_id=current["item_id"],
+        slug=current["slug"],
+        title=current["title"],
+        status=current["status"],
+        visibility=current["visibility"],
+        changed_fields=changed_fields,
+    )
+    if (
+        previous["status"] != current["status"]
+        and current["status"] == "published"
+        and current["visibility"] == "public"
+    ):
+        emit_content_published(
+            session,
+            content_type=content_type,
+            item_id=current["item_id"],
+            slug=current["slug"],
+            title=current["title"],
+        )
+    if previous["status"] != current["status"] and current["status"] == "archived":
+        emit_content_archived(
+            session,
+            content_type=content_type,
+            item_id=current["item_id"],
+            slug=current["slug"],
+            title=current["title"],
+        )
+    if previous["visibility"] != current["visibility"]:
+        emit_content_visibility_changed(
+            session,
+            content_type=content_type,
+            item_id=current["item_id"],
+            slug=current["slug"],
+            title=current["title"],
+            visibility=current["visibility"],
+        )
     _dispatch_content_subscriptions_if_needed(model, obj=obj)
     return read_schema.model_validate(obj)
 
@@ -134,10 +229,20 @@ def delete_item(
     *,
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> None:
+    from aerisun.domain.automation.events import emit_content_deleted
+
     obj = repo.find_by_id(session, model, item_id, base_query_factory=base_query_factory)
     if obj is None:
         raise ResourceNotFound("Not found")
+    snapshot = _content_snapshot(obj)
     repo.delete_one(session, obj)
+    emit_content_deleted(
+        session,
+        content_type=_content_type_for_model(model),
+        item_id=snapshot["item_id"],
+        slug=snapshot["slug"],
+        title=snapshot["title"],
+    )
 
 
 def bulk_delete_items(
@@ -147,7 +252,15 @@ def bulk_delete_items(
     *,
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> dict[str, int]:
+    from aerisun.domain.automation.events import emit_content_bulk_deleted
+
     affected = repo.bulk_delete(session, model, ids, base_query_factory=base_query_factory)
+    emit_content_bulk_deleted(
+        session,
+        content_type=_content_type_for_model(model),
+        ids=ids,
+        affected=affected,
+    )
     return {"affected": affected}
 
 
@@ -159,6 +272,8 @@ def bulk_update_status_items(
     *,
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> dict[str, int]:
+    from aerisun.domain.automation.events import emit_content_status_changed
+
     if not hasattr(model, "status"):
         raise ValidationError("Model does not support status")
     visibility: str | None = None
@@ -177,5 +292,13 @@ def bulk_update_status_items(
         model,
         status=normalized_status,
         visibility=visibility or "public",
+    )
+    emit_content_status_changed(
+        session,
+        content_type=_content_type_for_model(model),
+        ids=ids,
+        status=normalized_status,
+        visibility=visibility,
+        affected=affected,
     )
     return {"affected": affected}

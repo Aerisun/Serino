@@ -184,8 +184,3 @@ class McpAdminConfigRead(ModelBase):
 
 class McpAdminConfigUpdate(ModelBase):
     public_access: bool | None = Field(default=None, description="Whether MCP public access is enabled")
-    selected_preset: str | None = Field(default=None, description="Selected preset key")
-    enabled_capability_ids: list[str] | None = Field(
-        default=None,
-        description="Explicitly enabled capability identifiers",
-    )

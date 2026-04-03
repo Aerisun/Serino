@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Search, X, FileText, BookOpen, MessageSquare, Quote } from "lucide-react"
 import { searchContentApiV1SiteSearchGet } from "@serino/api-client/site"
+import { useFrontendI18n } from "@/i18n"
 
 interface SearchResult {
   type: string
@@ -25,6 +26,7 @@ interface SearchModalProps {
 }
 
 const SearchModal = ({ open, onClose }: SearchModalProps) => {
+  const { t } = useFrontendI18n()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -111,7 +113,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
                 type="text"
                 value={query}
                 onChange={(e) => handleChange(e.target.value)}
-                placeholder="搜索文章、日记、想法..."
+                placeholder={t("search.placeholder")}
                 className="flex-1 bg-transparent text-sm font-body text-foreground placeholder:text-foreground/25 outline-none"
               />
               <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-[rgb(var(--shiro-border-rgb)/0.15)] px-1.5 py-0.5 text-[10px] font-body text-foreground/20">
@@ -131,7 +133,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
 
               {!loading && searched && results.length === 0 && (
                 <div className="py-8 text-center">
-                  <p className="text-sm font-body text-foreground/30">没有找到相关内容</p>
+                  <p className="text-sm font-body text-foreground/30">{t("search.empty")}</p>
                 </div>
               )}
 
@@ -155,7 +157,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
                               className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-body"
                               style={{ color: cfg.color, background: `${cfg.color.replace(/[\d.]+\)$/, "0.1)")}` }}
                             >
-                              {cfg.label}
+                              {t(`search.type.${item.type}`, undefined, cfg.label)}
                             </span>
                           </div>
                           {item.snippet && (
@@ -173,7 +175,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
 
               {!loading && !searched && (
                 <div className="py-8 text-center">
-                  <p className="text-xs font-body text-foreground/20">输入关键词搜索全站内容</p>
+                  <p className="text-xs font-body text-foreground/20">{t("search.hint")}</p>
                 </div>
               )}
             </div>

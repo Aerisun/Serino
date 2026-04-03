@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { cn } from "@/lib/utils";
 
 interface Column<T> {
   header: string;
@@ -30,6 +31,7 @@ interface DataTableProps<T> {
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
   renderExpandedRow?: (row: T) => React.ReactNode;
+  getRowClassName?: (row: T) => string | undefined;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -45,6 +47,7 @@ export function DataTable<T extends { id: string }>({
   selectedIds,
   onSelectionChange,
   renderExpandedRow,
+  getRowClassName,
 }: DataTableProps<T>) {
   const { t } = useI18n();
   const totalPages = Math.ceil(total / pageSize);
@@ -142,7 +145,7 @@ export function DataTable<T extends { id: string }>({
             data.map((row) => (
               <Fragment key={row.id}>
                 <TableRow
-                  className={onRowClick ? "cursor-pointer" : ""}
+                  className={cn(onRowClick ? "cursor-pointer" : "", getRowClassName?.(row))}
                   onClick={() => onRowClick?.(row)}
                 >
                   {hasExpandedRow && (

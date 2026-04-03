@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { useI18n } from "@/i18n";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { CONTENT_CATEGORY_LABEL_KEYS, type ContentCategoryType } from "@/lib/contentCategories";
 import { toast } from "sonner";
 
@@ -92,8 +93,7 @@ export function ContentCategoryField({
         toast.success(t("contentCategories.createSuccess"));
       },
       onError: (error: any) => {
-        const message = error?.response?.data?.detail || t("common.operationFailed");
-        toast.error(message);
+        toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
       },
     },
   });

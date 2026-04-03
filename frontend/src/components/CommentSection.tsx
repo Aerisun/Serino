@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Heart, MessageCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import { transition } from "@/config";
+import { useFrontendI18n } from "@/i18n";
 import {
   loadCommunityConfig,
   type CommunityConfig,
 } from "@/lib/community-config";
-import WalineSurface from "@/components/WalineSurface";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
   createReactionApiV1SiteInteractionsReactionsPost,
@@ -15,6 +15,8 @@ import {
 } from "@serino/api-client/site-interactions";
 
 type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
+
+const WalineSurface = lazy(() => import("@/components/WalineSurface"));
 
 interface CommentSectionProps {
   contentType?: CommentSurface;
@@ -120,6 +122,7 @@ const CommentSection = ({
   contentSlug,
   expandable,
 }: CommentSectionProps) => {
+  const { t } = useFrontendI18n();
   const prefersReducedMotion = useReducedMotionPreference();
   const location = useLocation();
   const { id } = useParams();
@@ -133,24 +136,38 @@ const CommentSection = ({
 
   const isCollapsible = expandable ?? (contentContext?.contentType !== "guestbook");
   const like = useLike(contentContext);
+  const shouldLoadSurface = contentContext !== null && (!isCollapsible || showComments);
 
   useEffect(() => {
+    if (!shouldLoadSurface || config) {
+      return;
+    }
     loadCommunityConfig().then(setConfig).catch(() => {});
-  }, []);
+  }, [config, shouldLoadSurface]);
 
   useEffect(() => {
     setShowComments(!isCollapsible && contentContext !== null);
   }, [contentContext, isCollapsible]);
 
   const body = contentContext ? (
-    <WalineSurface
-      surface={contentContext.contentType}
-      slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
-      communityConfig={config}
-    />
+    shouldLoadSurface ? (
+      <Suspense
+        fallback={
+          <div className="liquid-glass rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] px-5 py-6 text-sm font-body text-foreground/45">
+            {t("comments.loading")}
+          </div>
+        }
+      >
+        <WalineSurface
+          surface={contentContext.contentType}
+          slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
+          communityConfig={config}
+        />
+      </Suspense>
+    ) : null
   ) : (
     <div className="liquid-glass rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] px-5 py-6 text-sm font-body text-foreground/45">
-      当前页面缺少评论上下文，暂时无法挂载评论区。
+      {t("comments.missingContext")}
     </div>
   );
 
@@ -209,7 +226,7 @@ const CommentSection = ({
           }`}
         >
           <MessageCircle className={`h-4 w-4 ${showComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
-          {showComments ? "收起评论" : "展开评论"}
+          {showComments ? t("comments.collapse") : t("comments.expand")}
         </button>
       </div>
 
