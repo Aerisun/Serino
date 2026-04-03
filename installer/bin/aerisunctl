@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SELF_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${SELF_PATH}")" && pwd)"
+INSTALLER_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+if [[ "${1:-}" != "--as-root" ]] && [[ "$(id -u)" -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    exec sudo "$0" --as-root "$@"
+  fi
+  echo "需要 root 或 sudo 才能执行 aerisunctl。" >&2
+  exit 1
+fi
+
+if [[ "${1:-}" == "--as-root" ]]; then
+  shift
+fi
+
+# shellcheck disable=SC1091
+source "${INSTALLER_ROOT}/lib/common.sh"
+# shellcheck disable=SC1091
+source "${INSTALLER_ROOT}/lib/env.sh"
+# shellcheck disable=SC1091
+source "${INSTALLER_ROOT}/lib/docker.sh"
+
+usage() {
+  cat <<'EOF'
+用法：
+  aerisunctl status
+  aerisunctl logs [service...]
+  aerisunctl restart
+  aerisunctl upgrade [vX.Y.Z]
+EOF
+}
+
+cmd_status() {
+  load_env_file "${AERISUN_ENV_FILE}"
+  compose ps
+  echo
+  echo "站点地址：${AERISUN_SITE_URL}"
+  echo "当前镜像源：${AERISUN_IMAGE_REGISTRY}"
+  echo "当前镜像标签：${AERISUN_IMAGE_TAG}"
+  curl --fail --silent --show-error "http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}" >/dev/null
+  echo "健康检查：ok"
+}
+
+cmd_logs() {
+  if [[ "$#" -gt 0 ]]; then
+    compose logs --tail 120 "$@"
+    return 0
+  fi
+  compose logs --tail 120 api waline caddy
+}
+
+cmd_restart() {
+  compose up -d
+  wait_for_release_ready
+}
+
+cmd_upgrade() {
+  exec "${INSTALLER_ROOT}/upgrade.sh" "$@"
+}
+
+main() {
+  local command="${1:-}"
+  shift || true
+
+  case "${command}" in
+    status)
+      cmd_status "$@"
+      ;;
+    logs)
+      cmd_logs "$@"
+      ;;
+    restart)
+      cmd_restart "$@"
+      ;;
+    upgrade)
+      cmd_upgrade "$@"
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
