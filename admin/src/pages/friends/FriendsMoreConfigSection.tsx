@@ -144,7 +144,7 @@ export function FriendsMoreConfigSection() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="space-y-4">
           <AppleSwitch
             checked={form.websiteHealthCheckEnabled}
             onCheckedChange={(checked) => setForm((prev) => ({ ...prev, websiteHealthCheckEnabled: checked }))}

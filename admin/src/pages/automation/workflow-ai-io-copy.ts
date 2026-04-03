@@ -32,7 +32,7 @@ function firstLine(values: string[] | undefined) {
 }
 
 const ACTION_SURFACE_PURPOSE_ZH: Record<string, string> = {
-  create_admin_content: "它会新建一条后台内容，比如文章、日记、想法或摘录。",
+  create_admin_content: "它会新建一条后台内容，比如文章、日记、碎碎念或文摘。",
   update_admin_content: "它会修改一条后台内容，比如正文、状态或可见范围。",
   delete_admin_content: "它会删除一条后台内容。",
   create_post_item: "它会新建一篇文章。",
@@ -41,12 +41,12 @@ const ACTION_SURFACE_PURPOSE_ZH: Record<string, string> = {
   create_diary_item: "它会新建一篇日记。",
   update_diary_item: "它会修改一篇日记的内容、状态或附加信息。",
   delete_diary_item: "它会删除一篇日记。",
-  create_thought_item: "它会新建一条想法。",
-  update_thought_item: "它会修改一条想法的内容、状态或可见范围。",
-  delete_thought_item: "它会删除一条想法。",
-  create_excerpt_item: "它会新建一条摘录。",
-  update_excerpt_item: "它会修改一条摘录的内容、来源或状态。",
-  delete_excerpt_item: "它会删除一条摘录。",
+  create_thought_item: "它会新建一条碎碎念。",
+  update_thought_item: "它会修改一条碎碎念的内容、状态或可见范围。",
+  delete_thought_item: "它会删除一条碎碎念。",
+  create_excerpt_item: "它会新建一条文摘。",
+  update_excerpt_item: "它会修改一条文摘的内容、来源或状态。",
+  delete_excerpt_item: "它会删除一条文摘。",
   bulk_delete_admin_content: "它会批量删除多条后台内容。",
   bulk_update_admin_content_status: "它会批量修改内容状态，比如发布、归档或改回草稿。",
   create_admin_content_category: "它会新建一个内容分类。",

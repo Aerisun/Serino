@@ -611,7 +611,7 @@ def test_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate) -
             ok=False,
             summary=str(exc),
             latency_ms=latency_ms,
-            remote_path_preview=f"{str(config.remote_path).rstrip('/')}/sites/{config.site_slug}",
+            remote_path_preview=str(config.remote_path or ""),
             recovery_key_ready=recovery_ready,
             recovery_key_acknowledged=recovery_acknowledged,
         )
@@ -620,7 +620,7 @@ def test_backup_sync_config(session: Session, payload: BackupSyncConfigUpdate) -
         ok=True,
         summary="SFTP 连接正常，远端目录可写。",
         latency_ms=latency_ms,
-        remote_path_preview=f"{str(config.remote_path).rstrip('/')}/sites/{config.site_slug}",
+        remote_path_preview=str(config.remote_path or ""),
         recovery_key_ready=recovery_ready,
         recovery_key_acknowledged=recovery_acknowledged,
     )
@@ -1525,7 +1525,7 @@ class SftpTransport:
         self._run_batch(commands, check=False)
 
     def _site_root(self) -> str:
-        return f"{self._remote_root}/sites/{self._site_slug}"
+        return self._remote_root
 
     def _catalog_root(self) -> str:
         return f"{self._site_root()}/catalog"

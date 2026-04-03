@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { useListVisitorUsersApiV1AdminVisitorsUsersGet } from "@serino/api-client/admin";
-import type { ListVisitorUsersApiV1AdminVisitorsUsersGetParams, SiteUserAdminRead } from "@serino/api-client/models";
+import type {
+  ListVisitorUsersApiV1AdminVisitorsUsersGetParams,
+  SiteUserAdminRead,
+} from "@serino/api-client/models";
 import { DataTable } from "@/components/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
@@ -21,7 +24,8 @@ const USER_MODE_OPTIONS = [
 type VisitorUserMode = (typeof USER_MODE_OPTIONS)[number]["key"];
 
 function providerBadgeTone(provider: string) {
-  if (provider === "google") return "bg-[#4285F4]/12 text-[#3367D6] border-[#4285F4]/16";
+  if (provider === "google")
+    return "bg-[#4285F4]/12 text-[#3367D6] border-[#4285F4]/16";
   if (provider === "github") {
     return "bg-slate-900/8 text-slate-700 border-slate-900/12 dark:bg-white/8 dark:text-white/82 dark:border-white/16";
   }
@@ -62,8 +66,12 @@ export function VisitorsUsersPanel() {
               className="h-10 w-10 rounded-full border border-border/60 object-cover"
             />
             <div className="min-w-0">
-              <div className="truncate font-medium text-foreground">{row.display_name}</div>
-              <div className="truncate text-xs text-muted-foreground">{row.primary_auth_provider}</div>
+              <div className="truncate font-medium text-foreground">
+                {row.display_name}
+              </div>
+              <div className="truncate text-xs text-muted-foreground">
+                {row.primary_auth_provider}
+              </div>
             </div>
           </div>
         ),
@@ -71,13 +79,17 @@ export function VisitorsUsersPanel() {
       {
         header: "邮箱标识",
         accessor: (row: SiteUserAdminRead) => (
-          <span className="font-mono text-xs text-muted-foreground">{row.email}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {row.email}
+          </span>
         ),
       },
       {
         header: "方式",
         accessor: (row: SiteUserAdminRead) => (
-          <Badge variant="outline">{row.auth_mode === "binding" ? "绑定" : "邮箱"}</Badge>
+          <Badge variant="outline">
+            {row.auth_mode === "binding" ? "绑定" : "邮箱"}
+          </Badge>
         ),
       },
       {
@@ -105,7 +117,9 @@ export function VisitorsUsersPanel() {
         header: "最近登录",
         accessor: (row: SiteUserAdminRead) =>
           row.last_login_at ? (
-            <span className="text-sm text-muted-foreground">{formatDate(row.last_login_at)}</span>
+            <span className="text-sm text-muted-foreground">
+              {formatDate(row.last_login_at)}
+            </span>
           ) : (
             <span className="text-sm text-muted-foreground">未登录</span>
           ),
@@ -166,7 +180,9 @@ export function VisitorsUsersPanel() {
           isLoading={usersQuery.isLoading}
           renderExpandedRow={(row) => (
             <div className="grid gap-3 py-4">
-              <div className="text-sm font-medium text-foreground">绑定详情</div>
+              <div className="text-sm font-medium text-foreground">
+                绑定详情
+              </div>
               {(row.oauth_accounts ?? []).length ? (
                 (row.oauth_accounts ?? []).map((account) => (
                   <div
@@ -176,9 +192,15 @@ export function VisitorsUsersPanel() {
                     <div className="font-medium text-foreground">
                       {account.provider === "google" ? "Google" : "GitHub"}
                     </div>
-                    <div className="text-muted-foreground">{account.provider_email || "未返回邮箱"}</div>
-                    <div className="text-muted-foreground">{account.provider_display_name || "未返回昵称"}</div>
-                    <div className="text-muted-foreground">{formatDate(account.created_at)}</div>
+                    <div className="text-muted-foreground">
+                      {account.provider_email || "未返回邮箱"}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {account.provider_display_name || "未返回昵称"}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {formatDate(account.created_at)}
+                    </div>
                   </div>
                 ))
               ) : (
@@ -199,7 +221,7 @@ export default function VisitorsUsersPage() {
     <div className="space-y-6">
       <PageHeader
         title="访客用户"
-        description="展示所有注册过邮箱或绑定过第三方账号的站点访客。"
+        description=""
         secondary={<VisitorsSectionSwitch />}
       />
 

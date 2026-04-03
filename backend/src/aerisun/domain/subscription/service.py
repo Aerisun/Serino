@@ -48,8 +48,8 @@ MICROSOFT_SMTP_SCOPE = "offline_access https://outlook.office.com/SMTP.Send"
 CONTENT_TYPE_LABELS = {
     "posts": "文章",
     "diary": "日记",
-    "thoughts": "想法",
-    "excerpts": "摘录",
+    "thoughts": "碎碎念",
+    "excerpts": "文摘",
 }
 
 DEFAULT_SUBJECT_TEMPLATE = "[{site_name}] {content_title}"

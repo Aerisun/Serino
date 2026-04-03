@@ -209,7 +209,7 @@ def test_backup_sync_config_test_endpoint_reports_connectivity(client, admin_hea
     assert response.status_code == 200
     payload = response.json()
     assert payload["ok"] is True
-    assert payload["remote_path_preview"] == "/srv/aerisun/backup/sites/test-site"
+    assert payload["remote_path_preview"] == "/srv/aerisun/backup"
     assert payload["recovery_key_ready"] is False
     assert payload["recovery_key_acknowledged"] is False
 

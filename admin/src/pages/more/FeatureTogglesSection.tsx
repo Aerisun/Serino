@@ -26,8 +26,8 @@ const FEATURE_FLAGS = ["toc", "reading_progress"] as const;
 const SUBSCRIPTION_CONTENT_OPTIONS = [
   { key: "posts", label: "文章" },
   { key: "diary", label: "日记" },
-  { key: "thoughts", label: "想法" },
-  { key: "excerpts", label: "摘录" },
+  { key: "thoughts", label: "碎碎念" },
+  { key: "excerpts", label: "文摘" },
 ] as const;
 const DEFAULT_SUBSCRIPTION_SUBJECT_TEMPLATE = "[{site_name}] {content_title}";
 const DEFAULT_SUBSCRIPTION_BODY_TEMPLATE =

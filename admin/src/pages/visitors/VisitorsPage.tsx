@@ -21,11 +21,15 @@ import type {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/PageHeader";
-import { DirtySaveButton, PendingSaveBadge } from "@/components/ui/DirtySaveButton";
+import {
+  DirtySaveButton,
+  PendingSaveBadge,
+} from "@/components/ui/DirtySaveButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { cn, formatDate } from "@/lib/utils";
 import { VisitorsSectionSwitch } from "@/pages/visitors/VisitorsSectionSwitch";
 import {
@@ -46,12 +50,10 @@ const VISITOR_OAUTH_OPTIONS = [
   {
     key: "google",
     label: "Google",
-    description: "允许访客使用 Google 绑定并登录站点身份。",
   },
   {
     key: "github",
     label: "GitHub",
-    description: "允许访客使用 GitHub 绑定并登录站点身份。",
   },
 ] as const;
 
@@ -60,9 +62,35 @@ const ADMIN_AUTH_OPTIONS = [
   { key: "github", label: "GitHub" },
 ] as const;
 
+const VISITOR_PROVIDER_HELP = {
+  google: {
+    title: "Google 访客登录",
+    description: "启用后，访客可以用 Google 账号登录后再评论或留言。",
+    usageItems: [
+      "需要先填写该渠道的 Client ID 和 Client Secret。",
+      "保存后，前台登录入口会出现 Google 选项。",
+    ],
+  },
+  github: {
+    title: "GitHub 访客登录",
+    description: "启用后，访客可以用 GitHub 账号登录后再评论或留言。",
+    usageItems: [
+      "需要先填写该渠道的 Client ID 和 Client Secret。",
+      "本地调试时可能需要单独的 OAuth App。",
+    ],
+  },
+} as const;
+
+const HELP_USAGE_TITLE = "会影响什么";
+const adminBasePath =
+  typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
+    ? __AERISUN_ADMIN_BASE_PATH__
+    : "/admin/";
+
 type VisitorOAuthProvider = (typeof VISITOR_OAUTH_OPTIONS)[number]["key"];
 type AdminAuthMethod = (typeof ADMIN_AUTH_OPTIONS)[number]["key"];
-type BindableAdminProvider = BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostProvider;
+type BindableAdminProvider =
+  BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostProvider;
 
 interface VisitorAuthFormState {
   email_login_enabled: boolean;
@@ -75,11 +103,17 @@ interface VisitorAuthFormState {
   github_client_secret: string;
 }
 
-function createForm(config?: SiteAuthConfigAdminRead | null): VisitorAuthFormState {
+function createForm(
+  config?: SiteAuthConfigAdminRead | null,
+): VisitorAuthFormState {
   return {
     email_login_enabled: config?.email_login_enabled ?? true,
-    visitor_oauth_providers: (config?.visitor_oauth_providers ?? []) as VisitorOAuthProvider[],
-    admin_auth_methods: (config?.admin_auth_methods ?? ["google", "github"]) as AdminAuthMethod[],
+    visitor_oauth_providers: (config?.visitor_oauth_providers ??
+      []) as VisitorOAuthProvider[],
+    admin_auth_methods: (config?.admin_auth_methods ?? [
+      "google",
+      "github",
+    ]) as AdminAuthMethod[],
     admin_email_enabled: config?.admin_email_enabled ?? false,
     google_client_id: config?.google_client_id ?? "",
     google_client_secret: config?.google_client_secret ?? "",
@@ -88,7 +122,11 @@ function createForm(config?: SiteAuthConfigAdminRead | null): VisitorAuthFormSta
   };
 }
 
-function toggleListValue<T extends string>(items: T[], item: T, enabled: boolean) {
+function toggleListValue<T extends string>(
+  items: T[],
+  item: T,
+  enabled: boolean,
+) {
   if (enabled) {
     return items.includes(item) ? items : [...items, item];
   }
@@ -111,32 +149,54 @@ function adminMethodCardClass(active: boolean) {
   );
 }
 
-function adminStatusPillClass(active: boolean) {
+type AdminBindingStatus = "disabled" | "incomplete" | "completed";
+
+function adminStatusPillClass(status: AdminBindingStatus) {
   return cn(
     "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium",
-    active
+    status === "completed"
       ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
-      : "border-border/60 bg-background/60 text-muted-foreground",
+      : status === "incomplete"
+        ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-200"
+        : "border-border/60 bg-background/60 text-muted-foreground",
   );
 }
 
+function adminStatusLabel(status: AdminBindingStatus) {
+  if (status === "completed") return "已完成";
+  if (status === "incomplete") return "未完成";
+  return "未开启";
+}
+
 function providerBadgeTone(provider: string) {
-  if (provider === "google") return "bg-[#4285F4]/12 text-[#3367D6] border-[#4285F4]/16";
-  if (provider === "github") return "bg-slate-900/8 text-slate-700 border-slate-900/12 dark:bg-white/8 dark:text-white/82 dark:border-white/16";
+  if (provider === "google")
+    return "bg-[#4285F4]/12 text-[#3367D6] border-[#4285F4]/16";
+  if (provider === "github")
+    return "bg-slate-900/8 text-slate-700 border-slate-900/12 dark:bg-white/8 dark:text-white/82 dark:border-white/16";
   return "bg-emerald-500/12 text-emerald-700 border-emerald-500/16";
 }
 
-async function getPublicOAuthAuthorizationUrl(provider: "google" | "github", returnTo: string) {
+async function getPublicOAuthAuthorizationUrl(
+  provider: "google" | "github",
+  returnTo: string,
+) {
   const query = new URLSearchParams({ return_to: returnTo });
-  const response = await fetch(`/api/v1/public/auth/oauth/${provider}/start?${query.toString()}`, {
-    method: "GET",
-    credentials: "include",
-  });
+  const response = await fetch(
+    `/api/v1/site-auth/oauth/${provider}/start?${query.toString()}`,
+    {
+      method: "GET",
+      credentials: "include",
+    },
+  );
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(String((payload as { detail?: string }).detail || "认证发起失败"));
+    throw new Error(
+      String((payload as { detail?: string }).detail || "认证发起失败"),
+    );
   }
-  return String((payload as { authorization_url?: string }).authorization_url || "");
+  return String(
+    (payload as { authorization_url?: string }).authorization_url || "",
+  );
 }
 
 function normalizeOrigin(value: string | undefined, fallback: string) {
@@ -149,17 +209,37 @@ function normalizeOrigin(value: string | undefined, fallback: string) {
 }
 
 function buildOAuthCallbackUrl(origin: string, provider: VisitorOAuthProvider) {
-  return `${origin.replace(/\/+$/, "")}/api/v1/public/auth/oauth/${provider}/callback`;
+  return `${origin.replace(/\/+$/, "")}/api/v1/site-auth/oauth/${provider}/callback`;
+}
+
+function buildAdminPath(path: string) {
+  const target = new URL(
+    path.replace(/^\/+/, ""),
+    window.location.origin + adminBasePath,
+  );
+  return `${target.pathname}${target.search}`;
 }
 
 function getOAuthCredentialFields(provider: VisitorOAuthProvider) {
   return provider === "google"
-    ? { idField: "google_client_id" as const, secretField: "google_client_secret" as const }
-    : { idField: "github_client_id" as const, secretField: "github_client_secret" as const };
+    ? {
+        idField: "google_client_id" as const,
+        secretField: "google_client_secret" as const,
+      }
+    : {
+        idField: "github_client_id" as const,
+        secretField: "github_client_secret" as const,
+      };
 }
 
-function formatProviderLabel(provider: VisitorOAuthProvider | BindableAdminProvider) {
-  return provider === "google" ? "Google" : provider === "github" ? "GitHub" : "邮箱";
+function formatProviderLabel(
+  provider: VisitorOAuthProvider | BindableAdminProvider,
+) {
+  return provider === "google"
+    ? "Google"
+    : provider === "github"
+      ? "GitHub"
+      : "邮箱";
 }
 
 function buildEmptyExpandedProviders() {
@@ -176,7 +256,12 @@ interface CompactSwitchProps {
   ariaLabel: string;
 }
 
-function CompactSwitch({ checked, onCheckedChange, disabled = false, ariaLabel }: CompactSwitchProps) {
+function CompactSwitch({
+  checked,
+  onCheckedChange,
+  disabled = false,
+  ariaLabel,
+}: CompactSwitchProps) {
   return (
     <button
       type="button"
@@ -203,6 +288,34 @@ function CompactSwitch({ checked, onCheckedChange, disabled = false, ariaLabel }
   );
 }
 
+type InlineHelpCopy = {
+  title: string;
+  description: string;
+  usageItems?: string[];
+};
+
+function InlineLabelWithHelp({
+  label,
+  copy,
+}: {
+  label: string;
+  copy: InlineHelpCopy;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{label}</span>
+      <LabelWithHelp
+        hideLabel
+        label={label}
+        title={copy.title}
+        description={copy.description}
+        usageTitle={copy.usageItems?.length ? HELP_USAGE_TITLE : undefined}
+        usageItems={copy.usageItems}
+      />
+    </span>
+  );
+}
+
 export default function VisitorsPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -210,18 +323,36 @@ export default function VisitorsPage() {
   const [savedForm, setSavedForm] = useState<VisitorAuthFormState | null>(null);
   const [visitorSaveError, setVisitorSaveError] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminEmailPassword, setAdminEmailPassword] = useState("");
+  const [adminEmailPasswordConfirm, setAdminEmailPasswordConfirm] =
+    useState("");
+  const [adminEmailPasswordSet, setAdminEmailPasswordSet] = useState(false);
+  const [adminEmailConfigExpanded, setAdminEmailConfigExpanded] =
+    useState(false);
   const [bindingError, setBindingError] = useState("");
-  const [testingProvider, setTestingProvider] = useState<VisitorOAuthProvider | null>(null);
-  const [savingProvider, setSavingProvider] = useState<VisitorOAuthProvider | null>(null);
+  const [testingProvider, setTestingProvider] =
+    useState<VisitorOAuthProvider | null>(null);
+  const [savingProvider, setSavingProvider] =
+    useState<VisitorOAuthProvider | null>(null);
   const [savingEmailLogin, setSavingEmailLogin] = useState(false);
   const [savingAdminConfig, setSavingAdminConfig] = useState(false);
-  const [expandedProviders, setExpandedProviders] =
-    useState<Record<VisitorOAuthProvider, boolean>>(buildEmptyExpandedProviders);
+  const [expandedProviders, setExpandedProviders] = useState<
+    Record<VisitorOAuthProvider, boolean>
+  >(buildEmptyExpandedProviders);
 
   const configQuery = useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet();
   const config = configQuery.data?.data ?? null;
-  const adminIdentitiesQuery = useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet();
+  const adminIdentitiesQuery =
+    useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet();
   const adminIdentities = adminIdentitiesQuery.data?.data ?? [];
+  const boundAdminProviders = new Set(
+    adminIdentities.map((identity) => identity.provider),
+  );
+  const emailAdminBindingStatus: AdminBindingStatus = !form.admin_email_enabled
+    ? "disabled"
+    : boundAdminProviders.has("email") && adminEmailPasswordSet
+      ? "completed"
+      : "incomplete";
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
   const adminOrigin = window.location.origin;
   const frontendOrigin = normalizeOrigin(systemInfo?.site_url, adminOrigin);
@@ -231,15 +362,22 @@ export default function VisitorsPage() {
       const nextForm = createForm(config);
       setForm(nextForm);
       setSavedForm(nextForm);
+      setAdminEmailPasswordSet(Boolean(config.admin_email_password_set));
       setVisitorSaveError("");
     }
   }, [config, savedForm]);
 
-  const saveVisitorProviderConfig = useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
-  const saveVisitorEmailConfig = useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
-  const saveAdminConfig = useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
+  const saveVisitorProviderConfig =
+    useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
+  const saveVisitorEmailConfig =
+    useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
+  const saveAdminConfig =
+    useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
 
-  const updateField = <K extends keyof VisitorAuthFormState>(key: K, value: VisitorAuthFormState[K]) => {
+  const updateField = <K extends keyof VisitorAuthFormState>(
+    key: K,
+    value: VisitorAuthFormState[K],
+  ) => {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -253,7 +391,8 @@ export default function VisitorsPage() {
       queryKey: getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey(),
     });
     void queryClient.invalidateQueries({
-      queryKey: getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
+      queryKey:
+        getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
     });
   };
 
@@ -271,6 +410,7 @@ export default function VisitorsPage() {
 
   const syncSavedAdminConfig = (nextConfig: SiteAuthConfigAdminRead) => {
     const nextForm = createForm(nextConfig);
+    setAdminEmailPasswordSet(Boolean(nextConfig.admin_email_password_set));
     setSavedForm((current) => ({
       ...(current ?? nextForm),
       admin_auth_methods: nextForm.admin_auth_methods,
@@ -283,7 +423,10 @@ export default function VisitorsPage() {
     }));
   };
 
-  const syncSavedOAuthProvider = (provider: VisitorOAuthProvider, nextConfig: SiteAuthConfigAdminRead) => {
+  const syncSavedOAuthProvider = (
+    provider: VisitorOAuthProvider,
+    nextConfig: SiteAuthConfigAdminRead,
+  ) => {
     const nextForm = createForm(nextConfig);
     const { idField, secretField } = getOAuthCredentialFields(provider);
     const nextEnabled = nextForm.visitor_oauth_providers.includes(provider);
@@ -291,42 +434,67 @@ export default function VisitorsPage() {
       const base = current ?? nextForm;
       return {
         ...base,
-        visitor_oauth_providers: toggleListValue(base.visitor_oauth_providers, provider, nextEnabled),
+        visitor_oauth_providers: toggleListValue(
+          base.visitor_oauth_providers,
+          provider,
+          nextEnabled,
+        ),
         [idField]: nextForm[idField],
         [secretField]: nextForm[secretField],
       };
     });
     setForm((current) => ({
       ...current,
-      visitor_oauth_providers: toggleListValue(current.visitor_oauth_providers, provider, nextEnabled),
+      visitor_oauth_providers: toggleListValue(
+        current.visitor_oauth_providers,
+        provider,
+        nextEnabled,
+      ),
       [idField]: nextForm[idField],
       [secretField]: nextForm[secretField],
     }));
   };
 
-  const syncSavedOAuthProviderToggle = (provider: VisitorOAuthProvider, nextConfig: SiteAuthConfigAdminRead) => {
+  const syncSavedOAuthProviderToggle = (
+    provider: VisitorOAuthProvider,
+    nextConfig: SiteAuthConfigAdminRead,
+  ) => {
     const nextForm = createForm(nextConfig);
     const nextEnabled = nextForm.visitor_oauth_providers.includes(provider);
     setSavedForm((current) => {
       const base = current ?? nextForm;
       return {
         ...base,
-        visitor_oauth_providers: toggleListValue(base.visitor_oauth_providers, provider, nextEnabled),
+        visitor_oauth_providers: toggleListValue(
+          base.visitor_oauth_providers,
+          provider,
+          nextEnabled,
+        ),
       };
     });
     setForm((current) => ({
       ...current,
-      visitor_oauth_providers: toggleListValue(current.visitor_oauth_providers, provider, nextEnabled),
+      visitor_oauth_providers: toggleListValue(
+        current.visitor_oauth_providers,
+        provider,
+        nextEnabled,
+      ),
     }));
   };
 
-  const buildOAuthProviderSavePayload = (provider: VisitorOAuthProvider): VisitorAuthFormState => {
+  const buildOAuthProviderSavePayload = (
+    provider: VisitorOAuthProvider,
+  ): VisitorAuthFormState => {
     const base = getBaseSavedForm();
     const { idField, secretField } = getOAuthCredentialFields(provider);
     const enabled = form.visitor_oauth_providers.includes(provider);
     return {
       ...base,
-      visitor_oauth_providers: toggleListValue(base.visitor_oauth_providers, provider, enabled),
+      visitor_oauth_providers: toggleListValue(
+        base.visitor_oauth_providers,
+        provider,
+        enabled,
+      ),
       [idField]: form[idField],
       [secretField]: form[secretField],
     };
@@ -337,15 +505,35 @@ export default function VisitorsPage() {
     checked: boolean,
   ): VisitorAuthFormState => ({
     ...getBaseSavedForm(),
-    visitor_oauth_providers: toggleListValue(getBaseSavedForm().visitor_oauth_providers, provider, checked),
+    visitor_oauth_providers: toggleListValue(
+      getBaseSavedForm().visitor_oauth_providers,
+      provider,
+      checked,
+    ),
   });
 
   const buildAdminSavePayload = (
-    nextAdmin: Pick<VisitorAuthFormState, "admin_auth_methods" | "admin_email_enabled">,
-  ): VisitorAuthFormState => ({
-    ...getBaseSavedForm(),
-    ...nextAdmin,
-  });
+    nextAdmin: Pick<
+      VisitorAuthFormState,
+      "admin_auth_methods" | "admin_email_enabled"
+    >,
+    adminEmailPasswordValue?: string,
+  ) => {
+    const base = getBaseSavedForm();
+    return {
+      email_login_enabled: base.email_login_enabled,
+      visitor_oauth_providers: base.visitor_oauth_providers,
+      admin_auth_methods: nextAdmin.admin_auth_methods,
+      admin_email_enabled: nextAdmin.admin_email_enabled,
+      google_client_id: base.google_client_id,
+      google_client_secret: base.google_client_secret,
+      github_client_id: base.github_client_id,
+      github_client_secret: base.github_client_secret,
+      ...(adminEmailPasswordValue
+        ? { admin_email_password: adminEmailPasswordValue }
+        : {}),
+    };
+  };
 
   const saveOAuthProvider = async (
     provider: VisitorOAuthProvider,
@@ -353,7 +541,11 @@ export default function VisitorsPage() {
   ) => {
     const enabled = form.visitor_oauth_providers.includes(provider);
     const { idField, secretField } = getOAuthCredentialFields(provider);
-    if (options?.requireCredentials !== false && enabled && (!form[idField].trim() || !form[secretField].trim())) {
+    if (
+      options?.requireCredentials !== false &&
+      enabled &&
+      (!form[idField].trim() || !form[secretField].trim())
+    ) {
       setVisitorSaveError("先把 Client ID 和 Client Secret 填完整");
       return false;
     }
@@ -380,7 +572,10 @@ export default function VisitorsPage() {
     }
   };
 
-  const handleOAuthProviderToggle = async (provider: VisitorOAuthProvider, checked: boolean) => {
+  const handleOAuthProviderToggle = async (
+    provider: VisitorOAuthProvider,
+    checked: boolean,
+  ) => {
     const previousProviders = form.visitor_oauth_providers;
     const nextProviders = toggleListValue(previousProviders, provider, checked);
     setForm((current) => ({
@@ -412,14 +607,18 @@ export default function VisitorsPage() {
   };
 
   const persistAdminConfig = async (
-    nextAdmin: Pick<VisitorAuthFormState, "admin_auth_methods" | "admin_email_enabled">,
+    nextAdmin: Pick<
+      VisitorAuthFormState,
+      "admin_auth_methods" | "admin_email_enabled"
+    >,
     onErrorRestore?: () => void,
+    options?: { adminEmailPassword?: string },
   ) => {
     setBindingError("");
     setSavingAdminConfig(true);
     try {
       const response = await saveAdminConfig.mutateAsync({
-        data: buildAdminSavePayload(nextAdmin),
+        data: buildAdminSavePayload(nextAdmin, options?.adminEmailPassword),
       });
       if (response.data) {
         syncSavedAdminConfig(response.data);
@@ -462,14 +661,19 @@ export default function VisitorsPage() {
 
   const handleAdminMethodToggle = async (method: AdminAuthMethod) => {
     const previous = form.admin_auth_methods;
-    const nextMethods = toggleListValue(previous, method, !previous.includes(method));
+    const nextMethods = toggleListValue(
+      previous,
+      method,
+      !previous.includes(method),
+    );
     setForm((current) => ({ ...current, admin_auth_methods: nextMethods }));
     await persistAdminConfig(
       {
         admin_auth_methods: nextMethods,
         admin_email_enabled: form.admin_email_enabled,
       },
-      () => setForm((current) => ({ ...current, admin_auth_methods: previous })),
+      () =>
+        setForm((current) => ({ ...current, admin_auth_methods: previous })),
     );
   };
 
@@ -482,28 +686,33 @@ export default function VisitorsPage() {
         admin_auth_methods: form.admin_auth_methods,
         admin_email_enabled: nextEnabled,
       },
-      () => setForm((current) => ({ ...current, admin_email_enabled: previous })),
+      () =>
+        setForm((current) => ({ ...current, admin_email_enabled: previous })),
     );
   };
 
-  const bindEmail = useBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost({
-    mutation: {
-      onMutate: () => setBindingError(""),
-      onSuccess: () => {
-        setAdminEmail("");
-        queryClient.invalidateQueries({
-          queryKey: getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey(),
-        });
-        toast.success("管理员邮箱身份已保存");
+  const bindEmail =
+    useBindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPost({
+      mutation: {
+        onMutate: () => setBindingError(""),
+        onSuccess: () => {
+          setAdminEmail("");
+          queryClient.invalidateQueries({
+            queryKey:
+              getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
+          });
+          queryClient.invalidateQueries({
+            queryKey: getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey(),
+          });
+          toast.success("管理员邮箱身份已保存");
+        },
+        onError: (error) => {
+          setBindingError(
+            error instanceof Error ? error.message : "管理员邮箱绑定失败",
+          );
+        },
       },
-      onError: (error) => {
-        setBindingError(error instanceof Error ? error.message : "管理员邮箱绑定失败");
-      },
-    },
-  });
+    });
 
   const handleBindAdminEmail = async () => {
     const saved = await persistAdminConfig({
@@ -516,40 +725,82 @@ export default function VisitorsPage() {
     bindEmail.mutate({ data: { email: adminEmail } });
   };
 
-  const bindCurrent = useBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost({
-    mutation: {
-      onMutate: () => setBindingError(""),
-      onSuccess: (_response, variables) => {
-        queryClient.invalidateQueries({
-          queryKey: getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey(),
-        });
-        toast.success(`${formatProviderLabel(variables.params.provider)} 认证成功，管理员身份已保存`);
+  const handleSaveAdminEmailPassword = async () => {
+    const normalizedPassword = adminEmailPassword.trim();
+    if (normalizedPassword.length < 8) {
+      setBindingError("管理员邮箱密码至少需要 8 个字符");
+      return;
+    }
+    if (normalizedPassword !== adminEmailPasswordConfirm.trim()) {
+      setBindingError("两次输入的管理员邮箱密码不一致");
+      return;
+    }
+    const saved = await persistAdminConfig(
+      {
+        admin_auth_methods: form.admin_auth_methods,
+        admin_email_enabled: form.admin_email_enabled,
       },
-      onError: (error) => {
-        setBindingError(error instanceof Error ? error.message : "管理员身份绑定失败");
-      },
-    },
-  });
+      undefined,
+      { adminEmailPassword: normalizedPassword },
+    );
+    if (!saved) {
+      return;
+    }
+    setAdminEmailPassword("");
+    setAdminEmailPasswordConfirm("");
+    toast.success("管理员邮箱密码已更新");
+  };
 
-  const deleteAdminIdentity = useDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
-        });
-        toast.success("管理员身份已移除");
+  const bindCurrent =
+    useBindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPost(
+      {
+        mutation: {
+          onMutate: () => setBindingError(""),
+          onSuccess: (_response, variables) => {
+            queryClient.invalidateQueries({
+              queryKey:
+                getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
+            });
+            queryClient.invalidateQueries({
+              queryKey: getListVisitorUsersApiV1AdminVisitorsUsersGetQueryKey(),
+            });
+            toast.success(
+              `${formatProviderLabel(variables.params.provider)} 认证成功，管理员身份已保存`,
+            );
+          },
+          onError: (error) => {
+            setBindingError(
+              error instanceof Error ? error.message : "管理员身份绑定失败",
+            );
+          },
+        },
       },
-      onError: (error) => {
-        setBindingError(error instanceof Error ? error.message : "管理员身份删除失败");
+    );
+
+  const deleteAdminIdentity =
+    useDeleteAdminIdentityEndpointApiV1AdminVisitorsAdminIdentitiesIdentityIdDelete(
+      {
+        mutation: {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey:
+                getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey(),
+            });
+            toast.success("管理员身份已移除");
+          },
+          onError: (error) => {
+            setBindingError(
+              error instanceof Error ? error.message : "管理员身份删除失败",
+            );
+          },
+        },
       },
-    },
-  });
+    );
 
   useEffect(() => {
-    const provider = searchParams.get("admin_bind_provider") as BindableAdminProvider | null;
+    const provider = searchParams.get(
+      "admin_bind_provider",
+    ) as BindableAdminProvider | null;
     const authResult = searchParams.get("auth");
     if (!provider || authResult !== "success") {
       return;
@@ -562,7 +813,9 @@ export default function VisitorsPage() {
   }, [bindCurrent, searchParams, setSearchParams]);
 
   useEffect(() => {
-    const provider = searchParams.get("oauth_test_provider") as VisitorOAuthProvider | null;
+    const provider = searchParams.get(
+      "oauth_test_provider",
+    ) as VisitorOAuthProvider | null;
     const authResult = searchParams.get("auth");
     if (!provider || authResult !== "success") {
       return;
@@ -572,7 +825,9 @@ export default function VisitorsPage() {
     next.delete("auth");
     setSearchParams(next, { replace: true });
     setTestingProvider(null);
-    toast.success(`${provider === "google" ? "Google" : "GitHub"} 认证测试成功`);
+    toast.success(
+      `${provider === "google" ? "Google" : "GitHub"} 认证测试成功`,
+    );
   }, [searchParams, setSearchParams]);
 
   const copyText = async (value: string, label: string) => {
@@ -586,7 +841,7 @@ export default function VisitorsPage() {
 
   const startAdminOAuthBinding = async (provider: "google" | "github") => {
     setBindingError("");
-    const returnTo = `/admin/visitors?admin_bind_provider=${provider}`;
+    const returnTo = buildAdminPath(`visitors?admin_bind_provider=${provider}`);
     try {
       const saved = await persistAdminConfig({
         admin_auth_methods: form.admin_auth_methods,
@@ -595,7 +850,10 @@ export default function VisitorsPage() {
       if (!saved) {
         return;
       }
-      const authorizationUrl = await getPublicOAuthAuthorizationUrl(provider, returnTo);
+      const authorizationUrl = await getPublicOAuthAuthorizationUrl(
+        provider,
+        returnTo,
+      );
       if (!authorizationUrl) {
         throw new Error("没有拿到可用的认证地址");
       }
@@ -606,8 +864,10 @@ export default function VisitorsPage() {
   };
 
   const startOAuthTest = async (provider: VisitorOAuthProvider) => {
-    const idField = provider === "google" ? "google_client_id" : "github_client_id";
-    const secretField = provider === "google" ? "google_client_secret" : "github_client_secret";
+    const idField =
+      provider === "google" ? "google_client_id" : "github_client_id";
+    const secretField =
+      provider === "google" ? "google_client_secret" : "github_client_secret";
     if (!form.visitor_oauth_providers.includes(provider)) {
       toast.error("先开启这个登录方式再测试");
       return;
@@ -625,7 +885,7 @@ export default function VisitorsPage() {
       }
       const authorizationUrl = await getPublicOAuthAuthorizationUrl(
         provider,
-        `/admin/visitors?oauth_test_provider=${provider}`,
+        buildAdminPath(`visitors?oauth_test_provider=${provider}`),
       );
       if (!authorizationUrl) {
         throw new Error("没有拿到可用的认证地址");
@@ -645,11 +905,7 @@ export default function VisitorsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="访客"
-        description="统一管理访客的邮箱登录、Google / GitHub 绑定，以及后台预留的管理员认证方式。"
-        secondary={<VisitorsSectionSwitch />}
-      />
+      <PageHeader title="访客" secondary={<VisitorsSectionSwitch />} />
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <Card>
@@ -657,22 +913,57 @@ export default function VisitorsPage() {
             <CardTitle className="flex items-center gap-2 text-xl">
               <KeyRound className="h-5 w-5 text-primary" />
               访客绑定
+              <LabelWithHelp
+                hideLabel
+                label="访客绑定"
+                title="访客绑定是什么"
+                description="在这里配置访客如何获得站点身份，然后再进行评论、留言和互动。"
+                usageTitle={HELP_USAGE_TITLE}
+                usageItems={[
+                  "可开启邮箱登录。",
+                  "可开启 Google / GitHub 登录。",
+                  "可填写 OAuth 回调地址并发起测试。",
+                ]}
+              />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <AppleSwitch
               checked={form.email_login_enabled}
-              onCheckedChange={(checked) => void handleEmailLoginToggle(checked)}
-              label="邮箱登录"
-              description="允许访客仅凭邮箱标识进入评论身份。"
+              onCheckedChange={(checked) =>
+                void handleEmailLoginToggle(checked)
+              }
+              label={
+                <InlineLabelWithHelp
+                  label="邮箱登录"
+                  copy={{
+                    title: "邮箱登录",
+                    description: "访客输入邮箱即可建立身份，不依赖第三方账号。",
+                    usageItems: [
+                      "开启后：前台会提供邮箱登录入口。",
+                      "关闭后：访客只能使用你启用的 OAuth 登录方式。",
+                    ],
+                  }}
+                />
+              }
               disabled={savingEmailLogin}
             />
 
             {VISITOR_OAUTH_OPTIONS.map((provider) => {
-              const enabled = form.visitor_oauth_providers.includes(provider.key);
-              const { idField, secretField } = getOAuthCredentialFields(provider.key);
-              const publicCallbackUrl = buildOAuthCallbackUrl(frontendOrigin, provider.key);
-              const adminCallbackUrl = buildOAuthCallbackUrl(adminOrigin, provider.key);
+              const enabled = form.visitor_oauth_providers.includes(
+                provider.key,
+              );
+              const { idField, secretField } = getOAuthCredentialFields(
+                provider.key,
+              );
+              const publicCallbackUrl = buildOAuthCallbackUrl(
+                frontendOrigin,
+                provider.key,
+              );
+              const adminCallbackUrl = buildOAuthCallbackUrl(
+                adminOrigin,
+                provider.key,
+              );
               const isTesting = testingProvider === provider.key;
               const isSaving = savingProvider === provider.key;
               const expanded = expandedProviders[provider.key];
@@ -681,7 +972,8 @@ export default function VisitorsPage() {
                 (effectiveSavedForm?.[secretField] ?? "") !== form[secretField];
               const showSaveButton = enabled || hasCredentialDirty || isSaving;
               const githubNeedsSeparateLocalApp =
-                provider.key === "github" && publicCallbackUrl !== adminCallbackUrl;
+                provider.key === "github" &&
+                publicCallbackUrl !== adminCallbackUrl;
               return (
                 <div
                   key={provider.key}
@@ -690,13 +982,28 @@ export default function VisitorsPage() {
                     expanded
                       ? "border-[rgb(var(--admin-accent-rgb)/0.22)] bg-[linear-gradient(180deg,rgb(var(--admin-surface-strong)/0.78),rgb(var(--admin-surface-1)/0.56))]"
                       : "admin-glass border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))]",
-                    hasCredentialDirty && "shadow-[0_22px_48px_-36px_rgb(var(--admin-accent-rgb)/0.48)]",
+                    hasCredentialDirty &&
+                      "shadow-[0_22px_48px_-36px_rgb(var(--admin-accent-rgb)/0.48)]",
                   )}
                 >
                   <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="text-base font-semibold text-foreground">{provider.label}</div>
+                        <div className="text-base font-semibold text-foreground">
+                          {provider.label}
+                        </div>
+                        <LabelWithHelp
+                          hideLabel
+                          label={`${provider.label} 访客登录`}
+                          title={VISITOR_PROVIDER_HELP[provider.key].title}
+                          description={
+                            VISITOR_PROVIDER_HELP[provider.key].description
+                          }
+                          usageTitle={HELP_USAGE_TITLE}
+                          usageItems={[
+                            ...VISITOR_PROVIDER_HELP[provider.key].usageItems,
+                          ]}
+                        />
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium",
@@ -709,7 +1016,6 @@ export default function VisitorsPage() {
                         </span>
                         {hasCredentialDirty ? <PendingSaveBadge /> : null}
                       </div>
-                      <p className="text-sm text-muted-foreground">{provider.description}</p>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
@@ -722,7 +1028,9 @@ export default function VisitorsPage() {
                       ) : null}
                       <CompactSwitch
                         checked={enabled}
-                        onCheckedChange={(checked) => void handleOAuthProviderToggle(provider.key, checked)}
+                        onCheckedChange={(checked) =>
+                          void handleOAuthProviderToggle(provider.key, checked)
+                        }
                         disabled={isSaving || isTesting}
                         ariaLabel={`${provider.label} 登录开关`}
                       />
@@ -736,21 +1044,37 @@ export default function VisitorsPage() {
                             [provider.key]: !current[provider.key],
                           }))
                         }
-                        aria-label={expanded ? `收起 ${provider.label} 配置` : `展开 ${provider.label} 配置`}
+                        aria-label={
+                          expanded
+                            ? `收起 ${provider.label} 配置`
+                            : `展开 ${provider.label} 配置`
+                        }
                         className="h-9 w-9 rounded-full"
                       >
-                        <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", expanded && "rotate-180")} />
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform duration-200",
+                            expanded && "rotate-180",
+                          )}
+                        />
                       </Button>
                     </div>
                   </div>
                   {expanded ? (
                     <div className="border-t border-border/60 px-4 pb-4 pt-4">
-                      <div className={cn("grid gap-4 md:grid-cols-2", !enabled && "opacity-75")}>
+                      <div
+                        className={cn(
+                          "grid gap-4 md:grid-cols-2",
+                          !enabled && "opacity-75",
+                        )}
+                      >
                         <div className="space-y-1">
                           <Label>Client ID</Label>
                           <Input
                             value={form[idField]}
-                            onChange={(event) => updateField(idField, event.target.value)}
+                            onChange={(event) =>
+                              updateField(idField, event.target.value)
+                            }
                             placeholder={`${provider.label} client id`}
                           />
                         </div>
@@ -759,7 +1083,9 @@ export default function VisitorsPage() {
                           <Input
                             type="password"
                             value={form[secretField]}
-                            onChange={(event) => updateField(secretField, event.target.value)}
+                            onChange={(event) =>
+                              updateField(secretField, event.target.value)
+                            }
                             placeholder={`${provider.label} client secret`}
                           />
                         </div>
@@ -768,10 +1094,20 @@ export default function VisitorsPage() {
                       <div className="mt-4 rounded-2xl border border-border/60 bg-background/70 p-4">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                           <div>
-                            <div className="text-sm font-semibold text-foreground">回调地址与测试</div>
-                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                              填完后点保存即可生效，不需要重启。下面的回调地址直接贴到 OAuth 平台。
-                            </p>
+                            <div className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                              <span>回调地址与测试</span>
+                              <LabelWithHelp
+                                hideLabel
+                                label="回调地址与测试"
+                                title="回调地址怎么用"
+                                description="把下面两条地址复制到 OAuth 平台配置中，保存后即可直接测试登录。"
+                                usageTitle={HELP_USAGE_TITLE}
+                                usageItems={[
+                                  "前台回调地址：访客在前台登录后会跳回这里。",
+                                  "后台绑定回调地址：管理员在后台绑定身份时会跳回这里。",
+                                ]}
+                              />
+                            </div>
                           </div>
                           <Button
                             type="button"
@@ -781,7 +1117,11 @@ export default function VisitorsPage() {
                             disabled={!enabled || isTesting}
                             className="gap-2"
                           >
-                            {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                            {isTesting ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ExternalLink className="h-4 w-4" />
+                            )}
                             测试认证
                           </Button>
                         </div>
@@ -794,13 +1134,20 @@ export default function VisitorsPage() {
                                   <Globe className="h-3.5 w-3.5" />
                                   前台回调地址
                                 </div>
-                                <div className="mt-2 break-all font-mono text-xs text-foreground">{publicCallbackUrl}</div>
+                                <div className="mt-2 break-all font-mono text-xs text-foreground">
+                                  {publicCallbackUrl}
+                                </div>
                               </div>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => void copyText(publicCallbackUrl, "前台回调地址")}
+                                onClick={() =>
+                                  void copyText(
+                                    publicCallbackUrl,
+                                    "前台回调地址",
+                                  )
+                                }
                                 className="shrink-0 gap-2"
                               >
                                 <Copy className="h-4 w-4" />
@@ -816,13 +1163,20 @@ export default function VisitorsPage() {
                                   <ShieldCheck className="h-3.5 w-3.5" />
                                   后台绑定回调地址
                                 </div>
-                                <div className="mt-2 break-all font-mono text-xs text-foreground">{adminCallbackUrl}</div>
+                                <div className="mt-2 break-all font-mono text-xs text-foreground">
+                                  {adminCallbackUrl}
+                                </div>
                               </div>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => void copyText(adminCallbackUrl, "后台绑定回调地址")}
+                                onClick={() =>
+                                  void copyText(
+                                    adminCallbackUrl,
+                                    "后台绑定回调地址",
+                                  )
+                                }
                                 className="shrink-0 gap-2"
                               >
                                 <Copy className="h-4 w-4" />
@@ -834,7 +1188,9 @@ export default function VisitorsPage() {
 
                         {githubNeedsSeparateLocalApp ? (
                           <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-700 dark:text-amber-200">
-                            GitHub OAuth App 只能保留一个 callback URL。本地如果要同时测试前台和后台绑定，建议单独建一个本地调试用 App。
+                            GitHub OAuth App 只能保留一个 callback
+                            URL。本地如果要同时测试前台和后台绑定，建议单独建一个本地调试用
+                            App。
                           </div>
                         ) : null}
                       </div>
@@ -857,19 +1213,39 @@ export default function VisitorsPage() {
             <CardTitle className="flex items-center gap-2 text-xl">
               <ShieldCheck className="h-5 w-5 text-primary" />
               管理员认证
+              <LabelWithHelp
+                hideLabel
+                label="管理员认证"
+                title="管理员认证是什么"
+                description="把你自己的前台账号绑定为管理员身份后，这个身份会在前台评论和留言中生效。"
+                usageTitle={HELP_USAGE_TITLE}
+                usageItems={[
+                  "先启用可用的认证方式。",
+                  "再执行一次认证并绑定。",
+                  "最后在已绑定身份里确认结果。",
+                ]}
+              />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <p className="text-sm leading-6 text-muted-foreground">
-              绑定后的前台账号在前端评论或留言时，会使用您的昵称作为名字、Hero 翻转视觉图作为头像。
-            </p>
-
             <section className="space-y-3">
               <div className="flex items-start gap-3">
                 <span className={accentStepBadgeClass}>1</span>
-                <div>
-                  <div className="text-sm font-semibold text-foreground">启用方式</div>
-                  <div className="text-xs text-muted-foreground">先决定哪些方式可以绑定为管理员身份。</div>
+                <div className="inline-flex items-center gap-1.5">
+                  <div className="text-sm font-semibold text-foreground">
+                    启用方式
+                  </div>
+                  <LabelWithHelp
+                    hideLabel
+                    label="启用方式"
+                    title="先启用，再绑定"
+                    description="这里决定哪些方式允许用于管理员身份绑定。没开启的方式，在下一步无法绑定。"
+                    usageTitle={HELP_USAGE_TITLE}
+                    usageItems={[
+                      "Google / GitHub：需要先完成 OAuth 配置。",
+                      "邮箱：前台登录遇到已绑定管理员邮箱时，会额外要求输入统一管理员密码。",
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -892,11 +1268,19 @@ export default function VisitorsPage() {
                             : "border-slate-900/12 bg-slate-900/8 text-slate-700 dark:border-white/16 dark:bg-white/8 dark:text-white/82",
                         )}
                       >
-                        {item.key === "google" ? <ShieldCheck className="h-4 w-4" /> : <Github className="h-4 w-4" />}
+                        {item.key === "google" ? (
+                          <ShieldCheck className="h-4 w-4" />
+                        ) : (
+                          <Github className="h-4 w-4" />
+                        )}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-medium text-foreground">{item.label}</span>
-                        <span className="block text-xs text-muted-foreground">OAuth 绑定</span>
+                        <span className="block text-sm font-medium text-foreground">
+                          {item.label}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          OAuth 绑定
+                        </span>
                       </span>
                     </button>
                   );
@@ -912,37 +1296,59 @@ export default function VisitorsPage() {
                     <Mail className="h-4 w-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-medium text-foreground">邮箱</span>
-                    <span className="block text-xs text-muted-foreground">仅后台识别</span>
+                    <span className="block text-sm font-medium text-foreground">
+                      邮箱
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      密码绑定
+                    </span>
                   </span>
                 </button>
               </div>
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {savingAdminConfig ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                <span>{savingAdminConfig ? "正在自动保存管理员认证方式..." : "这里不需要单独保存，点击后会自动保存。"}</span>
+                {savingAdminConfig ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                {savingAdminConfig ? (
+                  <span>正在保存管理员认证方式...</span>
+                ) : null}
               </div>
-              <p className="text-xs text-muted-foreground">邮箱仅作为后台识别和绑定使用，不会在前台公开显示。</p>
             </section>
 
             <section className="space-y-3 border-t border-border/60 pt-5">
               <div className="flex items-start gap-3">
                 <span className={accentStepBadgeClass}>2</span>
-                <div>
-                  <div className="text-sm font-semibold text-foreground">绑定管理员身份</div>
-                  <div className="text-xs text-muted-foreground">OAuth 会完成一次登录后自动回到这里完成绑定。</div>
+                <div className="inline-flex items-center gap-1.5">
+                  <div className="text-sm font-semibold text-foreground">
+                    绑定管理员身份
+                  </div>
+                  <LabelWithHelp
+                    hideLabel
+                    label="绑定管理员身份"
+                    title="绑定会发生什么"
+                    description="点击“认证并绑定”后会跳转到 OAuth 登录页，完成后自动返回本页并写入管理员身份。邮箱方式需要单独设置统一管理员密码。"
+                    usageTitle={HELP_USAGE_TITLE}
+                    usageItems={[
+                      "只有在第 1 步已开启的方式才可以绑定。",
+                      "同一个方式可以重新绑定为最新登录身份。",
+                      "邮箱绑定成功后，前台和后台邮箱直登都还要再输入管理员密码才会进入管理员态。",
+                    ]}
+                  />
                 </div>
               </div>
 
               <div className="space-y-3">
                 {ADMIN_AUTH_OPTIONS.map((item) => {
                   const active = form.admin_auth_methods.includes(item.key);
+                  const status: AdminBindingStatus = !active
+                    ? "disabled"
+                    : boundAdminProviders.has(item.key)
+                      ? "completed"
+                      : "incomplete";
                   const pending = bindCurrent.isPending || savingAdminConfig;
                   return (
-                    <div
-                      key={item.key}
-                      className={adminPanelCardClass}
-                    >
+                    <div key={item.key} className={adminPanelCardClass}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <span
@@ -953,27 +1359,36 @@ export default function VisitorsPage() {
                                 : "border-slate-900/12 bg-slate-900/8 text-slate-700 dark:border-white/16 dark:bg-white/8 dark:text-white/82",
                             )}
                           >
-                            {item.key === "google" ? <ShieldCheck className="h-4 w-4" /> : <Github className="h-4 w-4" />}
+                            {item.key === "google" ? (
+                              <ShieldCheck className="h-4 w-4" />
+                            ) : (
+                              <Github className="h-4 w-4" />
+                            )}
                           </span>
                           <div>
-                            <div className="text-sm font-medium text-foreground">{item.label}</div>
-                            <div className="text-xs text-muted-foreground">把当前登录过的 {item.label} 账号绑定成管理员身份。</div>
+                            <div className="text-sm font-medium text-foreground">
+                              {item.label}
+                            </div>
                           </div>
                         </div>
 
                         <div className="flex shrink-0 items-center gap-2">
-                          <span className={adminStatusPillClass(active)}>
-                            {active ? "已开启" : "未开启"}
+                          <span className={adminStatusPillClass(status)}>
+                            {adminStatusLabel(status)}
                           </span>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             disabled={!active || pending}
-                            onClick={() => void startAdminOAuthBinding(item.key)}
+                            onClick={() =>
+                              void startAdminOAuthBinding(item.key)
+                            }
                             className="gap-2"
                           >
-                            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                            {pending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : null}
                             认证并绑定
                           </Button>
                         </div>
@@ -983,39 +1398,129 @@ export default function VisitorsPage() {
                 })}
 
                 <div className={adminPanelCardClass}>
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <span className={accentIconBadgeClass}>
                         <Mail className="h-4 w-4" />
                       </span>
                       <div>
-                        <div className="text-sm font-medium text-foreground">邮箱管理员身份</div>
-                        <div className="text-xs text-muted-foreground">直接把某个邮箱标识保存为管理员身份。</div>
+                        <div className="text-sm font-medium text-foreground">
+                          邮箱管理员身份
+                        </div>
                       </div>
                     </div>
 
-                    <span className={adminStatusPillClass(form.admin_email_enabled)}>
-                      {form.admin_email_enabled ? "已开启" : "未开启"}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span
+                        className={adminStatusPillClass(
+                          emailAdminBindingStatus,
+                        )}
+                      >
+                        {adminStatusLabel(emailAdminBindingStatus)}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setAdminEmailConfigExpanded((current) => !current)
+                        }
+                        aria-label={
+                          adminEmailConfigExpanded
+                            ? "收起邮箱管理员配置"
+                            : "展开邮箱管理员配置"
+                        }
+                        className="h-9 w-9 rounded-full"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform duration-200",
+                            adminEmailConfigExpanded && "rotate-180",
+                          )}
+                        />
+                      </Button>
+                    </div>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                    <Input
-                      value={adminEmail}
-                      onChange={(event) => setAdminEmail(event.target.value)}
-                      placeholder="输入管理员邮箱标识"
-                      disabled={!form.admin_email_enabled || bindEmail.isPending || savingAdminConfig}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => void handleBindAdminEmail()}
-                      disabled={!form.admin_email_enabled || bindEmail.isPending || savingAdminConfig || !adminEmail.trim()}
-                      className="gap-2"
-                    >
-                      {bindEmail.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                      绑定邮箱
-                    </Button>
-                  </div>
+                  {adminEmailConfigExpanded ? (
+                    <div className="mt-4 space-y-4 border-t border-border/60 pt-4">
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <Input
+                          value={adminEmail}
+                          onChange={(event) =>
+                            setAdminEmail(event.target.value)
+                          }
+                          placeholder="输入管理员邮箱标识"
+                          disabled={
+                            !form.admin_email_enabled ||
+                            bindEmail.isPending ||
+                            savingAdminConfig
+                          }
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => void handleBindAdminEmail()}
+                          disabled={
+                            !form.admin_email_enabled ||
+                            bindEmail.isPending ||
+                            savingAdminConfig ||
+                            !adminEmail.trim()
+                          }
+                          className="gap-2"
+                        >
+                          {bindEmail.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                          绑定邮箱
+                        </Button>
+                      </div>
+
+                      <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+                        <Input
+                          type="password"
+                          value={adminEmailPassword}
+                          onChange={(event) =>
+                            setAdminEmailPassword(event.target.value)
+                          }
+                          placeholder="设置统一管理员密码"
+                          disabled={
+                            !form.admin_email_enabled || savingAdminConfig
+                          }
+                        />
+                        <Input
+                          type="password"
+                          value={adminEmailPasswordConfirm}
+                          onChange={(event) =>
+                            setAdminEmailPasswordConfirm(event.target.value)
+                          }
+                          placeholder="再次输入管理员密码"
+                          disabled={
+                            !form.admin_email_enabled || savingAdminConfig
+                          }
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => void handleSaveAdminEmailPassword()}
+                          disabled={
+                            !form.admin_email_enabled ||
+                            savingAdminConfig ||
+                            !adminEmailPassword.trim() ||
+                            !adminEmailPasswordConfirm.trim()
+                          }
+                          className="gap-2"
+                        >
+                          {savingAdminConfig ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <KeyRound className="h-4 w-4" />
+                          )}
+                          {adminEmailPasswordSet ? "重置密码" : "保存密码"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </section>
@@ -1024,9 +1529,16 @@ export default function VisitorsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <span className={accentStepBadgeClass}>3</span>
-                  <div>
-                    <div className="text-sm font-semibold text-foreground">已绑定身份</div>
-                    <div className="text-xs text-muted-foreground">这里显示已经切换成管理员模式的前台身份。</div>
+                  <div className="inline-flex items-center gap-1.5">
+                    <div className="text-sm font-semibold text-foreground">
+                      已绑定身份
+                    </div>
+                    <LabelWithHelp
+                      hideLabel
+                      label="已绑定身份"
+                      title="如何确认绑定成功"
+                      description="绑定成功后会在这里出现一条身份记录。你可以核对名称、邮箱和绑定时间，也可以删除后重绑。"
+                    />
                   </div>
                 </div>
                 <Badge variant="outline">{adminIdentities.length} 个</Badge>
@@ -1038,49 +1550,70 @@ export default function VisitorsPage() {
                     正在加载管理员身份...
                   </div>
                 ) : adminIdentities.length ? (
-                  adminIdentities.map((identity: SiteAdminIdentityAdminRead) => (
-                    <div
-                      key={identity.id}
-                      className={cn(adminPanelCardClass, "flex flex-col gap-4")}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <img
-                            src={identity.site_user_avatar_url}
-                            alt={identity.site_user_display_name}
-                            className="h-10 w-10 rounded-full border border-border/60 object-cover"
-                          />
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="truncate font-medium text-foreground">{identity.site_user_display_name}</span>
-                              <span
-                                className={cn(
-                                  "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium",
-                                  providerBadgeTone(identity.provider),
-                                )}
-                              >
-                                {identity.provider === "google" ? "Google" : identity.provider === "github" ? "GitHub" : "邮箱"}
-                              </span>
+                  adminIdentities.map(
+                    (identity: SiteAdminIdentityAdminRead) => (
+                      <div
+                        key={identity.id}
+                        className={cn(
+                          adminPanelCardClass,
+                          "flex flex-col gap-4",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <img
+                              src={identity.site_user_avatar_url}
+                              alt={identity.site_user_display_name}
+                              className="h-10 w-10 rounded-full border border-border/60 object-cover"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="truncate font-medium text-foreground">
+                                  {identity.site_user_display_name}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium",
+                                    providerBadgeTone(identity.provider),
+                                  )}
+                                >
+                                  {identity.provider === "google"
+                                    ? "Google"
+                                    : identity.provider === "github"
+                                      ? "GitHub"
+                                      : "邮箱"}
+                                </span>
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {identity.email}
+                              </div>
                             </div>
-                            <div className="mt-1 text-xs text-muted-foreground">{identity.email}</div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              deleteAdminIdentity.mutate({
+                                identityId: identity.id,
+                              })
+                            }
+                            disabled={deleteAdminIdentity.isPending}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-500/16 bg-rose-500/6 text-rose-600 transition hover:bg-rose-500/12 disabled:opacity-60 dark:text-rose-300"
+                            aria-label="删除管理员身份"
+                          >
+                            {deleteAdminIdentity.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => deleteAdminIdentity.mutate({ identityId: identity.id })}
-                          disabled={deleteAdminIdentity.isPending}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-500/16 bg-rose-500/6 text-rose-600 transition hover:bg-rose-500/12 disabled:opacity-60 dark:text-rose-300"
-                          aria-label="删除管理员身份"
-                        >
-                          {deleteAdminIdentity.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </button>
+                        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                          <div>标识：{identity.identifier}</div>
+                          <div>绑定时间：{formatDate(identity.updated_at)}</div>
+                        </div>
                       </div>
-                      <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                        <div>标识：{identity.identifier}</div>
-                        <div>绑定时间：{formatDate(identity.updated_at)}</div>
-                      </div>
-                    </div>
-                  ))
+                    ),
+                  )
                 ) : (
                   <div className="rounded-2xl border border-dashed border-border/60 bg-background/35 px-4 py-4 text-sm text-muted-foreground">
                     还没有绑定管理员身份。

@@ -65,7 +65,7 @@ import { toast } from "sonner";
 type BackupsSection = "settings" | "records";
 type BackupRecordsSection = "runs" | "commits";
 
-const DEFAULT_BACKUP_REMOTE_ROOT = "/srv/aerisun/backup";
+const REMOTE_PATH_PLACEHOLDER = "/home/<ssh-user>/aerisun-backups";
 const DEFAULT_BACKUP_CREDENTIAL_REF = "aerisun-backup-source";
 const DEFAULT_BACKUP_SITE_SLUG = "aerisun";
 const DEFAULT_BACKUP_CREDENTIAL_DIR = `.store/secrets/backup-sync/${DEFAULT_BACKUP_CREDENTIAL_REF}`;
@@ -78,7 +78,7 @@ const emptyForm: BackupSyncConfigUpdate = {
   site_slug: DEFAULT_BACKUP_SITE_SLUG,
   remote_host: "",
   remote_port: 22,
-  remote_path: DEFAULT_BACKUP_REMOTE_ROOT,
+  remote_path: "",
   remote_username: "",
   credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
   encrypt_runtime_data: false,
@@ -152,7 +152,7 @@ export default function BackupsPage() {
       site_slug: DEFAULT_BACKUP_SITE_SLUG,
       remote_host: config.transport.remote_host ?? "",
       remote_port: config.transport.remote_port ?? 22,
-      remote_path: config.transport.remote_path ?? DEFAULT_BACKUP_REMOTE_ROOT,
+      remote_path: config.transport.remote_path ?? "",
       remote_username: config.transport.remote_username ?? "",
       credential_ref: config.credential_ref ?? DEFAULT_BACKUP_CREDENTIAL_REF,
       encrypt_runtime_data: config.encrypt_runtime_data ?? false,
@@ -253,7 +253,7 @@ export default function BackupsPage() {
         site_slug: DEFAULT_BACKUP_SITE_SLUG,
         remote_host: payload.remote_host ?? "",
         remote_port: payload.remote_port ?? 22,
-        remote_path: payload.remote_path ?? DEFAULT_BACKUP_REMOTE_ROOT,
+        remote_path: payload.remote_path ?? "",
         remote_username: payload.remote_username ?? "",
         credential_ref: DEFAULT_BACKUP_CREDENTIAL_REF,
         encrypt_runtime_data: Boolean(payload.encrypt_runtime_data),
@@ -301,7 +301,7 @@ export default function BackupsPage() {
     () => ({
       remote_host: config?.transport.remote_host ?? "",
       remote_username: config?.transport.remote_username ?? "",
-      remote_path: config?.transport.remote_path ?? DEFAULT_BACKUP_REMOTE_ROOT,
+      remote_path: config?.transport.remote_path ?? "",
       remote_port: config?.transport.remote_port ?? 22,
       interval_minutes: config?.interval_minutes ?? 60,
       encrypt_runtime_data: Boolean(config?.encrypt_runtime_data),
@@ -315,7 +315,7 @@ export default function BackupsPage() {
     () => ({
       remote_host: form.remote_host ?? "",
       remote_username: form.remote_username ?? "",
-      remote_path: form.remote_path ?? DEFAULT_BACKUP_REMOTE_ROOT,
+      remote_path: form.remote_path ?? "",
       remote_port: form.remote_port ?? 22,
       interval_minutes: form.interval_minutes ?? 60,
       encrypt_runtime_data: Boolean(form.encrypt_runtime_data),
@@ -502,7 +502,13 @@ export default function BackupsPage() {
           <ConfigSettingsCard
             eyebrow={t("nav.system")}
             title={t("system.backupBasicSettings")}
-            description={t("system.backupBasicSettingsDescription")}
+            description={
+              !recoveryKeyReady ? (
+                <span className="font-medium text-amber-600 dark:text-amber-300">
+                  {t("system.backupBasicSettingsDescription")}
+                </span>
+              ) : undefined
+            }
             dirty={hasConfigChanges}
             saving={isBusy}
             saveDisabled={isConfigLoading || !canPersistBackupConfig}
@@ -639,8 +645,8 @@ export default function BackupsPage() {
                   }
                 >
                   <Input
-                    value={form.remote_path ?? DEFAULT_BACKUP_REMOTE_ROOT}
-                    placeholder={DEFAULT_BACKUP_REMOTE_ROOT}
+                    value={form.remote_path ?? ""}
+                    placeholder={REMOTE_PATH_PLACEHOLDER}
                     onChange={(e) => setField("remote_path", e.target.value)}
                   />
                 </Field>

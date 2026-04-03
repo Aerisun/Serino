@@ -11,6 +11,7 @@ import type { ContentCategoryRead } from "@serino/api-client/models";
 import { PageHeader } from "@/components/PageHeader";
 import { AdminSegmentedFilter } from "@/components/ui/AdminSegmentedFilter";
 import { Button } from "@/components/ui/Button";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { CONTENT_CATEGORY_LABEL_KEYS, CONTENT_CATEGORY_TYPES, type ContentCategoryType } from "@/lib/contentCategories";
@@ -119,7 +120,6 @@ export default function ContentCategoriesPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("contentCategories.title")}
-        description={t("contentCategories.description")}
       />
 
       <AdminSegmentedFilter
@@ -135,8 +135,20 @@ export default function ContentCategoriesPage() {
       <section className="rounded-3xl border border-border/50 bg-background/70 p-6 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.55)] backdrop-blur">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{t(CONTENT_CATEGORY_LABEL_KEYS[activeType])}</h2>
-            <p className="text-sm text-muted-foreground">{t("contentCategories.sectionHint")}</p>
+            <div className="inline-flex items-center gap-1.5">
+              <h2 className="text-lg font-semibold">{t(CONTENT_CATEGORY_LABEL_KEYS[activeType])}</h2>
+              <LabelWithHelp
+                hideLabel
+                label={t(CONTENT_CATEGORY_LABEL_KEYS[activeType])}
+                title="分类会用在哪里"
+                description="这里管理当前内容类型的分类名称。创建后，分类会出现在对应内容编辑页的分类下拉框里。"
+                usageTitle="你会在这里做什么"
+                usageItems={[
+                  "切换顶部类型标签后，只会管理该类型的分类。",
+                  "新建后即可在对应内容编辑页选择该分类。",
+                ]}
+              />
+            </div>
           </div>
           <Button
             onClick={() => {

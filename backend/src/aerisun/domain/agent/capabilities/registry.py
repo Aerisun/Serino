@@ -477,9 +477,9 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         "Return latest thoughts as JSON.",
         [CONTENT_READ],
         _thoughts_resource,
-        label="最新想法",
+        label="最新碎碎念",
         label_en="Latest thoughts",
-        help_text="以 JSON 格式返回最新已发布的想法。",
+        help_text="以 JSON 格式返回最新已发布的碎碎念。",
         help_text_en="Return latest published thoughts as a JSON list.",
         domain="content",
         group_label="内容",
@@ -489,9 +489,9 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         "Return latest excerpts as JSON.",
         [CONTENT_READ],
         _excerpts_resource,
-        label="最新摘录",
+        label="最新文摘",
         label_en="Latest excerpts",
-        help_text="以 JSON 格式返回最新已发布的摘录。",
+        help_text="以 JSON 格式返回最新已发布的文摘。",
         help_text_en="Return latest published excerpts as a JSON list.",
         domain="content",
         group_label="内容",
@@ -547,9 +547,9 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         _search_content_tool,
         label="搜索内容",
         label_en="Search content",
-        help_text="全文搜索所有公开内容（文章、日记、想法、摘录）。",
+        help_text="全文搜索所有公开内容（文章、日记、碎碎念、文摘）。",
         help_text_en="Full-text search across all public content types.",
-        ai_usage_hint="全文检索公开内容。query 必传（关键词），limit 默认 10。搜索范围涵盖文章、日记、想法、摘录。",
+        ai_usage_hint="全文检索公开内容。query 必传（关键词），limit 默认 10。搜索范围涵盖文章、日记、碎碎念、文摘。",
         examples=[{"arguments": {"query": "诗", "limit": 5}, "scenario": "按关键词搜索公开内容。"}],
         domain="content",
         group_label="内容",
@@ -573,12 +573,12 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         "List published thoughts with pagination.",
         [CONTENT_READ],
         _list_thoughts_tool,
-        label="公开想法列表",
+        label="公开碎碎念列表",
         label_en="List thoughts",
-        help_text="获取已发布的想法列表，支持分页。",
+        help_text="获取已发布的碎碎念列表，支持分页。",
         help_text_en="List published thoughts (short-form notes) with pagination.",
-        ai_usage_hint="列出已发布的公开想法。limit 默认 40，offset 默认 0。",
-        examples=[{"arguments": {"limit": 20, "offset": 0}, "scenario": "列出最近 20 条公开想法。"}],
+        ai_usage_hint="列出已发布的公开碎碎念。limit 默认 40，offset 默认 0。",
+        examples=[{"arguments": {"limit": 20, "offset": 0}, "scenario": "列出最近 20 条公开碎碎念。"}],
         domain="content",
         group_label="内容",
     ),
@@ -587,12 +587,12 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         "List published excerpts with pagination.",
         [CONTENT_READ],
         _list_excerpts_tool,
-        label="公开摘录列表",
+        label="公开文摘列表",
         label_en="List excerpts",
-        help_text="获取已发布的摘录列表，支持分页。",
+        help_text="获取已发布的文摘列表，支持分页。",
         help_text_en="List published excerpts (quotes/clips) with pagination.",
-        ai_usage_hint="列出已发布的公开摘录。limit 默认 40，offset 默认 0。",
-        examples=[{"arguments": {"limit": 20, "offset": 0}, "scenario": "列出最近 20 条公开摘录。"}],
+        ai_usage_hint="列出已发布的公开文摘。limit 默认 40，offset 默认 0。",
+        examples=[{"arguments": {"limit": 20, "offset": 0}, "scenario": "列出最近 20 条公开文摘。"}],
         domain="content",
         group_label="内容",
     ),
@@ -603,7 +603,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         list_admin_content,
         label="后台内容列表",
         label_en="List content (admin)",
-        help_text="查看后台所有内容项（文章、日记、想法、摘录），支持按状态、可见性、标签筛选和排序。",
+        help_text="查看后台所有内容项（文章、日记、碎碎念、文摘），支持按状态、可见性、标签筛选和排序。",
         help_text_en="Browse admin content (posts, diary, thoughts, excerpts) with filters.",
         ai_usage_hint=(
             "查询后台内容列表。content_type 必传，值为 posts/diary/thoughts/excerpts 之一。"
@@ -639,11 +639,11 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         intent="write",
         label="创建内容",
         label_en="Create content",
-        help_text="创建一条后台内容（文章、日记、想法或摘录），可设置初始状态和可见性。slug 自动生成。",
+        help_text="创建一条后台内容（文章、日记、碎碎念或文摘），可设置初始状态和可见性。slug 自动生成。",
         help_text_en="Create a content item with initial status and visibility. Slug is auto-generated.",
         ai_usage_hint=(
             "创建后台内容。content_type 必传 (posts/diary/thoughts/excerpts)。"
-            "payload 字典，可选字段：title(标题,日记和想法可省略), body(正文,必传), "
+            "payload 字典，可选字段：title(标题,日记和碎碎念可省略), body(正文,必传), "
             "summary(摘要), tags(标签列表), status(draft/published/archived,默认draft), "
             "visibility(public/private,默认public), category(分类名), "
             "mood(心情,仅diary/thoughts), weather(天气,仅diary)。"
@@ -1029,21 +1029,20 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
     ),
     _tool(
         "list_admin_records",
-        "List generic admin records: friends, social_links, poems, page_copy, display_options, "
-        "nav_items, resume_basics, resume_skills, or resume_experiences.",
+        "List generic admin records: friends, social_links, poems, page_copy, nav_items, or resume_basics.",
         [CONFIG_READ],
         list_admin_records,
         label="通用记录列表",
         label_en="List records",
         help_text=(
             "列出通用后台记录。支持的 resource 类型：friends(友链), social_links(社交链接), "
-            "poems(诗句), page_copy(页面文案), display_options(显示选项), nav_items(导航项), "
-            "resume_basics(简历基础), resume_skills(技能组), resume_experiences(经历)。"
+            "poems(诗句), page_copy(页面文案), nav_items(导航项), "
+            "resume_basics(简历基础)。"
         ),
         help_text_en="List generic admin records by resource type (friends, social_links, poems, etc.).",
         ai_usage_hint=(
             "列出通用后台记录。resource 必传，可选值：friends, social_links, poems, page_copy, "
-            "display_options, nav_items, resume_basics, resume_skills, resume_experiences。"
+            "nav_items, resume_basics。"
             "可选参数：page(页码,默认1), page_size(每页条数,默认20), "
             "search(关键词搜索), sort_by(排序字段,默认created_at), sort_order(asc/desc,默认desc)。"
         ),
@@ -1076,8 +1075,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="创建通用后台记录，覆盖友链、社交链接、诗句、页面文案、导航项、简历等。",
         help_text_en="Create one generic admin record (friend, social link, poem, nav item, resume, etc.).",
         ai_usage_hint=(
-            "创建通用后台记录。resource 必传（friends/social_links/poems/page_copy/"
-            "display_options/nav_items/resume_basics/resume_skills/resume_experiences），"
+            "创建通用后台记录。resource 必传（friends/social_links/poems/page_copy/nav_items/resume_basics），"
             "payload 必传（字段因 resource 类型而异）。"
         ),
         examples=[
@@ -1859,7 +1857,7 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         label_en="Dashboard stats",
         help_text="获取仪表盘统计数据，包含各类内容计数和近期活动。",
         help_text_en="Get dashboard statistics (content counts, recent activity).",
-        ai_usage_hint="获取仪表盘统计。不需要参数。返回文章/日记/想法/摘录数量、最近发布等。",
+        ai_usage_hint="获取仪表盘统计。不需要参数。返回文章/日记/碎碎念/文摘数量、最近发布等。",
         examples=[{"arguments": {}, "scenario": "获取仪表盘各项统计数据。"}],
         domain="system",
         group_label="系统",

@@ -7,18 +7,18 @@ const tabs = [
     to: "/visitors",
     end: true,
     label: "基础配置",
-    description: "访客认证",
+    description: "访客与管理员认证",
     icon: Settings2,
   },
   {
     value: "visitors-users",
     to: "/visitors/users",
     label: "用户统计",
-    description: "访客用户",
+    description: "访客列表和参与订阅的访客邮箱",
     icon: Users,
   },
 ] as const;
 
 export function VisitorsSectionSwitch() {
-  return <AdminSectionTabs items={tabs} className="w-fit" />
+  return <AdminSectionTabs items={tabs} className="w-fit" />;
 }

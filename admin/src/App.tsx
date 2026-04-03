@@ -42,7 +42,6 @@ const AdminNotFoundPage = lazy(() => import("@/pages/AdminNotFoundPage"));
 const AuditLogPage = lazy(() => import("@/pages/system/AuditLogPage"));
 const BackupsPage = lazy(() => import("@/pages/system/BackupsPage"));
 const SystemInfoPage = lazy(() => import("@/pages/system/SystemInfoPage"));
-const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,7 +89,7 @@ function ProtectedRoutes() {
           <Route path="system/audit-log" element={<AuditLogPage />} />
           <Route path="system/backups" element={<BackupsPage />} />
           <Route path="system/info" element={<SystemInfoPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings" element={<Navigate to="/system/info" replace />} />
           <Route path="*" element={<AdminNotFoundPage />} />
         </Route>
       </Routes>

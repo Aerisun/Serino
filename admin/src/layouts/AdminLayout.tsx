@@ -30,7 +30,6 @@ import {
   Moon,
   Sun,
   User,
-  UserCog,
   Info,
 } from "lucide-react";
 import { useTheme } from "@serino/theme";
@@ -65,7 +64,7 @@ const navGroups = [
     ],
   },
   {
-    labelKey: "nav.moderation",
+    labelKey: "nav.management",
     items: [
       { to: "/moderation", icon: Shield, labelKey: "nav.moderation" },
       { to: "/visitors", icon: User, labelKey: "nav.visitors" },
@@ -89,7 +88,6 @@ const navGroups = [
       },
       { to: "/system/backups", icon: Database, labelKey: "nav.backups" },
       { to: "/system/info", icon: Info, labelKey: "nav.systemInfo" },
-      { to: "/settings", icon: UserCog, labelKey: "nav.settings" },
     ],
   },
 ];

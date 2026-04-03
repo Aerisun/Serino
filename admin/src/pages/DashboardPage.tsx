@@ -826,10 +826,12 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              <DashboardSurface
-                title={t("dashboard.visitorsRecordsTitle")}
-                contentClassName="space-y-4"
-              >
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold tracking-[0.01em] text-foreground/92">
+                    {t("dashboard.visitorsRecordsTitle")}
+                  </h3>
+                </div>
                 <DataTable
                   columns={[
                     {
@@ -878,7 +880,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                 />
-              </DashboardSurface>
+              </section>
             </TabsContent>
           </Tabs>
         )}

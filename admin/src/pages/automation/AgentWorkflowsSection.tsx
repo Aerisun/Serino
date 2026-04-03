@@ -56,9 +56,8 @@ export function AgentWorkflowsSection() {
     lang === "zh"
       ? {
           title: "Agent 工作流",
-          description:
-            "直接在空白画布里创建工作流。创建阶段默认保存为未启用，确认无误后再打开启用。",
-          add: "新建空白工作流",
+          description: "",
+          add: "新建工作流",
           loading: "加载中...",
           empty: "还没有工作流，先新建一个。",
           builtIn: "系统内置",
@@ -90,7 +89,9 @@ export function AgentWorkflowsSection() {
 
   const items = useMemo(() => workflows ?? [], [workflows]);
   const [visualEditorOpen, setVisualEditorOpen] = useState(false);
-  const [visualWorkflowKey, setVisualWorkflowKey] = useState<string | null>(null);
+  const [visualWorkflowKey, setVisualWorkflowKey] = useState<string | null>(
+    null,
+  );
   const [visualWorkflowOverride, setVisualWorkflowOverride] =
     useState<AgentWorkflow | null>(null);
   const [persistDisabledOnClose, setPersistDisabledOnClose] = useState(false);
@@ -159,9 +160,7 @@ export function AgentWorkflowsSection() {
                       <Badge variant={item.built_in ? "outline" : "info"}>
                         {item.built_in ? copy.builtIn : copy.custom}
                       </Badge>
-                      <Badge
-                        variant={item.enabled ? "success" : "secondary"}
-                      >
+                      <Badge variant={item.enabled ? "success" : "secondary"}>
                         {item.enabled
                           ? lang === "zh"
                             ? "启用中"

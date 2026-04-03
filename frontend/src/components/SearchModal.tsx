@@ -13,11 +13,11 @@ interface SearchResult {
   published_at: string | null
 }
 
-const TYPE_CONFIG: Record<string, { label: string; icon: typeof FileText; color: string; prefix: string }> = {
-  posts: { label: "文章", icon: FileText, color: "rgb(var(--shiro-accent-rgb)/0.7)", prefix: "/posts" },
-  diary: { label: "日记", icon: BookOpen, color: "rgb(59 130 246 / 0.7)", prefix: "/diary" },
-  thoughts: { label: "想法", icon: MessageSquare, color: "rgb(168 85 247 / 0.7)", prefix: "/thoughts" },
-  excerpts: { label: "摘录", icon: Quote, color: "rgb(234 179 8 / 0.7)", prefix: "/excerpts" },
+const TYPE_CONFIG: Record<string, { typeKey: string; icon: typeof FileText; color: string; prefix: string }> = {
+  posts: { typeKey: "search.type.posts", icon: FileText, color: "rgb(var(--shiro-accent-rgb)/0.7)", prefix: "/posts" },
+  diary: { typeKey: "search.type.diary", icon: BookOpen, color: "rgb(59 130 246 / 0.7)", prefix: "/diary" },
+  thoughts: { typeKey: "search.type.thoughts", icon: MessageSquare, color: "rgb(168 85 247 / 0.7)", prefix: "/thoughts" },
+  excerpts: { typeKey: "search.type.excerpts", icon: Quote, color: "rgb(234 179 8 / 0.7)", prefix: "/excerpts" },
 }
 
 interface SearchModalProps {
@@ -33,7 +33,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
   const [searched, setSearched] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -53,7 +53,11 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
     setLoading(true)
     try {
       const response = await searchContentApiV1SiteSearchGet({ q: q.trim(), limit: 10 })
-      setResults(response.data.items as unknown as SearchResult[])
+      if ("items" in response.data && Array.isArray(response.data.items)) {
+        setResults(response.data.items as unknown as SearchResult[])
+      } else {
+        setResults([])
+      }
       setSearched(true)
     } catch {
       setResults([])
@@ -157,7 +161,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
                               className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-body"
                               style={{ color: cfg.color, background: `${cfg.color.replace(/[\d.]+\)$/, "0.1)")}` }}
                             >
-                              {t(`search.type.${item.type}`, undefined, cfg.label)}
+                              {t(cfg.typeKey)}
                             </span>
                           </div>
                           {item.snippet && (

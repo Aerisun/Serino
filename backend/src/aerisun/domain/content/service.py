@@ -38,8 +38,8 @@ MANAGED_MODEL_CONTENT_TYPES = {
 }
 
 AUTO_TITLE_FALLBACKS = {
-    "thoughts": "未命名想法",
-    "excerpts": "未命名摘录",
+    "thoughts": "未命名碎碎念",
+    "excerpts": "未命名文摘",
 }
 
 
