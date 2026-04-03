@@ -1,5 +1,6 @@
 import { Loader2, RefreshCw, Reply, Sparkles } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { useFrontendI18n } from "@/i18n";
 import {
   communityActionClass,
   communityAvatarClass,
@@ -21,6 +22,7 @@ const CommentThread = ({
 }: {
   items: CommunityCommentItem[];
   onReply: (target: ReplyTarget) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   depth?: number;
 }) => (
   <div className={depth > 0 ? "mt-4 border-l border-[rgb(var(--shiro-border-rgb)/0.14)] pl-4" : "space-y-4"}>
@@ -41,7 +43,7 @@ const CommentThread = ({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-body text-sm font-semibold text-foreground">{item.author_name}</span>
-                {item.is_author ? <StatusPill text="站长" tone="author" /> : null}
+                {item.is_author ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
                 <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
               </div>
               <div className="mt-2">
@@ -54,11 +56,11 @@ const CommentThread = ({
                   className={communityActionClass}
                 >
                   <Reply className="h-3.5 w-3.5" />
-                  回复
+                  {t("waline.list.reply")}
                 </button>
               </div>
               {item.replies?.length ? (
-                <CommentThread items={item.replies} onReply={onReply} depth={depth + 1} />
+                <CommentThread items={item.replies} onReply={onReply} t={t} depth={depth + 1} />
               ) : null}
             </div>
           </div>
@@ -115,11 +117,13 @@ const WalineCommentList = ({
   guestbookRetryLabel,
   guestbookEmptyMessage,
 }: WalineCommentListProps) => {
+  const { t } = useFrontendI18n();
+
   if (loadingConfig || loadingEntries) {
     return (
       <div className="aerisun-waline-loading">
         <Loader2 className="h-5 w-5 animate-spin" />
-        <span>{isGuestbook ? guestbookLoadingLabel : "正在载入评论..."}</span>
+        <span>{isGuestbook ? guestbookLoadingLabel : t("waline.list.loadingComments")}</span>
       </div>
     );
   }
@@ -134,7 +138,7 @@ const WalineCommentList = ({
           className="mt-3 inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.7] px-4 py-2 text-sm transition hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:bg-card/[0.8]"
         >
           <RefreshCw className="h-4 w-4" />
-          {isGuestbook ? guestbookRetryLabel : "重试加载"}
+          {isGuestbook ? guestbookRetryLabel : t("waline.list.retryLoad")}
         </button>
       </div>
     );
@@ -149,7 +153,7 @@ const WalineCommentList = ({
             <div className="rounded-[1.5rem] border border-dashed border-amber-500/26 bg-amber-500/8 p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
                 <Sparkles className="h-4 w-4" />
-                刚刚提交，等待审核
+                {t("waline.list.pendingReviewNew")}
               </div>
               <div className="space-y-3">
                 {pendingGuestbookEntries.map((item) => (
@@ -167,7 +171,7 @@ const WalineCommentList = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-foreground">{item.name}</span>
-                          <StatusPill text="待审核" tone="pending" />
+                          <StatusPill text={t("waline.list.pending")} tone="pending" />
                           <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
                         </div>
                         <div className="mt-2">
@@ -230,7 +234,7 @@ const WalineCommentList = ({
             <div className="rounded-[1.5rem] border border-dashed border-amber-500/26 bg-amber-500/8 p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
                 <Sparkles className="h-4 w-4" />
-                已提交，等待审核
+                {t("waline.list.pendingReviewSubmitted")}
               </div>
               <div className="space-y-3">
                 {pendingComments.map((item) => (
@@ -248,7 +252,7 @@ const WalineCommentList = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-foreground">{item.author_name}</span>
-                          <StatusPill text="待审核" tone="pending" />
+                          <StatusPill text={t("waline.list.pending")} tone="pending" />
                           <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
                         </div>
                         <div className="mt-2">
@@ -264,16 +268,16 @@ const WalineCommentList = ({
 
           {/* Approved comments */}
           {comments.length ? (
-            <CommentThread items={comments} onReply={onReply} />
+            <CommentThread items={comments} onReply={onReply} t={t} />
           ) : (
             <div className="aerisun-waline-empty">
-              还没有公开评论，第一条就从这里开始。
+              {t("waline.list.emptyPublic")}
             </div>
           )}
         </>
       ) : (
         <div className="aerisun-waline-empty">
-          当前还没有评论，第一条会在审核后显示在这里。
+          {t("waline.list.emptyAfterReview")}
         </div>
       )}
 
@@ -287,7 +291,7 @@ const WalineCommentList = ({
             className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.76] px-4 py-2 text-sm font-medium text-foreground/62 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.84)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card/[0.82]"
           >
             {loadingMoreEntries ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {loadingMoreEntries ? "加载中..." : "显示更多"}
+            {loadingMoreEntries ? t("waline.list.loadingMore") : t("waline.list.showMore")}
           </button>
         </div>
       ) : null}

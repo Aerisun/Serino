@@ -14,6 +14,7 @@ import LazyOnVisible from "@/components/LazyOnVisible";
 import ArticleEnhancements from "@/components/ArticleEnhancements";
 import { useFeatureFlags } from "@/contexts/runtime-config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
@@ -47,7 +48,7 @@ interface PostDetailPageConfig extends BaseViewPageConfig {
   detailEndLabel?: string;
 }
 
-const estimateWordCount = (value: string) => {
+const estimateWordCount = (value: string, lang: FrontendLang, wordsLabel: string) => {
   const plainText = value
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`[^`]*`/g, " ")
@@ -66,10 +67,15 @@ const estimateWordCount = (value: string) => {
   ).length;
 
   const total = cjkCount + latinWordCount;
-  return `${total.toLocaleString("zh-CN")} 字`;
+  return `${total.toLocaleString(lang === "zh" ? "zh-CN" : "en-US")} ${wordsLabel}`;
 };
 
-const buildRemotePost = (entry: ContentEntryRead, fallbackCategoryLabel: string): PostData => ({
+const buildRemotePost = (
+  entry: ContentEntryRead,
+  fallbackCategoryLabel: string,
+  lang: FrontendLang,
+  wordsLabel: string,
+): PostData => ({
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
@@ -78,42 +84,46 @@ const buildRemotePost = (entry: ContentEntryRead, fallbackCategoryLabel: string)
   likes: entry.like_count ?? 0,
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,
-  wordCount: estimateWordCount(entry.body),
+  wordCount: estimateWordCount(entry.body, lang, wordsLabel),
   content: entry.body,
 });
 
 const buildPreviewPost = (
   preview: ContentPreviewData,
   fallbackCategoryLabel: string,
+  lang: FrontendLang,
+  wordsLabel: string,
+  draftLabel: string,
 ): PostData => ({
   slug: preview.slug || "",
   title: preview.title,
-  date: formatPublishedDate(preview.published_at) || "草稿",
+  date: formatPublishedDate(preview.published_at) || draftLabel,
   category: preview.category || fallbackCategoryLabel,
   tags: preview.tags || [],
   likes: 0,
   views: 0,
   comments: 0,
-  wordCount: estimateWordCount(preview.body || ""),
+  wordCount: estimateWordCount(preview.body || "", lang, wordsLabel),
   content: preview.body || "",
 });
 
 const PostDetail = () => {
+  const { t, lang } = useFrontendI18n();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const pages = usePageConfig();
   const postsConfig = (pages.posts ?? {}) as PostDetailPageConfig;
-  const fallbackCategoryLabel = postsConfig.categories?.fallback ?? "未分类";
-  const detailBackLabel = postsConfig.detailBackLabel ?? "返回";
-  const detailListLabel = postsConfig.detailListLabel ?? "返回列表";
-  const detailMissingTitle = postsConfig.detailMissingTitle ?? "文章不存在";
+  const fallbackCategoryLabel = postsConfig.categories?.fallback ?? t("posts.fallbackCategory");
+  const detailBackLabel = postsConfig.detailBackLabel ?? t("postDetail.back");
+  const detailListLabel = postsConfig.detailListLabel ?? t("postDetail.backToList");
+  const detailMissingTitle = postsConfig.detailMissingTitle ?? t("postDetail.missingTitle");
   const detailMissingDescription =
-    postsConfig.detailMissingDescription ?? "你访问的文章暂时不存在。";
-  const detailEndLabel = postsConfig.detailEndLabel ?? "— 完 —";
-  const errorTitle = postsConfig.errorTitle ?? "文章加载失败";
-  const retryLabel = postsConfig.retryLabel ?? "重试";
+    postsConfig.detailMissingDescription ?? t("postDetail.missingDescription");
+  const detailEndLabel = postsConfig.detailEndLabel ?? t("postDetail.endLabel");
+  const errorTitle = postsConfig.errorTitle ?? t("posts.errorTitle");
+  const retryLabel = postsConfig.retryLabel ?? t("common.retry");
   const articleRef = useRef<HTMLElement>(null);
   const previewStorageKey = searchParams.get("previewStorageKey") || "";
 
@@ -124,11 +134,11 @@ const PostDetail = () => {
 
   const previewPost =
     previewData?.type === "posts"
-      ? buildPreviewPost(previewData, fallbackCategoryLabel)
+      ? buildPreviewPost(previewData, fallbackCategoryLabel, lang, t("common.words"), t("common.draft"))
       : null;
   const post =
     previewPost ??
-    (response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null);
+    (response?.data ? buildRemotePost(response.data, fallbackCategoryLabel, lang, t("common.words")) : null);
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
   const status: "loading" | "ready" | "empty" | "error" = previewPost
     ? "ready"
@@ -143,7 +153,7 @@ const PostDetail = () => {
     ? is404
       ? detailMissingDescription
       : error instanceof Error ? error.message : errorTitle
-    : !id ? "缺少文章标识" : "";
+    : !id ? t("postDetail.missingId") : "";
   const showArticleEnhancements = Boolean(post) && featureFlags.toc;
 
   return (

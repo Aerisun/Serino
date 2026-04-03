@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from aerisun.api.deps.site_auth import get_current_site_user
+from aerisun.api.deps.site_auth import get_current_site_session, get_current_site_user
 from aerisun.core.db import get_session
 from aerisun.core.rate_limit import RATE_AUTH_LOGIN, limiter
 from aerisun.domain.iam.models import AdminUser
@@ -27,11 +27,12 @@ from aerisun.domain.iam.service import (
     revoke_admin_session,
     update_admin_profile,
 )
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import (
     get_admin_login_options,
     resolve_admin_user_id_for_email,
-    resolve_admin_user_id_for_site_user,
+    resolve_admin_user_id_for_site_session,
+    validate_admin_email_password,
 )
 
 from .deps import get_current_admin
@@ -65,6 +66,7 @@ def login_with_bound_email(
     payload: AdminEmailLoginRequest,
     session: Session = Depends(get_session),
 ) -> LoginResponse:
+    validate_admin_email_password(session, payload.password)
     admin_user_id = resolve_admin_user_id_for_email(session, payload.email)
     return create_admin_session(session, admin_user_id)
 
@@ -74,9 +76,14 @@ def login_with_bound_email(
 def exchange_site_user_login(
     request: Request,
     current_site_user: SiteUser = Depends(get_current_site_user),
+    current_site_session: SiteUserSession = Depends(get_current_site_session),
     session: Session = Depends(get_session),
 ) -> LoginResponse:
-    admin_user_id = resolve_admin_user_id_for_site_user(session, current_site_user)
+    admin_user_id = resolve_admin_user_id_for_site_session(
+        session,
+        current_site_user,
+        current_site_session,
+    )
     return create_admin_session(session, admin_user_id)
 
 

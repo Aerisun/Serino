@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
-from aerisun.domain.site_auth.models import SiteUser
-from aerisun.domain.site_auth.service import validate_site_session_token
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.service import validate_site_session, validate_site_session_token
 
 
 def _cookie_name() -> str:
@@ -51,6 +51,26 @@ def get_current_site_user_optional(
         return validate_site_session_token(session, site_session)
     except Exception:
         return None
+
+
+def get_current_site_session_optional(
+    session: Session = Depends(get_session),
+    site_session: str | None = Cookie(default=None, alias=_cookie_name()),
+) -> SiteUserSession | None:
+    if not site_session:
+        return None
+    try:
+        return validate_site_session(session, site_session)
+    except Exception:
+        return None
+
+
+def get_current_site_session(
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
+) -> SiteUserSession:
+    if current_site_session is None:
+        raise HTTPException(status_code=401, detail="请先登录。")
+    return current_site_session
 
 
 def get_current_site_user(

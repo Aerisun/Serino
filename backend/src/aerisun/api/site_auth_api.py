@@ -4,9 +4,13 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, R
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from aerisun.api.deps.site_auth import get_current_site_user, get_current_site_user_optional
+from aerisun.api.deps.site_auth import (
+    get_current_site_session_optional,
+    get_current_site_user,
+    get_current_site_user_optional,
+)
 from aerisun.core.db import get_session
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.schemas import (
     EmailLoginRequest,
     EmailLoginResponse,
@@ -66,8 +70,9 @@ def _clear_session_cookie(response: Response) -> None:
 def read_site_auth_state(
     session: Session = Depends(get_session),
     current_user: SiteUser | None = Depends(get_current_site_user_optional),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> SiteAuthStateRead:
-    return get_auth_state(session, current_user)
+    return get_auth_state(session, current_user, current_site_session)
 
 
 @base_router.get("/avatar-candidates", response_model=SiteAuthAvatarCandidateBatchRead, summary="获取头像候选")
@@ -100,8 +105,14 @@ def update_my_profile(
     payload: SiteAuthProfileUpdateRequest,
     session: Session = Depends(get_session),
     current_user: SiteUser = Depends(get_current_site_user),
+    current_site_session: SiteUserSession | None = Depends(get_current_site_session_optional),
 ) -> SiteAuthUserRead:
-    return update_site_user_profile(session, current_user, payload)
+    return update_site_user_profile(
+        session,
+        current_user,
+        payload,
+        current_site_session,
+    )
 
 
 @base_router.post("/logout", status_code=204, summary="站点用户登出")

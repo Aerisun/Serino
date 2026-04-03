@@ -9,13 +9,14 @@ import BackToTop from "@/components/BackToTop";
 import PageShell from "@/components/PageShell";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import EmbeddedResume from "@/components/EmbeddedResume";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 
-const estimateReadTime = (value: string) =>
-  `${Math.max(1, Math.ceil(value.length / 180))} 分钟`;
+const estimateReadTime = (value: string, lang: FrontendLang, minuteLabel: string) =>
+  `${Math.max(1, Math.ceil(value.length / 180)).toLocaleString(lang === "zh" ? "zh-CN" : "en-US")} ${minuteLabel}`;
 
 const weatherIcons: Record<string, string> = {
   sunny: "☀️",
@@ -35,16 +36,17 @@ const weatherIcons: Record<string, string> = {
 };
 
 function PostPreview({ data }: { data: ContentPreviewData }) {
+  const { t, lang } = useFrontendI18n();
   const featureFlags = useFeatureFlags();
   const pages = usePageConfig();
   const postsConfig = (pages.posts ?? {}) as {
     categories?: { fallback?: string };
   };
-  const fallbackCategoryLabel = postsConfig.categories?.fallback ?? "未分类";
+  const fallbackCategoryLabel = postsConfig.categories?.fallback ?? t("posts.fallbackCategory");
   const articleRef = useRef<HTMLElement>(null);
 
   const category = data.category || fallbackCategoryLabel;
-  const readTime = estimateReadTime(data.body || "");
+  const readTime = estimateReadTime(data.body || "", lang, t("common.minutes"));
 
   return (
     <>
@@ -56,8 +58,8 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
         <div className="mb-4 flex flex-wrap items-center gap-3 text-xs font-body text-foreground/25">
           <span>
             {data.published_at
-              ? new Date(data.published_at).toLocaleDateString("zh-CN")
-              : "草稿"}
+              ? new Date(data.published_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US")
+              : t("common.draft")}
           </span>
           <span className="rounded-md border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-[rgb(var(--shiro-panel-rgb)/0.28)] px-2 py-0.5 text-[rgb(var(--shiro-accent-rgb)/0.72)]">
             {category}
@@ -75,7 +77,7 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-heading italic tracking-tight text-foreground leading-tight">
-          {data.title || "无标题"}
+          {data.title || t("common.untitled")}
         </h1>
 
         {data.tags && data.tags.length > 0 && (
@@ -112,7 +114,7 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
 
       <div className="mt-12 border-t border-[rgb(var(--shiro-divider-rgb)/0.26)] pt-8">
         <p className="text-center text-xs font-body text-foreground/20">
-          — END —
+          {t("postDetail.endLabel")}
         </p>
       </div>
     </>
@@ -120,13 +122,14 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
 }
 
 function DiaryPreview({ data }: { data: ContentPreviewData }) {
+  const { t, lang } = useFrontendI18n();
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLElement>(null);
   const dateStr = data.published_at
-    ? new Date(data.published_at).toLocaleDateString("zh-CN")
-    : "草稿";
+    ? new Date(data.published_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US")
+    : t("common.draft");
   const weekday = data.published_at
-    ? new Date(data.published_at).toLocaleDateString("zh-CN", {
+    ? new Date(data.published_at).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US", {
         weekday: "long",
       })
     : "";
@@ -145,13 +148,13 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
                 {dateStr} {weekday}
               </p>
               <h1 className="mt-2 text-2xl sm:text-3xl font-heading italic tracking-tight text-foreground leading-tight">
-                {data.title || "无标题"}
+                {data.title || t("common.untitled")}
               </h1>
             </div>
             <div className="flex items-center gap-3 text-lg">
-              {data.mood && <span title="心情">{data.mood}</span>}
+              {data.mood && <span title={t("preview.mood")}>{data.mood}</span>}
               {data.weather && (
-                <span title="天气">
+                <span title={t("preview.weather")}>
                   {weatherIcons[data.weather] || data.weather}
                 </span>
               )}
@@ -194,6 +197,7 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
 }
 
 function ResumePreview({ data }: { data: ContentPreviewData }) {
+  const { t } = useFrontendI18n();
   return (
     <PageShell
       eyebrow=""
@@ -209,7 +213,7 @@ function ResumePreview({ data }: { data: ContentPreviewData }) {
         transition={{ duration: 0.5, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
       >
         <EmbeddedResume
-          name={data.title || "Your Name"}
+          name={data.title || t("preview.defaultName")}
           content={data.summary || ""}
           profileImageUrl={data.profile_image_url}
           contacts={{
@@ -223,6 +227,7 @@ function ResumePreview({ data }: { data: ContentPreviewData }) {
 }
 
 export default function Preview() {
+  const { t } = useFrontendI18n();
   const [params] = useSearchParams();
   const storageKey = params.get("storageKey") || "";
   const { data, isLoading } = usePreviewChannel(storageKey);
@@ -235,8 +240,8 @@ export default function Preview() {
         <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
           <p className="text-sm font-body text-foreground/40">
             {storageKey && isLoading
-              ? "正在加载预览数据..."
-              : "缺少预览参数"}
+              ? t("preview.loadingData")
+              : t("preview.missingParam")}
           </p>
         </main>
         <Footer />

@@ -24,6 +24,16 @@ const getItemIsActive = (item: NavItem, pathname: string) =>
   item.children?.some((child) => isPathActive(child.href, pathname)) ||
   false;
 
+const adminBasePath =
+  typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
+    ? __AERISUN_ADMIN_BASE_PATH__
+    : "/admin/";
+
+const buildAdminConsoleEntryHref = () => {
+  const target = new URL("login?site_admin=1", window.location.origin + adminBasePath);
+  return `${target.pathname}${target.search}`;
+};
+
 const NavDropdown = ({
   item,
   navigate,
@@ -35,6 +45,7 @@ const NavDropdown = ({
   pathname: string;
   glassVariant: NavbarGlassVariant;
 }) => {
+  const { t } = useFrontendI18n();
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,7 +202,7 @@ const NavDropdown = ({
           </button>
           <button
             type="button"
-            aria-label={`展开${item.label}菜单`}
+            aria-label={t("navbar.expandMenu", { label: item.label })}
             onClick={handleArrowToggle}
             className={`flex items-center justify-center pr-3 transition-colors ${
               isActive
@@ -250,6 +261,8 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const authMenuRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = useReducedMotionPreference();
   const { user, openLogin, openProfileEditor, logout } = useSiteAuth();
+  const adminConsoleEntryHref =
+    typeof window !== "undefined" ? buildAdminConsoleEntryHref() : "/admin/login?site_admin=1";
   const navGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
   const navStrongGlassClass =
     glassVariant === "hero" ? "liquid-glass-hero-strong" : "liquid-glass-strong";
@@ -278,6 +291,12 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
     glassVariant === "hero"
       ? "text-white/72 hover:text-white"
       : "text-foreground/60 hover:text-[rgb(var(--shiro-accent-rgb)/0.68)]";
+  const topActionHoverMotion = prefersReducedMotion
+    ? undefined
+    : { y: -1.8, scale: 1.05 };
+  const topActionTapMotion = prefersReducedMotion
+    ? undefined
+    : { scale: 0.98 };
 
   useEffect(() => {
     const scrollContainer =
@@ -394,7 +413,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                             }`}>
                               {item.label}
                             </button>
-                            <button type="button" aria-label={`展开${item.label}`}
+                            <button type="button" aria-label={t("navbar.expandMenu", { label: item.label })}
                               onClick={() => setMobileExpanded((prev) => prev === item.label ? null : item.label)}
                               className={`flex h-full items-center px-4 py-3 transition-colors ${mobileArrowTextClass}`}>
                               <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${mobileExpanded === item.label ? "rotate-180" : ""}`} />
@@ -464,7 +483,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 <button
                   type="button"
                   onClick={() => setAuthMenuOpen((current) => !current)}
-                  aria-label={`${user.effective_display_name} 账户菜单`}
+                  aria-label={t("navbar.accountMenu", { name: user.effective_display_name })}
                   className={`inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border px-0 transition-all sm:w-auto sm:justify-start sm:gap-2 sm:px-2.5 sm:pr-3 ${navGlassClass} ${
                     glassVariant === "hero"
                       ? "border-white/14 text-white/86 hover:text-white"
@@ -507,6 +526,19 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                         <PencilLine className="h-4 w-4" />
                         {t("navbar.editProfile")}
                       </button>
+                      {user.can_access_admin_console ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthMenuOpen(false);
+                            window.location.assign(adminConsoleEntryHref);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          {t("navbar.adminConsole")}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => void logout().then(() => setAuthMenuOpen(false))}
@@ -520,9 +552,12 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 </AnimatePresence>
               </>
             ) : (
-              <button
+              <motion.button
                 type="button"
-                onClick={openLogin}
+                onClick={() => openLogin()}
+                whileHover={topActionHoverMotion}
+                whileTap={topActionTapMotion}
+                transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
                 className={[
                   "group relative inline-flex h-9 items-center gap-2 overflow-hidden rounded-full px-3.5 text-sm font-medium transition-all active:scale-[0.98]",
                   glassVariant === "hero"
@@ -534,7 +569,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 <span className="absolute -inset-x-2 top-1/2 h-6 -translate-y-1/2 bg-[radial-gradient(circle,_rgb(255_255_255/0.28),_transparent_58%)] opacity-0 blur-md transition-opacity group-hover:opacity-100" />
                 <Sparkles className="relative h-4 w-4" />
                 <span className="relative hidden sm:inline">{t("navbar.login")}</span>
-              </button>
+              </motion.button>
             )}
           </div>
           <button
@@ -595,24 +630,36 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
         </div>
 
         <div className="relative flex items-center gap-2 mr-1 md:mr-0 md:justify-self-end">
-          <button
+          <motion.button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-subscribe"))}
-            className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95 ${subscriptionAvailable ? "" : "opacity-60"}`}
+            whileHover={topActionHoverMotion}
+            whileTap={topActionTapMotion}
+            transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95 ${subscriptionAvailable ? "" : "opacity-85"}`}
             aria-label={subscriptionAvailable ? t("navbar.subscribe") : t("navbar.subscribeDisabled")}
             title={subscriptionAvailable ? t("navbar.subscribe") : t("navbar.subscribeDisabled")}
           >
             <BellRing className="h-4 w-4" />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("aerisun:open-search"))}
+            whileHover={topActionHoverMotion}
+            whileTap={topActionTapMotion}
+            transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
             className={`flex h-9 w-9 items-center justify-center rounded-full ${iconButtonGlassClass} ${iconButtonToneClass} transition-colors active:scale-95`}
             aria-label={t("navbar.search")}
           >
             <Search className="h-4 w-4" />
-          </button>
-          <ThemeToggle glassVariant={glassVariant} />
+          </motion.button>
+          <motion.div
+            whileHover={topActionHoverMotion}
+            whileTap={topActionTapMotion}
+            transition={transition({ duration: 0.2, reducedMotion: prefersReducedMotion })}
+          >
+            <ThemeToggle glassVariant={glassVariant} />
+          </motion.div>
         </div>
       </div>
       {mobileMenu}

@@ -304,7 +304,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
                         placeholder={
                           enabled
                             ? "name@example.com"
-                            : "站长还没有配置邮箱服务，敬请期待~"
+                            : t("subscribe.emailUnavailablePlaceholder")
                         }
                         disabled={!enabled || submitting}
                         className="h-full w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/28"

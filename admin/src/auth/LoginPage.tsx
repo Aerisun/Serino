@@ -2,9 +2,19 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAuth } from "./useAuth";
 import { ArrowRight, Github, Loader2, Lock, Mail, Sparkles, User } from "lucide-react";
 
+const adminBasePath =
+  typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
+    ? __AERISUN_ADMIN_BASE_PATH__
+    : "/admin/";
+
+function buildAdminPath(path: string) {
+  const target = new URL(path.replace(/^\/+/, ""), window.location.origin + adminBasePath);
+  return `${target.pathname}${target.search}`;
+}
+
 async function getPublicOAuthAuthorizationUrl(provider: "google" | "github", returnTo: string) {
   const query = new URLSearchParams({ return_to: returnTo });
-  const response = await fetch(`/api/v1/public/auth/oauth/${provider}/start?${query.toString()}`, {
+  const response = await fetch(`/api/v1/site-auth/oauth/${provider}/start?${query.toString()}`, {
     method: "GET",
     credentials: "include",
   });
@@ -19,6 +29,7 @@ function clearAdminAuthSearchParams() {
   const url = new URL(window.location.href);
   url.searchParams.delete("auth");
   url.searchParams.delete("admin_auth_provider");
+  url.searchParams.delete("site_admin");
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
@@ -33,6 +44,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminEmailPassword, setAdminEmailPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
 
@@ -44,9 +56,11 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
-    const authResult = new URLSearchParams(window.location.search).get("auth");
-    const provider = new URLSearchParams(window.location.search).get("admin_auth_provider");
-    if (authResult !== "success" || !provider) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const authResult = searchParams.get("auth");
+    const provider = searchParams.get("admin_auth_provider");
+    const siteAdmin = searchParams.get("site_admin");
+    if (siteAdmin !== "1" && (authResult !== "success" || !provider)) {
       return;
     }
     clearAdminAuthSearchParams();
@@ -77,7 +91,7 @@ export default function LoginPage() {
     setAdminError("");
     setAdminLoading(true);
     try {
-      await loginWithAdminEmail(adminEmail);
+      await loginWithAdminEmail(adminEmail, adminEmailPassword);
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : "管理员邮箱登录失败");
     } finally {
@@ -89,7 +103,10 @@ export default function LoginPage() {
     setAdminError("");
     setAdminLoading(true);
     try {
-      const authorizationUrl = await getPublicOAuthAuthorizationUrl(provider, `/admin/login?admin_auth_provider=${provider}`);
+      const authorizationUrl = await getPublicOAuthAuthorizationUrl(
+        provider,
+        buildAdminPath(`login?admin_auth_provider=${provider}`),
+      );
       if (!authorizationUrl) {
         throw new Error("没有拿到可用的认证地址");
       }
@@ -220,9 +237,22 @@ export default function LoginPage() {
                       className="login-input"
                     />
                   </div>
+                  <div className="login-input-wrap rounded-xl border border-white/10 bg-white/4">
+                    <Lock className="login-input-icon" size={18} strokeWidth={1.8} />
+                    <input
+                      type="password"
+                      placeholder="Shared admin email password"
+                      value={adminEmailPassword}
+                      onChange={(event) => setAdminEmailPassword(event.target.value)}
+                      className="login-input"
+                    />
+                  </div>
+                  <p className="text-xs leading-6 text-white/48">
+                    使用“访客 / 管理员认证”里配置的统一管理员邮箱密码完成登录。
+                  </p>
                   <button
                     type="submit"
-                    disabled={adminLoading || !adminEmail.trim()}
+                    disabled={adminLoading || !adminEmail.trim() || !adminEmailPassword.trim()}
                     className="login-btn"
                   >
                     {adminLoading ? (

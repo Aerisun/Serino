@@ -27,6 +27,7 @@ import PreviewModeBadge from "@/components/PreviewModeBadge";
 import LazyOnVisible from "@/components/LazyOnVisible";
 import ArticleEnhancements from "@/components/ArticleEnhancements";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site";
@@ -69,21 +70,21 @@ const weatherIcons: Record<Weather, typeof Sun> = {
   windy: Wind,
 };
 
-const weatherLabels: Record<Weather, string> = {
-  sunny: "晴",
-  cloudy: "多云",
-  fog: "雾",
-  haze: "霾",
-  light_rain: "小雨",
-  shower: "阵雨",
-  rainy: "雨",
-  heavy_rain: "大雨",
-  light_snow: "小雪",
-  snowy: "雪",
-  heavy_snow: "大雪",
-  sleet: "雨夹雪",
-  stormy: "雷阵雨",
-  windy: "大风",
+const weatherLabelKeys: Record<Weather, string> = {
+  sunny: "diary.weather.sunny",
+  cloudy: "diary.weather.cloudy",
+  fog: "diary.weather.fog",
+  haze: "diary.weather.haze",
+  light_rain: "diary.weather.lightRain",
+  shower: "diary.weather.shower",
+  rainy: "diary.weather.rainy",
+  heavy_rain: "diary.weather.heavyRain",
+  light_snow: "diary.weather.lightSnow",
+  snowy: "diary.weather.snowy",
+  heavy_snow: "diary.weather.heavySnow",
+  sleet: "diary.weather.sleet",
+  stormy: "diary.weather.stormy",
+  windy: "diary.weather.windy",
 };
 
 interface DiaryData {
@@ -107,17 +108,17 @@ interface DiaryDetailPageConfig extends BaseViewPageConfig {
   detailEndLabel?: string;
 }
 
-const formatWeekday = (value: string | null) => {
+const formatWeekday = (value: string | null, lang: FrontendLang) => {
   if (!value) return "";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
-  return new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(parsed);
+  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" }).format(parsed);
 };
 
-const buildRemoteDiaryEntry = (entry: ContentEntryRead): DiaryData => ({
+const buildRemoteDiaryEntry = (entry: ContentEntryRead, lang: FrontendLang): DiaryData => ({
   slug: entry.slug,
   date: formatPublishedDate(entry.published_at) || "",
-  weekday: formatWeekday(entry.published_at),
+  weekday: formatWeekday(entry.published_at, lang),
   weather: entry.weather as Weather | undefined,
   mood: entry.mood ?? undefined,
   title: entry.title,
@@ -127,10 +128,14 @@ const buildRemoteDiaryEntry = (entry: ContentEntryRead): DiaryData => ({
   comments: entry.comment_count ?? null,
 });
 
-const buildPreviewDiaryEntry = (preview: ContentPreviewData): DiaryData => ({
+const buildPreviewDiaryEntry = (
+  preview: ContentPreviewData,
+  lang: FrontendLang,
+  t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
+): DiaryData => ({
   slug: preview.slug || "",
-  date: formatPublishedDate(preview.published_at) || "草稿",
-  weekday: formatWeekday(preview.published_at ?? null),
+  date: formatPublishedDate(preview.published_at) || t("common.draft"),
+  weekday: formatWeekday(preview.published_at ?? null, lang),
   weather: preview.weather as Weather | undefined,
   mood: preview.mood ?? undefined,
   title: preview.title,
@@ -141,19 +146,20 @@ const buildPreviewDiaryEntry = (preview: ContentPreviewData): DiaryData => ({
 });
 
 const DiaryDetail = () => {
+  const { t, lang } = useFrontendI18n();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const featureFlags = useFeatureFlags();
   const diaryConfig = (usePageConfig().diary ?? {}) as DiaryDetailPageConfig;
-  const detailBackLabel = diaryConfig.detailBackLabel ?? "返回";
-  const detailListLabel = diaryConfig.detailListLabel ?? "返回列表";
-  const detailMissingTitle = diaryConfig.detailMissingTitle ?? "日记不存在";
+  const detailBackLabel = diaryConfig.detailBackLabel ?? t("diaryDetail.back");
+  const detailListLabel = diaryConfig.detailListLabel ?? t("diaryDetail.backToList");
+  const detailMissingTitle = diaryConfig.detailMissingTitle ?? t("diaryDetail.missingTitle");
   const detailMissingDescription =
-    diaryConfig.detailMissingDescription ?? "你访问的日记暂时不存在。";
-  const detailEndLabel = diaryConfig.detailEndLabel ?? "— 今日份记录 —";
-  const errorTitle = diaryConfig.errorTitle ?? "日记加载失败";
-  const retryLabel = diaryConfig.retryLabel ?? "重试";
+    diaryConfig.detailMissingDescription ?? t("diaryDetail.missingDescription");
+  const detailEndLabel = diaryConfig.detailEndLabel ?? t("diaryDetail.endLabel");
+  const errorTitle = diaryConfig.errorTitle ?? t("diary.errorTitle");
+  const retryLabel = diaryConfig.retryLabel ?? t("common.retry");
   const articleRef = useRef<HTMLDivElement>(null);
   const previewStorageKey = searchParams.get("previewStorageKey") || "";
 
@@ -171,10 +177,10 @@ const DiaryDetail = () => {
   });
 
   const previewEntry =
-    previewData?.type === "diary" ? buildPreviewDiaryEntry(previewData) : null;
+    previewData?.type === "diary" ? buildPreviewDiaryEntry(previewData, lang, t) : null;
   const entry =
     previewEntry ??
-    (response?.data ? buildRemoteDiaryEntry(response.data) : null);
+    (response?.data ? buildRemoteDiaryEntry(response.data, lang) : null);
   const is404 =
     isError &&
     error != null &&
@@ -201,12 +207,12 @@ const DiaryDetail = () => {
         ? error.message
         : errorTitle
     : !id
-      ? "缺少日记标识"
+      ? t("diaryDetail.missingId")
       : "";
   const showArticleEnhancements = Boolean(entry) && featureFlags.toc;
 
   const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
-  const weatherLabel = entry?.weather ? weatherLabels[entry.weather] : "";
+  const weatherLabel = entry?.weather ? t(weatherLabelKeys[entry.weather]) : "";
 
   return (
     <div className="min-h-screen bg-background text-foreground">

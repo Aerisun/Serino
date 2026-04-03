@@ -11,6 +11,7 @@ import {
   Check,
   BellOff,
   Github,
+  Lock,
   Loader2,
   Mail,
   RefreshCcw,
@@ -18,6 +19,7 @@ import {
   UserRoundPen,
 } from "lucide-react";
 import { transition } from "@/config";
+import { useFrontendI18n } from "@/i18n";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import {
   getOAuthAuthorizationUrl,
@@ -45,11 +47,11 @@ import {
 } from "@/contexts/site-auth-context";
 type AuthDialogMode = "login" | "profile";
 
-const CONTENT_TYPE_LABELS: Record<string, string> = {
-  posts: "文章",
-  diary: "日记",
-  thoughts: "想法",
-  excerpts: "摘录",
+const CONTENT_TYPE_LABEL_KEYS: Record<string, string> = {
+  posts: "subscribe.content.posts",
+  diary: "subscribe.content.diary",
+  thoughts: "subscribe.content.thoughts",
+  excerpts: "subscribe.content.excerpts",
 };
 
 interface SubscriptionChangedDetail {
@@ -79,6 +81,7 @@ function providerIcon(provider: string) {
 
 export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const prefersReducedMotion = useReducedMotionPreference();
+  const { t } = useFrontendI18n();
   const [authState, setAuthState] = useState<SiteAuthState | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -88,6 +91,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allowEmailLoginInDialog, setAllowEmailLoginInDialog] = useState(true);
   const [email, setEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarCandidates, setAvatarCandidates] = useState<
     SiteAuthAvatarCandidate[]
@@ -96,6 +100,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const [avatarBatch, setAvatarBatch] = useState(0);
   const [_avatarTotalBatches, setAvatarTotalBatches] = useState(1);
   const [needsProfile, setNeedsProfile] = useState(false);
+  const [requiresAdminPassword, setRequiresAdminPassword] = useState(false);
   const [subscriptionStatuses, setSubscriptionStatuses] = useState<
     SiteContentSubscriptionStatus[]
   >([]);
@@ -126,7 +131,9 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setAllowEmailLoginInDialog(true);
     setEmail("");
+    setAdminPassword("");
     setNeedsProfile(false);
+    setRequiresAdminPassword(false);
     setDisplayName("");
     setAvatarCandidates([]);
     setSelectedAvatar("");
@@ -168,28 +175,29 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
 
   const applyAvatarBatch = useCallback(
     (result: SiteAuthAvatarCandidateBatch, preferredAvatar?: string) => {
+      const candidatePool = result.avatar_candidates ?? [];
       const nextCandidates =
         preferredAvatar &&
-        !result.avatar_candidates.some(
+        !candidatePool.some(
           (candidate) => candidate.avatar_url === preferredAvatar,
         )
           ? [
               {
                 key: `current:${preferredAvatar}`,
-                label: "当前头像",
+                label: t("siteAuth.currentAvatar"),
                 avatar_url: preferredAvatar,
               },
-              ...result.avatar_candidates,
+              ...candidatePool,
             ]
-          : result.avatar_candidates;
+          : candidatePool;
       const visibleCandidates = nextCandidates.slice(
         0,
         PROFILE_AVATAR_PICKER_COUNT,
       );
 
       setAvatarCandidates(visibleCandidates);
-      setAvatarBatch(result.batch);
-      setAvatarTotalBatches(result.total_batches);
+      setAvatarBatch(result.batch ?? 0);
+      setAvatarTotalBatches(result.total_batches ?? 1);
       setSelectedAvatar((current) => {
         if (preferredAvatar) {
           return preferredAvatar;
@@ -205,7 +213,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         return visibleCandidates[0]?.avatar_url || "";
       });
     },
-    [],
+    [t],
   );
 
   const loadAvatarBatch = useCallback(
@@ -219,12 +227,12 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         });
         applyAvatarBatch(result, preferredAvatar);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "头像加载失败");
+        setError(err instanceof Error ? err.message : t("siteAuth.avatarLoadFailed"));
       } finally {
         setAvatarLoading(false);
       }
     },
-    [applyAvatarBatch],
+    [applyAvatarBatch, t],
   );
 
   const openProfileEditor = useCallback(() => {
@@ -273,12 +281,12 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       setSubscriptionFeedback({
         kind: "error",
-        message: err instanceof Error ? err.message : "订阅列表加载失败",
+        message: err instanceof Error ? err.message : t("siteAuth.subscriptionListLoadFailed"),
       });
     } finally {
       setSubscriptionLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!open || mode !== "profile") {
@@ -321,8 +329,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       setSubscriptionFeedback({
         kind: detail.subscribed ? "success" : "error",
         message: detail.subscribed
-          ? `订阅列表已加入 ${detail.email}。`
-          : `${detail.email} 已从订阅列表移除。`,
+          ? t("siteAuth.subscriptionAdded", { email: detail.email })
+          : t("siteAuth.subscriptionRemoved", { email: detail.email }),
       });
     };
 
@@ -336,7 +344,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         handleSubscriptionChanged,
       );
     };
-  }, []);
+  }, [t]);
 
   const handleEmailLogin = useCallback(async () => {
     setSubmitting(true);
@@ -346,22 +354,32 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         email: string;
         display_name?: string;
         avatar_url?: string;
+        admin_password?: string;
       } = { email };
 
       if (needsProfile) {
         payload.display_name = displayName;
         payload.avatar_url = selectedAvatar;
       }
+      if (requiresAdminPassword) {
+        payload.admin_password = adminPassword;
+      }
 
       const result = await loginWithEmail(payload);
+      if (result.requires_admin_password) {
+        setRequiresAdminPassword(true);
+        setAdminPassword("");
+        return;
+      }
       if (result.requires_profile) {
         setNeedsProfile(true);
+        setRequiresAdminPassword(false);
         setMode("login");
         setDisplayName(result.suggested_display_name || "");
         applyAvatarBatch({
-          batch: result.avatar_batch,
-          total_batches: result.avatar_total_batches,
-          avatar_candidates: result.avatar_candidates,
+          batch: result.avatar_batch ?? 0,
+          total_batches: result.avatar_total_batches ?? 1,
+          avatar_candidates: result.avatar_candidates ?? [],
         });
         return;
       }
@@ -374,17 +392,20 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       }));
       closeLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "登录失败");
+      setError(err instanceof Error ? err.message : t("siteAuth.loginFailed"));
     } finally {
       setSubmitting(false);
     }
   }, [
     applyAvatarBatch,
+    adminPassword,
     closeLogin,
     displayName,
     email,
     needsProfile,
+    requiresAdminPassword,
     selectedAvatar,
+    t,
   ]);
 
   const handleProfileUpdate = useCallback(async () => {
@@ -406,21 +427,21 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       }));
       closeLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "资料更新失败");
+      setError(err instanceof Error ? err.message : t("siteAuth.profileUpdateFailed"));
     } finally {
       setSubmitting(false);
     }
-  }, [closeLogin, displayName, selectedAvatar]);
+  }, [closeLogin, displayName, selectedAvatar, t]);
 
   const handleRefreshAvatars = useCallback(async () => {
     const identity =
       mode === "profile" ? (authState?.user?.email ?? "") : email;
     if (!identity.trim()) {
-      setError("请先输入邮箱。");
+      setError(t("siteAuth.emailRequired"));
       return;
     }
     await loadAvatarBatch(identity, avatarBatch + 1);
-  }, [authState?.user?.email, avatarBatch, email, loadAvatarBatch, mode]);
+  }, [authState?.user?.email, avatarBatch, email, loadAvatarBatch, mode, t]);
 
   const handleOAuthLogin = useCallback(async (provider: string) => {
     setSubmitting(true);
@@ -432,10 +453,10 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       );
       window.location.assign(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "登录失败");
+      setError(err instanceof Error ? err.message : t("siteAuth.loginFailed"));
       setSubmitting(false);
     }
-  }, []);
+  }, [t]);
 
   const handleUnsubscribe = useCallback(async (targetEmail: string) => {
     setSubscriptionPendingEmail(targetEmail);
@@ -450,17 +471,17 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       );
       setSubscriptionFeedback({
         kind: "success",
-        message: `${targetEmail} 取消订阅成功。`,
+        message: t("siteAuth.unsubscribeSuccess", { email: targetEmail }),
       });
     } catch (err) {
       setSubscriptionFeedback({
         kind: "error",
-        message: err instanceof Error ? err.message : "取消订阅失败",
+        message: err instanceof Error ? err.message : t("siteAuth.unsubscribeFailed"),
       });
     } finally {
       setSubscriptionPendingEmail(null);
     }
-  }, []);
+  }, [t]);
 
   const logout = useCallback(async () => {
     await logoutSiteAuth();
@@ -512,8 +533,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const showProfileForm = mode === "profile" || needsProfile;
   const hasScrollableSubscriptionList = subscriptionStatuses.length > 2;
   const currentProviderLabel = authState?.user
-    ? `${providerLabel(authState.user.primary_auth_provider)}${authState.user.is_admin ? " · 管理员模式" : ""}`
-    : "邮箱";
+    ? `${providerLabel(authState.user.primary_auth_provider)}${authState.user.is_admin ? t("siteAuth.adminModeSuffix") : ""}`
+    : t("siteAuth.emailProvider");
   const profileEditor = showProfileForm ? (
     <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
       {mode === "profile" ? (
@@ -521,16 +542,16 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <UserRoundPen className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
-              {authState?.user?.is_admin ? "修改基础资料" : "登录身份"}
+              {authState?.user?.is_admin ? t("siteAuth.editBaseProfile") : t("siteAuth.loginIdentity")}
             </div>
             <div className="mt-1 text-xs text-foreground/46">
-              当前登录方式：{currentProviderLabel}
+              {t("siteAuth.currentLoginMethod", { provider: currentProviderLabel })}
             </div>
           </div>
           <span className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.84] px-3 py-1 text-[0.72rem] text-foreground/50">
             {authState?.user?.is_admin
-              ? "管理员评论将固定使用站点身份"
-              : "邮箱仅用于后台识别"}
+              ? t("siteAuth.adminCommentIdentity")
+              : t("siteAuth.emailBackendOnly")}
           </span>
         </div>
       ) : null}
@@ -540,7 +561,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-foreground">
-                订阅列表
+                {t("siteAuth.subscriptionList")}
               </div>
             </div>
             {subscriptionLoading ? (
@@ -568,7 +589,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                     }`}
                   >
                     <div className="text-[0.7rem] uppercase tracking-[0.12em] text-foreground/42">
-                      订阅邮箱
+                      {t("siteAuth.subscriptionEmail")}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
                       <div className="min-w-0 break-all text-sm font-medium text-foreground">
@@ -587,18 +608,21 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                         ) : (
                           <BellOff className="h-3.5 w-3.5" />
                         )}
-                        {pending ? "取消中..." : "取消订阅"}
+                        {pending ? t("siteAuth.unsubscribing") : t("siteAuth.unsubscribe")}
                       </button>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {subscriptionStatus.content_types.map((contentType) => (
-                        <span
-                          key={`${subscriptionStatus.email}-${contentType}`}
-                          className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] px-2.5 py-1 text-xs text-foreground/64"
-                        >
-                          {CONTENT_TYPE_LABELS[contentType] ?? contentType}
-                        </span>
-                      ))}
+                      {subscriptionStatus.content_types.map((contentType) => {
+                        const labelKey = CONTENT_TYPE_LABEL_KEYS[contentType];
+                        return (
+                          <span
+                            key={`${subscriptionStatus.email}-${contentType}`}
+                            className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.82] px-2.5 py-1 text-xs text-foreground/64"
+                          >
+                            {labelKey ? t(labelKey) : contentType}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -606,12 +630,12 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
             </div>
           ) : (
             <div className="mt-3 rounded-[1rem] border border-dashed border-[rgb(var(--shiro-border-rgb)/0.2)] bg-background/[0.76] px-3 py-2 text-xs text-foreground/56">
-              当前没有活跃订阅。可在站点右上角的“订阅”按钮中添加。
+              {t("siteAuth.noActiveSubscription")}
             </div>
           )}
 
           {hasScrollableSubscriptionList ? (
-            <div className="mt-2 text-xs text-foreground/42">最多显示两个邮箱，可上下滚动查看更多。</div>
+            <div className="mt-2 text-xs text-foreground/42">{t("siteAuth.maxTwoEmailsHint")}</div>
           ) : null}
 
           {subscriptionFeedback ? (
@@ -631,19 +655,19 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       <div className="mt-4 space-y-3">
         <label className="block space-y-2">
           <span className="text-xs font-medium uppercase tracking-[0.14em] text-foreground/46">
-            用户名
+            {t("siteAuth.username")}
           </span>
           <input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             placeholder={
-              mode === "profile" ? "修改显示昵称" : "首次登录时设置一个显示昵称"
+              mode === "profile" ? t("siteAuth.editNickname") : t("siteAuth.firstLoginNickname")
             }
             className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
           />
         </label>
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-medium text-foreground/74">选择头像</div>
+          <div className="text-sm font-medium text-foreground/74">{t("siteAuth.selectAvatar")}</div>
           <button
             type="button"
             onClick={() => void handleRefreshAvatars()}
@@ -655,7 +679,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
             ) : (
               <RefreshCcw className="h-3.5 w-3.5" />
             )}
-            换一批
+            {t("siteAuth.refreshBatch")}
           </button>
         </div>
         <div className="grid grid-cols-6 gap-2">
@@ -704,7 +728,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
           ) : (
             <Mail className="h-4 w-4" />
           )}
-          {mode === "profile" ? "保存资料" : "完成首次登录"}
+          {mode === "profile" ? t("siteAuth.saveProfile") : t("siteAuth.completeFirstLogin")}
         </button>
       </div>
     </div>
@@ -755,32 +779,13 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                       ) : (
                         <Sparkles className="h-3.5 w-3.5" />
                       )}
-                      {mode === "profile" ? "PROFILE" : "Sign In"}
+                      {mode === "profile" ? t("siteAuth.profileTag") : t("siteAuth.signInTag")}
                     </div>
-                    <h2
-                      className={
-                        mode === "profile"
-                          ? "mt-4 text-3xl text-foreground"
-                          : "mt-4 text-3xl leading-[1.18] text-foreground"
-                      }
-                      style={
-                        mode === "profile"
-                          ? undefined
-                          : {
-                              fontFamily:
-                                "'LXGW WenKai', 'STKaiti', 'KaiTi', 'Songti SC', 'Noto Serif SC', 'Instrument Serif', serif",
-                              fontStyle: "italic",
-                              fontWeight: 500,
-                              letterSpacing: "0.02em",
-                            }
-                      }
-                    >
-                      {mode === "profile"
-                        ? authState?.user?.is_admin
-                          ? "更新基础资料"
-                          : "访客资料"
-                        : "登录"}
-                    </h2>
+                    {mode === "profile" ? (
+                      <h2 className="mt-4 text-3xl text-foreground">
+                        {authState?.user?.is_admin ? t("siteAuth.updateBaseProfile") : t("siteAuth.visitorProfile")}
+                      </h2>
+                    ) : null}
 
                     {mode === "profile" ? null : (
                       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -820,8 +825,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                                   </div>
                                   <div className={`text-xs ${enabled ? "text-foreground/46" : "text-foreground/32"}`}>
                                     {enabled
-                                      ? "使用第三方资料直接进入"
-                                      : `站长未开放 ${providerLabel(provider)} 登录`}
+                                      ? t("siteAuth.useThirdPartyDirect")
+                                      : t("siteAuth.providerDisabled", { provider: providerLabel(provider) })}
                                   </div>
                                 </div>
                               </div>
@@ -837,29 +842,60 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                       <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
                         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                           <Mail className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
-                          邮箱识别登录
+                          {t("siteAuth.emailIdentityLogin")}
                         </div>
                         <div className="mt-4 space-y-3">
                           <input
                             type="email"
                             value={email}
-                            onChange={(event) => setEmail(event.target.value)}
-                            placeholder="输入邮箱作为身份标识"
+                            onChange={(event) => {
+                              setEmail(event.target.value);
+                              if (requiresAdminPassword) {
+                                setRequiresAdminPassword(false);
+                                setAdminPassword("");
+                              }
+                            }}
+                            placeholder={t("siteAuth.emailIdentityPlaceholder")}
                             className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
                           />
+                          {requiresAdminPassword ? (
+                            <>
+                              <div className="rounded-[1rem] border border-[rgb(var(--shiro-accent-rgb)/0.16)] bg-[rgb(var(--shiro-accent-rgb)/0.08)] px-4 py-3 text-xs leading-6 text-foreground/66">
+                                {t("siteAuth.adminPasswordHint")}
+                              </div>
+                              <input
+                                type="password"
+                                value={adminPassword}
+                                onChange={(event) =>
+                                  setAdminPassword(event.target.value)
+                                }
+                                placeholder={t("siteAuth.adminPasswordPlaceholder")}
+                                className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
+                              />
+                            </>
+                          ) : null}
                           {!needsProfile ? (
                             <button
                               type="button"
                               onClick={() => void handleEmailLogin()}
-                              disabled={submitting || !email.trim()}
+                              disabled={
+                                submitting ||
+                                !email.trim() ||
+                                (requiresAdminPassword &&
+                                  !adminPassword.trim())
+                              }
                               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.2)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.16)] disabled:opacity-60"
                             >
                               {submitting ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : requiresAdminPassword ? (
+                                <Lock className="h-4 w-4" />
                               ) : (
                                 <Mail className="h-4 w-4" />
                               )}
-                              继续使用邮箱
+                              {requiresAdminPassword
+                                ? t("siteAuth.verifyPasswordAndLogin")
+                                : t("siteAuth.continueWithEmail")}
                             </button>
                           ) : null}
                         </div>

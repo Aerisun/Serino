@@ -19,7 +19,7 @@ interface AuthState {
     email_enabled: boolean;
   } | null;
   login: (username: string, password: string) => Promise<void>;
-  loginWithAdminEmail: (email: string) => Promise<void>;
+  loginWithAdminEmail: (email: string, password: string) => Promise<void>;
   exchangeSiteUserLogin: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   }, []);
 
-  const loginWithAdminEmail = useCallback(async (email: string) => {
-    const { data: res } = await loginWithBoundEmailApiV1AdminAuthEmailPost({ email });
+  const loginWithAdminEmail = useCallback(async (email: string, password: string) => {
+    const { data: res } = await loginWithBoundEmailApiV1AdminAuthEmailPost({ email, password });
     setAdminToken(res.token);
     const { data: me } = await meApiV1AdminAuthMeGet();
     setUser(me);

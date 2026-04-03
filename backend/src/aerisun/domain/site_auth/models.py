@@ -15,7 +15,9 @@ class SiteAuthConfig(Base, TimestampMixin):
     email_login_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     visitor_oauth_providers: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     admin_auth_methods: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    admin_console_auth_methods: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     admin_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    admin_email_password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_client_id: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     google_client_secret: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     github_client_id: Mapped[str] = mapped_column(String(255), nullable=False, default="")
@@ -82,4 +84,5 @@ class SiteUserSession(Base, TimestampMixin):
         nullable=False,
     )
     session_token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    admin_verified_provider: Mapped[str | None] = mapped_column(String(40), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

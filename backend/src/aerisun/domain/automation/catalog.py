@@ -1612,6 +1612,7 @@ def _event_trigger_options() -> list[AgentWorkflowCatalogOptionRead]:
                 {"field": "changed_fields", "description": "本次变更字段"},
                 {"field": "visitor_oauth_providers", "description": "前台可用 OAuth 提供商"},
                 {"field": "admin_auth_methods", "description": "管理员登录方式"},
+                {"field": "admin_console_auth_methods", "description": "允许进入管理台的管理员方式"},
                 {"field": "email_login_enabled", "description": "前台邮箱登录是否开启"},
                 {"field": "admin_email_enabled", "description": "管理员邮箱登录是否开启"},
             ],

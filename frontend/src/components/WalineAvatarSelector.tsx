@@ -1,5 +1,6 @@
 import { Check, LockKeyhole } from "lucide-react";
 import type { AvatarPreset } from "@/lib/community-config";
+import { useFrontendI18n } from "@/i18n";
 import {
   communityPopupClass,
   fallbackAvatar,
@@ -28,19 +29,22 @@ const WalineAvatarSelector = ({
   onClose,
   onToggle,
   selectedPreset,
-}: WalineAvatarSelectorProps) => (
-  <>
+}: WalineAvatarSelectorProps) => {
+  const { t } = useFrontendI18n();
+
+  return (
+    <>
     <div className="self-end">
       <button
         type="button"
         onClick={onToggle}
         className="group relative inline-flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[rgb(var(--shiro-border-rgb)/0.22)] bg-card/[0.9] p-1.5 shadow-[0_14px_36px_rgb(15_23_42/0.08)] transition hover:border-[rgb(var(--shiro-accent-rgb)/0.28)] hover:shadow-[0_18px_40px_rgb(15_23_42/0.12)] dark:border-[rgb(var(--shiro-border-rgb)/0.28)] dark:bg-card/[0.96]"
         aria-expanded={open}
-        aria-label="打开头像库"
+        aria-label={t("waline.avatar.openLibrary")}
       >
         <img
           src={selectedPreset?.avatar_url || fallbackAvatar(draftName)}
-          alt={selectedPreset?.label || draftName || "当前头像"}
+          alt={selectedPreset?.label || draftName || t("siteAuth.currentAvatar")}
           className="h-full w-full rounded-full object-cover"
         />
         <span className="absolute inset-0 rounded-full ring-1 ring-black/5 ring-inset dark:ring-white/10" />
@@ -59,7 +63,7 @@ const WalineAvatarSelector = ({
                 <button
                   key={preset.key}
                   type="button"
-                  title={locked ? `${preset.label} 已被占用` : preset.label}
+                  title={locked ? t("waline.avatar.occupied", { label: preset.label }) : preset.label}
                   disabled={locked}
                   aria-disabled={locked}
                   onClick={() => {
@@ -97,7 +101,8 @@ const WalineAvatarSelector = ({
         </div>
       </div>
     ) : null}
-  </>
-);
+    </>
+  );
+};
 
 export default WalineAvatarSelector;

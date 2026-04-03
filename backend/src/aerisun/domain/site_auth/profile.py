@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from aerisun.domain.exceptions import ValidationError
 from aerisun.domain.media.models import Asset
 from aerisun.domain.site_auth import repository as repo
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.schemas import (
     EmailLoginRequest,
     EmailLoginResponse,
@@ -21,7 +21,12 @@ from aerisun.domain.site_auth.schemas import (
 from aerisun.domain.site_config import repository as site_config_repo
 from aerisun.domain.waline.service import connect_waline_db, sync_site_user_comment_profile
 
-from .config_service import email_login_enabled, enabled_visitor_oauth_providers
+from .config_service import (
+    admin_console_auth_method_enabled,
+    email_login_enabled,
+    enabled_visitor_oauth_providers,
+    validate_admin_email_password,
+)
 from .sessions import create_site_session
 from .shared import normalize_display_name, normalize_email
 
@@ -190,9 +195,29 @@ def resolve_admin_avatar_url(session: Session) -> str:
     return avatar_url_for_seed(seed)
 
 
-def resolve_admin_identity(session: Session, user: SiteUser) -> ResolvedAdminIdentity:
-    admin_bindings = repo.list_admin_identities_by_user_ids(session, [user.id]).get(user.id, [])
-    if not admin_bindings:
+def resolve_admin_identity(
+    session: Session,
+    user: SiteUser,
+    site_session: SiteUserSession | None = None,
+    admin_verified_provider: str | None = None,
+) -> ResolvedAdminIdentity:
+    verified_provider = (
+        (site_session.admin_verified_provider or "").strip().lower()
+        if site_session
+        else (admin_verified_provider or "").strip().lower()
+    )
+    if not verified_provider:
+        return ResolvedAdminIdentity(
+            is_admin=False,
+            effective_display_name=user.display_name,
+            effective_avatar_url=user.avatar_url,
+        )
+    identity = repo.find_admin_identity_for_user_provider(
+        session,
+        site_user_id=user.id,
+        provider=verified_provider,
+    )
+    if identity is None or not identity.admin_user_id:
         return ResolvedAdminIdentity(
             is_admin=False,
             effective_display_name=user.display_name,
@@ -205,8 +230,23 @@ def resolve_admin_identity(session: Session, user: SiteUser) -> ResolvedAdminIde
     )
 
 
-def user_to_read(session: Session, user: SiteUser) -> SiteAuthUserRead:
-    admin_identity = resolve_admin_identity(session, user)
+def user_to_read(
+    session: Session,
+    user: SiteUser,
+    site_session: SiteUserSession | None = None,
+    admin_verified_provider: str | None = None,
+) -> SiteAuthUserRead:
+    verified_provider = (
+        (site_session.admin_verified_provider or "").strip().lower()
+        if site_session
+        else (admin_verified_provider or "").strip().lower()
+    )
+    admin_identity = resolve_admin_identity(
+        session,
+        user,
+        site_session,
+        admin_verified_provider=admin_verified_provider,
+    )
     return SiteAuthUserRead(
         id=user.id,
         email=user.email,
@@ -216,21 +256,32 @@ def user_to_read(session: Session, user: SiteUser) -> SiteAuthUserRead:
         effective_avatar_url=admin_identity.effective_avatar_url,
         primary_auth_provider=user.primary_auth_provider,
         is_admin=admin_identity.is_admin,
+        can_access_admin_console=bool(
+            admin_identity.is_admin and admin_console_auth_method_enabled(session, verified_provider)
+        ),
         last_login_at=user.last_login_at,
     )
 
 
-def get_auth_state(session: Session, user: SiteUser | None) -> SiteAuthStateRead:
+def get_auth_state(
+    session: Session,
+    user: SiteUser | None,
+    site_session: SiteUserSession | None = None,
+) -> SiteAuthStateRead:
     return SiteAuthStateRead(
         authenticated=user is not None,
-        user=user_to_read(session, user) if user else None,
+        user=user_to_read(session, user, site_session) if user else None,
         email_login_enabled=email_login_enabled(session),
         oauth_providers=enabled_visitor_oauth_providers(session),
     )
 
 
-def is_site_user_admin(session: Session, user: SiteUser) -> bool:
-    return resolve_admin_identity(session, user).is_admin
+def is_site_user_admin(
+    session: Session,
+    user: SiteUser,
+    site_session: SiteUserSession | None = None,
+) -> bool:
+    return resolve_admin_identity(session, user, site_session).is_admin
 
 
 def get_admin_comment_identity(session: Session) -> tuple[str, str, str]:
@@ -249,6 +300,27 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
     if not normalized_email or "@" not in normalized_email:
         raise ValidationError("请输入有效邮箱。")
 
+    admin_identity = repo.find_admin_email_identity(session, email=normalized_email)
+    admin_verified_provider = None
+    if admin_identity is not None and admin_identity.admin_user_id:
+        provided_password = (payload.admin_password or "").strip()
+        if not provided_password:
+            return (
+                EmailLoginResponse(
+                    authenticated=False,
+                    requires_profile=False,
+                    requires_admin_password=True,
+                    user=None,
+                    suggested_display_name=None,
+                    avatar_candidates=[],
+                    avatar_batch=0,
+                    avatar_total_batches=1,
+                ),
+                None,
+            )
+        validate_admin_email_password(session, provided_password)
+        admin_verified_provider = "email"
+
     existing = repo.find_user_by_email(session, normalized_email)
     if existing is not None:
         from datetime import UTC, datetime
@@ -256,12 +328,21 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
         existing.last_login_at = datetime.now(UTC)
         session.commit()
         session.refresh(existing)
-        token = create_site_session(session, existing.id)
+        token = create_site_session(
+            session,
+            existing.id,
+            admin_verified_provider=admin_verified_provider,
+        )
         return (
             EmailLoginResponse(
                 authenticated=True,
                 requires_profile=False,
-                user=user_to_read(session, existing),
+                requires_admin_password=False,
+                user=user_to_read(
+                    session,
+                    existing,
+                    admin_verified_provider=admin_verified_provider,
+                ),
                 suggested_display_name=None,
                 avatar_candidates=[],
                 avatar_batch=0,
@@ -278,6 +359,7 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
             EmailLoginResponse(
                 authenticated=False,
                 requires_profile=True,
+                requires_admin_password=False,
                 user=None,
                 suggested_display_name=suggest_display_name(normalized_email),
                 avatar_candidates=avatar_batch.avatar_candidates,
@@ -299,12 +381,21 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
     )
     session.commit()
     session.refresh(user)
-    token = create_site_session(session, user.id)
+    token = create_site_session(
+        session,
+        user.id,
+        admin_verified_provider=admin_verified_provider,
+    )
     return (
         EmailLoginResponse(
             authenticated=True,
             requires_profile=False,
-            user=user_to_read(session, user),
+            requires_admin_password=False,
+            user=user_to_read(
+                session,
+                user,
+                admin_verified_provider=admin_verified_provider,
+            ),
             suggested_display_name=None,
             avatar_candidates=[],
             avatar_batch=0,
@@ -318,6 +409,7 @@ def update_site_user_profile(
     session: Session,
     user: SiteUser,
     payload: SiteAuthProfileUpdateRequest,
+    site_session: SiteUserSession | None = None,
 ) -> SiteAuthUserRead:
     from aerisun.domain.automation.events import emit_site_user_profile_updated
 
@@ -344,4 +436,4 @@ def update_site_user_profile(
         display_name=user.display_name,
         avatar_url=user.avatar_url,
     )
-    return user_to_read(session, user)
+    return user_to_read(session, user, site_session)

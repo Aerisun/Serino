@@ -12,12 +12,13 @@ from .admin_binding import (  # noqa: F401
     get_admin_login_options,
     list_site_admin_identities_admin,
     resolve_admin_user_id_for_email,
-    resolve_admin_user_id_for_site_user,
+    resolve_admin_user_id_for_site_session,
 )
 from .config_service import (  # noqa: F401
     build_default_site_auth_config,
     get_site_auth_admin_config,
     update_site_auth_admin_config,
+    validate_admin_email_password,
 )
 from .oauth import build_oauth_authorization_url, complete_oauth_login  # noqa: F401
 from .profile import (  # noqa: F401
@@ -28,7 +29,7 @@ from .profile import (  # noqa: F401
     login_with_email,
     update_site_user_profile,
 )
-from .sessions import destroy_site_session, validate_site_session_token  # noqa: F401
+from .sessions import destroy_site_session, validate_site_session, validate_site_session_token  # noqa: F401
 from .shared import ALLOWED_OAUTH_PROVIDERS
 
 

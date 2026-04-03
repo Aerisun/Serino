@@ -751,6 +751,7 @@ def emit_site_auth_config_updated(
     changed_fields: list[str],
     visitor_oauth_providers: list[str],
     admin_auth_methods: list[str],
+    admin_console_auth_methods: list[str],
     email_login_enabled: bool,
     admin_email_enabled: bool,
 ) -> None:
@@ -763,6 +764,7 @@ def emit_site_auth_config_updated(
             "changed_fields": changed_fields,
             "visitor_oauth_providers": visitor_oauth_providers,
             "admin_auth_methods": admin_auth_methods,
+            "admin_console_auth_methods": admin_console_auth_methods,
             "email_login_enabled": email_login_enabled,
             "admin_email_enabled": admin_email_enabled,
         },

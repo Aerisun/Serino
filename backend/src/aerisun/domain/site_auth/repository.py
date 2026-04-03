@@ -42,11 +42,19 @@ def find_session_by_token(session: Session, token: str) -> SiteUserSession | Non
     return session.scalars(select(SiteUserSession).where(SiteUserSession.session_token == token)).first()
 
 
-def create_session(session: Session, *, site_user_id: str, token: str, expires_at: datetime) -> SiteUserSession:
+def create_session(
+    session: Session,
+    *,
+    site_user_id: str,
+    token: str,
+    expires_at: datetime,
+    admin_verified_provider: str | None = None,
+) -> SiteUserSession:
     site_session = SiteUserSession(
         site_user_id=site_user_id,
         session_token=token,
         expires_at=expires_at,
+        admin_verified_provider=admin_verified_provider,
     )
     session.add(site_session)
     return site_session

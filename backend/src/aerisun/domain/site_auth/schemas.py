@@ -22,7 +22,11 @@ class SiteAuthUserRead(ModelBase):
     effective_display_name: str = Field(description="Display name currently used in public surfaces")
     effective_avatar_url: str = Field(description="Avatar currently used in public surfaces")
     primary_auth_provider: str = Field(description="Primary auth provider")
-    is_admin: bool = Field(default=False, description="Whether the current site user is using admin identity")
+    is_admin: bool = Field(default=False, description="Whether the current site session is admin-elevated")
+    can_access_admin_console: bool = Field(
+        default=False,
+        description="Whether the current admin-elevated site session can enter the admin console",
+    )
     last_login_at: datetime | None = Field(default=None, description="Last login time")
 
 
@@ -37,11 +41,16 @@ class EmailLoginRequest(BaseModel):
     email: str = Field(description="Email identifier")
     display_name: str | None = Field(default=None, description="Optional display name for first login")
     avatar_url: str | None = Field(default=None, description="Optional avatar URL for first login")
+    admin_password: str | None = Field(default=None, description="Shared admin email password when elevation is needed")
 
 
 class EmailLoginResponse(BaseModel):
     authenticated: bool = Field(description="Whether a login session was created")
     requires_profile: bool = Field(default=False, description="Whether first-login profile setup is required")
+    requires_admin_password: bool = Field(
+        default=False,
+        description="Whether admin email login requires the shared admin password before creating a session",
+    )
     user: SiteAuthUserRead | None = Field(default=None, description="Current site user when authenticated")
     suggested_display_name: str | None = Field(default=None, description="Suggested display name for first login")
     avatar_candidates: list[SiteAuthAvatarCandidate] = Field(default_factory=list, description="Avatar candidates")
@@ -71,7 +80,12 @@ class SiteAuthConfigAdminRead(ModelBase):
         default_factory=list,
         description="Auth methods reserved for admin-side usage",
     )
+    admin_console_auth_methods: list[str] = Field(
+        default_factory=list,
+        description="Admin-elevated auth methods that are allowed to enter the admin console",
+    )
     admin_email_enabled: bool = Field(description="Whether email can be used as an admin identity")
+    admin_email_password_set: bool = Field(description="Whether the shared admin email password has been configured")
     google_client_id: str = Field(description="Google OAuth client id")
     google_client_secret: str = Field(description="Google OAuth client secret")
     github_client_id: str = Field(description="GitHub OAuth client id")
@@ -90,7 +104,15 @@ class SiteAuthConfigAdminUpdate(BaseModel):
         default=None,
         description="Auth methods reserved for admin-side usage",
     )
+    admin_console_auth_methods: list[str] | None = Field(
+        default=None,
+        description="Admin-elevated auth methods that are allowed to enter the admin console",
+    )
     admin_email_enabled: bool | None = Field(default=None, description="Whether email can be used as admin login")
+    admin_email_password: str | None = Field(
+        default=None,
+        description="Shared admin email password used by all bound admin email identities",
+    )
     google_client_id: str | None = Field(default=None, description="Google OAuth client id")
     google_client_secret: str | None = Field(default=None, description="Google OAuth client secret")
     github_client_id: str | None = Field(default=None, description="GitHub OAuth client id")

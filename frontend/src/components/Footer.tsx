@@ -84,12 +84,12 @@ const Footer = () => {
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
               <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-foreground/28">
-                <span>Powered by Aerisun /Serino</span>
+                <span>{t("footer.poweredBy")}</span>
                 <a
                   href="https://github.com/Aerisun/Serino"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="前往 Serino GitHub 仓库"
+                  aria-label={t("footer.githubRepoAria")}
                   className="shiro-focus-ring inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-foreground/28 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                 >
                   <ArrowUpRight className="h-2.75 w-2.75" strokeWidth={1.8} />
@@ -114,7 +114,7 @@ const Footer = () => {
                   href="/rss.xml"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="RSS 订阅"
+                  aria-label={t("footer.rssAria")}
                   className="shiro-focus-ring inline-flex h-5 w-5 items-center justify-center rounded-full text-foreground/30 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                 >
                   <Rss className="h-3.25 w-3.25" strokeWidth={1.8} />

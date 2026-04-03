@@ -4,11 +4,14 @@ from sqlalchemy.orm import Session
 
 from aerisun.domain.exceptions import AuthenticationFailed, ValidationError
 from aerisun.domain.site_auth import repository as repo
-from aerisun.domain.site_auth.models import SiteUser
+from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.schemas import SiteAdminEmailIdentityBindRequest, SiteAdminIdentityAdminRead
 
-from .config_service import get_admin_login_options as _get_admin_login_options
-from .config_service import get_site_auth_config_orm
+from .config_service import (
+    admin_console_auth_method_enabled,
+    get_admin_login_options as _get_admin_login_options,
+    get_site_auth_config_orm,
+)
 from .profile import build_avatar_candidates, suggest_display_name
 from .shared import ALLOWED_ADMIN_AUTH_METHODS, normalize_email, normalize_string_list
 
@@ -222,8 +225,21 @@ def get_admin_login_options(session: Session) -> dict[str, object]:
     return _get_admin_login_options(session)
 
 
-def resolve_admin_user_id_for_site_user(session: Session, current_user: SiteUser) -> str:
-    identity = repo.find_admin_identity_for_user(session, site_user_id=current_user.id)
+def resolve_admin_user_id_for_site_session(
+    session: Session,
+    current_user: SiteUser,
+    current_site_session: SiteUserSession,
+) -> str:
+    verified_provider = (current_site_session.admin_verified_provider or "").strip().lower()
+    if not verified_provider:
+        raise AuthenticationFailed("当前站点会话还没有完成管理员验证。")
+    if not admin_console_auth_method_enabled(session, verified_provider):
+        raise AuthenticationFailed("当前管理员身份未开启进入管理台。")
+    identity = repo.find_admin_identity_for_user_provider(
+        session,
+        site_user_id=current_user.id,
+        provider=verified_provider,
+    )
     if identity is None or not identity.admin_user_id:
         raise AuthenticationFailed("当前站点身份没有绑定后台管理员权限。")
     return identity.admin_user_id
@@ -235,6 +251,8 @@ def resolve_admin_user_id_for_email(session: Session, email: str) -> str:
         raise ValidationError("请输入有效邮箱。")
     config = get_site_auth_config_orm(session)
     if not config.admin_email_enabled:
+        raise ValidationError("当前未启用管理员邮箱登录。")
+    if not admin_console_auth_method_enabled(session, "email"):
         raise ValidationError("当前未启用管理员邮箱登录。")
     identity = repo.find_admin_email_identity(session, email=normalized_email)
     if identity is None or not identity.admin_user_id:

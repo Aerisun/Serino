@@ -3,14 +3,16 @@ import { motion } from "motion/react";
 import { ArrowLeft, Home, Sparkles } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n } from "@/i18n";
 
 const NotFound = () => {
+  const { t } = useFrontendI18n();
   const config = (usePageConfig().notFound as Record<string, unknown> | undefined) ?? {};
   const badgeLabel = String(config.badgeLabel ?? "404");
-  const homeLabel = String(config.homeLabel ?? "返回首页");
-  const backLabel = String(config.backLabel ?? "返回上页");
-  const title = String(config.title ?? "这个页面没有留下来");
-  const description = String(config.description ?? "似乎已经离开了当前的路径。");
+  const homeLabel = String(config.homeLabel ?? t("notFound.home"));
+  const backLabel = String(config.backLabel ?? t("notFound.back"));
+  const title = String(config.title ?? t("notFound.title"));
+  const description = String(config.description ?? t("notFound.description"));
   const metaTitle = String(config.metaTitle ?? title);
   const metaDescription = String(config.metaDescription ?? description);
 

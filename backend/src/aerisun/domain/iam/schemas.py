@@ -28,6 +28,7 @@ class AdminLoginOptionsRead(ModelBase):
 
 class AdminEmailLoginRequest(BaseModel):
     email: str
+    password: str
 
 
 class AdminUserRead(ModelBase):

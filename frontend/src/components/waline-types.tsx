@@ -1,4 +1,5 @@
 import type { AvatarPreset, CommunityConfig } from "@/lib/community-config";
+import { getFrontendLang, translateFrontendText } from "@/i18n";
 
 /* ── Domain types ── */
 
@@ -51,6 +52,7 @@ export interface EmojiChoice {
 
 export interface EmojiGroup {
   title: string;
+  titleKey?: string;
   items: EmojiChoice[];
 }
 
@@ -61,6 +63,7 @@ export const PROFILE_STORAGE_PREFIX = "aerisun:comment-profile:";
 export const EMOJI_GROUPS: EmojiGroup[] = [
   {
     title: "\u65E5\u5E38",
+    titleKey: "waline.emoji.groupDaily",
     items: [
       { emoji: "\uD83D\uDE42", label: "\u5FAE\u7B11", keywords: ["\u5FAE\u7B11", "\u7B11", "\u5F00\u5FC3", "smile"] },
       { emoji: "\uD83D\uDE0A", label: "\u5F00\u5FC3", keywords: ["\u5F00\u5FC3", "\u5FEB\u4E50", "\u9AD8\u5174"] },
@@ -74,6 +77,7 @@ export const EMOJI_GROUPS: EmojiGroup[] = [
   },
   {
     title: "\u4E92\u52A8",
+    titleKey: "waline.emoji.groupInteraction",
     items: [
       { emoji: "\uD83D\uDE04", label: "\u5927\u7B11", keywords: ["\u5927\u7B11", "\u54C8\u54C8", "laugh"] },
       { emoji: "\uD83D\uDE02", label: "\u7B11\u54ED", keywords: ["\u7B11\u54ED", "\u7206\u7B11", "lol"] },
@@ -87,6 +91,7 @@ export const EMOJI_GROUPS: EmojiGroup[] = [
   },
   {
     title: "\u6C1B\u56F4",
+    titleKey: "waline.emoji.groupAtmosphere",
     items: [
       { emoji: "\uD83E\uDEF6", label: "\u6BD4\u5FC3", keywords: ["\u6BD4\u5FC3", "\u559C\u6B22", "heart"] },
       { emoji: "\uD83D\uDCAD", label: "\u601D\u8003", keywords: ["\u601D\u8003", "\u60F3\u6CD5", "idea"] },
@@ -215,10 +220,27 @@ export const formatTimestamp = (value: string) => {
     return value;
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  const locale = getFrontendLang() === "zh" ? "zh-CN" : "en-US";
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+};
+
+type EmojiGroupTranslator = (
+  key: string,
+  values?: Record<string, string | number>,
+  fallback?: string,
+) => string;
+
+export const getLocalizedEmojiGroups = (
+  translate: EmojiGroupTranslator = translateFrontendText,
+): EmojiGroup[] => {
+  return EMOJI_GROUPS.map((group) => ({
+    ...group,
+    title: group.titleKey ? translate(group.titleKey, undefined, group.title) : group.title,
+  }));
 };
 
 export const readStoredDraft = (storageKey: string): Partial<DraftState> => {
@@ -251,14 +273,21 @@ export const insertTextAtSelection = (
   return { nextValue, selectionStart };
 };
 
-export const resolveApiError = (error: unknown) => {
+export const resolveApiError = (
+  error: unknown,
+  fallback = translateFrontendText(
+    "waline.common.requestFailed",
+    undefined,
+    "评论请求失败，请稍后再试。",
+  ),
+) => {
   if (error instanceof ApiError) {
     return error.message;
   }
   if (error instanceof Error && error.message.trim()) {
     return error.message;
   }
-  return "\u8BC4\u8BBA\u8BF7\u6C42\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5\u3002";
+  return fallback;
 };
 
 export const providerLabel = (provider: string) => {

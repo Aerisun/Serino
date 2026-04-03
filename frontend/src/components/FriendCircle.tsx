@@ -30,11 +30,11 @@ const FriendCircle = () => {
   const { regionRef, scrollViewportRef } =
     useContainedWheelScroll<HTMLDivElement>();
   const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
-  const title = String(config.friendCircleTitle ?? "朋友圈");
-  const viewAllLabel = String(config.friendCircleViewAllLabel ?? "查看全部");
-  const errorTitle = String(config.friendCircleErrorTitle ?? "友邻动态加载失败");
-  const retryLabel = String(config.friendCircleRetryLabel ?? "重试");
-  const emptyMessage = String(config.friendCircleEmptyMessage ?? "还没有公开的友邻动态");
+  const title = String(config.friendCircleTitle ?? t("friendCircle.title"));
+  const viewAllLabel = String(config.friendCircleViewAllLabel ?? t("friendCircle.viewAll"));
+  const errorTitle = String(config.friendCircleErrorTitle ?? t("friendCircle.errorTitle"));
+  const retryLabel = String(config.friendCircleRetryLabel ?? t("common.retry"));
+  const emptyMessage = String(config.friendCircleEmptyMessage ?? t("friendCircle.emptyMessage"));
   const refreshLabel = t("friendCircle.refresh");
 
   const { data: response, isLoading, isFetching, isError, error, refetch } =

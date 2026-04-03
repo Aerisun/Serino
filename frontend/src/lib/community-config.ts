@@ -8,6 +8,7 @@ import type {
 export type { AvatarPreset, CommunityCommentSort, CommunitySurface, WalineEmojiPreset };
 import { readCommunityConfigApiV1SiteCommunityConfigGet } from "@serino/api-client/site";
 import { clampPageSize } from "@/lib/page-size";
+import { translateFrontendText } from "@/i18n";
 
 const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;
 
@@ -76,7 +77,11 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   enable_enjoy_search: true,
   image_uploader: false,
   emoji_presets: DEFAULT_WALINE_EMOJI,
-  avatar_helper_copy: "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
+  avatar_helper_copy: translateFrontendText(
+    "community.avatarHelperCopy",
+    undefined,
+    "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
+  ),
   page_size: 10,
   image_max_bytes: DEFAULT_IMAGE_MAX_BYTES,
   migration_state: "not_started",

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { staggerItem, transition } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useReadCalendarApiV1SiteCalendarGet } from "@serino/api-client/site";
 import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
@@ -94,42 +95,58 @@ const normalizeCalendarEvent = (item: CalendarEventRead): CalendarEvent | null =
   };
 };
 
-const getWeekdayLabels = (value: unknown) => {
+const getWeekdayLabels = (
+  value: unknown,
+  t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
+) => {
   if (Array.isArray(value) && value.length === 7) {
     return value.map(String);
   }
 
-  return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+  return [
+    t("calendar.weekdayMon"),
+    t("calendar.weekdayTue"),
+    t("calendar.weekdayWed"),
+    t("calendar.weekdayThu"),
+    t("calendar.weekdayFri"),
+    t("calendar.weekdaySat"),
+    t("calendar.weekdaySun"),
+  ];
 };
 
-const getMonthLabels = (value: unknown) => {
+const getMonthLabels = (value: unknown, lang: FrontendLang) => {
   if (Array.isArray(value) && value.length === 12) {
     return value.map(String);
   }
 
-  return Array.from({ length: 12 }, (_, index) => `${index + 1}月`);
+  return Array.from({ length: 12 }, (_, index) =>
+    new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { month: "short" }).format(
+      new Date(2024, index, 1),
+    ),
+  );
 };
 
 const CalendarPage = () => {
+  const { t, lang } = useFrontendI18n();
   const config = usePageConfig().calendar as unknown as CalendarPageConfig;
-  const weekdayLabels = getWeekdayLabels(config.weekdayLabels);
-  const monthLabels = getMonthLabels(config.monthLabels);
-  const loadingLabel = config.loadingLabel ?? "正在加载日历";
-  const retryLabel = config.retryLabel ?? "重试加载";
-  const errorTitle = config.errorTitle ?? "日历加载失败";
-  const selectedEmptyMessage = config.selectedEmptyMessage ?? "这一天没有记录";
+  const weekdayLabels = getWeekdayLabels(config.weekdayLabels, t);
+  const monthLabels = getMonthLabels(config.monthLabels, lang);
+  const loadingLabel = config.loadingLabel ?? t("calendar.loadingLabel");
+  const retryLabel = config.retryLabel ?? t("calendar.retryLabel");
+  const errorTitle = config.errorTitle ?? t("calendar.errorTitle");
+  const selectedEmptyMessage = config.selectedEmptyMessage ?? t("calendar.selectedEmptyMessage");
   const typeConfig = {
     post: {
       ...typeConfigBase.post,
-      label: config.postTypeLabel ?? "帖子",
+      label: config.postTypeLabel ?? t("calendar.postTypeLabel"),
     },
     diary: {
       ...typeConfigBase.diary,
-      label: config.diaryTypeLabel ?? "日记",
+      label: config.diaryTypeLabel ?? t("calendar.diaryTypeLabel"),
     },
     excerpt: {
       ...typeConfigBase.excerpt,
-      label: config.excerptTypeLabel ?? "文摘",
+      label: config.excerptTypeLabel ?? t("calendar.excerptTypeLabel"),
     },
   } as const;
   const today = new Date();
@@ -180,6 +197,9 @@ const CalendarPage = () => {
   const todayKey = formatDateKey(today);
   const activeDate = selectedDate;
   const activeEvents = activeDate ? eventMap[activeDate] || [] : eventMap[todayKey] || [];
+  const activeDayLabel = activeDate
+    ? t("calendar.dayOfMonth", { day: parseInt(activeDate.split("-")[2], 10) })
+    : String(config.todayLabel ?? t("calendar.today"));
 
   const cells: (number | null)[] = [];
   for (let index = 0; index < firstDay; index += 1) {
@@ -228,7 +248,7 @@ const CalendarPage = () => {
               <ChevronLeft className="h-5 w-5" />
             </button>
             <h2 className="text-lg font-body font-medium text-foreground/80">
-              {year} 年 {monthLabels[month]}
+              {t("calendar.yearMonth", { year, month: monthLabels[month] })}
             </h2>
             <button
               type="button"
@@ -335,7 +355,7 @@ const CalendarPage = () => {
           })}
         >
           <h3 className="mb-4 text-xs font-body uppercase tracking-widest text-foreground/30">
-            {activeDate ? `${parseInt(activeDate.split("-")[2], 10)} 日` : String(config.todayLabel ?? "")}
+            {activeDayLabel}
           </h3>
 
           {status === "loading" ? (
@@ -365,7 +385,7 @@ const CalendarPage = () => {
             </div>
           ) : !hasMonthData ? (
             <p className="py-8 text-center text-sm font-body text-foreground/20">
-              {String(config.emptyMessage ?? "")}
+              {String(config.emptyMessage ?? t("calendar.emptyMessage"))}
             </p>
           ) : activeEvents.length > 0 ? (
             <div className="flex flex-col gap-3">
@@ -405,7 +425,7 @@ const CalendarPage = () => {
             </div>
           ) : (
             <p className="py-8 text-center text-sm font-body text-foreground/20">
-              {selectedDate ? selectedEmptyMessage : String(config.emptyMessage ?? "")}
+              {selectedDate ? selectedEmptyMessage : String(config.emptyMessage ?? t("calendar.emptyMessage"))}
             </p>
           )}
         </motion.div>

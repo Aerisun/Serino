@@ -3,6 +3,7 @@ import { BookOpen, FileText, Heart, MessageCircle, PencilLine, Quote } from "luc
 import { useNavigate } from "react-router-dom";
 import { useReadRecentActivityApiV1SiteRecentActivityGet } from "@serino/api-client/site";
 import type { RecentActivityItemRead } from "@serino/api-client/models";
+import { useFrontendI18n } from "@/i18n";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useContainedWheelScroll } from "@/hooks/use-contained-wheel-scroll";
 
@@ -26,10 +27,11 @@ interface ActivityItem {
 }
 
 const GUESTBOOK_ROUTE = "/guestbook";
+type TranslateFn = (key: string, values?: Record<string, string | number>, fallback?: string) => string;
 
 const isPublishType = (value: ActivityType) => value.startsWith("publish_");
 
-const formatRelativeDate = (value: string) => {
+const formatRelativeDate = (value: string, t: TranslateFn, lang: "zh" | "en") => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
     return value;
@@ -37,24 +39,24 @@ const formatRelativeDate = (value: string) => {
 
   const diffMs = Date.now() - parsed.getTime();
   if (diffMs < 60_000) {
-    return "刚刚";
+    return t("recentActivity.justNow");
   }
 
   const hours = Math.floor(diffMs / 3_600_000);
   if (hours < 24) {
-    return `${Math.max(1, hours)} 小时前`;
+    return t("recentActivity.hoursAgo", { count: Math.max(1, hours) });
   }
 
   const days = Math.floor(hours / 24);
   if (days === 1) {
-    return "昨天";
+    return t("recentActivity.yesterday");
   }
 
   if (days < 7) {
-    return `${days} 天前`;
+    return t("recentActivity.daysAgo", { count: days });
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -72,10 +74,10 @@ const looksMachineLike = (value: string) => {
   return false;
 };
 
-const normalizeActorName = (value: string) => {
+const normalizeActorName = (value: string, t: TranslateFn) => {
   const normalized = value.trim();
   if (looksMachineLike(normalized)) {
-    return "访客";
+    return t("recentActivity.visitor");
   }
   return normalized;
 };
@@ -112,15 +114,15 @@ const normalizeType = (value: string): ActivityType => {
   return "comment";
 };
 
-const normalizeActivity = (value: RecentActivityItemRead): ActivityItem => {
+const normalizeActivity = (value: RecentActivityItemRead, t: TranslateFn, lang: "zh" | "en"): ActivityItem => {
   const type = normalizeType(value.kind);
 
   return {
     type,
-    user: normalizeActorName(value.actor_name ?? ""),
+    user: normalizeActorName(value.actor_name ?? "", t),
     target: humanizeTarget(value.target_title ?? ""),
     detail: isPublishType(type) ? value.excerpt?.trim() || undefined : undefined,
-    date: formatRelativeDate(value.created_at),
+    date: formatRelativeDate(value.created_at, t, lang),
     href: value.href ?? (type === "guestbook" ? GUESTBOOK_ROUTE : undefined),
   };
 };
@@ -141,8 +143,8 @@ const detailClass =
 const itemClass =
   "group relative flex w-full gap-4 rounded-2xl py-1 text-left transition-colors";
 
-const renderSummary = (item: ActivityItem): ReactNode => {
-  const actor = <span className={actorClass}>{item.user || "访客"}</span>;
+const renderSummary = (item: ActivityItem, t: TranslateFn): ReactNode => {
+  const actor = <span className={actorClass}>{item.user || t("recentActivity.visitor")}</span>;
   const target = item.target ? <span className={targetClass}>{item.target}</span> : null;
 
   if (item.type === "like") {
@@ -159,7 +161,7 @@ const renderSummary = (item: ActivityItem): ReactNode => {
     return (
       <>
         {actor}
-        <span className={verbClass}>留言了</span>
+        <span className={verbClass}>{t("recentActivity.guestbook")}</span>
       </>
     );
   }
@@ -178,7 +180,7 @@ const renderSummary = (item: ActivityItem): ReactNode => {
     return (
       <>
         {actor}
-        <span className={verbClass}>发布了文章</span>
+        <span className={verbClass}>{t("recentActivity.postPublished")}</span>
         {target ? <span className="pl-2">{target}</span> : null}
       </>
     );
@@ -188,7 +190,7 @@ const renderSummary = (item: ActivityItem): ReactNode => {
     return (
       <>
         {actor}
-        <span className={verbClass}>发布了日记</span>
+        <span className={verbClass}>{t("recentActivity.diaryPublished")}</span>
         {target ? <span className="pl-2">{target}</span> : null}
       </>
     );
@@ -198,7 +200,7 @@ const renderSummary = (item: ActivityItem): ReactNode => {
     return (
       <>
         {actor}
-        <span className={verbClass}>发布了一条碎碎念</span>
+        <span className={verbClass}>{t("recentActivity.thoughtPublished")}</span>
       </>
     );
   }
@@ -207,7 +209,7 @@ const renderSummary = (item: ActivityItem): ReactNode => {
     return (
       <>
         {actor}
-        <span className={verbClass}>发布了一条文摘</span>
+        <span className={verbClass}>{t("recentActivity.excerptPublished")}</span>
       </>
     );
   }
@@ -216,20 +218,21 @@ const renderSummary = (item: ActivityItem): ReactNode => {
 };
 
 const RecentActivity = () => {
+  const { t, lang } = useFrontendI18n();
   const navigate = useNavigate();
   const { regionRef, scrollViewportRef } =
     useContainedWheelScroll<HTMLDivElement>();
   const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
-  const title = String(config.recentActivityTitle ?? "最近动态");
-  const errorTitle = String(config.recentActivityErrorTitle ?? "最近动态加载失败");
-  const retryLabel = String(config.recentActivityRetryLabel ?? "重试");
-  const emptyMessage = String(config.recentActivityEmptyMessage ?? "暂时还没有公开的最近动态");
+  const title = String(config.recentActivityTitle ?? t("recentActivity.title"));
+  const errorTitle = String(config.recentActivityErrorTitle ?? t("recentActivity.errorTitle"));
+  const retryLabel = String(config.recentActivityRetryLabel ?? t("recentActivity.retryLabel"));
+  const emptyMessage = String(config.recentActivityEmptyMessage ?? t("recentActivity.emptyMessage"));
 
   const { data: response, isLoading, isError, error, refetch } =
     useReadRecentActivityApiV1SiteRecentActivityGet({ limit: 8 });
   const activities = useMemo(
-    () => response?.data?.items?.map(normalizeActivity) ?? [],
-    [response],
+    () => response?.data?.items?.map((item) => normalizeActivity(item, t, lang)) ?? [],
+    [lang, response, t],
   );
   const status: "loading" | "ready" | "empty" | "error" = isLoading
     ? "loading"
@@ -341,7 +344,7 @@ const RecentActivity = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className={`${summaryClass} min-w-0 truncate`}>
-                          {renderSummary(item)}
+                          {renderSummary(item, t)}
                         </p>
                         {item.detail ? (
                           <span className={detailClass}>{item.detail}</span>
