@@ -53,7 +53,7 @@ venv/
 /.playwright-cli
 
 # Local env overrides (worktree-specific ports + secrets)
-.env.*.local
+.env*local
 
 # Companion local secret env files
 companions/**/.env
