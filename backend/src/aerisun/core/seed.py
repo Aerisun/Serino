@@ -182,7 +182,7 @@ DEFAULT_PAGE_COPIES = [
     {
         "page_key": "friends",
         "title": "朋友们",
-        "subtitle": "海内存知己，天涯若比邻。",
+        "subtitle": "海内存知己，天涯若比邻",
         "search_placeholder": None,
         "empty_message": "暂时没有友链内容",
         "max_width": "max-w-4xl",
