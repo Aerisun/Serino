@@ -58,7 +58,7 @@ services:
       JWT_TOKEN: ${WALINE_JWT_TOKEN}
       SECURE_DOMAINS: ${WALINE_SECURE_DOMAINS}
       AVATAR_PROXY: ${WALINE_AVATAR_PROXY:-https://avatar.75cdn.workers.dev}
-      GRAVATAR_STR: ${WALINE_GRAVATAR_STR}
+      GRAVATAR_STR: ${WALINE_GRAVATAR_STR:-}
     volumes:
       - ${AERISUN_STORE_BIND_DIR:-./.aerisun-store}:/srv/aerisun/store
     ports:

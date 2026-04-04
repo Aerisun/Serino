@@ -11,7 +11,7 @@ AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${AERISUN_APP_ROOT}/.env.production.local}
 AERISUN_ENV_EXAMPLE_FILE="${AERISUN_ENV_EXAMPLE_FILE:-${AERISUN_APP_ROOT}/.env.production.local.example}"
 AERISUN_INSTALLER_DEST="${AERISUN_INSTALLER_DEST:-${AERISUN_APP_ROOT}/installer}"
 AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-${AERISUN_APP_ROOT}/backups}"
-AERISUN_INSTALL_BASE_URL="${AERISUN_INSTALL_BASE_URL:-https://install.aerisun.com/releases}"
+AERISUN_INSTALL_BASE_URL="${AERISUN_INSTALL_BASE_URL:-}"
 AERISUN_INSTALL_GITHUB_REPO="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
 AERISUN_INSTALL_CHANNEL="${AERISUN_INSTALL_CHANNEL:-stable}"
 AERISUN_INSTALL_VERSION="${AERISUN_INSTALL_VERSION:-}"
@@ -137,6 +137,7 @@ install_release_payload() {
   local source_root="${1:-${AERISUN_TEMPLATE_ROOT}}"
 
   run_as_root mkdir -p "${AERISUN_APP_ROOT}" "${AERISUN_DATA_DIR}" "${AERISUN_BACKUP_ROOT}"
+  run_as_root chown -R 1001:1001 "${AERISUN_DATA_DIR}"
   run_as_root install -m 0644 "${source_root}/docker-compose.release.yml" "${AERISUN_COMPOSE_FILE}"
   run_as_root install -m 0644 "${source_root}/.env.production.local.example" "${AERISUN_ENV_EXAMPLE_FILE}"
   run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"

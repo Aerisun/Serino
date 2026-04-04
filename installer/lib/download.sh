@@ -6,9 +6,10 @@ validate_release_tag() {
 
 release_download_base_urls() {
   local version="$1"
-  printf '%s\n' \
-    "${AERISUN_INSTALL_BASE_URL%/}/${version}" \
-    "https://github.com/${AERISUN_INSTALL_GITHUB_REPO}/releases/download/${version}"
+  printf '%s\n' "https://github.com/${AERISUN_INSTALL_GITHUB_REPO}/releases/download/${version}"
+  if [[ -n "${AERISUN_INSTALL_BASE_URL:-}" ]]; then
+    printf '%s\n' "${AERISUN_INSTALL_BASE_URL%/}/${version}"
+  fi
 }
 
 download_release_asset() {

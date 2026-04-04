@@ -83,36 +83,42 @@ prompt_bootstrap_admin_credentials() {
   local password=""
   local confirm_password=""
 
+  cat >&2 <<'EOF'
+请设置网站管理台的登录信息。
+- 这组登录名和登录密码用于进入网站管理台
+- 安装完成后请自行妥善记录，避免遗忘
+EOF
+
   while true; do
     if command_exists whiptail; then
       username="$(
-        whiptail --title "Aerisun 安装" --inputbox "请输入后台管理员用户名（3-120 位，仅支持字母、数字、点、下划线、横线）" 10 84 "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE:-admin}" 3>&1 1>&2 2>&3 </dev/tty
+        whiptail --title "Aerisun 安装" --inputbox "请输入网站管理台登录名（3-120 位，仅支持字母、数字、点、下划线、横线）。请务必记录好。" 11 84 "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE:-admin}" 3>&1 1>&2 2>&3 </dev/tty
       )" || die "安装已取消。"
       password="$(
-        whiptail --title "Aerisun 安装" --passwordbox "请输入后台管理员密码（至少 8 位）" 10 84 3>&1 1>&2 2>&3 </dev/tty
+        whiptail --title "Aerisun 安装" --passwordbox "请输入网站管理台登录密码（至少 8 位）。请务必记录好。" 11 84 3>&1 1>&2 2>&3 </dev/tty
       )" || die "安装已取消。"
       confirm_password="$(
-        whiptail --title "Aerisun 安装" --passwordbox "请再次输入后台管理员密码" 10 84 3>&1 1>&2 2>&3 </dev/tty
+        whiptail --title "Aerisun 安装" --passwordbox "请再次输入网站管理台登录密码" 10 84 3>&1 1>&2 2>&3 </dev/tty
       )" || die "安装已取消。"
     else
-      read -r -p "请输入后台管理员用户名: " username </dev/tty
-      read -r -s -p "请输入后台管理员密码: " password </dev/tty
+      read -r -p "请输入网站管理台登录名（请务必记录好）: " username </dev/tty
+      read -r -s -p "请输入网站管理台登录密码（请务必记录好）: " password </dev/tty
       printf '\n' >&2
-      read -r -s -p "请再次输入后台管理员密码: " confirm_password </dev/tty
+      read -r -s -p "请再次输入网站管理台登录密码: " confirm_password </dev/tty
       printf '\n' >&2
     fi
 
     username="$(trim_input "${username}")"
     if ! validate_bootstrap_admin_username "${username}"; then
-      log_warn "管理员用户名格式无效，只能使用 3-120 位字母、数字、点、下划线或横线。"
+      log_warn "网站管理台登录名格式无效，只能使用 3-120 位字母、数字、点、下划线或横线。"
       continue
     fi
     if [[ ${#password} -lt 8 ]]; then
-      log_warn "管理员密码至少需要 8 位。"
+      log_warn "网站管理台登录密码至少需要 8 位。"
       continue
     fi
     if [[ "${password}" != "${confirm_password}" ]]; then
-      log_warn "两次输入的管理员密码不一致。"
+      log_warn "两次输入的网站管理台登录密码不一致。"
       continue
     fi
 
@@ -130,7 +136,8 @@ confirm_install_settings() {
 数据目录：${AERISUN_DATA_DIR}
 接入方式：${AERISUN_INSTALL_ACCESS_MODE}
 站点地址：${AERISUN_INSTALL_HOST}
-管理员账号：${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}
+网站管理台登录名：${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}
+提示：请确认你已经记录好网站管理台登录密码
 EOF
   )
 

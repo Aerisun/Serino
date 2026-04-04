@@ -4,7 +4,7 @@ set -euo pipefail
 bootstrap_from_release() {
   local version="${AERISUN_INSTALL_VERSION:-}"
   local repo="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
-  local base_url="${AERISUN_INSTALL_BASE_URL:-https://install.aerisun.com/releases}"
+  local base_url="${AERISUN_INSTALL_BASE_URL:-}"
   local bundle_name="${AERISUN_INSTALL_BUNDLE_NAME:-aerisun-installer-bundle.tar.gz}"
   local tmp_dir=""
   local bundle_file=""
@@ -27,10 +27,14 @@ bootstrap_from_release() {
 
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/aerisun-bootstrap.XXXXXX")"
   bundle_file="${tmp_dir}/${bundle_name}"
-  release_url="${base_url%/}/${version}/${bundle_name}"
+  release_url="https://github.com/${repo}/releases/download/${version}/${bundle_name}"
 
   if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
-    release_url="https://github.com/${repo}/releases/download/${version}/${bundle_name}"
+    if [[ -z "${base_url}" ]]; then
+      echo "无法从 GitHub Release 下载安装包：${release_url}" >&2
+      exit 1
+    fi
+    release_url="${base_url%/}/${version}/${bundle_name}"
     curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"
   fi
 
