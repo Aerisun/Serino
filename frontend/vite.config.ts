@@ -5,6 +5,60 @@ import path from "path";
 
 const stripTrailingSlash = (value: string) => value.trim().replace(/\/+$/, "") || "/api";
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const buildObfuscationTargets = [
+  "Powered by ",
+  "Aerisun /Serino",
+  " · ",
+  "All Rights Reserved",
+  "https://github.com/Aerisun/Serino",
+  "Open Aerisun /Serino repository",
+  "M7 7h10v10 M7 17 17 7",
+] as const;
+
+const encodeBuildLiteral = (value: string, quote: '"' | "'" | "`") =>
+  Array.from(value)
+    .map((char) => {
+      if (char === "\\") return "\\\\";
+      if (char === quote) return `\\${quote}`;
+      if (quote === "`" && char === "$") return "\\x24";
+      const codePoint = char.codePointAt(0) ?? 0;
+      if (codePoint <= 0xff) {
+        return `\\x${codePoint.toString(16).padStart(2, "0")}`;
+      }
+      return `\\u${codePoint.toString(16).padStart(4, "0")}`;
+    })
+    .join("");
+
+const replaceQuotedLiteral = (code: string, value: string) => {
+  let next = code;
+  for (const quote of [`"`, `'`, "`"] as const) {
+    const escapedValue =
+      quote === `"`
+        ? JSON.stringify(value).slice(1, -1)
+        : quote === `'`
+          ? value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+          : value.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+    const pattern = new RegExp(`${escapeRegExp(quote)}${escapeRegExp(escapedValue)}${escapeRegExp(quote)}`, "g");
+    next = next.replace(pattern, `${quote}${encodeBuildLiteral(value, quote)}${quote}`);
+  }
+  return next;
+};
+
+const footerBuildObfuscationPlugin = () => ({
+  name: "aerisun-footer-build-obfuscation",
+  apply: "build" as const,
+  enforce: "post" as const,
+  generateBundle(_: unknown, bundle: Record<string, { type: string; code?: string }>) {
+    for (const output of Object.values(bundle)) {
+      if (output.type !== "chunk" || typeof output.code !== "string") continue;
+      let nextCode = output.code;
+      for (const target of buildObfuscationTargets) {
+        nextCode = replaceQuotedLiteral(nextCode, target);
+      }
+      output.code = nextCode;
+    }
+  },
+});
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, ".."), "");
@@ -75,6 +129,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      footerBuildObfuscationPlugin(),
       VitePWA({
         registerType: "autoUpdate",
         manifest: false,

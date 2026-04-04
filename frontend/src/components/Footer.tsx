@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ArrowUpRight, Monitor, Moon, Rss, Sun } from "lucide-react";
+import { Monitor, Moon, Rss, Sun } from "lucide-react";
 import { useReadActivityHeatmapApiV1SiteActivityHeatmapGet } from "@serino/api-client/site";
 import { useTheme } from "@serino/theme";
 import { useSiteConfig } from "@/contexts/runtime-config";
@@ -17,6 +17,29 @@ const themeIcons = {
   dark: Moon,
   system: Monitor,
 } as const;
+
+const footerLead = "Powered by ";
+const footerBrand = "Aerisun /Serino";
+const footerSeparator = "·";
+const footerTail = "All Rights Reserved";
+const footerRepoHref = "https://github.com/Aerisun/Serino";
+const footerRepoAria = "Open Aerisun /Serino repository";
+const footerRepoIconPath = "M7 7h10v10 M7 17 17 7";
+
+const FooterRepoIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d={footerRepoIconPath} />
+  </svg>
+);
 
 const Footer = () => {
   const site = useSiteConfig();
@@ -85,15 +108,25 @@ const Footer = () => {
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
               <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-foreground/28">
-                <span>{t("footer.poweredBy")}</span>
+                <span
+                  className="text-inherit leading-inherit text-foreground/38 italic tracking-[0.012em]"
+                  style={{ fontFamily: "'Instrument Serif', serif" }}
+                >
+                  <span>{footerLead}</span>
+                  <span className="underline decoration-[0.05em] underline-offset-[0.14em]">
+                    {footerBrand}
+                  </span>
+                  <span className="px-1">{footerSeparator}</span>
+                  <span>{footerTail}</span>
+                </span>
                 <a
-                  href="https://github.com/Aerisun/Serino"
+                  href={footerRepoHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={t("footer.githubRepoAria")}
+                  aria-label={footerRepoAria}
                   className="shiro-focus-ring inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-foreground/28 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                 >
-                  <ArrowUpRight className="h-2.75 w-2.75" strokeWidth={1.8} />
+                  <FooterRepoIcon className="h-2.75 w-2.75" />
                 </a>
               </p>
 
