@@ -12,6 +12,7 @@ import structlog
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.core.runtime_version import get_runtime_version
 from aerisun.core.time import beijing_today
 from aerisun.domain.activity.repository import batch_resolve_titles
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
@@ -681,6 +682,7 @@ def get_system_info() -> SystemInfo:
                 media_size += f.stat().st_size
 
     return SystemInfo(
+        version=get_runtime_version(settings),
         python_version=sys.version.split()[0],
         db_size_bytes=db_size,
         media_dir_size_bytes=media_size,

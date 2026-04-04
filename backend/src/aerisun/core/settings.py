@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     admin_dist_dir: Path = Path("/srv/aerisun/admin")
     site_url: str = "http://localhost:5173"
     waline_server_url: str = "/waline"
+    release_version: str = ""
     backup_sync_tmp_dir: Path = PROJECT_ROOT / ".store" / ".backup-sync-tmp"
     backup_sync_default_site_slug: str = "aerisun"
     backup_sync_default_interval_minutes: int = 60

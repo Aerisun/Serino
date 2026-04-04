@@ -271,6 +271,7 @@ class TestSystemInfo:
         resp = client.get(f"{BASE}/info", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.json()
+        assert data["version"]
         assert "python_version" in data
         assert "db_size_bytes" in data
         assert "media_dir_size_bytes" in data

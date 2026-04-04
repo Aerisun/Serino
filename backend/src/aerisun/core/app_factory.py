@@ -16,6 +16,7 @@ from aerisun.api.seo import router as seo_router
 from aerisun.core.bootstrap import lifespan
 from aerisun.core.middleware import register_middleware
 from aerisun.core.rate_limit import limiter
+from aerisun.core.runtime_version import get_runtime_version
 from aerisun.core.settings import get_settings
 
 
@@ -39,7 +40,7 @@ def create_app() -> FastAPI:
     is_prod = settings.environment == "production"
     app = FastAPI(
         title="Aerisun API",
-        version="0.1.0",
+        version=get_runtime_version(settings),
         lifespan=app_lifespan,
         docs_url=None if is_prod else "/docs",
         redoc_url=None if is_prod else "/redoc",
