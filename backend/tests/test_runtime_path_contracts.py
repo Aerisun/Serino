@@ -81,7 +81,10 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
     assert "AERISUN_FRONTEND_UPSTREAM" not in production_text
     assert "AERISUN_ADMIN_UPSTREAM" not in production_text
     assert ".env.*.local" in dockerignore_text
-    assert "AERISUN_IMAGE_REGISTRY=docker.io/aerisun" in production_local_example_text
+    assert (
+        "AERISUN_IMAGE_REGISTRY=crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino"
+        in production_local_example_text
+    )
     assert "AERISUN_SEED_REFERENCE_DATA=true" in production_local_example_text
     assert "AERISUN_DATA_BACKFILL_ENABLED=true" in production_local_example_text
 

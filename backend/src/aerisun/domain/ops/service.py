@@ -11,8 +11,8 @@ from pathlib import Path
 import structlog
 from sqlalchemy.orm import Session
 
-from aerisun.core.settings import get_settings
 from aerisun.core.runtime_version import get_runtime_version
+from aerisun.core.settings import get_settings
 from aerisun.core.time import beijing_today
 from aerisun.domain.activity.repository import batch_resolve_titles
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry

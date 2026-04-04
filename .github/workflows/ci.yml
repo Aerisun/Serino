@@ -4,21 +4,23 @@ on:
   push:
     branches: [main]
     tags: ["v*.*.*"]
+  release:
+    types: [published]
   pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Release tag to republish, for example v0.1.0
+        description: Existing release tag to republish, for example v0.1.0
         required: true
         type: string
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event_name == 'release' && github.event.release.tag_name || github.ref }}
   cancel-in-progress: true
 
 env:
-  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
+  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
   DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME != '' && vars.DOCKERHUB_USERNAME || 'aerisun' }}
   ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY != '' && vars.ALIYUN_ACR_REGISTRY || 'crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com' }}
   ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE != '' && vars.ALIYUN_ACR_NAMESPACE || 'serino' }}
@@ -398,7 +400,7 @@ jobs:
 
   docker-smoke:
     name: Docker Smoke
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
     needs: [backend, frontend, admin, contract, docker-build]
     runs-on: ubuntu-latest
     steps:
@@ -414,7 +416,7 @@ jobs:
 
   docker-publish:
     name: Docker Publish Release (${{ matrix.title }})
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release'
     needs: [docker-smoke]
     runs-on: ubuntu-latest
     strategy:
@@ -463,6 +465,8 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             release_tag="${{ inputs.release_tag }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            release_tag="${{ github.event.release.tag_name }}"
           else
             release_tag="${GITHUB_REF_NAME}"
           fi
@@ -543,7 +547,7 @@ jobs:
 
   installer-release:
     name: Installer Release Assets
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release'
     needs: [docker-publish]
     runs-on: ubuntu-latest
     permissions:
@@ -559,6 +563,8 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             release_tag="${{ inputs.release_tag }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            release_tag="${{ github.event.release.tag_name }}"
           else
             release_tag="${GITHUB_REF_NAME}"
           fi

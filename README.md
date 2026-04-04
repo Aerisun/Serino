@@ -56,7 +56,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 ### 📦 一键自动化安装（推荐）
 
-面向可连接国际互联网（国内后面了解一下接入...）的主流 `systemd amd64` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
+面向可连接（可以不是国际）互联网的主流 `systemd amd64` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
 
 ```bash
 curl --http1.1 -fsSL https://raw.githubusercontent.com/Aerisun/Serino/main/installer/install.sh | bash
