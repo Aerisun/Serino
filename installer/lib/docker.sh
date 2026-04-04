@@ -43,35 +43,11 @@ try_pull_release_image() {
 }
 
 resolve_active_registry() {
-  local primary="$1"
-  local fallback="$2"
-  local image_tag="$3"
-  local selection="${AERISUN_INSTALL_REGISTRY}"
-
-  case "${selection}" in
-    auto)
-      if try_pull_release_image "${primary}" "${image_tag}"; then
-        printf '%s' "${primary}"
-        return 0
-      fi
-      if try_pull_release_image "${fallback}" "${image_tag}"; then
-        printf '%s' "${fallback}"
-        return 0
-      fi
-      die "TCR 和 Docker Hub 都无法拉取镜像。"
-      ;;
-    tcr)
-      try_pull_release_image "${primary}" "${image_tag}" || die "TCR 拉取失败。"
-      printf '%s' "${primary}"
-      ;;
-    dockerhub)
-      try_pull_release_image "${fallback}" "${image_tag}" || die "Docker Hub 拉取失败。"
-      printf '%s' "${fallback}"
-      ;;
-    *)
-      die "AERISUN_INSTALL_REGISTRY 只能是 auto、tcr 或 dockerhub。"
-      ;;
-  esac
+  local registry="$1"
+  local image_tag="$2"
+  [[ -n "${registry}" ]] || die "安装清单缺少 Docker Hub 镜像前缀。"
+  try_pull_release_image "${registry}" "${image_tag}" || die "Docker Hub 拉取失败。"
+  printf '%s' "${registry}"
 }
 
 compose_up_release() {

@@ -57,8 +57,6 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert 'WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"' in smoke_text
     assert "AERISUN_DOMAIN=http://${SITE_HOST}" in smoke_text
     assert 'LOCAL_IMAGE_REGISTRY="${AERISUN_SMOKE_IMAGE_REGISTRY:-serino-smoke-local}"' in smoke_text
-    assert "AERISUN_IMAGE_PRIMARY_REGISTRY=${LOCAL_IMAGE_REGISTRY}" in smoke_text
-    assert "AERISUN_IMAGE_FALLBACK_REGISTRY=docker.io/does-not-matter" in smoke_text
     assert "AERISUN_IMAGE_REGISTRY=${LOCAL_IMAGE_REGISTRY}" in smoke_text
     assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
     assert "AERISUN_DATA_BACKFILL_ENABLED=true" in smoke_text
@@ -83,8 +81,6 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
     assert "AERISUN_FRONTEND_UPSTREAM" not in production_text
     assert "AERISUN_ADMIN_UPSTREAM" not in production_text
     assert ".env.*.local" in dockerignore_text
-    assert "AERISUN_IMAGE_PRIMARY_REGISTRY=" in production_local_example_text
-    assert "AERISUN_IMAGE_FALLBACK_REGISTRY=docker.io/aerisun" in production_local_example_text
     assert "AERISUN_IMAGE_REGISTRY=docker.io/aerisun" in production_local_example_text
     assert "AERISUN_SEED_REFERENCE_DATA=true" in production_local_example_text
     assert "AERISUN_DATA_BACKFILL_ENABLED=true" in production_local_example_text

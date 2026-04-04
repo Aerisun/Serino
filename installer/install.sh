@@ -84,8 +84,7 @@ main() {
 
   active_registry="$(
     resolve_active_registry \
-      "${AERISUN_IMAGE_PRIMARY_REGISTRY:-}" \
-      "${AERISUN_IMAGE_FALLBACK_REGISTRY}" \
+      "${AERISUN_IMAGE_REGISTRY}" \
       "${AERISUN_IMAGE_TAG}"
   )"
 
@@ -93,8 +92,6 @@ main() {
     "${AERISUN_INSTALL_ACCESS_MODE}" \
     "${AERISUN_INSTALL_HOST}" \
     "${active_registry}" \
-    "${AERISUN_IMAGE_PRIMARY_REGISTRY:-}" \
-    "${AERISUN_IMAGE_FALLBACK_REGISTRY}" \
     "${AERISUN_IMAGE_TAG}"
 
   install_release_payload "${bundle_root}"

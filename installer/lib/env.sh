@@ -74,9 +74,7 @@ build_runtime_configuration() {
   local access_mode="$1"
   local host="$2"
   local active_registry="$3"
-  local primary_registry="$4"
-  local fallback_registry="$5"
-  local image_tag="$6"
+  local image_tag="$4"
   local site_url=""
 
   if [[ "${access_mode}" == "domain" ]]; then
@@ -92,8 +90,6 @@ build_runtime_configuration() {
   AERISUN_CORS_ORIGINS_VALUE="[\"${site_url}\"]"
   AERISUN_WALINE_SECURE_DOMAINS_VALUE="${host}"
   AERISUN_WALINE_JWT_TOKEN_VALUE="$(generate_secret)"
-  AERISUN_IMAGE_PRIMARY_REGISTRY_VALUE="${primary_registry}"
-  AERISUN_IMAGE_FALLBACK_REGISTRY_VALUE="${fallback_registry}"
   AERISUN_IMAGE_REGISTRY_VALUE="${active_registry}"
   AERISUN_IMAGE_TAG_VALUE="${image_tag}"
 }
@@ -116,8 +112,6 @@ AERISUN_DATA_BACKFILL_ENABLED=true
 AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}")
 AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}")
 AERISUN_STORE_BIND_DIR=${AERISUN_DATA_DIR}
-AERISUN_IMAGE_PRIMARY_REGISTRY=${AERISUN_IMAGE_PRIMARY_REGISTRY_VALUE}
-AERISUN_IMAGE_FALLBACK_REGISTRY=${AERISUN_IMAGE_FALLBACK_REGISTRY_VALUE}
 AERISUN_IMAGE_REGISTRY=${AERISUN_IMAGE_REGISTRY_VALUE}
 AERISUN_IMAGE_TAG=${AERISUN_IMAGE_TAG_VALUE}
 EOF

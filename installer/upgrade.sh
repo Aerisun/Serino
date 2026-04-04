@@ -53,8 +53,7 @@ main() {
   local bundle_file=""
   local backup_dir=""
   local active_registry=""
-  local target_primary_registry=""
-  local target_fallback_registry=""
+  local target_registry=""
   local target_image_tag=""
 
   if [[ -n "${version}" ]]; then
@@ -64,8 +63,7 @@ main() {
   version="$(resolve_release_tag)"
   manifest_file="$(mktemp)"
   load_release_manifest "${version}" "${manifest_file}"
-  target_primary_registry="${AERISUN_IMAGE_PRIMARY_REGISTRY:-}"
-  target_fallback_registry="${AERISUN_IMAGE_FALLBACK_REGISTRY}"
+  target_registry="${AERISUN_IMAGE_REGISTRY}"
   target_image_tag="${AERISUN_IMAGE_TAG}"
 
   load_env_file "${AERISUN_ENV_FILE}"
@@ -80,14 +78,11 @@ main() {
 
   active_registry="$(
     resolve_active_registry \
-      "${target_primary_registry}" \
-      "${target_fallback_registry}" \
+      "${target_registry}" \
       "${target_image_tag}"
   )"
 
   install_release_payload "${bundle_dir}"
-  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_PRIMARY_REGISTRY" "${target_primary_registry}"
-  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_FALLBACK_REGISTRY" "${target_fallback_registry}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
 

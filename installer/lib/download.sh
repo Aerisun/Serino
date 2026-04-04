@@ -62,5 +62,5 @@ load_release_manifest() {
   source "${manifest_file}"
 
   [[ -n "${AERISUN_IMAGE_TAG:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_TAG。"
-  [[ -n "${AERISUN_IMAGE_FALLBACK_REGISTRY:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_FALLBACK_REGISTRY。"
+  [[ -n "${AERISUN_IMAGE_REGISTRY:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_REGISTRY。"
 }
