@@ -1,0 +1,18 @@
+[Unit]
+Description=Serino Application Stack
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/serino
+ExecStart=/usr/bin/env COMPOSE_PROJECT_NAME=serino docker compose --env-file /etc/serino/serino.env -f /opt/serino/docker-compose.release.yml up -d --remove-orphans
+ExecStop=/usr/bin/env COMPOSE_PROJECT_NAME=serino docker compose --env-file /etc/serino/serino.env -f /opt/serino/docker-compose.release.yml down
+ExecReload=/usr/bin/env COMPOSE_PROJECT_NAME=serino docker compose --env-file /etc/serino/serino.env -f /opt/serino/docker-compose.release.yml up -d --remove-orphans
+TimeoutStartSec=0
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

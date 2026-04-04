@@ -14,7 +14,7 @@ source "${SCRIPT_DIR}/lib/docker.sh"
 backup_current_installation() {
   local backup_dir="$1"
   run_as_root mkdir -p "${backup_dir}"
-  [[ -f "${AERISUN_ENV_FILE}" ]] && run_as_root cp -a "${AERISUN_ENV_FILE}" "${backup_dir}/.env.production.local"
+  [[ -f "${AERISUN_ENV_FILE}" ]] && run_as_root cp -a "${AERISUN_ENV_FILE}" "${backup_dir}/serino.env"
   [[ -f "${AERISUN_COMPOSE_FILE}" ]] && run_as_root cp -a "${AERISUN_COMPOSE_FILE}" "${backup_dir}/docker-compose.release.yml"
   [[ -d "${AERISUN_INSTALLER_DEST}" ]] && run_as_root cp -a "${AERISUN_INSTALLER_DEST}" "${backup_dir}/installer"
   if [[ -d "${AERISUN_DATA_DIR}" ]]; then
@@ -25,8 +25,8 @@ backup_current_installation() {
 restore_current_installation() {
   local backup_dir="$1"
 
-  if [[ -f "${backup_dir}/.env.production.local" ]]; then
-    run_as_root cp -a "${backup_dir}/.env.production.local" "${AERISUN_ENV_FILE}"
+  if [[ -f "${backup_dir}/serino.env" ]]; then
+    run_as_root cp -a "${backup_dir}/serino.env" "${AERISUN_ENV_FILE}"
   fi
   if [[ -f "${backup_dir}/docker-compose.release.yml" ]]; then
     run_as_root cp -a "${backup_dir}/docker-compose.release.yml" "${AERISUN_COMPOSE_FILE}"
@@ -35,18 +35,18 @@ restore_current_installation() {
     run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
     run_as_root cp -a "${backup_dir}/installer" "${AERISUN_INSTALLER_DEST}"
     run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" /usr/local/bin/sercli
+    install_systemd_units "${backup_dir}"
   fi
   if [[ -f "${backup_dir}/data.tar.gz" ]]; then
     run_as_root rm -rf "${AERISUN_DATA_DIR}"
-    run_as_root mkdir -p "${AERISUN_DATA_DIR%/*}"
+    run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR%/*}"
     run_as_root tar -xzf "${backup_dir}/data.tar.gz" -C "${AERISUN_DATA_DIR%/*}"
+    run_as_root chown -R "${SERINO_SERVICE_USER}:${SERINO_SERVICE_GROUP}" "${AERISUN_DATA_DIR}"
   fi
+  daemon_reload
 }
 
 main() {
-  require_supported_linux
-  require_root_or_sudo
-
   local version="${1:-}"
   local manifest_file=""
   local bundle_dir=""
@@ -55,6 +55,14 @@ main() {
   local active_registry=""
   local target_registry=""
   local target_image_tag=""
+
+  require_supported_linux
+  require_root_or_sudo
+  ensure_supported_existing_installation
+  ensure_service_user
+  load_env_file "${AERISUN_ENV_FILE}"
+
+  bash "${SCRIPT_DIR}/doctor.sh"
 
   if [[ -n "${version}" ]]; then
     AERISUN_INSTALL_VERSION="${version}"
@@ -65,15 +73,13 @@ main() {
   load_release_manifest "${version}" "${manifest_file}"
   target_registry="${AERISUN_IMAGE_REGISTRY}"
   target_image_tag="${AERISUN_IMAGE_TAG}"
-
-  load_env_file "${AERISUN_ENV_FILE}"
   bundle_dir="$(make_temp_dir)"
   bundle_file="${bundle_dir}/${AERISUN_INSTALL_BUNDLE_NAME}"
   download_release_asset "${version}" "${AERISUN_INSTALL_BUNDLE_NAME}" "${bundle_file}"
   tar -xzf "${bundle_file}" -C "${bundle_dir}"
 
   backup_dir="${AERISUN_BACKUP_ROOT}/upgrade-$(date +%Y%m%d%H%M%S)"
-  compose down
+  stop_serino_service
   backup_current_installation "${backup_dir}"
 
   active_registry="$(
@@ -87,12 +93,14 @@ main() {
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
   normalize_production_env_file "${AERISUN_ENV_FILE}"
 
-  if ! compose_up_release || ! wait_for_release_ready; then
+  if ! compose pull || ! enable_serino_service || ! wait_for_release_ready; then
     log_warn "升级失败，正在回滚。"
+    stop_serino_service
     restore_current_installation "${backup_dir}"
-    compose_up_release
+    compose pull || true
+    enable_serino_service
     wait_for_release_ready
-    die "升级失败，已回滚到旧版本。"
+    die "升级失败，已回滚到旧版本。可执行 sercli doctor 与 sercli logs api waline caddy 查看诊断信息。"
   fi
 
   log_info "升级完成：${version}"

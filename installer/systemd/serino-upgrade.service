@@ -1,6 +1,6 @@
 [Unit]
-Description=Aerisun Manual Upgrade Job
-After=network-online.target docker.service
+Description=Serino Manual Upgrade Job
+After=network-online.target docker.service serino.service
 Wants=network-online.target
 
 [Service]

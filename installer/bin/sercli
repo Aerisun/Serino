@@ -32,21 +32,30 @@ usage() {
   sercli restart
   sercli upgrade [vX.Y.Z]
   sercli uninstall [--force]
+  sercli doctor [--json]
 EOF
 }
 
 cmd_status() {
-  load_env_file "${AERISUN_ENV_FILE}"
+  ensure_supported_existing_installation
   compose ps
   echo
-  echo "站点地址：${AERISUN_SITE_URL}"
-  echo "当前镜像源：${AERISUN_IMAGE_REGISTRY}"
-  echo "当前镜像标签：${AERISUN_IMAGE_TAG}"
-  curl --fail --silent --show-error "http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}" >/dev/null
-  echo "健康检查：ok"
+  run_as_root systemctl --no-pager --full status "${SERINO_SYSTEMD_UNIT}" || true
+  echo
+  load_env_file "${AERISUN_ENV_FILE}"
+  echo "站点地址：${AERISUN_SITE_URL:-<未配置>}"
+  echo "当前镜像源：${AERISUN_IMAGE_REGISTRY:-<未配置>}"
+  echo "当前镜像标签：${AERISUN_IMAGE_TAG:-<未配置>}"
+  if curl --fail --silent --show-error "http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}" >/dev/null 2>&1; then
+    echo "健康检查：ok"
+  else
+    echo "健康检查：fail"
+    return 1
+  fi
 }
 
 cmd_logs() {
+  ensure_supported_existing_installation
   if [[ "$#" -gt 0 ]]; then
     compose logs --tail 120 "$@"
     return 0
@@ -55,7 +64,8 @@ cmd_logs() {
 }
 
 cmd_restart() {
-  compose up -d
+  ensure_supported_existing_installation
+  restart_serino_service
   wait_for_release_ready
 }
 
@@ -65,6 +75,10 @@ cmd_upgrade() {
 
 cmd_uninstall() {
   exec "${INSTALLER_ROOT}/uninstall.sh" "$@"
+}
+
+cmd_doctor() {
+  exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"
 }
 
 main() {
@@ -86,6 +100,9 @@ main() {
       ;;
     uninstall)
       cmd_uninstall "$@"
+      ;;
+    doctor)
+      cmd_doctor "$@"
       ;;
     *)
       usage

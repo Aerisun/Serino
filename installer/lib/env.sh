@@ -21,6 +21,12 @@ quote_env_literal() {
   printf "'%s'" "${value}"
 }
 
+install_managed_env_file() {
+  local source_file="$1"
+  local target_file="$2"
+  run_as_root install -o root -g "${SERINO_SERVICE_GROUP}" -m 0640 "${source_file}" "${target_file}"
+}
+
 normalize_host_input() {
   local value="$1"
   value="${value#"${value%%[![:space:]]*}"}"
@@ -52,14 +58,32 @@ load_env_file() {
   fi
 }
 
+copy_env_file_for_read() {
+  local file="$1"
+  local tmp_file=""
+
+  [[ -f "${file}" ]] || return 1
+
+  if [[ -r "${file}" ]]; then
+    printf '%s' "${file}"
+    return 0
+  fi
+
+  tmp_file="$(mktemp)"
+  run_as_root cat "${file}" > "${tmp_file}"
+  printf '%s' "${tmp_file}"
+}
+
 set_env_value() {
   local file="$1"
   local key="$2"
   local value="$3"
   local tmp_file
+  local source_file=""
 
   tmp_file="$(mktemp)"
   if [[ -f "${file}" ]]; then
+    source_file="$(copy_env_file_for_read "${file}")"
     awk -v key="${key}" -v value="${value}" '
       BEGIN { replaced = 0 }
       $0 ~ ("^" key "=") {
@@ -73,34 +97,34 @@ set_env_value() {
           print key "=" value
         }
       }
-    ' "${file}" > "${tmp_file}"
+    ' "${source_file}" > "${tmp_file}"
   else
     printf '%s=%s\n' "${key}" "${value}" > "${tmp_file}"
   fi
 
-  if [[ -e "${file}" && -w "${file}" ]] || [[ ! -e "${file}" && -w "$(dirname "${file}")" ]]; then
-    install -m 0600 "${tmp_file}" "${file}"
-  else
-    run_as_root install -m 0600 "${tmp_file}" "${file}"
-  fi
+  install_managed_env_file "${tmp_file}" "${file}"
   rm -f "${tmp_file}"
+  if [[ -n "${source_file}" && "${source_file}" != "${file}" ]]; then
+    rm -f "${source_file}"
+  fi
 }
 
 unset_env_value() {
   local file="$1"
   local key="$2"
   local tmp_file
+  local source_file=""
 
   [[ -f "${file}" ]] || return 0
 
   tmp_file="$(mktemp)"
-  awk -v key="${key}" '$0 !~ ("^" key "=") { print }' "${file}" > "${tmp_file}"
-  if [[ -w "${file}" ]]; then
-    install -m 0600 "${tmp_file}" "${file}"
-  else
-    run_as_root install -m 0600 "${tmp_file}" "${file}"
-  fi
+  source_file="$(copy_env_file_for_read "${file}")"
+  awk -v key="${key}" '$0 !~ ("^" key "=") { print }' "${source_file}" > "${tmp_file}"
+  install_managed_env_file "${tmp_file}" "${file}"
   rm -f "${tmp_file}"
+  if [[ -n "${source_file}" && "${source_file}" != "${file}" ]]; then
+    rm -f "${source_file}"
+  fi
 }
 
 build_runtime_configuration() {
@@ -134,6 +158,8 @@ write_production_env() {
   tmp_file="$(mktemp)"
   cat > "${tmp_file}" <<EOF
 AERISUN_ENVIRONMENT=production
+AERISUN_INSTALL_CHANNEL=${AERISUN_INSTALL_CHANNEL}
+AERISUN_INSTALL_BASE_URL=${AERISUN_INSTALL_BASE_URL}
 AERISUN_DOMAIN=${AERISUN_DOMAIN_VALUE}
 AERISUN_SITE_URL=${AERISUN_SITE_URL_VALUE}
 AERISUN_WALINE_SERVER_URL=${AERISUN_WALINE_SERVER_URL_VALUE}
@@ -148,10 +174,15 @@ AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN
 AERISUN_STORE_BIND_DIR=${AERISUN_DATA_DIR}
 AERISUN_IMAGE_REGISTRY=${AERISUN_IMAGE_REGISTRY_VALUE}
 AERISUN_IMAGE_TAG=${AERISUN_IMAGE_TAG_VALUE}
+AERISUN_API_IMAGE_NAME=${AERISUN_API_IMAGE_NAME}
+AERISUN_WEB_IMAGE_NAME=${AERISUN_WEB_IMAGE_NAME}
+AERISUN_WALINE_IMAGE_NAME=${AERISUN_WALINE_IMAGE_NAME}
 AERISUN_RELEASE_VERSION=${AERISUN_IMAGE_TAG_VALUE}
+SERINO_RUNTIME_UID=${SERINO_RUNTIME_UID}
+SERINO_RUNTIME_GID=${SERINO_RUNTIME_GID}
 EOF
 
-  run_as_root install -m 0600 "${tmp_file}" "${output_file}"
+  install_managed_env_file "${tmp_file}" "${output_file}"
   rm -f "${tmp_file}"
 }
 

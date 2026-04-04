@@ -16,18 +16,76 @@ compose() {
   die "当前机器缺少 docker compose。"
 }
 
+daemon_reload() {
+  run_as_root systemctl daemon-reload
+}
+
+enable_serino_service() {
+  run_as_root systemctl enable --now "${SERINO_SYSTEMD_UNIT}" >/dev/null
+}
+
+start_serino_service() {
+  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null
+}
+
+stop_serino_service() {
+  run_as_root systemctl stop "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1 || true
+}
+
+restart_serino_service() {
+  run_as_root systemctl restart "${SERINO_SYSTEMD_UNIT}" >/dev/null
+}
+
+service_is_active() {
+  run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"
+}
+
+stop_and_remove_serino_units() {
+  local unit=""
+  for unit in \
+    "${SERINO_SYSTEMD_UNIT}" \
+    "${SERINO_SYSTEMD_UPGRADE_TIMER}" \
+    "${SERINO_SYSTEMD_UPGRADE_SERVICE}" \
+    aerisun.service \
+    aerisun-upgrade.timer \
+    aerisun-upgrade.service; do
+    run_as_root systemctl disable --now "${unit}" >/dev/null 2>&1 || true
+    if [[ -f "/etc/systemd/system/${unit}" ]]; then
+      run_as_root rm -f "/etc/systemd/system/${unit}"
+    fi
+    if [[ -d "/etc/systemd/system/${unit}.d" ]]; then
+      run_as_root rm -rf "/etc/systemd/system/${unit}.d"
+    fi
+  done
+  daemon_reload >/dev/null 2>&1 || true
+}
+
+teardown_release_stack() {
+  if command_exists docker && [[ -f "${AERISUN_COMPOSE_FILE}" ]] && [[ -f "${AERISUN_ENV_FILE}" ]]; then
+    compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+  fi
+
+  if command_exists docker; then
+    run_as_root docker volume rm -f \
+      "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_data" \
+      "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_config" >/dev/null 2>&1 || true
+    run_as_root docker network rm "${AERISUN_COMPOSE_PROJECT_NAME}_default" >/dev/null 2>&1 || true
+    run_as_root docker volume rm -f \
+      "aerisun_caddy_data" \
+      "aerisun_caddy_config" >/dev/null 2>&1 || true
+    run_as_root docker network rm "aerisun_default" >/dev/null 2>&1 || true
+  fi
+}
+
 ensure_docker_installed() {
-  if command_exists docker && (docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
+  if command_exists docker && (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
     run_as_root systemctl enable --now docker >/dev/null
     return 0
   fi
 
   log_info "正在自动安装 Docker。"
-  local tmp_dir
-  tmp_dir="$(make_temp_dir)"
-  curl --fail --location --silent --show-error https://get.docker.com -o "${tmp_dir}/get-docker.sh"
-  run_as_root sh "${tmp_dir}/get-docker.sh"
-  cleanup_temp_dir "${tmp_dir}"
+  curl --fail --location --silent --show-error https://get.docker.com \
+    | run_as_root bash -s docker --mirror Aliyun
   run_as_root systemctl enable --now docker >/dev/null
 
   if ! (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
@@ -39,7 +97,7 @@ try_pull_release_image() {
   local registry="$1"
   local image_tag="$2"
   [[ -n "${registry}" ]] || return 1
-  run_as_root docker pull "${registry}/serino-api:${image_tag}" >/dev/null 2>&1
+  run_as_root docker pull "${registry}/${AERISUN_API_IMAGE_NAME:-serino-api}:${image_tag}" >/dev/null 2>&1
 }
 
 resolve_active_registry() {
@@ -52,7 +110,7 @@ resolve_active_registry() {
 
 compose_up_release() {
   compose pull
-  compose up -d
+  enable_serino_service
 }
 
 wait_for_url() {
@@ -253,6 +311,73 @@ die_domain_https_not_ready() {
 
   print_domain_https_failure_details "${host}" "${label}" "${path}"
   exit 1
+}
+
+preflight_domain_installation() {
+  local host="$1"
+  local resolved_ips=""
+  local resolved_summary=""
+  local local_ips=""
+  local local_ip_summary=""
+  local public_ip=""
+  local port_80_usage=""
+  local port_443_usage=""
+  local -a reasons=()
+
+  if [[ "${host}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ || "${host}" == *:* ]]; then
+    reasons+=("域名模式要求填写可公网访问的域名，当前输入看起来是 IP 地址：${host}")
+  fi
+
+  resolved_ips="$(resolve_host_ips "${host}" 2>/dev/null || true)"
+  resolved_summary="$(printf '%s\n' "${resolved_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
+  local_ips="$(list_local_ip_candidates)"
+  local_ip_summary="$(printf '%s\n' "${local_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
+  public_ip="$(detect_public_ip_candidate)"
+
+  if [[ -z "${resolved_summary}" ]]; then
+    reasons+=("域名 ${host} 当前无法解析，请确认 A/AAAA 记录已经生效。")
+  elif [[ -n "${public_ip}" ]] && ! domain_points_to_candidate_ip "${resolved_ips}" "${public_ip}"; then
+    reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP ${public_ip}。")
+  elif [[ -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
+    reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机已知地址 ${local_ip_summary:-未知}。")
+  fi
+
+  if port_in_use 80; then
+    port_80_usage="$(describe_port_usage 80 || true)"
+    reasons+=("本机 80 端口已被占用，外部 HTTP 校验无法完成。")
+  fi
+  if port_in_use 443; then
+    port_443_usage="$(describe_port_usage 443 || true)"
+    reasons+=("本机 443 端口已被占用，HTTPS 服务无法接管。")
+  fi
+
+  if [[ ${#reasons[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  printf '[ERROR] 域名模式预检失败：%s\n' "${host}" >&2
+  for reason in "${reasons[@]}"; do
+    printf '[ERROR] - %s\n' "${reason}" >&2
+  done
+  printf '[ERROR] - 请同时确认云服务器安全组与本机防火墙都已放行 80/443。\n' >&2
+
+  if [[ -n "${resolved_summary}" ]]; then
+    printf '[ERROR] 当前 DNS 解析：%s -> %s\n' "${host}" "${resolved_summary}" >&2
+  fi
+  if [[ -n "${public_ip}" ]]; then
+    printf '[ERROR] 当前探测到的本机公网 IP：%s\n' "${public_ip}" >&2
+  fi
+  if [[ -n "${local_ip_summary}" ]]; then
+    printf '[ERROR] 当前探测到的本机地址：%s\n' "${local_ip_summary}" >&2
+  fi
+  if [[ -n "${port_80_usage}" ]]; then
+    printf '[ERROR] 80 端口监听详情：\n%s\n' "${port_80_usage}" >&2
+  fi
+  if [[ -n "${port_443_usage}" ]]; then
+    printf '[ERROR] 443 端口监听详情：\n%s\n' "${port_443_usage}" >&2
+  fi
+
+  return 1
 }
 
 wait_for_release_ready() {

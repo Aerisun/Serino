@@ -1,7 +1,9 @@
 services:
   api:
-    image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/serino-api:${AERISUN_IMAGE_TAG:-latest}
+    image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_API_IMAGE_NAME:-serino-api}:${AERISUN_IMAGE_TAG:-latest}
+    user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"
     environment:
+      HOME: /srv/aerisun/store
       AERISUN_ENVIRONMENT: ${AERISUN_ENVIRONMENT:-production}
       AERISUN_HOST: ${AERISUN_HOST:-0.0.0.0}
       AERISUN_PORT: ${AERISUN_PORT:-8000}
@@ -30,7 +32,7 @@ services:
       AERISUN_LOG_LEVEL: ${AERISUN_LOG_LEVEL:-INFO}
       WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
     volumes:
-      - ${AERISUN_STORE_BIND_DIR:-./.aerisun-store}:/srv/aerisun/store
+      - ${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store
     ports:
       - "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"
     healthcheck:
@@ -49,8 +51,10 @@ services:
         max-file: "3"
 
   waline:
-    image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/serino-waline:${AERISUN_IMAGE_TAG:-latest}
+    image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WALINE_IMAGE_NAME:-serino-waline}:${AERISUN_IMAGE_TAG:-latest}
+    user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"
     environment:
+      HOME: /srv/aerisun/store
       SITE_NAME: ${AERISUN_APP_NAME:-Aerisun}
       SITE_URL: ${AERISUN_SITE_URL}
       SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
@@ -61,7 +65,7 @@ services:
       AVATAR_PROXY: ${WALINE_AVATAR_PROXY:-https://avatar.75cdn.workers.dev}
       GRAVATAR_STR: ${WALINE_GRAVATAR_STR:-}
     volumes:
-      - ${AERISUN_STORE_BIND_DIR:-./.aerisun-store}:/srv/aerisun/store
+      - ${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store
     ports:
       - "127.0.0.1:${WALINE_PORT:-8360}:8360"
     healthcheck:
@@ -86,7 +90,7 @@ services:
         max-file: "3"
 
   caddy:
-    image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/serino-web:${AERISUN_IMAGE_TAG:-latest}
+    image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WEB_IMAGE_NAME:-serino-web}:${AERISUN_IMAGE_TAG:-latest}
     ports:
       - "${AERISUN_HTTP_PORT:-80}:80"
       - "${AERISUN_HTTPS_PORT:-443}:443"
