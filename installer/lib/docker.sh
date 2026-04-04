@@ -45,8 +45,8 @@ try_pull_release_image() {
 resolve_active_registry() {
   local registry="$1"
   local image_tag="$2"
-  [[ -n "${registry}" ]] || die "安装清单缺少 Docker Hub 镜像前缀。"
-  try_pull_release_image "${registry}" "${image_tag}" || die "Docker Hub 拉取失败。"
+  [[ -n "${registry}" ]] || die "安装清单缺少镜像仓库前缀。"
+  try_pull_release_image "${registry}" "${image_tag}" || die "镜像仓库拉取失败：${registry}"
   printf '%s' "${registry}"
 }
 
