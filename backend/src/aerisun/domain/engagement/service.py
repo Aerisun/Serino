@@ -28,6 +28,10 @@ from aerisun.domain.site_auth import repository as site_auth_repo
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import get_admin_comment_identity, is_site_user_admin
 from aerisun.domain.site_config import repository as site_config_repo
+from aerisun.domain.site_config.schemas import (
+    COMMENT_MODERATION_MODE_NO_REVIEW,
+    normalize_comment_moderation_mode,
+)
 from aerisun.domain.waline.service import (
     build_comment_path,
     create_waline_record,
@@ -499,6 +503,14 @@ def _resolve_comment_sorting(session: Session) -> str:
     return sorting or "latest"
 
 
+def _resolve_comment_creation_status(session: Session) -> str:
+    config = site_config_repo.find_community_config(session)
+    moderation_mode = normalize_comment_moderation_mode(config.moderation_mode if config is not None else None)
+    if moderation_mode == COMMENT_MODERATION_MODE_NO_REVIEW:
+        return "approved"
+    return "pending"
+
+
 def _sort_guestbook_entries(
     items: list[GuestbookEntryRead],
     sorting: str,
@@ -617,22 +629,24 @@ def create_public_guestbook_entry(
 
     from aerisun.domain.automation.events import emit_guestbook_pending
 
+    entry_status = _resolve_comment_creation_status(session)
     entry = create_waline_record(
         comment=payload.body.strip(),
         nick=author_name,
         mail=author_email,
         link=website,
-        status="pending",
+        status=entry_status,
         url=build_comment_path("guestbook", "guestbook"),
         avatar_key=avatar_key,
         avatar_url=avatar_url,
     )
-    emit_guestbook_pending(
-        session,
-        entry_id=str(entry.id),
-        author_name=entry.nick or "访客",
-        body_preview=(entry.comment or "")[:240],
-    )
+    if entry.status == "pending":
+        emit_guestbook_pending(
+            session,
+            entry_id=str(entry.id),
+            author_name=entry.nick or "访客",
+            body_preview=(entry.comment or "")[:240],
+        )
     return GuestbookCreateResponse(
         item=GuestbookEntryRead(
             id=str(entry.id),
@@ -779,25 +793,27 @@ def create_public_comment(
 
     from aerisun.domain.automation.events import emit_comment_pending
 
+    item_status = _resolve_comment_creation_status(session)
     item = create_waline_record(
         comment=payload.body.strip(),
         nick=author_name,
         mail=author_email,
         link=None,
-        status="pending",
+        status=item_status,
         url=url,
         parent_id=parent_id,
         avatar_key=avatar_key,
         avatar_url=avatar_url,
     )
-    emit_comment_pending(
-        session,
-        comment_id=str(item.id),
-        content_type=content_type,
-        content_slug=content_slug,
-        author_name=item.nick or "访客",
-        body_preview=(item.comment or "")[:240],
-    )
+    if item.status == "pending":
+        emit_comment_pending(
+            session,
+            comment_id=str(item.id),
+            content_type=content_type,
+            content_slug=content_slug,
+            author_name=item.nick or "访客",
+            body_preview=(item.comment or "")[:240],
+        )
     return CommentCreateResponse(
         item=CommentRead(
             id=str(item.id),

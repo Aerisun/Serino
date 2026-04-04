@@ -63,7 +63,7 @@ def test_admin_community_config_round_trip(client) -> None:
         "enable_enjoy_search": current["enable_enjoy_search"],
         "image_uploader": current["image_uploader"],
         "anonymous_enabled": False,
-        "moderation_mode": "manual",
+        "moderation_mode": "no_review",
         "default_sorting": "oldest",
         "page_size": 30,
         "avatar_helper_copy": "测试留言头像库",
@@ -80,7 +80,20 @@ def test_admin_community_config_round_trip(client) -> None:
     assert response.status_code == 200
     refreshed = response.json()
     assert refreshed["anonymous_enabled"] is False
-    assert refreshed["moderation_mode"] == "manual"
+    assert refreshed["moderation_mode"] == "no_review"
     assert refreshed["default_sorting"] == "oldest"
     assert refreshed["page_size"] == 30
     assert refreshed["avatar_helper_copy"] == "测试留言头像库"
+
+
+def test_admin_community_config_normalizes_legacy_moderation_mode(client) -> None:
+    token = _create_admin_token("community-config-admin-legacy")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.put(
+        "/api/v1/admin/site-config/community-config",
+        headers=headers,
+        json={"moderation_mode": "manual"},
+    )
+    assert response.status_code == 200
+    assert response.json()["moderation_mode"] == "all_pending"

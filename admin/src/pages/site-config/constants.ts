@@ -48,8 +48,7 @@ export const MIGRATION_STATE_LABELS: LangLabels = {
 
 export const MODERATION_MODE_LABELS: LangLabels = {
   all_pending: { zh: "全部待审", en: "All Pending" },
-  manual: { zh: "人工审核", en: "Manual" },
-  mixed: { zh: "混合模式", en: "Mixed" },
+  no_review: { zh: "不审核", en: "No Review" },
 };
 
 export const DEFAULT_SORTING_LABELS: LangLabels = {

@@ -33,7 +33,7 @@ import {
   optionLabel,
 } from "../constants";
 
-const MODERATION_MODE_OPTIONS = ["all_pending", "manual", "mixed"] as const;
+const MODERATION_MODE_OPTIONS = ["all_pending", "no_review"] as const;
 const DEFAULT_SORTING_OPTIONS = ["latest", "oldest", "hottest"] as const;
 
 export function CommunityTab() {

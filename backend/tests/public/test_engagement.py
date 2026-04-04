@@ -223,6 +223,29 @@ def test_create_guestbook_accepts_pending_entry(client) -> None:
     assert payload["item"]["website"] == "https://guest.example.com"
 
 
+def test_create_guestbook_skips_moderation_when_disabled(client) -> None:
+    _update_community_config(moderation_mode="no_review")
+    _login_site_user(client, email="guest-no-review@example.com", display_name="Guest No Review")
+
+    response = client.post(
+        "/api/v1/site-interactions/guestbook",
+        json={
+            "name": "Ignored Name",
+            "email": "ignored@example.com",
+            "body": "无需审核的留言。",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["item"]["status"] == "approved"
+
+    listing = client.get("/api/v1/site-interactions/guestbook")
+    assert listing.status_code == 200
+    assert any(item["body"] == "无需审核的留言。" for item in listing.json()["items"])
+
+
 def test_create_guestbook_requires_login(client) -> None:
     response = client.post(
         "/api/v1/site-interactions/guestbook",
@@ -304,6 +327,29 @@ def test_create_comment_accepts_pending_item(client) -> None:
     assert payload["item"]["status"] == "pending"
     assert payload["item"]["author_name"] == "Pytest Reader"
     assert payload["item"]["avatar_url"].startswith("https://api.dicebear.com/")
+
+
+def test_create_comment_skips_moderation_when_disabled(client) -> None:
+    _update_community_config(moderation_mode="no_review")
+    _login_site_user(client, email="reader-no-review@example.com", display_name="Reader No Review")
+
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "这条评论应当直接通过。",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["item"]["status"] == "approved"
+
+    listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+    assert listing.status_code == 200
+    assert any(item["body"] == "这条评论应当直接通过。" for item in _flatten_comments(listing.json()["items"]))
 
 
 def test_read_comments_marks_email_bound_admin_identity(client) -> None:

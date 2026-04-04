@@ -76,7 +76,7 @@ def test_community_config_revision_detail_lists_changed_fields(client, admin_hea
         f"{SITE_CONFIG_BASE}/community-config",
         headers=admin_headers,
         json={
-            "moderation_mode": "manual",
+            "moderation_mode": "no_review",
             "default_sorting": "oldest",
             "page_size": 30,
             "avatar_helper_copy": "登录后再评论",

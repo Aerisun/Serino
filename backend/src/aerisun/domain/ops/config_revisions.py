@@ -38,6 +38,7 @@ from aerisun.domain.site_config.models import (
     SiteProfile,
     SocialLink,
 )
+from aerisun.domain.site_config.schemas import normalize_comment_moderation_mode
 from aerisun.domain.subscription.service import get_subscription_config_orm
 
 RESOURCE_VERSION = "2026-03-config-v1"
@@ -444,7 +445,7 @@ def _community_capture(session: Session) -> dict[str, Any]:
             "enable_enjoy_search": config.enable_enjoy_search,
             "image_uploader": config.image_uploader,
             "anonymous_enabled": config.anonymous_enabled,
-            "moderation_mode": config.moderation_mode,
+            "moderation_mode": normalize_comment_moderation_mode(config.moderation_mode),
             "default_sorting": config.default_sorting,
             "page_size": config.page_size,
             "image_max_bytes": config.image_max_bytes,
@@ -459,6 +460,8 @@ def _community_restore(session: Session, snapshot: dict[str, Any]) -> None:
     if config is None:
         raise ResourceNotFound("Community config not configured")
     for key, value in snapshot.items():
+        if key == "moderation_mode":
+            value = normalize_comment_moderation_mode(value)
         setattr(config, key, value)
     session.flush()
 

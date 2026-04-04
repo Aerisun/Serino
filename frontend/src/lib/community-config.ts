@@ -92,6 +92,14 @@ const normalizeCommentSorting = (value: unknown): CommunityCommentSort => {
 };
 
 const WALINE_EMOJI_CDN = "https://unpkg.com/@waline/emojis@1.1.0";
+const normalizeModerationMode = (value: unknown): string => {
+  const normalized = String(value ?? "").trim().toLowerCase().replace(/-/g, "_");
+  if (normalized === "no_review" || normalized === "none" || normalized === "off" || normalized === "disabled") {
+    return "no_review";
+  }
+  return "all_pending";
+};
+
 const normalizeBasePath = (value: string, fallback: string) => {
   const trimmed = value.trim();
   const candidate = trimmed || fallback;
@@ -147,7 +155,7 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     meta,
     required_meta: record.required_meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.required_meta,
     anonymous_enabled: record.anonymous_enabled ?? DEFAULT_WALINE_COMMUNITY_CONFIG.anonymous_enabled,
-    moderation_mode: record.moderation_mode ?? DEFAULT_WALINE_COMMUNITY_CONFIG.moderation_mode,
+    moderation_mode: normalizeModerationMode(record.moderation_mode),
     default_sorting: normalizeCommentSorting(record.default_sorting),
     enable_enjoy_search: record.enable_enjoy_search ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enable_enjoy_search,
     image_uploader: record.image_uploader ?? DEFAULT_WALINE_COMMUNITY_CONFIG.image_uploader,

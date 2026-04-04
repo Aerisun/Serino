@@ -34,6 +34,14 @@ const DEFAULT_EMOJI_PRESETS = ["twemoji", "qq", "bilibili"];
 const DEFAULT_MODERATION_MODE = "all_pending";
 const DEFAULT_DEFAULT_SORTING = "latest";
 
+const normalizeModerationMode = (value: string | null | undefined): string => {
+  const normalized = String(value ?? "").trim().toLowerCase().replace(/-/g, "_");
+  if (normalized === "no_review" || normalized === "none" || normalized === "off" || normalized === "disabled") {
+    return "no_review";
+  }
+  return DEFAULT_MODERATION_MODE;
+};
+
 const splitList = (value: string) =>
   value
     .split(/[\n,]/)
@@ -81,7 +89,7 @@ export const createCommunityForm = (config?: CommunityConfigAdminRead | null): C
   image_uploader: config?.image_uploader ?? false,
   helper_copy: config?.avatar_helper_copy ?? "",
   email_login_enabled: config?.anonymous_enabled ?? true,
-  moderation_mode: config?.moderation_mode ?? DEFAULT_MODERATION_MODE,
+  moderation_mode: normalizeModerationMode(config?.moderation_mode),
   default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
   page_size: String(config?.page_size ?? 20),
   image_max_bytes: String(config?.image_max_bytes ?? 524288),
@@ -98,7 +106,7 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   enable_enjoy_search: form.enable_enjoy_search,
   image_uploader: form.image_uploader,
   anonymous_enabled: form.email_login_enabled,
-  moderation_mode: form.moderation_mode.trim() || DEFAULT_MODERATION_MODE,
+  moderation_mode: normalizeModerationMode(form.moderation_mode),
   default_sorting: form.default_sorting.trim() || DEFAULT_DEFAULT_SORTING,
   page_size: Math.max(1, Number.parseInt(form.page_size, 10) || 20),
   image_max_bytes: Math.max(0, Number.parseInt(form.image_max_bytes, 10) || 524288),

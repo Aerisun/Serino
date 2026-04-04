@@ -87,6 +87,7 @@ def test_seed_bootstrap_data_uses_updated_defaults(tmp_path, monkeypatch) -> Non
             community = session.query(CommunityConfig).one()
 
         assert community.image_uploader is True
+        assert community.moderation_mode == "no_review"
     finally:
         teardown_runtime_state()
 

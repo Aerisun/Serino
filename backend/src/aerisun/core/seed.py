@@ -376,7 +376,7 @@ def build_default_community_config() -> dict[str, object]:
         "enable_enjoy_search": True,
         "image_uploader": True,
         "anonymous_enabled": True,
-        "moderation_mode": "all_pending",
+        "moderation_mode": "no_review",
         "default_sorting": "latest",
         "page_size": 20,
         "image_max_bytes": 524288,

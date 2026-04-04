@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from aerisun.core.schemas import ModelBase
 
+COMMENT_MODERATION_MODE_ALL_PENDING = "all_pending"
+COMMENT_MODERATION_MODE_NO_REVIEW = "no_review"
+
 
 def _normalize_media_reference_value(
     value: str | None,
@@ -20,6 +23,13 @@ def _normalize_media_reference_value(
     if not text:
         return None if empty_as_none else ""
     return text
+
+
+def normalize_comment_moderation_mode(value: str | None) -> str:
+    normalized = str(value or "").strip().lower().replace("-", "_")
+    if normalized in {"no_review", "none", "off", "disabled"}:
+        return COMMENT_MODERATION_MODE_NO_REVIEW
+    return COMMENT_MODERATION_MODE_ALL_PENDING
 
 
 class SocialLinkRead(ModelBase):
@@ -131,6 +141,11 @@ class CommunityConfigRead(ModelBase):
     image_max_bytes: int | None = Field(default=524288, description="Max image upload size in bytes")
     avatar_helper_copy: str = Field(description="Avatar helper text")
     migration_state: str = Field(description="Migration progress state")
+
+    @field_validator("moderation_mode", mode="before")
+    @classmethod
+    def validate_moderation_mode(cls, value: str | None) -> str:
+        return normalize_comment_moderation_mode(value)
 
 
 class ResumeRead(ModelBase):
@@ -351,6 +366,13 @@ class CommunityConfigUpdate(BaseModel):
     avatar_helper_copy: str | None = Field(default=None, description="Avatar selection helper text")
     migration_state: str | None = Field(default=None, description="Waline migration state")
 
+    @field_validator("moderation_mode", mode="before")
+    @classmethod
+    def validate_moderation_mode(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return normalize_comment_moderation_mode(value)
+
 
 class CommunityConfigAdminRead(ModelBase):
     id: str = Field(description="Unique community config identifier")
@@ -371,6 +393,11 @@ class CommunityConfigAdminRead(ModelBase):
     migration_state: str = Field(description="Waline migration state")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
+
+    @field_validator("moderation_mode", mode="before")
+    @classmethod
+    def validate_moderation_mode(cls, value: str | None) -> str:
+        return normalize_comment_moderation_mode(value)
 
 
 # ---------------------------------------------------------------------------
