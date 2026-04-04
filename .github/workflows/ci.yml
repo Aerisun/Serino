@@ -422,17 +422,27 @@ jobs:
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ steps.prep.outputs.version }}
 
+      # Release publish is intentionally slimmer than build validation:
+      # - publish only linux/amd64 for now
+      # - reuse GHA cache via cache-from only
+      # - skip provenance/attestation to reduce tail latency
+      - name: Build cache import
+        run: echo "Release publish reuses gha cache only; cache export stays in docker-build."
+
+      - name: Push to registries
+        run: echo "Publishing linux/amd64 images to Docker Hub and Tencent Cloud TCR."
+
       - name: Build and publish image
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image_name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
 
   installer-release:
     name: Installer Release Assets
