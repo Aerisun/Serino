@@ -108,6 +108,7 @@ require_supported_linux() {
   command_exists systemctl || die "缺少 systemctl，无法管理 Docker 服务。"
   command_exists curl || die "缺少 curl。"
   command_exists tar || die "缺少 tar。"
+  command_exists base64 || die "缺少 base64。"
 }
 
 port_in_use() {
@@ -152,14 +153,14 @@ install_release_payload() {
 print_install_summary() {
   local site_url="$1"
   local admin_url="$2"
+  local admin_username="$3"
   cat >&2 <<EOF
 
 安装完成。
 前台地址：${site_url}
 后台地址：${admin_url}
-默认管理员：admin
-默认密码：admin123
-首次登录后台后必须立即修改密码
+后台管理员：${admin_username}
+后台密码：安装过程中设置的密码
 
 常用命令：
   aerisunctl status

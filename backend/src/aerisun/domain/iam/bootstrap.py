@@ -19,13 +19,11 @@ def add_admin_user(
     username: str,
     password: str,
     is_active: bool = True,
-    password_change_required: bool = False,
 ) -> AdminUser:
     user = AdminUser(
         username=username,
         password_hash=hash_admin_password(password),
         is_active=is_active,
-        password_change_required=password_change_required,
     )
     session.add(user)
     return user
@@ -36,17 +34,20 @@ def ensure_default_production_admin(
     *,
     environment: str,
     is_first_boot: bool,
+    username: str | None = None,
+    password: str | None = None,
 ) -> AdminUser | None:
     if environment != "production" or not is_first_boot:
         return None
     if session.query(AdminUser).first() is not None:
         return None
+    if not username or not password:
+        raise RuntimeError("Missing bootstrap admin credentials for first production boot")
 
     user = add_admin_user(
         session,
-        username=DEFAULT_ADMIN_USERNAME,
-        password=DEFAULT_ADMIN_PASSWORD,
-        password_change_required=True,
+        username=username,
+        password=password,
     )
     session.commit()
     session.refresh(user)

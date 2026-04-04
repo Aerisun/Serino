@@ -4,6 +4,10 @@ generate_secret() {
   od -An -tx1 -N32 /dev/urandom | tr -d ' \n'
 }
 
+encode_env_b64() {
+  printf '%s' "$1" | base64 | tr -d '\n'
+}
+
 normalize_host_input() {
   local value="$1"
   value="${value#"${value%%[![:space:]]*}"}"
@@ -53,6 +57,19 @@ set_env_value() {
   rm -f "${tmp_file}"
 }
 
+unset_env_value() {
+  local file="$1"
+  local key="$2"
+  local tmp_file
+
+  [[ -f "${file}" ]] || return 0
+
+  tmp_file="$(mktemp)"
+  awk -v key="${key}" '$0 !~ ("^" key "=") { print }' "${file}" > "${tmp_file}"
+  run_as_root install -m 0600 "${tmp_file}" "${file}"
+  rm -f "${tmp_file}"
+}
+
 build_runtime_configuration() {
   local access_mode="$1"
   local host="$2"
@@ -96,6 +113,8 @@ WALINE_SECURE_DOMAINS=${AERISUN_WALINE_SECURE_DOMAINS_VALUE}
 WALINE_JWT_TOKEN=${AERISUN_WALINE_JWT_TOKEN_VALUE}
 AERISUN_SEED_REFERENCE_DATA=true
 AERISUN_DATA_BACKFILL_ENABLED=true
+AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}")
+AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}")
 AERISUN_STORE_BIND_DIR=${AERISUN_DATA_DIR}
 AERISUN_IMAGE_PRIMARY_REGISTRY=${AERISUN_IMAGE_PRIMARY_REGISTRY_VALUE}
 AERISUN_IMAGE_FALLBACK_REGISTRY=${AERISUN_IMAGE_FALLBACK_REGISTRY_VALUE}

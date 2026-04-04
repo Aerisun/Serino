@@ -79,6 +79,7 @@ main() {
   configure_local_firewall
   prompt_access_mode
   prompt_install_host
+  prompt_bootstrap_admin_credentials
   confirm_install_settings
 
   active_registry="$(
@@ -100,16 +101,20 @@ main() {
   write_production_env "${AERISUN_ENV_FILE}"
   compose_up_release
   wait_for_release_ready
-  verify_default_admin_login || die "服务已启动，但默认管理员首登改密状态检查失败。"
+  verify_default_admin_login || die "服务已启动，但安装时设置的管理员登录检查失败。"
+  unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64"
+  unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64"
 
   if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "domain" ]]; then
     print_install_summary \
       "${AERISUN_SITE_URL_VALUE}" \
-      "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}"
+      "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}" \
+      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}"
   else
     print_install_summary \
       "${AERISUN_SITE_URL_VALUE}/" \
-      "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}"
+      "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}" \
+      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}"
   fi
 }
 

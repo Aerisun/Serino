@@ -61,7 +61,6 @@ make check-secrets
   - 前台：`http://127.0.0.1:8080/`
   - 后台：`http://127.0.0.1:3001/admin/`
   - 默认管理账号密码（针对空数据库创建）：`admin` / `admin123`
-  - 首次登录后台后必须立即修改密码，未完成前其余后台功能会保持锁定
 
 - 停止环境：
 
@@ -94,15 +93,17 @@ make check-secrets
 - v1 安装器面向可联网的主流 `systemd` Linux，安装时会：
   - 自动安装 Docker / Compose（如果系统里还没有）
   - 通过交互式向导收集域名或公网 IP
+  - 域名模式自动通过 Caddy 启动 HTTPS；如果 HTTPS 就绪失败，会直接输出 DNS、端口监听和 Caddy 日志相关原因
   - 优先从腾讯云 TCR 拉镜像，失败时自动回退 Docker Hub
   - 把服务安装到 `/opt/aerisun`
   - 把数据目录固定到 `/var/lib/aerisun`
   - 安装完成后提供 `aerisunctl status|logs|restart|upgrade`
 
-- 全新生产部署成功后，默认后台账号密码为：
-  - `admin`
-  - `admin123`
-  - 首次登录后台后必须立即修改密码
+- 全新生产部署成功后：
+  - 后台管理员用户名和密码由安装向导现场设置
+  - 安装器只会在首装时使用这组凭据初始化后台账号
+  - 校验成功后，安装器会把一次性初始化密码从 `.env.production.local` 移除
+  - 如果是手动执行 `docker compose`，也必须先在 `.env.production.local` 里填写 `AERISUN_BOOTSTRAP_ADMIN_USERNAME` 和 `AERISUN_BOOTSTRAP_ADMIN_PASSWORD`，首装完成并确认可登录后再删除
 
 - 生产安装与升级默认遵循三段式数据流程：
   - 首装：`migration + bootstrap seed`

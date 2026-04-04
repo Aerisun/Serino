@@ -23,6 +23,8 @@ def production_runtime(tmp_path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AERISUN_SITE_URL", "https://example.com")
     monkeypatch.setenv("AERISUN_WALINE_SERVER_URL", "https://example.com/waline")
     monkeypatch.setenv("WALINE_JWT_TOKEN", "bootstrap-admin-token")
+    monkeypatch.setenv("AERISUN_BOOTSTRAP_ADMIN_USERNAME", "installer-admin")
+    monkeypatch.setenv("AERISUN_BOOTSTRAP_ADMIN_PASSWORD", "installer-admin-pass")
     monkeypatch.setenv("AERISUN_FEED_CRAWL_ENABLED", "false")
     monkeypatch.setenv("AERISUN_IP_GEO_ENABLED", "false")
 
@@ -32,7 +34,7 @@ def production_runtime(tmp_path, monkeypatch: pytest.MonkeyPatch):
     teardown_runtime_state()
 
 
-def test_production_first_boot_creates_default_admin_and_allows_login(production_runtime) -> None:
+def test_production_first_boot_creates_installer_admin_and_allows_login(production_runtime) -> None:
     from aerisun.core.app_factory import create_app
     from aerisun.core.bootstrap_admin import ensure_first_boot_default_admin
 
@@ -47,20 +49,13 @@ def test_production_first_boot_creates_default_admin_and_allows_login(production
     try:
         response = client.post(
             "/api/v1/admin/auth/login",
-            json={"username": "admin", "password": "admin123"},
-        )
-        token = response.json()["token"]
-        me_response = client.get(
-            "/api/v1/admin/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
+            json={"username": "installer-admin", "password": "installer-admin-pass"},
         )
     finally:
         client.close()
 
     assert response.status_code == 200
     assert response.json()["token"]
-    assert me_response.status_code == 200
-    assert me_response.json()["password_change_required"] is True
 
 
 def test_production_non_first_boot_does_not_backfill_default_admin(production_runtime) -> None:
@@ -94,3 +89,13 @@ def test_production_non_first_boot_does_not_reset_existing_admin_password(produc
         assert user.username == "admin"
         with pytest.raises(AuthenticationFailed):
             authenticate_admin(session, "admin", "admin123")
+
+
+def test_production_first_boot_requires_bootstrap_admin_credentials(production_runtime, monkeypatch) -> None:
+    from aerisun.core.bootstrap_admin import ensure_first_boot_default_admin
+
+    monkeypatch.delenv("AERISUN_BOOTSTRAP_ADMIN_USERNAME", raising=False)
+    monkeypatch.delenv("AERISUN_BOOTSTRAP_ADMIN_PASSWORD", raising=False)
+
+    with pytest.raises(RuntimeError, match="bootstrap admin credentials"):
+        ensure_first_boot_default_admin(is_first_boot=True)

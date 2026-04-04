@@ -149,7 +149,7 @@ else:
 
 created = ensure_first_boot_default_admin(is_first_boot=is_first_boot)
 if created:
-    log("已创建生产环境首次默认管理员：admin")
+    log("已创建生产环境首次管理员账号。")
 PY
 fi
 
