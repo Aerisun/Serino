@@ -27,8 +27,62 @@ env:
   DEFAULT_IMAGE_REGISTRY: ${{ vars.AERISUN_IMAGE_REGISTRY != '' && vars.AERISUN_IMAGE_REGISTRY || 'crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino' }}
 
 jobs:
+  run-policy:
+    name: Run Policy
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run_full_checks: ${{ steps.policy.outputs.run_full_checks }}
+      target_sha: ${{ steps.target.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+      - name: Resolve target commit
+        id: target
+        run: echo "sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+      - name: Decide whether to rerun full checks
+        id: policy
+        uses: actions/github-script@v7
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        with:
+          script: |
+            const eventName = context.eventName;
+            if (eventName === 'pull_request' || (eventName === 'push' && context.ref === 'refs/heads/main')) {
+              core.setOutput('run_full_checks', 'true');
+              return;
+            }
+
+            if (eventName === 'workflow_dispatch' || eventName === 'release') {
+              const sha = process.env.TARGET_SHA;
+              const workflowId = 'ci.yml';
+
+              async function hasSuccessfulRun(event) {
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowId,
+                  event,
+                  status: 'completed',
+                  per_page: 100,
+                });
+                return data.workflow_runs.some((run) => run.head_sha === sha && run.conclusion === 'success');
+              }
+
+              const alreadyTested = (await hasSuccessfulRun('push')) || (await hasSuccessfulRun('pull_request'));
+              core.setOutput('run_full_checks', alreadyTested ? 'false' : 'true');
+              return;
+            }
+
+            core.setOutput('run_full_checks', 'false');
+
   workspace-guards:
     name: Workspace Guards
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +95,8 @@ jobs:
 
   installer:
     name: Installer
-    needs: [workspace-guards]
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,6 +115,8 @@ jobs:
 
   backend:
     name: Backend (Python)
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -85,6 +142,8 @@ jobs:
 
   openapi:
     name: Export OpenAPI
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -108,7 +167,8 @@ jobs:
 
   api-client:
     name: Generate API Client
-    needs: [openapi]
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy, openapi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +197,8 @@ jobs:
 
   frontend:
     name: Frontend
-    needs: [api-client, workspace-guards]
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy, api-client, workspace-guards]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -163,7 +224,8 @@ jobs:
 
   admin:
     name: Admin
-    needs: [api-client, workspace-guards]
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy, api-client, workspace-guards]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -189,7 +251,8 @@ jobs:
 
   contract:
     name: Contract Tests
-    needs: [backend, api-client]
+    if: needs.run-policy.outputs.run_full_checks == 'true'
+    needs: [run-policy, backend, api-client]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -221,7 +284,7 @@ jobs:
 
   docker-build:
     name: Docker Build (${{ matrix.title }})
-    needs: [backend, frontend, admin, contract, installer]
+    needs: [run-policy]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -234,7 +297,6 @@ jobs:
             image_description: Serino backend API service
             context: ./backend
             file: ./backend/Dockerfile
-            artifact_name: ""
           - title: Web
             release_image_name: serino-web
             dev_image_name: serino-dev-web
@@ -242,7 +304,6 @@ jobs:
             image_description: Serino Caddy image with built frontend and admin assets
             context: .
             file: ./Dockerfile.caddy
-            artifact_name: api-client-generated
           - title: Waline
             release_image_name: serino-waline
             dev_image_name: serino-dev-waline
@@ -250,18 +311,10 @@ jobs:
             image_description: Serino-managed Waline service image
             context: .
             file: ./Dockerfile.waline
-            artifact_name: ""
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.CHECKOUT_REF }}
-
-      - name: Download generated API client
-        if: matrix.artifact_name != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: packages/api-client
 
       - uses: docker/setup-qemu-action@v3
 
@@ -297,7 +350,7 @@ jobs:
   docker-publish-dev:
     name: Docker Publish Dev (${{ matrix.title }})
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [docker-smoke]
+    needs: [docker-build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -310,7 +363,6 @@ jobs:
             image_description: Serino backend API service
             context: ./backend
             file: ./backend/Dockerfile
-            artifact_name: ""
           - title: Web
             release_image_name: serino-web
             dev_image_name: serino-dev-web
@@ -318,7 +370,6 @@ jobs:
             image_description: Serino Caddy image with built frontend and admin assets
             context: .
             file: ./Dockerfile.caddy
-            artifact_name: api-client-generated
           - title: Waline
             release_image_name: serino-waline
             dev_image_name: serino-dev-waline
@@ -326,18 +377,10 @@ jobs:
             image_description: Serino-managed Waline service image
             context: .
             file: ./Dockerfile.waline
-            artifact_name: ""
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.CHECKOUT_REF }}
-
-      - name: Download generated API client
-        if: matrix.artifact_name != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: packages/api-client
 
       - uses: docker/setup-qemu-action@v3
 
@@ -398,19 +441,147 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.release_image_name }}
 
-  docker-smoke:
-    name: Docker Smoke
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
-    needs: [backend, frontend, admin, contract, docker-build]
+  installer-dev-channel:
+    name: Installer Dev Channel Assets
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [docker-publish-dev]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.CHECKOUT_REF }}
-      - uses: actions/download-artifact@v4
+
+      - name: Prepare dev metadata
+        id: prep
+        shell: bash
+        run: |
+          release_tag="${GITHUB_REF_NAME}"
+
+          if [[ ! "${release_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Release tag must look like v1.2.3, got '${release_tag}'" >&2
+            exit 1
+          fi
+
+          version="${release_tag#v}"
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "dev_base_url=${{ vars.BINFEN_INSTALL_BASE_URL }}/dev" >> "${GITHUB_OUTPUT}"
+
+      - name: Package dev installer assets
+        env:
+          AERISUN_INSTALL_CHANNEL: dev
+          AERISUN_RELEASE_TAG: ${{ steps.prep.outputs.release_tag }}
+          AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
+          AERISUN_INSTALL_BASE_URL: ${{ steps.prep.outputs.dev_base_url }}
+          AERISUN_INSTALL_DOCKERHUB_NAMESPACE: ${{ env.DOCKERHUB_USERNAME }}
+        run: bash ./scripts/package-installer.sh
+
+      - name: Upload dev installer assets to Bitiful OSS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BINFEN_OSS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BINFEN_OSS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.BINFEN_OSS_REGION }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          BINFEN_OSS_ENDPOINT: ${{ vars.BINFEN_OSS_ENDPOINT }}
+          BINFEN_OSS_BUCKET: ${{ vars.BINFEN_OSS_BUCKET }}
+          BINFEN_OSS_PREFIX: ${{ vars.BINFEN_OSS_PREFIX }}
+          BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
+        shell: bash
+        run: |
+          aws --version
+
+          prefix="${BINFEN_OSS_PREFIX#/}"
+          prefix="${prefix%/}"
+          if [[ -n "${prefix}" ]]; then
+            root_prefix="${prefix}/dev/"
+            version_prefix="${prefix}/dev/${{ steps.prep.outputs.release_tag }}/"
+          else
+            root_prefix="dev/"
+            version_prefix="dev/${{ steps.prep.outputs.release_tag }}/"
+          fi
+
+          if [[ "${BINFEN_OSS_FORCE_PATH_STYLE}" == "true" ]]; then
+            aws configure set default.s3.addressing_style path
+          else
+            aws configure set default.s3.addressing_style virtual
+          fi
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.latest.sh \
+            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}install.sh" \
+            --content-type "application/x-sh" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/latest.env \
+            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}latest.env" \
+            --content-type "text/plain; charset=utf-8" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.sh \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}install.sh" \
+            --content-type "application/x-sh"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-bundle.tar.gz \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-bundle.tar.gz"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-manifest.env \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-manifest.env" \
+            --content-type "text/plain; charset=utf-8"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/docker-compose.release.yml \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}docker-compose.release.yml" \
+            --content-type "text/yaml; charset=utf-8"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
+            --content-type "text/plain; charset=utf-8"
+
+  release-readiness:
+    name: Release Readiness
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release') }}
+    needs: [run-policy, workspace-guards, installer, backend, openapi, api-client, frontend, admin, contract]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate release prerequisites
+        env:
+          RUN_FULL_CHECKS: ${{ needs.run-policy.outputs.run_full_checks }}
+          WORKSPACE_GUARDS_RESULT: ${{ needs.workspace-guards.result }}
+          INSTALLER_RESULT: ${{ needs.installer.result }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          OPENAPI_RESULT: ${{ needs.openapi.result }}
+          API_CLIENT_RESULT: ${{ needs.api-client.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          ADMIN_RESULT: ${{ needs.admin.result }}
+          CONTRACT_RESULT: ${{ needs.contract.result }}
+        run: |
+          if [[ "${RUN_FULL_CHECKS}" != "true" ]]; then
+            echo "Target commit already has successful CI checks; skip repeated full checks."
+            exit 0
+          fi
+
+          for result in \
+            "${WORKSPACE_GUARDS_RESULT}" \
+            "${INSTALLER_RESULT}" \
+            "${BACKEND_RESULT}" \
+            "${OPENAPI_RESULT}" \
+            "${API_CLIENT_RESULT}" \
+            "${FRONTEND_RESULT}" \
+            "${ADMIN_RESULT}" \
+            "${CONTRACT_RESULT}"; do
+            if [[ "${result}" != "success" ]]; then
+              echo "Release full-check gate failed because one or more prerequisite jobs did not succeed." >&2
+              exit 1
+            fi
+          done
+
+  docker-smoke:
+    name: Docker Smoke
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release'
+    needs: [release-readiness, docker-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: api-client-generated
-          path: packages/api-client
+          ref: ${{ env.CHECKOUT_REF }}
       - name: Smoke test release compose with locally built images
         run: bash ./scripts/docker-smoke.sh
 
@@ -430,7 +601,6 @@ jobs:
             image_description: Serino backend API service
             context: ./backend
             file: ./backend/Dockerfile
-            artifact_name: ""
           - title: Web
             release_image_name: serino-web
             dev_image_name: serino-dev-web
@@ -438,7 +608,6 @@ jobs:
             image_description: Serino Caddy image with built frontend and admin assets
             context: .
             file: ./Dockerfile.caddy
-            artifact_name: api-client-generated
           - title: Waline
             release_image_name: serino-waline
             dev_image_name: serino-dev-waline
@@ -446,18 +615,10 @@ jobs:
             image_description: Serino-managed Waline service image
             context: .
             file: ./Dockerfile.waline
-            artifact_name: ""
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.CHECKOUT_REF }}
-
-      - name: Download generated API client
-        if: matrix.artifact_name != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: packages/api-client
 
       - name: Prepare release metadata
         id: prep
@@ -583,6 +744,7 @@ jobs:
           AERISUN_RELEASE_TAG: ${{ steps.prep.outputs.release_tag }}
           AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
           AERISUN_IMAGE_REGISTRY: ${{ env.DEFAULT_IMAGE_REGISTRY }}
+          AERISUN_INSTALL_BASE_URL: ${{ vars.BINFEN_INSTALL_BASE_URL }}
         run: bash ./scripts/package-installer.sh
 
       - uses: actions/upload-artifact@v4
@@ -600,3 +762,62 @@ jobs:
             dist/installer/aerisun-installer-manifest.env
             dist/installer/docker-compose.release.yml
             dist/installer/.env.production.local.example
+
+      - name: Upload installer assets to Bitiful OSS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BINFEN_OSS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BINFEN_OSS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.BINFEN_OSS_REGION }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          BINFEN_OSS_ENDPOINT: ${{ vars.BINFEN_OSS_ENDPOINT }}
+          BINFEN_OSS_BUCKET: ${{ vars.BINFEN_OSS_BUCKET }}
+          BINFEN_OSS_PREFIX: ${{ vars.BINFEN_OSS_PREFIX }}
+          BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
+        shell: bash
+        run: |
+          aws --version
+
+          prefix="${BINFEN_OSS_PREFIX#/}"
+          prefix="${prefix%/}"
+          if [[ -n "${prefix}" ]]; then
+            root_prefix="${prefix}/"
+            version_prefix="${prefix}/${{ steps.prep.outputs.release_tag }}/"
+          else
+            root_prefix=""
+            version_prefix="${{ steps.prep.outputs.release_tag }}/"
+          fi
+
+          if [[ "${BINFEN_OSS_FORCE_PATH_STYLE}" == "true" ]]; then
+            aws configure set default.s3.addressing_style path
+          else
+            aws configure set default.s3.addressing_style virtual
+          fi
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.latest.sh \
+            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}install.sh" \
+            --content-type "application/x-sh" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/latest.env \
+            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}latest.env" \
+            --content-type "text/plain; charset=utf-8" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.sh \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}install.sh" \
+            --content-type "application/x-sh"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-bundle.tar.gz \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-bundle.tar.gz"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-manifest.env \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-manifest.env" \
+            --content-type "text/plain; charset=utf-8"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/docker-compose.release.yml \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}docker-compose.release.yml" \
+            --content-type "text/yaml; charset=utf-8"
+
+          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
+            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
+            --content-type "text/plain; charset=utf-8"

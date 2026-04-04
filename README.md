@@ -59,7 +59,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 面向可连接（可以不是国际）互联网的主流 `systemd amd64` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
 
 ```bash
-curl --http1.1 -fsSL https://raw.githubusercontent.com/Aerisun/Serino/main/installer/install.sh | bash
+curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 
 ```
 
@@ -75,8 +75,6 @@ wget https://raw.githubusercontent.com/Aerisun/Aerisun/main/.env.production.loca
 vim .env.production.local # 必须填写初始化管理员账号、密码等必要配置
 docker compose --env-file .env.production.local -f docker-compose.release.yml up -d
 
-# 后续系统智能平滑更新 (仅执行数据 Backfill，绝不覆写现有数据)
-curl -fsSL https://install.aerisun.com/upgrade.sh | bash
 ```
 
 ---
@@ -96,7 +94,11 @@ cd backend && uv sync --dev
 # 3. 启动开发环境（支持多工作树）
 make dev        # 启动方式 1：灌入开发用假数据 (Dev Seed)
 make dev-pseed  # 启动方式 2：灌入生产初始化数据，用于调整生产种子 (Prod Seed)
+
 make dev-stop   # 停止整套本地开发环境
+
+curl -fsSL https://install.aerisun.top/serino/dev/install.sh | bash # 测试安装（除了使用最新的 dev 渠道和镜像来源，别的与正式安装器完全一致）
+# 单台机器一次只应选择一个渠道，切换先行 `sercli uninstall --force` 再重装。
 ```
 
 - 默认前台地址：`http://127.0.0.1:8080/`
