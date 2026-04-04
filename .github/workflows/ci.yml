@@ -20,6 +20,9 @@ concurrency:
 env:
   CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.release_tag) || github.ref }}
   DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME != '' && vars.DOCKERHUB_USERNAME || 'aerisun' }}
+  ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY != '' && vars.ALIYUN_ACR_REGISTRY || 'crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com' }}
+  ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE != '' && vars.ALIYUN_ACR_NAMESPACE || 'serino' }}
+  DEFAULT_IMAGE_REGISTRY: ${{ vars.AERISUN_IMAGE_REGISTRY != '' && vars.AERISUN_IMAGE_REGISTRY || 'crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino' }}
 
 jobs:
   workspace-guards:
@@ -44,13 +47,13 @@ jobs:
           ref: ${{ env.CHECKOUT_REF }}
       - name: Check installer shell syntax
         run: |
-          find installer -type f \( -name '*.sh' -o -name 'aerisunctl' \) -print0 | xargs -0 -n1 bash -n
+          find installer -type f \( -name '*.sh' -o -name 'sercli' \) -print0 | xargs -0 -n1 bash -n
           bash -n ./scripts/package-installer.sh
       - name: Package installer assets
         env:
           AERISUN_RELEASE_TAG: v0.0.0
           AERISUN_RELEASE_VERSION: 0.0.0
-          AERISUN_IMAGE_REGISTRY: docker.io/${{ env.DOCKERHUB_USERNAME }}
+          AERISUN_IMAGE_REGISTRY: ${{ env.DEFAULT_IMAGE_REGISTRY }}
         run: bash ./scripts/package-installer.sh
 
   backend:
@@ -223,21 +226,24 @@ jobs:
       matrix:
         include:
           - title: API
-            image_name: serino-api
+            release_image_name: serino-api
+            dev_image_name: serino-dev-api
             image_title: Serino API
             image_description: Serino backend API service
             context: ./backend
             file: ./backend/Dockerfile
             artifact_name: ""
           - title: Web
-            image_name: serino-web
+            release_image_name: serino-web
+            dev_image_name: serino-dev-web
             image_title: Serino Web
             image_description: Serino Caddy image with built frontend and admin assets
             context: .
             file: ./Dockerfile.caddy
             artifact_name: api-client-generated
           - title: Waline
-            image_name: serino-waline
+            release_image_name: serino-waline
+            dev_image_name: serino-dev-waline
             image_title: Serino Waline
             image_description: Serino-managed Waline service image
             context: .
@@ -263,7 +269,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: docker.io/${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}
+          images: docker.io/${{ env.DOCKERHUB_USERNAME }}/${{ matrix.release_image_name }}
           tags: |
             type=raw,value=build-validation
           labels: |
@@ -283,8 +289,112 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.image_name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
+          cache-from: type=gha,scope=${{ matrix.release_image_name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.release_image_name }}
+
+  docker-publish-dev:
+    name: Docker Publish Dev (${{ matrix.title }})
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [docker-smoke]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - title: API
+            release_image_name: serino-api
+            dev_image_name: serino-dev-api
+            image_title: Serino API
+            image_description: Serino backend API service
+            context: ./backend
+            file: ./backend/Dockerfile
+            artifact_name: ""
+          - title: Web
+            release_image_name: serino-web
+            dev_image_name: serino-dev-web
+            image_title: Serino Web
+            image_description: Serino Caddy image with built frontend and admin assets
+            context: .
+            file: ./Dockerfile.caddy
+            artifact_name: api-client-generated
+          - title: Waline
+            release_image_name: serino-waline
+            dev_image_name: serino-dev-waline
+            image_title: Serino Waline
+            image_description: Serino-managed Waline service image
+            context: .
+            file: ./Dockerfile.waline
+            artifact_name: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
+
+      - name: Download generated API client
+        if: matrix.artifact_name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: packages/api-client
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Prepare dev release metadata
+        id: prep
+        shell: bash
+        run: |
+          release_tag="${GITHUB_REF_NAME}"
+
+          if [[ ! "${release_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Release tag must look like v1.2.3, got '${release_tag}'" >&2
+            exit 1
+          fi
+
+          version="${release_tag#v}"
+          IFS='.' read -r major minor patch <<<"${version}"
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "major_minor=${major}.${minor}" >> "${GITHUB_OUTPUT}"
+          echo "major=${major}" >> "${GITHUB_OUTPUT}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/${{ env.DOCKERHUB_USERNAME }}/${{ matrix.dev_image_name }}
+          tags: |
+            type=raw,value=${{ steps.prep.outputs.version }}
+            type=raw,value=${{ steps.prep.outputs.major_minor }}
+            type=raw,value=${{ steps.prep.outputs.major }}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image_title }}
+            org.opencontainers.image.description=${{ matrix.image_description }}
+            org.opencontainers.image.vendor=Aerisun
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.prep.outputs.version }}
+
+      - name: Build and publish dev image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.release_image_name }}
 
   docker-smoke:
     name: Docker Smoke
@@ -303,8 +413,8 @@ jobs:
         run: bash ./scripts/docker-smoke.sh
 
   docker-publish:
-    name: Docker Publish (${{ matrix.title }})
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    name: Docker Publish Release (${{ matrix.title }})
+    if: github.event_name == 'workflow_dispatch'
     needs: [docker-smoke]
     runs-on: ubuntu-latest
     strategy:
@@ -312,21 +422,24 @@ jobs:
       matrix:
         include:
           - title: API
-            image_name: serino-api
+            release_image_name: serino-api
+            dev_image_name: serino-dev-api
             image_title: Serino API
             image_description: Serino backend API service
             context: ./backend
             file: ./backend/Dockerfile
             artifact_name: ""
           - title: Web
-            image_name: serino-web
+            release_image_name: serino-web
+            dev_image_name: serino-dev-web
             image_title: Serino Web
             image_description: Serino Caddy image with built frontend and admin assets
             context: .
             file: ./Dockerfile.caddy
             artifact_name: api-client-generated
           - title: Waline
-            image_name: serino-waline
+            release_image_name: serino-waline
+            dev_image_name: serino-dev-waline
             image_title: Serino Waline
             image_description: Serino-managed Waline service image
             context: .
@@ -362,7 +475,8 @@ jobs:
           version="${release_tag#v}"
           IFS='.' read -r major minor patch <<<"${version}"
 
-          echo "dockerhub_image=docker.io/${DOCKERHUB_USERNAME}/${{ matrix.image_name }}" >> "${GITHUB_OUTPUT}"
+          echo "dockerhub_image=docker.io/${DOCKERHUB_USERNAME}/${{ matrix.release_image_name }}" >> "${GITHUB_OUTPUT}"
+          echo "aliyun_image=${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/${{ matrix.release_image_name }}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "major_minor=${major}.${minor}" >> "${GITHUB_OUTPUT}"
           echo "major=${major}" >> "${GITHUB_OUTPUT}"
@@ -378,11 +492,20 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Login to Aliyun ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ALIYUN_ACR_REGISTRY }}
+          username: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.prep.outputs.dockerhub_image }}
+          images: |
+            ${{ steps.prep.outputs.dockerhub_image }}
+            ${{ steps.prep.outputs.aliyun_image }}
           tags: |
             type=raw,value=${{ steps.prep.outputs.version }}
             type=raw,value=${{ steps.prep.outputs.major_minor }}
@@ -404,7 +527,7 @@ jobs:
         run: echo "Release publish reuses gha cache only; cache export stays in docker-build."
 
       - name: Push to registries
-        run: echo "Publishing linux/amd64 images to Docker Hub."
+        run: echo "Publishing linux/amd64 images to Docker Hub and Aliyun ACR."
 
       - name: Build and publish image
         uses: docker/build-push-action@v6
@@ -416,11 +539,11 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.image_name }}
+          cache-from: type=gha,scope=${{ matrix.release_image_name }}
 
   installer-release:
     name: Installer Release Assets
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch'
     needs: [docker-publish]
     runs-on: ubuntu-latest
     permissions:
@@ -453,7 +576,7 @@ jobs:
         env:
           AERISUN_RELEASE_TAG: ${{ steps.prep.outputs.release_tag }}
           AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
-          AERISUN_IMAGE_REGISTRY: docker.io/${{ env.DOCKERHUB_USERNAME }}
+          AERISUN_IMAGE_REGISTRY: ${{ env.DEFAULT_IMAGE_REGISTRY }}
         run: bash ./scripts/package-installer.sh
 
       - uses: actions/upload-artifact@v4
