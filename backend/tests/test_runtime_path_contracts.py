@@ -85,8 +85,82 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
         "AERISUN_IMAGE_REGISTRY=crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino"
         in production_local_example_text
     )
+    assert "/etc/serino/serino.env" in production_local_example_text
+    assert "/var/lib/serino" in production_local_example_text
     assert "AERISUN_SEED_REFERENCE_DATA=true" in production_local_example_text
     assert "AERISUN_DATA_BACKFILL_ENABLED=true" in production_local_example_text
+
+
+def test_installer_runtime_paths_follow_serino_system_layout():
+    common_text = read_project_file("installer/lib/common.sh")
+    compose_text = read_project_file("docker-compose.release.yml")
+    sercli_text = read_project_file("installer/bin/sercli")
+    doctor_text = read_project_file("installer/doctor.sh")
+    install_text = read_project_file("installer/install.sh")
+    package_text = read_project_file("scripts/package-installer.sh")
+
+    assert 'SERINO_CONFIG_ROOT="${SERINO_CONFIG_ROOT:-/etc/serino}"' in common_text
+    assert 'SERINO_LOG_ROOT="${SERINO_LOG_ROOT:-/var/log/serino}"' in common_text
+    assert 'SERINO_SERVICE_USER="${SERINO_SERVICE_USER:-serino}"' in common_text
+    assert 'AERISUN_APP_ROOT="${AERISUN_APP_ROOT:-/opt/serino}"' in common_text
+    assert 'AERISUN_DATA_DIR="${AERISUN_DATA_DIR:-/var/lib/serino}"' in common_text
+    assert 'AERISUN_COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME:-serino}"' in common_text
+    assert 'AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${SERINO_CONFIG_ROOT}/serino.env}"' in common_text
+    assert 'AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"' in common_text
+    assert (
+        'AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"'
+        in common_text
+    )
+    assert (
+        'AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
+        in common_text
+    )
+    assert 'AERISUN_API_IMAGE_NAME="${AERISUN_API_IMAGE_NAME:-serino-api}"' in common_text
+    assert 'AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"' in common_text
+    assert 'AERISUN_WALINE_IMAGE_NAME="${AERISUN_WALINE_IMAGE_NAME:-serino-waline}"' in common_text
+
+    assert (
+        "image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_API_IMAGE_NAME:-serino-api}:${AERISUN_IMAGE_TAG:-latest}"
+        in compose_text
+    )
+    assert (
+        "image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WALINE_IMAGE_NAME:-serino-waline}:${AERISUN_IMAGE_TAG:-latest}"
+        in compose_text
+    )
+    assert (
+        "image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WEB_IMAGE_NAME:-serino-web}:${AERISUN_IMAGE_TAG:-latest}"
+        in compose_text
+    )
+    assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' in compose_text
+    assert "HOME: /srv/aerisun/store" in compose_text
+    assert "${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store" in compose_text
+
+    assert "sercli doctor [--json]" in sercli_text
+    assert 'exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"' in sercli_text
+    assert 'record_check "fail" "env.bootstrap_cleanup"' in doctor_text
+    assert 'record_check "fail" "data.migrations"' in doctor_text
+    assert 'local channel="${AERISUN_INSTALL_CHANNEL:-stable}"' in install_text
+    assert (
+        'local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
+        in install_text
+    )
+    assert 'cat > "${DIST_DIR}/latest.env" <<EOF' in package_text
+    assert "AERISUN_INSTALL_CHANNEL=${INSTALL_CHANNEL}" in package_text
+    assert 'render_bootstrap_script "${DIST_DIR}/install.latest.sh"' in package_text
+    assert 'render_bootstrap_script "${DIST_DIR}/install.sh"' in package_text
+    assert 'API_IMAGE_NAME="serino-dev-api"' in package_text
+
+
+def test_dev_channel_does_not_require_a_second_installer_entrypoint():
+    assert not (PROJECT_ROOT / "installer/install-dev.sh").exists()
+
+
+def test_installer_systemd_units_switch_to_serino_names():
+    assert (PROJECT_ROOT / "installer/systemd/serino.service").exists()
+    assert (PROJECT_ROOT / "installer/systemd/serino-upgrade.service").exists()
+    assert (PROJECT_ROOT / "installer/systemd/serino-upgrade.timer").exists()
+    assert not (PROJECT_ROOT / "installer/systemd/aerisun-upgrade.service").exists()
+    assert not (PROJECT_ROOT / "installer/systemd/aerisun-upgrade.timer").exists()
 
 
 def test_legacy_backend_process_scripts_are_removed():
