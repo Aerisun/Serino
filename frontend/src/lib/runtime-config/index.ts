@@ -185,6 +185,19 @@ const normalizeSocialPlacement = (placement?: string | null): "hero" | "footer" 
   }
 };
 
+const normalizeSocialHref = (href: string, iconKey: string): string => {
+  const trimmed = href.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (normalizeIconKey(iconKey) !== "email") {
+    return trimmed;
+  }
+
+  return /^mailto:/i.test(trimmed) ? trimmed : `mailto:${trimmed}`;
+};
+
 // ---------------------------------------------------------------------------
 // Normalize site config
 // ---------------------------------------------------------------------------
@@ -233,7 +246,7 @@ const normalizeSiteConfig = (
     poemHitokotoKeywords: payload.site.poem_hitokoto_keywords ?? [],
     socialLinks: payload.social_links.map((link) => ({
       name: link.name,
-      href: link.href,
+      href: normalizeSocialHref(link.href, link.icon_key),
       iconKey: normalizeIconKey(link.icon_key),
       placement: normalizeSocialPlacement(link.placement),
     })),

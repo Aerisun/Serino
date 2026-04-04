@@ -5,6 +5,11 @@ import path from "path";
 
 const stripTrailingSlash = (value: string) => value.trim().replace(/\/+$/, "") || "/api";
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const buildBasePathPrefixPattern = (value: string) => {
+  const normalized = value.trim().replace(/\/+$/, "");
+  return new RegExp(`^${escapeRegExp(normalized)}(?:/|$)`);
+};
+const seoDocumentPattern = /^\/(?:sitemap|rss|feed|feeds)\.xml$/;
 const buildObfuscationTargets = [
   "Powered by ",
   "Aerisun /Serino",
@@ -71,6 +76,10 @@ export default defineConfig(({ mode }) => {
     explicitAdminBaseUrl || (mode !== "production" ? `http://127.0.0.1:${adminPort}` : "");
   const walineBasePath = stripTrailingSlash(env.AERISUN_WALINE_BASE_PATH ?? "/waline");
   const apiBasePathPattern = new RegExp(`${escapeRegExp(apiBasePath)}/`);
+  const apiBasePathPrefixPattern = buildBasePathPrefixPattern(apiBasePath);
+  const adminBasePathPattern = buildBasePathPrefixPattern(adminBasePath);
+  const walineBasePathPattern = buildBasePathPrefixPattern(walineBasePath);
+  const feedsBasePathPattern = /^\/feeds(?:\/|$)/;
   const walinePort = env.WALINE_PORT || "8360";
 
   return {
@@ -134,6 +143,13 @@ export default defineConfig(({ mode }) => {
         registerType: "autoUpdate",
         manifest: false,
         workbox: {
+          navigateFallbackDenylist: [
+            adminBasePathPattern,
+            apiBasePathPrefixPattern,
+            walineBasePathPattern,
+            feedsBasePathPattern,
+            seoDocumentPattern,
+          ],
           runtimeCaching: [
             {
               urlPattern: apiBasePathPattern,

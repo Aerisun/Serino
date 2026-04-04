@@ -64,6 +64,7 @@ export const GUEST_AVATAR_MODE_LABELS: LangLabels = {
 };
 
 export const SOCIAL_SOFTWARE_OPTIONS = [
+  "email",
   "github",
   "gitlab",
   "gitee",
@@ -89,6 +90,7 @@ export const SOCIAL_SOFTWARE_OPTIONS = [
 ] as const;
 
 export const SOCIAL_SOFTWARE_LABELS: LangLabels = {
+  email: { zh: "邮箱", en: "Email" },
   github: { zh: "GitHub", en: "GitHub" },
   gitlab: { zh: "GitLab", en: "GitLab" },
   gitee: { zh: "Gitee", en: "Gitee" },
