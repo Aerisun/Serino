@@ -74,7 +74,7 @@ main() {
   ensure_port_available 443
 
   version="$(resolve_release_tag)"
-  log_info "准备安装 Aerisun ${version}。"
+  log_info "准备安装 Serino ${version} ..."
 
   manifest_file="$(mktemp)"
   load_release_manifest "${version}" "${manifest_file}"
@@ -100,6 +100,7 @@ main() {
 
   install_release_payload "${bundle_root}"
   write_production_env "${AERISUN_ENV_FILE}"
+  normalize_production_env_file "${AERISUN_ENV_FILE}"
   compose_up_release
   wait_for_release_ready
   verify_default_admin_login || die "服务已启动，但安装时设置的管理员登录检查失败。"
@@ -110,12 +111,14 @@ main() {
     print_install_summary \
       "${AERISUN_SITE_URL_VALUE}" \
       "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}" \
-      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}"
+      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}" \
+      "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}"
   else
     print_install_summary \
       "${AERISUN_SITE_URL_VALUE}/" \
       "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}" \
-      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}"
+      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}" \
+      "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}"
   fi
 }
 

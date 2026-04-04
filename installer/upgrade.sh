@@ -34,7 +34,7 @@ restore_current_installation() {
   if [[ -d "${backup_dir}/installer" ]]; then
     run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
     run_as_root cp -a "${backup_dir}/installer" "${AERISUN_INSTALLER_DEST}"
-    run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/aerisunctl" /usr/local/bin/aerisunctl
+    run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" /usr/local/bin/sercli
   fi
   if [[ -f "${backup_dir}/data.tar.gz" ]]; then
     run_as_root rm -rf "${AERISUN_DATA_DIR}"
@@ -85,6 +85,7 @@ main() {
   install_release_payload "${bundle_dir}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
+  normalize_production_env_file "${AERISUN_ENV_FILE}"
 
   if ! compose_up_release || ! wait_for_release_ready; then
     log_warn "升级失败，正在回滚。"

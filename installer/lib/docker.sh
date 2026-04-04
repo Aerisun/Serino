@@ -227,7 +227,7 @@ print_domain_https_failure_details() {
       for reason in "${backend_reasons[@]}"; do
         printf '[ERROR] - %s\n' "${reason}" >&2
       done
-      printf '[ERROR] - 可执行 aerisunctl logs api waline caddy 查看详细日志。\n' >&2
+      printf '[ERROR] - 可执行 sercli logs api waline caddy 查看详细日志。\n' >&2
     fi
   fi
 

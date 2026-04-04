@@ -5,4 +5,4 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/aerisunctl upgrade
+ExecStart=/usr/local/bin/sercli upgrade

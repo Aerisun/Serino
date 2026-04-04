@@ -145,27 +145,31 @@ install_release_payload() {
   run_as_root cp -a "${source_root}/installer/." "${AERISUN_INSTALLER_DEST}/"
   run_as_root chmod 0755 \
     "${AERISUN_INSTALLER_DEST}/install.sh" \
+    "${AERISUN_INSTALLER_DEST}/uninstall.sh" \
     "${AERISUN_INSTALLER_DEST}/upgrade.sh" \
-    "${AERISUN_INSTALLER_DEST}/bin/aerisunctl"
-  run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/aerisunctl" /usr/local/bin/aerisunctl
+    "${AERISUN_INSTALLER_DEST}/bin/sercli"
+  run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" /usr/local/bin/sercli
 }
 
 print_install_summary() {
   local site_url="$1"
   local admin_url="$2"
   local admin_username="$3"
+  local admin_password="$4"
   cat >&2 <<EOF
 
-安装完成。
-前台地址：${site_url}
-后台地址：${admin_url}
-后台管理员：${admin_username}
-后台密码：安装过程中设置的密码
+安装完成后可通过以下地址访问：
+- 网站首页：${site_url}
+- 网站管理台：${admin_url}
+- 管理台登录名：${admin_username}，登录密码：${admin_password}（此处最后一次显示，之后所有密码明文将彻底清除）
+- 后续升级，重启，彻底卸载等操作，可以使用终端命令 sercli 进行 ~
 
-常用命令：
-  aerisunctl status
-  aerisunctl logs
-  aerisunctl restart
-  aerisunctl upgrade
+🎉 恭喜你，Serino 部署完成！
+
+    此刻，所有感谢的话语都显得有些苍白。作为一名大二业余开发者，能在茫茫人海中与你相遇，是我最珍贵的幸运。你选择信任、安装并使用我的作品，这份信任与陪伴，是我坚持下去最大的意义。
+
+    感谢你让 Serino 有机会参与见证你的生活片段。愿这里成为你心灵的栖息地，无论喜悦还是忧伤，都能被温柔以待✨ 
+
+—— 开发者 Aerisun 敬上
 EOF
 }

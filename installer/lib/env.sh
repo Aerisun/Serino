@@ -4,8 +4,21 @@ generate_secret() {
   od -An -tx1 -N32 /dev/urandom | tr -d ' \n'
 }
 
+trim_env_input() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "${value}"
+}
+
 encode_env_b64() {
   printf '%s' "$1" | base64 | tr -d '\n'
+}
+
+quote_env_literal() {
+  local value="$1"
+  value="${value//\'/\'\"\'\"\'}"
+  printf "'%s'" "${value}"
 }
 
 normalize_host_input() {
@@ -20,11 +33,23 @@ normalize_host_input() {
 
 load_env_file() {
   local file="$1"
+  local tmp_file=""
   [[ -f "${file}" ]] || return 0
+
+  if [[ ! -r "${file}" ]]; then
+    tmp_file="$(mktemp)"
+    run_as_root cat "${file}" > "${tmp_file}"
+    file="${tmp_file}"
+  fi
+
   set -a
   # shellcheck disable=SC1090
   source "${file}"
   set +a
+
+  if [[ -n "${tmp_file}" ]]; then
+    rm -f "${tmp_file}"
+  fi
 }
 
 set_env_value() {
@@ -53,7 +78,11 @@ set_env_value() {
     printf '%s=%s\n' "${key}" "${value}" > "${tmp_file}"
   fi
 
-  run_as_root install -m 0600 "${tmp_file}" "${file}"
+  if [[ -e "${file}" && -w "${file}" ]] || [[ ! -e "${file}" && -w "$(dirname "${file}")" ]]; then
+    install -m 0600 "${tmp_file}" "${file}"
+  else
+    run_as_root install -m 0600 "${tmp_file}" "${file}"
+  fi
   rm -f "${tmp_file}"
 }
 
@@ -66,7 +95,11 @@ unset_env_value() {
 
   tmp_file="$(mktemp)"
   awk -v key="${key}" '$0 !~ ("^" key "=") { print }' "${file}" > "${tmp_file}"
-  run_as_root install -m 0600 "${tmp_file}" "${file}"
+  if [[ -w "${file}" ]]; then
+    install -m 0600 "${tmp_file}" "${file}"
+  else
+    run_as_root install -m 0600 "${tmp_file}" "${file}"
+  fi
   rm -f "${tmp_file}"
 }
 
@@ -87,7 +120,7 @@ build_runtime_configuration() {
 
   AERISUN_SITE_URL_VALUE="${site_url}"
   AERISUN_WALINE_SERVER_URL_VALUE="${site_url}/waline"
-  AERISUN_CORS_ORIGINS_VALUE="[\"${site_url}\"]"
+  AERISUN_CORS_ORIGINS_VALUE="$(build_cors_origins_json "${site_url}")"
   AERISUN_WALINE_SECURE_DOMAINS_VALUE="${host}"
   AERISUN_WALINE_JWT_TOKEN_VALUE="$(generate_secret)"
   AERISUN_IMAGE_REGISTRY_VALUE="${active_registry}"
@@ -104,7 +137,7 @@ AERISUN_ENVIRONMENT=production
 AERISUN_DOMAIN=${AERISUN_DOMAIN_VALUE}
 AERISUN_SITE_URL=${AERISUN_SITE_URL_VALUE}
 AERISUN_WALINE_SERVER_URL=${AERISUN_WALINE_SERVER_URL_VALUE}
-AERISUN_CORS_ORIGINS=${AERISUN_CORS_ORIGINS_VALUE}
+AERISUN_CORS_ORIGINS=$(quote_env_literal "${AERISUN_CORS_ORIGINS_VALUE}")
 WALINE_SECURE_DOMAINS=${AERISUN_WALINE_SECURE_DOMAINS_VALUE}
 WALINE_JWT_TOKEN=${AERISUN_WALINE_JWT_TOKEN_VALUE}
 WALINE_GRAVATAR_STR=
@@ -115,8 +148,36 @@ AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN
 AERISUN_STORE_BIND_DIR=${AERISUN_DATA_DIR}
 AERISUN_IMAGE_REGISTRY=${AERISUN_IMAGE_REGISTRY_VALUE}
 AERISUN_IMAGE_TAG=${AERISUN_IMAGE_TAG_VALUE}
+AERISUN_RELEASE_VERSION=${AERISUN_IMAGE_TAG_VALUE}
 EOF
 
   run_as_root install -m 0600 "${tmp_file}" "${output_file}"
   rm -f "${tmp_file}"
+}
+
+build_cors_origins_json() {
+  local site_url="$1"
+  site_url="$(trim_env_input "${site_url}")"
+  [[ -n "${site_url}" ]] || return 1
+  [[ "${site_url}" =~ ^https?://[^[:space:]]+$ ]] || return 1
+  printf '["%s"]' "${site_url}"
+}
+
+normalize_production_env_file() {
+  local file="$1"
+  local site_url=""
+  local normalized_cors=""
+  local release_version=""
+
+  load_env_file "${file}"
+
+  site_url="$(trim_env_input "${AERISUN_SITE_URL:-}")"
+  [[ -n "${site_url}" ]] || die "缺少 AERISUN_SITE_URL，无法重建生产环境配置。"
+  normalized_cors="$(build_cors_origins_json "${site_url}")" || die "AERISUN_SITE_URL 格式无效：${site_url}"
+  set_env_value "${file}" "AERISUN_CORS_ORIGINS" "$(quote_env_literal "${normalized_cors}")"
+
+  release_version="${AERISUN_RELEASE_VERSION:-${AERISUN_IMAGE_TAG:-}}"
+  if [[ -n "${release_version}" ]]; then
+    set_env_value "${file}" "AERISUN_RELEASE_VERSION" "${release_version}"
+  fi
 }

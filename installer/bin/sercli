@@ -9,7 +9,7 @@ if [[ "${1:-}" != "--as-root" ]] && [[ "$(id -u)" -ne 0 ]]; then
   if command -v sudo >/dev/null 2>&1; then
     exec sudo "$0" --as-root "$@"
   fi
-  echo "需要 root 或 sudo 才能执行 aerisunctl。" >&2
+  echo "需要 root 或 sudo 才能执行 sercli。" >&2
   exit 1
 fi
 
@@ -27,10 +27,11 @@ source "${INSTALLER_ROOT}/lib/docker.sh"
 usage() {
   cat <<'EOF'
 用法：
-  aerisunctl status
-  aerisunctl logs [service...]
-  aerisunctl restart
-  aerisunctl upgrade [vX.Y.Z]
+  sercli status
+  sercli logs [service...]
+  sercli restart
+  sercli upgrade [vX.Y.Z]
+  sercli uninstall [--force]
 EOF
 }
 
@@ -62,6 +63,10 @@ cmd_upgrade() {
   exec "${INSTALLER_ROOT}/upgrade.sh" "$@"
 }
 
+cmd_uninstall() {
+  exec "${INSTALLER_ROOT}/uninstall.sh" "$@"
+}
+
 main() {
   local command="${1:-}"
   shift || true
@@ -78,6 +83,9 @@ main() {
       ;;
     upgrade)
       cmd_upgrade "$@"
+      ;;
+    uninstall)
+      cmd_uninstall "$@"
       ;;
     *)
       usage
