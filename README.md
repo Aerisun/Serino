@@ -9,6 +9,10 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 > 🙏 **致谢**：本项目参考了 [Shiro](https://github.com/Innei/Shiro) 、[astro-theme-pure](https://github.com/cworld1/astro-theme-pure)、 [Claude Code](https://github.com/anthropics/claude-code) ，我深深地沉醉于他们的匠心设计，在此由衷感谢和致敬这些项目作者的开源精神。
 
+## ✨ 示例站点
+
+- [Aerisun](https://aerisun.top/)
+
 欢迎体验 Serino 带来的极简之美与灵活运转之便！
 
 ---
@@ -16,6 +20,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 ## 🚀 核心特性
 
 - 🛡️ **绝对隔离**：代码、数据与配置彻底解耦。无损升级确保历史积累与私有存，储零覆写。
+- 🚀 **一键安装升级**：一句命令行部署！安装、重启、升级流程收敛，部署维护更省心。
 - ⚙️ **舒适配置**：告别修改源码，全站参数均通过分层设计的后台 UI 实时调整，清晰易拓。
 - 🎨 **极简美学**：素雅留白搭配内敛交互，带来全端自适应的无干扰沉浸阅读。
 - 📝 **扩展语法**：搭载强大的 Markdown 扩展解析引擎，轻松驾驭个性的多样化排版。
@@ -51,10 +56,11 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 ### 📦 一键自动化安装（推荐）
 
-面向可联网的主流 `systemd` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
+面向可连接国际互联网（国内后面了解一下接入...）的主流 `systemd amd64` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
 
 ```bash
-curl -fsSL https://install.aerisun.com/install.sh | bash
+curl --http1.1 -fsSL https://raw.githubusercontent.com/Aerisun/Serino/main/installer/install.sh | bash
+
 ```
 
 ### 🐳 Docker Compose 手动部署
@@ -80,11 +86,14 @@ curl -fsSL https://install.aerisun.com/upgrade.sh | bash
 环境要求：`Node.js 22.x+`、`pnpm`、`uv (Python)`。
 
 ```bash
-# 1. 安装前端与后端依赖
+# 1.拉取代码
+git clone https://github.com/Aerisun/Serino
+
+# 2. 安装前端与后端依赖
 pnpm install --frozen-lockfile
 cd backend && uv sync --dev
 
-# 2. 启动开发环境（支持多工作树）
+# 3. 启动开发环境（支持多工作树）
 make dev        # 启动方式 1：灌入开发用假数据 (Dev Seed)
 make dev-pseed  # 启动方式 2：灌入生产初始化数据，用于调整生产种子 (Prod Seed)
 make dev-stop   # 停止整套本地开发环境
