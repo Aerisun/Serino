@@ -172,8 +172,7 @@ const HeroContent = () => {
         </motion.div>
 
         <motion.p
-          className="max-w-[30rem] text-center text-[0.98rem] leading-7 text-white/76 sm:text-lg"
-          style={{ fontFamily: "'Instrument Serif', serif" }}
+          className="mx-auto max-w-[34rem] text-center text-[1.02rem] leading-7 text-[rgb(14_22_40/0.98)] [text-shadow:0_1px_0_rgba(255,255,255,0.42),0_2px_10px_rgba(255,255,255,0.18),0_8px_20px_rgba(15,23,42,0.16)] [-webkit-text-stroke:0.4px_rgba(255,255,255,0.34)] dark:text-[rgb(255_255_255/0.92)] dark:[text-shadow:0_1px_0_rgba(0,0,0,0.24),0_8px_18px_rgba(0,0,0,0.3)] dark:[-webkit-text-stroke:0.35px_rgba(9,14,24,0.28)] sm:text-[1.1rem]"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -181,6 +180,14 @@ const HeroContent = () => {
             delay: prefersReducedMotion ? 0 : 0.1,
             reducedMotion: prefersReducedMotion,
           })}
+          style={{
+            fontFamily:
+              "'PingFang SC', 'SF Pro SC', 'SF Pro Display', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
+            fontWeight: 600,
+            letterSpacing: "0.015em",
+            WebkitFontSmoothing: "antialiased",
+            MozOsxFontSmoothing: "grayscale",
+          }}
         >
           {site.bio}
         </motion.p>
