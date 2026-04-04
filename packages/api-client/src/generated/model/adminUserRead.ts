@@ -9,6 +9,5 @@ export interface AdminUserRead {
   id: string;
   username: string;
   is_active: boolean;
-  password_change_required: boolean;
   created_at: string;
 }

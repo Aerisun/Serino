@@ -15,7 +15,6 @@ class AdminUser(Base, TimestampMixin):
     username: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    password_change_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class AdminSession(Base, TimestampMixin):

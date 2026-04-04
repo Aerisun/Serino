@@ -35,7 +35,7 @@ from aerisun.domain.site_auth.service import (
     validate_admin_email_password,
 )
 
-from .deps import get_current_admin, require_admin_console_access
+from .deps import get_current_admin
 
 router = APIRouter(prefix="/auth", tags=["admin-auth"])
 
@@ -102,24 +102,17 @@ def me(admin: AdminUser = Depends(get_current_admin)) -> AdminUserRead:
 
 @router.put("/password", status_code=204, summary="修改密码")
 def change_password(
-    request: Request,
     payload: PasswordChangeRequest,
     admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> None:
-    change_admin_password(
-        session,
-        admin,
-        payload.current_password,
-        payload.new_password,
-        keep_session_token=_extract_token(request),
-    )
+    change_admin_password(session, admin, payload.current_password, payload.new_password)
 
 
 @router.put("/profile", response_model=AdminUserRead, summary="更新个人资料")
 def update_profile_endpoint(
     payload: AdminProfileUpdate,
-    admin: AdminUser = Depends(require_admin_console_access),
+    admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> AdminUserRead:
     return update_admin_profile(session, admin, payload.username)

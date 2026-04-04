@@ -35,7 +35,6 @@ class AdminUserRead(ModelBase):
     id: str
     username: str
     is_active: bool
-    password_change_required: bool
     created_at: datetime
 
 

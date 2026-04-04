@@ -2,6 +2,5 @@
   "id": "4d13c925-a87f-4e93-825f-fdfe58b13566",
   "username": "test-admin",
   "is_active": true,
-  "password_change_required": false,
   "created_at": "2026-04-03T17:13:32.450286"
 }

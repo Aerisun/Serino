@@ -1224,7 +1224,6 @@ export const MeApiV1AdminAuthMeGetResponse = zod.object({
   "id": zod.string(),
   "username": zod.string(),
   "is_active": zod.boolean(),
-  "password_change_required": zod.boolean(),
   "created_at": zod.string().datetime({})
 })
 
@@ -1249,7 +1248,6 @@ export const UpdateProfileEndpointApiV1AdminAuthProfilePutResponse = zod.object(
   "id": zod.string(),
   "username": zod.string(),
   "is_active": zod.boolean(),
-  "password_change_required": zod.boolean(),
   "created_at": zod.string().datetime({})
 })
 

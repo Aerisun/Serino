@@ -28,7 +28,6 @@ from aerisun.domain.iam.schemas import (
 SESSION_TTL_HOURS = 24
 API_KEY_PREFIX_LEN = 4
 API_KEY_SUFFIX_LEN = 3
-PASSWORD_CHANGE_REQUIRED_DETAIL = "Password change required before accessing admin console"
 
 
 def _canonicalize_stored_api_key_scope(scope: str) -> str | None:
@@ -85,11 +84,6 @@ def authenticate_admin(session: Session, username: str, password: str) -> AdminU
     return user
 
 
-def ensure_admin_console_access(admin: AdminUser) -> None:
-    if admin.password_change_required:
-        raise PermissionDenied(PASSWORD_CHANGE_REQUIRED_DETAIL)
-
-
 def create_admin_session(session: Session, admin_user_id: str, ttl_hours: int | None = None) -> LoginResponse:
     """Create a new session token for the given admin user."""
     settings = get_settings()
@@ -107,22 +101,11 @@ def destroy_admin_sessions(session: Session, admin_user_id: str) -> None:
     session.commit()
 
 
-def change_admin_password(
-    session: Session,
-    admin: AdminUser,
-    current_password: str,
-    new_password: str,
-    *,
-    keep_session_token: str | None = None,
-) -> None:
+def change_admin_password(session: Session, admin: AdminUser, current_password: str, new_password: str) -> None:
     """Verify old password and update to new. Raises ValueError on mismatch."""
     if not bcrypt.checkpw(current_password.encode(), admin.password_hash.encode()):
         raise ValidationError("Current password is incorrect")
     admin.password_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
-    password_was_required = bool(admin.password_change_required)
-    admin.password_change_required = False
-    if password_was_required:
-        repo.delete_other_sessions_for_user(session, admin.id, keep_session_token)
     session.commit()
 
 

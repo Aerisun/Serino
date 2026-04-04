@@ -209,9 +209,6 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
     } <= backup_recovery_key_columns
     assert "backup_snapshots" not in tables
     assert "restore_points" not in tables
-    if "admin_users" in tables:
-        admin_user_columns = _get_columns(str(db_path), "admin_users")
-        assert "password_change_required" in admin_user_columns
 
     if expect_data_updates:
         community_config_row = _get_row(str(db_path), "community_config")
@@ -232,40 +229,6 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
         assert asset_row["category"] == "general"
         assert asset_row["scope"] == "user"
         assert asset_row["note"] is None
-
-
-def test_admin_password_change_required_defaults_to_false_for_existing_rows(monkeypatch, tmp_path) -> None:
-    db_path = tmp_path / "migration-admin-flag.sqlite3"
-    _configure_test_database(monkeypatch, tmp_path, db_path)
-
-    _upgrade_to_revision("0052_add_data_migration_tracking")
-
-    connection = sqlite3.connect(db_path)
-    try:
-        connection.execute(
-            """
-            INSERT INTO admin_users (
-                id, username, password_hash, is_active, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "existing-admin",
-                "existing-admin",
-                "hashed-password",
-                1,
-                "2026-04-04T00:00:00",
-                "2026-04-04T00:00:00",
-            ),
-        )
-        connection.commit()
-    finally:
-        connection.close()
-
-    _upgrade_to_revision("head")
-
-    row = _get_row(str(db_path), "admin_users")
-    assert row is not None
-    assert row["password_change_required"] in (0, False)
 
 
 def test_0001_initial_is_static_historical_schema(tmp_path, monkeypatch) -> None:

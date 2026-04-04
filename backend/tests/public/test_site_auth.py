@@ -12,7 +12,6 @@ def _seed_bound_admin_email(
     email: str,
     shared_password: str = "shared-admin-password",
     console_methods: list[str] | None = None,
-    password_change_required: bool = False,
 ) -> None:
     from aerisun.core.db import get_session_factory
     from aerisun.domain.iam.models import AdminUser
@@ -27,12 +26,9 @@ def _seed_bound_admin_email(
             admin_user = AdminUser(
                 username="site-auth-admin",
                 password_hash=bcrypt.hashpw(b"route-password", bcrypt.gensalt()).decode(),
-                password_change_required=password_change_required,
             )
             session.add(admin_user)
             session.flush()
-        else:
-            admin_user.password_change_required = password_change_required
 
         config = get_site_auth_config_orm(session)
         config.admin_email_enabled = True
@@ -233,36 +229,6 @@ def test_exchange_site_user_requires_admin_elevated_session(client) -> None:
     exchanged = client.post("/api/v1/admin/auth/exchange-site-user")
     assert exchanged.status_code == 200
     assert exchanged.json()["token"]
-
-
-def test_exchange_site_user_respects_password_change_required_admin_gate(client) -> None:
-    email = "locked-console-admin@example.com"
-    _seed_bound_admin_email(
-        email=email,
-        console_methods=["email"],
-        password_change_required=True,
-    )
-
-    elevated_login = _login_site_user(
-        client,
-        email=email,
-        admin_password="shared-admin-password",
-    )
-    assert elevated_login.status_code == 200
-    assert elevated_login.json()["user"]["can_access_admin_console"] is True
-
-    exchanged = client.post("/api/v1/admin/auth/exchange-site-user")
-    assert exchanged.status_code == 200
-    token = exchanged.json()["token"]
-    headers = {"Authorization": f"Bearer {token}"}
-
-    me = client.get("/api/v1/admin/auth/me", headers=headers)
-    assert me.status_code == 200
-    assert me.json()["password_change_required"] is True
-
-    blocked_dashboard = client.get("/api/v1/admin/system/dashboard/stats", headers=headers)
-    assert blocked_dashboard.status_code == 403
-    assert blocked_dashboard.json()["detail"] == "Password change required before accessing admin console"
 
 
 @respx.mock

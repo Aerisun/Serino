@@ -16,12 +16,12 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ConfigSettingsCard } from "@/components/ConfigSettingsCard";
-import { Button } from "@/components/ui/Button";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Server, Database, HardDrive, Clock, Code, Monitor, Trash2, TriangleAlert, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Server, Database, HardDrive, Clock, Code, Monitor, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import type { AdminSessionRead, SystemInfo } from "@serino/api-client/models";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,7 @@ function formatDateTime(dateStr: string): string {
 
 export default function SystemInfoPage() {
   const { t } = useI18n();
-  const { user, refreshMe, logout, requiresPasswordChange } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [username, setUsername] = useState(user?.username || "");
@@ -77,16 +77,12 @@ export default function SystemInfoPage() {
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
 
   const { data: raw, isLoading } = useSystemInfoApiV1AdminSystemInfoGet({
-    query: { refetchInterval: 30000, enabled: !requiresPasswordChange },
+    query: { refetchInterval: 30000 },
   });
   const { data: visitorAuthConfigRaw } =
-    useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet({
-      query: { enabled: !requiresPasswordChange },
-    });
+    useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet();
   const { data: adminIdentitiesRaw } =
-    useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet({
-      query: { enabled: !requiresPasswordChange },
-    });
+    useListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGet();
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["admin-sessions"],
@@ -190,7 +186,6 @@ export default function SystemInfoPage() {
         current_password: currentPassword,
         new_password: newPassword,
       });
-      await refreshMe();
       toast.success(t("common.operationSuccess"));
       setCurrentPassword("");
       setNewPassword("");
@@ -233,127 +228,8 @@ export default function SystemInfoPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t("systemInfo.title")}
-        description={requiresPasswordChange ? t("settings.passwordChangeRequiredDesc") : t("systemInfo.description")}
-        actions={requiresPasswordChange ? (
-          <Button variant="outline" onClick={() => void logout()}>
-            <LogOut className="mr-2 h-4 w-4" />
-            {t("nav.logout")}
-          </Button>
-        ) : undefined}
-      />
-      {requiresPasswordChange ? (
-        <>
-          <Card className="border border-amber-500/30 bg-amber-500/8">
-            <CardContent className="flex gap-3 px-6 py-5">
-              <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-foreground">
-                  {t("settings.passwordChangeRequiredTitle")}
-                </p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {t("settings.passwordChangeRequiredHint")}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("settings.changePassword")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">{t("settings.currentPassword")}</label>
-                  <Input
-                    type="password"
-                    value={currentPassword}
-                    placeholder="••••••••"
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">{t("settings.newPassword")}</label>
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    placeholder="••••••••"
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">{t("settings.confirmPassword")}</label>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    placeholder="••••••••"
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handlePasswordChange}
-                    disabled={
-                      passwordSaving ||
-                      !currentPassword.trim() ||
-                      !newPassword.trim() ||
-                      !confirmPassword.trim()
-                    }
-                  >
-                    {passwordSaving ? t("common.loading") : t("settings.changePassword")}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("settings.activeSessions")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {sessionsLoading ? (
-                  <p className="text-muted-foreground">{t("common.loading")}</p>
-                ) : sessions.length === 0 ? (
-                  <p className="text-muted-foreground">{t("common.noData")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {sessions.map((session: AdminSessionRead) => (
-                      <div key={session.id} className="admin-glass flex items-center justify-between rounded-lg p-3">
-                        <div className="flex items-center gap-3">
-                          <Monitor className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">
-                              {session.is_current && (
-                                <span className="mr-2 text-green-600">({t("settings.currentSession")})</span>
-                              )}
-                              {t("settings.sessionCreated")}: {formatDateTime(session.created_at)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {t("settings.sessionExpires")}: {formatDateTime(session.expires_at)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {!session.is_current && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRevokeTarget(session.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      ) : isLoading ? (
+      <PageHeader title={t("systemInfo.title")} description={t("systemInfo.description")} />
+      {isLoading ? (
         <p className="text-muted-foreground">{t("common.loading")}</p>
       ) : (
         <>
