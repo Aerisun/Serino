@@ -534,6 +534,15 @@ jobs:
             "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
             --content-type "text/plain; charset=utf-8"
 
+      - name: Refresh dev installer CDN cache
+        env:
+          BINFEN_CDN_API_TOKEN: ${{ secrets.BINFEN_CDN_API_TOKEN }}
+          DEV_INSTALL_BASE_URL: ${{ steps.prep.outputs.dev_base_url }}
+        run: |
+          bash ./scripts/refresh-bitiful-cdn.sh \
+            "${DEV_INSTALL_BASE_URL}/install.sh" \
+            "${DEV_INSTALL_BASE_URL}/latest.env"
+
   release-readiness:
     name: Release Readiness
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release') }}
@@ -820,3 +829,12 @@ jobs:
           aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
             "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
             --content-type "text/plain; charset=utf-8"
+
+      - name: Refresh installer CDN cache
+        env:
+          BINFEN_CDN_API_TOKEN: ${{ secrets.BINFEN_CDN_API_TOKEN }}
+          BINFEN_INSTALL_BASE_URL: ${{ vars.BINFEN_INSTALL_BASE_URL }}
+        run: |
+          bash ./scripts/refresh-bitiful-cdn.sh \
+            "${BINFEN_INSTALL_BASE_URL}/install.sh" \
+            "${BINFEN_INSTALL_BASE_URL}/latest.env"

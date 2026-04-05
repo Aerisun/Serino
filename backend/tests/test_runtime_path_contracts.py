@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -455,6 +455,23 @@ def test_installer_runtime_paths_follow_serino_system_layout():
 
 def test_dev_channel_does_not_require_a_second_installer_entrypoint():
     assert not (PROJECT_ROOT / "installer/install-dev.sh").exists()
+
+
+def test_release_workflow_refreshes_bitiful_installer_cache():
+    workflow_text = read_project_file(".github/workflows/ci.yml")
+    refresh_script_text = read_project_file("scripts/refresh-bitiful-cdn.sh")
+
+    assert (
+        'BINFEN_CDN_API_ENDPOINT="${BINFEN_CDN_API_ENDPOINT:-https://api.bitiful.com/cdn/cache/refresh}"'
+        in refresh_script_text
+    )
+    assert 'BINFEN_CDN_API_TOKEN="${BINFEN_CDN_API_TOKEN:?BINFEN_CDN_API_TOKEN is required}"' in refresh_script_text
+    assert "curl --fail-with-body --silent --show-error \\" in refresh_script_text
+    assert "bash ./scripts/refresh-bitiful-cdn.sh \\" in workflow_text
+    assert '"${BINFEN_INSTALL_BASE_URL}/install.sh"' in workflow_text
+    assert '"${BINFEN_INSTALL_BASE_URL}/latest.env"' in workflow_text
+    assert '"${DEV_INSTALL_BASE_URL}/install.sh"' in workflow_text
+    assert '"${DEV_INSTALL_BASE_URL}/latest.env"' in workflow_text
 
 
 def test_installer_systemd_units_switch_to_serino_names():
