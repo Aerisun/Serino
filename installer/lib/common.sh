@@ -231,6 +231,7 @@ legacy_installation_paths() {
     /etc/systemd/system/aerisun.service; do
     [[ -e "${path}" ]] && printf '%s\n' "${path}"
   done
+  return 0
 }
 
 current_installation_paths() {
@@ -245,6 +246,7 @@ current_installation_paths() {
     /usr/local/bin/sercli; do
     [[ -e "${path}" ]] && printf '%s\n' "${path}"
   done
+  return 0
 }
 
 ensure_no_legacy_installation() {
@@ -273,6 +275,30 @@ ${existing_paths}
 请先执行 sercli uninstall --force，或手工清理后再重装。
 EOF
 )"
+}
+
+purge_installation_paths() {
+  cd /
+  run_as_root rm -rf \
+    "${AERISUN_APP_ROOT}" \
+    "${SERINO_CONFIG_ROOT}" \
+    "${AERISUN_DATA_DIR}" \
+    "${SERINO_LOG_ROOT}" \
+    "${AERISUN_BACKUP_ROOT}" \
+    /opt/aerisun \
+    /var/lib/aerisun \
+    /var/backups/aerisun
+  run_as_root rm -f /usr/local/bin/sercli
+  run_as_root rm -f /usr/local/bin/aerisunctl
+}
+
+purge_service_account() {
+  if id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
+    run_as_root userdel "${SERINO_SERVICE_USER}" >/dev/null 2>&1 || true
+  fi
+  if getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
+    run_as_root groupdel "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1 || true
+  fi
 }
 
 ensure_supported_existing_installation() {

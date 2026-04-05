@@ -45,45 +45,6 @@ EOF
   [[ "${answer}" == "UNINSTALL" ]] || die "已取消卸载。"
 }
 
-remove_local_images() {
-  command_exists docker || return 0
-
-  local image_ids=""
-  image_ids="$(
-    run_as_root docker images --format '{{.Repository}} {{.ID}}' \
-      | awk '$1 ~ /(^|\/)(serino-api|serino-web|serino-waline|serino-dev-api|serino-dev-web|serino-dev-waline)$/ { print $2 }' \
-      | sort -u
-  )"
-
-  [[ -n "${image_ids}" ]] || return 0
-  # shellcheck disable=SC2086
-  run_as_root docker image rm -f ${image_ids} >/dev/null 2>&1 || true
-}
-
-remove_installation_paths() {
-  cd /
-  run_as_root rm -rf \
-    "${AERISUN_APP_ROOT}" \
-    "${SERINO_CONFIG_ROOT}" \
-    "${AERISUN_DATA_DIR}" \
-    "${SERINO_LOG_ROOT}" \
-    "${AERISUN_BACKUP_ROOT}" \
-    /opt/aerisun \
-    /var/lib/aerisun \
-    /var/backups/aerisun
-  run_as_root rm -f /usr/local/bin/sercli
-  run_as_root rm -f /usr/local/bin/aerisunctl
-}
-
-remove_service_account() {
-  if id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
-    run_as_root userdel "${SERINO_SERVICE_USER}" >/dev/null 2>&1 || true
-  fi
-  if getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
-    run_as_root groupdel "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1 || true
-  fi
-}
-
 main() {
   require_supported_linux
   require_root_or_sudo
@@ -96,9 +57,9 @@ main() {
   print_last_diagnostics
   stop_and_remove_serino_units
   teardown_release_stack
-  remove_local_images
-  remove_installation_paths
-  remove_service_account
+  remove_serino_local_images
+  purge_installation_paths
+  purge_service_account
   log_info "Serino 已从当前机器彻底卸载。"
 }
 

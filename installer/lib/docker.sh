@@ -66,6 +66,13 @@ teardown_release_stack() {
   fi
 
   if command_exists docker; then
+    run_as_root docker rm -f \
+      serino-api-1 \
+      serino-waline-1 \
+      serino-caddy-1 \
+      aerisun-api-1 \
+      aerisun-waline-1 \
+      aerisun-caddy-1 >/dev/null 2>&1 || true
     run_as_root docker volume rm -f \
       "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_data" \
       "${AERISUN_COMPOSE_PROJECT_NAME}_caddy_config" >/dev/null 2>&1 || true
@@ -75,6 +82,21 @@ teardown_release_stack() {
       "aerisun_caddy_config" >/dev/null 2>&1 || true
     run_as_root docker network rm "aerisun_default" >/dev/null 2>&1 || true
   fi
+}
+
+remove_serino_local_images() {
+  command_exists docker || return 0
+
+  local image_ids=""
+  image_ids="$(
+    run_as_root docker images --format '{{.Repository}} {{.ID}}' \
+      | awk '$1 ~ /(^|\/)(serino-api|serino-web|serino-waline|serino-dev-api|serino-dev-web|serino-dev-waline)$/ { print $2 }' \
+      | sort -u
+  )"
+
+  [[ -n "${image_ids}" ]] || return 0
+  # shellcheck disable=SC2086
+  run_as_root docker image rm -f ${image_ids} >/dev/null 2>&1 || true
 }
 
 ensure_docker_installed() {

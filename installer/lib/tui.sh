@@ -150,3 +150,45 @@ EOF
   read -r -p "继续安装？[y/N]: " answer </dev/tty
   [[ "${answer}" =~ ^[Yy]$ ]] || die "安装已取消。"
 }
+
+confirm_overwrite_installation() {
+  local existing_paths="$1"
+  local has_legacy="$2"
+  local has_current="$3"
+  local summary=""
+
+  summary="$(
+    cat <<EOF
+检测到当前机器上已存在 Serino 旧布局或当前布局残留：
+${existing_paths}
+
+你可以选择：
+- 取消：保留现有安装；如果你要保留数据并升级，请使用 sercli upgrade
+- 覆盖安装：停止并删除现有服务、配置、数据、日志、备份、本地镜像与服务账号，然后重新安装
+
+覆盖安装不可恢复。
+EOF
+  )"
+
+  if command_exists whiptail; then
+    local title="确认覆盖安装"
+    if [[ -n "${has_legacy}" && -n "${has_current}" ]]; then
+      title="检测到旧布局与现有安装"
+    elif [[ -n "${has_legacy}" ]]; then
+      title="检测到旧布局残留"
+    elif [[ -n "${has_current}" ]]; then
+      title="检测到现有安装"
+    fi
+    whiptail \
+      --title "${title}" \
+      --yes-button "覆盖安装" \
+      --no-button "取消" \
+      --yesno "${summary}" 18 84 </dev/tty || die "已取消安装。"
+    return 0
+  fi
+
+  printf '%s\n' "${summary}" >&2
+  local answer=""
+  read -r -p "如确认彻底覆盖并重装，请输入 OVERWRITE: " answer </dev/tty
+  [[ "${answer}" == "OVERWRITE" ]] || die "已取消安装。"
+}

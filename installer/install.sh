@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+bootstrap_log_info() {
+  printf '[INFO] %s\n' "$*" >&2
+}
+
+bootstrap_log_warn() {
+  printf '[WARN] %s\n' "$*" >&2
+}
+
 bootstrap_from_release() {
   local version="${AERISUN_INSTALL_VERSION:-}"
   local repo="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
@@ -32,16 +40,20 @@ bootstrap_from_release() {
   if [[ -z "${version}" ]]; then
     if [[ -n "${base_url}" ]]; then
       latest_url="${base_url%/}/latest.env"
+      bootstrap_log_info "🎈 正在解析 ${channel} 渠道最新版本：${latest_url}"
       latest_payload="$(
         curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${latest_url}" 2>/dev/null || true
       )"
       if [[ -n "${latest_payload}" ]]; then
         version="$(printf '%s\n' "${latest_payload}" | extract_release_tag_from_env_payload)"
+      else
+        bootstrap_log_warn "未能从 ${latest_url} 读取版本信息。"
       fi
     fi
 
     if [[ -z "${version}" && "${channel}" == "stable" ]]; then
       api_url="https://api.github.com/repos/${repo}/releases/latest"
+      bootstrap_log_info "正在从 GitHub Release 解析 stable 最新版本。"
       version="$(
         curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${api_url}" \
           | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(v[^"]*\)".*/\1/p' \
@@ -59,9 +71,11 @@ bootstrap_from_release() {
   bundle_file="${tmp_dir}/${bundle_name}"
   if [[ -n "${base_url}" ]]; then
     release_url="${base_url%/}/${version}/${bundle_name}"
+    bootstrap_log_info "🌟 准备下载 ${channel} 安装包：${release_url}"
     if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
       if [[ "${channel}" == "stable" ]]; then
         release_url="https://github.com/${repo}/releases/download/${version}/${bundle_name}"
+        bootstrap_log_warn "渠道源下载失败，回退到 GitHub Release：${release_url}"
         if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
           echo "无法下载安装包：${base_url%/}/${version}/${bundle_name}" >&2
           exit 1
@@ -73,12 +87,14 @@ bootstrap_from_release() {
     fi
   else
     release_url="https://github.com/${repo}/releases/download/${version}/${bundle_name}"
+    bootstrap_log_info "准备从 GitHub Release 下载安装包：${release_url}"
     if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
       echo "无法从 GitHub Release 下载安装包：${release_url}" >&2
       exit 1
     fi
   fi
 
+  bootstrap_log_info "👏 正在解压安装包并启动安装器。"
   tar -xzf "${bundle_file}" -C "${tmp_dir}"
   export AERISUN_INSTALL_VERSION="${version}"
   export AERISUN_INSTALL_CHANNEL="${channel}"
@@ -119,23 +135,36 @@ cleanup_failed_installation() {
   stop_serino_service
   teardown_release_stack
   stop_and_remove_serino_units
-  run_as_root rm -rf \
-    "${AERISUN_APP_ROOT}" \
-    "${SERINO_CONFIG_ROOT}" \
-    "${AERISUN_DATA_DIR}" \
-    "${SERINO_LOG_ROOT}" \
-    "${AERISUN_BACKUP_ROOT}"
-  run_as_root rm -f /usr/local/bin/sercli
-  if id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
-    run_as_root userdel "${SERINO_SERVICE_USER}" >/dev/null 2>&1 || true
-  fi
-  if getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
-    run_as_root groupdel "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1 || true
-  fi
+  remove_serino_local_images
+  purge_installation_paths
+  purge_service_account
   log_warn "残留已清理。请根据上面的错误信息修复后重新执行安装。"
 }
 
 trap 'cleanup_failed_installation' ERR
+
+prepare_install_target() {
+  local legacy_paths=""
+  local current_paths=""
+  local detected_paths=""
+
+  legacy_paths="$(legacy_installation_paths)"
+  current_paths="$(current_installation_paths)"
+  detected_paths="$(
+    printf '%s\n%s\n' "${legacy_paths}" "${current_paths}" | awk 'NF'
+  )"
+
+  [[ -z "${detected_paths}" ]] && return 0
+
+  confirm_overwrite_installation "${detected_paths}" "${legacy_paths}" "${current_paths}"
+  log_warn "你已选择覆盖安装，正在彻底清理现有 Serino 安装与残留。"
+  stop_serino_service
+  teardown_release_stack
+  stop_and_remove_serino_units
+  remove_serino_local_images
+  purge_installation_paths
+  purge_service_account
+}
 
 main() {
   local version=""
@@ -145,8 +174,7 @@ main() {
 
   require_supported_linux
   require_root_or_sudo
-  ensure_no_legacy_installation
-  ensure_fresh_install_target
+  prepare_install_target
   ensure_port_available 80
   ensure_port_available 443
 
