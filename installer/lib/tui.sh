@@ -92,12 +92,6 @@ prompt_bootstrap_admin_credentials() {
   local password=""
   local confirm_password=""
 
-  cat >&2 <<'EOF'
-请设置网站管理台的登录信息。
-- 这组登录名和登录密码用于进入网站管理台
-- 安装完成后请自行妥善记录，避免遗忘
-EOF
-
   while true; do
     if command_exists whiptail; then
       username="$(
@@ -204,14 +198,14 @@ EOF
 
 prompt_domain_preflight_action() {
   local host="$1"
-  local prompt="${AERISUN_DOMAIN_PREFLIGHT_SUMMARY:-域名 ${host} 似乎没有解析到本机器 IP，也许您的域名输入有误，或当前网络/代理影响了检测。}"
+  local prompt="域名 ${host} 似乎没有稳定解析到本机器。可能是域名输入有误，或当前网络/代理影响了检测。"
   prompt="${prompt}"$'\n\n'"请选择下一步操作："
 
   if command_exists whiptail; then
-    whiptail --title "域名预检未通过" --menu "${prompt}" 18 88 4 \
+    whiptail --title "域名预检未通过" --menu "${prompt}" 18 96 4 \
+      continue "域名已绑定本机，继续安装" \
       retry "重新输入域名并重新检查" \
       ip "改为 IP/主机名模式继续安装" \
-      continue "域名确实已绑定到本机器，继续安装" \
       cancel "取消安装" \
       3>&1 1>&2 2>&3 </dev/tty || die "安装已取消。"
     return 0
@@ -219,18 +213,18 @@ prompt_domain_preflight_action() {
 
   cat >&2 <<EOF
 ${prompt}
-  1) 重新输入域名并重新检查
-  2) 改为 IP/主机名模式继续安装
-  3) 域名确实已经绑定到本机器，继续安装
+  1) ${host} 确实已经绑定到本机器，继续安装 😎
+  2) 重新输入域名并重新检查
+  3) 改为 IP/主机名模式继续安装
   4) 取消安装
 EOF
 
   local selection=""
   read -r -p "输入 1、2、3 或 4: " selection </dev/tty
   case "${selection}" in
-    1) printf 'retry\n' ;;
-    2) printf 'ip\n' ;;
-    3) printf 'continue\n' ;;
+    1) printf 'continue\n' ;;
+    2) printf 'retry\n' ;;
+    3) printf 'ip\n' ;;
     4) printf 'cancel\n' ;;
     *) die "无效的选择。" ;;
   esac

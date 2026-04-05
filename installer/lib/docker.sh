@@ -419,7 +419,7 @@ preflight_domain_installation() {
   fi
 
   AERISUN_DOMAIN_PREFLIGHT_SUMMARY="$(cat <<EOF
-域名 ${host} 似乎没有解析到本机器 IP，也许您的域名输入有误，或当前网络/代理影响了检测 🤔
+域名 ${host} 似乎没有解析到本机器 IP，也许您的域名输入有误，或当前网络/代理影响了检测🤔
 EOF
 )"
 

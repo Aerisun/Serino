@@ -194,17 +194,81 @@ build_cors_origins_json() {
   printf '["%s"]' "${site_url}"
 }
 
+extract_host_from_url() {
+  local value="$1"
+  value="$(trim_env_input "${value}")"
+  value="${value#http://}"
+  value="${value#https://}"
+  value="${value%%/*}"
+  printf '%s' "${value}"
+}
+
+derive_domain_value() {
+  local domain=""
+  local host=""
+
+  domain="$(trim_env_input "${AERISUN_DOMAIN:-${AERISUN_DOMAIN_VALUE:-}}")"
+  if [[ -n "${domain}" ]]; then
+    printf '%s' "${domain}"
+    return 0
+  fi
+
+  host="$(trim_env_input "${AERISUN_INSTALL_HOST:-}")"
+  [[ -n "${host}" ]] || return 1
+
+  if [[ "${AERISUN_INSTALL_ACCESS_MODE:-}" == "ip" ]]; then
+    printf 'http://%s' "${host}"
+  else
+    printf '%s' "${host}"
+  fi
+}
+
+derive_site_url_value() {
+  local site_url=""
+  local domain_value=""
+
+  site_url="$(trim_env_input "${AERISUN_SITE_URL:-${AERISUN_SITE_URL_VALUE:-}}")"
+  if [[ -n "${site_url}" ]]; then
+    printf '%s' "${site_url}"
+    return 0
+  fi
+
+  domain_value="$(derive_domain_value || true)"
+  [[ -n "${domain_value}" ]] || return 1
+
+  if [[ "${domain_value}" =~ ^https?:// ]]; then
+    printf '%s' "${domain_value}"
+  else
+    printf 'https://%s' "${domain_value}"
+  fi
+}
+
 normalize_production_env_file() {
   local file="$1"
   local site_url=""
   local normalized_cors=""
+  local domain_value=""
+  local waline_secure_domains=""
+  local waline_server_url=""
   local release_version=""
 
   load_env_file "${file}"
 
-  site_url="$(trim_env_input "${AERISUN_SITE_URL:-}")"
+  site_url="$(derive_site_url_value || true)"
   [[ -n "${site_url}" ]] || die "缺少 AERISUN_SITE_URL，无法重建生产环境配置。"
   normalized_cors="$(build_cors_origins_json "${site_url}")" || die "AERISUN_SITE_URL 格式无效：${site_url}"
+  domain_value="$(derive_domain_value || true)"
+  waline_secure_domains="$(extract_host_from_url "${site_url}")"
+  waline_server_url="${site_url}${AERISUN_WALINE_BASE_PATH:-/waline}"
+
+  set_env_value "${file}" "AERISUN_SITE_URL" "${site_url}"
+  if [[ -n "${domain_value}" ]]; then
+    set_env_value "${file}" "AERISUN_DOMAIN" "${domain_value}"
+  fi
+  if [[ -n "${waline_secure_domains}" ]]; then
+    set_env_value "${file}" "WALINE_SECURE_DOMAINS" "${waline_secure_domains}"
+  fi
+  set_env_value "${file}" "AERISUN_WALINE_SERVER_URL" "${waline_server_url}"
   set_env_value "${file}" "AERISUN_CORS_ORIGINS" "$(quote_env_literal "${normalized_cors}")"
 
   release_version="${AERISUN_RELEASE_VERSION:-${AERISUN_IMAGE_TAG:-}}"

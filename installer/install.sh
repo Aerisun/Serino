@@ -221,23 +221,28 @@ main() {
   configure_local_firewall
   ensure_service_user
   AERISUN_INSTALL_CLEANUP_ARMED=1
+  log_info "🤔 正在校验镜像仓库可用性..."
   active_registry="$(
     resolve_active_registry \
       "${AERISUN_IMAGE_REGISTRY}" \
       "${AERISUN_IMAGE_TAG}"
   )"
 
+  log_info "🤯 正在生成生产环境配置..."
   build_runtime_configuration \
     "${AERISUN_INSTALL_ACCESS_MODE}" \
     "${AERISUN_INSTALL_HOST}" \
     "${active_registry}" \
     "${AERISUN_IMAGE_TAG}"
 
+  log_info "💪 正在安装运行载荷..."
   install_release_payload "${bundle_root}"
   write_production_env "${AERISUN_ENV_FILE}"
   normalize_production_env_file "${AERISUN_ENV_FILE}"
   daemon_reload
+  log_info "🥳 正在拉取并启动容器，这一步可能需要几分钟..."
   compose_up_release
+  log_info "🎊 正在等待站点服务就绪..."
   wait_for_release_ready
   verify_default_admin_login || die "服务已启动，但安装时设置的管理员登录检查失败。"
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64"
