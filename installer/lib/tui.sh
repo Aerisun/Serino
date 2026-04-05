@@ -81,25 +81,6 @@ dialog_height() {
   printf '%s' "${preferred}"
 }
 
-wrap_dialog_text() {
-  local text="$1"
-  local width="${2:-68}"
-  local wrap_width=$(( width - 10 ))
-  local line=""
-
-  if (( wrap_width < 24 )); then
-    wrap_width=24
-  fi
-
-  while IFS= read -r line || [[ -n "${line}" ]]; do
-    if [[ -z "${line}" ]]; then
-      printf '\n'
-    else
-      printf '%s\n' "${line}" | fold -s -w "${wrap_width}"
-    fi
-  done <<<"${text}"
-}
-
 prompt_access_mode() {
   [[ -e /dev/tty ]] || die "当前终端不可交互，无法执行安装向导。"
 
@@ -148,7 +129,7 @@ prompt_install_host() {
     width="$(dialog_width 66 50)"
     height="$(dialog_height 10 10)"
     value="$(
-      whiptail --title "Aerisun 安装" --inputbox "$(wrap_dialog_text "${prompt}" "${width}")" "${height}" "${width}" "${default_value}" 3>&1 1>&2 2>&3 </dev/tty
+      whiptail --title "Aerisun 安装" --inputbox "${prompt}" "${height}" "${width}" "${default_value}" 3>&1 1>&2 2>&3 </dev/tty
     )" || die "安装已取消。"
   else
     if [[ -n "${default_value}" ]]; then
@@ -180,13 +161,13 @@ prompt_bootstrap_admin_credentials() {
       local width=""
       width="$(dialog_width 68 52)"
       username="$(
-        whiptail --title "Aerisun 安装" --inputbox "$(wrap_dialog_text "请输入网站管理台登录名（3-120 位，仅支持字母、数字、点、下划线、横线）。请务必记录好。" "${width}")" 12 "${width}" "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE:-admin}" 3>&1 1>&2 2>&3 </dev/tty
+        whiptail --title "Aerisun 安装" --inputbox "请输入网站管理台登录名（3-120 位，仅支持字母、数字、点、下划线、横线）。请务必记录好。" 12 "${width}" "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE:-admin}" 3>&1 1>&2 2>&3 </dev/tty
       )" || die "安装已取消。"
       password="$(
-        whiptail --title "Aerisun 安装" --passwordbox "$(wrap_dialog_text "请输入网站管理台登录密码（至少 8 位）。请务必记录好。" "${width}")" 12 "${width}" 3>&1 1>&2 2>&3 </dev/tty
+        whiptail --title "Aerisun 安装" --passwordbox "请输入网站管理台登录密码（至少 8 位）。请务必记录好。" 12 "${width}" 3>&1 1>&2 2>&3 </dev/tty
       )" || die "安装已取消。"
       confirm_password="$(
-        whiptail --title "Aerisun 安装" --passwordbox "$(wrap_dialog_text "请再次输入网站管理台登录密码" "${width}")" 10 "${width}" 3>&1 1>&2 2>&3 </dev/tty
+        whiptail --title "Aerisun 安装" --passwordbox "请再次输入网站管理台登录密码" 10 "${width}" 3>&1 1>&2 2>&3 </dev/tty
       )" || die "安装已取消。"
     else
       read -r -p "请输入网站管理台登录名（请务必记录好）: " username </dev/tty
@@ -234,7 +215,7 @@ EOF
     local height=""
     width="$(dialog_width 66 52)"
     height="$(dialog_height 16 12)"
-    whiptail --title "确认安装" --yesno "$(wrap_dialog_text "${summary}" "${width}")" "${height}" "${width}" </dev/tty || die "安装已取消。"
+    whiptail --title "确认安装" --yesno "${summary}" "${height}" "${width}" </dev/tty || die "安装已取消。"
     return 0
   fi
 
@@ -278,7 +259,7 @@ EOF
       --title "${title}" \
       --yes-button "覆盖安装" \
       --no-button "取消" \
-      --yesno "$(wrap_dialog_text "${summary}" "${width}")" "${height}" "${width}" </dev/tty || die "已取消安装。"
+      --yesno "${summary}" "${height}" "${width}" </dev/tty || die "已取消安装。"
     return 0
   fi
 
@@ -290,7 +271,7 @@ EOF
 
 prompt_domain_preflight_action() {
   local host="$1"
-  local prompt="域名 ${host} 似乎没有稳定解析到本机器。可能是域名输入有误，或当前网络/代理影响了检测 🤔"
+  local prompt="域名 ${host} 似乎没有稳定解析到本机器。可能是域名输入有误，或当前网络/代理影响了检测。"
   prompt="${prompt}"$'\n\n'"请选择下一步操作："
 
   if command_exists whiptail; then
@@ -298,8 +279,8 @@ prompt_domain_preflight_action() {
     local height=""
     width="$(dialog_width 72 54)"
     height="$(dialog_height 18 14)"
-    whiptail --title "域名预检未通过" --menu "$(wrap_dialog_text "${prompt}" "${width}")" "${height}" "${width}" 4 \
-      continue "${host} 已绑定本机，继续安装 😎" \
+    whiptail --title "域名预检未通过" --menu "${prompt}" "${height}" "${width}" 4 \
+      continue "${host} 已绑定本机，继续安装" \
       retry "重新输入域名并重新检查" \
       ip "改为 IP/主机名模式继续安装" \
       cancel "取消安装" \

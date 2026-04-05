@@ -8,9 +8,9 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/serino
-ExecStart=/bin/bash -lc 'set -a; source /etc/serino/serino.env; set +a; export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.release.yml up -d --remove-orphans'
-ExecStop=/bin/bash -lc 'set -a; source /etc/serino/serino.env; set +a; export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.release.yml down'
-ExecReload=/bin/bash -lc 'set -a; source /etc/serino/serino.env; set +a; export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.release.yml up -d --remove-orphans'
+ExecStart=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.runtime.yml up -d --remove-orphans'
+ExecStop=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.runtime.yml down'
+ExecReload=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.runtime.yml up -d --remove-orphans'
 TimeoutStartSec=0
 TimeoutStopSec=180
 

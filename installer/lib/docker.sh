@@ -2,6 +2,8 @@
 
 compose_with_env() {
   local compose_runner="$1"
+  local compose_file="$2"
+  shift
   shift
 
   run_as_root bash -lc '
@@ -10,6 +12,12 @@ compose_with_env() {
     project_name="$3"
     compose_runner="$4"
     shift 4
+
+    set -euo pipefail
+    [[ -f "${env_file}" ]] || {
+      echo "missing env file: ${env_file}" >&2
+      exit 1
+    }
 
     set -a
     # shellcheck disable=SC1090
@@ -22,21 +30,114 @@ compose_with_env() {
     fi
 
     exec docker compose -f "${compose_file}" "$@"
-  ' bash "${AERISUN_ENV_FILE}" "${AERISUN_COMPOSE_FILE}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${compose_runner}" "$@"
+  ' bash "${AERISUN_ENV_FILE}" "${compose_file}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${compose_runner}" "$@"
 }
 
-compose() {
+resolve_compose_runner() {
   if run_as_root docker compose version >/dev/null 2>&1; then
-    compose_with_env "docker" "$@"
-    return
+    printf '%s' "docker"
+    return 0
   fi
 
   if command_exists docker-compose; then
-    compose_with_env "docker-compose" "$@"
-    return
+    printf '%s' "docker-compose"
+    return 0
   fi
 
   die "当前机器缺少 docker compose。"
+}
+
+runtime_compose_file() {
+  if [[ -f "${AERISUN_RENDERED_COMPOSE_FILE}" ]]; then
+    printf '%s' "${AERISUN_RENDERED_COMPOSE_FILE}"
+    return 0
+  fi
+
+  printf '%s' "${AERISUN_COMPOSE_FILE}"
+}
+
+render_release_compose_configuration() {
+  local output_file="$1"
+
+  run_as_root bash -lc '
+    env_file="$1"
+    template_file="$2"
+    output_file="$3"
+
+    set -euo pipefail
+    [[ -f "${env_file}" ]] || {
+      echo "missing env file: ${env_file}" >&2
+      exit 1
+    }
+    [[ -f "${template_file}" ]] || {
+      echo "missing compose template: ${template_file}" >&2
+      exit 1
+    }
+
+    set -a
+    # shellcheck disable=SC1090
+    source "${env_file}"
+    set +a
+
+    python3 - "${template_file}" "${output_file}" <<'"'"'PY'"'"'
+import os
+import re
+import sys
+from pathlib import Path
+
+import yaml
+
+template_path = Path(sys.argv[1])
+output_path = Path(sys.argv[2])
+
+pattern = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(:-([^}]*))?\}")
+
+
+def substitute_string(value: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        key = match.group(1)
+        default = match.group(3)
+        if key in os.environ:
+            return os.environ[key]
+        if default is not None:
+            return default
+        return ""
+
+    return pattern.sub(repl, value)
+
+
+def render(node):
+    if isinstance(node, dict):
+        return {key: render(value) for key, value in node.items()}
+    if isinstance(node, list):
+        return [render(item) for item in node]
+    if isinstance(node, str):
+        return substitute_string(node)
+    return node
+
+
+template = yaml.safe_load(template_path.read_text()) or {}
+rendered = render(template)
+rendered_text = yaml.safe_dump(
+    rendered,
+    allow_unicode=True,
+    default_flow_style=False,
+    sort_keys=False,
+)
+
+if "${" in rendered_text:
+    print("unresolved placeholders remain in rendered compose output", file=sys.stderr)
+    sys.exit(1)
+
+output_path.write_text(rendered_text)
+PY
+  ' bash "${AERISUN_ENV_FILE}" "${AERISUN_COMPOSE_FILE}" "${output_file}"
+}
+
+compose() {
+  local compose_runner=""
+  compose_runner="$(resolve_compose_runner)"
+  compose_with_env "${compose_runner}" "$(runtime_compose_file)" "$@"
 }
 
 daemon_reload() {
@@ -138,37 +239,88 @@ ensure_docker_installed() {
   fi
 }
 
-probe_release_image() {
-  local registry="$1"
-  local image_tag="$2"
-  local image_ref=""
-
-  [[ -n "${registry}" ]] || return 1
-  image_ref="${registry}/${AERISUN_API_IMAGE_NAME:-serino-api}:${image_tag}"
-
-  if run_as_root docker manifest inspect "${image_ref}" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if run_as_root docker buildx imagetools inspect "${image_ref}" >/dev/null 2>&1; then
-    return 0
-  fi
-
-  log_warn "镜像元数据探测失败，回退到拉取校验：${image_ref}"
-  run_as_root docker pull "${image_ref}" >/dev/null 2>&1
-}
-
 resolve_active_registry() {
   local registry="$1"
   local image_tag="$2"
   [[ -n "${registry}" ]] || die "安装清单缺少镜像仓库前缀。"
-  probe_release_image "${registry}" "${image_tag}" || die "镜像仓库拉取失败：${registry}"
+  [[ -n "${image_tag}" ]] || die "安装清单缺少镜像版本号。"
   printf '%s' "${registry}"
 }
 
+validate_release_compose_configuration() {
+  local rendered_file=""
+
+  rendered_file="$(mktemp)"
+  if ! render_release_compose_configuration "${rendered_file}"; then
+    rm -f "${rendered_file}"
+    die "安装配置校验失败，无法渲染最终 docker compose 配置。"
+  fi
+
+  python3 - "${rendered_file}" \
+    "${AERISUN_IMAGE_REGISTRY}/${AERISUN_API_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
+    "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WEB_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
+    "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WALINE_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
+    "${AERISUN_SITE_URL_VALUE}" \
+    "${AERISUN_WALINE_SERVER_URL_VALUE}" <<'PY' || {
+import sys
+from pathlib import Path
+
+import yaml
+
+rendered_path = Path(sys.argv[1])
+expected_api = sys.argv[2]
+expected_web = sys.argv[3]
+expected_waline = sys.argv[4]
+expected_site_url = sys.argv[5]
+expected_waline_url = sys.argv[6]
+
+data = yaml.safe_load(rendered_path.read_text()) or {}
+services = data.get("services") or {}
+errors: list[str] = []
+
+def env_value(service_name: str, key: str) -> str | None:
+    service = services.get(service_name) or {}
+    environment = service.get("environment") or {}
+    return environment.get(key)
+
+def image_value(service_name: str) -> str | None:
+    service = services.get(service_name) or {}
+    return service.get("image")
+
+checks = [
+    ("API 镜像", image_value("api"), expected_api),
+    ("Web 镜像", image_value("caddy"), expected_web),
+    ("Waline 镜像", image_value("waline"), expected_waline),
+    ("AERISUN_SITE_URL", env_value("api", "AERISUN_SITE_URL"), expected_site_url),
+    ("AERISUN_WALINE_SERVER_URL", env_value("api", "AERISUN_WALINE_SERVER_URL"), expected_waline_url),
+    ("Waline SITE_URL", env_value("waline", "SITE_URL"), expected_site_url),
+    ("Waline SERVER_URL", env_value("waline", "SERVER_URL"), expected_waline_url),
+]
+
+for label, actual, expected in checks:
+    if actual != expected:
+        errors.append(f"{label} 不匹配：期望 {expected}，实际 {actual or '<missing>'}")
+
+if errors:
+    for line in errors:
+        print(line, file=sys.stderr)
+    sys.exit(1)
+PY
+    if install_debug_enabled; then
+      log_error "docker compose 渲染文件：${rendered_file}"
+      sed -n '1,220p' "${rendered_file}" >&2 || true
+    fi
+    rm -f "${rendered_file}"
+    die "安装配置校验失败，最终运行配置没有正确展开到目标版本。"
+  }
+
+  run_as_root install -m 0644 "${rendered_file}" "${AERISUN_RENDERED_COMPOSE_FILE}"
+  rm -f "${rendered_file}"
+}
+
 compose_up_release() {
-  compose pull
-  enable_serino_service
+  compose pull || return $?
+  enable_serino_service || return $?
 }
 
 wait_for_url() {

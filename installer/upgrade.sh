@@ -16,6 +16,7 @@ backup_current_installation() {
   run_as_root mkdir -p "${backup_dir}"
   [[ -f "${AERISUN_ENV_FILE}" ]] && run_as_root cp -a "${AERISUN_ENV_FILE}" "${backup_dir}/serino.env"
   [[ -f "${AERISUN_COMPOSE_FILE}" ]] && run_as_root cp -a "${AERISUN_COMPOSE_FILE}" "${backup_dir}/docker-compose.release.yml"
+  [[ -f "${AERISUN_RENDERED_COMPOSE_FILE}" ]] && run_as_root cp -a "${AERISUN_RENDERED_COMPOSE_FILE}" "${backup_dir}/docker-compose.runtime.yml"
   [[ -d "${AERISUN_INSTALLER_DEST}" ]] && run_as_root cp -a "${AERISUN_INSTALLER_DEST}" "${backup_dir}/installer"
   if [[ -d "${AERISUN_DATA_DIR}" ]]; then
     run_as_root tar -czf "${backup_dir}/data.tar.gz" -C "${AERISUN_DATA_DIR%/*}" "$(basename "${AERISUN_DATA_DIR}")"
@@ -30,6 +31,11 @@ restore_current_installation() {
   fi
   if [[ -f "${backup_dir}/docker-compose.release.yml" ]]; then
     run_as_root cp -a "${backup_dir}/docker-compose.release.yml" "${AERISUN_COMPOSE_FILE}"
+  fi
+  if [[ -f "${backup_dir}/docker-compose.runtime.yml" ]]; then
+    run_as_root cp -a "${backup_dir}/docker-compose.runtime.yml" "${AERISUN_RENDERED_COMPOSE_FILE}"
+  else
+    run_as_root rm -f "${AERISUN_RENDERED_COMPOSE_FILE}"
   fi
   if [[ -d "${backup_dir}/installer" ]]; then
     run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
@@ -92,6 +98,7 @@ main() {
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
   normalize_production_env_file "${AERISUN_ENV_FILE}"
+  validate_release_compose_configuration
 
   if ! compose pull || ! enable_serino_service || ! wait_for_release_ready; then
     log_warn "升级失败，正在回滚。"

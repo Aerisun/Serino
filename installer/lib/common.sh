@@ -17,6 +17,7 @@ AERISUN_APP_ROOT="${AERISUN_APP_ROOT:-/opt/serino}"
 AERISUN_DATA_DIR="${AERISUN_DATA_DIR:-/var/lib/serino}"
 AERISUN_COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME:-serino}"
 AERISUN_COMPOSE_FILE="${AERISUN_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.release.yml}"
+AERISUN_RENDERED_COMPOSE_FILE="${AERISUN_RENDERED_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.runtime.yml}"
 AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${SERINO_CONFIG_ROOT}/serino.env}"
 AERISUN_ENV_EXAMPLE_FILE="${AERISUN_ENV_EXAMPLE_FILE:-${AERISUN_APP_ROOT}/.env.production.local.example}"
 AERISUN_INSTALLER_DEST="${AERISUN_INSTALLER_DEST:-${AERISUN_APP_ROOT}/installer}"
@@ -352,6 +353,7 @@ install_release_payload() {
 
   ensure_system_layout
   run_as_root install -m 0644 "${source_root}/docker-compose.release.yml" "${AERISUN_COMPOSE_FILE}"
+  run_as_root rm -f "${AERISUN_RENDERED_COMPOSE_FILE}"
   run_as_root install -m 0644 "${source_root}/.env.production.local.example" "${AERISUN_ENV_EXAMPLE_FILE}"
   run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
   run_as_root install -d -o root -g root -m 0755 "${AERISUN_INSTALLER_DEST}"

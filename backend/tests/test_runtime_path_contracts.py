@@ -97,6 +97,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     sercli_text = read_project_file("installer/bin/sercli")
     doctor_text = read_project_file("installer/doctor.sh")
     install_text = read_project_file("installer/install.sh")
+    docker_text = read_project_file("installer/lib/docker.sh")
+    service_text = read_project_file("installer/systemd/serino.service")
     package_text = read_project_file("scripts/package-installer.sh")
 
     assert 'SERINO_CONFIG_ROOT="${SERINO_CONFIG_ROOT:-/etc/serino}"' in common_text
@@ -106,6 +108,10 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_DATA_DIR="${AERISUN_DATA_DIR:-/var/lib/serino}"' in common_text
     assert 'AERISUN_COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME:-serino}"' in common_text
     assert 'AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${SERINO_CONFIG_ROOT}/serino.env}"' in common_text
+    assert (
+        'AERISUN_RENDERED_COMPOSE_FILE="${AERISUN_RENDERED_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.runtime.yml}"'
+        in common_text
+    )
     assert 'AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"' in common_text
     assert (
         'AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"'
@@ -140,10 +146,20 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'record_check "fail" "env.bootstrap_cleanup"' in doctor_text
     assert 'record_check "fail" "data.migrations"' in doctor_text
     assert 'local channel="${AERISUN_INSTALL_CHANNEL:-stable}"' in install_text
+    assert "validate_release_compose_configuration" in install_text
     assert (
         'local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
         in install_text
     )
+    assert "compose_with_env() {" in docker_text
+    assert "resolve_compose_runner() {" in docker_text
+    assert "runtime_compose_file() {" in docker_text
+    assert "render_release_compose_configuration() {" in docker_text
+    assert 'source "${env_file}"' in docker_text
+    assert "validate_release_compose_configuration() {" in docker_text
+    assert "yaml.safe_dump" in docker_text
+    assert "probe_release_image" not in docker_text
+    assert "docker-compose.runtime.yml" in service_text
     assert 'cat > "${DIST_DIR}/latest.env" <<EOF' in package_text
     assert "AERISUN_INSTALL_CHANNEL=${INSTALL_CHANNEL}" in package_text
     assert 'render_bootstrap_script "${DIST_DIR}/install.latest.sh"' in package_text

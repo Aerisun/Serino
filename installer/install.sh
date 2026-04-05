@@ -221,7 +221,7 @@ main() {
   configure_local_firewall
   ensure_service_user
   AERISUN_INSTALL_CLEANUP_ARMED=1
-  log_info "🤔 正在校验镜像仓库可用性..."
+  log_info "🤔 正在确认镜像源配置..."
   active_registry="$(
     resolve_active_registry \
       "${AERISUN_IMAGE_REGISTRY}" \
@@ -240,6 +240,8 @@ main() {
   write_production_env "${AERISUN_ENV_FILE}"
   normalize_production_env_file "${AERISUN_ENV_FILE}"
   daemon_reload
+  log_info "🧪 正在校验安装配置..."
+  validate_release_compose_configuration
   log_info "🥳 正在拉取并启动容器，这一步可能需要几分钟..."
   compose_up_release
   log_info "🎊 正在等待站点服务就绪..."
