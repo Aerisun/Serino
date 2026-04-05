@@ -269,7 +269,12 @@ main() {
     die "服务启动失败，安装已中止。可根据上面的报错信息修复后重试。"
   fi
   log_info "🎊 正在等待站点服务就绪..."
-  wait_for_release_ready
+  if ! wait_for_release_ready; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "站点服务在预期时间内未就绪，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
   verify_default_admin_login || die "服务已启动，但安装时设置的管理员登录检查失败。"
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64"
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64"

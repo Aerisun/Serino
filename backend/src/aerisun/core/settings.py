@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # own .store/ directory instead of sharing the main branch's.
 BACKEND_ROOT = Path(__file__).absolute().parents[3]
 PROJECT_ROOT = BACKEND_ROOT.parent
+PRODUCTION_STORE_ROOT = Path("/srv/aerisun/store")
 
 
 def _resolve_env_files() -> tuple[Path, ...]:
@@ -151,8 +152,12 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _normalize_runtime_paths(self) -> Settings:
-        store_dir = self.store_dir.expanduser()
         legacy_store_dir = (PROJECT_ROOT / ".store").expanduser()
+        store_dir = self.store_dir.expanduser()
+
+        if self.environment == "production" and store_dir == legacy_store_dir:
+            self.store_dir = PRODUCTION_STORE_ROOT
+            store_dir = self.store_dir
 
         def under_store(path: Path, *parts: str) -> Path:
             candidate = path.expanduser()

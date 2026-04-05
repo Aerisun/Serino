@@ -106,8 +106,8 @@ main() {
     stop_serino_service
     restore_current_installation "${backup_dir}"
     compose pull || true
-    enable_serino_service
-    wait_for_release_ready
+    enable_serino_service || true
+    wait_for_release_ready || true
     die "升级失败，已回滚到旧版本。可执行 sercli doctor 与 sercli logs api waline caddy 查看诊断信息。"
   fi
 

@@ -65,10 +65,7 @@ class BackgroundServices:
         await self._task_manager.start()
         await start_visit_record_worker()
         self._visit_worker_started = True
-        logger.info(
-            "Background services started",
-            duration_ms=round((perf_counter() - started_at) * 1000, 2),
-        )
+        logger.info("Background services started in %.2fms", (perf_counter() - started_at) * 1000)
 
     async def stop(self) -> None:
         if self._visit_worker_started:
@@ -102,10 +99,7 @@ async def lifespan(_app):
     _refresh_bootstrap_seed_on_reload_if_needed()
     check_insecure_defaults(settings)
     init_sentry(settings)
-    logger.info(
-        "Application infrastructure ready",
-        duration_ms=round((perf_counter() - infra_started_at) * 1000, 2),
-    )
+    logger.info("Application infrastructure ready in %.2fms", (perf_counter() - infra_started_at) * 1000)
 
     background_task = asyncio.create_task(background_services.start(), name="aerisun-background-start")
     background_task.add_done_callback(_log_background_start_result)

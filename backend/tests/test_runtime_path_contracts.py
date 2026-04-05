@@ -34,6 +34,21 @@ def test_settings_normalize_runtime_paths_under_store_dir():
     assert settings.backup_sync_tmp_dir == store_dir / ".backup-sync-tmp"
 
 
+def test_production_settings_default_runtime_paths_point_to_srv_store():
+    from aerisun.core.settings import Settings
+
+    settings = Settings(_env_file=None, environment="production")
+
+    assert settings.store_dir == Path("/srv/aerisun/store")
+    assert settings.data_dir == Path("/srv/aerisun/store")
+    assert settings.media_dir == Path("/srv/aerisun/store/media")
+    assert settings.secrets_dir == Path("/srv/aerisun/store/secrets")
+    assert settings.db_path == Path("/srv/aerisun/store/aerisun.db")
+    assert settings.waline_db_path == Path("/srv/aerisun/store/waline.db")
+    assert settings.workflow_db_path == Path("/srv/aerisun/store/langgraph.db")
+    assert settings.backup_sync_tmp_dir == Path("/srv/aerisun/store/.backup-sync-tmp")
+
+
 def test_shared_path_defaults_are_tracked_in_root_env():
     env_text = read_project_file(".env")
 
@@ -57,7 +72,10 @@ def test_deploy_contract_reuses_shared_env_keys():
 
     assert "AERISUN_PORT: ${AERISUN_PORT:-8000}" in compose_text
     assert "AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}" in compose_text
-    assert "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}" in compose_text
+    assert (
+        "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}"
+        in compose_text
+    )
     assert "AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}" in compose_text
     healthcheck_curl = (
         'curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}'
@@ -192,7 +210,10 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' in compose_text
     assert "HOME: /srv/aerisun/store" in compose_text
     assert "AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}" in compose_text
-    assert "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}" in compose_text
+    assert (
+        "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}"
+        in compose_text
+    )
     assert "${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store" in compose_text
 
     assert "sercli doctor [--json]" in sercli_text
@@ -261,8 +282,14 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert '@base_router.get("/healthz"' in backend_site_api_text
     assert "background_task = asyncio.create_task(background_services.start()" in backend_bootstrap_core_text
     assert "await start_visit_record_worker()" in backend_bootstrap_core_text
-    assert "self.workflow_db_path = under_store(self.workflow_db_path, \"langgraph.db\")" in read_project_file("backend/src/aerisun/core/settings.py")
-    assert "self.backup_sync_tmp_dir = under_store(self.backup_sync_tmp_dir, \".backup-sync-tmp\")" in read_project_file("backend/src/aerisun/core/settings.py")
+    assert 'duration_ms=' not in backend_bootstrap_core_text
+    assert 'logger.info("Application infrastructure ready in %.2fms"' in backend_bootstrap_core_text
+    assert 'logger.info("Background services started in %.2fms"' in backend_bootstrap_core_text
+    settings_text = read_project_file("backend/src/aerisun/core/settings.py")
+    assert 'if self.environment == "production" and store_dir == legacy_store_dir:' in settings_text
+    assert "self.store_dir = PRODUCTION_STORE_ROOT" in settings_text
+    assert 'self.workflow_db_path = under_store(self.workflow_db_path, "langgraph.db")' in settings_text
+    assert 'self.backup_sync_tmp_dir = under_store(self.backup_sync_tmp_dir, ".backup-sync-tmp")' in settings_text
     start_block = backend_task_manager_text.split("async def start(self) -> None:", 1)[1].split(
         "def _snapshot_daily_traffic", 1
     )[0]
@@ -273,7 +300,16 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'command: ["/bin/bash", "/app/backend/scripts/serve.sh"]' not in compose_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in dev_compose_text
     assert "mkdir -p /app/node_modules/@waline/vercel/runtime/config" in waline_dockerfile_text
+    assert "touch /app/node_modules/@waline/vercel/runtime/config/production.json" in waline_dockerfile_text
+    assert "chmod 0777 /app/node_modules/@waline/vercel/runtime/config" in waline_dockerfile_text
+    assert "chmod 0666 /app/node_modules/@waline/vercel/runtime/config/production.json" in waline_dockerfile_text
     assert "chown -R 1001:1001 /app" in waline_dockerfile_text
+    waline_block = compose_text.split("  waline:\n", 1)[1].split("\n  caddy:\n", 1)[0]
+    assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' not in waline_block
+    assert "run_as_root systemctl enable \"${SERINO_SYSTEMD_UNIT}\" >/dev/null" in docker_text
+    assert "run_as_root systemctl start \"${SERINO_SYSTEMD_UNIT}\" >/dev/null" in docker_text
+    assert "run_as_root systemctl is-active --quiet \"${SERINO_SYSTEMD_UNIT}\"" in docker_text
+    assert "if ! wait_for_release_ready; then" in install_text
 
 
 def test_dev_channel_does_not_require_a_second_installer_entrypoint():

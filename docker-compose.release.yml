@@ -54,7 +54,6 @@ services:
 
   waline:
     image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WALINE_IMAGE_NAME:-serino-waline}:${AERISUN_IMAGE_TAG:-latest}
-    user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"
     environment:
       HOME: /srv/aerisun/store
       SITE_NAME: ${AERISUN_APP_NAME:-Aerisun}

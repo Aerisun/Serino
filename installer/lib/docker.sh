@@ -152,7 +152,9 @@ daemon_reload() {
 }
 
 enable_serino_service() {
-  run_as_root systemctl enable --now "${SERINO_SYSTEMD_UNIT}" >/dev/null
+  run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null
+  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null
+  run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"
 }
 
 start_serino_service() {

@@ -25,6 +25,9 @@ COPY --from=waline-build /app /app
 RUN addgroup -S serino -g 1001 \
   && adduser -S -D -H -u 1001 -G serino serino \
   && mkdir -p /app/node_modules/@waline/vercel/runtime/config \
+  && touch /app/node_modules/@waline/vercel/runtime/config/production.json \
+  && chmod 0777 /app/node_modules/@waline/vercel/runtime/config \
+  && chmod 0666 /app/node_modules/@waline/vercel/runtime/config/production.json \
   && chown -R 1001:1001 /app
 
 USER 1001:1001
