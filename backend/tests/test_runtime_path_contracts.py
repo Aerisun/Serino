@@ -251,7 +251,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "run_backend_alembic upgrade head" in backend_bootstrap_text
     assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_serve_text
     assert 'run_backend_uvicorn "${UVICORN_ARGS[@]}"' in backend_serve_text
-    assert "run_backend_alembic upgrade head" in backend_migrate_text
+    assert 'command = [sys.executable, "-m", "alembic", "upgrade", "head"]' in backend_migrate_text
+    assert 'print(".", end="", flush=True)' in backend_migrate_text
     assert "seed_bootstrap_data()" in backend_bootstrap_prod_text
     assert "ensure_first_boot_default_admin(is_first_boot=True)" in backend_bootstrap_prod_text
     assert "run_pending_backfills()" in backend_backfill_text
