@@ -206,8 +206,23 @@ list_local_ip_candidates() {
   } | tr ' ' '\n' | awk 'NF' | sort -u
 }
 
+detect_public_ip_candidates() {
+  local url=""
+  local candidate=""
+
+  for url in https://api.ipify.org https://api6.ipify.org https://api64.ipify.org; do
+    candidate="$(curl --noproxy '*' --silent --show-error --max-time 5 "${url}" 2>/dev/null || true)"
+    [[ -n "${candidate}" ]] && printf '%s\n' "${candidate}"
+  done
+
+  for url in https://api.ipify.org https://api6.ipify.org https://api64.ipify.org; do
+    candidate="$(curl --silent --show-error --max-time 5 "${url}" 2>/dev/null || true)"
+    [[ -n "${candidate}" ]] && printf '%s\n' "${candidate}"
+  done
+}
+
 detect_public_ip_candidate() {
-  curl --silent --show-error --max-time 5 https://api64.ipify.org 2>/dev/null || true
+  detect_public_ip_candidates | awk 'NF' | sort -u | head -n 1
 }
 
 join_lines() {
@@ -221,6 +236,21 @@ domain_points_to_candidate_ip() {
   grep -Fxq "${candidate_ip}" <<<"${resolved_ips}"
 }
 
+domain_points_to_any_candidate_ip() {
+  local resolved_ips="$1"
+  local candidate_ips="$2"
+  [[ -n "${candidate_ips}" ]] || return 1
+
+  while IFS= read -r candidate_ip; do
+    [[ -n "${candidate_ip}" ]] || continue
+    if domain_points_to_candidate_ip "${resolved_ips}" "${candidate_ip}"; then
+      return 0
+    fi
+  done <<<"${candidate_ips}"
+
+  return 1
+}
+
 print_domain_https_failure_details() {
   local host="$1"
   local label="$2"
@@ -229,7 +259,8 @@ print_domain_https_failure_details() {
   local resolved_summary=""
   local local_ips=""
   local local_ip_summary=""
-  local public_ip=""
+  local public_ips=""
+  local public_ip_summary=""
   local caddy_logs=""
   local -a dns_reasons=()
   local -a firewall_reasons=()
@@ -240,13 +271,14 @@ print_domain_https_failure_details() {
   resolved_summary="$(printf '%s\n' "${resolved_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
   local_ips="$(list_local_ip_candidates)"
   local_ip_summary="$(printf '%s\n' "${local_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
-  public_ip="$(detect_public_ip_candidate)"
+  public_ips="$(detect_public_ip_candidates | awk 'NF' | sort -u)"
+  public_ip_summary="$(printf '%s\n' "${public_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
 
   if [[ -z "${resolved_summary}" ]]; then
     dns_reasons+=("域名 ${host} 当前无法解析，请确认 A/AAAA 记录已经生效。")
   else
-    if [[ -n "${public_ip}" ]] && ! domain_points_to_candidate_ip "${resolved_ips}" "${public_ip}"; then
-      dns_reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP ${public_ip}。")
+    if [[ -n "${public_ips}" ]] && ! domain_points_to_any_candidate_ip "${resolved_ips}" "${public_ips}"; then
+      dns_reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP 候选 ${public_ip_summary}。")
     elif [[ -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
       dns_reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机已知地址 ${local_ip_summary:-未知}。")
     fi
@@ -277,52 +309,53 @@ print_domain_https_failure_details() {
     backend_reasons+=("Caddy 无法连接 API 或 Waline 容器，请检查后端容器是否已经健康启动。")
   fi
 
-  log_error "${label} 未通过 HTTPS 就绪检查：https://${host}${path}"
+  log_error "${label} 还没有通过 HTTPS 就绪检查。"
 
   if [[ ${#dns_reasons[@]} -eq 0 && ${#firewall_reasons[@]} -eq 0 && ${#cert_reasons[@]} -eq 0 && ${#backend_reasons[@]} -eq 0 ]]; then
-    log_error "未能自动定位具体原因，请重点检查 DNS、生效中的 80/443、安全组和 Caddy 日志。"
+    log_error "还没能自动确认具体原因，请检查域名解析、80/443 放行情况，以及证书签发状态。"
   else
     local reason=""
     if [[ ${#dns_reasons[@]} -gt 0 ]]; then
-      printf '[ERROR] DNS 问题：\n' >&2
+      printf '[ERROR] 可能是域名解析还没完全生效。\n' >&2
       for reason in "${dns_reasons[@]}"; do
-        printf '[ERROR] - %s\n' "${reason}" >&2
+        install_debug_enabled && printf '[ERROR] - %s\n' "${reason}" >&2
       done
     fi
     if [[ ${#firewall_reasons[@]} -gt 0 ]]; then
-      printf '[ERROR] 安全组问题：\n' >&2
+      printf '[ERROR] 可能是 80/443 端口还没有完全放通。\n' >&2
       for reason in "${firewall_reasons[@]}"; do
-        printf '[ERROR] - %s\n' "${reason}" >&2
+        install_debug_enabled && printf '[ERROR] - %s\n' "${reason}" >&2
       done
-      printf '[ERROR] - 请同时确认云服务器安全组与本机防火墙都已放行 80/443。\n' >&2
+      printf '[ERROR] 请同时确认云服务器安全组与本机防火墙都已放行 80/443。\n' >&2
     fi
     if [[ ${#cert_reasons[@]} -gt 0 ]]; then
-      printf '[ERROR] 证书问题：\n' >&2
+      printf '[ERROR] 可能是证书签发或 HTTPS 站点初始化还没有完成。\n' >&2
       for reason in "${cert_reasons[@]}"; do
-        printf '[ERROR] - %s\n' "${reason}" >&2
+        install_debug_enabled && printf '[ERROR] - %s\n' "${reason}" >&2
       done
     fi
     if [[ ${#backend_reasons[@]} -gt 0 ]]; then
-      printf '[ERROR] 后端容器问题：\n' >&2
+      printf '[ERROR] 可能是后端容器还没有完全启动。\n' >&2
       for reason in "${backend_reasons[@]}"; do
-        printf '[ERROR] - %s\n' "${reason}" >&2
+        install_debug_enabled && printf '[ERROR] - %s\n' "${reason}" >&2
       done
-      printf '[ERROR] - 可执行 sercli logs api waline caddy 查看详细日志。\n' >&2
+      printf '[ERROR] 如需详细排查，可执行 sercli logs api waline caddy。\n' >&2
     fi
   fi
 
-  if [[ -n "${resolved_summary}" ]]; then
-    printf '[ERROR] 当前 DNS 解析：%s -> %s\n' "${host}" "${resolved_summary}" >&2
-  fi
-  if [[ -n "${public_ip}" ]]; then
-    printf '[ERROR] 当前探测到的本机公网 IP：%s\n' "${public_ip}" >&2
-  fi
-  if [[ -n "${local_ip_summary}" ]]; then
-    printf '[ERROR] 当前探测到的本机地址：%s\n' "${local_ip_summary}" >&2
-  fi
-
-  if [[ -n "${caddy_logs}" ]]; then
-    printf '[ERROR] 最近 Caddy 日志：\n%s\n' "${caddy_logs}" >&2
+  if install_debug_enabled; then
+    if [[ -n "${resolved_summary}" ]]; then
+      printf '[ERROR] 当前 DNS 解析：%s -> %s\n' "${host}" "${resolved_summary}" >&2
+    fi
+    if [[ -n "${public_ip_summary}" ]]; then
+      printf '[ERROR] 当前探测到的本机公网 IP 候选：%s\n' "${public_ip_summary}" >&2
+    fi
+    if [[ -n "${local_ip_summary}" ]]; then
+      printf '[ERROR] 当前探测到的本机地址：%s\n' "${local_ip_summary}" >&2
+    fi
+    if [[ -n "${caddy_logs}" ]]; then
+      printf '[ERROR] 最近 Caddy 日志：\n%s\n' "${caddy_logs}" >&2
+    fi
   fi
 }
 
@@ -341,10 +374,15 @@ preflight_domain_installation() {
   local resolved_summary=""
   local local_ips=""
   local local_ip_summary=""
-  local public_ip=""
+  local public_ips=""
+  local public_ip_summary=""
   local port_80_usage=""
   local port_443_usage=""
   local -a reasons=()
+  local -a debug_lines=()
+
+  AERISUN_DOMAIN_PREFLIGHT_SUMMARY=""
+  AERISUN_DOMAIN_PREFLIGHT_DEBUG_DETAILS=""
 
   if [[ "${host}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ || "${host}" == *:* ]]; then
     reasons+=("域名模式要求填写可公网访问的域名，当前输入看起来是 IP 地址：${host}")
@@ -354,12 +392,13 @@ preflight_domain_installation() {
   resolved_summary="$(printf '%s\n' "${resolved_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
   local_ips="$(list_local_ip_candidates)"
   local_ip_summary="$(printf '%s\n' "${local_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
-  public_ip="$(detect_public_ip_candidate)"
+  public_ips="$(detect_public_ip_candidates | awk 'NF' | sort -u)"
+  public_ip_summary="$(printf '%s\n' "${public_ips}" | awk 'NF' | join_lines 2>/dev/null || true)"
 
   if [[ -z "${resolved_summary}" ]]; then
     reasons+=("域名 ${host} 当前无法解析，请确认 A/AAAA 记录已经生效。")
-  elif [[ -n "${public_ip}" ]] && ! domain_points_to_candidate_ip "${resolved_ips}" "${public_ip}"; then
-    reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP ${public_ip}。")
+  elif [[ -n "${public_ips}" ]] && ! domain_points_to_any_candidate_ip "${resolved_ips}" "${public_ips}"; then
+    reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP 候选 ${public_ip_summary}。")
   elif [[ -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
     reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机已知地址 ${local_ip_summary:-未知}。")
   fi
@@ -374,29 +413,47 @@ preflight_domain_installation() {
   fi
 
   if [[ ${#reasons[@]} -eq 0 ]]; then
+    AERISUN_DOMAIN_PREFLIGHT_SUMMARY=""
+    AERISUN_DOMAIN_PREFLIGHT_DEBUG_DETAILS=""
     return 0
   fi
 
-  printf '[ERROR] 域名模式预检失败：%s\n' "${host}" >&2
-  for reason in "${reasons[@]}"; do
-    printf '[ERROR] - %s\n' "${reason}" >&2
-  done
-  printf '[ERROR] - 请同时确认云服务器安全组与本机防火墙都已放行 80/443。\n' >&2
+  AERISUN_DOMAIN_PREFLIGHT_SUMMARY="$(cat <<EOF
+域名 ${host} 似乎没有解析到本机器 IP，也许您的域名输入有误，或当前网络/代理影响了检测 🤔
+EOF
+)"
 
-  if [[ -n "${resolved_summary}" ]]; then
-    printf '[ERROR] 当前 DNS 解析：%s -> %s\n' "${host}" "${resolved_summary}" >&2
+  if install_debug_enabled; then
+    for reason in "${reasons[@]}"; do
+      debug_lines+=("- ${reason}")
+    done
+    if [[ -n "${resolved_summary}" ]]; then
+      debug_lines+=("当前 DNS 解析：${host} -> ${resolved_summary}")
+    fi
+    if [[ -n "${public_ip_summary}" ]]; then
+      debug_lines+=("当前探测到的本机公网 IP 候选：${public_ip_summary}")
+    fi
+    if [[ -n "${local_ip_summary}" ]]; then
+      debug_lines+=("当前探测到的本机地址：${local_ip_summary}")
+    fi
+    if [[ -n "${port_80_usage}" ]]; then
+      debug_lines+=("80 端口监听详情：")
+      debug_lines+=("${port_80_usage}")
+    fi
+    if [[ -n "${port_443_usage}" ]]; then
+      debug_lines+=("443 端口监听详情：")
+      debug_lines+=("${port_443_usage}")
+    fi
+    AERISUN_DOMAIN_PREFLIGHT_DEBUG_DETAILS="$(printf '%s\n' "${debug_lines[@]}" | awk 'NF')"
+  else
+    AERISUN_DOMAIN_PREFLIGHT_DEBUG_DETAILS=""
   fi
-  if [[ -n "${public_ip}" ]]; then
-    printf '[ERROR] 当前探测到的本机公网 IP：%s\n' "${public_ip}" >&2
-  fi
-  if [[ -n "${local_ip_summary}" ]]; then
-    printf '[ERROR] 当前探测到的本机地址：%s\n' "${local_ip_summary}" >&2
-  fi
-  if [[ -n "${port_80_usage}" ]]; then
-    printf '[ERROR] 80 端口监听详情：\n%s\n' "${port_80_usage}" >&2
-  fi
-  if [[ -n "${port_443_usage}" ]]; then
-    printf '[ERROR] 443 端口监听详情：\n%s\n' "${port_443_usage}" >&2
+
+  if !(command_exists whiptail && [[ -e /dev/tty ]]); then
+    printf '[WARN] %s\n' "${AERISUN_DOMAIN_PREFLIGHT_SUMMARY}" >&2
+    if [[ -n "${AERISUN_DOMAIN_PREFLIGHT_DEBUG_DETAILS}" ]]; then
+      printf '[ERROR] %s\n' "${AERISUN_DOMAIN_PREFLIGHT_DEBUG_DETAILS}" >&2
+    fi
   fi
 
   return 1

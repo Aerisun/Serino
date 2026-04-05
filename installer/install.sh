@@ -171,6 +171,7 @@ main() {
   local manifest_file=""
   local bundle_root="${AERISUN_TEMPLATE_ROOT}"
   local active_registry=""
+  local preflight_action=""
 
   require_supported_linux
   require_root_or_sudo
@@ -186,9 +187,32 @@ main() {
   prompt_access_mode
   prompt_install_host
 
-  if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "domain" ]]; then
-    preflight_domain_installation "${AERISUN_INSTALL_HOST}" || exit 1
-  fi
+  while [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "domain" ]]; do
+    if preflight_domain_installation "${AERISUN_INSTALL_HOST}"; then
+      break
+    fi
+
+    preflight_action="$(prompt_domain_preflight_action "${AERISUN_INSTALL_HOST}")"
+    case "${preflight_action}" in
+      retry)
+        prompt_install_host
+        ;;
+      ip)
+        AERISUN_INSTALL_ACCESS_MODE="ip"
+        prompt_install_host
+        ;;
+      continue)
+        log_warn "已按你的选择忽略域名预检告警，继续安装。若域名仍未指向本机，后续 HTTPS 就绪检查仍会失败。"
+        break
+        ;;
+      cancel)
+        die "安装已取消。"
+        ;;
+      *)
+        die "未知的域名预检处理选项：${preflight_action}"
+        ;;
+    esac
+  done
 
   prompt_bootstrap_admin_credentials
   confirm_install_settings
