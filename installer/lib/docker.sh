@@ -1,16 +1,39 @@
 #!/usr/bin/env bash
 
+compose_with_env() {
+  local compose_runner="$1"
+  shift
+
+  run_as_root bash -lc '
+    env_file="$1"
+    compose_file="$2"
+    project_name="$3"
+    compose_runner="$4"
+    shift 4
+
+    set -a
+    # shellcheck disable=SC1090
+    source "${env_file}"
+    set +a
+    export COMPOSE_PROJECT_NAME="${project_name}"
+
+    if [[ "${compose_runner}" == "docker-compose" ]]; then
+      exec docker-compose -f "${compose_file}" "$@"
+    fi
+
+    exec docker compose -f "${compose_file}" "$@"
+  ' bash "${AERISUN_ENV_FILE}" "${AERISUN_COMPOSE_FILE}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${compose_runner}" "$@"
+}
+
 compose() {
   if run_as_root docker compose version >/dev/null 2>&1; then
-    run_as_root env COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME}" \
-      docker compose --env-file "${AERISUN_ENV_FILE}" -f "${AERISUN_COMPOSE_FILE}" "$@"
-    return 0
+    compose_with_env "docker" "$@"
+    return
   fi
 
   if command_exists docker-compose; then
-    run_as_root env COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME}" \
-      docker-compose --env-file "${AERISUN_ENV_FILE}" -f "${AERISUN_COMPOSE_FILE}" "$@"
-    return 0
+    compose_with_env "docker-compose" "$@"
+    return
   fi
 
   die "当前机器缺少 docker compose。"
@@ -115,18 +138,31 @@ ensure_docker_installed() {
   fi
 }
 
-try_pull_release_image() {
+probe_release_image() {
   local registry="$1"
   local image_tag="$2"
+  local image_ref=""
+
   [[ -n "${registry}" ]] || return 1
-  run_as_root docker pull "${registry}/${AERISUN_API_IMAGE_NAME:-serino-api}:${image_tag}" >/dev/null 2>&1
+  image_ref="${registry}/${AERISUN_API_IMAGE_NAME:-serino-api}:${image_tag}"
+
+  if run_as_root docker manifest inspect "${image_ref}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if run_as_root docker buildx imagetools inspect "${image_ref}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log_warn "镜像元数据探测失败，回退到拉取校验：${image_ref}"
+  run_as_root docker pull "${image_ref}" >/dev/null 2>&1
 }
 
 resolve_active_registry() {
   local registry="$1"
   local image_tag="$2"
   [[ -n "${registry}" ]] || die "安装清单缺少镜像仓库前缀。"
-  try_pull_release_image "${registry}" "${image_tag}" || die "镜像仓库拉取失败：${registry}"
+  probe_release_image "${registry}" "${image_tag}" || die "镜像仓库拉取失败：${registry}"
   printf '%s' "${registry}"
 }
 
