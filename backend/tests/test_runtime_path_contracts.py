@@ -10,7 +10,12 @@ def read_project_file(relative_path: str) -> str:
 
 
 def test_settings_normalize_runtime_paths_under_store_dir():
-    from aerisun.core.settings import PROJECT_ROOT as SETTINGS_PROJECT_ROOT, Settings
+    from aerisun.core.settings import (
+        PROJECT_ROOT as SETTINGS_PROJECT_ROOT,
+    )
+    from aerisun.core.settings import (
+        Settings,
+    )
 
     store_dir = Path("/srv/aerisun/store")
     settings = Settings(
@@ -191,6 +196,11 @@ def test_installer_runtime_paths_follow_serino_system_layout():
         'AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
         in common_text
     )
+    assert 'AERISUN_APT_MIRROR_URL="${AERISUN_APT_MIRROR_URL:-https://mirrors.cnnic.cn/ubuntu/}"' in common_text
+    assert (
+        'AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-https://docker.m.daocloud.io}"'
+        in common_text
+    )
     assert 'AERISUN_API_IMAGE_NAME="${AERISUN_API_IMAGE_NAME:-serino-api}"' in common_text
     assert 'AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"' in common_text
     assert 'AERISUN_WALINE_IMAGE_NAME="${AERISUN_WALINE_IMAGE_NAME:-serino-waline}"' in common_text
@@ -207,7 +217,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
         "image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_WEB_IMAGE_NAME:-serino-web}:${AERISUN_IMAGE_TAG:-latest}"
         in compose_text
     )
-    assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' in compose_text
+    api_block = compose_text.split("  api:\n", 1)[1].split("\n\n  waline:\n", 1)[0]
+    assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' in api_block
     assert "HOME: /srv/aerisun/store" in compose_text
     assert "AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}" in compose_text
     assert (
@@ -253,8 +264,21 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "managed_file_exists() {" in env_text
     assert 'path_is_file "${file}"' in env_text
     assert '[[ -f "${file}" ]]' not in env_text
+    assert "AERISUN_APT_MIRROR_URL=${AERISUN_APT_MIRROR_URL}" in env_text
+    assert 'AERISUN_DOCKER_REGISTRY_MIRRORS=$(quote_env_literal "${AERISUN_DOCKER_REGISTRY_MIRRORS}")' in env_text
     assert "yaml.safe_dump" in docker_text
     assert "probe_release_image" not in docker_text
+    assert "apt_install_with_optional_mirror() {" in docker_text
+    assert "apt-get install -y docker.io docker-compose-v2" in docker_text
+    assert (
+        "deb http://security.ubuntu.com/ubuntu ${codename}-security main restricted universe multiverse" in docker_text
+    )
+    assert "configure_docker_registry_mirrors() {" in docker_text
+    assert '"registry-mirrors"' in docker_text
+    assert "install_docker_from_system_packages() {" in docker_text
+    assert "apt-get install -y docker.io docker-compose-v2" in docker_text
+    assert "install_docker_from_convenience_script() {" in docker_text
+    assert "--retry 5 --retry-all-errors --connect-timeout 10" in docker_text
     assert "__AERISUN_APP_ROOT__" in service_text
     assert "__AERISUN_COMPOSE_PROJECT_NAME__" in service_text
     assert "__AERISUN_RENDERED_COMPOSE_FILE__" in service_text
@@ -282,7 +306,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert '@base_router.get("/healthz"' in backend_site_api_text
     assert "background_task = asyncio.create_task(background_services.start()" in backend_bootstrap_core_text
     assert "await start_visit_record_worker()" in backend_bootstrap_core_text
-    assert 'duration_ms=' not in backend_bootstrap_core_text
+    assert "duration_ms=" not in backend_bootstrap_core_text
     assert 'logger.info("Application infrastructure ready in %.2fms"' in backend_bootstrap_core_text
     assert 'logger.info("Background services started in %.2fms"' in backend_bootstrap_core_text
     settings_text = read_project_file("backend/src/aerisun/core/settings.py")
@@ -306,9 +330,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "chown -R 1001:1001 /app" in waline_dockerfile_text
     waline_block = compose_text.split("  waline:\n", 1)[1].split("\n  caddy:\n", 1)[0]
     assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' not in waline_block
-    assert "run_as_root systemctl enable \"${SERINO_SYSTEMD_UNIT}\" >/dev/null" in docker_text
-    assert "run_as_root systemctl start \"${SERINO_SYSTEMD_UNIT}\" >/dev/null" in docker_text
-    assert "run_as_root systemctl is-active --quiet \"${SERINO_SYSTEMD_UNIT}\"" in docker_text
+    assert 'run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null' in docker_text
+    assert 'run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null' in docker_text
+    assert 'run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"' in docker_text
     assert "if ! wait_for_release_ready; then" in install_text
 
 

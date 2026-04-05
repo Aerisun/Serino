@@ -241,16 +241,133 @@ print_service_start_failure_diagnostics() {
   fi
 }
 
-ensure_docker_installed() {
-  if command_exists docker && (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
-    run_as_root systemctl enable --now docker >/dev/null
+apt_install_with_optional_mirror() {
+  local mirror_url="${AERISUN_APT_MIRROR_URL:-}"
+  local sources_file=""
+  local codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
+
+  if [[ -z "${mirror_url}" ]]; then
+    run_as_root env DEBIAN_FRONTEND=noninteractive apt-get update
+    run_as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2
     return 0
   fi
 
-  log_info "正在自动安装 Docker。"
-  curl --fail --location --silent --show-error https://get.docker.com \
-    | run_as_root bash -s docker --mirror Aliyun
+  mirror_url="${mirror_url%/}/"
+  [[ -n "${codename}" ]] || die "缺少系统发行版代号，无法使用自定义 APT 镜像源。"
+  sources_file="$(make_temp_file)"
+
+  case "${AERISUN_INSTALL_DISTRO:-}" in
+    ubuntu)
+      cat > "${sources_file}" <<EOF
+deb ${mirror_url} ${codename} main restricted universe multiverse
+deb ${mirror_url} ${codename}-updates main restricted universe multiverse
+deb ${mirror_url} ${codename}-backports main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu ${codename}-security main restricted universe multiverse
+EOF
+      ;;
+    debian)
+      cat > "${sources_file}" <<EOF
+deb ${mirror_url} ${codename} main contrib non-free non-free-firmware
+deb ${mirror_url} ${codename}-updates main contrib non-free non-free-firmware
+deb ${mirror_url} ${codename}-security main contrib non-free non-free-firmware
+EOF
+      ;;
+    *)
+      rm -f "${sources_file}"
+      return 1
+      ;;
+  esac
+
+  log_info "正在使用自定义 APT 镜像源安装 Docker。"
+  run_as_root env DEBIAN_FRONTEND=noninteractive apt-get \
+    -o Dir::Etc::sourcelist="${sources_file}" \
+    -o Dir::Etc::sourceparts="-" \
+    -o APT::Get::List-Cleanup="0" update
+  run_as_root env DEBIAN_FRONTEND=noninteractive apt-get \
+    -o Dir::Etc::sourcelist="${sources_file}" \
+    -o Dir::Etc::sourceparts="-" \
+    install -y docker.io docker-compose-v2
+  rm -f "${sources_file}"
+}
+
+install_docker_from_system_packages() {
+  case "${AERISUN_INSTALL_DISTRO:-}" in
+    ubuntu|debian)
+      log_info "正在通过系统软件包安装 Docker。"
+      apt_install_with_optional_mirror
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+install_docker_from_convenience_script() {
+  local script_file=""
+  script_file="$(make_temp_file)"
+  if ! curl --fail --location --show-error --retry 5 --retry-all-errors --connect-timeout 10 \
+    https://get.docker.com -o "${script_file}"; then
+    rm -f "${script_file}"
+    return 1
+  fi
+
+  run_as_root bash "${script_file}" docker --mirror Aliyun
+  rm -f "${script_file}"
+}
+
+configure_docker_registry_mirrors() {
+  local mirrors="${AERISUN_DOCKER_REGISTRY_MIRRORS:-}"
+  local daemon_file="/etc/docker/daemon.json"
+  local tmp_file=""
+
+  [[ -n "${mirrors}" ]] || return 0
+
+  tmp_file="$(make_temp_file)"
+  log_info "正在配置 Docker 镜像加速。"
+  python3 - "${mirrors}" "${tmp_file}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+mirrors_raw = sys.argv[1]
+output_path = Path(sys.argv[2])
+daemon_path = Path("/etc/docker/daemon.json")
+mirrors = [item.strip() for item in mirrors_raw.split(",") if item.strip()]
+
+data = {}
+if daemon_path.exists():
+    try:
+        data = json.loads(daemon_path.read_text())
+    except Exception:
+        data = {}
+
+data["registry-mirrors"] = mirrors
+output_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+PY
+  run_as_root install -d -o root -g root -m 0755 /etc/docker
+  run_as_root install -o root -g root -m 0644 "${tmp_file}" "${daemon_file}"
+  rm -f "${tmp_file}"
+}
+
+ensure_docker_installed() {
+  local docker_ready=1
+
+  if ! command_exists docker || ! (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
+    docker_ready=0
+  fi
+
+  if [[ "${docker_ready}" == "0" ]]; then
+    if ! install_docker_from_system_packages; then
+      log_warn "系统软件包安装 Docker 失败，正在回退到官方安装脚本。"
+      install_docker_from_convenience_script || die "Docker 自动安装失败，请检查当前网络环境后重试。"
+    fi
+  fi
+
+  configure_docker_registry_mirrors
   run_as_root systemctl enable --now docker >/dev/null
+  if [[ -n "${AERISUN_DOCKER_REGISTRY_MIRRORS:-}" ]]; then
+    run_as_root systemctl restart docker >/dev/null
+  fi
 
   if ! (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
     die "Docker 已安装，但缺少 docker compose。"
