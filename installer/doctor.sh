@@ -10,7 +10,7 @@ source "${SCRIPT_DIR}/lib/env.sh"
 source "${SCRIPT_DIR}/lib/docker.sh"
 
 JSON_MODE=false
-DOCTOR_TMP="$(mktemp)"
+DOCTOR_TMP="$(make_temp_file)"
 trap 'rm -f "${DOCTOR_TMP}"' EXIT
 
 record_check() {

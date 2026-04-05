@@ -4,9 +4,10 @@ import mimetypes
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.params import Depends as DependsMarker
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from aerisun.api.deps.site_auth import (
@@ -292,12 +293,30 @@ def read_activity_heatmap(
     return build_activity_heatmap(session, weeks=weeks, tz_name=tz)
 
 
-@base_router.get("/healthz", response_model=HealthRead, summary="健康检查")
-def healthz() -> HealthRead:
+@base_router.get("/livez", response_model=HealthRead, summary="存活检查")
+def livez() -> HealthRead:
     return HealthRead(
         status="ok",
         timestamp=datetime.now(UTC),
     )
+
+
+@base_router.get("/readyz", response_model=HealthRead, summary="就绪检查")
+def readyz(session: Session = Depends(get_session)) -> HealthRead:
+    try:
+        session.execute(text("SELECT 1"))
+    except Exception as exc:  # pragma: no cover - defensive readiness fallback
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="database not ready") from exc
+
+    return HealthRead(
+        status="ok",
+        timestamp=datetime.now(UTC),
+    )
+
+
+@base_router.get("/healthz", response_model=HealthRead, summary="健康检查")
+def healthz(session: Session = Depends(get_session)) -> HealthRead:
+    return readyz(session)
 
 
 router.include_router(base_router)

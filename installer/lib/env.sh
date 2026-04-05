@@ -27,6 +27,11 @@ install_managed_env_file() {
   run_as_root install -o root -g "${SERINO_SERVICE_GROUP}" -m 0640 "${source_file}" "${target_file}"
 }
 
+managed_file_exists() {
+  local file="$1"
+  path_is_file "${file}"
+}
+
 normalize_host_input() {
   local value="$1"
   value="${value#"${value%%[![:space:]]*}"}"
@@ -40,10 +45,10 @@ normalize_host_input() {
 load_env_file() {
   local file="$1"
   local tmp_file=""
-  [[ -f "${file}" ]] || return 0
+  managed_file_exists "${file}" || return 0
 
   if [[ ! -r "${file}" ]]; then
-    tmp_file="$(mktemp)"
+    tmp_file="$(make_temp_file)"
     run_as_root cat "${file}" > "${tmp_file}"
     file="${tmp_file}"
   fi
@@ -62,14 +67,14 @@ copy_env_file_for_read() {
   local file="$1"
   local tmp_file=""
 
-  [[ -f "${file}" ]] || return 1
+  managed_file_exists "${file}" || return 1
 
   if [[ -r "${file}" ]]; then
     printf '%s' "${file}"
     return 0
   fi
 
-  tmp_file="$(mktemp)"
+  tmp_file="$(make_temp_file)"
   run_as_root cat "${file}" > "${tmp_file}"
   printf '%s' "${tmp_file}"
 }
@@ -81,8 +86,8 @@ set_env_value() {
   local tmp_file
   local source_file=""
 
-  tmp_file="$(mktemp)"
-  if [[ -f "${file}" ]]; then
+  tmp_file="$(make_temp_file)"
+  if managed_file_exists "${file}"; then
     source_file="$(copy_env_file_for_read "${file}")"
     awk -v key="${key}" -v value="${value}" '
       BEGIN { replaced = 0 }
@@ -115,9 +120,9 @@ unset_env_value() {
   local tmp_file
   local source_file=""
 
-  [[ -f "${file}" ]] || return 0
+  managed_file_exists "${file}" || return 0
 
-  tmp_file="$(mktemp)"
+  tmp_file="$(make_temp_file)"
   source_file="$(copy_env_file_for_read "${file}")"
   awk -v key="${key}" '$0 !~ ("^" key "=") { print }' "${source_file}" > "${tmp_file}"
   install_managed_env_file "${tmp_file}" "${file}"
@@ -155,7 +160,7 @@ write_production_env() {
   local output_file="$1"
   local tmp_file
 
-  tmp_file="$(mktemp)"
+  tmp_file="$(make_temp_file)"
   cat > "${tmp_file}" <<EOF
 AERISUN_ENVIRONMENT=production
 AERISUN_INSTALL_CHANNEL=${AERISUN_INSTALL_CHANNEL}

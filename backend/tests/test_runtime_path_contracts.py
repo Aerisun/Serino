@@ -15,7 +15,7 @@ def test_shared_path_defaults_are_tracked_in_root_env():
     assert "AERISUN_API_BASE_PATH=/api" in env_text
     assert "AERISUN_ADMIN_BASE_PATH=/admin/" in env_text
     assert "AERISUN_WALINE_BASE_PATH=/waline" in env_text
-    assert "AERISUN_HEALTHCHECK_PATH=/api/v1/site/healthz" in env_text
+    assert "AERISUN_HEALTHCHECK_PATH=/api/v1/site/readyz" in env_text
     assert "AERISUN_FRONTEND_DIST_DIR=/srv/aerisun/frontend" in env_text
     assert "AERISUN_ADMIN_DIST_DIR=/srv/aerisun/admin" in env_text
 
@@ -31,9 +31,9 @@ def test_deploy_contract_reuses_shared_env_keys():
     admin_vite_text = read_project_file("admin/vite.config.ts")
 
     assert "AERISUN_PORT: ${AERISUN_PORT:-8000}" in compose_text
-    assert "AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}" in compose_text
+    assert "AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}" in compose_text
     healthcheck_curl = (
-        'curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}'
+        'curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}'
     )
     assert healthcheck_curl in compose_text
     assert "WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}" in compose_text
@@ -52,7 +52,7 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "{$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}" in caddy_text
     assert "{$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}" in caddy_text
 
-    assert 'HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"' in smoke_text
+    assert 'HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in smoke_text
     assert 'ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"' in smoke_text
     assert 'WALINE_BASE_PATH="$(strip_trailing_slash "${AERISUN_WALINE_BASE_PATH:-/waline}")"' in smoke_text
     assert "AERISUN_DOMAIN=http://${SITE_HOST}" in smoke_text
@@ -61,10 +61,10 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
     assert "AERISUN_DATA_BACKFILL_ENABLED=true" in smoke_text
 
-    assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"' in dev_smoke_text
+    assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in dev_smoke_text
     assert 'admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"' in dev_smoke_text
     backend_health_url = (
-        'backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"'
+        'backend_health_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"'
     )
     assert backend_health_url in dev_start_text
     assert 'const apiBasePath = stripTrailingSlash(env.AERISUN_API_BASE_PATH ?? "/api");' in frontend_vite_text
@@ -98,6 +98,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     doctor_text = read_project_file("installer/doctor.sh")
     install_text = read_project_file("installer/install.sh")
     docker_text = read_project_file("installer/lib/docker.sh")
+    env_text = read_project_file("installer/lib/env.sh")
     service_text = read_project_file("installer/systemd/serino.service")
     upgrade_service_text = read_project_file("installer/systemd/serino-upgrade.service")
     package_text = read_project_file("scripts/package-installer.sh")
@@ -107,6 +108,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     backend_migrate_text = read_project_file("backend/scripts/migrate.sh")
     backend_bootstrap_prod_text = read_project_file("backend/scripts/bootstrap-prod.sh")
     backend_backfill_text = read_project_file("backend/scripts/backfill.sh")
+    backend_site_api_text = read_project_file("backend/src/aerisun/api/site.py")
+    backend_bootstrap_core_text = read_project_file("backend/src/aerisun/core/bootstrap.py")
+    backend_task_manager_text = read_project_file("backend/src/aerisun/core/task_manager.py")
     dev_compose_text = read_project_file("docker-compose.yml")
     backend_dockerfile_text = read_project_file("backend/Dockerfile")
     waline_dockerfile_text = read_project_file("Dockerfile.waline")
@@ -126,7 +130,12 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"' in common_text
     assert 'AERISUN_HTTP_PORT="${AERISUN_HTTP_PORT:-80}"' in common_text
     assert 'AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"' in common_text
-    assert 'SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf \'%s\' \'/usr/local/bin/sercli\' || printf \'%s\' "${AERISUN_BIN_ROOT}/sercli")}"' in common_text
+    assert "make_temp_file() {" in common_text
+    assert "make_root_temp_file_in_dir() {" in common_text
+    assert (
+        'SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf \'%s\' \'/usr/local/bin/sercli\' || printf \'%s\' "${AERISUN_BIN_ROOT}/sercli")}"'
+        in common_text
+    )
     assert (
         'AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"'
         in common_text
@@ -182,7 +191,15 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "render_release_compose_configuration() {" in docker_text
     assert 'source "${env_file}"' in docker_text
     assert "validate_release_compose_configuration() {" in docker_text
+    assert (
+        'rendered_file="$(make_root_temp_file_in_dir "${AERISUN_APP_ROOT}" ".docker-compose.rendered.XXXXXX.yml")"'
+        in docker_text
+    )
+    assert 'run_as_root mktemp "${AERISUN_APP_ROOT}/.docker-compose.rendered.XXXXXX.yml"' not in docker_text
     assert "print_service_start_failure_diagnostics() {" in docker_text
+    assert "managed_file_exists() {" in env_text
+    assert 'path_is_file "${file}"' in env_text
+    assert '[[ -f "${file}" ]]' not in env_text
     assert "yaml.safe_dump" in docker_text
     assert "probe_release_image" not in docker_text
     assert "__AERISUN_APP_ROOT__" in service_text
@@ -206,6 +223,15 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "seed_bootstrap_data()" in backend_bootstrap_prod_text
     assert "ensure_first_boot_default_admin(is_first_boot=True)" in backend_bootstrap_prod_text
     assert "run_pending_backfills()" in backend_backfill_text
+    assert '@base_router.get("/livez"' in backend_site_api_text
+    assert '@base_router.get("/readyz"' in backend_site_api_text
+    assert '@base_router.get("/healthz"' in backend_site_api_text
+    assert "background_task = asyncio.create_task(background_services.start()" in backend_bootstrap_core_text
+    assert "await start_visit_record_worker()" in backend_bootstrap_core_text
+    start_block = backend_task_manager_text.split("async def start(self) -> None:", 1)[1].split(
+        "def _snapshot_daily_traffic", 1
+    )[0]
+    assert "record_daily_traffic_snapshot(session)" not in start_block
     assert "uv sync --frozen --no-dev --no-editable" in backend_dockerfile_text
     assert 'CMD ["/bin/bash", "/app/backend/scripts/serve.sh"]' in backend_dockerfile_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in compose_text

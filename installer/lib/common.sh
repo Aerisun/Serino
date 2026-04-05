@@ -117,9 +117,26 @@ make_temp_dir() {
   mktemp -d "${TMPDIR:-/tmp}/serino-installer.XXXXXX"
 }
 
+make_temp_file() {
+  mktemp "${TMPDIR:-/tmp}/serino-installer.XXXXXX"
+}
+
+make_root_temp_file_in_dir() {
+  local dir="$1"
+  local pattern="$2"
+
+  run_as_root install -d -o root -g root -m 0755 "${dir}"
+  run_as_root mktemp "${dir%/}/${pattern}"
+}
+
 cleanup_temp_dir() {
   local dir="$1"
   [[ -n "${dir}" && -d "${dir}" ]] && rm -rf "${dir}"
+}
+
+cleanup_temp_file() {
+  local file="$1"
+  [[ -n "${file}" && -f "${file}" ]] && rm -f "${file}"
 }
 
 detect_arch() {
@@ -365,9 +382,9 @@ install_systemd_units() {
   local upgrade_service_tmp=""
   local timer_tmp=""
 
-  service_tmp="$(mktemp)"
-  upgrade_service_tmp="$(mktemp)"
-  timer_tmp="$(mktemp)"
+  service_tmp="$(make_temp_file)"
+  upgrade_service_tmp="$(make_temp_file)"
+  timer_tmp="$(make_temp_file)"
 
   python3 - "${service_template}" "${service_tmp}" "${AERISUN_APP_ROOT}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${AERISUN_RENDERED_COMPOSE_FILE}" <<'PY'
 from pathlib import Path

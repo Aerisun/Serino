@@ -34,11 +34,6 @@ class TaskManager:
 
         from apscheduler.schedulers.background import BackgroundScheduler
 
-        from aerisun.core.db import get_session_factory
-
-        with get_session_factory()() as session:
-            record_daily_traffic_snapshot(session)
-
         self._scheduler = BackgroundScheduler(daemon=True)
         self._scheduler.add_job(
             self._snapshot_daily_traffic,

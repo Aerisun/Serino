@@ -180,7 +180,7 @@ main() {
   ensure_port_available "${AERISUN_HTTPS_PORT}"
 
   version="$(resolve_release_tag)"
-  manifest_file="$(mktemp)"
+  manifest_file="$(make_temp_file)"
   load_release_manifest "${version}" "${manifest_file}"
   log_info "准备安装 Serino ${version} ..."
 

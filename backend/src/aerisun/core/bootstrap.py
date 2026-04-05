@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from time import perf_counter
 
 from aerisun.core.db import dispose_engine
 from aerisun.core.db_preflight import compute_seed_fingerprint, get_stored_seed_fingerprint, store_seed_metadata
@@ -16,7 +19,6 @@ from aerisun.core.sentry import init_sentry
 from aerisun.core.settings import BACKEND_ROOT, get_settings
 from aerisun.core.task_manager import TaskManager
 from aerisun.domain.automation.runtime_registry import get_automation_runtime
-from aerisun.domain.iam.service import repair_legacy_api_key_scopes
 from aerisun.domain.ops.service import start_visit_record_worker, stop_visit_record_worker
 
 logger = logging.getLogger("aerisun.bootstrap")
@@ -48,45 +50,78 @@ def _refresh_bootstrap_seed_on_reload_if_needed() -> None:
     store_seed_metadata(settings.db_path, fingerprint=current_fp)
 
 
+class BackgroundServices:
+    def __init__(self, settings) -> None:
+        self._settings = settings
+        self._task_manager: TaskManager | None = None
+        self._runtime = None
+        self._visit_worker_started = False
+
+    async def start(self) -> None:
+        started_at = perf_counter()
+        self._task_manager = TaskManager(self._settings)
+        self._runtime = get_automation_runtime()
+        self._runtime.start()
+        await self._task_manager.start()
+        await start_visit_record_worker()
+        self._visit_worker_started = True
+        logger.info(
+            "Background services started",
+            duration_ms=round((perf_counter() - started_at) * 1000, 2),
+        )
+
+    async def stop(self) -> None:
+        if self._visit_worker_started:
+            await stop_visit_record_worker()
+            self._visit_worker_started = False
+        if self._task_manager is not None:
+            await self._task_manager.stop()
+            self._task_manager = None
+        if self._runtime is not None:
+            self._runtime.stop()
+            self._runtime = None
+
+
+def _log_background_start_result(task: asyncio.Task[None]) -> None:
+    with contextlib.suppress(asyncio.CancelledError):
+        exc = task.exception()
+        if exc is not None:
+            logger.exception("Background service startup failed", exc_info=exc)
+
+
 @asynccontextmanager
 async def lifespan(_app):
-    """Three-phase startup, reverse-order shutdown."""
+    """Minimal readiness startup, deferred background services, reverse-order shutdown."""
     settings = get_settings()
+    infra_started_at = perf_counter()
+    background_services = BackgroundServices(settings)
+    background_task: asyncio.Task[None] | None = None
 
-    # Phase 1: Infrastructure
     settings.ensure_directories()
     setup_logging(settings)
     _refresh_bootstrap_seed_on_reload_if_needed()
-    from aerisun.core.db import get_session_factory
-
-    factory = get_session_factory()
-    with factory() as session:
-        repaired_api_keys = repair_legacy_api_key_scopes(session)
-    if repaired_api_keys:
-        logger.info("Repaired legacy API key scopes", repaired=repaired_api_keys)
-    logger.info("Infrastructure ready")
-
-    # Phase 2: Integrations
     check_insecure_defaults(settings)
     init_sentry(settings)
-    logger.info("Integrations ready")
+    logger.info(
+        "Application infrastructure ready",
+        duration_ms=round((perf_counter() - infra_started_at) * 1000, 2),
+    )
 
-    # Phase 3: Background services
-    task_manager = TaskManager(settings)
-    runtime = get_automation_runtime()
-    runtime.start()
-    await task_manager.start()
-    await start_visit_record_worker()
-    logger.info("Background services started")
+    background_task = asyncio.create_task(background_services.start(), name="aerisun-background-start")
+    background_task.add_done_callback(_log_background_start_result)
 
     try:
         yield
     finally:
-        # Reverse-order shutdown
         logger.info("Shutting down background services")
-        await stop_visit_record_worker()
-        await task_manager.stop()
-        runtime.stop()
+        if background_task is not None and not background_task.done():
+            background_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await background_task
+        elif background_task is not None:
+            with contextlib.suppress(Exception):
+                await background_task
+        await background_services.stop()
         logger.info("Disposing database engine")
         dispose_engine()
         logger.info("Shutdown complete")

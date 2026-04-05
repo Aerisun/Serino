@@ -75,7 +75,7 @@ main() {
   fi
 
   version="$(resolve_release_tag)"
-  manifest_file="$(mktemp)"
+  manifest_file="$(make_temp_file)"
   load_release_manifest "${version}" "${manifest_file}"
   target_registry="${AERISUN_IMAGE_REGISTRY}"
   target_image_tag="${AERISUN_IMAGE_TAG}"

@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     api_base_path: str = "/api"
     admin_base_path: str = "/admin/"
     waline_base_path: str = "/waline"
-    healthcheck_path: str = "/api/v1/site/healthz"
+    healthcheck_path: str = "/api/v1/site/readyz"
     frontend_dist_dir: Path = Path("/srv/aerisun/frontend")
     admin_dist_dir: Path = Path("/srv/aerisun/admin")
     site_url: str = "http://localhost:5173"

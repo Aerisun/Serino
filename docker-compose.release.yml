@@ -16,7 +16,7 @@ services:
       AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
       AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
       AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}
-      AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}
+      AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}
       AERISUN_SITE_URL: ${AERISUN_SITE_URL}
       AERISUN_WALINE_SERVER_URL: ${AERISUN_WALINE_SERVER_URL}
       AERISUN_RELEASE_VERSION: ${AERISUN_RELEASE_VERSION:-}
@@ -36,7 +36,7 @@ services:
     ports:
       - "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"]
+      test: ["CMD", "curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"]
       interval: 15s
       timeout: 5s
       retries: 3

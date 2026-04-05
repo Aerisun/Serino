@@ -266,9 +266,7 @@ resolve_active_registry() {
 validate_release_compose_configuration() {
   local rendered_file=""
 
-  rendered_file="$(
-    run_as_root mktemp "${AERISUN_APP_ROOT}/.docker-compose.rendered.XXXXXX.yml"
-  )"
+  rendered_file="$(make_root_temp_file_in_dir "${AERISUN_APP_ROOT}" ".docker-compose.rendered.XXXXXX.yml")"
   if ! render_release_compose_configuration "${rendered_file}"; then
     run_as_root rm -f "${rendered_file}"
     die "安装配置校验失败，无法渲染最终 docker compose 配置。"
