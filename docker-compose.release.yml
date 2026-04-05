@@ -11,8 +11,10 @@ services:
       AERISUN_DATA_DIR: ${AERISUN_DATA_DIR:-/srv/aerisun/store}
       AERISUN_DB_PATH: ${AERISUN_DB_PATH:-/srv/aerisun/store/aerisun.db}
       AERISUN_WALINE_DB_PATH: ${AERISUN_WALINE_DB_PATH:-/srv/aerisun/store/waline.db}
+      AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}
       AERISUN_MEDIA_DIR: ${AERISUN_MEDIA_DIR:-/srv/aerisun/store/media}
       AERISUN_SECRETS_DIR: ${AERISUN_SECRETS_DIR:-/srv/aerisun/store/secrets}
+      AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}
       AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}
       AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}
       AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}

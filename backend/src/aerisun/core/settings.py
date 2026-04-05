@@ -5,7 +5,7 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Use absolute path WITHOUT resolving symlinks so each git worktree gets its
@@ -148,6 +148,26 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
     sentry_traces_sample_rate: float = 0.1
+
+    @model_validator(mode="after")
+    def _normalize_runtime_paths(self) -> Settings:
+        store_dir = self.store_dir.expanduser()
+        legacy_store_dir = (PROJECT_ROOT / ".store").expanduser()
+
+        def under_store(path: Path, *parts: str) -> Path:
+            candidate = path.expanduser()
+            if candidate == legacy_store_dir.joinpath(*parts):
+                return store_dir.joinpath(*parts)
+            return candidate
+
+        self.data_dir = under_store(self.data_dir)
+        self.media_dir = under_store(self.media_dir, "media")
+        self.secrets_dir = under_store(self.secrets_dir, "secrets")
+        self.db_path = under_store(self.db_path, "aerisun.db")
+        self.waline_db_path = under_store(self.waline_db_path, "waline.db")
+        self.workflow_db_path = under_store(self.workflow_db_path, "langgraph.db")
+        self.backup_sync_tmp_dir = under_store(self.backup_sync_tmp_dir, ".backup-sync-tmp")
+        return self
 
     @property
     def database_url(self) -> str:

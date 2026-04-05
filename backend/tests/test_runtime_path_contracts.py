@@ -9,6 +9,31 @@ def read_project_file(relative_path: str) -> str:
     return (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
 
 
+def test_settings_normalize_runtime_paths_under_store_dir():
+    from aerisun.core.settings import PROJECT_ROOT as SETTINGS_PROJECT_ROOT, Settings
+
+    store_dir = Path("/srv/aerisun/store")
+    settings = Settings(
+        _env_file=None,
+        store_dir=store_dir,
+        data_dir=SETTINGS_PROJECT_ROOT / ".store",
+        media_dir=SETTINGS_PROJECT_ROOT / ".store" / "media",
+        secrets_dir=SETTINGS_PROJECT_ROOT / ".store" / "secrets",
+        db_path=SETTINGS_PROJECT_ROOT / ".store" / "aerisun.db",
+        waline_db_path=SETTINGS_PROJECT_ROOT / ".store" / "waline.db",
+        workflow_db_path=SETTINGS_PROJECT_ROOT / ".store" / "langgraph.db",
+        backup_sync_tmp_dir=SETTINGS_PROJECT_ROOT / ".store" / ".backup-sync-tmp",
+    )
+
+    assert settings.data_dir == store_dir
+    assert settings.media_dir == store_dir / "media"
+    assert settings.secrets_dir == store_dir / "secrets"
+    assert settings.db_path == store_dir / "aerisun.db"
+    assert settings.waline_db_path == store_dir / "waline.db"
+    assert settings.workflow_db_path == store_dir / "langgraph.db"
+    assert settings.backup_sync_tmp_dir == store_dir / ".backup-sync-tmp"
+
+
 def test_shared_path_defaults_are_tracked_in_root_env():
     env_text = read_project_file(".env")
 
@@ -31,6 +56,8 @@ def test_deploy_contract_reuses_shared_env_keys():
     admin_vite_text = read_project_file("admin/vite.config.ts")
 
     assert "AERISUN_PORT: ${AERISUN_PORT:-8000}" in compose_text
+    assert "AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}" in compose_text
+    assert "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}" in compose_text
     assert "AERISUN_HEALTHCHECK_PATH: ${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}" in compose_text
     healthcheck_curl = (
         'curl", "-f", "http://localhost:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}'
@@ -87,6 +114,8 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
     )
     assert "/etc/serino/serino.env" in production_local_example_text
     assert "/var/lib/serino" in production_local_example_text
+    assert "AERISUN_WORKFLOW_DB_PATH=/srv/aerisun/store/langgraph.db" in production_local_example_text
+    assert "AERISUN_BACKUP_SYNC_TMP_DIR=/srv/aerisun/store/.backup-sync-tmp" in production_local_example_text
     assert "AERISUN_SEED_REFERENCE_DATA=true" in production_local_example_text
     assert "AERISUN_DATA_BACKFILL_ENABLED=true" in production_local_example_text
 
@@ -162,6 +191,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )
     assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' in compose_text
     assert "HOME: /srv/aerisun/store" in compose_text
+    assert "AERISUN_WORKFLOW_DB_PATH: ${AERISUN_WORKFLOW_DB_PATH:-/srv/aerisun/store/langgraph.db}" in compose_text
+    assert "AERISUN_BACKUP_SYNC_TMP_DIR: ${AERISUN_BACKUP_SYNC_TMP_DIR:-/srv/aerisun/store/.backup-sync-tmp}" in compose_text
     assert "${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store" in compose_text
 
     assert "sercli doctor [--json]" in sercli_text
@@ -183,6 +214,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )
     assert "compose_with_env() {" in docker_text
     assert "compose_api_task() {" in docker_text
+    assert 'compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@"' in docker_text
     assert "run_release_migrations() {" in docker_text
     assert "run_release_bootstrap() {" in docker_text
     assert "run_release_backfills() {" in docker_text
@@ -228,6 +260,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert '@base_router.get("/healthz"' in backend_site_api_text
     assert "background_task = asyncio.create_task(background_services.start()" in backend_bootstrap_core_text
     assert "await start_visit_record_worker()" in backend_bootstrap_core_text
+    assert "self.workflow_db_path = under_store(self.workflow_db_path, \"langgraph.db\")" in read_project_file("backend/src/aerisun/core/settings.py")
+    assert "self.backup_sync_tmp_dir = under_store(self.backup_sync_tmp_dir, \".backup-sync-tmp\")" in read_project_file("backend/src/aerisun/core/settings.py")
     start_block = backend_task_manager_text.split("async def start(self) -> None:", 1)[1].split(
         "def _snapshot_daily_traffic", 1
     )[0]

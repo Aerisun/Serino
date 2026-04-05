@@ -144,7 +144,7 @@ compose_api_task() {
   local task="$1"
   shift
 
-  compose run --rm --no-deps api /bin/bash "/app/backend/scripts/${task}" "$@"
+  compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@"
 }
 
 daemon_reload() {
