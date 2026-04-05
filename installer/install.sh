@@ -9,12 +9,22 @@ bootstrap_log_warn() {
   printf '[WARN] %s\n' "$*" >&2
 }
 
+bootstrap_metadata_curl() {
+  curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+    --connect-timeout 10 --max-time 45 "$@"
+}
+
+bootstrap_asset_curl() {
+  curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+    --connect-timeout 10 --max-time 180 "$@"
+}
+
 bootstrap_from_release() {
   local version="${AERISUN_INSTALL_VERSION:-}"
   local repo="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
   local channel="${AERISUN_INSTALL_CHANNEL:-stable}"
-  local default_base_url="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"
-  local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"
+  local default_base_url="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.top/serino}"
+  local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"
   local base_url="${AERISUN_INSTALL_BASE_URL:-}"
   local bundle_name="${AERISUN_INSTALL_BUNDLE_NAME:-aerisun-installer-bundle.tar.gz}"
   local tmp_dir=""
@@ -42,20 +52,20 @@ bootstrap_from_release() {
       latest_url="${base_url%/}/latest.env"
       bootstrap_log_info "🎈 正在解析 ${channel} 渠道最新版本：${latest_url}"
       latest_payload="$(
-        curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${latest_url}" 2>/dev/null || true
+        bootstrap_metadata_curl "${latest_url}" 2>/dev/null || true
       )"
       if [[ -n "${latest_payload}" ]]; then
         version="$(printf '%s\n' "${latest_payload}" | extract_release_tag_from_env_payload)"
       else
-        bootstrap_log_warn "未能从 ${latest_url} 读取版本信息。"
+        bootstrap_log_warn "未能从 ${latest_url} 读取版本信息，正在准备回退。"
       fi
     fi
 
     if [[ -z "${version}" && "${channel}" == "stable" ]]; then
       api_url="https://api.github.com/repos/${repo}/releases/latest"
-      bootstrap_log_info "正在从 GitHub Release 解析 stable 最新版本。"
+      bootstrap_log_warn "渠道版本解析失败，正在回退到 GitHub Release API：${api_url}"
       version="$(
-        curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${api_url}" \
+        bootstrap_metadata_curl "${api_url}" \
           | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(v[^"]*\)".*/\1/p' \
           | head -n 1
       )"
@@ -72,11 +82,11 @@ bootstrap_from_release() {
   if [[ -n "${base_url}" ]]; then
     release_url="${base_url%/}/${version}/${bundle_name}"
     bootstrap_log_info "🌟 准备下载 ${channel} 安装包：${release_url}"
-    if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
+    if ! bootstrap_asset_curl "${release_url}" -o "${bundle_file}"; then
       if [[ "${channel}" == "stable" ]]; then
         release_url="https://github.com/${repo}/releases/download/${version}/${bundle_name}"
         bootstrap_log_warn "渠道源下载失败，回退到 GitHub Release：${release_url}"
-        if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
+        if ! bootstrap_asset_curl "${release_url}" -o "${bundle_file}"; then
           echo "无法下载安装包：${base_url%/}/${version}/${bundle_name}" >&2
           exit 1
         fi
@@ -88,7 +98,7 @@ bootstrap_from_release() {
   else
     release_url="https://github.com/${repo}/releases/download/${version}/${bundle_name}"
     bootstrap_log_info "准备从 GitHub Release 下载安装包：${release_url}"
-    if ! curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${release_url}" -o "${bundle_file}"; then
+    if ! bootstrap_asset_curl "${release_url}" -o "${bundle_file}"; then
       echo "无法从 GitHub Release 下载安装包：${release_url}" >&2
       exit 1
     fi

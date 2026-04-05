@@ -135,6 +135,9 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
         "AERISUN_IMAGE_REGISTRY=crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino"
         in production_local_example_text
     )
+    assert "AERISUN_UBUNTU_APT_MIRROR_URL=https://your-mirror.example.com/ubuntu/" in production_local_example_text
+    assert "AERISUN_DEBIAN_APT_MIRROR_URL=https://your-mirror.example.com/debian/" in production_local_example_text
+    assert "AERISUN_APT_MIRROR_URL=https://your-shared-mirror.example.com/" in production_local_example_text
     assert "/etc/serino/serino.env" in production_local_example_text
     assert "/var/lib/serino" in production_local_example_text
     assert "AERISUN_WORKFLOW_DB_PATH=/srv/aerisun/store/langgraph.db" in production_local_example_text
@@ -149,6 +152,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     sercli_text = read_project_file("installer/bin/sercli")
     doctor_text = read_project_file("installer/doctor.sh")
     install_text = read_project_file("installer/install.sh")
+    download_text = read_project_file("installer/lib/download.sh")
     docker_text = read_project_file("installer/lib/docker.sh")
     env_text = read_project_file("installer/lib/env.sh")
     service_text = read_project_file("installer/systemd/serino.service")
@@ -189,14 +193,22 @@ def test_installer_runtime_paths_follow_serino_system_layout():
         in common_text
     )
     assert (
-        'AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"'
+        'AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.top/serino}"'
         in common_text
     )
     assert (
-        'AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
+        'AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"'
         in common_text
     )
-    assert 'AERISUN_APT_MIRROR_URL="${AERISUN_APT_MIRROR_URL:-https://mirrors.cnnic.cn/ubuntu/}"' in common_text
+    assert 'AERISUN_APT_MIRROR_URL="${AERISUN_APT_MIRROR_URL:-}"' in common_text
+    assert (
+        'AERISUN_UBUNTU_APT_MIRROR_URL="${AERISUN_UBUNTU_APT_MIRROR_URL:-https://mirrors.aliyun.com/ubuntu/,https://mirrors.tuna.tsinghua.edu.cn/ubuntu/,https://mirrors.ustc.edu.cn/ubuntu/}"'
+        in common_text
+    )
+    assert (
+        'AERISUN_DEBIAN_APT_MIRROR_URL="${AERISUN_DEBIAN_APT_MIRROR_URL:-https://mirrors.aliyun.com/debian/,https://mirrors.tuna.tsinghua.edu.cn/debian/,https://mirrors.ustc.edu.cn/debian/}"'
+        in common_text
+    )
     assert (
         'AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-https://docker.m.daocloud.io}"'
         in common_text
@@ -241,7 +253,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "run_release_bootstrap" in install_text
     assert "print_service_start_failure_diagnostics" in install_text
     assert (
-        'local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
+        'local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"'
         in install_text
     )
     assert "compose_with_env() {" in docker_text
@@ -265,20 +277,46 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'path_is_file "${file}"' in env_text
     assert '[[ -f "${file}" ]]' not in env_text
     assert "AERISUN_APT_MIRROR_URL=${AERISUN_APT_MIRROR_URL}" in env_text
+    assert "AERISUN_UBUNTU_APT_MIRROR_URL=${AERISUN_UBUNTU_APT_MIRROR_URL}" in env_text
+    assert "AERISUN_DEBIAN_APT_MIRROR_URL=${AERISUN_DEBIAN_APT_MIRROR_URL}" in env_text
     assert 'AERISUN_DOCKER_REGISTRY_MIRRORS=$(quote_env_literal "${AERISUN_DOCKER_REGISTRY_MIRRORS}")' in env_text
     assert "yaml.safe_dump" in docker_text
     assert "probe_release_image" not in docker_text
-    assert "apt_install_with_optional_mirror() {" in docker_text
-    assert "apt-get install -y docker.io docker-compose-v2" in docker_text
+    assert "run_as_root_quiet() {" in docker_text
+    assert "run_as_root_with_dots() {" in docker_text
+    assert "run_as_root_with_dots_timeout() {" in docker_text
+    assert "printf '.' >&2" in docker_text
+    assert "resolve_system_apt_mirror_url() {" in docker_text
+    assert "install_docker_prerequisites_with_optional_mirror() {" in docker_text
+    assert "install_docker_prerequisites_from_apt() {" in docker_text
+    assert 'apt-get "${apt_args[@]}" install -y ca-certificates curl gnupg lsb-release' in docker_text
     assert (
         "deb http://security.ubuntu.com/ubuntu ${codename}-security main restricted universe multiverse" in docker_text
     )
+    assert "install_docker_from_aliyun_apt() {" in docker_text
+    assert "configure_docker_aliyun_apt_repository() {" in docker_text
+    assert "remove_conflicting_docker_packages() {" in docker_text
+    assert "https://mirrors.aliyun.com/docker-ce/linux/${distro}/gpg" in docker_text
+    assert "https://mirrors.aliyun.com/docker-ce/linux/${distro}" in docker_text
+    assert "\\$(lsb_release -cs) stable" in docker_text
+    assert "docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" in docker_text
     assert "configure_docker_registry_mirrors() {" in docker_text
     assert '"registry-mirrors"' in docker_text
-    assert "install_docker_from_system_packages() {" in docker_text
-    assert "apt-get install -y docker.io docker-compose-v2" in docker_text
     assert "install_docker_from_convenience_script() {" in docker_text
     assert "--retry 5 --retry-all-errors --connect-timeout 10" in docker_text
+    assert "--max-time 60 https://mirrors.aliyun.com/docker-ce/linux/${distro}/gpg" in docker_text
+    assert "release_metadata_curl() {" in download_text
+    assert "release_asset_curl() {" in download_text
+    assert "--connect-timeout 10 --max-time 45" in download_text
+    assert "--connect-timeout 10 --max-time 180" in download_text
+    assert 'log_warn "下载 ${asset_name} 失败：${url}"' in download_text
+    assert 'log_warn "正在回退到下一个分发源：${base_urls[$((idx + 1))]%/}/${asset_name}"' in download_text
+    assert "bootstrap_metadata_curl() {" in install_text
+    assert "bootstrap_asset_curl() {" in install_text
+    assert "--connect-timeout 10 --max-time 45" in install_text
+    assert "--connect-timeout 10 --max-time 180" in install_text
+    assert "正在准备回退" in install_text
+    assert "正在回退到 GitHub Release API" in install_text
     assert "__AERISUN_APP_ROOT__" in service_text
     assert "__AERISUN_COMPOSE_PROJECT_NAME__" in service_text
     assert "__AERISUN_RENDERED_COMPOSE_FILE__" in service_text

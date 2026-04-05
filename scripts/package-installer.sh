@@ -42,7 +42,7 @@ case "${INSTALL_CHANNEL}" in
   stable)
     IMAGE_REGISTRY="${IMAGE_REGISTRY:?AERISUN_IMAGE_REGISTRY is required for stable channel}"
     if [[ -z "${INSTALL_BASE_URL}" ]]; then
-      INSTALL_BASE_URL="https://install.aerisun.com"
+      INSTALL_BASE_URL="https://install.aerisun.top/serino"
     fi
     ;;
   dev)
@@ -53,7 +53,7 @@ case "${INSTALL_CHANNEL}" in
     WEB_IMAGE_NAME="serino-dev-web"
     WALINE_IMAGE_NAME="serino-dev-waline"
     if [[ -z "${INSTALL_BASE_URL}" ]]; then
-      INSTALL_BASE_URL="https://install.aerisun.com/dev"
+      INSTALL_BASE_URL="https://install.aerisun.top/serino/dev"
     fi
     ;;
   *)

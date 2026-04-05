@@ -7,7 +7,7 @@
 
 Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Agent 与自动化的个人博客项目。
 
-> 🙏 **致谢**：本项目参考了 [Shiro](https://github.com/Innei/Shiro) 、[astro-theme-pure](https://github.com/cworld1/astro-theme-pure)、 [Claude Code](https://github.com/anthropics/claude-code) ，我深深地沉醉于他们的匠心设计，在此由衷感谢和致敬这些项目作者的开源精神。
+> 🙏 **致谢**：本项目参考了 [waline](https://github.com/walinejs/waline)、[Shiro](https://github.com/Innei/Shiro) 、[astro-theme-pure](https://github.com/cworld1/astro-theme-pure)、 [Claude Code](https://github.com/anthropics/claude-code) ，我深深地沉醉于他们的匠心设计，在此由衷感谢和致敬这些项目作者的开源精神。
 
 ## ✨ 示例站点
 
@@ -56,7 +56,7 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 ### 📦 一键自动化安装（推荐）
 
-面向可连接（可以不是国际）互联网的主流 `systemd amd64` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
+面向可连接（可以不是国际）互联网的 `Ubuntu/Debian` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
 
 ```bash
 curl -fsSL https://install.aerisun.top/serino/install.sh | bash

@@ -241,60 +241,210 @@ print_service_start_failure_diagnostics() {
   fi
 }
 
-apt_install_with_optional_mirror() {
-  local mirror_url="${AERISUN_APT_MIRROR_URL:-}"
-  local sources_file=""
-  local codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
+run_as_root_quiet() {
+  local logfile="$1"
+  shift
 
-  if [[ -z "${mirror_url}" ]]; then
-    run_as_root env DEBIAN_FRONTEND=noninteractive apt-get update
-    run_as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2
-    return 0
+  if install_debug_enabled; then
+    run_as_root "$@"
+    return
   fi
 
-  mirror_url="${mirror_url%/}/"
-  [[ -n "${codename}" ]] || die "缺少系统发行版代号，无法使用自定义 APT 镜像源。"
-  sources_file="$(make_temp_file)"
+  run_as_root "$@" >>"${logfile}" 2>&1
+}
 
+run_as_root_with_dots() {
+  local logfile="$1"
+  shift
+  local pid=""
+  local status=0
+
+  if install_debug_enabled; then
+    run_as_root "$@"
+    return
+  fi
+
+  run_as_root "$@" >>"${logfile}" 2>&1 &
+  pid=$!
+  while kill -0 "${pid}" >/dev/null 2>&1; do
+    printf '.' >&2
+    sleep 1
+  done
+  wait "${pid}" || status=$?
+  printf '\n' >&2
+  return "${status}"
+}
+
+run_as_root_with_dots_timeout() {
+  local logfile="$1"
+  local timeout_seconds="$2"
+  shift 2
+
+  if command_exists timeout; then
+    run_as_root_with_dots "${logfile}" timeout --foreground "${timeout_seconds}" "$@"
+    return $?
+  fi
+
+  run_as_root_with_dots "${logfile}" "$@"
+}
+
+resolve_system_apt_mirror_url() {
   case "${AERISUN_INSTALL_DISTRO:-}" in
     ubuntu)
-      cat > "${sources_file}" <<EOF
-deb ${mirror_url} ${codename} main restricted universe multiverse
-deb ${mirror_url} ${codename}-updates main restricted universe multiverse
-deb ${mirror_url} ${codename}-backports main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu ${codename}-security main restricted universe multiverse
-EOF
+      if [[ -n "${AERISUN_UBUNTU_APT_MIRROR_URL:-}" ]]; then
+        printf '%s' "${AERISUN_UBUNTU_APT_MIRROR_URL}"
+        return 0
+      fi
       ;;
     debian)
-      cat > "${sources_file}" <<EOF
-deb ${mirror_url} ${codename} main contrib non-free non-free-firmware
-deb ${mirror_url} ${codename}-updates main contrib non-free non-free-firmware
-deb ${mirror_url} ${codename}-security main contrib non-free non-free-firmware
-EOF
-      ;;
-    *)
-      rm -f "${sources_file}"
-      return 1
+      if [[ -n "${AERISUN_DEBIAN_APT_MIRROR_URL:-}" ]]; then
+        printf '%s' "${AERISUN_DEBIAN_APT_MIRROR_URL}"
+        return 0
+      fi
       ;;
   esac
 
-  log_info "正在使用自定义 APT 镜像源安装 Docker。"
-  run_as_root env DEBIAN_FRONTEND=noninteractive apt-get \
-    -o Dir::Etc::sourcelist="${sources_file}" \
-    -o Dir::Etc::sourceparts="-" \
-    -o APT::Get::List-Cleanup="0" update
-  run_as_root env DEBIAN_FRONTEND=noninteractive apt-get \
-    -o Dir::Etc::sourcelist="${sources_file}" \
-    -o Dir::Etc::sourceparts="-" \
-    install -y docker.io docker-compose-v2
-  rm -f "${sources_file}"
+  printf '%s' "${AERISUN_APT_MIRROR_URL:-}"
 }
 
-install_docker_from_system_packages() {
+install_docker_prerequisites_from_apt() {
+  local logfile="$1"
+  shift
+  local apt_args=("$@")
+
+  run_as_root_with_dots_timeout "${logfile}" 600 env DEBIAN_FRONTEND=noninteractive \
+    apt-get "${apt_args[@]}" install -y ca-certificates curl gnupg lsb-release
+}
+
+install_docker_prerequisites_with_optional_mirror() {
+  local mirror_url=""
+  local mirror_candidates=()
+  local candidate=""
+  local sources_file=""
+  local codename="${VERSION_CODENAME:-${UBUNTU_CODENAME:-}}"
+  local logfile=""
+
+  logfile="$(make_temp_file)"
+  mirror_url="$(resolve_system_apt_mirror_url)"
+
+  if [[ -z "${mirror_url}" ]]; then
+    if run_as_root_with_dots_timeout "${logfile}" 600 env DEBIAN_FRONTEND=noninteractive apt-get update \
+      && install_docker_prerequisites_from_apt "${logfile}"; then
+      rm -f "${logfile}"
+      return 0
+    fi
+
+    log_warn "基础依赖安装失败，详细日志位于：${logfile}"
+    return 1
+  fi
+
+  IFS=',' read -r -a mirror_candidates <<<"${mirror_url}"
+  [[ -n "${codename}" ]] || die "缺少系统发行版代号，无法使用自定义 APT 镜像源。"
+
+  for candidate in "${mirror_candidates[@]}"; do
+    candidate="${candidate#"${candidate%%[![:space:]]*}"}"
+    candidate="${candidate%"${candidate##*[![:space:]]}"}"
+    [[ -n "${candidate}" ]] || continue
+    candidate="${candidate%/}/"
+    sources_file="$(make_temp_file)"
+
+    case "${AERISUN_INSTALL_DISTRO:-}" in
+      ubuntu)
+        cat > "${sources_file}" <<EOF
+deb ${candidate} ${codename} main restricted universe multiverse
+deb ${candidate} ${codename}-updates main restricted universe multiverse
+deb ${candidate} ${codename}-backports main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu ${codename}-security main restricted universe multiverse
+EOF
+        ;;
+      debian)
+        cat > "${sources_file}" <<EOF
+deb ${candidate} ${codename} main contrib non-free non-free-firmware
+deb ${candidate} ${codename}-updates main contrib non-free non-free-firmware
+deb ${candidate} ${codename}-security main contrib non-free non-free-firmware
+EOF
+        ;;
+      *)
+        rm -f "${sources_file}" "${logfile}"
+        return 1
+        ;;
+    esac
+
+    if run_as_root_with_dots_timeout "${logfile}" 600 env DEBIAN_FRONTEND=noninteractive apt-get \
+      -o Dir::Etc::sourcelist="${sources_file}" \
+      -o Dir::Etc::sourceparts="-" \
+      -o APT::Get::List-Cleanup="0" update \
+      && install_docker_prerequisites_from_apt "${logfile}" \
+        -o Dir::Etc::sourcelist="${sources_file}" \
+        -o Dir::Etc::sourceparts="-"; then
+      rm -f "${sources_file}" "${logfile}"
+      return 0
+    fi
+
+    rm -f "${sources_file}"
+  done
+
+  if run_as_root_with_dots_timeout "${logfile}" 600 env DEBIAN_FRONTEND=noninteractive apt-get update \
+    && install_docker_prerequisites_from_apt "${logfile}"; then
+    rm -f "${logfile}"
+    return 0
+  fi
+
+  log_warn "基础依赖安装失败，详细日志位于：${logfile}"
+  return 1
+}
+
+configure_docker_aliyun_apt_repository() {
+  local logfile="$1"
+  local distro="${AERISUN_INSTALL_DISTRO:-}"
+
+  [[ "${distro}" == "ubuntu" || "${distro}" == "debian" ]] || return 1
+
+  run_as_root_quiet "${logfile}" install -m 0755 -d /usr/share/keyrings || return 1
+  run_as_root_with_dots_timeout "${logfile}" 120 bash -lc \
+    "curl -fsSL --connect-timeout 10 --max-time 60 https://mirrors.aliyun.com/docker-ce/linux/${distro}/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg" || return 1
+  run_as_root_quiet "${logfile}" chmod a+r /usr/share/keyrings/docker-archive-keyring.gpg || return 1
+  run_as_root_quiet "${logfile}" bash -lc \
+    "echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://mirrors.aliyun.com/docker-ce/linux/${distro} \$(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list" || return 1
+}
+
+remove_conflicting_docker_packages() {
+  local logfile="$1"
+  run_as_root_quiet "${logfile}" env DEBIAN_FRONTEND=noninteractive apt-get remove -y \
+    docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc || true
+}
+
+install_docker_from_aliyun_apt() {
+  local logfile=""
+
   case "${AERISUN_INSTALL_DISTRO:-}" in
     ubuntu|debian)
-      log_info "正在通过系统软件包安装 Docker。"
-      apt_install_with_optional_mirror
+      logfile="$(make_temp_file)"
+      log_info "正在通过阿里云 APT 源安装 Docker。"
+      remove_conflicting_docker_packages "${logfile}"
+      install_docker_prerequisites_with_optional_mirror || {
+        log_warn "Docker 安装环境准备失败，详细日志位于：${logfile}"
+        rm -f "${logfile}"
+        return 1
+      }
+      configure_docker_aliyun_apt_repository "${logfile}" || {
+        log_warn "阿里云 Docker 软件源配置失败，详细日志位于：${logfile}"
+        rm -f "${logfile}"
+        return 1
+      }
+      run_as_root_with_dots_timeout "${logfile}" 600 env DEBIAN_FRONTEND=noninteractive apt-get update || {
+        log_warn "阿里云 Docker 软件源更新失败，详细日志位于：${logfile}"
+        rm -f "${logfile}"
+        return 1
+      }
+      run_as_root_with_dots_timeout "${logfile}" 900 env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || {
+        log_warn "阿里云 Docker 软件源安装失败，详细日志位于：${logfile}"
+        rm -f "${logfile}"
+        return 1
+      }
+      rm -f "${logfile}"
+      return 0
       ;;
     *)
       return 1
@@ -304,15 +454,24 @@ install_docker_from_system_packages() {
 
 install_docker_from_convenience_script() {
   local script_file=""
+  local logfile=""
+
+  logfile="$(make_temp_file)"
   script_file="$(make_temp_file)"
+  log_info "正在尝试通过 Docker 官方安装脚本安装 Docker。"
   if ! curl --fail --location --show-error --retry 5 --retry-all-errors --connect-timeout 10 \
-    https://get.docker.com -o "${script_file}"; then
+    --max-time 120 https://get.docker.com -o "${script_file}" >>"${logfile}" 2>&1; then
+    rm -f "${script_file}" "${logfile}"
+    return 1
+  fi
+
+  if ! run_as_root_with_dots_timeout "${logfile}" 900 sh "${script_file}" --mirror Aliyun; then
+    log_warn "官方 Docker 安装脚本执行失败，详细日志位于：${logfile}"
     rm -f "${script_file}"
     return 1
   fi
 
-  run_as_root bash "${script_file}" docker --mirror Aliyun
-  rm -f "${script_file}"
+  rm -f "${script_file}" "${logfile}"
 }
 
 configure_docker_registry_mirrors() {
@@ -357,9 +516,9 @@ ensure_docker_installed() {
   fi
 
   if [[ "${docker_ready}" == "0" ]]; then
-    if ! install_docker_from_system_packages; then
-      log_warn "系统软件包安装 Docker 失败，正在回退到官方安装脚本。"
-      install_docker_from_convenience_script || die "Docker 自动安装失败，请检查当前网络环境后重试。"
+    if ! install_docker_from_convenience_script; then
+      log_warn "官方 Docker 安装脚本失败，正在回退到阿里云 APT 源安装。"
+      install_docker_from_aliyun_apt || die "Docker 自动安装失败，请检查当前网络环境后重试。"
     fi
   fi
 

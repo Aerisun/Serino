@@ -27,15 +27,17 @@ AERISUN_INSTALL_BASE_URL="${AERISUN_INSTALL_BASE_URL:-}"
 AERISUN_INSTALL_GITHUB_REPO="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
 AERISUN_INSTALL_CHANNEL="${AERISUN_INSTALL_CHANNEL:-stable}"
 AERISUN_INSTALL_VERSION="${AERISUN_INSTALL_VERSION:-}"
-AERISUN_APT_MIRROR_URL="${AERISUN_APT_MIRROR_URL:-https://mirrors.cnnic.cn/ubuntu/}"
+AERISUN_APT_MIRROR_URL="${AERISUN_APT_MIRROR_URL:-}"
+AERISUN_UBUNTU_APT_MIRROR_URL="${AERISUN_UBUNTU_APT_MIRROR_URL:-https://mirrors.aliyun.com/ubuntu/,https://mirrors.tuna.tsinghua.edu.cn/ubuntu/,https://mirrors.ustc.edu.cn/ubuntu/}"
+AERISUN_DEBIAN_APT_MIRROR_URL="${AERISUN_DEBIAN_APT_MIRROR_URL:-https://mirrors.aliyun.com/debian/,https://mirrors.tuna.tsinghua.edu.cn/debian/,https://mirrors.ustc.edu.cn/debian/}"
 AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-https://docker.m.daocloud.io}"
 AERISUN_HTTP_PORT="${AERISUN_HTTP_PORT:-80}"
 AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"
 AERISUN_PORT="${AERISUN_PORT:-8000}"
 WALINE_PORT="${WALINE_PORT:-8360}"
 AERISUN_INSTALL_DOCKERHUB_NAMESPACE="${AERISUN_INSTALL_DOCKERHUB_NAMESPACE:-aerisun}"
-AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"
-AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"
+AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.top/serino}"
+AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"
 AERISUN_INSTALL_DEBUG="${AERISUN_INSTALL_DEBUG:-false}"
 AERISUN_INSTALL_MANIFEST_NAME="${AERISUN_INSTALL_MANIFEST_NAME:-aerisun-installer-manifest.env}"
 AERISUN_INSTALL_BUNDLE_NAME="${AERISUN_INSTALL_BUNDLE_NAME:-aerisun-installer-bundle.tar.gz}"
@@ -451,6 +453,86 @@ install_release_payload() {
   install_systemd_units "${source_root}"
 }
 
+print_install_completion_card() {
+  local term_cols="${COLUMNS:-}"
+
+  if ! [[ "${term_cols}" =~ ^[0-9]+$ ]] || [[ "${term_cols}" -le 0 ]]; then
+    term_cols="$(tput cols 2>/dev/null || true)"
+  fi
+  if ! [[ "${term_cols}" =~ ^[0-9]+$ ]] || [[ "${term_cols}" -le 0 ]]; then
+    term_cols=80
+  fi
+
+  python3 - "${term_cols}" >&2 <<'PY'
+import sys
+import unicodedata
+
+
+def char_display_width(ch: str) -> int:
+    if not ch:
+        return 0
+    if ch in "\t\r\n":
+        return 0
+    if unicodedata.combining(ch):
+        return 0
+    if unicodedata.east_asian_width(ch) in {"F", "W"}:
+        return 2
+    # Most terminals render emoji-like symbols as double width.
+    if ord(ch) >= 0x1F300:
+        return 2
+    return 1
+
+
+def text_display_width(text: str) -> int:
+    return sum(char_display_width(ch) for ch in text)
+
+
+def wrap_line(text: str, width: int) -> list[str]:
+    if text == "":
+        return [""]
+    out = []
+    current = ""
+    current_width = 0
+    for ch in text:
+        ch_width = char_display_width(ch)
+        if current and current_width + ch_width > width:
+            out.append(current)
+            current = ch
+            current_width = ch_width
+            continue
+        current += ch
+        current_width += ch_width
+    if current:
+        out.append(current)
+    return out or [""]
+
+
+term_cols = int(sys.argv[1]) if len(sys.argv) > 1 else 80
+content_width = max(24, min(72, term_cols - 4))
+
+lines = [
+    "  🎉 恭喜你，Serino 部署完成！",
+    "",
+    "  谢谢你愿意来到这里。作为一名大二业余开发者，能在茫茫人海中与你相遇，是我最珍贵的缘分。你选择安装并使用我的作品，这份信任与陪伴，是我坚持下去最大的动力。",
+    "  感谢你让 Serino 有机会参与和见证你的生活点滴。愿这里成为你心灵的栖息地，也愿你无论喜悦还是忧伤，都能被温柔以待✨",
+    "",
+    "  —— 开发者 Aerisun 敬上",
+]
+
+wrapped = []
+for line in lines:
+    wrapped.extend(wrap_line(line, content_width))
+
+top = "┌" + ("─" * content_width) + "┐"
+bottom = "└" + ("─" * content_width) + "┘"
+print(top)
+for line in wrapped:
+    pad = max(0, content_width - text_display_width(line))
+    print("│" + line + (" " * pad) + "│")
+print(bottom)
+PY
+}
+
 print_install_summary() {
   local site_url="$1"
   local admin_url="$2"
@@ -458,18 +540,14 @@ print_install_summary() {
   local admin_password="$4"
   cat >&2 <<EOF
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 安装完成后可通过以下地址访问：
 - 网站首页：${site_url}
 - 网站管理台：${admin_url}
 - 管理台登录名：${admin_username}，登录密码：${admin_password}（此处最后一次显示，之后所有密码明文将彻底清除）
 - 后续查看状态、诊断、升级、重启、彻底卸载等操作，可以使用终端命令 sercli 进行 ~
-
-🎉 恭喜你，Serino 部署完成！
-
-    此刻，所有感谢的话语都显得有些苍白。作为一名大二业余开发者，能在茫茫人海中与你相遇，是我最珍贵的幸运。你选择信任、安装并使用我的作品，这份信任与陪伴，是我坚持下去最大的意义。
-
-    感谢你让 Serino 有机会参与见证你的生活片段。愿这里成为你心灵的栖息地，无论喜悦还是忧伤，都能被温柔以待✨
-
-—— 开发者 Aerisun 敬上
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 EOF
+
+  print_install_completion_card
 }

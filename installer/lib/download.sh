@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+release_metadata_curl() {
+  curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+    --connect-timeout 10 --max-time 45 "$@"
+}
+
+release_asset_curl() {
+  curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+    --connect-timeout 10 --max-time 180 "$@"
+}
+
 validate_release_tag() {
   [[ "$1" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "版本号必须是 v1.2.3 这种格式。"
 }
@@ -40,15 +50,26 @@ download_release_asset() {
   local asset_name="$2"
   local destination="$3"
   local url=""
+  local base_urls=()
+  local idx=0
 
   while IFS= read -r base_url; do
-    url="${base_url%/}/${asset_name}"
-    if curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${url}" -o "${destination}"; then
-      return 0
-    fi
+    base_urls+=("${base_url}")
   done < <(release_download_base_urls "${version}")
 
-  die "无法下载 ${asset_name}（version=${version}）。"
+  for idx in "${!base_urls[@]}"; do
+    url="${base_urls[${idx}]%/}/${asset_name}"
+    if release_asset_curl "${url}" -o "${destination}"; then
+      return 0
+    fi
+
+    if (( idx + 1 < ${#base_urls[@]} )); then
+      log_warn "下载 ${asset_name} 失败：${url}"
+      log_warn "正在回退到下一个分发源：${base_urls[$((idx + 1))]%/}/${asset_name}"
+    fi
+  done
+
+  die "无法下载 ${asset_name}（version=${version}）。已尝试：$(printf '%s ' "${base_urls[@]}")"
 }
 
 fetch_latest_release_tag() {
@@ -59,7 +80,7 @@ fetch_latest_release_tag() {
   base_url="$(current_channel_base_url)"
   if [[ -n "${base_url}" ]]; then
     tag="$(
-      curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 \
+      release_metadata_curl \
         "${base_url%/}/latest.env" 2>/dev/null \
         | extract_release_tag_from_env_payload \
         || true
@@ -69,14 +90,16 @@ fetch_latest_release_tag() {
       printf '%s' "${tag}"
       return 0
     fi
+    log_warn "未能从 ${base_url%/}/latest.env 解析版本号。"
   fi
 
   if [[ "${AERISUN_INSTALL_CHANNEL}" != "stable" ]]; then
     die "渠道 ${AERISUN_INSTALL_CHANNEL} 缺少 latest.env，无法解析当前版本。"
   fi
 
+  log_warn "正在回退到 GitHub Release API 解析 stable 最新版本。"
   tag="$(
-    curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 "${api_url}" \
+    release_metadata_curl "${api_url}" \
       | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(v[^"]*\)".*/\1/p' \
       | head -n 1
   )"
