@@ -3,6 +3,12 @@
 AERISUN_INSTALLER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AERISUN_TEMPLATE_ROOT="$(cd "${AERISUN_INSTALLER_ROOT}/.." && pwd)"
 
+AERISUN_APP_ROOT="${AERISUN_APP_ROOT:-/opt/serino}"
+AERISUN_DATA_DIR="${AERISUN_DATA_DIR:-/var/lib/serino}"
+AERISUN_COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME:-serino}"
+AERISUN_COMPOSE_FILE="${AERISUN_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.release.yml}"
+AERISUN_RENDERED_COMPOSE_FILE="${AERISUN_RENDERED_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.runtime.yml}"
+AERISUN_BIN_ROOT="${AERISUN_BIN_ROOT:-${AERISUN_APP_ROOT}/bin}"
 SERINO_CONFIG_ROOT="${SERINO_CONFIG_ROOT:-/etc/serino}"
 SERINO_LOG_ROOT="${SERINO_LOG_ROOT:-/var/log/serino}"
 SERINO_SERVICE_USER="${SERINO_SERVICE_USER:-serino}"
@@ -10,14 +16,9 @@ SERINO_SERVICE_GROUP="${SERINO_SERVICE_GROUP:-serino}"
 SERINO_SYSTEMD_UNIT="${SERINO_SYSTEMD_UNIT:-serino.service}"
 SERINO_SYSTEMD_UPGRADE_SERVICE="${SERINO_SYSTEMD_UPGRADE_SERVICE:-serino-upgrade.service}"
 SERINO_SYSTEMD_UPGRADE_TIMER="${SERINO_SYSTEMD_UPGRADE_TIMER:-serino-upgrade.timer}"
+SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf '%s' '/usr/local/bin/sercli' || printf '%s' "${AERISUN_BIN_ROOT}/sercli")}"
 SERINO_RUNTIME_UID=""
 SERINO_RUNTIME_GID=""
-
-AERISUN_APP_ROOT="${AERISUN_APP_ROOT:-/opt/serino}"
-AERISUN_DATA_DIR="${AERISUN_DATA_DIR:-/var/lib/serino}"
-AERISUN_COMPOSE_PROJECT_NAME="${AERISUN_COMPOSE_PROJECT_NAME:-serino}"
-AERISUN_COMPOSE_FILE="${AERISUN_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.release.yml}"
-AERISUN_RENDERED_COMPOSE_FILE="${AERISUN_RENDERED_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.runtime.yml}"
 AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${SERINO_CONFIG_ROOT}/serino.env}"
 AERISUN_ENV_EXAMPLE_FILE="${AERISUN_ENV_EXAMPLE_FILE:-${AERISUN_APP_ROOT}/.env.production.local.example}"
 AERISUN_INSTALLER_DEST="${AERISUN_INSTALLER_DEST:-${AERISUN_APP_ROOT}/installer}"
@@ -26,6 +27,10 @@ AERISUN_INSTALL_BASE_URL="${AERISUN_INSTALL_BASE_URL:-}"
 AERISUN_INSTALL_GITHUB_REPO="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
 AERISUN_INSTALL_CHANNEL="${AERISUN_INSTALL_CHANNEL:-stable}"
 AERISUN_INSTALL_VERSION="${AERISUN_INSTALL_VERSION:-}"
+AERISUN_HTTP_PORT="${AERISUN_HTTP_PORT:-80}"
+AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"
+AERISUN_PORT="${AERISUN_PORT:-8000}"
+WALINE_PORT="${WALINE_PORT:-8360}"
 AERISUN_INSTALL_DOCKERHUB_NAMESPACE="${AERISUN_INSTALL_DOCKERHUB_NAMESPACE:-aerisun}"
 AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"
 AERISUN_INSTALL_DEFAULT_DEV_BASE_URL="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"
@@ -88,6 +93,24 @@ run_as_root() {
     return
   fi
   sudo "$@"
+}
+
+path_exists() {
+  local path="$1"
+  [[ -e "${path}" ]] && return 0
+  run_as_root test -e "${path}"
+}
+
+path_is_file() {
+  local path="$1"
+  [[ -f "${path}" ]] && return 0
+  run_as_root test -f "${path}"
+}
+
+path_is_dir() {
+  local path="$1"
+  [[ -d "${path}" ]] && return 0
+  run_as_root test -d "${path}"
 }
 
 make_temp_dir() {
@@ -244,7 +267,7 @@ legacy_installation_paths() {
     /etc/systemd/system/aerisun-upgrade.service \
     /etc/systemd/system/aerisun-upgrade.timer \
     /etc/systemd/system/aerisun.service; do
-    [[ -e "${path}" ]] && printf '%s\n' "${path}"
+    path_exists "${path}" && printf '%s\n' "${path}"
   done
   return 0
 }
@@ -258,8 +281,8 @@ current_installation_paths() {
     "${SERINO_LOG_ROOT}" \
     "${AERISUN_BACKUP_ROOT}" \
     /etc/systemd/system/"${SERINO_SYSTEMD_UNIT}" \
-    /usr/local/bin/sercli; do
-    [[ -e "${path}" ]] && printf '%s\n' "${path}"
+    "${SERINO_BIN_LINK}"; do
+    path_exists "${path}" && printf '%s\n' "${path}"
   done
   return 0
 }
@@ -303,7 +326,7 @@ purge_installation_paths() {
     /opt/aerisun \
     /var/lib/aerisun \
     /var/backups/aerisun
-  run_as_root rm -f /usr/local/bin/sercli
+  run_as_root rm -f "${SERINO_BIN_LINK}"
   run_as_root rm -f /usr/local/bin/aerisunctl
 }
 
@@ -318,9 +341,9 @@ purge_service_account() {
 
 ensure_supported_existing_installation() {
   ensure_no_legacy_installation
-  [[ -f "${AERISUN_ENV_FILE}" ]] || die "未检测到新模型安装的配置文件：${AERISUN_ENV_FILE}"
-  [[ -f "${AERISUN_COMPOSE_FILE}" ]] || die "未检测到新模型安装的 compose 文件：${AERISUN_COMPOSE_FILE}"
-  [[ -d "${AERISUN_INSTALLER_DEST}" ]] || die "未检测到新模型安装的 installer 目录：${AERISUN_INSTALLER_DEST}"
+  path_is_file "${AERISUN_ENV_FILE}" || die "未检测到新模型安装的配置文件：${AERISUN_ENV_FILE}"
+  path_is_file "${AERISUN_COMPOSE_FILE}" || die "未检测到新模型安装的 compose 文件：${AERISUN_COMPOSE_FILE}"
+  path_is_dir "${AERISUN_INSTALLER_DEST}" || die "未检测到新模型安装的 installer 目录：${AERISUN_INSTALLER_DEST}"
 }
 
 ensure_system_layout() {
@@ -335,16 +358,56 @@ ensure_system_layout() {
 
 install_systemd_units() {
   local source_root="${1:-${AERISUN_TEMPLATE_ROOT}}"
+  local service_template="${source_root}/installer/systemd/serino.service"
+  local upgrade_service_template="${source_root}/installer/systemd/serino-upgrade.service"
+  local timer_template="${source_root}/installer/systemd/serino-upgrade.timer"
+  local service_tmp=""
+  local upgrade_service_tmp=""
+  local timer_tmp=""
 
-  run_as_root install -m 0644 \
-    "${source_root}/installer/systemd/serino.service" \
-    "/etc/systemd/system/${SERINO_SYSTEMD_UNIT}"
-  run_as_root install -m 0644 \
-    "${source_root}/installer/systemd/serino-upgrade.service" \
-    "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_SERVICE}"
-  run_as_root install -m 0644 \
-    "${source_root}/installer/systemd/serino-upgrade.timer" \
-    "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_TIMER}"
+  service_tmp="$(mktemp)"
+  upgrade_service_tmp="$(mktemp)"
+  timer_tmp="$(mktemp)"
+
+  python3 - "${service_template}" "${service_tmp}" "${AERISUN_APP_ROOT}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${AERISUN_RENDERED_COMPOSE_FILE}" <<'PY'
+from pathlib import Path
+import sys
+
+template = Path(sys.argv[1]).read_text(encoding="utf-8")
+replacements = {
+    "__AERISUN_APP_ROOT__": sys.argv[3],
+    "__AERISUN_COMPOSE_PROJECT_NAME__": sys.argv[4],
+    "__AERISUN_RENDERED_COMPOSE_FILE__": sys.argv[5],
+}
+
+for key, value in replacements.items():
+    template = template.replace(key, value)
+
+Path(sys.argv[2]).write_text(template, encoding="utf-8")
+PY
+
+  python3 - "${upgrade_service_template}" "${upgrade_service_tmp}" "${SERINO_SYSTEMD_UNIT}" "${SERINO_BIN_LINK}" <<'PY'
+from pathlib import Path
+import sys
+
+template = Path(sys.argv[1]).read_text(encoding="utf-8")
+replacements = {
+    "__SERINO_SYSTEMD_UNIT__": sys.argv[3],
+    "__SERINO_BIN_LINK__": sys.argv[4],
+}
+
+for key, value in replacements.items():
+    template = template.replace(key, value)
+
+Path(sys.argv[2]).write_text(template, encoding="utf-8")
+PY
+
+  cp "${timer_template}" "${timer_tmp}"
+
+  run_as_root install -m 0644 "${service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UNIT}"
+  run_as_root install -m 0644 "${upgrade_service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_SERVICE}"
+  run_as_root install -m 0644 "${timer_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_TIMER}"
+  rm -f "${service_tmp}" "${upgrade_service_tmp}" "${timer_tmp}"
   run_as_root systemctl daemon-reload
 }
 
@@ -357,6 +420,7 @@ install_release_payload() {
   run_as_root install -m 0644 "${source_root}/.env.production.local.example" "${AERISUN_ENV_EXAMPLE_FILE}"
   run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
   run_as_root install -d -o root -g root -m 0755 "${AERISUN_INSTALLER_DEST}"
+  run_as_root install -d -o root -g root -m 0755 "${AERISUN_BIN_ROOT}"
   run_as_root cp -a "${source_root}/installer/." "${AERISUN_INSTALLER_DEST}/"
   run_as_root chmod 0755 \
     "${AERISUN_INSTALLER_DEST}/install.sh" \
@@ -364,7 +428,7 @@ install_release_payload() {
     "${AERISUN_INSTALLER_DEST}/uninstall.sh" \
     "${AERISUN_INSTALLER_DEST}/upgrade.sh" \
     "${AERISUN_INSTALLER_DEST}/bin/sercli"
-  run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" /usr/local/bin/sercli
+  run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" "${SERINO_BIN_LINK}"
   install_systemd_units "${source_root}"
 }
 

@@ -14,11 +14,11 @@ source "${SCRIPT_DIR}/lib/docker.sh"
 backup_current_installation() {
   local backup_dir="$1"
   run_as_root mkdir -p "${backup_dir}"
-  [[ -f "${AERISUN_ENV_FILE}" ]] && run_as_root cp -a "${AERISUN_ENV_FILE}" "${backup_dir}/serino.env"
-  [[ -f "${AERISUN_COMPOSE_FILE}" ]] && run_as_root cp -a "${AERISUN_COMPOSE_FILE}" "${backup_dir}/docker-compose.release.yml"
-  [[ -f "${AERISUN_RENDERED_COMPOSE_FILE}" ]] && run_as_root cp -a "${AERISUN_RENDERED_COMPOSE_FILE}" "${backup_dir}/docker-compose.runtime.yml"
-  [[ -d "${AERISUN_INSTALLER_DEST}" ]] && run_as_root cp -a "${AERISUN_INSTALLER_DEST}" "${backup_dir}/installer"
-  if [[ -d "${AERISUN_DATA_DIR}" ]]; then
+  path_is_file "${AERISUN_ENV_FILE}" && run_as_root cp -a "${AERISUN_ENV_FILE}" "${backup_dir}/serino.env"
+  path_is_file "${AERISUN_COMPOSE_FILE}" && run_as_root cp -a "${AERISUN_COMPOSE_FILE}" "${backup_dir}/docker-compose.release.yml"
+  path_is_file "${AERISUN_RENDERED_COMPOSE_FILE}" && run_as_root cp -a "${AERISUN_RENDERED_COMPOSE_FILE}" "${backup_dir}/docker-compose.runtime.yml"
+  path_is_dir "${AERISUN_INSTALLER_DEST}" && run_as_root cp -a "${AERISUN_INSTALLER_DEST}" "${backup_dir}/installer"
+  if path_is_dir "${AERISUN_DATA_DIR}"; then
     run_as_root tar -czf "${backup_dir}/data.tar.gz" -C "${AERISUN_DATA_DIR%/*}" "$(basename "${AERISUN_DATA_DIR}")"
   fi
 }
@@ -40,7 +40,7 @@ restore_current_installation() {
   if [[ -d "${backup_dir}/installer" ]]; then
     run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
     run_as_root cp -a "${backup_dir}/installer" "${AERISUN_INSTALLER_DEST}"
-    run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" /usr/local/bin/sercli
+    run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" "${SERINO_BIN_LINK}"
     install_systemd_units "${backup_dir}"
   fi
   if [[ -f "${backup_dir}/data.tar.gz" ]]; then
@@ -100,8 +100,9 @@ main() {
   normalize_production_env_file "${AERISUN_ENV_FILE}"
   validate_release_compose_configuration
 
-  if ! compose pull || ! enable_serino_service || ! wait_for_release_ready; then
+  if ! compose pull || ! run_release_migrations || ! run_release_backfills || ! enable_serino_service || ! wait_for_release_ready; then
     log_warn "升级失败，正在回滚。"
+    print_service_start_failure_diagnostics
     stop_serino_service
     restore_current_installation "${backup_dir}"
     compose pull || true

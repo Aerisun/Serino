@@ -2,10 +2,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/runtime-lib.sh"
 
-cd "${BACKEND_DIR}"
-export PYTHONPATH="${BACKEND_DIR}/src${PYTHONPATH:+:${PYTHONPATH}}"
+prepare_backend_runtime
 
 UVICORN_ARGS=(
   aerisun.main:app
@@ -20,4 +20,4 @@ if [[ "${AERISUN_DEV_RELOAD:-0}" == "1" ]]; then
   )
 fi
 
-exec uv run uvicorn "${UVICORN_ARGS[@]}"
+run_backend_uvicorn "${UVICORN_ARGS[@]}"

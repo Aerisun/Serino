@@ -176,8 +176,8 @@ main() {
   require_supported_linux
   require_root_or_sudo
   prepare_install_target
-  ensure_port_available 80
-  ensure_port_available 443
+  ensure_port_available "${AERISUN_HTTP_PORT}"
+  ensure_port_available "${AERISUN_HTTPS_PORT}"
 
   version="$(resolve_release_tag)"
   manifest_file="$(mktemp)"
@@ -242,8 +242,32 @@ main() {
   daemon_reload
   log_info "🧪 正在校验安装配置..."
   validate_release_compose_configuration
-  log_info "🥳 正在拉取并启动容器，这一步可能需要几分钟..."
-  compose_up_release
+  log_info "📦 正在拉取镜像，这一步可能需要几分钟..."
+  if ! compose pull; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "镜像拉取失败，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
+  if ! run_release_migrations; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "数据库迁移失败，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
+  if ! run_release_bootstrap; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "首装初始化失败，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
+  log_info "🥳 正在启动站点服务..."
+  if ! enable_serino_service; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "服务启动失败，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
   log_info "🎊 正在等待站点服务就绪..."
   wait_for_release_ready
   verify_default_admin_login || die "服务已启动，但安装时设置的管理员登录检查失败。"

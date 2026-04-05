@@ -33,7 +33,7 @@ confirm_uninstall() {
 - 数据目录：${AERISUN_DATA_DIR}
 - 日志目录：${SERINO_LOG_ROOT}
 - 备份目录：${AERISUN_BACKUP_ROOT}
-- 本机命令入口：/usr/local/bin/sercli
+- 本机命令入口：${SERINO_BIN_LINK}
 - systemd 服务：${SERINO_SYSTEMD_UNIT} / ${SERINO_SYSTEMD_UPGRADE_SERVICE} / ${SERINO_SYSTEMD_UPGRADE_TIMER}
 - 服务用户与用户组：${SERINO_SERVICE_USER}:${SERINO_SERVICE_GROUP}
 
@@ -50,7 +50,7 @@ main() {
   require_root_or_sudo
   confirm_uninstall "${1:-}"
 
-  if [[ -f "${AERISUN_ENV_FILE}" ]]; then
+  if path_is_file "${AERISUN_ENV_FILE}"; then
     load_env_file "${AERISUN_ENV_FILE}"
   fi
 

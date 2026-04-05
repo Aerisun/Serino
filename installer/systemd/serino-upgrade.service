@@ -1,8 +1,8 @@
 [Unit]
 Description=Serino Manual Upgrade Job
-After=network-online.target docker.service serino.service
+After=network-online.target docker.service __SERINO_SYSTEMD_UNIT__
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/sercli upgrade
+ExecStart=__SERINO_BIN_LINK__ upgrade

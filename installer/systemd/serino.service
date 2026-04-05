@@ -7,10 +7,10 @@ Requires=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/opt/serino
-ExecStart=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.runtime.yml up -d --remove-orphans'
-ExecStop=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.runtime.yml down'
-ExecReload=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=serino; exec docker compose -f /opt/serino/docker-compose.runtime.yml up -d --remove-orphans'
+WorkingDirectory=__AERISUN_APP_ROOT__
+ExecStart=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=__AERISUN_COMPOSE_PROJECT_NAME__; exec docker compose -f __AERISUN_RENDERED_COMPOSE_FILE__ up -d --remove-orphans'
+ExecStop=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=__AERISUN_COMPOSE_PROJECT_NAME__; exec docker compose -f __AERISUN_RENDERED_COMPOSE_FILE__ down'
+ExecReload=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=__AERISUN_COMPOSE_PROJECT_NAME__; exec docker compose -f __AERISUN_RENDERED_COMPOSE_FILE__ up -d --remove-orphans'
 TimeoutStartSec=0
 TimeoutStopSec=180
 

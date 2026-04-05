@@ -128,10 +128,10 @@ check_directories() {
 }
 
 check_symlink_and_units() {
-  if [[ "$(readlink -f /usr/local/bin/sercli 2>/dev/null || true)" == "${AERISUN_INSTALLER_DEST}/bin/sercli" ]]; then
+  if [[ "$(readlink -f "${SERINO_BIN_LINK}" 2>/dev/null || true)" == "${AERISUN_INSTALLER_DEST}/bin/sercli" ]]; then
     record_check "ok" "sercli.link" "sercli 命令入口已指向当前安装目录。" ""
   else
-    record_check "fail" "sercli.link" "sercli 命令入口不存在或未指向当前安装目录。" "sudo ln -sf ${AERISUN_INSTALLER_DEST}/bin/sercli /usr/local/bin/sercli"
+    record_check "fail" "sercli.link" "sercli 命令入口不存在或未指向当前安装目录。" "sudo ln -sf ${AERISUN_INSTALLER_DEST}/bin/sercli ${SERINO_BIN_LINK}"
   fi
 
   local unit=""
@@ -179,7 +179,7 @@ check_serino_service_state() {
 }
 
 check_env_contract() {
-  if [[ ! -f "${AERISUN_ENV_FILE}" ]]; then
+  if ! path_is_file "${AERISUN_ENV_FILE}"; then
     record_check "fail" "env.missing" "缺少配置文件 ${AERISUN_ENV_FILE}" "重新执行安装器或从备份恢复 ${AERISUN_ENV_FILE}"
     return
   fi

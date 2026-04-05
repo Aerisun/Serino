@@ -99,7 +99,17 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     install_text = read_project_file("installer/install.sh")
     docker_text = read_project_file("installer/lib/docker.sh")
     service_text = read_project_file("installer/systemd/serino.service")
+    upgrade_service_text = read_project_file("installer/systemd/serino-upgrade.service")
     package_text = read_project_file("scripts/package-installer.sh")
+    runtime_lib_text = read_project_file("backend/scripts/runtime-lib.sh")
+    backend_bootstrap_text = read_project_file("backend/scripts/bootstrap.sh")
+    backend_serve_text = read_project_file("backend/scripts/serve.sh")
+    backend_migrate_text = read_project_file("backend/scripts/migrate.sh")
+    backend_bootstrap_prod_text = read_project_file("backend/scripts/bootstrap-prod.sh")
+    backend_backfill_text = read_project_file("backend/scripts/backfill.sh")
+    dev_compose_text = read_project_file("docker-compose.yml")
+    backend_dockerfile_text = read_project_file("backend/Dockerfile")
+    waline_dockerfile_text = read_project_file("Dockerfile.waline")
 
     assert 'SERINO_CONFIG_ROOT="${SERINO_CONFIG_ROOT:-/etc/serino}"' in common_text
     assert 'SERINO_LOG_ROOT="${SERINO_LOG_ROOT:-/var/log/serino}"' in common_text
@@ -112,7 +122,11 @@ def test_installer_runtime_paths_follow_serino_system_layout():
         'AERISUN_RENDERED_COMPOSE_FILE="${AERISUN_RENDERED_COMPOSE_FILE:-${AERISUN_APP_ROOT}/docker-compose.runtime.yml}"'
         in common_text
     )
+    assert 'AERISUN_BIN_ROOT="${AERISUN_BIN_ROOT:-${AERISUN_APP_ROOT}/bin}"' in common_text
     assert 'AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"' in common_text
+    assert 'AERISUN_HTTP_PORT="${AERISUN_HTTP_PORT:-80}"' in common_text
+    assert 'AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"' in common_text
+    assert 'SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf \'%s\' \'/usr/local/bin/sercli\' || printf \'%s\' "${AERISUN_BIN_ROOT}/sercli")}"' in common_text
     assert (
         'AERISUN_INSTALL_DEFAULT_BASE_URL="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.com}"'
         in common_text
@@ -147,24 +161,58 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'record_check "fail" "data.migrations"' in doctor_text
     assert 'local channel="${AERISUN_INSTALL_CHANNEL:-stable}"' in install_text
     assert "validate_release_compose_configuration" in install_text
+    assert "if ! compose pull; then" in install_text
+    assert "if ! run_release_migrations; then" in install_text
+    assert "if ! run_release_bootstrap; then" in install_text
+    assert "if ! enable_serino_service; then" in install_text
+    assert "run_release_migrations" in install_text
+    assert "run_release_bootstrap" in install_text
+    assert "print_service_start_failure_diagnostics" in install_text
     assert (
         'local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.com/dev}"'
         in install_text
     )
     assert "compose_with_env() {" in docker_text
+    assert "compose_api_task() {" in docker_text
+    assert "run_release_migrations() {" in docker_text
+    assert "run_release_bootstrap() {" in docker_text
+    assert "run_release_backfills() {" in docker_text
     assert "resolve_compose_runner() {" in docker_text
     assert "runtime_compose_file() {" in docker_text
     assert "render_release_compose_configuration() {" in docker_text
     assert 'source "${env_file}"' in docker_text
     assert "validate_release_compose_configuration() {" in docker_text
+    assert "print_service_start_failure_diagnostics() {" in docker_text
     assert "yaml.safe_dump" in docker_text
     assert "probe_release_image" not in docker_text
-    assert "docker-compose.runtime.yml" in service_text
+    assert "__AERISUN_APP_ROOT__" in service_text
+    assert "__AERISUN_COMPOSE_PROJECT_NAME__" in service_text
+    assert "__AERISUN_RENDERED_COMPOSE_FILE__" in service_text
+    assert "__SERINO_SYSTEMD_UNIT__" in upgrade_service_text
+    assert "__SERINO_BIN_LINK__" in upgrade_service_text
     assert 'cat > "${DIST_DIR}/latest.env" <<EOF' in package_text
     assert "AERISUN_INSTALL_CHANNEL=${INSTALL_CHANNEL}" in package_text
     assert 'render_bootstrap_script "${DIST_DIR}/install.latest.sh"' in package_text
     assert 'render_bootstrap_script "${DIST_DIR}/install.sh"' in package_text
     assert 'API_IMAGE_NAME="serino-dev-api"' in package_text
+    assert "run_backend_python()" in runtime_lib_text
+    assert "run_backend_alembic()" in runtime_lib_text
+    assert "run_backend_uvicorn()" in runtime_lib_text
+    assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_bootstrap_text
+    assert "run_backend_alembic upgrade head" in backend_bootstrap_text
+    assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_serve_text
+    assert 'run_backend_uvicorn "${UVICORN_ARGS[@]}"' in backend_serve_text
+    assert "run_backend_alembic upgrade head" in backend_migrate_text
+    assert "seed_bootstrap_data()" in backend_bootstrap_prod_text
+    assert "ensure_first_boot_default_admin(is_first_boot=True)" in backend_bootstrap_prod_text
+    assert "run_pending_backfills()" in backend_backfill_text
+    assert "uv sync --frozen --no-dev --no-editable" in backend_dockerfile_text
+    assert 'CMD ["/bin/bash", "/app/backend/scripts/serve.sh"]' in backend_dockerfile_text
+    assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in compose_text
+    assert 'command: ["/bin/bash", "/app/backend/scripts/serve.sh"]' not in compose_text
+    assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in dev_compose_text
+    assert "mkdir -p /app/node_modules/@waline/vercel/runtime/config" in waline_dockerfile_text
+    assert "chown -R 1001:1001 /app" in waline_dockerfile_text
 
 
 def test_dev_channel_does_not_require_a_second_installer_entrypoint():

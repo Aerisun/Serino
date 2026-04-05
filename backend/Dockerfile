@@ -6,7 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HOME=/home/aerisun \
     UV_NO_DEV=1 \
-    UV_FROZEN=1
+    UV_FROZEN=1 \
+    PATH=/app/backend/.venv/bin:$PATH
 
 WORKDIR /app/backend
 
@@ -23,7 +24,7 @@ COPY alembic ./alembic
 COPY scripts ./scripts
 COPY src ./src
 
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --no-editable
 
 RUN groupadd -r aerisun && useradd -m -d /home/aerisun -r -g aerisun -u 1001 aerisun \
     && mkdir -p /home/aerisun/.cache/uv \
@@ -33,4 +34,4 @@ USER aerisun
 
 EXPOSE 8000
 
-CMD ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]
+CMD ["/bin/bash", "/app/backend/scripts/serve.sh"]

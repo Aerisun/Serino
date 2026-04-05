@@ -140,6 +140,13 @@ compose() {
   compose_with_env "${compose_runner}" "$(runtime_compose_file)" "$@"
 }
 
+compose_api_task() {
+  local task="$1"
+  shift
+
+  compose run --rm --no-deps api /bin/bash "/app/backend/scripts/${task}" "$@"
+}
+
 daemon_reload() {
   run_as_root systemctl daemon-reload
 }
@@ -185,7 +192,7 @@ stop_and_remove_serino_units() {
 }
 
 teardown_release_stack() {
-  if command_exists docker && [[ -f "${AERISUN_COMPOSE_FILE}" ]] && [[ -f "${AERISUN_ENV_FILE}" ]]; then
+  if command_exists docker && path_is_file "${AERISUN_COMPOSE_FILE}" && path_is_file "${AERISUN_ENV_FILE}"; then
     compose down --volumes --remove-orphans >/dev/null 2>&1 || true
   fi
 
@@ -223,6 +230,15 @@ remove_serino_local_images() {
   run_as_root docker image rm -f ${image_ids} >/dev/null 2>&1 || true
 }
 
+print_service_start_failure_diagnostics() {
+  log_error "服务启动失败，以下是最近的诊断信息。"
+  run_as_root systemctl --no-pager --full status "${SERINO_SYSTEMD_UNIT}" >&2 || true
+  if command_exists docker && path_is_file "$(runtime_compose_file)"; then
+    compose ps >&2 || true
+    compose logs --tail 120 api waline caddy >&2 || true
+  fi
+}
+
 ensure_docker_installed() {
   if command_exists docker && (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
     run_as_root systemctl enable --now docker >/dev/null
@@ -250,13 +266,15 @@ resolve_active_registry() {
 validate_release_compose_configuration() {
   local rendered_file=""
 
-  rendered_file="$(mktemp)"
+  rendered_file="$(
+    run_as_root mktemp "${AERISUN_APP_ROOT}/.docker-compose.rendered.XXXXXX.yml"
+  )"
   if ! render_release_compose_configuration "${rendered_file}"; then
-    rm -f "${rendered_file}"
+    run_as_root rm -f "${rendered_file}"
     die "安装配置校验失败，无法渲染最终 docker compose 配置。"
   fi
 
-  python3 - "${rendered_file}" \
+  run_as_root python3 - "${rendered_file}" \
     "${AERISUN_IMAGE_REGISTRY}/${AERISUN_API_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
     "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WEB_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
     "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WALINE_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
@@ -308,19 +326,34 @@ if errors:
 PY
     if install_debug_enabled; then
       log_error "docker compose 渲染文件：${rendered_file}"
-      sed -n '1,220p' "${rendered_file}" >&2 || true
+      run_as_root sed -n '1,220p' "${rendered_file}" >&2 || true
     fi
-    rm -f "${rendered_file}"
+    run_as_root rm -f "${rendered_file}"
     die "安装配置校验失败，最终运行配置没有正确展开到目标版本。"
   }
 
   run_as_root install -m 0644 "${rendered_file}" "${AERISUN_RENDERED_COMPOSE_FILE}"
-  rm -f "${rendered_file}"
+  run_as_root rm -f "${rendered_file}"
 }
 
 compose_up_release() {
   compose pull || return $?
   enable_serino_service || return $?
+}
+
+run_release_migrations() {
+  log_info "🧱 正在执行数据库迁移..."
+  compose_api_task "migrate.sh"
+}
+
+run_release_bootstrap() {
+  log_info "🌱 正在执行首装初始化..."
+  compose_api_task "bootstrap-prod.sh"
+}
+
+run_release_backfills() {
+  log_info "🛠️ 正在执行升级数据回填..."
+  compose_api_task "backfill.sh"
 }
 
 wait_for_url() {
