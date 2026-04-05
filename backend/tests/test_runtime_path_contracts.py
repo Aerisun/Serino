@@ -1,12 +1,93 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def read_project_file(relative_path: str) -> str:
     return (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def run_installer_bash(script: str) -> str:
+    completed = subprocess.run(
+        ["bash", "-lc", script],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout
+
+
+def test_installer_ip_helpers_prefer_ipv4_and_bracket_ipv6_urls():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+curl() {
+  case " $* " in
+    *" -4 "*)
+      return 1
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ip() {
+  if [[ "${1:-}" == "-o" && "${2:-}" == "-4" ]]; then
+    cat <<'EOF'
+2: eth0    inet 10.129.246.67/24 brd 10.129.246.255 scope global dynamic eth0
+3: docker0 inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+EOF
+    return 0
+  fi
+  if [[ "${1:-}" == "-o" && "${2:-}" == "-6" ]]; then
+    cat <<'EOF'
+2: eth0    inet6 2001:db8::20/64 scope global dynamic
+EOF
+    return 0
+  fi
+  return 1
+}
+
+hostname() {
+  if [[ "${1:-}" == "-I" ]]; then
+    printf '2001:db8::30 10.0.0.2 198.51.100.5'
+    return 0
+  fi
+  return 1
+}
+
+printf '%s\\n' "$(guess_host_for_ip_mode)"
+printf '%s\\n' "$(normalize_host_input 'http://[2001:db8::40]/demo')"
+printf '%s\\n' "$(build_url_from_host 'http' '2001:db8::40')"
+build_runtime_configuration ip '2001:db8::40' 'registry.example.com/ns' '0.1.19'
+printf '%s\\n' "${AERISUN_DOMAIN_VALUE}"
+printf '%s\\n' "${AERISUN_SITE_URL_VALUE}"
+printf '%s\\n' "${AERISUN_WALINE_SERVER_URL_VALUE}"
+printf '%s\\n' "${AERISUN_WALINE_SECURE_DOMAINS_VALUE}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "10.129.246.67",
+        "2001:db8::40",
+        "http://[2001:db8::40]",
+        "http://[2001:db8::40]",
+        "http://[2001:db8::40]",
+        "http://[2001:db8::40]/waline",
+        "2001:db8::40",
+    ]
 
 
 def test_settings_normalize_runtime_paths_under_store_dir():
@@ -209,10 +290,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
         'AERISUN_DEBIAN_APT_MIRROR_URL="${AERISUN_DEBIAN_APT_MIRROR_URL:-https://mirrors.aliyun.com/debian/,https://mirrors.tuna.tsinghua.edu.cn/debian/,https://mirrors.ustc.edu.cn/debian/}"'
         in common_text
     )
-    assert (
-        'AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-https://docker.m.daocloud.io}"'
-        in common_text
-    )
+    assert 'AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-}"' in common_text
     assert 'AERISUN_API_IMAGE_NAME="${AERISUN_API_IMAGE_NAME:-serino-api}"' in common_text
     assert 'AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"' in common_text
     assert 'AERISUN_WALINE_IMAGE_NAME="${AERISUN_WALINE_IMAGE_NAME:-serino-waline}"' in common_text
@@ -368,9 +446,10 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "chown -R 1001:1001 /app" in waline_dockerfile_text
     waline_block = compose_text.split("  waline:\n", 1)[1].split("\n  caddy:\n", 1)[0]
     assert 'user: "${SERINO_RUNTIME_UID:-1001}:${SERINO_RUNTIME_GID:-1001}"' not in waline_block
-    assert 'run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null' in docker_text
-    assert 'run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null' in docker_text
+    assert 'run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1' in docker_text
+    assert 'run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1' in docker_text
     assert 'run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"' in docker_text
+    assert "run_as_root systemctl enable --now docker >/dev/null 2>&1" in docker_text
     assert "if ! wait_for_release_ready; then" in install_text
 
 

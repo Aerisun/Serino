@@ -39,7 +39,40 @@ normalize_host_input() {
   value="${value#http://}"
   value="${value#https://}"
   value="${value%%/*}"
+  if [[ "${value}" == \[* ]]; then
+    value="${value#\[}"
+    value="${value%%]*}"
+    printf '%s' "${value}"
+    return 0
+  fi
   printf '%s' "${value}"
+}
+
+is_ipv4_literal() {
+  local value="$1"
+  [[ "${value}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+}
+
+is_ipv6_literal() {
+  local value="$1"
+  value="$(normalize_host_input "${value}")"
+  [[ "${value}" == *:* ]]
+}
+
+format_host_for_url() {
+  local value="$1"
+  value="$(normalize_host_input "${value}")"
+  if is_ipv6_literal "${value}"; then
+    printf '[%s]' "${value}"
+    return 0
+  fi
+  printf '%s' "${value}"
+}
+
+build_url_from_host() {
+  local scheme="$1"
+  local host="$2"
+  printf '%s://%s' "${scheme}" "$(format_host_for_url "${host}")"
 }
 
 load_env_file() {
@@ -138,19 +171,22 @@ build_runtime_configuration() {
   local active_registry="$3"
   local image_tag="$4"
   local site_url=""
+  local normalized_host=""
+
+  normalized_host="$(normalize_host_input "${host}")"
 
   if [[ "${access_mode}" == "domain" ]]; then
-    AERISUN_DOMAIN_VALUE="${host}"
-    site_url="https://${host}"
+    AERISUN_DOMAIN_VALUE="${normalized_host}"
+    site_url="https://${normalized_host}"
   else
-    AERISUN_DOMAIN_VALUE="http://${host}"
-    site_url="http://${host}"
+    AERISUN_DOMAIN_VALUE="$(build_url_from_host "http" "${normalized_host}")"
+    site_url="$(build_url_from_host "http" "${normalized_host}")"
   fi
 
   AERISUN_SITE_URL_VALUE="${site_url}"
   AERISUN_WALINE_SERVER_URL_VALUE="${site_url}/waline"
   AERISUN_CORS_ORIGINS_VALUE="$(build_cors_origins_json "${site_url}")"
-  AERISUN_WALINE_SECURE_DOMAINS_VALUE="${host}"
+  AERISUN_WALINE_SECURE_DOMAINS_VALUE="${normalized_host}"
   AERISUN_WALINE_JWT_TOKEN_VALUE="$(generate_secret)"
   AERISUN_IMAGE_REGISTRY_VALUE="${active_registry}"
   AERISUN_IMAGE_TAG_VALUE="${image_tag}"
@@ -209,6 +245,10 @@ extract_host_from_url() {
   value="${value#http://}"
   value="${value#https://}"
   value="${value%%/*}"
+  if [[ "${value}" == \[* ]]; then
+    value="${value#\[}"
+    value="${value%%]*}"
+  fi
   printf '%s' "${value}"
 }
 
@@ -226,7 +266,7 @@ derive_domain_value() {
   [[ -n "${host}" ]] || return 1
 
   if [[ "${AERISUN_INSTALL_ACCESS_MODE:-}" == "ip" ]]; then
-    printf 'http://%s' "${host}"
+    build_url_from_host "http" "${host}"
   else
     printf '%s' "${host}"
   fi
@@ -248,7 +288,7 @@ derive_site_url_value() {
   if [[ "${domain_value}" =~ ^https?:// ]]; then
     printf '%s' "${domain_value}"
   else
-    printf 'https://%s' "${domain_value}"
+    build_url_from_host "https" "${domain_value}"
   fi
 }
 

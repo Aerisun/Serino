@@ -94,6 +94,7 @@ cd backend && uv sync --dev
 # 3. 启动开发环境（支持多工作树）
 make dev        # 启动方式 1：灌入开发用假数据 (Dev Seed)
 make dev-pseed  # 启动方式 2：灌入生产初始化数据，用于调整生产种子 (Prod Seed)
+# 密码改废进不了后台? 试试 cd backend & uv run aerisun-create-admin
 
 make dev-stop   # 停止整套本地开发环境
 

@@ -152,13 +152,13 @@ daemon_reload() {
 }
 
 enable_serino_service() {
-  run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null
-  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null
+  run_as_root systemctl enable "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
+  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
   run_as_root systemctl is-active --quiet "${SERINO_SYSTEMD_UNIT}"
 }
 
 start_serino_service() {
-  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null
+  run_as_root systemctl start "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
 }
 
 stop_serino_service() {
@@ -166,7 +166,7 @@ stop_serino_service() {
 }
 
 restart_serino_service() {
-  run_as_root systemctl restart "${SERINO_SYSTEMD_UNIT}" >/dev/null
+  run_as_root systemctl restart "${SERINO_SYSTEMD_UNIT}" >/dev/null 2>&1
 }
 
 service_is_active() {
@@ -482,7 +482,6 @@ configure_docker_registry_mirrors() {
   [[ -n "${mirrors}" ]] || return 0
 
   tmp_file="$(make_temp_file)"
-  log_info "正在配置 Docker 镜像加速。"
   python3 - "${mirrors}" "${tmp_file}" <<'PY'
 import json
 import sys
@@ -523,9 +522,9 @@ ensure_docker_installed() {
   fi
 
   configure_docker_registry_mirrors
-  run_as_root systemctl enable --now docker >/dev/null
+  run_as_root systemctl enable --now docker >/dev/null 2>&1
   if [[ -n "${AERISUN_DOCKER_REGISTRY_MIRRORS:-}" ]]; then
-    run_as_root systemctl restart docker >/dev/null
+    run_as_root systemctl restart docker >/dev/null 2>&1
   fi
 
   if ! (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then

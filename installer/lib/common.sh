@@ -30,7 +30,7 @@ AERISUN_INSTALL_VERSION="${AERISUN_INSTALL_VERSION:-}"
 AERISUN_APT_MIRROR_URL="${AERISUN_APT_MIRROR_URL:-}"
 AERISUN_UBUNTU_APT_MIRROR_URL="${AERISUN_UBUNTU_APT_MIRROR_URL:-https://mirrors.aliyun.com/ubuntu/,https://mirrors.tuna.tsinghua.edu.cn/ubuntu/,https://mirrors.ustc.edu.cn/ubuntu/}"
 AERISUN_DEBIAN_APT_MIRROR_URL="${AERISUN_DEBIAN_APT_MIRROR_URL:-https://mirrors.aliyun.com/debian/,https://mirrors.tuna.tsinghua.edu.cn/debian/,https://mirrors.ustc.edu.cn/debian/}"
-AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-https://docker.m.daocloud.io}"
+AERISUN_DOCKER_REGISTRY_MIRRORS="${AERISUN_DOCKER_REGISTRY_MIRRORS:-}"
 AERISUN_HTTP_PORT="${AERISUN_HTTP_PORT:-80}"
 AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"
 AERISUN_PORT="${AERISUN_PORT:-8000}"
@@ -488,40 +488,70 @@ def text_display_width(text: str) -> int:
 
 
 def wrap_line(text: str, width: int) -> list[str]:
-    if text == "":
-        return [""]
-    out = []
-    current = ""
-    current_width = 0
-    for ch in text:
-        ch_width = char_display_width(ch)
-        if current and current_width + ch_width > width:
-            out.append(current)
-            current = ch
-            current_width = ch_width
-            continue
-        current += ch
-        current_width += ch_width
-    if current:
-        out.append(current)
-    return out or [""]
+  text = text.strip()
+  if text == "":
+    return [""]
+
+  out = []
+  current = ""
+  current_width = 0
+
+  for ch in text:
+    ch_width = char_display_width(ch)
+    if current and current_width + ch_width > width:
+      out.append(current.rstrip())
+      current = ch
+      current_width = ch_width
+      continue
+    current += ch
+    current_width += ch_width
+
+  if current:
+    out.append(current.rstrip())
+
+  return out or [""]
+
+
+def align_center(text: str, width: int) -> str:
+  tw = text_display_width(text)
+  left = max(0, (width - tw) // 2)
+  return (" " * left) + text
+
+
+def align_right(text: str, width: int) -> str:
+  tw = text_display_width(text)
+  left = max(0, width - tw)
+  return (" " * left) + text
 
 
 term_cols = int(sys.argv[1]) if len(sys.argv) > 1 else 80
-content_width = max(24, min(72, term_cols - 4))
+content_width = max(28, min(92, term_cols - 4))
+side_padding = 3
+first_line_indent = 4
+inner_width = max(18, content_width - (side_padding * 2))
+side_pad_text = " " * side_padding
+first_indent_text = " " * first_line_indent
 
-lines = [
-    "  🎉 恭喜你，Serino 部署完成！",
-    "",
-    "  谢谢你愿意来到这里。作为一名大二业余开发者，能在茫茫人海中与你相遇，是我最珍贵的缘分。你选择安装并使用我的作品，这份信任与陪伴，是我坚持下去最大的动力。",
-    "  感谢你让 Serino 有机会参与和见证你的生活点滴。愿这里成为你心灵的栖息地，也愿你无论喜悦还是忧伤，都能被温柔以待✨",
-    "",
-    "  —— 开发者 Aerisun 敬上",
+title = "🎉 恭喜你，Serino 部署完成！"
+paragraphs = [
+  "谢谢你愿意来到这里！作为一名业余开发者，能在茫茫人海中与你相遇，是我最珍贵的缘分。你选择安装并使用我的作品，这份信任与陪伴，是我继续打磨它最大的动力。",
+  "感谢你让 Serino 有机会参与和见证你的生活点滴。愿这里成为你心灵短暂停靠的港湾，也愿你无论喜悦还是低落，都能被温柔以待✨",
 ]
+signature = "—— 开发者 Aerisun 敬上"
 
-wrapped = []
-for line in lines:
-    wrapped.extend(wrap_line(line, content_width))
+wrapped = [side_pad_text + title + side_pad_text, " " * content_width]
+for paragraph in paragraphs:
+  wrap_slack = 1 if content_width < 64 else 0
+  para_wrap_width = max(12, inner_width - first_line_indent - wrap_slack)
+  para_lines = wrap_line(paragraph, para_wrap_width)
+  for idx, line in enumerate(para_lines):
+    if idx == 0:
+      body_line = first_indent_text + line
+    else:
+      body_line = line
+    wrapped.append(side_pad_text + body_line + side_pad_text)
+  wrapped.append(" " * content_width)
+wrapped.append(side_pad_text + align_right(signature, inner_width) + side_pad_text)
 
 top = "┌" + ("─" * content_width) + "┐"
 bottom = "└" + ("─" * content_width) + "┘"

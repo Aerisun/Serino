@@ -1,19 +1,99 @@
 #!/usr/bin/env bash
 
+is_private_ipv4_literal() {
+  local value="$1"
+  [[ "${value}" =~ ^10\. ]] && return 0
+  [[ "${value}" =~ ^192\.168\. ]] && return 0
+  [[ "${value}" =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. ]] && return 0
+  [[ "${value}" =~ ^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\. ]] && return 0
+  [[ "${value}" =~ ^169\.254\. ]] && return 0
+  return 1
+}
+
+list_local_ip_candidates_by_family() {
+  local family="$1"
+
+  if command_exists ip; then
+    if [[ "${family}" == "4" ]]; then
+      ip -o -4 addr show scope global up 2>/dev/null \
+        | awk '$2 !~ /^(lo|docker|br-|veth|virbr|cni|flannel|tailscale|zt)/ {print $4}' \
+        | cut -d/ -f1
+    else
+      ip -o -6 addr show scope global up 2>/dev/null \
+        | awk '$2 !~ /^(lo|docker|br-|veth|virbr|cni|flannel|tailscale|zt)/ {print $4}' \
+        | cut -d/ -f1
+    fi
+  fi
+
+  if command_exists hostname; then
+    hostname -I 2>/dev/null | tr ' ' '\n'
+  fi
+}
+
+pick_first_ip_by_family() {
+  local family="$1"
+  local candidate=""
+
+  while IFS= read -r candidate; do
+    candidate="$(trim_input "${candidate}")"
+    [[ -n "${candidate}" ]] || continue
+    candidate="$(normalize_host_input "${candidate}")"
+    if [[ "${family}" == "4" ]] && is_ipv4_literal "${candidate}"; then
+      printf '%s' "${candidate}"
+      return 0
+    fi
+    if [[ "${family}" == "6" ]] && is_ipv6_literal "${candidate}"; then
+      printf '%s' "${candidate}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+pick_first_public_ipv4() {
+  local candidate=""
+
+  while IFS= read -r candidate; do
+    candidate="$(trim_input "${candidate}")"
+    [[ -n "${candidate}" ]] || continue
+    candidate="$(normalize_host_input "${candidate}")"
+    is_ipv4_literal "${candidate}" || continue
+    if ! is_private_ipv4_literal "${candidate}"; then
+      printf '%s' "${candidate}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 guess_host_for_ip_mode() {
   local host=""
-  host="$(curl --noproxy '*' --silent --show-error --max-time 5 https://api.ipify.org 2>/dev/null || true)"
+
+  host="$(list_local_ip_candidates_by_family 4 | pick_first_public_ipv4 || true)"
+  if [[ -z "${host}" ]]; then
+    host="$(curl --noproxy '*' --silent --show-error --max-time 5 -4 https://api.ipify.org 2>/dev/null || true)"
+  fi
+  if [[ -z "${host}" ]]; then
+    host="$(curl --silent --show-error --max-time 5 -4 https://api.ipify.org 2>/dev/null || true)"
+  fi
+  if [[ -z "${host}" ]]; then
+    host="$(
+      list_local_ip_candidates_by_family 4 | pick_first_ip_by_family 4 || true
+    )"
+  fi
+
+  if [[ -z "${host}" ]]; then
+    host="$(
+      list_local_ip_candidates_by_family 6 | pick_first_ip_by_family 6 || true
+    )"
+  fi
   if [[ -z "${host}" ]]; then
     host="$(curl --noproxy '*' --silent --show-error --max-time 5 https://api64.ipify.org 2>/dev/null || true)"
   fi
   if [[ -z "${host}" ]]; then
-    host="$(curl --silent --show-error --max-time 5 https://api.ipify.org 2>/dev/null || true)"
-  fi
-  if [[ -z "${host}" ]]; then
     host="$(curl --silent --show-error --max-time 5 https://api64.ipify.org 2>/dev/null || true)"
-  fi
-  if [[ -z "${host}" ]] && command_exists hostname; then
-    host="$(hostname -I 2>/dev/null | awk '{print $1}')"
   fi
   printf '%s' "${host}"
 }
@@ -120,7 +200,7 @@ prompt_install_host() {
     prompt="请输入已经解析到本机公网 IP 的域名"
   else
     default_value="$(guess_host_for_ip_mode)"
-    prompt="请输入服务器公网 IP 或主机名"
+    prompt="请输入服务器可访问的 IPv4 / IPv6 或主机名"
   fi
 
   if command_exists whiptail; then
