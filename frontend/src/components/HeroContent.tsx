@@ -105,7 +105,7 @@ const HeroContent = () => {
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
-      <div className="flex flex-1 flex-col items-center justify-center gap-8">
+      <div className="mt-7 flex flex-1 flex-col items-center justify-center gap-6 sm:mt-0 sm:gap-8">
         <motion.p
           className="text-center text-[10px] uppercase tracking-[0.32em] text-white/32 sm:text-[11px]"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
@@ -172,7 +172,7 @@ const HeroContent = () => {
         </motion.div>
 
         <motion.p
-          className="mx-auto max-w-[34rem] text-center text-[1.02rem] leading-7 text-[rgb(14_22_40/0.98)] [text-shadow:0_1px_0_rgba(255,255,255,0.42),0_2px_10px_rgba(255,255,255,0.18),0_8px_20px_rgba(15,23,42,0.16)] [-webkit-text-stroke:0.4px_rgba(255,255,255,0.34)] dark:text-[rgb(255_255_255/0.92)] dark:[text-shadow:0_1px_0_rgba(0,0,0,0.24),0_8px_18px_rgba(0,0,0,0.3)] dark:[-webkit-text-stroke:0.35px_rgba(9,14,24,0.28)] sm:text-[1.1rem]"
+          className="mx-auto max-w-[34rem] text-center text-[1.02rem] leading-6 text-[rgb(14_22_40/0.98)] [text-shadow:0_1px_0_rgba(255,255,255,0.42),0_2px_10px_rgba(255,255,255,0.18),0_8px_20px_rgba(15,23,42,0.16)] [-webkit-text-stroke:0.4px_rgba(255,255,255,0.34)] dark:text-[rgb(255_255_255/0.92)] dark:[text-shadow:0_1px_0_rgba(0,0,0,0.24),0_8px_18px_rgba(0,0,0,0.3)] dark:[-webkit-text-stroke:0.35px_rgba(9,14,24,0.28)] sm:text-[1.1rem] sm:leading-7"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -193,7 +193,7 @@ const HeroContent = () => {
         </motion.p>
 
         <motion.div
-          className="flex flex-wrap justify-center gap-3"
+          className="mt-4 flex flex-wrap justify-center gap-4"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -220,7 +220,7 @@ const HeroContent = () => {
         </motion.div>
 
         <motion.div
-          className="flex w-full justify-center gap-3"
+          className="mt-3 flex w-full justify-center gap-3"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -250,7 +250,7 @@ const HeroContent = () => {
       </div>
 
       <motion.div
-        className="flex flex-col items-center gap-3 pb-6 pt-2"
+        className="flex flex-col items-center gap-3 pb-3 pt-2 sm:pb-6"
         initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={transition({

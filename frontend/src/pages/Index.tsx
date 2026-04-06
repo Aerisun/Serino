@@ -24,7 +24,7 @@ const Index = () => {
     >
       <PageMeta description={site.bio} />
       <Navbar glassVariant="hero" />
-      <div className="relative min-h-screen flex flex-col overflow-hidden">
+      <div className="relative min-h-[100svh] flex flex-col overflow-hidden">
         {showImageFallback && (
           <img
             src={posterUrl}
@@ -59,7 +59,7 @@ const Index = () => {
           style={{ background: `linear-gradient(to bottom, transparent, ${fadeTo})` }}
         />
 
-        <div className="relative z-10 flex flex-col min-h-screen">
+        <div className="relative z-10 flex min-h-[100svh] flex-col">
           <HeroContent />
         </div>
       </div>

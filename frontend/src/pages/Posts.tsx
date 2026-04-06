@@ -202,7 +202,7 @@ const Posts = () => {
             >
               <div className="flex flex-wrap items-center gap-2">
                 {post.isArchived ? <ArchiveBadge /> : null}
-                <h2 className="min-w-0 text-base font-medium leading-snug text-foreground/90 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-lg">
+                <h2 className="min-w-0 flex-1 overflow-hidden text-base font-medium leading-snug text-foreground/90 transition-colors [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow-wrap:anywhere] [word-break:break-word] group-hover:text-[rgb(var(--shiro-accent-rgb)/0.92)] sm:text-lg">
                   {post.title}
                 </h2>
               </div>

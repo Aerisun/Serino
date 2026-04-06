@@ -68,7 +68,7 @@ export const useContainedWheelScroll = <T extends HTMLElement>() => {
       viewport.scrollTop = nextScrollTop;
       viewport.scrollLeft = nextScrollLeft;
 
-      if (scrollChanged || maxScrollTop > 0 || maxScrollLeft > 0) {
+      if (scrollChanged) {
         event.preventDefault();
         event.stopPropagation();
       }

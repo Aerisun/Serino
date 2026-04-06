@@ -935,6 +935,48 @@
         }
       }
     },
+    "/api/v1/site/livez": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "存活检查",
+        "operationId": "livez_api_v1_site_livez_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/readyz": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "就绪检查",
+        "operationId": "readyz_api_v1_site_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site/healthz": {
       "get": {
         "tags": [

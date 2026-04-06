@@ -96,6 +96,23 @@ const formatWeekday = (value: string | null, lang: FrontendLang) => {
     : "";
 };
 
+const splitPoemAuthor = (poem?: string) => {
+  if (!poem) return null;
+
+  const normalized = poem.trim();
+  if (!normalized) return null;
+
+  const match = normalized.match(/^(.*?)(\s*(?:——|--|—|–)\s*.+)$/);
+  if (!match) {
+    return { text: normalized, author: "" };
+  }
+
+  return {
+    text: match[1].trim(),
+    author: match[2].trim(),
+  };
+};
+
 const mapRemoteDiaryEntry = (
   entry: ContentEntryRead,
   index: number,
@@ -180,6 +197,24 @@ const Diary = () => {
       ),
     );
   }, [items, search]);
+
+  const renderPoem = (poem?: string) => {
+    const parts = splitPoemAuthor(poem);
+    if (!parts) return null;
+
+    const toneClass =
+      "text-[11px] font-heading italic tracking-wide text-[rgb(var(--shiro-accent-rgb)/0.5)] transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]";
+
+    return (
+      <>
+        <span className={`hidden sm:inline ${toneClass}`}>{poem}</span>
+        <span className={`flex max-w-full flex-wrap items-baseline gap-x-1.5 gap-y-1 sm:hidden ${toneClass}`}>
+          <span className="min-w-0 break-words">{parts.text}</span>
+          {parts.author ? <span className="ml-auto shrink-0 text-right">{parts.author}</span> : null}
+        </span>
+      </>
+    );
+  };
 
   return (
     <PageShell
@@ -330,11 +365,7 @@ const Diary = () => {
                             {entry.content}
                           </p>
                           <div className="mt-4 flex items-center justify-between border-t border-foreground/[0.05] pt-3 transition-colors group-hover:border-[rgb(var(--shiro-divider-rgb)/0.28)]">
-                            {entry.poem ? (
-                              <span className="text-[11px] font-heading italic tracking-wide text-[rgb(var(--shiro-accent-rgb)/0.5)] transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]">
-                                {entry.poem}
-                              </span>
-                            ) : null}
+                            {renderPoem(entry.poem)}
                             <button
                               type="button"
                               onClick={(event) => {
