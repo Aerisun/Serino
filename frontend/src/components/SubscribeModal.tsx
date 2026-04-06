@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { BellRing, Check, Copy, ExternalLink, Mail, Rss, X } from "lucide-react";
+import {
+  BellRing,
+  Check,
+  Copy,
+  ExternalLink,
+  Mail,
+  Rss,
+  X,
+} from "lucide-react";
 import { subscribeToContentApiV1SiteSubscriptionsPost } from "@serino/api-client/site";
 import { useFrontendI18n } from "@/i18n";
 import { trackSubscriptionEmail } from "@/lib/subscription-tracker";
@@ -48,7 +56,8 @@ const isSubscriptionSuccessPayload = (
     typeof payload.email === "string" &&
     Array.isArray(payload.content_types) &&
     payload.content_types.every((item) => typeof item === "string") &&
-    (payload.subscribed === undefined || typeof payload.subscribed === "boolean")
+    (payload.subscribed === undefined ||
+      typeof payload.subscribed === "boolean")
   );
 };
 
@@ -101,16 +110,19 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
     };
   }, []);
 
-  const pushToast = useCallback((kind: "success" | "error", message: string) => {
-    setToast({ kind, message });
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 3200);
-  }, []);
+  const pushToast = useCallback(
+    (kind: "success" | "error", message: string) => {
+      setToast({ kind, message });
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+      toastTimerRef.current = window.setTimeout(() => {
+        setToast(null);
+        toastTimerRef.current = null;
+      }, 3200);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -181,13 +193,16 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       setFeedback({ kind: "success", message });
       pushToast("success", message);
       window.dispatchEvent(
-        new CustomEvent<SubscriptionChangedDetail>("aerisun:subscription-changed", {
-          detail: {
-            email: subscribed.email,
-            content_types: subscribed.content_types,
-            subscribed: Boolean(subscribed.subscribed),
+        new CustomEvent<SubscriptionChangedDetail>(
+          "aerisun:subscription-changed",
+          {
+            detail: {
+              email: subscribed.email,
+              content_types: subscribed.content_types,
+              subscribed: Boolean(subscribed.subscribed),
+            },
           },
-        }),
+        ),
       );
     } catch (error) {
       const detail =
@@ -243,7 +258,7 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto scrollbar-hide px-3 pb-4 pt-[calc(env(safe-area-inset-top)+4.25rem)] sm:px-4 sm:py-[10vh]"
+            className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto scrollbar-hide px-3 pb-[calc(env(safe-area-inset-bottom)+2.45rem)] pt-[calc(env(safe-area-inset-top)+4.25rem)] sm:px-4 sm:py-[10vh]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -260,209 +275,215 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.96 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 mx-auto flex max-h-[calc(100dvh-5.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[30px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:max-h-[calc(100dvh-4.5rem)]"
+              className="relative z-10 mx-auto flex max-h-[calc(100dvh-7.25rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[26px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:max-h-[calc(100dvh-4.5rem)] sm:rounded-[30px]"
             >
-            <div className="relative flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -left-12 top-6 h-28 w-28 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.12)] blur-3xl"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute right-10 top-10 h-20 w-20 rounded-full bg-white/12 blur-2xl dark:bg-white/6"
-              />
-
-              <div className="relative overflow-hidden border-b border-[rgb(var(--shiro-divider-rgb)/0.14)] bg-[linear-gradient(135deg,rgb(var(--shiro-panel-rgb)/0.78),rgb(var(--shiro-panel-strong-rgb)/0.4))] px-5 py-5 sm:px-6">
-                <div className="max-w-2xl">
-                  <h2 className="font-body text-[1.9rem] text-foreground/88">
-                    {t("subscribe.title")}
-                  </h2>
-                  <div
-                    aria-hidden="true"
-                    className="mt-4 flex items-center gap-2.5"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.8)]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.45)]" />
-                    <span className="h-px w-16 bg-gradient-to-r from-[rgb(var(--shiro-accent-rgb)/0.36)] to-transparent" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.84fr)]">
-                <div className="space-y-5 p-5 sm:p-6">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground/72">
-                      {t("subscribe.emailLabel")}
-                    </label>
-                    <div className="flex h-12 items-center gap-3 rounded-[20px] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-white/58 px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition focus-within:border-[rgb(var(--shiro-accent-rgb)/0.36)] focus-within:bg-white/72 focus-within:shadow-[0_12px_28px_rgba(15,23,42,0.06)] dark:bg-black/10 dark:focus-within:bg-black/20">
-                      <Mail className="h-4 w-4 shrink-0 text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
-                      <input
-                        ref={inputRef}
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder={
-                          enabled
-                            ? "name@example.com"
-                            : t("subscribe.emailUnavailablePlaceholder")
-                        }
-                        disabled={!enabled || submitting}
-                        className="h-full w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/28"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-sm font-medium text-foreground/72">
-                        {t("subscribe.contentLabel")}
-                      </div>
-                      <div className="text-[11px] uppercase tracking-[0.16em] text-foreground/34">
-                        {selectedTypes.length}/4
-                      </div>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {CONTENT_OPTIONS.map((item) => {
-                        const checked = selectedTypes.includes(item.key);
-                        return (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => toggleType(item.key)}
-                            aria-pressed={checked}
-                            disabled={!enabled || submitting}
-                              className={`group relative flex h-[68px] items-center justify-between gap-3 overflow-hidden rounded-[20px] border px-4 text-left transition ${
-                              checked
-                                ? "border-[rgb(var(--shiro-accent-rgb)/0.34)] bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.13),rgb(var(--shiro-accent-rgb)/0.08))] shadow-[0_12px_24px_rgba(15,23,42,0.06)]"
-                                : "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/36 hover:bg-white/54 hover:shadow-[0_10px_22px_rgba(15,23,42,0.04)] dark:bg-black/10 dark:hover:bg-black/16"
-                            } ${!enabled ? "cursor-not-allowed opacity-55" : ""}`}
-                          >
-                            <span
-                              aria-hidden="true"
-                              className={`absolute inset-x-4 top-0 h-px transition ${
-                                checked
-                                  ? "bg-gradient-to-r from-transparent via-white/60 to-transparent"
-                                  : "bg-transparent"
-                              }`}
-                            />
-                            <span className="min-w-0">
-                              <span className="block text-sm font-medium text-foreground/82">
-                                {t(`subscribe.content.${item.key}`)}
-                              </span>
-                            </span>
-                            <span
-                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition ${
-                                checked
-                                  ? "border-[rgb(var(--shiro-accent-rgb)/0.42)] bg-[rgb(var(--shiro-accent-rgb)/0.86)] text-white"
-                                  : "border-[rgb(var(--shiro-border-rgb)/0.28)] bg-transparent text-transparent"
-                              }`}
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {feedback ? (
-                    <div
-                      className={`rounded-[18px] px-4 py-3 text-sm ${
-                        feedback.kind === "success"
-                          ? "border border-emerald-500/18 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                          : "border border-rose-500/18 bg-rose-500/10 text-rose-700 dark:text-rose-300"
-                      }`}
-                    >
-                      {feedback.message}
-                    </div>
-                  ) : null}
-
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => void handleSubmit()}
-                      disabled={submitting || !enabled}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.16)] px-5 text-sm font-medium text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.22)] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <BellRing className="h-4 w-4" />
-                      {enabled ? (submitting ? t("subscribe.submitting") : t("subscribe.submit")) : t("subscribe.unavailable")}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border-t border-[rgb(var(--shiro-divider-rgb)/0.14)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] p-5 sm:p-6 md:border-l md:border-t-0">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground/78">
-                    <Rss className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.76)]" />
-                    RSS
-                  </div>
-                  <div className="mt-4 grid gap-2.5">
-                    {feedLinks.map((item) => (
-                      <div
-                        key={item.key}
-                        className="rounded-[20px] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/40 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition hover:bg-white/50 dark:bg-black/10 dark:hover:bg-black/16"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 text-sm font-medium text-foreground/80">
-                              <span
-                                aria-hidden="true"
-                                className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.72)]"
-                              />
-                              {t(`subscribe.content.${item.key}`)}
-                            </div>
-                            <div className="mt-1 break-all text-xs leading-5 text-foreground/46">
-                              {item.url}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <a
-                              href={item.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={t("subscribe.openRss")}
-                              aria-label={t("subscribe.openRss")}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => void handleCopy(item.key, item.url)}
-                              title={
-                                copiedKey === item.key
-                                  ? t("subscribe.copied")
-                                  : t("subscribe.copyRss")
-                              }
-                              aria-label={
-                                copiedKey === item.key
-                                  ? t("subscribe.copiedRss")
-                                  : t("subscribe.copyRss")
-                              }
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16"
-                            >
-                              {copiedKey === item.key ? (
-                                <Check className="h-3.5 w-3.5" />
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/44 text-foreground/54 transition hover:text-foreground/84 dark:bg-black/10"
+              className="absolute right-4 top-4 hidden h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/44 text-foreground/54 transition hover:text-foreground/84 dark:bg-black/10 sm:inline-flex"
               aria-label={t("subscribe.closeAria")}
             >
               <X className="h-4 w-4" />
             </button>
+            <div className="relative flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -left-12 top-6 h-28 w-28 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.12)] blur-3xl"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-10 top-10 h-20 w-20 rounded-full bg-white/12 blur-2xl dark:bg-white/6"
+                />
+
+                <div className="relative overflow-hidden border-b border-[rgb(var(--shiro-divider-rgb)/0.14)] bg-[linear-gradient(135deg,rgb(var(--shiro-panel-rgb)/0.78),rgb(var(--shiro-panel-strong-rgb)/0.4))] px-5 py-4 sm:px-6 sm:py-5">
+                  <div className="max-w-2xl">
+                    <h2 className="font-body text-[1.7rem] text-foreground/88 sm:text-[1.9rem]">
+                      {t("subscribe.title")}
+                    </h2>
+                    <div
+                      aria-hidden="true"
+                      className="mt-3 flex items-center gap-2.5 sm:mt-4"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.8)]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.45)]" />
+                      <span className="h-px w-16 bg-gradient-to-r from-[rgb(var(--shiro-accent-rgb)/0.36)] to-transparent" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.84fr)]">
+                  <div className="space-y-4 px-4 pb-3 pt-4 sm:space-y-5 sm:p-6">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-foreground/72">
+                        {t("subscribe.emailLabel")}
+                      </label>
+                      <div className="flex h-11 items-center gap-3 rounded-[18px] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-white/58 px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition focus-within:border-[rgb(var(--shiro-accent-rgb)/0.36)] focus-within:bg-white/72 focus-within:shadow-[0_12px_28px_rgba(15,23,42,0.06)] dark:bg-black/10 dark:focus-within:bg-black/20 sm:h-12 sm:rounded-[20px]">
+                        <Mail className="h-4 w-4 shrink-0 text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
+                        <input
+                          ref={inputRef}
+                          type="email"
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
+                          placeholder={
+                            enabled
+                              ? "name@example.com"
+                              : t("subscribe.emailUnavailablePlaceholder")
+                          }
+                          disabled={!enabled || submitting}
+                          className="h-full w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/28"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 sm:space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-medium text-foreground/72">
+                          {t("subscribe.contentLabel")}
+                        </div>
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-foreground/34">
+                          {selectedTypes.length}/4
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CONTENT_OPTIONS.map((item) => {
+                          const checked = selectedTypes.includes(item.key);
+                          return (
+                            <button
+                              key={item.key}
+                              type="button"
+                              onClick={() => toggleType(item.key)}
+                              aria-pressed={checked}
+                              disabled={!enabled || submitting}
+                              className={`group relative flex h-[58px] items-center justify-between gap-2.5 overflow-hidden rounded-[18px] border px-3.5 text-left transition sm:h-[68px] sm:gap-3 sm:rounded-[20px] sm:px-4 ${
+                                checked
+                                  ? "border-[rgb(var(--shiro-accent-rgb)/0.34)] bg-[linear-gradient(135deg,rgb(var(--shiro-accent-rgb)/0.13),rgb(var(--shiro-accent-rgb)/0.08))] shadow-[0_12px_24px_rgba(15,23,42,0.06)]"
+                                  : "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/36 hover:bg-white/54 hover:shadow-[0_10px_22px_rgba(15,23,42,0.04)] dark:bg-black/10 dark:hover:bg-black/16"
+                              } ${!enabled ? "cursor-not-allowed opacity-55" : ""}`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={`absolute inset-x-4 top-0 h-px transition ${
+                                  checked
+                                    ? "bg-gradient-to-r from-transparent via-white/60 to-transparent"
+                                    : "bg-transparent"
+                                }`}
+                              />
+                              <span className="min-w-0">
+                                <span className="block text-[0.95rem] font-medium text-foreground/82 sm:text-sm">
+                                  {t(`subscribe.content.${item.key}`)}
+                                </span>
+                              </span>
+                              <span
+                                className={`flex h-[1.375rem] w-[1.375rem] shrink-0 items-center justify-center rounded-full border transition sm:h-6 sm:w-6 ${
+                                  checked
+                                    ? "border-[rgb(var(--shiro-accent-rgb)/0.42)] bg-[rgb(var(--shiro-accent-rgb)/0.86)] text-white"
+                                    : "border-[rgb(var(--shiro-border-rgb)/0.28)] bg-transparent text-transparent"
+                                }`}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {feedback ? (
+                      <div
+                        className={`rounded-[18px] px-4 py-2.5 text-sm sm:py-3 ${
+                          feedback.kind === "success"
+                            ? "border border-emerald-500/18 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                            : "border border-rose-500/18 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                        }`}
+                      >
+                        {feedback.message}
+                      </div>
+                    ) : null}
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void handleSubmit()}
+                        disabled={submitting || !enabled}
+                        className="inline-flex h-[2.625rem] items-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.24)] bg-[rgb(var(--shiro-accent-rgb)/0.16)] px-5 text-sm font-medium text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.22)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+                      >
+                        <BellRing className="h-4 w-4" />
+                        {enabled
+                          ? submitting
+                            ? t("subscribe.submitting")
+                            : t("subscribe.submit")
+                          : t("subscribe.unavailable")}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[rgb(var(--shiro-divider-rgb)/0.14)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] px-4 pb-3 pt-4 sm:p-6 md:border-l md:border-t-0">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground/78">
+                      <Rss className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.76)]" />
+                      RSS
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:mt-4 sm:gap-2.5">
+                      {feedLinks.map((item) => (
+                        <div
+                          key={item.key}
+                          className="rounded-[18px] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/40 px-3.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] transition hover:bg-white/50 dark:bg-black/10 dark:hover:bg-black/16 sm:rounded-[20px] sm:px-4 sm:py-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 text-sm font-medium text-foreground/80">
+                                <span
+                                  aria-hidden="true"
+                                  className="h-1.5 w-1.5 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.72)]"
+                                />
+                                {t(`subscribe.content.${item.key}`)}
+                              </div>
+                              <div className="mt-1 break-all text-xs leading-5 text-foreground/46">
+                                {item.url}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={t("subscribe.openRss")}
+                                aria-label={t("subscribe.openRss")}
+                                className="inline-flex h-[2.125rem] w-[2.125rem] items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16 sm:h-9 sm:w-9"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleCopy(item.key, item.url)
+                                }
+                                title={
+                                  copiedKey === item.key
+                                    ? t("subscribe.copied")
+                                    : t("subscribe.copyRss")
+                                }
+                                aria-label={
+                                  copiedKey === item.key
+                                    ? t("subscribe.copiedRss")
+                                    : t("subscribe.copyRss")
+                                }
+                                className="inline-flex h-[2.125rem] w-[2.125rem] items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-foreground/64 transition hover:bg-white/60 hover:text-foreground/86 dark:hover:bg-black/16 sm:h-9 sm:w-9"
+                              >
+                                {copiedKey === item.key ? (
+                                  <Check className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </motion.div>
           </motion.div>
         )}
