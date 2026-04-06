@@ -415,7 +415,7 @@ const Excerpts = () => {
             />
 
             <motion.div
-              className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-3xl p-8 liquid-glass scrollbar-hide transition-[background-color,border-color,box-shadow]"
+              className="relative flex max-h-[min(88vh,46rem)] w-full max-w-lg flex-col overflow-hidden rounded-3xl p-6 liquid-glass transition-[background-color,border-color,box-shadow] sm:p-8"
               initial={{ scale: 0.95, opacity: 0, y: 16 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 16 }}
@@ -430,79 +430,84 @@ const Excerpts = () => {
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                {selected.isArchived ? <ArchiveBadge /> : null}
-                <BookOpen className="h-4 w-4 text-foreground/25 transition-colors" />
-                <span
-                  className="text-xs font-body text-foreground/30 transition-colors"
-                  style={{ fontFamily: getExcerptFontFamily(selected.source) }}
-                >
-                  {selected.source}
-                </span>
-              </div>
-              <p className="mt-0.5 text-xs font-body text-foreground/30 transition-colors">
-                {selected.author ? (
+              <div className="shrink-0">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  {selected.isArchived ? <ArchiveBadge /> : null}
+                  <BookOpen className="h-4 w-4 text-foreground/25 transition-colors" />
                   <span
-                    style={{
-                      fontFamily: getExcerptFontFamily(selected.author),
-                    }}
+                    className="text-xs font-body text-foreground/30 transition-colors"
+                    style={{ fontFamily: getExcerptFontFamily(selected.source) }}
                   >
-                    {selected.author}
+                    {selected.source}
                   </span>
-                ) : null}
-                {selected.author && selected.date ? " · " : null}
-                {selected.date ? <span>{selected.date}</span> : null}
-              </p>
-              <div className="my-5 border-t border-foreground/[0.06] transition-colors" />
-              <p
-                className="indent-[2em] text-[0.935rem] font-body leading-8 text-foreground/74 transition-colors"
-                style={{ fontFamily: getExcerptFontFamily(selected.content) }}
-              >
-                {selected.content}
-              </p>
-              {selected.category ? (
-                <div className="mt-6 text-[11px] font-body text-foreground/25 transition-colors">
-                  {selected.category}
                 </div>
-              ) : null}
-
-              <div className="mt-6 border-t border-foreground/[0.06] pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModalComments((v) => !v)}
-                  className={`flex items-center gap-2 text-xs font-body transition-colors ${
-                    showModalComments
-                      ? "text-[rgb(var(--shiro-accent-rgb)/0.78)]"
-                      : "text-foreground/30 hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
-                  }`}
-                >
-                  <MessageCircle
-                    className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
-                  />
-                  {showModalComments
-                    ? commentsCloseLabel
-                    : `${commentsOpenLabel} · ${selected.comments}`}
-                </button>
-
-                <AnimatePresence>
-                  {showModalComments && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                      className="mt-3 overflow-hidden"
+                <p className="mt-0.5 text-xs font-body text-foreground/30 transition-colors">
+                  {selected.author ? (
+                    <span
+                      style={{
+                        fontFamily: getExcerptFontFamily(selected.author),
+                      }}
                     >
-                      <Suspense fallback={null}>
-                        <CommentSection
-                          contentType="excerpts"
-                          contentSlug={selected.id}
-                          expandable={false}
-                        />
-                      </Suspense>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      {selected.author}
+                    </span>
+                  ) : null}
+                  {selected.author && selected.date ? " · " : null}
+                  {selected.date ? <span>{selected.date}</span> : null}
+                </p>
+                <div className="my-5 border-t border-foreground/[0.06] transition-colors" />
+              </div>
+
+              <div className="min-h-0 overflow-y-auto pr-1 scrollbar-hide overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+                <p
+                  className="indent-[2em] text-[0.935rem] font-body leading-8 text-foreground/74 transition-colors [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap"
+                  style={{ fontFamily: getExcerptFontFamily(selected.content) }}
+                >
+                  {selected.content}
+                </p>
+                {selected.category ? (
+                  <div className="mt-6 text-[11px] font-body text-foreground/25 transition-colors">
+                    {selected.category}
+                  </div>
+                ) : null}
+
+                <div className="mt-6 border-t border-foreground/[0.06] pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModalComments((v) => !v)}
+                    className={`flex items-center gap-2 text-xs font-body transition-colors ${
+                      showModalComments
+                        ? "text-[rgb(var(--shiro-accent-rgb)/0.78)]"
+                        : "text-foreground/30 hover:text-[rgb(var(--shiro-accent-rgb)/0.62)]"
+                    }`}
+                  >
+                    <MessageCircle
+                      className={`h-3.5 w-3.5 ${showModalComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
+                    />
+                    {showModalComments
+                      ? commentsCloseLabel
+                      : `${commentsOpenLabel} · ${selected.comments}`}
+                  </button>
+
+                  <AnimatePresence>
+                    {showModalComments && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        className="mt-3 overflow-hidden"
+                      >
+                        <Suspense fallback={null}>
+                          <CommentSection
+                            contentType="excerpts"
+                            contentSlug={selected.id}
+                            expandable={false}
+                          />
+                        </Suspense>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </motion.div>
           </motion.div>
