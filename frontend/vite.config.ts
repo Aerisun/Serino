@@ -94,6 +94,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: parseInt(env.AERISUN_FRONTEND_PORT || "8080", 10),
+      allowedHosts: true,
       hmr: {
         overlay: false,
       },

@@ -24,7 +24,9 @@ export default defineConfig(({ mode }) => {
       __SERINO_DEV__: JSON.stringify(mode !== "production"),
     },
     server: {
+      host: "::",
       port: adminPort,
+      allowedHosts: true,
       proxy: {
         [apiBasePath]: {
           target: `http://localhost:${backendPort}`,
