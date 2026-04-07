@@ -27,7 +27,7 @@ function useExcerptListConfig(): ContentListConfig {
         accessor: (row: ContentAdminRead) => {
           const snippet = getBodySnippet(row.body, row.title || row.id);
           return (
-            <div className="line-clamp-3 max-w-xl text-sm leading-6 text-foreground/90" title={snippet}>
+            <div className="line-clamp-3 max-w-md text-sm leading-6 text-foreground/90" title={snippet}>
               {snippet}
             </div>
           );
