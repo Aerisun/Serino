@@ -130,6 +130,8 @@ def _build_comment_url_path(url: str) -> tuple[str, str]:
 def _build_comment_path(content_type: str, content_slug: str) -> str:
     if content_type == "guestbook":
         return WALINE_GUESTBOOK_PATH
+    if content_type == "friends":
+        return "/friends"
     return f"/{content_type}/{content_slug}"
 
 

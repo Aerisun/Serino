@@ -109,6 +109,7 @@ def test_run_pending_backfills_applies_registered_repairs_once(tmp_path, monkeyp
                 "posts",
                 "diary",
                 "guestbook",
+                "friends",
                 "thoughts",
                 "excerpts",
             ]

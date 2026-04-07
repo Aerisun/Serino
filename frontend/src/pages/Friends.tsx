@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronDown, RefreshCw } from "lucide-react";
+import ArticleMarkdownRenderer from "@/components/ArticleMarkdownRenderer";
+import CommentSection from "@/components/CommentSection";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
@@ -35,6 +37,7 @@ interface CirclePost {
 interface FriendsPageConfig extends BaseViewPageConfig {
   pageSize?: number;
   circleTitle?: string;
+  applicationMarkdown?: string;
   loadMoreLabel?: string;
   refreshLabel?: string;
   refreshAriaLabel?: string;
@@ -125,6 +128,8 @@ const Friends = () => {
   );
   const autoRefreshSeconds = readPositiveConfigNumber(config.autoRefreshSeconds, 666);
   const autoRefreshMs = autoRefreshSeconds > 0 ? autoRefreshSeconds * 1000 : false;
+  const applicationMarkdown =
+    typeof config.applicationMarkdown === "string" ? config.applicationMarkdown.trim() : "";
   const pageSize = clampPageSize(config.pageSize, 10);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -570,6 +575,31 @@ const Friends = () => {
           })}
         </p>
       )}
+
+      <div className="mt-16 border-t border-foreground/[0.06] pt-10">
+        {applicationMarkdown ? (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: config.motion.duration + 0.05,
+              delay: 0.22,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+          >
+            <ArticleMarkdownRenderer
+              content={applicationMarkdown}
+              className="prose-headings:font-heading prose-headings:italic prose-headings:text-foreground prose-p:text-[15px] prose-p:leading-8 prose-li:text-[15px] prose-li:leading-8 prose-strong:text-foreground prose-a:text-[rgb(var(--shiro-accent-rgb)/0.88)]"
+            />
+          </motion.section>
+        ) : null}
+
+        <CommentSection
+          contentType="friends"
+          contentSlug="friends"
+          expandable={false}
+        />
+      </div>
     </PageShell>
   );
 };

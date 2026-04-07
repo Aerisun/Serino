@@ -25,18 +25,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import { Plus, Trash2, Pencil, Settings2, Users, Rss } from "lucide-react";
+import { FileText, Plus, Trash2, Pencil, Settings2, Users, Rss } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 import type { FriendAdminRead } from "@serino/api-client/models";
 import { FeedSourcesSection } from "./FeedSourcesSection";
+import { FriendsPageContentSection } from "./FriendsPageContentSection";
 import { FriendsMoreConfigSection } from "./FriendsMoreConfigSection";
 
 const EMPTY_FRIENDS: FriendAdminRead[] = [];
 
-type FriendsSection = "friends" | "more-config";
+type FriendsSection = "friends" | "page-content" | "more-config";
 
 export default function FriendsPage() {
   const { t } = useI18n();
@@ -279,6 +280,12 @@ export default function FriendsPage() {
                 icon: Users,
               },
               {
+                value: "page-content",
+                label: t("friends.tabs.pageContent"),
+                description: t("friends.sectionDescriptions.pageContent"),
+                icon: FileText,
+              },
+              {
                 value: "more-config",
                 label: t("friends.tabs.moreConfig"),
                 description: t("friends.sectionDescriptions.moreConfig"),
@@ -447,6 +454,8 @@ export default function FriendsPage() {
             </CardContent>
           </Card>
         </div>
+      ) : section === "page-content" ? (
+        <FriendsPageContentSection />
       ) : (
         <FriendsMoreConfigSection />
       )}

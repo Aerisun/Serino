@@ -1,5 +1,11 @@
 /** Surface keys where community comments can be enabled */
-export type CommunitySurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
+export type CommunitySurface =
+  | "posts"
+  | "diary"
+  | "guestbook"
+  | "thoughts"
+  | "excerpts"
+  | "friends";
 
 /** Comment sorting options */
 export type CommunityCommentSort = "latest" | "oldest" | "hottest";

@@ -225,6 +225,7 @@ DEFAULT_PAGE_COPIES = [
             "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
             "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
             "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
+            "applicationMarkdown": "## 友链申请\n\n这里可以自由编辑申请说明、交换模板、收录条件，或者任何想放在评论区上方的补充内容。\n\n- 建议按固定模板留言\n- 请先添加本站再申请\n- 站点需要可以稳定访问",
             "randomRecentDays": 66,
             "autoRefreshSeconds": 666,
             "websiteHealthCheckEnabled": True,
@@ -457,6 +458,12 @@ def build_default_community_config() -> dict[str, object]:
                 "key": "guestbook",
                 "label": "留言板",
                 "path": "/guestbook",
+                "enabled": True,
+            },
+            {
+                "key": "friends",
+                "label": "友链申请",
+                "path": "/friends",
                 "enabled": True,
             },
             {

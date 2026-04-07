@@ -14,7 +14,7 @@ import {
   readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet,
 } from "@serino/api-client/site-interactions";
 
-type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts";
+type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts" | "friends";
 
 const WalineSurface = lazy(() => import("@/components/WalineSurface"));
 
@@ -42,6 +42,10 @@ const resolveCommentContext = (
     return { contentType: "guestbook", slug: "guestbook" };
   }
 
+  if (contentType === "friends") {
+    return { contentType: "friends", slug: contentSlug || "friends" };
+  }
+
   if (
     (contentType === "posts" || contentType === "diary" || contentType === "thoughts" || contentType === "excerpts") &&
     contentSlug
@@ -51,6 +55,10 @@ const resolveCommentContext = (
 
   if (pathname.startsWith("/guestbook")) {
     return { contentType: "guestbook", slug: "guestbook" };
+  }
+
+  if (pathname.startsWith("/friends")) {
+    return { contentType: "friends", slug: "friends" };
   }
 
   const fallbackSlug = routeId ? decodeURIComponent(routeId) : "";

@@ -25,6 +25,7 @@ def test_read_pages_returns_seeded_page_copy(client) -> None:
     assert items["friends"]["extras"]["loadingLabel"] == "正在加载..."
     assert items["friends"]["extras"]["loadMoreLabel"] == "加载更多"
     assert items["friends"]["extras"]["retryLabel"] == "重试加载"
+    assert "友链申请" in items["friends"]["extras"]["applicationMarkdown"]
     assert items["guestbook"]["extras"]["submittingLabel"] == "提交留言"
     assert items["calendar"]["extras"]["weekdayLabels"][0] == "周一"
     assert items["calendar"]["extras"]["loadingLabel"] == "正在加载日历"

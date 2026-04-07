@@ -16,6 +16,9 @@ CONTENT_MODELS: dict[str, type] = {
 
 def content_exists(session: Session, content_type: str, content_slug: str) -> bool:
     """Check if a published public content item exists."""
+    if content_type == "friends":
+        return content_slug == "friends"
+
     model = CONTENT_MODELS.get(content_type)
     if model is None:
         return False

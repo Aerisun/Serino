@@ -46,7 +46,14 @@ def test_admin_community_config_round_trip(client) -> None:
     response = client.get("/api/v1/admin/site-config/community-config", headers=headers)
     assert response.status_code == 200
     current = response.json()
-    assert [item["key"] for item in current["surfaces"]] == ["posts", "diary", "guestbook", "thoughts", "excerpts"]
+    assert [item["key"] for item in current["surfaces"]] == [
+        "posts",
+        "diary",
+        "guestbook",
+        "friends",
+        "thoughts",
+        "excerpts",
+    ]
     assert current["anonymous_enabled"] is True
     assert current["moderation_mode"] == "all_pending"
     assert current["default_sorting"] == "latest"

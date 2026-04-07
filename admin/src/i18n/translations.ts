@@ -109,9 +109,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "settings.allowGithubLogin": "允许使用 GitHub 登录",
     "settings.oauthLoginConfigLabel": "未配置？去访客里绑定",
     "settings.oauthLoginConfigTitle": "先完成管理员身份绑定",
-    "settings.oauthLoginConfigDesc": "这些按钮控制前台管理员身份是否允许直接进入管理台。要先在“访客 -> 管理员认证”完成对应绑定；邮箱方式还需要先设置统一管理员密码。",
-    "settings.oauthLoginConfigStep1": "前往 访客 -> 管理员认证 -> 第 2 步“绑定管理员身份”。",
-    "settings.oauthLoginConfigStep2": "如需开启邮箱，还要在同页先保存统一管理员邮箱密码。",
+    "settings.oauthLoginConfigDesc":
+      "这些按钮控制前台管理员身份是否允许直接进入管理台。要先在“访客 -> 管理员认证”完成对应绑定；邮箱方式还需要先设置统一管理员密码。",
+    "settings.oauthLoginConfigStep1":
+      "前往 访客 -> 管理员认证 -> 第 2 步“绑定管理员身份”。",
+    "settings.oauthLoginConfigStep2":
+      "如需开启邮箱，还要在同页先保存统一管理员邮箱密码。",
     "settings.profile": "个人资料",
     "settings.password": "密码",
     "settings.sessions": "活跃会话",
@@ -385,9 +388,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     "friends.show": "显示",
     "friends.archiveAction": "归档",
     "friends.tabs.friends": "朋友们",
+    "friends.tabs.pageContent": "申请说明",
     "friends.tabs.moreConfig": "更多配置",
     "friends.sectionDescriptions.friends": "管理友链与订阅源。",
+    "friends.sectionDescriptions.pageContent": "编辑友链申请说明文案",
     "friends.sectionDescriptions.moreConfig": "友链页高级配置。",
+    "friends.pageContentTitle": "申请说明区",
+    "friends.pageContentDescription": "",
+    "friends.pageContentLabel": "",
+    "friends.pageContentPlaceholder":
+      "在这里写友链申请说明、交换模板、补充备注或任何你想放在评论区上方的内容。",
     "friends.moreConfigTitle": "友链页更多配置",
     "friends.moreConfigDescription":
       "这里保存的是后端页面配置，前台友链页和后台巡检任务都会读取这些数值来控制随机文章、自动刷新和定时巡检。",
@@ -1174,8 +1184,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.smtpUseSsl": "启用 SSL",
 
     // more
-    "more.description":
-      "",
+    "more.description": "",
     "more.tabs.featureFlags": "功能开关",
     "more.tabs.mailConfig": "邮箱配置",
     "more.tabs.apiConfig": "API配置",
@@ -1185,7 +1194,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "more.sectionDescriptions.mailConfig": "订阅邮件与 SMTP 发信设置",
     "more.sectionDescriptions.apiConfig": "大模型 API 接入配置",
     "more.sectionDescriptions.proxyConfig": "本机代理端口与 Webhook 出站路由",
-    "more.sectionDescriptions.objectStorage": "OSS 加速、媒体分发与本地镜像回源",
+    "more.sectionDescriptions.objectStorage":
+      "OSS 加速、媒体分发与本地镜像回源",
     "more.mailSettings": "邮件发送",
     "more.mailSettingsDescription": "配置订阅通知使用的 SMTP 发件账号。",
 
@@ -1325,9 +1335,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "settings.allowGithubLogin": "Allow GitHub Login",
     "settings.oauthLoginConfigLabel": "Not configured? Bind in Visitors",
     "settings.oauthLoginConfigTitle": "Bind admin identity first",
-    "settings.oauthLoginConfigDesc": "These buttons control whether an elevated site admin identity can enter the admin console directly. Bind the matching identity first in Visitors; email also requires the shared admin email password to be configured.",
-    "settings.oauthLoginConfigStep1": "Go to Visitors -> Admin Authentication -> Step 2 Bind Admin Identity.",
-    "settings.oauthLoginConfigStep2": "For email, also save the shared admin email password on that page first.",
+    "settings.oauthLoginConfigDesc":
+      "These buttons control whether an elevated site admin identity can enter the admin console directly. Bind the matching identity first in Visitors; email also requires the shared admin email password to be configured.",
+    "settings.oauthLoginConfigStep1":
+      "Go to Visitors -> Admin Authentication -> Step 2 Bind Admin Identity.",
+    "settings.oauthLoginConfigStep2":
+      "For email, also save the shared admin email password on that page first.",
     "settings.profile": "Profile",
     "settings.password": "Password",
     "settings.sessions": "Sessions",
@@ -1613,11 +1626,20 @@ export const translations: Record<Lang, Record<string, string>> = {
     "friends.show": "Show",
     "friends.archiveAction": "Archive",
     "friends.tabs.friends": "Friends",
+    "friends.tabs.pageContent": "Apply Copy",
     "friends.tabs.moreConfig": "More Config",
     "friends.sectionDescriptions.friends":
       "Manage friend links and feed sources.",
+    "friends.sectionDescriptions.pageContent":
+      "Edit the freeform Markdown block shown at the bottom of the friends page.",
     "friends.sectionDescriptions.moreConfig":
       "Configure random article, auto-refresh, and health-check behavior for the friends page.",
+    "friends.pageContentTitle": "Friends Page Markdown",
+    "friends.pageContentDescription":
+      "This Markdown is rendered near the bottom of the public friends page and works well for link-exchange templates, rules, and notes.",
+    "friends.pageContentLabel": "Markdown content",
+    "friends.pageContentPlaceholder":
+      "Write your friend-link instructions, template, notes, or anything you want to show above the comment section.",
     "friends.moreConfigTitle": "Friends Page Config",
     "friends.moreConfigDescription":
       "These values are stored in backend page config and are used by the public friends page and background health checks.",
@@ -2203,7 +2225,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // systemInfo
     "nav.systemInfo": "About System",
     "systemInfo.title": "About System",
-    "systemInfo.description": "View server status and manage admin account sessions",
+    "systemInfo.description":
+      "View server status and manage admin account sessions",
     "systemInfo.version": "Version",
     "systemInfo.python": "Python Version",
     "systemInfo.dbSize": "Database Size",

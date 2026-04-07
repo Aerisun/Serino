@@ -25,7 +25,14 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
         config = session.query(CommunityConfig).first()
         assert config is not None
         assert config.server_url == get_settings().waline_server_url
-        assert [item["key"] for item in config.surfaces] == ["posts", "diary", "guestbook", "thoughts", "excerpts"]
+        assert [item["key"] for item in config.surfaces] == [
+            "posts",
+            "diary",
+            "guestbook",
+            "friends",
+            "thoughts",
+            "excerpts",
+        ]
     finally:
         session.close()
 
@@ -34,7 +41,14 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
 
     payload = response.json()
     assert payload["server_url"] == get_settings().waline_server_url
-    assert [item["key"] for item in payload["surfaces"]] == ["posts", "diary", "guestbook", "thoughts", "excerpts"]
+    assert [item["key"] for item in payload["surfaces"]] == [
+        "posts",
+        "diary",
+        "guestbook",
+        "friends",
+        "thoughts",
+        "excerpts",
+    ]
     assert payload["provider"] == "waline"
     assert payload["anonymous_enabled"] is True
     assert payload["moderation_mode"] == "all_pending"
