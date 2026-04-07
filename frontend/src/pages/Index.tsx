@@ -1,10 +1,14 @@
+import { Suspense, useState } from "react";
+import { useTheme } from "@serino/theme";
 import Navbar from "@/components/Navbar";
 import HeroContent from "@/components/HeroContent";
-import ActivitySection from "@/components/ActivitySection";
+import LazyOnVisible from "@/components/LazyOnVisible";
 import PageMeta from "@/components/PageMeta";
-import { useTheme } from "@serino/theme";
 import { useSiteConfig } from "@/contexts/runtime-config";
-import { useState } from "react";
+import { useDeferredActivation } from "@/hooks/useDeferredActivation";
+import { lazyWithPreload } from "@/lib/lazy";
+
+const ActivitySection = lazyWithPreload(() => import("@/components/ActivitySection"));
 
 const Index = () => {
   const { resolvedTheme } = useTheme();
@@ -12,10 +16,11 @@ const Index = () => {
   const videoUrl = site.heroVideoUrl;
   const posterUrl = site.heroPosterUrl;
   const [videoFailed, setVideoFailed] = useState(false);
+  const videoActivated = useDeferredActivation(Boolean(videoUrl), [videoUrl]);
   const fadeTo = resolvedTheme === "dark" ? "hsl(0 0% 4%)" : "hsl(0 0% 100%)";
   const heroOverlayClass = "bg-black/12";
-  const showVideo = Boolean(videoUrl) && !videoFailed;
-  const showImageFallback = Boolean(posterUrl) && !showVideo;
+  const showVideo = Boolean(videoUrl) && videoActivated && !videoFailed;
+  const showImageFallback = Boolean(posterUrl);
 
   return (
     <div
@@ -31,6 +36,8 @@ const Index = () => {
             alt={site.title || site.name}
             className="absolute inset-0 h-full w-full object-cover z-0"
             loading="eager"
+            decoding="async"
+            fetchPriority="high"
           />
         )}
 
@@ -65,7 +72,27 @@ const Index = () => {
       </div>
 
       {/* Continuous scrollable content */}
-      <ActivitySection />
+      <LazyOnVisible
+        rootMargin="480px 0px"
+        fallback={
+          <section className="relative flex w-full flex-col overflow-hidden bg-background">
+            <div className="mx-auto w-full max-w-[84rem] px-6 pt-20 pb-12 lg:px-8 xl:px-10">
+              <div className="mb-10">
+                <div className="h-3 w-24 rounded-full bg-foreground/[0.05]" />
+                <div className="mt-3 h-10 w-72 rounded-full bg-foreground/[0.05]" />
+              </div>
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12 xl:gap-14">
+                <div className="liquid-glass h-64 rounded-[2rem] p-6 md:p-8" />
+                <div className="liquid-glass h-64 rounded-[2rem] p-6 md:p-8" />
+              </div>
+            </div>
+          </section>
+        }
+      >
+        <Suspense fallback={null}>
+          <ActivitySection />
+        </Suspense>
+      </LazyOnVisible>
     </div>
   );
 };

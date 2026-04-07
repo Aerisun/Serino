@@ -1,0 +1,86 @@
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/barlow-400-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --background: 220 16% 96%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222 47% 11%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --shiro-accent-rgb: 51 166 184;
+  --shiro-accent-hsl: 188 57% 46%;
+  --shiro-border-rgb: 202 229 235;
+  --shiro-border-strong-rgb: 152 208 218;
+  --shiro-divider-rgb: 179 219 228;
+  --shiro-panel-rgb: 239 248 249;
+  --shiro-panel-strong-rgb: 226 243 245;
+  --shiro-glow-rgb: 88 182 197;
+  --shiro-sheen-rgb: 202 232 237;
+  --shiro-coin-border-rgb: 136 202 213;
+  --radius: 9999px;
+}
+
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 90%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 55%;
+  --accent: 0 0% 12%;
+  --accent-foreground: 0 0% 90%;
+  --destructive: 0 62.8% 50.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 14%;
+  --input: 0 0% 14%;
+  --ring: 0 0% 80%;
+  --shiro-accent-rgb: 245 150 170;
+  --shiro-accent-hsl: 347 83% 77%;
+  --shiro-border-rgb: 109 69 79;
+  --shiro-border-strong-rgb: 189 116 132;
+  --shiro-divider-rgb: 160 100 113;
+  --shiro-panel-rgb: 52 40 49;
+  --shiro-panel-strong-rgb: 70 50 60;
+  --shiro-glow-rgb: 246 158 177;
+  --shiro-sheen-rgb: 254 247 248;
+  --shiro-coin-border-rgb: 203 125 142;
+}
+
+html, body, #root {
+  min-height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Barlow', sans-serif;
+}

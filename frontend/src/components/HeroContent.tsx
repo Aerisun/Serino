@@ -5,6 +5,7 @@ import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import { SocialIcon } from "@/components/icons/SocialIcon";
 import { API_BASE_PATH } from "@/lib/api";
+import { useDeferredActivation } from "@/hooks/useDeferredActivation";
 
 const EMPTY_POEMS = [""];
 const POEM_PREVIEW_ENDPOINT = `${API_BASE_PATH}/v1/site/poem-preview`;
@@ -35,11 +36,15 @@ const HeroContent = () => {
     (link) => link.placement === "hero" || link.placement === "both",
   );
   const fallbackPoems = site.poems.length > 0 ? site.poems : EMPTY_POEMS;
+  const remotePoemActivation = useDeferredActivation(site.poemSource === "hitokoto", [
+    site.poemSource,
+    fallbackPoems[0],
+  ]);
   const [poem, setPoem] = useState(() => fallbackPoems[0]);
   const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
-    if (site.poemSource !== "hitokoto") {
+    if (site.poemSource !== "hitokoto" || !remotePoemActivation) {
       setPoem(fallbackPoems[Math.floor(Math.random() * fallbackPoems.length)]);
       return;
     }
@@ -66,10 +71,10 @@ const HeroContent = () => {
     return () => {
       cancelled = true;
     };
-  }, [fallbackPoems, site.poemSource]);
+  }, [fallbackPoems, remotePoemActivation, site.poemSource]);
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !remotePoemActivation) return;
 
     const timer = window.setInterval(() => {
       if (site.poemSource === "hitokoto") {
@@ -101,7 +106,7 @@ const HeroContent = () => {
     }, POEM_ROTATION_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [fallbackPoems, prefersReducedMotion, site.poemSource]);
+  }, [fallbackPoems, prefersReducedMotion, remotePoemActivation, site.poemSource]);
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
@@ -165,6 +170,7 @@ const HeroContent = () => {
                   alt={site.name}
                   className="h-full w-full object-cover"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>

@@ -24,7 +24,11 @@ const normalizeFriendPost = (value: FriendFeedItemRead): FriendPost => ({
   url: value.url,
 });
 
-const FriendCircle = () => {
+interface FriendCircleProps {
+  enabled?: boolean;
+}
+
+const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
   const { t } = useFrontendI18n();
   const navigate = useNavigate();
   const { regionRef, scrollViewportRef } =
@@ -58,7 +62,10 @@ const FriendCircle = () => {
     isError,
     error,
     refetch,
-  } = useReadFriendFeedApiV1SiteFriendFeedGet({ limit: 12 });
+  } = useReadFriendFeedApiV1SiteFriendFeedGet(
+    { limit: 12 },
+    { query: { enabled } },
+  );
   const friendPosts = useMemo(
     () => response?.data?.items?.map(normalizeFriendPost) ?? [],
     [response],

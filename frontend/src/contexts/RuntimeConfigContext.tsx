@@ -3,30 +3,42 @@ import { RuntimeConfigContext, describeRuntimeConfigError } from "@/contexts/run
 import { useFrontendI18n } from "@/i18n";
 import { loadRuntimeConfig, type RuntimeConfigSnapshot } from "@/lib/runtime-config";
 
-export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
+export function RuntimeConfigProvider({
+  children,
+  initialConfig = null,
+}: {
+  children: ReactNode;
+  initialConfig?: RuntimeConfigSnapshot | null;
+}) {
   const { t } = useFrontendI18n();
-  const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(null);
+  const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(initialConfig);
   const [error, setError] = useState<Error | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialConfig);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (blocking = false) => {
+    if (blocking) {
+      setLoading(true);
+    }
     try {
       const snapshot = await loadRuntimeConfig();
       setConfig(snapshot);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to load config"));
+      if (!config) {
+        setError(err instanceof Error ? err : new Error("Failed to load config"));
+      }
     } finally {
-      setLoading(false);
+      if (blocking) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [config]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(!initialConfig);
+  }, [initialConfig, load]);
 
-  if (loading) {
+  if (loading && !config) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/60" />
@@ -34,7 +46,7 @@ export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  if (error || !config) {
+  if ((error || !config) && !config) {
     const message = describeRuntimeConfigError(error);
 
     return (
@@ -44,7 +56,7 @@ export function RuntimeConfigProvider({ children }: { children: ReactNode }) {
           <p className="text-xs text-foreground/40">{message}</p>
         </div>
         <button
-          onClick={load}
+          onClick={() => void load(true)}
           className="rounded-full px-5 py-2 text-sm font-medium liquid-glass text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
         >
           {t("common.retry")}
