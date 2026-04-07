@@ -1,4 +1,4 @@
-import { CalendarDays, Globe, Link2, Mail, Phone } from "lucide-react";
+import { CalendarDays, Globe, Link2, Mail, Phone } from "@/components/icons/AppIcon";
 
 interface SocialIconProps {
   iconKey: string;

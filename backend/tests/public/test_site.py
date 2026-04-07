@@ -64,6 +64,33 @@ def test_read_site_manifest_uses_configured_site_icon(client) -> None:
     assert payload["icons"][0]["src"] == "/media/internal/assets/site-icon/4cc8bfdd4830.svg"
 
 
+def test_read_site_bootstrap_returns_aggregated_payload(client) -> None:
+    response = client.get("/api/v1/site/bootstrap")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "public, max-age=60, stale-while-revalidate=300"
+
+    payload = response.json()
+    assert payload["revision"]
+    assert payload["generated_at"]
+    assert payload["site"]["site"]["title"] == "Aerisun"
+    assert payload["pages"]["items"]
+    assert payload["resume"]["title"]
+
+
+def test_read_site_bootstrap_script_assigns_window_payload(client) -> None:
+    response = client.get("/bootstrap.js")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "public, max-age=60, stale-while-revalidate=300"
+    assert response.headers["content-type"].startswith("application/javascript")
+
+    body = response.text
+    assert body.startswith("window.__AERISUN_BOOTSTRAP__=")
+    assert '"revision":"' in body
+    assert '"resume":{' in body
+
+
 @respx.mock
 def test_read_poem_preview_defaults_to_hitokoto(client) -> None:
     respx.get("https://v1.hitokoto.cn/").mock(

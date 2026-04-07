@@ -1,5 +1,5 @@
 import { Loader2, RefreshCw, Reply, Sparkles } from "lucide-react";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
+import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import { useFrontendI18n } from "@/i18n";
 import {
   communityActionClass,
@@ -47,7 +47,7 @@ const CommentThread = ({
                 <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
               </div>
               <div className="mt-2">
-                <MarkdownRenderer content={item.body} className="aerisun-comment-body" />
+                <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
               </div>
               <div className="mt-3 flex items-center gap-3 text-xs text-foreground/45">
                 <button
@@ -176,7 +176,7 @@ const WalineCommentList = ({
                           <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
                         </div>
                         <div className="mt-2">
-                          <MarkdownRenderer content={item.body} className="aerisun-comment-body" />
+                          <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
                         </div>
                       </div>
                     </div>
@@ -217,7 +217,7 @@ const WalineCommentList = ({
                       ) : null}
                     </div>
                     <div className="mt-2">
-                      <MarkdownRenderer content={item.body} className="aerisun-comment-body" />
+                      <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
                     </div>
                   </div>
                 </div>
@@ -258,7 +258,7 @@ const WalineCommentList = ({
                           <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
                         </div>
                         <div className="mt-2">
-                          <MarkdownRenderer content={item.body} className="aerisun-comment-body" />
+                          <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
                         </div>
                       </div>
                     </div>

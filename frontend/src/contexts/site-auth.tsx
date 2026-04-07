@@ -9,8 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Check,
   BellOff,
+  Check,
   Github,
   Lock,
   Loader2,
@@ -18,7 +18,7 @@ import {
   RefreshCcw,
   Sparkles,
   UserRoundPen,
-} from "lucide-react";
+} from "@/components/icons/AppIcon";
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";

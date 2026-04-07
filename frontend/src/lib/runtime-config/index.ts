@@ -3,6 +3,7 @@ import {
   readPageCopyApiV1SitePagesGet,
   readResumeApiV1SiteResumeGet,
 } from "@serino/api-client/site";
+import { API_BASE_PATH } from "@/lib/api";
 import { clampPageSize } from "@/lib/page-size";
 
 // ---------------------------------------------------------------------------
@@ -110,7 +111,9 @@ export interface PageConfig {
 }
 
 export interface RuntimeConfigSnapshot {
-  source: "remote";
+  source: "bootstrap" | "cached" | "remote";
+  revision?: string;
+  generatedAt?: string;
   site: {
     name: string;
     title: string;
@@ -134,11 +137,26 @@ export interface RuntimeConfigSnapshot {
   pages: Record<string, PageConfig>;
 }
 
+export interface RuntimeBootstrapResponse {
+  revision: string;
+  generated_at: string;
+  site: BackendSiteResponse;
+  pages: BackendPagesResponse;
+  resume: BackendResumeResponse;
+}
+
+export interface CachedRuntimeBootstrap {
+  revision: string;
+  stored_at: string;
+  payload: RuntimeBootstrapResponse;
+}
+
 // ---------------------------------------------------------------------------
 // Default motion configs (code constants — not personal data)
 // ---------------------------------------------------------------------------
 const DEFAULT_MOTION: PageMotionConfig = { duration: 0.4, delay: 0.06, stagger: 0.04 };
 const PAGE_COPY_SIZE_MAX = 30;
+const RUNTIME_BOOTSTRAP_STORAGE_KEY = "aerisun.runtime-bootstrap.v1";
 
 const PAGE_DEFAULTS: Record<string, { width?: PageWidth; pageSize?: number; motion?: PageMotionConfig }> = {
   posts:    { width: "content", pageSize: 15, motion: DEFAULT_MOTION },
@@ -352,10 +370,160 @@ const normalizeResumeConfig = (payload: BackendResumeResponse): PageConfig => {
   };
 };
 
-// ---------------------------------------------------------------------------
-// Main loader — errors propagate to caller
-// ---------------------------------------------------------------------------
-export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
+const normalizeRuntimeConfigSnapshot = (
+  payload: {
+    site: BackendSiteResponse;
+    pages: BackendPagesResponse;
+    resume: BackendResumeResponse;
+  },
+  source: RuntimeConfigSnapshot["source"],
+  meta?: { revision?: string; generatedAt?: string },
+): RuntimeConfigSnapshot => {
+  const normalizedPages = normalizePagesConfig(payload.pages);
+  normalizedPages.resume = normalizeResumeConfig(payload.resume);
+
+  return {
+    source,
+    revision: meta?.revision,
+    generatedAt: meta?.generatedAt,
+    site: normalizeSiteConfig(payload.site),
+    pages: normalizedPages,
+  };
+};
+
+const isRuntimeBootstrapResponse = (value: unknown): value is RuntimeBootstrapResponse => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<RuntimeBootstrapResponse>;
+  return (
+    typeof candidate.revision === "string" &&
+    typeof candidate.generated_at === "string" &&
+    !!candidate.site &&
+    !!candidate.pages &&
+    !!candidate.resume
+  );
+};
+
+const persistRuntimeBootstrap = (payload: RuntimeBootstrapResponse) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const cached: CachedRuntimeBootstrap = {
+    revision: payload.revision,
+    stored_at: new Date().toISOString(),
+    payload,
+  };
+
+  try {
+    window.localStorage.setItem(RUNTIME_BOOTSTRAP_STORAGE_KEY, JSON.stringify(cached));
+  } catch {
+    // Ignore storage failures; bootstrap refresh still succeeds for the current session.
+  }
+};
+
+const readCachedRuntimeBootstrap = (): CachedRuntimeBootstrap | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(RUNTIME_BOOTSTRAP_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Partial<CachedRuntimeBootstrap>;
+    if (!parsed || typeof parsed !== "object" || !isRuntimeBootstrapResponse(parsed.payload)) {
+      return null;
+    }
+    return {
+      revision: parsed.revision ?? parsed.payload.revision,
+      stored_at: parsed.stored_at ?? "",
+      payload: parsed.payload,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const readWindowRuntimeBootstrap = (): RuntimeBootstrapResponse | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const payload = window.__AERISUN_BOOTSTRAP__;
+  return isRuntimeBootstrapResponse(payload) ? payload : null;
+};
+
+export function getInitialRuntimeConfigSnapshot(): RuntimeConfigSnapshot | null {
+  const windowBootstrap = readWindowRuntimeBootstrap();
+  if (windowBootstrap) {
+    persistRuntimeBootstrap(windowBootstrap);
+    return normalizeRuntimeConfigSnapshot(
+      {
+        site: windowBootstrap.site,
+        pages: windowBootstrap.pages,
+        resume: windowBootstrap.resume,
+      },
+      "bootstrap",
+      {
+        revision: windowBootstrap.revision,
+        generatedAt: windowBootstrap.generated_at,
+      },
+    );
+  }
+
+  const cachedBootstrap = readCachedRuntimeBootstrap();
+  if (!cachedBootstrap) {
+    return null;
+  }
+
+  return normalizeRuntimeConfigSnapshot(
+    {
+      site: cachedBootstrap.payload.site,
+      pages: cachedBootstrap.payload.pages,
+      resume: cachedBootstrap.payload.resume,
+    },
+    "cached",
+    {
+      revision: cachedBootstrap.payload.revision,
+      generatedAt: cachedBootstrap.payload.generated_at,
+    },
+  );
+};
+
+async function loadRuntimeBootstrap(): Promise<RuntimeConfigSnapshot> {
+  const response = await fetch(`${API_BASE_PATH}/v1/site/bootstrap`, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bootstrap request failed: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as RuntimeBootstrapResponse;
+  if (!isRuntimeBootstrapResponse(payload)) {
+    throw new Error("Invalid bootstrap payload");
+  }
+
+  persistRuntimeBootstrap(payload);
+  return normalizeRuntimeConfigSnapshot(
+    {
+      site: payload.site,
+      pages: payload.pages,
+      resume: payload.resume,
+    },
+    "remote",
+    {
+      revision: payload.revision,
+      generatedAt: payload.generated_at,
+    },
+  );
+}
+
+async function loadLegacyRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
   const [siteResponse, pagesResponse, resumeResponse] = await Promise.all([
     readSiteConfigApiV1SiteSiteGet(),
     readPageCopyApiV1SitePagesGet(),
@@ -366,12 +534,16 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
   const pages = pagesResponse.data as unknown as BackendPagesResponse;
   const resume = resumeResponse.data as unknown as BackendResumeResponse;
 
-  const normalizedPages = normalizePagesConfig(pages);
-  normalizedPages.resume = normalizeResumeConfig(resume);
+  return normalizeRuntimeConfigSnapshot({ site, pages, resume }, "remote");
+}
 
-  return {
-    source: "remote",
-    site: normalizeSiteConfig(site),
-    pages: normalizedPages,
-  };
+// ---------------------------------------------------------------------------
+// Main loader — errors propagate to caller
+// ---------------------------------------------------------------------------
+export async function loadRuntimeConfig(): Promise<RuntimeConfigSnapshot> {
+  try {
+    return await loadRuntimeBootstrap();
+  } catch {
+    return loadLegacyRuntimeConfig();
+  }
 }

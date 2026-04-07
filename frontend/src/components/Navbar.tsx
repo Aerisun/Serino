@@ -1,9 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BellRing, ChevronDown, LogOut, Menu, PencilLine, Search, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ThemeToggle from "@/components/ThemeToggle";
+import {
+  BellRing,
+  ChevronDown,
+  LogOut,
+  Menu,
+  PencilLine,
+  Search,
+  Sparkles,
+  X,
+} from "@/components/icons/AppIcon";
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";

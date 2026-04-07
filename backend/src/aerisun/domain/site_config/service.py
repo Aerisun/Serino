@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import random
 import socket
+import hashlib
+from datetime import UTC, datetime
 from collections import deque
 from copy import deepcopy
 from html.parser import HTMLParser
@@ -29,6 +31,7 @@ from aerisun.domain.site_config.schemas import (
     PageCopyRead,
     PoemRead,
     ResumeRead,
+    SiteBootstrapRead,
     SiteConfigRead,
     SitePoemPreviewRead,
     SiteProfileAdminRead,
@@ -673,6 +676,33 @@ def get_resume(session: Session) -> ResumeRead:
         location=basics.location,
         email=basics.email,
         profile_image_url=basics.profile_image_url,
+    )
+
+
+def get_site_bootstrap(session: Session) -> SiteBootstrapRead:
+    site = get_site_config(session)
+    pages = get_page_copy(session)
+    resume = get_resume(session)
+    bootstrap_seed = {
+        "site": site.model_dump(mode="json"),
+        "pages": pages.model_dump(mode="json"),
+        "resume": resume.model_dump(mode="json"),
+    }
+    revision = hashlib.sha256(
+        json.dumps(
+            bootstrap_seed,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+    return SiteBootstrapRead(
+        revision=revision,
+        generated_at=datetime.now(UTC),
+        site=site,
+        pages=pages,
+        resume=resume,
     )
 
 

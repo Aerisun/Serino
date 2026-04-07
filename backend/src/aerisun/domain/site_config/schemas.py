@@ -156,6 +156,14 @@ class ResumeRead(ModelBase):
     profile_image_url: str = Field(default="", description="Profile image URL")
 
 
+class SiteBootstrapRead(ModelBase):
+    revision: str = Field(description="Stable revision hash for the current public site bootstrap payload")
+    generated_at: datetime = Field(description="UTC timestamp for when the bootstrap payload was generated")
+    site: SiteConfigRead = Field(description="Site profile and navigation bundle")
+    pages: PageCollectionRead = Field(description="Page copy bundle")
+    resume: ResumeRead = Field(description="Resume basics bundle")
+
+
 # ---------------------------------------------------------------------------
 # Admin: SiteProfile
 # ---------------------------------------------------------------------------

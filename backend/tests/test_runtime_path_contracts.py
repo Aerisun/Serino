@@ -182,6 +182,7 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert "{$AERISUN_WALINE_BASE_PATH:/waline}" in caddy_text
     assert "{$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}" in caddy_text
     assert "{$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}" in caddy_text
+    assert "handle /bootstrap.js" in caddy_text
 
     assert 'HEALTHCHECK_PATH="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in smoke_text
     assert 'ADMIN_BASE_PATH="$(ensure_trailing_slash "${AERISUN_ADMIN_BASE_PATH:-/admin/}")"' in smoke_text

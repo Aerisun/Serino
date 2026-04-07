@@ -245,7 +245,11 @@ const renderMobileLead = (item: ActivityItem, t: TranslateFn): ReactNode => {
   return renderSummary(item, t);
 };
 
-const RecentActivity = () => {
+interface RecentActivityProps {
+  enabled?: boolean;
+}
+
+const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
   const { t, lang } = useFrontendI18n();
   const navigate = useNavigate();
   const { regionRef, scrollViewportRef } =
@@ -261,7 +265,10 @@ const RecentActivity = () => {
   const emptyMessage = String(config.recentActivityEmptyMessage ?? t("recentActivity.emptyMessage"));
 
   const { data: response, isLoading, isError, error, refetch } =
-    useReadRecentActivityApiV1SiteRecentActivityGet({ limit: 8 });
+    useReadRecentActivityApiV1SiteRecentActivityGet(
+      { limit: 8 },
+      { query: { enabled } },
+    );
   const activities = useMemo(
     () => response?.data?.items?.map((item) => normalizeActivity(item, t, lang)) ?? [],
     [lang, response, t],

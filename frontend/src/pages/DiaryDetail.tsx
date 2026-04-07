@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import {
@@ -34,10 +34,11 @@ import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { formatDateInBeijing } from "@/lib/time";
 import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+import { lazyWithPreload } from "@/lib/lazy";
 
 const CommentSection = lazy(() => import("@/components/CommentSection"));
+const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
 
 type Weather =
   | "sunny"
@@ -215,6 +216,12 @@ const DiaryDetail = () => {
       : "";
   const showArticleEnhancements = Boolean(entry) && featureFlags.toc;
 
+  useEffect(() => {
+    if (entry) {
+      void ArticleMarkdownRenderer.preload();
+    }
+  }, [entry]);
+
   const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
   const weatherLabel = entry?.weather ? t(weatherLabelKeys[entry.weather]) : "";
 
@@ -338,10 +345,20 @@ const DiaryDetail = () => {
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
-              <MarkdownRenderer
-                content={entry.body}
-                className="detail-markdown"
-              />
+              <Suspense
+                fallback={
+                  <div className="space-y-4">
+                    <div className="h-4 w-full rounded-full bg-foreground/[0.035]" />
+                    <div className="h-4 w-[90%] rounded-full bg-foreground/[0.03]" />
+                    <div className="h-4 w-[74%] rounded-full bg-foreground/[0.03]" />
+                  </div>
+                }
+              >
+                <ArticleMarkdownRenderer
+                  content={entry.body}
+                  className="detail-markdown"
+                />
+              </Suspense>
             </motion.div>
 
             {showArticleEnhancements ? (

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, FileText, Tag } from "lucide-react";
@@ -20,10 +20,11 @@ import { formatPublishedDate } from "@/lib/api/utils";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { useReadPostApiV1SitePostsSlugGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import type { BaseViewPageConfig } from "@/lib/page-config";
+import { lazyWithPreload } from "@/lib/lazy";
 
 const CommentSection = lazy(() => import("@/components/CommentSection"));
+const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
 
 interface PostData {
   slug: string;
@@ -160,6 +161,12 @@ const PostDetail = () => {
     : !id ? t("postDetail.missingId") : "";
   const showArticleEnhancements = Boolean(post) && featureFlags.toc;
 
+  useEffect(() => {
+    if (post) {
+      void ArticleMarkdownRenderer.preload();
+    }
+  }, [post]);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
@@ -271,7 +278,17 @@ const PostDetail = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              <MarkdownRenderer content={post.content} className="detail-markdown" />
+              <Suspense
+                fallback={
+                  <div className="space-y-4">
+                    <div className="h-4 w-full rounded-full bg-foreground/[0.035]" />
+                    <div className="h-4 w-[92%] rounded-full bg-foreground/[0.03]" />
+                    <div className="h-4 w-[78%] rounded-full bg-foreground/[0.03]" />
+                  </div>
+                }
+              >
+                <ArticleMarkdownRenderer content={post.content} className="detail-markdown" />
+              </Suspense>
             </motion.article>
 
             {showArticleEnhancements ? (

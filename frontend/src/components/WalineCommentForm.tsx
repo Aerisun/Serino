@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { transition } from "@/config";
 import type { AvatarPreset } from "@/lib/community-config";
 import { useFrontendI18n } from "@/i18n";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
+import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import WalineAvatarSelector from "./WalineAvatarSelector";
 import {
   communityActionClass,
@@ -404,7 +404,7 @@ const WalineCommentForm = ({
               {editorMode === "preview" ? (
                 <div className="min-h-[160px] rounded-[1.4rem] border border-[rgb(var(--shiro-border-rgb)/0.28)] bg-background/[0.82] px-4 py-4 dark:border-[rgb(var(--shiro-border-rgb)/0.32)] dark:bg-card/[0.9]">
                   {deferredBody.trim() ? (
-                    <MarkdownRenderer content={deferredBody} className="aerisun-comment-preview" />
+                    <CommentMarkdownRenderer content={deferredBody} className="aerisun-comment-preview" />
                   ) : (
                     <div className="flex min-h-[128px] items-center justify-center text-sm text-foreground/42">
                       {t("waline.form.previewPlaceholder")}

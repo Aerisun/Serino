@@ -1,6 +1,6 @@
-import { Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "@serino/theme";
 import { useFrontendI18n } from "@/i18n";
+import { Monitor, Moon, Sun } from "@/components/icons/AppIcon";
 
 const cycle = ["light", "dark", "system"] as const;
 const icons = { light: Sun, dark: Moon, system: Monitor };

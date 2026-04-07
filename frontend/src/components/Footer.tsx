@@ -41,14 +41,21 @@ const FooterRepoIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const Footer = () => {
+interface FooterProps {
+  enabled?: boolean;
+}
+
+const Footer = ({ enabled = true }: FooterProps) => {
   const site = useSiteConfig();
   const { t } = useFrontendI18n();
   const { theme, setTheme } = useTheme();
-  const { data: heatmapResponse } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet({
-    weeks: 52,
-    tz: "Asia/Shanghai",
-  });
+  const { data: heatmapResponse } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet(
+    {
+      weeks: 52,
+      tz: "Asia/Shanghai",
+    },
+    { query: { enabled } },
+  );
 
   const ownerName = site.name.trim() || site.title.trim() || "Aerisun";
   const filingText = site.footer.filingInfo.trim();

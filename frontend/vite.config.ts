@@ -2,6 +2,8 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import fs from "fs";
+import zlib from "zlib";
 
 const stripTrailingSlash = (value: string) => value.trim().replace(/\/+$/, "") || "/api";
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -19,6 +21,9 @@ const buildObfuscationTargets = [
   "Open Aerisun /Serino repository",
   "M7 7h10v10 M7 17 17 7",
 ] as const;
+const FRONTEND_ENTRY_JS_GZIP_BUDGET_BYTES = 60 * 1024;
+const FRONTEND_ENTRY_CSS_GZIP_BUDGET_BYTES = 12 * 1024;
+const PRECACHE_BUDGET_BYTES = 2 * 1024 * 1024;
 
 const encodeBuildLiteral = (value: string, quote: '"' | "'" | "`") =>
   Array.from(value)
@@ -61,6 +66,60 @@ const footerBuildObfuscationPlugin = () => ({
         nextCode = replaceQuotedLiteral(nextCode, target);
       }
       output.code = nextCode;
+    }
+  },
+});
+
+const performanceBudgetPlugin = () => ({
+  name: "aerisun-performance-budgets",
+  apply: "build" as const,
+  closeBundle() {
+    const distDir = path.resolve(__dirname, "dist");
+    const indexHtmlPath = path.join(distDir, "index.html");
+    if (!fs.existsSync(indexHtmlPath)) {
+      return;
+    }
+
+    const indexHtml = fs.readFileSync(indexHtmlPath, "utf-8");
+    const entryScriptMatch = indexHtml.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/);
+    const entryStyleMatch = indexHtml.match(/<link rel="stylesheet" crossorigin href="([^"]+)">/);
+
+    const requiredFileSize = (assetPath: string | undefined, budgetBytes: number, label: string) => {
+      if (!assetPath) {
+        throw new Error(`Missing ${label} asset in dist/index.html`);
+      }
+      const relativePath = assetPath.replace(/^\//, "");
+      const absolutePath = path.join(distDir, relativePath);
+      const gzipBytes = zlib.gzipSync(fs.readFileSync(absolutePath)).length;
+      if (gzipBytes > budgetBytes) {
+        throw new Error(`${label} gzip budget exceeded: ${gzipBytes} > ${budgetBytes}`);
+      }
+    };
+
+    requiredFileSize(entryScriptMatch?.[1], FRONTEND_ENTRY_JS_GZIP_BUDGET_BYTES, "entry JS");
+    requiredFileSize(entryStyleMatch?.[1], FRONTEND_ENTRY_CSS_GZIP_BUDGET_BYTES, "entry CSS");
+
+    if (/createLucideIcon-[\w-]+\.js/.test(indexHtml)) {
+      throw new Error("Homepage should not modulepreload lucide-react startup chunks");
+    }
+
+    const swPath = path.join(distDir, "sw.js");
+    if (!fs.existsSync(swPath)) {
+      return;
+    }
+
+    const swContent = fs.readFileSync(swPath, "utf-8");
+    const precachedUrls = Array.from(swContent.matchAll(/url:\s*["']([^"']+)["']/g))
+      .map((match) => match[1])
+      .filter((value) => value.startsWith("/") || !/^https?:\/\//.test(value));
+    const totalPrecacheBytes = Array.from(new Set(precachedUrls)).reduce((total, urlValue) => {
+      const relativePath = urlValue.replace(/^\//, "");
+      const absolutePath = path.join(distDir, relativePath);
+      return total + (fs.existsSync(absolutePath) ? fs.statSync(absolutePath).size : 0);
+    }, 0);
+
+    if (totalPrecacheBytes > PRECACHE_BUDGET_BYTES) {
+      throw new Error(`PWA precache budget exceeded: ${totalPrecacheBytes} > ${PRECACHE_BUDGET_BYTES}`);
     }
   },
 });
@@ -140,10 +199,19 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       footerBuildObfuscationPlugin(),
+      performanceBudgetPlugin(),
       VitePWA({
         registerType: "autoUpdate",
         manifest: false,
         workbox: {
+          globPatterns: [
+            "index.html",
+            "registerSW.js",
+            "assets/index-*.js",
+            "assets/index-*.css",
+            "fonts/barlow-400-latin.woff2",
+          ],
+          maximumFileSizeToCacheInBytes: 384 * 1024,
           navigateFallbackDenylist: [
             adminBasePathPattern,
             apiBasePathPrefixPattern,
@@ -156,6 +224,21 @@ export default defineConfig(({ mode }) => {
               urlPattern: apiBasePathPattern,
               handler: "NetworkFirst",
               options: { cacheName: "api-cache", expiration: { maxEntries: 50, maxAgeSeconds: 300 } },
+            },
+            {
+              urlPattern: /\/bootstrap\.js$/,
+              handler: "StaleWhileRevalidate",
+              options: { cacheName: "bootstrap-cache", expiration: { maxEntries: 2, maxAgeSeconds: 600 } },
+            },
+            {
+              urlPattern: /\.(woff2?|ttf|otf)$/,
+              handler: "CacheFirst",
+              options: { cacheName: "font-cache", expiration: { maxEntries: 40, maxAgeSeconds: 86400 * 90 } },
+            },
+            {
+              urlPattern: /\/(assets\/.*)?(markdown|katex|mermaid|waline|comment|highlight)[^/]*\.(js|css)$/,
+              handler: "CacheFirst",
+              options: { cacheName: "rich-content", expiration: { maxEntries: 60, maxAgeSeconds: 86400 * 30 } },
             },
             {
               urlPattern: /\.(js|css|png|jpg|jpeg|svg|gif|woff2?)$/,

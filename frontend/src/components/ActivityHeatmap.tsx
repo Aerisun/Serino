@@ -74,7 +74,11 @@ const buildMonthMarkers = (weeks: WeeklyData[]) => {
   return markers;
 };
 
-const ActivityHeatmap = () => {
+interface ActivityHeatmapProps {
+  enabled?: boolean;
+}
+
+const ActivityHeatmap = ({ enabled = true }: ActivityHeatmapProps) => {
   const { t } = useFrontendI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
@@ -90,10 +94,14 @@ const ActivityHeatmap = () => {
   ] as const;
   const isDark = resolvedTheme === "dark";
 
-  const { data: response, isLoading, isError, refetch } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet({
-    weeks: 52,
-    tz: "Asia/Shanghai",
-  });
+  const { data: response, isLoading, isError, refetch } =
+    useReadActivityHeatmapApiV1SiteActivityHeatmapGet(
+      {
+        weeks: 52,
+        tz: "Asia/Shanghai",
+      },
+      { query: { enabled } },
+    );
   const remoteWeeks = response?.data?.weeks;
   const data = useMemo(() => (remoteWeeks ? normalizeHeatmapWeeks(remoteWeeks) : []), [remoteWeeks]);
   const remoteStats = response?.data?.stats ?? null;

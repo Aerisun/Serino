@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Clock, Eye, MessageCircle, Tag } from "lucide-react";
@@ -10,11 +10,13 @@ import PageShell from "@/components/PageShell";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n, type FrontendLang } from "@/i18n";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import EmbeddedResume from "@/components/EmbeddedResume";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
+import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { formatDateInBeijing } from "@/lib/time";
+
+const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
 
 const estimateReadTime = (value: string, lang: FrontendLang, minuteLabel: string) =>
   `${Math.max(1, Math.ceil(value.length / 180)).toLocaleString(lang === "zh" ? "zh-CN" : "en-US")} ${minuteLabel}`;
@@ -45,6 +47,10 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
   };
   const fallbackCategoryLabel = postsConfig.categories?.fallback ?? t("posts.fallbackCategory");
   const articleRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    void ArticleMarkdownRenderer.preload();
+  }, []);
 
   const category = data.category || fallbackCategoryLabel;
   const readTime = estimateReadTime(data.body || "", lang, t("common.minutes"));
@@ -107,7 +113,17 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
       >
-        <MarkdownRenderer content={data.body || ""} />
+        <Suspense
+          fallback={
+            <div className="space-y-4">
+              <div className="h-4 w-full rounded-full bg-foreground/[0.035]" />
+              <div className="h-4 w-[88%] rounded-full bg-foreground/[0.03]" />
+              <div className="h-4 w-[76%] rounded-full bg-foreground/[0.03]" />
+            </div>
+          }
+        >
+          <ArticleMarkdownRenderer content={data.body || ""} />
+        </Suspense>
       </motion.article>
 
       {featureFlags.toc && (
@@ -142,6 +158,10 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
         weekday: "long",
       })
     : "";
+
+  useEffect(() => {
+    void ArticleMarkdownRenderer.preload();
+  }, []);
 
   return (
     <>
@@ -179,7 +199,17 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
       >
-        <MarkdownRenderer content={data.body || ""} />
+        <Suspense
+          fallback={
+            <div className="space-y-4">
+              <div className="h-4 w-full rounded-full bg-foreground/[0.035]" />
+              <div className="h-4 w-[88%] rounded-full bg-foreground/[0.03]" />
+              <div className="h-4 w-[76%] rounded-full bg-foreground/[0.03]" />
+            </div>
+          }
+        >
+          <ArticleMarkdownRenderer content={data.body || ""} />
+        </Suspense>
       </motion.article>
 
       {featureFlags.toc && (
