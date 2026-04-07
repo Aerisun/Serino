@@ -15,6 +15,10 @@
         reverse_proxy api:{$AERISUN_PORT:8000}
     }
 
+    handle /bootstrap.js {
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
     # Waline 评论服务
     handle {$AERISUN_WALINE_BASE_PATH:/waline}* {
         uri strip_prefix {$AERISUN_WALINE_BASE_PATH:/waline}

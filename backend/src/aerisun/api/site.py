@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+import json
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
@@ -40,6 +41,7 @@ from aerisun.domain.site_config.schemas import (
     LinkPreviewRead,
     PageCollectionRead,
     ResumeRead,
+    SiteBootstrapRead,
     SiteConfigRead,
     SitePoemPreviewRead,
 )
@@ -48,6 +50,7 @@ from aerisun.domain.site_config.service import (
     get_community_config,
     get_page_copy,
     get_resume,
+    get_site_bootstrap,
     get_site_config,
     get_site_link_preview,
     get_site_poem_preview,
@@ -58,6 +61,8 @@ from aerisun.domain.social.service import list_public_friend_feed, list_public_f
 base_router = APIRouter()
 public_router = APIRouter(tags=["site"])
 router = APIRouter(prefix="/api/v1/site", tags=["site"])
+
+BOOTSTRAP_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
 
 
 def _can_view_archived_content(
@@ -103,6 +108,21 @@ def read_site_manifest(session: Session = Depends(get_session)) -> JSONResponse:
     return JSONResponse(content=manifest, media_type="application/manifest+json")
 
 
+@public_router.get("/bootstrap.js", summary="获取首屏运行时配置脚本")
+def read_site_bootstrap_script(session: Session = Depends(get_session)) -> Response:
+    payload = get_site_bootstrap(session)
+    serialized = json.dumps(
+        payload.model_dump(mode="json"),
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return Response(
+        content=f"window.__AERISUN_BOOTSTRAP__={serialized.replace('</', '<\\/')};",
+        media_type="application/javascript",
+        headers={"Cache-Control": BOOTSTRAP_CACHE_CONTROL},
+    )
+
+
 @base_router.get("/site", response_model=SiteConfigRead, summary="获取站点配置")
 def read_site_config(session: Session = Depends(get_session)) -> SiteConfigRead:
     return get_site_config(session)
@@ -121,6 +141,12 @@ def read_community_config(session: Session = Depends(get_session)) -> CommunityC
 @base_router.get("/resume", response_model=ResumeRead, summary="获取简历数据")
 def read_resume(session: Session = Depends(get_session)) -> ResumeRead:
     return get_resume(session)
+
+
+@base_router.get("/bootstrap", response_model=SiteBootstrapRead, summary="获取前端启动配置聚合包")
+def read_bootstrap(response: Response, session: Session = Depends(get_session)) -> SiteBootstrapRead:
+    response.headers["Cache-Control"] = BOOTSTRAP_CACHE_CONTROL
+    return get_site_bootstrap(session)
 
 
 @base_router.get("/poem-preview", response_model=SitePoemPreviewRead, summary="获取首页诗句预览")
