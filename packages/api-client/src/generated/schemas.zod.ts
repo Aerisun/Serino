@@ -13,6 +13,12 @@ export const ReadSiteManifestManifestWebmanifestGetResponse = zod.unknown()
 
 
 /**
+ * @summary 获取首屏运行时配置脚本
+ */
+export const ReadSiteBootstrapScriptBootstrapJsGetResponse = zod.unknown()
+
+
+/**
  * @summary 获取站点配置
  */
 export const readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault = `hitokoto`;
@@ -117,6 +123,78 @@ export const ReadResumeApiV1SiteResumeGetResponse = zod.object({
   "location": zod.string().default(readResumeApiV1SiteResumeGetResponseLocationDefault).describe('Current base location'),
   "email": zod.string().default(readResumeApiV1SiteResumeGetResponseEmailDefault).describe('Primary contact email'),
   "profile_image_url": zod.string().default(readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault).describe('Profile image URL')
+})
+
+
+/**
+ * @summary 获取前端启动配置聚合包
+ */
+export const readBootstrapApiV1SiteBootstrapGetResponseSiteSitePoemSourceDefault = `hitokoto`;
+export const readBootstrapApiV1SiteBootstrapGetResponseResumeLocationDefault = ``;
+export const readBootstrapApiV1SiteBootstrapGetResponseResumeEmailDefault = ``;
+export const readBootstrapApiV1SiteBootstrapGetResponseResumeProfileImageUrlDefault = ``;
+
+export const ReadBootstrapApiV1SiteBootstrapGetResponse = zod.object({
+  "revision": zod.string().describe('Stable revision hash for the current public site bootstrap payload'),
+  "generated_at": zod.string().datetime({}).describe('UTC timestamp for when the bootstrap payload was generated'),
+  "site": zod.object({
+  "site": zod.object({
+  "name": zod.string().describe('Site owner name'),
+  "title": zod.string().describe('Site title'),
+  "bio": zod.string().describe('Short biography'),
+  "role": zod.string().describe('Professional role'),
+  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
+  "site_icon_url": zod.string().describe('Browser tab icon path'),
+  "hero_image_url": zod.string().describe('Hero image path'),
+  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
+  "hero_actions": zod.array(zod.record(zod.string(), zod.unknown())).describe('Hero section action buttons'),
+  "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
+  "poem_source": zod.enum(['custom', 'hitokoto']).default(readBootstrapApiV1SiteBootstrapGetResponseSiteSitePoemSourceDefault).describe('Poem source mode'),
+  "poem_hitokoto_types": zod.array(zod.string()).optional().describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.array(zod.string()).optional().describe('Hitokoto preferred keywords'),
+  "feature_flags": zod.record(zod.string(), zod.unknown()).optional().describe('Feature toggle flags')
+}).describe('Site profile configuration'),
+  "social_links": zod.array(zod.object({
+  "name": zod.string().describe('Social platform display name'),
+  "href": zod.string().describe('Social profile URL'),
+  "icon_key": zod.string().describe('Icon identifier'),
+  "placement": zod.string().describe('Display location: hero or footer'),
+  "order_index": zod.number().describe('Sort order')
+})).describe('Social media links'),
+  "poems": zod.array(zod.object({
+  "content": zod.string().describe('Poem text content'),
+  "order_index": zod.number().describe('Display order')
+})).describe('Featured poems'),
+  "navigation": zod.array(zod.object({
+  "label": zod.string().describe('Navigation item label'),
+  "trigger": zod.string().describe('Interaction trigger type'),
+  "href": zod.union([zod.string(),zod.null()]).optional().describe('Navigation URL'),
+  "children": zod.array(zod.object({
+  "label": zod.string().describe('Child navigation label'),
+  "href": zod.string().describe('Child navigation URL')
+})).optional().describe('Nested child navigation items')
+})).optional().describe('Navigation menu items')
+}).describe('Site profile and navigation bundle'),
+  "pages": zod.object({
+  "items": zod.array(zod.object({
+  "page_key": zod.string().describe('Page identifier key'),
+  "title": zod.string().describe('Page title'),
+  "subtitle": zod.string().describe('Page subtitle'),
+  "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder text'),
+  "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
+  "max_width": zod.union([zod.string(),zod.null()]).describe('Max page width CSS value'),
+  "page_size": zod.union([zod.number(),zod.null()]).describe('Items per page'),
+  "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration')
+})).describe('List of page configurations')
+}).describe('Page copy bundle'),
+  "resume": zod.object({
+  "title": zod.string().describe('Resume page title'),
+  "summary": zod.string().describe('Professional summary'),
+  "location": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeLocationDefault).describe('Current base location'),
+  "email": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeEmailDefault).describe('Primary contact email'),
+  "profile_image_url": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeProfileImageUrlDefault).describe('Profile image URL')
+}).describe('Resume basics bundle')
 })
 
 

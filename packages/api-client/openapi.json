@@ -24,6 +24,25 @@
         }
       }
     },
+    "/bootstrap.js": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取首屏运行时配置脚本",
+        "operationId": "read_site_bootstrap_script_bootstrap_js_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site/site": {
       "get": {
         "tags": [
@@ -101,6 +120,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResumeRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site/bootstrap": {
+      "get": {
+        "tags": [
+          "site"
+        ],
+        "summary": "获取前端启动配置聚合包",
+        "operationId": "read_bootstrap_api_v1_site_bootstrap_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteBootstrapRead"
                 }
               }
             }
@@ -26853,6 +26893,42 @@
           "primary_auth_provider"
         ],
         "title": "SiteAuthUserRead"
+      },
+      "SiteBootstrapRead": {
+        "properties": {
+          "revision": {
+            "type": "string",
+            "title": "Revision",
+            "description": "Stable revision hash for the current public site bootstrap payload"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At",
+            "description": "UTC timestamp for when the bootstrap payload was generated"
+          },
+          "site": {
+            "$ref": "#/components/schemas/SiteConfigRead",
+            "description": "Site profile and navigation bundle"
+          },
+          "pages": {
+            "$ref": "#/components/schemas/PageCollectionRead",
+            "description": "Page copy bundle"
+          },
+          "resume": {
+            "$ref": "#/components/schemas/ResumeRead",
+            "description": "Resume basics bundle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "generated_at",
+          "site",
+          "pages",
+          "resume"
+        ],
+        "title": "SiteBootstrapRead"
       },
       "SiteConfigRead": {
         "properties": {

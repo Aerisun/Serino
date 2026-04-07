@@ -56,6 +56,7 @@ import type {
   ResumeRead,
   SearchContentApiV1SiteSearchGetParams,
   SearchResponse,
+  SiteBootstrapRead,
   SiteConfigRead,
   SitePoemPreviewRead
 } from '../model';
@@ -173,6 +174,116 @@ export function useReadSiteManifestManifestWebmanifestGet<TData = Awaited<Return
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReadSiteManifestManifestWebmanifestGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取首屏运行时配置脚本
+ */
+export type readSiteBootstrapScriptBootstrapJsGetResponse200 = {
+  data: unknown
+  status: 200
+}
+
+export type readSiteBootstrapScriptBootstrapJsGetResponseSuccess = (readSiteBootstrapScriptBootstrapJsGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type readSiteBootstrapScriptBootstrapJsGetResponse = (readSiteBootstrapScriptBootstrapJsGetResponseSuccess)
+
+export const getReadSiteBootstrapScriptBootstrapJsGetUrl = () => {
+
+
+
+
+  return `/bootstrap.js`
+}
+
+export const readSiteBootstrapScriptBootstrapJsGet = async ( options?: RequestInit): Promise<readSiteBootstrapScriptBootstrapJsGetResponse> => {
+
+  return customInstance<readSiteBootstrapScriptBootstrapJsGetResponse>(getReadSiteBootstrapScriptBootstrapJsGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadSiteBootstrapScriptBootstrapJsGetQueryKey = () => {
+    return [
+    `/bootstrap.js`
+    ] as const;
+    }
+
+
+export const getReadSiteBootstrapScriptBootstrapJsGetQueryOptions = <TData = Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadSiteBootstrapScriptBootstrapJsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>> = ({ signal }) => readSiteBootstrapScriptBootstrapJsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadSiteBootstrapScriptBootstrapJsGetQueryResult = NonNullable<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>>
+export type ReadSiteBootstrapScriptBootstrapJsGetQueryError = ErrorType<unknown>
+
+
+export function useReadSiteBootstrapScriptBootstrapJsGet<TData = Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>,
+          TError,
+          Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadSiteBootstrapScriptBootstrapJsGet<TData = Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>,
+          TError,
+          Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadSiteBootstrapScriptBootstrapJsGet<TData = Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取首屏运行时配置脚本
+ */
+
+export function useReadSiteBootstrapScriptBootstrapJsGet<TData = Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readSiteBootstrapScriptBootstrapJsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadSiteBootstrapScriptBootstrapJsGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -613,6 +724,116 @@ export function useReadResumeApiV1SiteResumeGet<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReadResumeApiV1SiteResumeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取前端启动配置聚合包
+ */
+export type readBootstrapApiV1SiteBootstrapGetResponse200 = {
+  data: SiteBootstrapRead
+  status: 200
+}
+
+export type readBootstrapApiV1SiteBootstrapGetResponseSuccess = (readBootstrapApiV1SiteBootstrapGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type readBootstrapApiV1SiteBootstrapGetResponse = (readBootstrapApiV1SiteBootstrapGetResponseSuccess)
+
+export const getReadBootstrapApiV1SiteBootstrapGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/bootstrap`
+}
+
+export const readBootstrapApiV1SiteBootstrapGet = async ( options?: RequestInit): Promise<readBootstrapApiV1SiteBootstrapGetResponse> => {
+
+  return customInstance<readBootstrapApiV1SiteBootstrapGetResponse>(getReadBootstrapApiV1SiteBootstrapGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadBootstrapApiV1SiteBootstrapGetQueryKey = () => {
+    return [
+    `/api/v1/site/bootstrap`
+    ] as const;
+    }
+
+
+export const getReadBootstrapApiV1SiteBootstrapGetQueryOptions = <TData = Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadBootstrapApiV1SiteBootstrapGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>> = ({ signal }) => readBootstrapApiV1SiteBootstrapGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadBootstrapApiV1SiteBootstrapGetQueryResult = NonNullable<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>>
+export type ReadBootstrapApiV1SiteBootstrapGetQueryError = ErrorType<unknown>
+
+
+export function useReadBootstrapApiV1SiteBootstrapGet<TData = Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>,
+          TError,
+          Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadBootstrapApiV1SiteBootstrapGet<TData = Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>,
+          TError,
+          Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadBootstrapApiV1SiteBootstrapGet<TData = Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取前端启动配置聚合包
+ */
+
+export function useReadBootstrapApiV1SiteBootstrapGet<TData = Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readBootstrapApiV1SiteBootstrapGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadBootstrapApiV1SiteBootstrapGetQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
