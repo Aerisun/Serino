@@ -21,14 +21,13 @@ type ProfileFieldKey =
   | "name"
   | "title"
   | "role"
-  | "footer_text"
+  | "bio"
   | "filing_info"
   | "hero_image_url"
   | "hero_poster_url"
   | "hero_video_url"
   | "og_image"
-  | "site_icon_url"
-  | "bio";
+  | "site_icon_url";
 
 type FieldHelpCopy = {
   label: string;
@@ -46,14 +45,13 @@ const PROFILE_FORM_FIELDS = [
   "name",
   "title",
   "role",
-  "footer_text",
+  "bio",
   "filing_info",
   "hero_image_url",
   "hero_poster_url",
   "hero_video_url",
   "og_image",
   "site_icon_url",
-  "bio",
 ] as const satisfies readonly ProfileFieldKey[];
 
 function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormState {
@@ -62,7 +60,6 @@ function createProfileForm(profile?: SiteProfileAdminRead | null): ProfileFormSt
     title: profile?.title ?? "",
     bio: profile?.bio ?? "",
     role: profile?.role ?? "",
-    footer_text: profile?.footer_text ?? "",
     filing_info: profile?.filing_info ?? "",
     og_image: profile?.og_image ?? "",
     site_icon_url: profile?.site_icon_url ?? "",
@@ -105,15 +102,6 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       usageItems: [
         "首页 Hero 顶部的小字标签",
         "页脚名称下方的身份说明",
-      ],
-    },
-    footer_text: {
-      label: "页脚补充文案",
-      title: "页脚最底部的一句短文案",
-      description: "适合放一句签名、构建说明或简短态度表达，不建议写太长。",
-      usageTitle: "会影响这些位置",
-      usageItems: [
-        "全站页脚底部的补充说明",
       ],
     },
     filing_info: {
@@ -230,15 +218,6 @@ const PROFILE_FIELD_COPY: Record<"zh" | "en", Record<ProfileFieldKey, FieldHelpC
       usageItems: [
         "The small label above the homepage hero",
         "The role line under the name in the footer",
-      ],
-    },
-    footer_text: {
-      label: "Footer Supporting Copy",
-      title: "The short line at the bottom of the footer",
-      description: "Good for a signature, build note, or a short tone-setting sentence.",
-      usageTitle: "Used in",
-      usageItems: [
-        "The footer support line across the site",
       ],
     },
     filing_info: {
@@ -422,7 +401,7 @@ export function ProfileTab() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-        {(["name", "title", "role", "footer_text", "filing_info"] as const).map((key) => (
+        {(["name", "title", "role"] as const).map((key) => (
           <div key={key} className="space-y-2">
             {renderHelpLabel(key)}
             <Input
@@ -431,6 +410,21 @@ export function ProfileTab() {
             />
           </div>
         ))}
+        <div className="space-y-2">
+          {renderHelpLabel("bio")}
+          <Textarea
+            value={form.bio}
+            onChange={(e) => updateField("bio", e.target.value)}
+            rows={4}
+          />
+        </div>
+        <div className="space-y-2">
+          {renderHelpLabel("filing_info")}
+          <Input
+            value={form.filing_info}
+            onChange={(e) => updateField("filing_info", e.target.value)}
+          />
+        </div>
         <ResourceUploadField
           label={renderHelpLabel("hero_image_url")}
           value={form.hero_image_url}
@@ -486,14 +480,6 @@ export function ProfileTab() {
           onChange={(value) => updateField("site_icon_url", value)}
           onUploadPersist={(value) => autoSaveUploadedField("site_icon_url", value)}
         />
-        <div className="space-y-2">
-          {renderHelpLabel("bio")}
-          <Textarea
-            value={form.bio}
-            onChange={(e) => updateField("bio", e.target.value)}
-            rows={4}
-          />
-        </div>
       </CardContent>
     </Card>
   );

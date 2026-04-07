@@ -30,6 +30,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.items": "项",
     "common.itemsTotal": "{count} 项",
     "common.title": "标题",
+    "common.snippet": "文段",
     "common.name": "名称",
     "common.date": "日期",
     "common.type": "类型",
@@ -238,7 +239,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.siteTitle": "站点标题",
     "siteConfig.bio": "简介",
     "siteConfig.role": "角色",
-    "siteConfig.footerText": "页脚文字",
     "siteConfig.platform": "平台",
     "siteConfig.platformPlaceholder": "选择一个平台",
     "siteConfig.platformHint":
@@ -1246,6 +1246,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "common.items": "items",
     "common.itemsTotal": "{count} items total",
     "common.title": "Title",
+    "common.snippet": "Snippet",
     "common.name": "Name",
     "common.date": "Date",
     "common.type": "Type",
@@ -1459,7 +1460,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.siteTitle": "Site Title",
     "siteConfig.bio": "Bio",
     "siteConfig.role": "Role",
-    "siteConfig.footerText": "Footer Text",
     "siteConfig.platform": "Platform",
     "siteConfig.platformPlaceholder": "Choose a platform",
     "siteConfig.platformHint":

@@ -4,7 +4,9 @@ import {
   useBulkStatusThoughts,
   getListThoughtsQueryKey,
 } from "@serino/api-client/admin";
+import type { ContentAdminRead } from "@serino/api-client/models";
 import { StatusBadge } from "@/components/StatusBadge";
+import { getBodySnippet } from "@/lib/content-snippets";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import ContentListPage from "@/pages/common/ContentListPage";
@@ -20,7 +22,17 @@ function useThoughtListConfig(): ContentListConfig {
     newPath: "/thoughts/new",
     editPath: (id) => `/thoughts/${id}`,
     columns: [
-      { header: t("common.title"), accessor: "title" },
+      {
+        header: t("common.snippet"),
+        accessor: (row: ContentAdminRead) => {
+          const snippet = getBodySnippet(row.body, row.title || row.id);
+          return (
+            <div className="line-clamp-3 max-w-xl text-sm leading-6 text-foreground/90" title={snippet}>
+              {snippet}
+            </div>
+          );
+        },
+      },
       { header: t("common.status"), accessor: (row) => <StatusBadge status={row.status} /> },
       { header: t("posts.visibility"), accessor: (row) => <StatusBadge status={row.visibility} /> },
       { header: t("posts.publishedAt"), accessor: (row) => formatDate(row.published_at || row.updated_at) },
