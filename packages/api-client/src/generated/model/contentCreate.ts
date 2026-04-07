@@ -11,7 +11,7 @@ export interface ContentCreate {
   /** URL-friendly unique identifier */
   slug?: string | null;
   /** Display title */
-  title?: string | null;
+  title: string;
   /** Brief summary or excerpt */
   summary?: string | null;
   /** Full content body in Markdown */

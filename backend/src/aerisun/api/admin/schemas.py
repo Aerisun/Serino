@@ -8,6 +8,7 @@ from aerisun.core.schemas import ModelBase
 from aerisun.domain.content.schemas import (  # noqa: F401
     ContentAdminRead,
     ContentCreate,
+    ContentTitleSuggestionRead,
     ContentUpdate,
     ImportResult,
     PoemGenerationRequest,

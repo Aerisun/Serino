@@ -2345,6 +2345,226 @@ export function useReadActivityHeatmapApiV1SiteActivityHeatmapGet<TData = Awaite
 
 
 /**
+ * @summary 存活检查
+ */
+export type livezApiV1SiteLivezGetResponse200 = {
+  data: HealthRead
+  status: 200
+}
+
+export type livezApiV1SiteLivezGetResponseSuccess = (livezApiV1SiteLivezGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type livezApiV1SiteLivezGetResponse = (livezApiV1SiteLivezGetResponseSuccess)
+
+export const getLivezApiV1SiteLivezGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/livez`
+}
+
+export const livezApiV1SiteLivezGet = async ( options?: RequestInit): Promise<livezApiV1SiteLivezGetResponse> => {
+
+  return customInstance<livezApiV1SiteLivezGetResponse>(getLivezApiV1SiteLivezGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLivezApiV1SiteLivezGetQueryKey = () => {
+    return [
+    `/api/v1/site/livez`
+    ] as const;
+    }
+
+
+export const getLivezApiV1SiteLivezGetQueryOptions = <TData = Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLivezApiV1SiteLivezGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>> = ({ signal }) => livezApiV1SiteLivezGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LivezApiV1SiteLivezGetQueryResult = NonNullable<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>>
+export type LivezApiV1SiteLivezGetQueryError = ErrorType<unknown>
+
+
+export function useLivezApiV1SiteLivezGet<TData = Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>,
+          TError,
+          Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLivezApiV1SiteLivezGet<TData = Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>,
+          TError,
+          Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLivezApiV1SiteLivezGet<TData = Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 存活检查
+ */
+
+export function useLivezApiV1SiteLivezGet<TData = Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof livezApiV1SiteLivezGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLivezApiV1SiteLivezGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 就绪检查
+ */
+export type readyzApiV1SiteReadyzGetResponse200 = {
+  data: HealthRead
+  status: 200
+}
+
+export type readyzApiV1SiteReadyzGetResponseSuccess = (readyzApiV1SiteReadyzGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type readyzApiV1SiteReadyzGetResponse = (readyzApiV1SiteReadyzGetResponseSuccess)
+
+export const getReadyzApiV1SiteReadyzGetUrl = () => {
+
+
+
+
+  return `/api/v1/site/readyz`
+}
+
+export const readyzApiV1SiteReadyzGet = async ( options?: RequestInit): Promise<readyzApiV1SiteReadyzGetResponse> => {
+
+  return customInstance<readyzApiV1SiteReadyzGetResponse>(getReadyzApiV1SiteReadyzGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadyzApiV1SiteReadyzGetQueryKey = () => {
+    return [
+    `/api/v1/site/readyz`
+    ] as const;
+    }
+
+
+export const getReadyzApiV1SiteReadyzGetQueryOptions = <TData = Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadyzApiV1SiteReadyzGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>> = ({ signal }) => readyzApiV1SiteReadyzGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReadyzApiV1SiteReadyzGetQueryResult = NonNullable<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>>
+export type ReadyzApiV1SiteReadyzGetQueryError = ErrorType<unknown>
+
+
+export function useReadyzApiV1SiteReadyzGet<TData = Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>,
+          TError,
+          Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadyzApiV1SiteReadyzGet<TData = Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>,
+          TError,
+          Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReadyzApiV1SiteReadyzGet<TData = Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 就绪检查
+ */
+
+export function useReadyzApiV1SiteReadyzGet<TData = Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyzApiV1SiteReadyzGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReadyzApiV1SiteReadyzGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
  * @summary 健康检查
  */
 export type healthzApiV1SiteHealthzGetResponse200 = {

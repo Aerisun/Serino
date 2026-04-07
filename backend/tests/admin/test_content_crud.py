@@ -18,7 +18,6 @@ BASE = "/api/v1/admin"
 # Content types and their URL segments.
 CONTENT_TYPES = ["posts", "diary", "thoughts", "excerpts"]
 TAGLESS_CONTENT_TYPES = {"diary", "thoughts", "excerpts"}
-AUTO_TITLE_CONTENT_TYPES = {"thoughts", "excerpts"}
 
 
 def _make_payload(content_type: str, suffix: str = "") -> dict:
@@ -31,12 +30,6 @@ def _make_payload(content_type: str, suffix: str = "") -> dict:
         "status": "draft",
         "visibility": "public",
     }
-
-
-def _expected_title(content_type: str, payload: dict) -> str:
-    if content_type in AUTO_TITLE_CONTENT_TYPES:
-        return payload.get("summary") or payload["body"]
-    return payload["title"]
 
 
 # ── Full CRUD lifecycle per content type ──────────────────────────────
@@ -52,7 +45,7 @@ class TestContentCRUDLifecycle:
         assert resp.status_code == 201
         data = resp.json()
         assert data["slug"] == payload["slug"]
-        assert data["title"] == _expected_title(content_type, payload)
+        assert data["title"] == payload["title"]
         assert data["body"] == payload["body"]
         expected_tags = [] if content_type in TAGLESS_CONTENT_TYPES else ["test"]
         assert data["tags"] == expected_tags
@@ -89,7 +82,7 @@ class TestContentCRUDLifecycle:
         resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.json()["id"] == item_id
-        assert resp.json()["title"] == _expected_title(content_type, payload)
+        assert resp.json()["title"] == payload["title"]
 
     def test_update(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-update")
@@ -97,25 +90,19 @@ class TestContentCRUDLifecycle:
         item_id = create_resp.json()["id"]
 
         update_payload = {"title": "Updated Title"}
-        expected_title = "Updated Title"
-        if content_type in AUTO_TITLE_CONTENT_TYPES:
-            update_payload = {"body": f"Updated {content_type} body"}
-            expected_title = update_payload["body"]
         resp = client.put(
             f"{BASE}/{content_type}/{item_id}",
             json=update_payload,
             headers=admin_headers,
         )
         assert resp.status_code == 200
-        assert resp.json()["title"] == expected_title
+        assert resp.json()["title"] == "Updated Title"
         # slug should remain unchanged
         assert resp.json()["slug"] == payload["slug"]
 
     def test_create_without_slug_generates_unique_slug(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-auto-slug")
         payload.pop("slug")
-        if content_type in AUTO_TITLE_CONTENT_TYPES:
-            payload.pop("title")
 
         resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
 
@@ -123,29 +110,25 @@ class TestContentCRUDLifecycle:
         generated_slug = resp.json()["slug"]
         assert generated_slug.isdigit()
 
-    def test_posts_and_diary_still_require_title(self, client, admin_headers, content_type):
-        if content_type not in {"posts", "diary"}:
-            pytest.skip("Only posts and diary require a manual title")
-
+    def test_create_missing_title_is_rejected(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-missing-title")
         payload.pop("title")
 
         resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
 
         assert resp.status_code == 422
-        assert resp.json()["detail"] == "标题不能为空"
+        detail = resp.json()["detail"]
+        assert isinstance(detail, list)
+        assert detail[0]["loc"][-1] == "title"
 
-    def test_thoughts_and_excerpts_can_create_without_title(self, client, admin_headers, content_type):
-        if content_type not in AUTO_TITLE_CONTENT_TYPES:
-            pytest.skip("Only thoughts and excerpts auto-derive title")
-
-        payload = _make_payload(content_type, "-missing-title")
-        payload.pop("title")
+    def test_create_empty_title_is_rejected(self, client, admin_headers, content_type):
+        payload = _make_payload(content_type, "-empty-title")
+        payload["title"] = ""
 
         resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
 
-        assert resp.status_code == 201
-        assert resp.json()["title"] == payload["body"]
+        assert resp.status_code == 422
+        assert resp.json()["detail"] == "标题不能为空"
 
     def test_duplicate_slug_is_rejected_across_content_types(self, client, admin_headers, content_type):
         shared_slug = f"shared-slug-{content_type}"
@@ -387,8 +370,7 @@ class TestContentSearchAndPagination:
         keyword = f"UniqueKeyword{content_type}"
         payload = _make_payload(content_type, "-search")
         payload["body"] = f"Searchable {keyword} Entry"
-        if content_type not in AUTO_TITLE_CONTENT_TYPES:
-            payload["title"] = f"Searchable {keyword} Entry"
+        payload["title"] = f"Searchable {keyword} Entry"
         client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
 
         resp = client.get(

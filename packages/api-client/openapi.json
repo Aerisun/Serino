@@ -12231,6 +12231,60 @@
         ]
       }
     },
+    "/api/v1/admin/content/default-title": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-content-meta"
+        ],
+        "summary": "获取内容默认标题",
+        "operationId": "get_default_content_title",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "content_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "thoughts",
+                "excerpts"
+              ],
+              "type": "string",
+              "description": "内容类型",
+              "title": "Content Type"
+            },
+            "description": "内容类型"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentTitleSuggestionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/content/category-options": {
       "get": {
         "tags": [
@@ -20448,14 +20502,7 @@
             "description": "URL-friendly unique identifier"
           },
           "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Title",
             "description": "Display title"
           },
@@ -20611,6 +20658,7 @@
         },
         "type": "object",
         "required": [
+          "title",
           "body"
         ],
         "title": "ContentCreate"
@@ -21616,6 +21664,32 @@
           "recipient"
         ],
         "title": "ContentSubscriptionTestResult"
+      },
+      "ContentTitleSuggestionRead": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Suggested default title"
+          },
+          "sequence": {
+            "type": "integer",
+            "title": "Sequence",
+            "description": "Suggested sequence number for the day"
+          },
+          "date_label": {
+            "type": "string",
+            "title": "Date Label",
+            "description": "Formatted Beijing date label used in the title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "sequence",
+          "date_label"
+        ],
+        "title": "ContentTitleSuggestionRead"
       },
       "ContentUpdate": {
         "properties": {

@@ -564,6 +564,24 @@ export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetResponse = zod.object
 
 
 /**
+ * @summary 存活检查
+ */
+export const LivezApiV1SiteLivezGetResponse = zod.object({
+  "status": zod.string().describe('Service health status'),
+  "timestamp": zod.string().datetime({}).describe('Current server timestamp')
+})
+
+
+/**
+ * @summary 就绪检查
+ */
+export const ReadyzApiV1SiteReadyzGetResponse = zod.object({
+  "status": zod.string().describe('Service health status'),
+  "timestamp": zod.string().datetime({}).describe('Current server timestamp')
+})
+
+
+/**
  * @summary 健康检查
  */
 export const HealthzApiV1SiteHealthzGetResponse = zod.object({
@@ -1340,7 +1358,7 @@ export const createPostsBodyPinOrderDefault = 0;
 
 export const CreatePostsBody = zod.object({
   "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
+  "title": zod.string().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -1548,7 +1566,7 @@ export const createDiaryBodyPinOrderDefault = 0;
 
 export const CreateDiaryBody = zod.object({
   "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
+  "title": zod.string().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -1756,7 +1774,7 @@ export const createThoughtsBodyPinOrderDefault = 0;
 
 export const CreateThoughtsBody = zod.object({
   "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
+  "title": zod.string().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -1964,7 +1982,7 @@ export const createExcerptsBodyPinOrderDefault = 0;
 
 export const CreateExcerptsBody = zod.object({
   "slug": zod.union([zod.string(),zod.null()]).optional().describe('URL-friendly unique identifier'),
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Display title'),
+  "title": zod.string().describe('Display title'),
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
@@ -8619,6 +8637,20 @@ export const ListTagsApiV1AdminContentTagsGetResponseItem = zod.object({
   "count": zod.number().describe('Number of entries with this tag')
 })
 export const ListTagsApiV1AdminContentTagsGetResponse = zod.array(ListTagsApiV1AdminContentTagsGetResponseItem)
+
+
+/**
+ * @summary 获取内容默认标题
+ */
+export const GetDefaultContentTitleQueryParams = zod.object({
+  "content_type": zod.enum(['thoughts', 'excerpts']).describe('内容类型')
+})
+
+export const GetDefaultContentTitleResponse = zod.object({
+  "title": zod.string().describe('Suggested default title'),
+  "sequence": zod.number().describe('Suggested sequence number for the day'),
+  "date_label": zod.string().describe('Formatted Beijing date label used in the title')
+})
 
 
 /**

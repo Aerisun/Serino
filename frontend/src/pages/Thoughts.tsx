@@ -10,7 +10,7 @@ import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
-import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
+import { formatPublishedDate } from "@/lib/api/utils";
 import { usePreviewChannel } from "@/lib/preview";
 import { readThoughtsApiV1SiteThoughtsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
@@ -37,12 +37,9 @@ interface ThoughtsPageConfig extends BaseViewPageConfig {
 }
 
 const mapRemoteThought = (entry: ContentEntryRead): Thought => {
-  const paragraphs = splitContentParagraphs(entry.body);
-
   return {
     id: entry.slug,
-    content:
-      entry.summary?.trim() || paragraphs[0] || entry.body || entry.title,
+    content: entry.body || entry.summary?.trim() || "",
     date:
       entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
     isArchived: entry.status === "archived",
@@ -63,12 +60,9 @@ const buildPreviewThought = (preview: {
   mood?: string;
   category?: string;
 }, draftLabel: string): Thought => {
-  const paragraphs = splitContentParagraphs(preview.body || "");
-
   return {
     id: preview.slug || "__preview-thought",
-    content:
-      preview.summary?.trim() || paragraphs[0] || preview.body || preview.title,
+    content: preview.body || preview.summary?.trim() || "",
     date: formatPublishedDate(preview.published_at) || draftLabel,
     isArchived: false,
     likes: 0,
@@ -346,7 +340,7 @@ const Thoughts = () => {
                 )}
               </div>
 
-              <p className="mt-2 text-[0.97rem] leading-7 text-foreground/71 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
+              <p className="mt-2 whitespace-pre-wrap text-[0.97rem] leading-7 text-foreground/71 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
                 {thought.content}
               </p>
 
