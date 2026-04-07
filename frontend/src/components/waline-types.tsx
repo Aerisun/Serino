@@ -215,6 +215,73 @@ export const buildDefaultAvatarPreset = (identity: string): AvatarPreset => {
 export const fallbackAvatar = (name: string) =>
   `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name || "visitor")}`;
 
+export const buildCommentAnchorId = (commentId: string) => `comment-${commentId}`;
+export const COMMENT_JUMP_REQUEST_EVENT = "aerisun:comment-jump-request";
+
+let activeHighlightedElement: HTMLElement | null = null;
+let activeHighlightTimer: number | null = null;
+
+export const scrollToCommentTarget = (commentId: string) => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  let jumpRequested = false;
+
+  const highlightTarget = (target: HTMLElement) => {
+    if (activeHighlightedElement && activeHighlightedElement !== target) {
+      activeHighlightedElement.classList.remove("aerisun-comment-jump-highlight");
+    }
+    if (activeHighlightTimer !== null) {
+      window.clearTimeout(activeHighlightTimer);
+    }
+
+    target.classList.remove("aerisun-comment-jump-highlight");
+    void target.getBoundingClientRect();
+    target.classList.add("aerisun-comment-jump-highlight");
+    activeHighlightedElement = target;
+
+    activeHighlightTimer = window.setTimeout(() => {
+      target.classList.remove("aerisun-comment-jump-highlight");
+      if (activeHighlightedElement === target) {
+        activeHighlightedElement = null;
+      }
+      activeHighlightTimer = null;
+    }, 1600);
+  };
+
+  const tryScroll = (remainingAttempts: number) => {
+    const target = document.getElementById(buildCommentAnchorId(commentId));
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      highlightTarget(target);
+      return;
+    }
+
+    if (!jumpRequested) {
+      jumpRequested = true;
+      window.dispatchEvent(
+        new CustomEvent(COMMENT_JUMP_REQUEST_EVENT, {
+          detail: { commentId },
+        }),
+      );
+    }
+
+    if (remainingAttempts <= 0) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      tryScroll(remainingAttempts - 1);
+    });
+  };
+
+  tryScroll(8);
+};
+
 export const formatTimestamp = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {

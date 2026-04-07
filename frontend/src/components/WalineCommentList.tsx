@@ -1,73 +1,229 @@
-import { Loader2, RefreshCw, Reply, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ArrowUpRight, ChevronDown, Loader2, RefreshCw, Reply, Sparkles } from "lucide-react";
 import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import { useFrontendI18n } from "@/i18n";
 import {
+  COMMENT_JUMP_REQUEST_EVENT,
+  buildCommentAnchorId,
   communityActionClass,
   communityAvatarClass,
-  communityCardClass,
   fallbackAvatar,
   formatTimestamp,
+  scrollToCommentTarget,
   StatusPill,
   type CommunityCommentItem,
   type CommunityGuestbookItem,
   type ReplyTarget,
 } from "./waline-types";
 
-/* ── Recursive comment thread ── */
+type FlattenedReply = CommunityCommentItem & {
+  replyToId: string;
+  replyToName: string;
+  threadDepth: number;
+};
 
-const CommentThread = ({
-  items,
+const flattenReplies = (
+  items: CommunityCommentItem[],
+  replyToId: string,
+  replyToName: string,
+  threadDepth = 1,
+): FlattenedReply[] =>
+  items.flatMap((item) => [
+    {
+      ...item,
+      replyToId,
+      replyToName,
+      threadDepth,
+    },
+    ...flattenReplies(item.replies ?? [], item.id, item.author_name, threadDepth + 1),
+  ]);
+
+const buildCommentRootLookup = (items: CommunityCommentItem[]) => {
+  const lookup = new Map<string, string>();
+
+  const visit = (item: CommunityCommentItem, rootId: string) => {
+    lookup.set(item.id, rootId);
+    (item.replies ?? []).forEach((reply) => visit(reply, rootId));
+  };
+
+  items.forEach((item) => visit(item, item.id));
+
+  return lookup;
+};
+
+const StreamEntry = ({
+  id,
+  avatarSrc,
+  authorName,
+  createdAt,
+  body,
+  isAuthor,
+  pending = false,
+  website,
+  replyContext,
   onReply,
-  depth = 0,
+  actionSlot,
 }: {
-  items: CommunityCommentItem[];
+  id?: string;
+  avatarSrc: string;
+  authorName: string;
+  createdAt: string;
+  body: string;
+  isAuthor?: boolean;
+  pending?: boolean;
+  website?: string | null;
+  replyContext?: {
+    label: string;
+    targetId: string;
+  };
+  onReply?: () => void;
+  actionSlot?: ReactNode;
+}) => {
+  const { t } = useFrontendI18n();
+
+  return (
+    <div id={id} className="aerisun-stream-entry">
+      <img
+        src={avatarSrc}
+        alt={authorName}
+        className={`${communityAvatarClass} aerisun-comment-avatar h-11 w-11 rounded-full`}
+        loading="lazy"
+      />
+      <div className="min-w-0">
+        <div className="aerisun-comment-header">
+          <span className="aerisun-comment-author">{authorName}</span>
+          {isAuthor ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
+          {pending ? <StatusPill text={t("waline.list.pending")} tone="pending" /> : null}
+          <span className="aerisun-comment-timestamp">{formatTimestamp(createdAt)}</span>
+          {website ? (
+            <a
+              href={website}
+              target="_blank"
+              rel="noreferrer"
+              className="aerisun-comment-website"
+            >
+              {website.replace(/^https?:\/\//, "")}
+            </a>
+          ) : null}
+          {replyContext ? (
+            <button
+              type="button"
+              onClick={() => scrollToCommentTarget(replyContext.targetId)}
+              className="aerisun-comment-context"
+              title={replyContext.label}
+            >
+              <ArrowUpRight className="h-3.5 w-3.5" />
+              {replyContext.label}
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-3">
+          <CommentMarkdownRenderer content={body} className="aerisun-comment-body" />
+        </div>
+        {onReply || actionSlot ? (
+          <div className="aerisun-comment-actions">
+            {onReply ? (
+              <button type="button" onClick={onReply} className={communityActionClass}>
+                <Reply className="h-3.5 w-3.5" />
+                {t("waline.list.reply")}
+              </button>
+            ) : null}
+            {actionSlot}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+const CommentReplyStream = ({
+  item,
+  expanded,
+  onToggleReplies,
+  onReply,
+  t,
+}: {
+  item: CommunityCommentItem;
+  expanded: boolean;
+  onToggleReplies: (rootId: string) => void;
   onReply: (target: ReplyTarget) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
-  depth?: number;
-}) => (
-  <div className={depth > 0 ? "mt-4 border-l border-[rgb(var(--shiro-border-rgb)/0.14)] pl-4" : "space-y-4"}>
-    {items.map((item) => {
-      const avatarSrc = item.avatar_url || fallbackAvatar(item.author_name);
-      return (
-        <article
-          key={item.id}
-          className={`${communityCardClass} rounded-[1.4rem] p-4`}
-        >
-          <div className="flex items-start gap-3">
-            <img
-              src={avatarSrc}
-              alt={item.author_name}
-              className={`${communityAvatarClass} h-11 w-11 rounded-2xl`}
-              loading="lazy"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-body text-sm font-semibold text-foreground">{item.author_name}</span>
-                {item.is_author ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
-                <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
-              </div>
-              <div className="mt-2">
-                <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
-              </div>
-              <div className="mt-3 flex items-center gap-3 text-xs text-foreground/45">
-                <button
-                  type="button"
-                  onClick={() => onReply({ id: item.id, name: item.author_name })}
-                  className={communityActionClass}
+}) => {
+  const replyItems = flattenReplies(item.replies ?? [], item.id, item.author_name);
+
+  return (
+    <article className="aerisun-comment-thread" data-comment-id={item.id}>
+      <StreamEntry
+        id={buildCommentAnchorId(item.id)}
+        avatarSrc={item.avatar_url || fallbackAvatar(item.author_name)}
+        authorName={item.author_name}
+        createdAt={item.created_at}
+        body={item.body}
+        isAuthor={item.is_author}
+        onReply={() => onReply({ id: item.id, name: item.author_name })}
+        actionSlot={replyItems.length ? (
+          <button
+            type="button"
+            onClick={() => onToggleReplies(item.id)}
+            className={`${communityActionClass} aerisun-comment-thread__reply-toggle`}
+            aria-expanded={expanded}
+          >
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            {expanded
+              ? t("waline.list.collapseReplies", { count: replyItems.length })
+              : t("waline.list.expandReplies", { count: replyItems.length })}
+          </button>
+        ) : null}
+      />
+
+      {replyItems.length ? (
+        <>
+          {expanded ? (
+            <div className="aerisun-comment-thread__replies">
+              {replyItems.map((reply) => (
+                <div
+                  key={reply.id}
+                  id={buildCommentAnchorId(reply.id)}
+                  className="aerisun-comment-reply"
+                  data-depth={Math.min(reply.threadDepth, 4)}
+                  data-comment-id={reply.id}
                 >
-                  <Reply className="h-3.5 w-3.5" />
-                  {t("waline.list.reply")}
-                </button>
-              </div>
-              {item.replies?.length ? (
-                <CommentThread items={item.replies} onReply={onReply} t={t} depth={depth + 1} />
-              ) : null}
+                  <StreamEntry
+                    avatarSrc={reply.avatar_url || fallbackAvatar(reply.author_name)}
+                    authorName={reply.author_name}
+                    createdAt={reply.created_at}
+                    body={reply.body}
+                    isAuthor={reply.is_author}
+                    replyContext={{
+                      label: t("waline.form.replyingTo", { name: reply.replyToName }),
+                      targetId: reply.replyToId,
+                    }}
+                    onReply={() => onReply({ id: reply.id, name: reply.author_name })}
+                  />
+                </div>
+              ))}
             </div>
-          </div>
-        </article>
-      );
-    })}
-  </div>
+          ) : null}
+        </>
+      ) : null}
+    </article>
+  );
+};
+
+const StatusStream = ({
+  title,
+  items,
+}: {
+  title: string;
+  items: ReactNode;
+}) => (
+  <section className="aerisun-waline-status-panel">
+    <div className="aerisun-waline-status-panel__title">
+      <Sparkles className="h-4 w-4" />
+      {title}
+    </div>
+    <div className="aerisun-waline-status-panel__list">{items}</div>
+  </section>
 );
 
 /* ── Main list component ── */
@@ -118,6 +274,74 @@ const WalineCommentList = ({
   guestbookEmptyMessage,
 }: WalineCommentListProps) => {
   const { t } = useFrontendI18n();
+  const replyRootByCommentId = useMemo(() => buildCommentRootLookup(comments), [comments]);
+  const [expandedThreadIds, setExpandedThreadIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    setExpandedThreadIds((current) => {
+      const next = new Set<string>();
+      current.forEach((threadId) => {
+        if (replyRootByCommentId.has(threadId)) {
+          next.add(threadId);
+        }
+      });
+
+      if (next.size === current.size) {
+        let unchanged = true;
+        current.forEach((threadId) => {
+          if (!next.has(threadId)) {
+            unchanged = false;
+          }
+        });
+        if (unchanged) {
+          return current;
+        }
+      }
+
+      return next;
+    });
+  }, [replyRootByCommentId]);
+
+  useEffect(() => {
+    const handleJumpRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ commentId?: string }>).detail;
+      const commentId = detail?.commentId;
+      if (!commentId) {
+        return;
+      }
+
+      const rootId = replyRootByCommentId.get(commentId);
+      if (!rootId || rootId === commentId) {
+        return;
+      }
+
+      setExpandedThreadIds((current) => {
+        if (current.has(rootId)) {
+          return current;
+        }
+        const next = new Set(current);
+        next.add(rootId);
+        return next;
+      });
+    };
+
+    window.addEventListener(COMMENT_JUMP_REQUEST_EVENT, handleJumpRequest as EventListener);
+    return () => {
+      window.removeEventListener(COMMENT_JUMP_REQUEST_EVENT, handleJumpRequest as EventListener);
+    };
+  }, [replyRootByCommentId]);
+
+  const toggleThreadReplies = (rootId: string) => {
+    setExpandedThreadIds((current) => {
+      const next = new Set(current);
+      if (next.has(rootId)) {
+        next.delete(rootId);
+      } else {
+        next.add(rootId);
+      }
+      return next;
+    });
+  };
 
   if (loadingConfig || loadingEntries) {
     return (
@@ -145,147 +369,87 @@ const WalineCommentList = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {isGuestbook ? (
         <>
-          {/* Pending guestbook entries */}
           {pendingGuestbookEntries.length ? (
-            <div className="rounded-[1.5rem] border border-dashed border-amber-500/26 bg-amber-500/8 p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
-                <Sparkles className="h-4 w-4" />
-                {t("waline.list.pendingReviewNew")}
-              </div>
-              <div className="space-y-3">
-                {pendingGuestbookEntries.map((item) => (
-                  <article
-                    key={`pending-${item.id}`}
-                    className="rounded-[1.2rem] border border-amber-500/18 bg-background/[0.76] p-4 dark:bg-card/[0.84]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <img
-                        src={item.avatar_url || fallbackAvatar(item.name)}
-                        alt={item.name}
-                        className={`${communityAvatarClass} h-11 w-11 rounded-2xl`}
-                        loading="lazy"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-foreground">{item.name}</span>
-                          {item.is_author ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
-                          <StatusPill text={t("waline.list.pending")} tone="pending" />
-                          <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
-                        </div>
-                        <div className="mt-2">
-                          <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
+            <StatusStream
+              title={t("waline.list.pendingReviewNew")}
+              items={pendingGuestbookEntries.map((item) => (
+                <StreamEntry
+                  key={`pending-${item.id}`}
+                  avatarSrc={item.avatar_url || fallbackAvatar(item.name)}
+                  authorName={item.name}
+                  createdAt={item.created_at}
+                  body={item.body}
+                  isAuthor={item.is_author}
+                  pending
+                />
+              ))}
+            />
           ) : null}
 
-          {/* Approved guestbook entries */}
           {guestbookEntries.length ? (
-            guestbookEntries.map((item) => (
-              <article
-                key={item.id}
-                className={`${communityCardClass} rounded-[1.5rem] p-4`}
-              >
-                <div className="flex items-start gap-3">
-                  <img
-                    src={item.avatar_url || fallbackAvatar(item.name)}
-                    alt={item.name}
-                    className={`${communityAvatarClass} h-12 w-12 rounded-2xl`}
-                    loading="lazy"
+            <div className="aerisun-comment-list">
+              {guestbookEntries.map((item) => (
+                <article key={item.id} className="aerisun-comment-thread">
+                  <StreamEntry
+                    id={buildCommentAnchorId(item.id)}
+                    avatarSrc={item.avatar_url || fallbackAvatar(item.name)}
+                    authorName={item.name}
+                    createdAt={item.created_at}
+                    body={item.body}
+                    isAuthor={item.is_author}
+                    website={item.website}
                   />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-foreground">{item.name}</span>
-                      {item.is_author ? <StatusPill text={t("waline.list.siteOwner")} tone="author" /> : null}
-                      <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
-                      {item.website ? (
-                        <a
-                          href={item.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-[rgb(var(--shiro-accent-rgb)/0.78)] underline-offset-4 hover:underline"
-                        >
-                          {item.website.replace(/^https?:\/\//, "")}
-                        </a>
-                      ) : null}
-                    </div>
-                    <div className="mt-2">
-                      <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))
-          ) : (
-            <div className="aerisun-waline-empty">
-              {guestbookEmptyMessage}
+                </article>
+              ))}
             </div>
+          ) : (
+            <div className="aerisun-waline-empty">{guestbookEmptyMessage}</div>
           )}
         </>
       ) : comments.length || pendingComments.length ? (
         <>
-          {/* Pending comments */}
           {pendingComments.length ? (
-            <div className="rounded-[1.5rem] border border-dashed border-amber-500/26 bg-amber-500/8 p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
-                <Sparkles className="h-4 w-4" />
-                {t("waline.list.pendingReviewSubmitted")}
-              </div>
-              <div className="space-y-3">
-                {pendingComments.map((item) => (
-                  <article
-                    key={`pending-${item.id}`}
-                    className="rounded-[1.2rem] border border-amber-500/18 bg-background/[0.76] p-4 dark:bg-card/[0.84]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <img
-                        src={item.avatar_url || fallbackAvatar(item.author_name)}
-                        alt={item.author_name}
-                        className={`${communityAvatarClass} h-11 w-11 rounded-2xl`}
-                        loading="lazy"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-foreground">{item.author_name}</span>
-                          <StatusPill text={t("waline.list.pending")} tone="pending" />
-                          <span className="text-xs text-foreground/40">{formatTimestamp(item.created_at)}</span>
-                        </div>
-                        <div className="mt-2">
-                          <CommentMarkdownRenderer content={item.body} className="aerisun-comment-body" />
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
+            <StatusStream
+              title={t("waline.list.pendingReviewSubmitted")}
+              items={pendingComments.map((item) => (
+                <StreamEntry
+                  key={`pending-${item.id}`}
+                  avatarSrc={item.avatar_url || fallbackAvatar(item.author_name)}
+                  authorName={item.author_name}
+                  createdAt={item.created_at}
+                  body={item.body}
+                  pending
+                />
+              ))}
+            />
           ) : null}
 
-          {/* Approved comments */}
           {comments.length ? (
-            <CommentThread items={comments} onReply={onReply} t={t} />
-          ) : (
-            <div className="aerisun-waline-empty">
-              {t("waline.list.emptyPublic")}
+            <div className="aerisun-comment-list">
+              {comments.map((item) => (
+                <CommentReplyStream
+                  key={item.id}
+                  item={item}
+                  expanded={expandedThreadIds.has(item.id)}
+                  onToggleReplies={toggleThreadReplies}
+                  onReply={onReply}
+                  t={t}
+                />
+              ))}
             </div>
+          ) : (
+            <div className="aerisun-waline-empty">{t("waline.list.emptyPublic")}</div>
           )}
         </>
       ) : (
-        <div className="aerisun-waline-empty">
-          {t("waline.list.emptyAfterReview")}
-        </div>
+        <div className="aerisun-waline-empty">{t("waline.list.emptyAfterReview")}</div>
       )}
 
-      {/* Load more */}
       {hasMoreEntries ? (
-        <div className="flex justify-center pt-2">
+        <div className="flex justify-center pt-1">
           <button
             type="button"
             onClick={onLoadMore}

@@ -1,5 +1,6 @@
 import { type RefObject } from "react";
 import {
+  ArrowUpRight,
   CornerDownRight,
   Eye,
   ImagePlus,
@@ -9,6 +10,7 @@ import {
   Send,
   Smile,
   Sparkles,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { transition } from "@/config";
@@ -24,6 +26,7 @@ import {
   communityInputClass,
   communityTextareaClass,
   fallbackAvatar,
+  scrollToCommentTarget,
   StatusPill,
   type DraftState,
   type EditorMode,
@@ -175,7 +178,14 @@ const WalineCommentForm = ({
             {replyTarget ? (
               <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] px-4 py-3 text-sm text-foreground/48 dark:bg-card/[0.82]">
                 <Sparkles className="h-4 w-4" />
-                {t("waline.form.replyingTo", { name: replyTarget.name })}
+                <button
+                  type="button"
+                  onClick={() => scrollToCommentTarget(replyTarget.id)}
+                  className="aerisun-comment-context"
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  {t("waline.form.replyingTo", { name: replyTarget.name })}
+                </button>
               </div>
             ) : null}
 
@@ -269,7 +279,14 @@ const WalineCommentForm = ({
             {replyTarget ? (
               <div className="shiro-accent-panel flex flex-wrap items-center gap-2 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] px-4 py-3 text-sm text-foreground/62">
                 <CornerDownRight className="h-4 w-4" />
-                {t("waline.form.replyingTo", { name: replyTarget.name })}
+                <button
+                  type="button"
+                  onClick={() => scrollToCommentTarget(replyTarget.id)}
+                  className="aerisun-comment-context"
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  {t("waline.form.replyingTo", { name: replyTarget.name })}
+                </button>
                 <button
                   type="button"
                   onClick={onClearReply}

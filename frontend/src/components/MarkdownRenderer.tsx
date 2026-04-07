@@ -6,9 +6,11 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type ComponentPropsWithoutRef,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -52,15 +54,21 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
-type MarkdownDataDivProps = ComponentPropsWithoutRef<"div"> & {
+type MarkdownDataPropsBase = {
   "data-md-kind"?: string;
   "data-md-type"?: string;
   "data-md-title"?: string;
+  "data-md-label"?: string;
+  "data-md-value"?: string;
   "data-md-summary"?: string;
   "data-md-cols"?: string;
   "data-md-gap"?: string;
   "data-md-min"?: string;
 };
+
+type MarkdownDataDivProps = ComponentPropsWithoutRef<"div"> & MarkdownDataPropsBase;
+
+type MarkdownDataSpanProps = ComponentPropsWithoutRef<"span"> & MarkdownDataPropsBase;
 
 type MarkdownSectionProps = ComponentPropsWithoutRef<"section"> & {
   "data-footnotes"?: string | boolean;
@@ -164,6 +172,37 @@ const copyTextToClipboard = async (value: string) => {
   } finally {
     document.body.removeChild(textarea);
   }
+};
+
+let activeCopyToastElement: HTMLDivElement | null = null;
+let activeCopyToastTimer: number | null = null;
+
+const showCopyToast = (message: string) => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  if (!activeCopyToastElement) {
+    activeCopyToastElement = document.createElement("div");
+    activeCopyToastElement.className = "markdown-copy-toast";
+    activeCopyToastElement.setAttribute("role", "status");
+    activeCopyToastElement.setAttribute("aria-live", "polite");
+    document.body.appendChild(activeCopyToastElement);
+  }
+
+  activeCopyToastElement.textContent = message;
+  activeCopyToastElement.classList.remove("is-visible");
+  void activeCopyToastElement.getBoundingClientRect();
+  activeCopyToastElement.classList.add("is-visible");
+
+  if (activeCopyToastTimer !== null) {
+    window.clearTimeout(activeCopyToastTimer);
+  }
+
+  activeCopyToastTimer = window.setTimeout(() => {
+    activeCopyToastElement?.classList.remove("is-visible");
+    activeCopyToastTimer = null;
+  }, 1500);
 };
 
 const flashMarkdownTarget = (id: string) => {
@@ -767,6 +806,111 @@ function MarkdownStepsBlock({ children }: { children: ReactNode }) {
   return <div className="markdown-steps">{children}</div>;
 }
 
+function MarkdownCopySurface({
+  children,
+  title,
+  label,
+  value,
+  inline = false,
+}: {
+  children: ReactNode;
+  title?: string;
+  label?: string;
+  value?: string;
+  inline?: boolean;
+}) {
+  const contentRef = useRef<HTMLDivElement | HTMLSpanElement | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  useEffect(() => {
+    if (copyState === "idle") {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setCopyState("idle");
+    }, 1600);
+    return () => window.clearTimeout(timer);
+  }, [copyState]);
+
+  const idleLabel = label?.trim() || getText("markdown.copyAction", "点击复制");
+  const statusLabel =
+    copyState === "copied"
+      ? getText("code.copied", "已复制")
+      : copyState === "failed"
+        ? getText("code.failed", "失败")
+        : idleLabel;
+
+  const handleCopy = async (nextValue?: string) => {
+    const resolvedValue =
+      nextValue?.trim()
+      || value?.trim()
+      || contentRef.current?.innerText?.trim()
+      || extractTextContent(children).trim();
+
+    if (!resolvedValue) {
+      setCopyState("failed");
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(resolvedValue);
+      setCopyState("copied");
+      showCopyToast(getText("code.copied", "已复制"));
+    } catch {
+      setCopyState("failed");
+    }
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement | HTMLSpanElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    void handleCopy();
+  };
+
+  if (inline) {
+    return (
+      <span
+        className={`markdown-copy-inline ${copyState !== "idle" ? `is-${copyState}` : ""}`}
+        role="button"
+        tabIndex={0}
+        aria-label={title?.trim() || statusLabel}
+        onClick={() => void handleCopy()}
+        onKeyDown={handleKeyDown}
+      >
+        <code ref={contentRef} className="markdown-copy-inline-content">
+          {children}
+        </code>
+      </span>
+    );
+  }
+
+  return (
+    <div className={`markdown-copy-block ${copyState !== "idle" ? `is-${copyState}` : ""}`}>
+      <div
+        ref={(node) => {
+          contentRef.current = node;
+        }}
+        className="markdown-copy-block-body"
+      >
+        {children}
+      </div>
+      <button
+        type="button"
+        className="markdown-copy-block-icon"
+        aria-label={title?.trim() || statusLabel}
+        title={statusLabel}
+        onClick={() => void handleCopy()}
+        onKeyDown={handleKeyDown}
+      >
+        {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
+
 function MarkdownDiv({
   children,
   className,
@@ -826,10 +970,47 @@ function MarkdownDiv({
     return <MarkdownStepsBlock>{children}</MarkdownStepsBlock>;
   }
 
+  if (kind === "copy") {
+    return (
+      <MarkdownCopySurface
+        title={props["data-md-title"]}
+        label={props["data-md-label"]}
+        value={props["data-md-value"]}
+      >
+        {children}
+      </MarkdownCopySurface>
+    );
+  }
+
   return (
     <div className={className} {...props}>
       {children}
     </div>
+  );
+}
+
+function MarkdownSpan({
+  children,
+  className,
+  ...props
+}: MarkdownDataSpanProps) {
+  if (props["data-md-kind"] === "copy") {
+    return (
+      <MarkdownCopySurface
+        title={props["data-md-title"]}
+        label={props["data-md-label"]}
+        value={props["data-md-value"]}
+        inline
+      >
+        {children}
+      </MarkdownCopySurface>
+    );
+  }
+
+  return (
+    <span className={className} {...props}>
+      {children}
+    </span>
   );
 }
 
@@ -1008,6 +1189,7 @@ const components = {
   img: MarkdownImage,
   pre: MarkdownPre,
   div: MarkdownDiv,
+  span: MarkdownSpan,
   table: MarkdownTable,
   section: MarkdownSection,
   sup: MarkdownSup,

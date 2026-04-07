@@ -527,44 +527,48 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.96 }}
                       transition={transition({ duration: 0.18, reducedMotion: prefersReducedMotion })}
-                      className={`absolute left-0 top-[calc(100%+0.75rem)] w-60 overflow-hidden rounded-[1.35rem] border p-2 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ${navStrongGlassClass}`}
-                      style={{ borderColor: "rgb(var(--shiro-border-rgb) / 0.34)" }}
+                      className="absolute left-0 top-[calc(100%+0.75rem)] w-60"
                     >
-                      <div className="px-3 py-2">
-                        <div className="text-sm font-semibold text-foreground">{user.effective_display_name}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          openProfileEditor();
-                          setAuthMenuOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                      <div
+                        className={`overflow-hidden rounded-[1.35rem] border p-2 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ${navStrongGlassClass}`}
+                        style={{ borderColor: "rgb(var(--shiro-border-rgb) / 0.34)" }}
                       >
-                        <PencilLine className="h-4 w-4" />
-                        {t("navbar.editProfile")}
-                      </button>
-                      {user.can_access_admin_console ? (
+                        <div className="px-3 py-2">
+                          <div className="text-sm font-semibold text-foreground">{user.effective_display_name}</div>
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
+                            openProfileEditor();
                             setAuthMenuOpen(false);
-                            window.location.assign(adminConsoleEntryHref);
                           }}
                           className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                         >
-                          <Sparkles className="h-4 w-4" />
-                          {t("navbar.adminConsole")}
+                          <PencilLine className="h-4 w-4" />
+                          {t("navbar.editProfile")}
                         </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => void logout().then(() => setAuthMenuOpen(false))}
-                        className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        {t("navbar.logout")}
-                      </button>
+                        {user.can_access_admin_console ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAuthMenuOpen(false);
+                              window.location.assign(adminConsoleEntryHref);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            {t("navbar.adminConsole")}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => void logout().then(() => setAuthMenuOpen(false))}
+                          className="flex w-full items-center gap-2 rounded-[1rem] px-3 py-2 text-left text-sm text-foreground/66 transition hover:bg-[rgb(var(--shiro-panel-rgb)/0.36)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          {t("navbar.logout")}
+                        </button>
+                      </div>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>

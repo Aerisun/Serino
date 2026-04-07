@@ -52,6 +52,20 @@ export const remarkAerisunDirectives: Plugin = () => {
       }
 
       switch (name) {
+        case "copy":
+          data.hName = tagName;
+          data.hProperties = {
+            ...baseProps,
+            "data-md-kind": "copy",
+            "data-md-title": getStringAttribute(attributes.title),
+            "data-md-label": getStringAttribute(attributes.label),
+            "data-md-value":
+              getStringAttribute(attributes.value)
+              || getStringAttribute(attributes.copy)
+              || getStringAttribute(attributes.text),
+          };
+          return;
+
         case "details":
           data.hName = tagName;
           data.hProperties = {

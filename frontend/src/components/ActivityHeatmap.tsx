@@ -223,13 +223,13 @@ const ActivityHeatmap = ({ enabled = true }: ActivityHeatmapProps) => {
         </Link>
       </div>
 
-      <div className="relative grid grid-cols-3 items-end gap-x-3 gap-y-3 sm:gap-x-12">
+      <div className="relative grid grid-flow-col auto-cols-max justify-start items-end gap-x-6 sm:gap-x-10 md:gap-x-14 lg:gap-x-20">
         {[
           { label: stats[0].label, value: hasData ? thisWeek : "—" },
           { label: stats[1].label, value: hasData ? peakWeek : "—" },
           { label: stats[2].label, value: hasData ? averagePerWeekLabel : "—" },
         ].map((stat) => (
-          <div key={stat.label} className="min-w-0">
+          <div key={stat.label} className="min-w-0 whitespace-nowrap">
             <span className="block text-xl font-body font-medium tabular-nums" style={{ color: statValueColor }}>
               {stat.value}
             </span>

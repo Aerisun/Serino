@@ -1438,6 +1438,7 @@ code:not([class*="language-"]) {
 
 .detail-markdown.prose .markdown-figure-caption,
 .detail-markdown.prose .markdown-copy-button,
+.detail-markdown.prose .markdown-copy-block-icon,
 .detail-markdown.prose .markdown-mermaid-error-title,
 .detail-markdown.prose .markdown-link-card-badge,
 .detail-markdown.prose .markdown-admonition-title,
@@ -1445,4 +1446,138 @@ code:not([class*="language-"]) {
 .detail-markdown.prose .markdown-tab-trigger,
 .detail-markdown.prose .markdown-footnotes > h2 {
   font-family: "Barlow", sans-serif;
+}
+
+.prose .markdown-copy-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.65rem;
+  margin: 0.55rem 0 0.85rem;
+  border: 1px solid rgb(var(--shiro-border-rgb) / 0.16);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(180deg, rgb(var(--shiro-panel-rgb) / 0.24), rgb(var(--shiro-panel-rgb) / 0.12)),
+    rgb(var(--shiro-panel-rgb) / 0.08);
+  padding: 0.7rem 0.75rem 0.72rem 0.9rem;
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.prose .markdown-copy-block:hover,
+.prose .markdown-copy-block:focus-within {
+  border-color: rgb(var(--shiro-accent-rgb) / 0.26);
+  background:
+    linear-gradient(180deg, rgb(var(--shiro-panel-rgb) / 0.3), rgb(var(--shiro-panel-rgb) / 0.16)),
+    rgb(var(--shiro-panel-rgb) / 0.12);
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.08);
+}
+
+.prose .markdown-copy-block.is-copied {
+  border-color: rgb(var(--shiro-accent-rgb) / 0.34);
+  box-shadow: 0 0 0 4px rgb(var(--shiro-accent-rgb) / 0.08);
+}
+
+.prose .markdown-copy-block-icon {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--shiro-border-rgb) / 0.18);
+  background: rgb(var(--shiro-panel-rgb) / 0.62);
+  padding: 0.42rem;
+  line-height: 0;
+  color: rgb(var(--shiro-foreground-rgb) / 0.58);
+}
+
+.prose .markdown-copy-block-icon {
+  align-self: center;
+  justify-self: end;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.prose .markdown-copy-block-icon:hover,
+.prose .markdown-copy-block-icon:focus-visible {
+  border-color: rgb(var(--shiro-accent-rgb) / 0.24);
+  color: rgb(var(--shiro-accent-rgb) / 0.86);
+  outline: none;
+}
+
+.prose .markdown-copy-block.is-copied .markdown-copy-block-icon {
+  border-color: rgb(var(--shiro-accent-rgb) / 0.24);
+  color: rgb(var(--shiro-accent-rgb) / 0.86);
+}
+
+.prose .markdown-copy-block-body > :first-child {
+  margin-top: 0.05rem;
+}
+
+.prose .markdown-copy-block-body > :last-child {
+  margin-bottom: 0;
+}
+
+.prose .markdown-copy-inline {
+  display: inline-block;
+  position: relative;
+  vertical-align: baseline;
+  cursor: copy;
+  line-height: inherit;
+}
+
+.prose .markdown-copy-inline:hover,
+.prose .markdown-copy-inline:focus-visible {
+  outline: none;
+}
+
+.prose .markdown-copy-inline-content {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid rgb(var(--shiro-border-rgb) / 0.18);
+  border-radius: 0.6rem;
+  background: rgb(var(--shiro-panel-rgb) / 0.38);
+  color: rgb(var(--shiro-accent-rgb) / 0.9);
+  font-size: 0.92em;
+  font-weight: 500;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.prose .markdown-copy-inline:hover .markdown-copy-inline-content,
+.prose .markdown-copy-inline:focus-visible .markdown-copy-inline-content {
+  border-color: rgb(var(--shiro-accent-rgb) / 0.22);
+  background: rgb(var(--shiro-panel-rgb) / 0.4);
+}
+
+.prose .markdown-copy-inline.is-copied .markdown-copy-inline-content {
+  border-color: rgb(var(--shiro-accent-rgb) / 0.28);
+  color: rgb(var(--shiro-accent-rgb) / 0.98);
+  box-shadow: 0 0 0 3px rgb(var(--shiro-accent-rgb) / 0.08);
+}
+
+.prose .markdown-copy-inline.is-failed .markdown-copy-inline-content {
+  border-color: rgb(220 38 38 / 0.24);
+  color: rgb(220 38 38 / 0.9);
+}
+
+.markdown-copy-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  z-index: 90;
+  transform: translateX(-50%) translateY(0.5rem);
+  pointer-events: none;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--shiro-accent-rgb) / 0.16);
+  background: rgb(var(--shiro-panel-rgb) / 0.94);
+  padding: 0.45rem 0.8rem;
+  font-family: "Barlow", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgb(var(--shiro-accent-rgb) / 0.9);
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.12);
+  opacity: 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.markdown-copy-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

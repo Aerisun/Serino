@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { RuntimeConfigContext, describeRuntimeConfigError } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { loadRuntimeConfig, type RuntimeConfigSnapshot } from "@/lib/runtime-config";
@@ -14,6 +14,11 @@ export function RuntimeConfigProvider({
   const [config, setConfig] = useState<RuntimeConfigSnapshot | null>(initialConfig);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(!initialConfig);
+  const configRef = useRef<RuntimeConfigSnapshot | null>(initialConfig);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const load = useCallback(async (blocking = false) => {
     if (blocking) {
@@ -24,7 +29,7 @@ export function RuntimeConfigProvider({
       setConfig(snapshot);
       setError(null);
     } catch (err) {
-      if (!config) {
+      if (!configRef.current) {
         setError(err instanceof Error ? err : new Error("Failed to load config"));
       }
     } finally {
@@ -32,10 +37,14 @@ export function RuntimeConfigProvider({
         setLoading(false);
       }
     }
-  }, [config]);
+  }, []);
 
   useEffect(() => {
-    void load(!initialConfig);
+    const hasSeedConfig = Boolean(initialConfig);
+    setConfig(initialConfig);
+    setLoading(!hasSeedConfig);
+    setError(null);
+    void load(!hasSeedConfig);
   }, [initialConfig, load]);
 
   if (loading && !config) {
