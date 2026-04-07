@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -8,6 +10,7 @@ from aerisun.domain.content.schemas import (
     ContentCategoryCreate,
     ContentCategoryRead,
     ContentCategoryUpdate,
+    ContentTitleSuggestionRead,
     TagInfo,
 )
 from aerisun.domain.content.service import (
@@ -15,6 +18,7 @@ from aerisun.domain.content.service import (
     create_managed_category,
     delete_managed_category,
     list_managed_categories,
+    suggest_content_default_title,
     update_managed_category,
 )
 from aerisun.domain.iam.models import AdminUser
@@ -30,6 +34,20 @@ def list_tags(
     session: Session = Depends(get_session),
 ) -> list[TagInfo]:
     return aggregate_tags(session)
+
+
+@router.get(
+    "/default-title",
+    response_model=ContentTitleSuggestionRead,
+    summary="获取内容默认标题",
+    operation_id="get_default_content_title",
+)
+def get_default_title(
+    content_type: Literal["thoughts", "excerpts"] = Query(description="内容类型"),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> ContentTitleSuggestionRead:
+    return suggest_content_default_title(session, content_type=content_type)
 
 
 @router.get(
