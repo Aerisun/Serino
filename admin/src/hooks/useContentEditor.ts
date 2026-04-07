@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ContentCreate, ContentUpdate } from "@serino/api-client/models";
+import { useGetDefaultContentTitle } from "@serino/api-client/admin";
+import type { ContentCreate, ContentUpdate, GetDefaultContentTitleContentType } from "@serino/api-client/models";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { useContentPreview } from "@/lib/useContentPreview";
@@ -62,6 +63,11 @@ export interface ContentEditorConfig {
 export function useContentEditor(config: ContentEditorConfig) {
   const { id } = useParams();
   const isNew = id === "new";
+  const isDefaultTitleContentType =
+    config.contentType === "thoughts" || config.contentType === "excerpts";
+  const defaultTitleContentType = (
+    isDefaultTitleContentType ? config.contentType : "thoughts"
+  ) as GetDefaultContentTitleContentType;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -74,12 +80,25 @@ export function useContentEditor(config: ContentEditorConfig) {
   const hydratedRef = useRef(false);
   const baselineSnapshotRef = useRef("");
   const forceAutoSaveRef = useRef(false);
+  const suggestedTitleRef = useRef("");
+  const appliedSuggestedTitleRef = useRef(false);
+  const titleEditedRef = useRef(false);
 
   // ---- Fetch ----
   const { data: itemData } = config.hooks.useGet(id!, {
     query: { enabled: !isNew && !!id },
   });
   const item = itemData?.data;
+  const { data: defaultTitleSuggestion } = useGetDefaultContentTitle(
+    { content_type: defaultTitleContentType },
+    {
+      query: {
+        enabled: isNew && isDefaultTitleContentType,
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+      },
+    },
+  );
 
   // ---- Form state ----
   const [form, setForm] = useState<ContentCreate>(config.defaultForm);
@@ -108,6 +127,9 @@ export function useContentEditor(config: ContentEditorConfig) {
     autoSaveInFlightRef.current = false;
     pendingAutoSaveRef.current = false;
     hydratedRef.current = false;
+    suggestedTitleRef.current = "";
+    appliedSuggestedTitleRef.current = false;
+    titleEditedRef.current = false;
 
     const draftId = id ?? "new";
     const savedDraft = readEditorDraftSnapshot<ContentCreate>(config.contentType, draftId);
@@ -149,8 +171,40 @@ export function useContentEditor(config: ContentEditorConfig) {
     hydratedRef.current = true;
   }, [item]);
 
-  const setField = (key: string, value: any) =>
+  useEffect(() => {
+    const suggestedTitle = defaultTitleSuggestion?.data?.title;
+    if (!suggestedTitle) {
+      return;
+    }
+    suggestedTitleRef.current = suggestedTitle;
+    if (
+      !isNew ||
+      !isDefaultTitleContentType ||
+      !hydratedRef.current ||
+      appliedSuggestedTitleRef.current ||
+      titleEditedRef.current
+    ) {
+      return;
+    }
+    if (form.title.trim()) {
+      appliedSuggestedTitleRef.current = true;
+      return;
+    }
+    appliedSuggestedTitleRef.current = true;
+    setForm((prev) => {
+      if (prev.title.trim()) {
+        return prev;
+      }
+      return { ...prev, title: suggestedTitle };
+    });
+  }, [defaultTitleSuggestion?.data?.title, form.title, isDefaultTitleContentType, isNew]);
+
+  const setField = (key: string, value: any) => {
+    if (key === "title") {
+      titleEditedRef.current = true;
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   // ---- Query invalidation ----
   const invalidateQueries = async () =>
@@ -180,9 +234,22 @@ export function useContentEditor(config: ContentEditorConfig) {
   const [isSaving, setIsSaving] = useState(false);
   const isPublishedAtValid = isManualPublishedAtValid(isPublishedAtManual, form.published_at);
   const isDraftDirty = buildDraftSignature(form, isPublishedAtManual) !== baselineSnapshotRef.current;
+  const hasMeaningfulContent = useMemo(() => {
+    const nextForm = { ...form };
+    if (
+      isNew &&
+      isDefaultTitleContentType &&
+      !titleEditedRef.current &&
+      suggestedTitleRef.current &&
+      nextForm.title.trim() === suggestedTitleRef.current
+    ) {
+      nextForm.title = "";
+    }
+    return hasMeaningfulEditorContent(nextForm as Record<string, unknown>);
+  }, [form, isDefaultTitleContentType, isNew]);
 
   const persistDraftSnapshot = (draftId: string, nextForm: ContentCreate, manualState: boolean) => {
-    if (!hasMeaningfulEditorContent(nextForm as Record<string, unknown>)) {
+    if (!hasMeaningfulContent) {
       clearEditorDraftSnapshot(config.contentType, draftId);
       return;
     }
@@ -222,7 +289,7 @@ export function useContentEditor(config: ContentEditorConfig) {
       return { saved: false as const };
     }
 
-    if (skipIfEmptyForNew && currentIsNew && !hasMeaningfulEditorContent(currentForm as Record<string, unknown>)) {
+    if (skipIfEmptyForNew && currentIsNew && !hasMeaningfulContent) {
       clearEditorDraftSnapshot(config.contentType, "new");
       if (navigateToList) {
         navigate(config.listRoute);
@@ -357,7 +424,7 @@ export function useContentEditor(config: ContentEditorConfig) {
     if (
       !hydratedRef.current ||
       (!forceAutoSaveRef.current && !isDraftDirty) ||
-      !hasMeaningfulEditorContent(form as Record<string, unknown>)
+      !hasMeaningfulContent
     ) {
       return;
     }
@@ -375,7 +442,7 @@ export function useContentEditor(config: ContentEditorConfig) {
         autosaveTimerRef.current = null;
       }
     };
-  }, [form, isDraftDirty, isPublishedAtManual]);
+  }, [form, hasMeaningfulContent, isDraftDirty, isPublishedAtManual]);
 
   // ---- Preview ----
   const storageKey = `aerisun-preview-${config.contentType}-${id ?? "new"}`;

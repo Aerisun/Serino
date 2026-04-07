@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import re
-from datetime import datetime
+from datetime import date, datetime
 from typing import TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import uuid_str
-from aerisun.core.time import BEIJING_TZ, to_beijing_datetime
+from aerisun.core.time import BEIJING_TZ, beijing_day_bounds, beijing_today, to_beijing_datetime
 from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
     ContentCategory,
@@ -17,7 +16,12 @@ from aerisun.domain.content.models import (
     PostEntry,
     ThoughtEntry,
 )
-from aerisun.domain.content.schemas import ContentCategoryRead, ContentCollectionRead, ContentEntryRead
+from aerisun.domain.content.schemas import (
+    ContentCategoryRead,
+    ContentCollectionRead,
+    ContentEntryRead,
+    ContentTitleSuggestionRead,
+)
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.waline.service import build_comment_path, count_records_by_urls, get_counter_stats_by_urls
 
@@ -25,9 +29,7 @@ ContentModel = TypeVar("ContentModel", PostEntry, DiaryEntry, ThoughtEntry, Exce
 
 CONTENT_CATEGORY_TYPES = {"posts", "thoughts", "excerpts"}
 CONTENT_TYPES = {"posts", "diary", "thoughts", "excerpts"}
-AUTO_TITLE_CONTENT_TYPES = {"thoughts", "excerpts"}
 TAGLESS_CONTENT_TYPES = {"diary", "thoughts", "excerpts"}
-
 
 CONTENT_STATUS_VALUES = {"draft", "published", "archived"}
 CONTENT_VISIBILITY_VALUES = {"public", "private"}
@@ -38,10 +40,12 @@ MANAGED_MODEL_CONTENT_TYPES = {
     ExcerptEntry: "excerpts",
 }
 
-AUTO_TITLE_FALLBACKS = {
-    "thoughts": "未命名碎碎念",
-    "excerpts": "未命名文摘",
+DEFAULT_TITLE_PREFIXES = {
+    "thoughts": "碎碎念",
+    "excerpts": "文摘",
 }
+DEFAULT_TITLE_COUNTED_STATUSES = ("published", "archived")
+CHINESE_NUMERAL_DIGITS = "零一二三四五六七八九"
 
 
 def _normalize_optional_text(
@@ -75,22 +79,77 @@ def _normalize_tags(value: object | None) -> list[str]:
     return normalized
 
 
-def _strip_markdown_text(value: str) -> str:
-    text = re.sub(r"```[\s\S]*?```", " ", value)
-    text = re.sub(r"`([^`]*)`", r"\1", text)
-    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)
-    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"^[#>*+\-\d.\)\s]+", "", text, flags=re.MULTILINE)
-    return " ".join(text.split())
+def _to_chinese_numeral(value: int) -> str:
+    if value <= 0:
+        raise ValidationError("标题序号必须大于 0")
+    if value < 10:
+        return CHINESE_NUMERAL_DIGITS[value]
+    if value < 20:
+        suffix = "" if value == 10 else CHINESE_NUMERAL_DIGITS[value % 10]
+        return f"十{suffix}"
+    if value < 100:
+        tens, ones = divmod(value, 10)
+        prefix = f"{CHINESE_NUMERAL_DIGITS[tens]}十"
+        return prefix if ones == 0 else f"{prefix}{CHINESE_NUMERAL_DIGITS[ones]}"
+    if value < 1000:
+        hundreds, remainder = divmod(value, 100)
+        prefix = f"{CHINESE_NUMERAL_DIGITS[hundreds]}百"
+        if remainder == 0:
+            return prefix
+        if remainder < 10:
+            return f"{prefix}零{CHINESE_NUMERAL_DIGITS[remainder]}"
+        return f"{prefix}{_to_chinese_numeral(remainder)}"
+    return str(value)
 
 
-def _derive_content_title(content_type: str, *, summary: str | None, body: str | None) -> str:
-    source = summary or body or ""
-    plain_text = _strip_markdown_text(source)
-    if plain_text:
-        return plain_text[:60].rstrip()
-    return AUTO_TITLE_FALLBACKS.get(content_type, "未命名内容")
+def _format_default_title_date_label(target_day: date) -> str:
+    return f"{target_day.year % 100}.{target_day.month}.{target_day.day}."
+
+
+def _count_daily_title_candidates(
+    session: Session,
+    *,
+    content_type: str,
+    target_day: date,
+) -> int:
+    model = repo.CONTENT_MODELS.get(content_type)
+    if model is None:
+        raise ValidationError("不支持的内容类型")
+    day_start, day_end = beijing_day_bounds(target_day)
+    reference_time = func.coalesce(model.published_at, model.created_at)
+    return (
+        session.query(func.count(model.id))
+        .filter(model.status.in_(DEFAULT_TITLE_COUNTED_STATUSES))
+        .filter(reference_time >= day_start, reference_time < day_end)
+        .scalar()
+        or 0
+    )
+
+
+def suggest_content_default_title(
+    session: Session,
+    *,
+    content_type: str,
+) -> ContentTitleSuggestionRead:
+    prefix = DEFAULT_TITLE_PREFIXES.get(content_type)
+    if prefix is None:
+        raise ValidationError("仅支持为碎碎念和文摘生成默认标题")
+
+    target_day = beijing_today()
+    sequence = (
+        _count_daily_title_candidates(
+            session,
+            content_type=content_type,
+            target_day=target_day,
+        )
+        + 1
+    )
+    date_label = _format_default_title_date_label(target_day)
+    return ContentTitleSuggestionRead(
+        title=f"{prefix}{_to_chinese_numeral(sequence)}则 ({date_label})",
+        sequence=sequence,
+        date_label=date_label,
+    )
 
 
 def _all_existing_content_slugs(session: Session) -> set[str]:
@@ -155,22 +214,7 @@ def _normalize_content_fields(
     elif existing is None or "tags" in data:
         data["tags"] = _normalize_tags(data.get("tags"))
 
-    if content_type in AUTO_TITLE_CONTENT_TYPES:
-        if existing is None:
-            data["title"] = _derive_content_title(
-                content_type,
-                summary=data.get("summary"),
-                body=data.get("body"),
-            )
-        elif any(field in data for field in ("summary", "body", "title")):
-            data["title"] = _derive_content_title(
-                content_type,
-                summary=data.get("summary", existing.summary),
-                body=data.get("body", existing.body),
-            )
-        elif "title" in data and data.get("title") is None:
-            data.pop("title", None)
-    elif existing is None:
+    if existing is None:
         if not data.get("title"):
             raise ValidationError("标题不能为空")
     elif "title" in data and not data.get("title"):

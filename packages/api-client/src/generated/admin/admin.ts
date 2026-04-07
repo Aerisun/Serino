@@ -90,6 +90,7 @@ import type {
   ContentSubscriptionConfigAdminRead,
   ContentSubscriptionConfigAdminUpdate,
   ContentSubscriptionTestResult,
+  ContentTitleSuggestionRead,
   ContentUpdate,
   DeriveAiSchemaRequest,
   DeriveAiSchemaResponse,
@@ -104,6 +105,7 @@ import type {
   FriendFeedSourceCreate,
   FriendFeedSourceUpdate,
   FriendUpdate,
+  GetDefaultContentTitleParams,
   GetMcpConfigApiV1AdminIntegrationsMcpConfigGetParams,
   GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetParams,
   GuestbookAdminRead,
@@ -18258,6 +18260,130 @@ export function useListTagsApiV1AdminContentTagsGet<TData = Awaited<ReturnType<t
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListTagsApiV1AdminContentTagsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取内容默认标题
+ */
+export type getDefaultContentTitleResponse200 = {
+  data: ContentTitleSuggestionRead
+  status: 200
+}
+
+export type getDefaultContentTitleResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getDefaultContentTitleResponseSuccess = (getDefaultContentTitleResponse200) & {
+  headers: Headers;
+};
+export type getDefaultContentTitleResponseError = (getDefaultContentTitleResponse422) & {
+  headers: Headers;
+};
+
+export type getDefaultContentTitleResponse = (getDefaultContentTitleResponseSuccess | getDefaultContentTitleResponseError)
+
+export const getGetDefaultContentTitleUrl = (params: GetDefaultContentTitleParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/content/default-title?${stringifiedParams}` : `/api/v1/admin/content/default-title`
+}
+
+export const getDefaultContentTitle = async (params: GetDefaultContentTitleParams, options?: RequestInit): Promise<getDefaultContentTitleResponse> => {
+
+  return customInstance<getDefaultContentTitleResponse>(getGetDefaultContentTitleUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDefaultContentTitleQueryKey = (params?: GetDefaultContentTitleParams,) => {
+    return [
+    `/api/v1/admin/content/default-title`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDefaultContentTitleQueryOptions = <TData = Awaited<ReturnType<typeof getDefaultContentTitle>>, TError = ErrorType<HTTPValidationError>>(params: GetDefaultContentTitleParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDefaultContentTitle>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDefaultContentTitleQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDefaultContentTitle>>> = ({ signal }) => getDefaultContentTitle(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDefaultContentTitle>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDefaultContentTitleQueryResult = NonNullable<Awaited<ReturnType<typeof getDefaultContentTitle>>>
+export type GetDefaultContentTitleQueryError = ErrorType<HTTPValidationError>
+
+
+export function useGetDefaultContentTitle<TData = Awaited<ReturnType<typeof getDefaultContentTitle>>, TError = ErrorType<HTTPValidationError>>(
+ params: GetDefaultContentTitleParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDefaultContentTitle>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDefaultContentTitle>>,
+          TError,
+          Awaited<ReturnType<typeof getDefaultContentTitle>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDefaultContentTitle<TData = Awaited<ReturnType<typeof getDefaultContentTitle>>, TError = ErrorType<HTTPValidationError>>(
+ params: GetDefaultContentTitleParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDefaultContentTitle>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDefaultContentTitle>>,
+          TError,
+          Awaited<ReturnType<typeof getDefaultContentTitle>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDefaultContentTitle<TData = Awaited<ReturnType<typeof getDefaultContentTitle>>, TError = ErrorType<HTTPValidationError>>(
+ params: GetDefaultContentTitleParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDefaultContentTitle>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取内容默认标题
+ */
+
+export function useGetDefaultContentTitle<TData = Awaited<ReturnType<typeof getDefaultContentTitle>>, TError = ErrorType<HTTPValidationError>>(
+ params: GetDefaultContentTitleParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDefaultContentTitle>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDefaultContentTitleQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -11,6 +11,20 @@ const envApiBaseUrl =
     "",
   );
 
+async function clearDevelopmentPwaState() {
+  if (!import.meta.env.DEV || typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    return;
+  }
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map((registration) => registration.unregister()));
+
+  if ("caches" in window) {
+    const cacheKeys = await caches.keys();
+    await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+  }
+}
+
 initPublicClient({ baseUrl: envApiBaseUrl });
 initSentry();
 
@@ -28,6 +42,10 @@ if (typeof window !== "undefined") {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<App initialRuntimeConfig={initialRuntimeConfig} />);
+void clearDevelopmentPwaState().finally(() => {
+  createRoot(document.getElementById("root")!).render(
+    <App initialRuntimeConfig={initialRuntimeConfig} />,
+  );
+});
 
 declare const __AERISUN_API_BASE_URL__: string | undefined;

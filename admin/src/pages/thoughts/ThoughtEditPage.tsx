@@ -9,6 +9,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHeaderActions";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
@@ -98,6 +99,13 @@ export default function ThoughtEditPage() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+        <div className="space-y-2">
+          <Label>{t("common.title")}</Label>
+          <Input
+            value={form.title}
+            onChange={(event) => setField("title", event.target.value)}
+          />
         </div>
 
         <div className="pt-6 border-t border-border">

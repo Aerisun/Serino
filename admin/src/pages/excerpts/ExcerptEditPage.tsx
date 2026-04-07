@@ -79,6 +79,13 @@ export default function ExcerptEditPage() {
           <div className="space-y-2"><Label>{t("excerpts.authorName")}</Label><Input value={form.author_name || ""} onChange={(e) => setField("author_name", e.target.value)} placeholder={t("excerpts.authorPlaceholder")} /></div>
           <div className="space-y-2"><Label>{t("excerpts.source")}</Label><Input value={form.source || ""} onChange={(e) => setField("source", e.target.value)} placeholder={t("excerpts.sourcePlaceholder")} /></div>
         </div>
+        <div className="space-y-2">
+          <Label>{t("common.title")}</Label>
+          <Input
+            value={form.title}
+            onChange={(event) => setField("title", event.target.value)}
+          />
+        </div>
 
         <div className="pt-6 border-t border-border">
           <PublishTimeFooter

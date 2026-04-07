@@ -235,6 +235,71 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
   );
 }
 
+function FragmentPreview({ data }: { data: ContentPreviewData }) {
+  const { t, lang } = useFrontendI18n();
+  const featureFlags = useFeatureFlags();
+  const articleRef = useRef<HTMLElement>(null);
+  const dateLabel = data.published_at
+    ? formatDateInBeijing(data.published_at, lang === "zh" ? "zh-CN" : "en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+    : t("common.draft");
+  const secondaryMeta = data.type === "thoughts"
+    ? [data.category, data.mood].filter(Boolean)
+    : [data.category, data.author_name, data.source].filter(Boolean);
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="liquid-glass rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.14)] p-6">
+          <p className="text-xs font-body text-foreground/25">
+            {dateLabel}
+          </p>
+          {secondaryMeta.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {secondaryMeta.map((value) => (
+                <span
+                  key={value}
+                  className="rounded-md border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.24)] px-2 py-0.5 text-[11px] font-body text-foreground/46"
+                >
+                  {value}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </motion.div>
+
+      <motion.article
+        ref={articleRef}
+        className="mt-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {data.body ? (
+          <MarkdownRenderer content={data.body} />
+        ) : (
+          <p className="text-sm font-body text-foreground/40">{t("common.empty")}</p>
+        )}
+      </motion.article>
+
+      {featureFlags.toc && data.body ? (
+        <TableOfContents
+          containerRef={articleRef}
+          content={[data.body]}
+        />
+      ) : null}
+    </>
+  );
+}
+
 function ResumePreview({ data }: { data: ContentPreviewData }) {
   const { t } = useFrontendI18n();
   return (
@@ -307,6 +372,8 @@ export default function Preview() {
       <main className="mx-auto max-w-2xl px-6 pt-28 pb-20 lg:px-8">
         {data.type === "diary" ? (
           <DiaryPreview data={data} />
+        ) : data.type === "thoughts" || data.type === "excerpts" ? (
+          <FragmentPreview data={data} />
         ) : (
           <PostPreview data={data} />
         )}

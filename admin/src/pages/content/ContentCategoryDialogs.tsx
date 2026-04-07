@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useI18n } from "@/i18n";
+import { getBodySnippet } from "@/lib/content-snippets";
 import type { ContentCategoryType } from "@/lib/contentCategories";
 import { CONTENT_LIST_PARAMS, getContentListQueryKey } from "./contentCategoryQueries";
 
@@ -87,6 +88,13 @@ interface EditCategoryDialogProps {
   onSave: () => void;
   categoryName: string;
   pending: boolean;
+}
+
+function getCategoryItemLabel(item: ContentRead, contentType: ContentCategoryType) {
+  if (contentType === "thoughts" || contentType === "excerpts") {
+    return getBodySnippet(item.body, item.summary || item.title || item.id);
+  }
+  return item.title || item.summary || item.id;
 }
 
 export function EditCategoryDialog({
@@ -284,7 +292,9 @@ export function EditCategoryDialog({
                   <div className="p-3 space-y-2">
                     {managedItems.map((item: any) => (
                       <div key={item.id} className="flex items-center justify-between rounded-lg bg-background/80 px-3 py-2 text-sm">
-                        <span className="truncate flex-1">{item.title || item.summary || item.id}</span>
+                        <span className="line-clamp-3 flex-1 leading-5">
+                          {getCategoryItemLabel(item, contentType)}
+                        </span>
                         <Button
                           variant="outline"
                           size="sm"
@@ -342,7 +352,9 @@ export function EditCategoryDialog({
               <div className="p-3 space-y-2">
                 {unclassifiedItems.map((item: any) => (
                   <div key={item.id} className="flex items-center justify-between rounded-lg bg-background/80 px-3 py-2 text-sm">
-                    <span className="truncate flex-1">{item.title || item.summary || item.id}</span>
+                    <span className="line-clamp-3 flex-1 leading-5">
+                      {getCategoryItemLabel(item, contentType)}
+                    </span>
                     <Button
                       variant="outline"
                       size="sm"

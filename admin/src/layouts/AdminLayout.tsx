@@ -31,6 +31,7 @@ import {
   Sun,
   User,
   Info,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
@@ -59,7 +60,7 @@ const navGroups = [
     labelKey: "nav.configuration",
     items: [
       { to: "/site-config", icon: Settings, labelKey: "nav.siteConfig" },
-      { to: "/more", icon: Settings, labelKey: "nav.more" },
+      { to: "/more", icon: SlidersHorizontal, labelKey: "nav.more" },
       { to: "/friends", icon: Users, labelKey: "nav.friends" },
     ],
   },

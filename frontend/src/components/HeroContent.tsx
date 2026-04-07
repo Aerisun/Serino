@@ -110,7 +110,7 @@ const HeroContent = () => {
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
-      <div className="mt-7 flex flex-1 flex-col items-center justify-center gap-6 sm:mt-0 sm:gap-8">
+      <div className="mt-9 flex flex-1 flex-col items-center justify-center gap-6 sm:mt-0 sm:gap-8">
         <motion.p
           className="text-center text-[10px] uppercase tracking-[0.32em] text-white/32 sm:text-[11px]"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
@@ -199,7 +199,7 @@ const HeroContent = () => {
         </motion.p>
 
         <motion.div
-          className="mt-4 flex flex-wrap justify-center gap-4"
+          className="mt-3 flex flex-wrap justify-center gap-4 sm:mt-4"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
@@ -226,7 +226,7 @@ const HeroContent = () => {
         </motion.div>
 
         <motion.div
-          className="mt-3 flex w-full justify-center gap-3"
+          className="mt-1.5 flex w-full justify-center gap-3 sm:mt-3"
           initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transition({
