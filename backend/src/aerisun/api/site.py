@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import mimetypes
 import json
+import mimetypes
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
