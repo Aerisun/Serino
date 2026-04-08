@@ -4,17 +4,14 @@ import { Heart, MessageCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
+import { useContentReaction, type ContentReactionSurface } from "@/hooks/use-content-reaction";
 import {
   loadCommunityConfig,
   type CommunityConfig,
 } from "@/lib/community-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import {
-  createReactionApiV1SiteInteractionsReactionsPost,
-  readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet,
-} from "@serino/api-client/site-interactions";
 
-type CommentSurface = "posts" | "diary" | "guestbook" | "thoughts" | "excerpts" | "friends";
+type CommentSurface = ContentReactionSurface | "guestbook";
 
 const WalineSurface = lazy(() => import("@/components/WalineSurface"));
 
@@ -28,9 +25,6 @@ interface CommentContext {
   contentType: CommentSurface;
   slug: string;
 }
-
-const LIKE_STORAGE_PREFIX = "aerisun:liked:";
-const LIKE_TOKEN_PREFIX = "aerisun:like-token:";
 
 const resolveCommentContext = (
   contentType: CommentSurface | undefined,
@@ -72,59 +66,6 @@ const resolveCommentContext = (
   return null;
 };
 
-/**
- * Like via the site's public reaction API.
- * Reactions are append-only, so once liked on this device the button stays active.
- */
-const useLike = (ctx: CommentContext | null) => {
-  const [liked, setLiked] = useState(false);
-  const [count, setCount] = useState(0);
-  const [busy, setBusy] = useState(false);
-
-  const reactionKey = ctx && ctx.contentType !== "guestbook" ? `${ctx.contentType}:${ctx.slug}` : null;
-
-  useEffect(() => {
-    if (!ctx || ctx.contentType === "guestbook" || !reactionKey) return;
-    const storageKey = `${LIKE_STORAGE_PREFIX}${reactionKey}`;
-    setLiked(localStorage.getItem(storageKey) === "1");
-
-    readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet(ctx.contentType, ctx.slug, "like")
-      .then((response) => {
-        setCount(response.data.total ?? 0);
-      })
-      .catch(() => {});
-  }, [ctx, reactionKey]);
-
-  const toggle = useCallback(async () => {
-    if (!ctx || ctx.contentType === "guestbook" || !reactionKey || liked || busy) return;
-    setBusy(true);
-    try {
-      const tokenStorageKey = `${LIKE_TOKEN_PREFIX}${reactionKey}`;
-      let clientToken = localStorage.getItem(tokenStorageKey);
-      if (!clientToken) {
-        clientToken = `${reactionKey}:${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem(tokenStorageKey, clientToken);
-      }
-
-      const response = await createReactionApiV1SiteInteractionsReactionsPost({
-        content_type: ctx.contentType,
-        content_slug: ctx.slug,
-        reaction_type: "like",
-        client_token: clientToken,
-      });
-      setCount(response.data.total ?? count + 1);
-      setLiked(true);
-      localStorage.setItem(`${LIKE_STORAGE_PREFIX}${reactionKey}`, "1");
-    } catch {
-      // silently fail
-    } finally {
-      setBusy(false);
-    }
-  }, [busy, count, ctx, liked, reactionKey]);
-
-  return { liked, count, busy, toggle, enabled: ctx !== null && ctx.contentType !== "guestbook" };
-};
-
 const CommentSection = ({
   contentType,
   contentSlug,
@@ -141,9 +82,15 @@ const CommentSection = ({
     () => resolveCommentContext(contentType, contentSlug, location.pathname, id),
     [contentSlug, contentType, id, location.pathname],
   );
+  const reactionContentType = contentContext && contentContext.contentType !== "guestbook"
+    ? contentContext.contentType
+    : null;
 
   const isCollapsible = expandable ?? (contentContext?.contentType !== "guestbook");
-  const like = useLike(contentContext);
+  const like = useContentReaction({
+    contentType: reactionContentType,
+    slug: reactionContentType ? contentContext?.slug ?? null : null,
+  });
   const shouldLoadSurface = contentContext !== null && (!isCollapsible || showComments);
 
   useEffect(() => {
@@ -210,14 +157,15 @@ const CommentSection = ({
           <button
             type="button"
             onClick={like.toggle}
-            disabled={like.busy || like.liked}
+            disabled={like.busy}
+            aria-pressed={like.active}
             className={`${btnBase} disabled:cursor-default ${
-              like.liked
+              like.active
                 ? "border-[rgb(var(--shiro-accent-rgb)/0.28)] text-[rgb(var(--shiro-accent-rgb)/0.85)]"
                 : "border-[rgb(var(--shiro-border-rgb)/0.18)] text-foreground/45 hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
             }`}
           >
-            <Heart className={`h-4 w-4 ${like.liked ? "fill-current" : ""}`} />
+            <Heart className={`h-4 w-4 ${like.active ? "fill-current" : ""}`} />
             <span className="tabular-nums">{like.count}</span>
           </button>
         )}

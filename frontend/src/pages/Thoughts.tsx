@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Heart, MessageCircle, Repeat2, Search } from "lucide-react";
+import { Heart, MessageCircle, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import ArchiveBadge from "@/components/ArchiveBadge";
 import PageShell from "@/components/PageShell";
 import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { staggerItem } from "@/config";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { useContentReaction } from "@/hooks/use-content-reaction";
 import { useFrontendI18n } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
@@ -25,7 +26,6 @@ interface Thought {
   isArchived: boolean;
   likes: number;
   comments: number;
-  reposts: number;
   mood?: string;
   category: string;
 }
@@ -45,7 +45,6 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
     isArchived: entry.status === "archived",
     likes: entry.like_count ?? 0,
     comments: entry.comment_count ?? 0,
-    reposts: entry.repost_count ?? 0,
     mood: entry.mood ?? undefined,
     category: entry.category || "",
   };
@@ -67,10 +66,43 @@ const buildPreviewThought = (preview: {
     isArchived: false,
     likes: 0,
     comments: 0,
-    reposts: 0,
     mood: preview.mood ?? undefined,
     category: preview.category || "",
   };
+};
+
+const ThoughtLikeButton = ({
+  thoughtId,
+  initialLikes,
+  disabled = false,
+}: {
+  thoughtId: string;
+  initialLikes: number;
+  disabled?: boolean;
+}) => {
+  const reaction = useContentReaction({
+    contentType: disabled ? null : "thoughts",
+    slug: disabled ? null : thoughtId,
+    initialTotal: initialLikes,
+    enabled: !disabled,
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => void reaction.toggle()}
+      disabled={!reaction.enabled || reaction.busy}
+      aria-pressed={reaction.active}
+      className={`flex items-center gap-1.5 transition-colors active:scale-[0.95] disabled:cursor-default disabled:opacity-50 ${
+        reaction.active
+          ? "text-[rgb(var(--shiro-accent-rgb)/0.76)]"
+          : "hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
+      }`}
+    >
+      <Heart className={`h-3.5 w-3.5 ${reaction.active ? "fill-current" : ""}`} />
+      {reaction.count}
+    </button>
+  );
 };
 
 const matchesSearchText = (
@@ -351,10 +383,11 @@ const Thoughts = () => {
               ) : null}
 
               <div className="mt-3 flex items-center gap-5 text-xs text-foreground/20 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.42)]">
-                <span className="flex items-center gap-1.5">
-                  <Heart className="h-3.5 w-3.5" />
-                  {thought.likes}
-                </span>
+                <ThoughtLikeButton
+                  thoughtId={thought.id}
+                  initialLikes={thought.likes}
+                  disabled={previewThought?.id === thought.id}
+                />
                 <button
                   type="button"
                   onClick={() =>
@@ -363,19 +396,12 @@ const Thoughts = () => {
                     )
                   }
                   className={`flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95] ${expandedCommentId === thought.id ? "text-[rgb(var(--shiro-accent-rgb)/0.76)]" : ""}`}
-                >
-                  <MessageCircle
-                    className={`h-3.5 w-3.5 ${expandedCommentId === thought.id ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
-                  />
-                  {thought.comments}
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] active:scale-[0.95]"
-                >
-                  <Repeat2 className="h-3.5 w-3.5" />
-                  {thought.reposts}
-                </button>
+                  >
+                    <MessageCircle
+                      className={`h-3.5 w-3.5 ${expandedCommentId === thought.id ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`}
+                    />
+                    {thought.comments}
+                  </button>
               </div>
 
               <AnimatePresence>

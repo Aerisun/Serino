@@ -35,9 +35,19 @@ export interface SiteContentUnsubscribeResult {
   unsubscribed: boolean;
 }
 
+function isAxiosErrorLike(
+  error: unknown,
+): error is AxiosError<{ detail?: unknown; message?: unknown }> {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { isAxiosError?: unknown }).isAxiosError === true
+  );
+}
+
 const resolveErrorMessage = (error: unknown) => {
-  if (error instanceof AxiosError) {
-    const detail = error.response?.data as { detail?: unknown; message?: unknown } | undefined;
+  if (isAxiosErrorLike(error)) {
+    const detail = error.response?.data;
     return normalizeErrorMessage(detail?.detail) ?? normalizeErrorMessage(detail?.message) ?? error.message;
   }
 

@@ -22,7 +22,6 @@ import {
   communityActionClass,
   communityChipClass,
   communityEmojiPopupClass,
-  communityEmojiSearchClass,
   communityInputClass,
   communityTextareaClass,
   fallbackAvatar,
@@ -30,7 +29,7 @@ import {
   StatusPill,
   type DraftState,
   type EditorMode,
-  type EmojiGroup,
+  type EmojiChoice,
   type ReplyTarget,
 } from "./waline-types";
 
@@ -74,15 +73,11 @@ export interface WalineCommentFormProps {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
 
   /* Emoji */
-  emojiSelectionEnabled: boolean;
   emojiPickerOpen: boolean;
   onToggleEmojiPicker: () => void;
-  emojiQuery: string;
-  onEmojiQueryChange: (value: string) => void;
-  filteredEmojiGroups: EmojiGroup[];
+  emojiChoices: EmojiChoice[];
   onEmojiInsert: (emoji: string) => void;
   emojiPickerRef: RefObject<HTMLDivElement | null>;
-  emojiSearchRef: RefObject<HTMLInputElement | null>;
 
   /* Image upload */
   imageUploadsEnabled: boolean;
@@ -132,15 +127,11 @@ const WalineCommentForm = ({
   onSetEditorMode,
   deferredBody,
   textareaRef,
-  emojiSelectionEnabled,
   emojiPickerOpen,
   onToggleEmojiPicker,
-  emojiQuery,
-  onEmojiQueryChange,
-  filteredEmojiGroups,
+  emojiChoices,
   onEmojiInsert,
   emojiPickerRef,
-  emojiSearchRef,
   imageUploadsEnabled,
   imageUploading,
   imageInputRef,
@@ -172,7 +163,7 @@ const WalineCommentForm = ({
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={transition({ duration: 0.3, reducedMotion: prefersReducedMotion })}
-          className="overflow-hidden"
+          className={emojiPickerOpen || avatarPickerOpen ? "overflow-visible" : "overflow-hidden"}
         >
           <div ref={avatarPickerRef} className="space-y-4">
             {replyTarget ? (
@@ -300,94 +291,68 @@ const WalineCommentForm = ({
 
             {/* Editor area */}
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 whitespace-nowrap sm:flex-wrap sm:justify-between sm:gap-3">
                 {/* Write / preview tabs */}
-                <div className="inline-flex rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.74] p-1 dark:bg-card/[0.8]">
+                <div className="inline-flex shrink-0 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.74] p-0.5 sm:p-1 dark:bg-card/[0.8]">
                   <button
                     type="button"
                     onClick={() => onSetEditorMode("write")}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition ${
+                    className={`inline-flex items-center gap-0.5 rounded-full px-2 py-1.5 text-[11px] transition sm:gap-1.5 sm:px-3 sm:text-xs ${
                       editorMode === "write"
                         ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.88)]"
                         : "text-foreground/52 hover:text-foreground/76"
                     }`}
                   >
-                    <PencilLine className="h-3.5 w-3.5" />
+                    <PencilLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     {t("waline.form.edit")}
                   </button>
                   <button
                     type="button"
                     onClick={() => onSetEditorMode("preview")}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition ${
+                    className={`inline-flex items-center gap-0.5 rounded-full px-2 py-1.5 text-[11px] transition sm:gap-1.5 sm:px-3 sm:text-xs ${
                       editorMode === "preview"
                         ? "bg-[rgb(var(--shiro-accent-rgb)/0.12)] text-[rgb(var(--shiro-accent-rgb)/0.88)]"
                         : "text-foreground/52 hover:text-foreground/76"
                     }`}
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     {t("waline.form.preview")}
                   </button>
                 </div>
 
                 {/* Emoji + image buttons */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {emojiSelectionEnabled ? (
-                    <div ref={emojiPickerRef} className="relative">
+                <div className="ml-auto flex items-center gap-1.5 whitespace-nowrap pl-2 sm:ml-0 sm:gap-2 sm:pl-0">
+                  <div ref={emojiPickerRef} className="relative hidden shrink-0 sm:block">
                       <button
                         type="button"
                         onClick={onToggleEmojiPicker}
-                        className={communityChipClass}
+                        className={`${communityChipClass} gap-0.5 px-2 py-1.5 text-[11px] sm:gap-1.5 sm:px-3 sm:text-xs`}
                         aria-expanded={emojiPickerOpen}
                         aria-label={t("waline.form.openEmojiPicker")}
                       >
-                        <Smile className="h-3.5 w-3.5" />
+                        <Smile className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         {t("waline.form.emoji")}
                       </button>
                       {emojiPickerOpen ? (
                         <div className={communityEmojiPopupClass}>
-                          <label className="block space-y-2">
-                            <span className="text-[0.65rem] font-medium uppercase tracking-[0.22em] text-foreground/40">
-                              {t("waline.form.searchEmoji")}
-                            </span>
-                            <input
-                              ref={emojiSearchRef}
-                              value={emojiQuery}
-                              onChange={(event) => onEmojiQueryChange(event.target.value)}
-                              placeholder={t("waline.form.searchEmojiPlaceholder")}
-                              className={communityEmojiSearchClass}
-                            />
-                          </label>
-
-                          <div className="mt-3 max-h-56 space-y-3 overflow-auto pr-1">
-                            {filteredEmojiGroups.length ? filteredEmojiGroups.map((group) => (
-                              <div key={group.title} className="space-y-2">
-                                <p className="text-[0.65rem] font-medium uppercase tracking-[0.22em] text-foreground/35">
-                                  {group.title}
-                                </p>
-                                <div className="grid grid-cols-6 gap-2">
-                                  {group.items.map((choice) => (
-                                    <button
-                                      key={choice.emoji}
-                                      type="button"
-                                      title={choice.label}
-                                      onClick={() => onEmojiInsert(choice.emoji)}
-                                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent bg-background/[0.76] text-base transition hover:border-[rgb(var(--shiro-accent-rgb)/0.2)] hover:bg-[rgb(var(--shiro-accent-rgb)/0.12)] dark:bg-card/[0.82]"
-                                    >
-                                      {choice.emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )) : (
-                              <div className="rounded-2xl border border-dashed border-[rgb(var(--shiro-border-rgb)/0.18)] px-3 py-6 text-center text-sm text-foreground/40">
-                                {t("waline.form.emojiNotFound")}
-                              </div>
-                            )}
+                          <div className="max-h-[min(20rem,60vh)] overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <div className="grid grid-cols-6 gap-2 sm:grid-cols-7">
+                              {emojiChoices.map((choice, index) => (
+                                <button
+                                  key={`${choice.emoji}-${index}`}
+                                  type="button"
+                                  title={choice.label}
+                                  onClick={() => onEmojiInsert(choice.emoji)}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent bg-background/[0.76] text-base transition hover:border-[rgb(var(--shiro-accent-rgb)/0.2)] hover:bg-[rgb(var(--shiro-accent-rgb)/0.12)] dark:bg-card/[0.82]"
+                                >
+                                  {choice.emoji}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       ) : null}
                     </div>
-                  ) : null}
 
                   {imageUploadsEnabled ? (
                     <>
@@ -395,9 +360,9 @@ const WalineCommentForm = ({
                         type="button"
                         onClick={() => imageInputRef.current?.click()}
                         disabled={imageUploading}
-                        className={`${communityChipClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                        className={`${communityChipClass} shrink-0 gap-0.5 px-2 py-1.5 text-[11px] sm:gap-1.5 sm:px-3 sm:text-xs disabled:cursor-not-allowed disabled:opacity-60`}
                       >
-                        {imageUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-4" />}
+                        {imageUploading ? <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" /> : <ImagePlus className="h-3 w-3 sm:h-3.5 sm:w-4" />}
                         {t("waline.form.image")}
                       </button>
                       <input

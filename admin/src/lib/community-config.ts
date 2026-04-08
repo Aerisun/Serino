@@ -10,7 +10,6 @@ export interface CommunityConfigFormState {
   meta: string;
   required_meta: string;
   emoji_presets: string;
-  enable_enjoy_search: boolean;
   image_uploader: boolean;
   helper_copy: string;
   email_login_enabled: boolean;
@@ -30,7 +29,7 @@ const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceUpdate[] = [
 
 const DEFAULT_META = ["nick", "mail"];
 const DEFAULT_REQUIRED_META = ["nick"];
-const DEFAULT_EMOJI_PRESETS = ["twemoji", "qq", "bilibili"];
+const DEFAULT_EMOJI_PRESETS = ["weibo", "qq", "tieba", "bilibili", "twemoji", "alus", "bmoji"];
 const DEFAULT_MODERATION_MODE = "all_pending";
 const DEFAULT_DEFAULT_SORTING = "latest";
 
@@ -85,7 +84,6 @@ export const createCommunityForm = (config?: CommunityConfigAdminRead | null): C
   meta: joinList(config?.meta ?? DEFAULT_META),
   required_meta: joinList(config?.required_meta ?? DEFAULT_REQUIRED_META),
   emoji_presets: joinList(config?.emoji_presets ?? DEFAULT_EMOJI_PRESETS),
-  enable_enjoy_search: config?.enable_enjoy_search ?? true,
   image_uploader: config?.image_uploader ?? false,
   helper_copy: config?.avatar_helper_copy ?? "",
   email_login_enabled: config?.anonymous_enabled ?? true,
@@ -103,7 +101,6 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   meta: splitList(form.meta),
   required_meta: splitList(form.required_meta),
   emoji_presets: splitList(form.emoji_presets),
-  enable_enjoy_search: form.enable_enjoy_search,
   image_uploader: form.image_uploader,
   anonymous_enabled: form.email_login_enabled,
   moderation_mode: normalizeModerationMode(form.moderation_mode),

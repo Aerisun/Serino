@@ -169,6 +169,23 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("aerisun:open-site-auth", handler);
   }, [resetForm]);
 
+  useEffect(() => {
+    if (!open || typeof document === "undefined") {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousDocumentOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousDocumentOverflow;
+    };
+  }, [open]);
+
   const closeLogin = useCallback(() => {
     setOpen(false);
     resetForm();
@@ -545,12 +562,13 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   );
 
   const showProfileForm = mode === "profile" || needsProfile;
+  const compactLoginLayout = mode === "login" && !showProfileForm;
   const hasScrollableSubscriptionList = subscriptionStatuses.length > 2;
   const currentProviderLabel = authState?.user
     ? `${providerLabel(authState.user.primary_auth_provider)}${authState.user.is_admin ? t("siteAuth.adminModeSuffix") : ""}`
     : t("siteAuth.emailProvider");
   const profileEditor = showProfileForm ? (
-    <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
+    <div className={`${mode === "profile" ? "mt-5" : "mt-2"} rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4`}>
       {mode === "profile" ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -666,7 +684,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="mt-4 space-y-3">
+      <div className={`${mode === "profile" ? "mt-4" : "mt-1"} space-y-3`}>
         <label className="block space-y-2">
           <span className="text-xs font-medium uppercase tracking-[0.14em] text-foreground/46">
             {t("siteAuth.username")}
@@ -696,7 +714,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
             {t("siteAuth.refreshBatch")}
           </button>
         </div>
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 justify-items-center gap-2 sm:grid-cols-6">
           {avatarCandidates.map((candidate) => {
             const selected = selectedAvatar === candidate.avatar_url;
             return (
@@ -753,7 +771,13 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       ? createPortal(
           <AnimatePresence>
             {open ? (
-              <div className="fixed inset-0 z-[1200] flex items-center justify-center px-4">
+              <div
+                className={`fixed inset-0 z-[1200] flex justify-center overflow-hidden px-3 ${
+                  compactLoginLayout
+                    ? "items-center pb-[calc(env(safe-area-inset-bottom)+3.5rem)] pt-[calc(env(safe-area-inset-top)+0.75rem)]"
+                    : "items-start pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-[calc(env(safe-area-inset-top)+0.85rem)]"
+                } sm:items-center sm:px-4 sm:py-6`}
+              >
                 <motion.button
                   type="button"
                   className="absolute inset-0 bg-[rgb(10_15_23/0.28)] backdrop-blur-sm"
@@ -774,154 +798,162 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                     duration: 0.24,
                     reducedMotion: prefersReducedMotion,
                   })}
-                  className="relative w-full max-w-[34rem] overflow-hidden rounded-[2rem] border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-background/[0.88] p-6 shadow-[0_30px_90px_rgb(15_23_42/0.18)] backdrop-blur-2xl dark:bg-card/[0.92]"
+                  role="dialog"
+                  aria-modal="true"
+                  className="relative flex min-h-0 w-full max-w-[34rem] max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.7rem)] flex-col overflow-hidden rounded-[1.75rem] border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-background/[0.88] shadow-[0_30px_90px_rgb(15_23_42/0.18)] backdrop-blur-2xl dark:bg-card/[0.92] sm:max-h-[min(calc(100dvh-3rem),48rem)] sm:rounded-[2rem]"
                 >
                   <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--shiro-glow-rgb)/0.7)] to-transparent" />
                   <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgb(255_107_53/0.18),_transparent_68%)]" />
                   <div className="absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,_rgb(66_133_244/0.18),_transparent_66%)]" />
 
-                  <div className="relative">
-                    <div
-                      className={`inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1 text-foreground/46 ${
-                        mode === "profile"
-                          ? "font-heading text-[0.9rem] italic tracking-[0.08em] text-[rgb(var(--shiro-accent-rgb)/0.84)]"
-                          : "text-[0.68rem] uppercase tracking-[0.24em]"
-                      }`}
-                    >
+                  <div
+                    className={`relative min-h-0 flex-1 overflow-y-auto overscroll-contain ${
+                      showProfileForm ? "scrollbar-hide" : ""
+                    }`}
+                  >
+                    <div className="px-4 py-4 sm:px-6 sm:py-6">
+                      <div
+                        className={`inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1 text-foreground/46 ${
+                          mode === "profile"
+                            ? "font-heading text-[0.9rem] italic tracking-[0.08em] text-[rgb(var(--shiro-accent-rgb)/0.84)]"
+                            : "text-[0.68rem] uppercase tracking-[0.24em]"
+                        }`}
+                      >
+                        {mode === "profile" ? (
+                          <UserRoundPen className="h-3.5 w-3.5" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5" />
+                        )}
+                        {mode === "profile" ? t("siteAuth.profileTag") : t("siteAuth.signInTag")}
+                      </div>
                       {mode === "profile" ? (
-                        <UserRoundPen className="h-3.5 w-3.5" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
-                      )}
-                      {mode === "profile" ? t("siteAuth.profileTag") : t("siteAuth.signInTag")}
-                    </div>
-                    {mode === "profile" ? (
-                      <h2 className="mt-4 text-3xl text-foreground">
-                        {authState?.user?.is_admin ? t("siteAuth.updateBaseProfile") : t("siteAuth.visitorProfile")}
-                      </h2>
-                    ) : null}
+                        <h2 className="mt-4 text-3xl text-foreground">
+                          {authState?.user?.is_admin ? t("siteAuth.updateBaseProfile") : t("siteAuth.visitorProfile")}
+                        </h2>
+                      ) : null}
 
-                    {mode === "profile" ? null : (
-                      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                        {(["google", "github"] as const).map((provider) => {
-                          const Icon = providerIcon(provider);
-                          const enabled = enabledOAuthProviderSet.has(provider);
-                          return (
-                            <button
-                              key={provider}
-                              type="button"
-                              onClick={enabled ? () => void handleOAuthLogin(provider) : undefined}
-                              disabled={submitting || !enabled}
-                              className={`group relative overflow-hidden rounded-[1.35rem] border px-4 py-4 text-left transition ${
-                                enabled
-                                  ? "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.8] hover:border-[rgb(var(--shiro-accent-rgb)/0.26)] hover:bg-background/[0.9] disabled:opacity-60"
-                                  : "border-[rgb(var(--shiro-border-rgb)/0.1)] bg-foreground/[0.04] opacity-55 cursor-not-allowed"
-                              }`}
-                            >
-                              {enabled ? (
-                                <div
-                                  className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
-                                  style={{
-                                    background:
-                                      "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))",
-                                  }}
-                                />
-                              ) : null}
-                              <div className="relative flex items-center gap-3">
-                                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] ${
-                                  enabled ? "bg-white/80 text-foreground/78" : "bg-foreground/[0.06] text-foreground/32"
-                                }`}>
-                                  <Icon className="h-4 w-4" />
-                                </span>
-                                <div>
-                                  <div className={`text-sm font-semibold ${enabled ? "text-foreground" : "text-foreground/42"}`}>
-                                    {providerLabel(provider)}
-                                  </div>
-                                  <div className={`text-xs ${enabled ? "text-foreground/46" : "text-foreground/32"}`}>
-                                    {enabled
-                                      ? t("siteAuth.useThirdPartyDirect")
-                                      : t("siteAuth.providerDisabled", { provider: providerLabel(provider) })}
+                      {mode === "profile" ? null : (
+                        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                          {(["google", "github"] as const).map((provider) => {
+                            const Icon = providerIcon(provider);
+                            const enabled = enabledOAuthProviderSet.has(provider);
+                            return (
+                              <button
+                                key={provider}
+                                type="button"
+                                onClick={enabled ? () => void handleOAuthLogin(provider) : undefined}
+                                disabled={submitting || !enabled}
+                                className={`group relative overflow-hidden rounded-[1.35rem] border px-4 py-4 text-left transition ${
+                                  enabled
+                                    ? "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.8] hover:border-[rgb(var(--shiro-accent-rgb)/0.26)] hover:bg-background/[0.9] disabled:opacity-60"
+                                    : "border-[rgb(var(--shiro-border-rgb)/0.1)] bg-foreground/[0.04] opacity-55 cursor-not-allowed"
+                                }`}
+                              >
+                                {enabled ? (
+                                  <div
+                                    className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
+                                    style={{
+                                      background:
+                                        "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))",
+                                    }}
+                                  />
+                                ) : null}
+                                <div className="relative flex items-center gap-3">
+                                  <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] ${
+                                    enabled ? "bg-white/80 text-foreground/78" : "bg-foreground/[0.06] text-foreground/32"
+                                  }`}>
+                                    <Icon className="h-4 w-4" />
+                                  </span>
+                                  <div>
+                                    <div className={`text-sm font-semibold ${enabled ? "text-foreground" : "text-foreground/42"}`}>
+                                      {providerLabel(provider)}
+                                    </div>
+                                    <div className={`text-xs ${enabled ? "text-foreground/46" : "text-foreground/32"}`}>
+                                      {enabled
+                                        ? t("siteAuth.useThirdPartyDirect")
+                                        : t("siteAuth.providerDisabled", { provider: providerLabel(provider) })}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {mode === "profile" ? (
-                      profileEditor
-                    ) : dialogEmailLoginEnabled ? (
-                      <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                          <Mail className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
-                          {t("siteAuth.emailIdentityLogin")}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div className="mt-4 space-y-3">
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(event) => {
-                              setEmail(event.target.value);
-                              if (requiresAdminPassword) {
-                                setRequiresAdminPassword(false);
-                                setAdminPassword("");
-                              }
-                            }}
-                            placeholder={t("siteAuth.emailIdentityPlaceholder")}
-                            className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
-                          />
-                          {requiresAdminPassword ? (
-                            <>
-                              <div className="rounded-[1rem] border border-[rgb(var(--shiro-accent-rgb)/0.16)] bg-[rgb(var(--shiro-accent-rgb)/0.08)] px-4 py-3 text-xs leading-6 text-foreground/66">
-                                {t("siteAuth.adminPasswordHint")}
-                              </div>
-                              <input
-                                type="password"
-                                value={adminPassword}
-                                onChange={(event) =>
-                                  setAdminPassword(event.target.value)
+                      )}
+
+                      {mode === "profile" ? (
+                        profileEditor
+                      ) : dialogEmailLoginEnabled ? (
+                        <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                            <Mail className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
+                            {t("siteAuth.emailIdentityLogin")}
+                          </div>
+                          <div className="mt-4 space-y-3">
+                            <input
+                              type="email"
+                              value={email}
+                              onChange={(event) => {
+                                setEmail(event.target.value);
+                                if (requiresAdminPassword) {
+                                  setRequiresAdminPassword(false);
+                                  setAdminPassword("");
                                 }
-                                placeholder={t("siteAuth.adminPasswordPlaceholder")}
-                                className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
-                              />
-                            </>
-                          ) : null}
-                          {!needsProfile ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleEmailLogin()}
-                              disabled={
-                                submitting ||
-                                !email.trim() ||
-                                (requiresAdminPassword &&
-                                  !adminPassword.trim())
-                              }
-                              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.2)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.16)] disabled:opacity-60"
-                            >
-                              {submitting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : requiresAdminPassword ? (
-                                <Lock className="h-4 w-4" />
-                              ) : (
-                                <Mail className="h-4 w-4" />
-                              )}
-                              {requiresAdminPassword
-                                ? t("siteAuth.verifyPasswordAndLogin")
-                                : t("siteAuth.continueWithEmail")}
-                            </button>
-                          ) : null}
+                              }}
+                              placeholder={t("siteAuth.emailIdentityPlaceholder")}
+                              className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
+                            />
+                            {requiresAdminPassword ? (
+                              <>
+                                <div className="rounded-[1rem] border border-[rgb(var(--shiro-accent-rgb)/0.16)] bg-[rgb(var(--shiro-accent-rgb)/0.08)] px-4 py-3 text-xs leading-6 text-foreground/66">
+                                  {t("siteAuth.adminPasswordHint")}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={adminPassword}
+                                  onChange={(event) =>
+                                    setAdminPassword(event.target.value)
+                                  }
+                                  placeholder={t("siteAuth.adminPasswordPlaceholder")}
+                                  className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
+                                />
+                              </>
+                            ) : null}
+                            {!needsProfile ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleEmailLogin()}
+                                disabled={
+                                  submitting ||
+                                  !email.trim() ||
+                                  (requiresAdminPassword &&
+                                    !adminPassword.trim())
+                                }
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[rgb(var(--shiro-accent-rgb)/0.2)] bg-[rgb(var(--shiro-accent-rgb)/0.12)] px-4 py-3 text-sm font-semibold text-[rgb(var(--shiro-accent-rgb)/0.92)] transition hover:bg-[rgb(var(--shiro-accent-rgb)/0.16)] disabled:opacity-60"
+                              >
+                                {submitting ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : requiresAdminPassword ? (
+                                  <Lock className="h-4 w-4" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
+                                {requiresAdminPassword
+                                  ? t("siteAuth.verifyPasswordAndLogin")
+                                  : t("siteAuth.continueWithEmail")}
+                              </button>
+                            ) : null}
+                          </div>
+                          {profileEditor}
                         </div>
-                        {profileEditor}
-                      </div>
-                    ) : null}
+                      ) : null}
 
-                    {error ? (
-                      <div className="mt-4 rounded-2xl border border-rose-500/16 bg-rose-500/8 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
-                        {error}
-                      </div>
-                    ) : null}
+                      {error ? (
+                        <div className="mt-4 rounded-2xl border border-rose-500/16 bg-rose-500/8 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+                          {error}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </motion.div>
               </div>

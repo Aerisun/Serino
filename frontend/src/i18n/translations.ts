@@ -1,6 +1,9 @@
 export type FrontendLang = "zh" | "en";
 
-export const frontendTranslations: Record<FrontendLang, Record<string, string>> = {
+export const frontendTranslations: Record<
+  FrontendLang,
+  Record<string, string>
+> = {
   zh: {
     "common.retry": "重试",
     "common.loading": "加载中",
@@ -22,7 +25,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "runtime.apiFailed": "接口请求失败（HTTP {status}）",
     "runtime.unreachable": "无法访问接口 {target}",
     "runtime.configLoadFailed": "无法加载站点配置",
-    "community.avatarHelperCopy": "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
+    "community.avatarHelperCopy":
+      "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
     "siteAuth.requestFailed": "请求失败",
     "siteAuth.networkError": "请求失败，请检查网络连接",
     "comments.loading": "评论区加载中...",
@@ -135,7 +139,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "friends.loadMore": "加载更多",
     "friends.errorTitle": "友链页面加载失败",
     "friends.summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
-    "friends.footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
+    "friends.footerSummaryTemplate":
+      "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
     "friends.randomPickerTemplate": "从最近 {days} 天里随机挑一篇",
     "friends.randomRefresh": "换一篇",
     "friends.randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
@@ -158,7 +163,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "subscribe.emailRequired": "请输入邮箱。",
     "subscribe.typeRequired": "至少选择一项内容。",
     "subscribe.invalidResponse": "订阅请求返回异常，请稍后重试。",
-    "subscribe.success": "确认邮件发送成功，订阅已生效。已记录你填写的邮箱 {email}。",
+    "subscribe.success":
+      "确认邮件发送成功，订阅已生效。已记录你填写的邮箱 {email}。",
     "subscribe.failed": "订阅失败，请稍后重试。",
     "subscribe.closeAria": "关闭订阅弹窗",
     "subscribe.openRss": "打开 RSS 链接",
@@ -169,7 +175,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "subscribe.content.diary": "日记",
     "subscribe.content.thoughts": "碎碎念",
     "subscribe.content.excerpts": "文摘",
-    "subscribe.emailUnavailablePlaceholder": "站长还没有配置邮箱服务，敬请期待~",
+    "subscribe.emailUnavailablePlaceholder":
+      "站长还没有配置邮箱服务，敬请期待~",
     "search.type.posts": "文章",
     "search.type.diary": "日记",
     "search.type.thoughts": "碎碎念",
@@ -196,7 +203,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "siteAuth.subscriptionEmail": "订阅邮箱",
     "siteAuth.unsubscribing": "取消中...",
     "siteAuth.unsubscribe": "取消订阅",
-    "siteAuth.noActiveSubscription": "当前没有活跃订阅。可在站点右上角的“订阅”按钮中添加。",
+    "siteAuth.noActiveSubscription":
+      "当前没有活跃订阅。可在站点右上角的“订阅”按钮中添加。",
     "siteAuth.maxTwoEmailsHint": "最多显示两个邮箱，可上下滚动查看更多。",
     "siteAuth.username": "用户名",
     "siteAuth.editNickname": "修改显示昵称",
@@ -213,25 +221,25 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "siteAuth.emailIdentityPlaceholder": "输入邮箱作为身份标识",
     "siteAuth.continueWithEmail": "继续使用邮箱",
     "siteAuth.verifyPasswordAndLogin": "验证密码并登录",
-    "siteAuth.adminPasswordHint": "这个邮箱已绑定管理员身份。请输入后台配置的管理员邮箱密码，验证通过后才会进入管理员态。",
+    "siteAuth.adminPasswordHint":
+      "这个邮箱已绑定管理员身份。请输入后台配置的管理员邮箱密码，验证通过后才会进入管理员态。",
     "siteAuth.adminPasswordPlaceholder": "输入管理员邮箱密码",
     "siteAuth.profileTag": "资料",
     "siteAuth.signInTag": "登录",
     "waline.avatar.openLibrary": "打开头像库",
     "waline.avatar.occupied": "{label} 已被占用",
-    "waline.emoji.groupDaily": "日常",
-    "waline.emoji.groupInteraction": "互动",
-    "waline.emoji.groupAtmosphere": "氛围",
     "waline.common.requestFailed": "评论请求失败，请稍后再试。",
     "waline.form.replyingTo": "回复 {name}",
     "waline.form.checkingAuth": "正在检查登录状态...",
     "waline.form.adminMode": "管理员模式",
     "waline.form.loggedIn": "已登录",
-    "waline.form.adminSubmitHint": "将使用您的昵称\"{name}\"作为名字，并使用 Hero 翻转视觉图作为头像提交评论。",
+    "waline.form.adminSubmitHint":
+      '将使用您的昵称"{name}"作为名字，并使用 Hero 翻转视觉图作为头像提交评论。',
     "waline.form.userSubmitHint": "将使用 {name} 的昵称、邮箱和头像提交评论。",
     "waline.form.logout": "退出登录",
     "waline.form.loginRequiredTitle": "登录后才能发布内容",
-    "waline.form.loginRequiredDesc": "登录后会固定使用你的站点身份发表评论或留言，手动输入昵称、邮箱和访客头像的入口已关闭。",
+    "waline.form.loginRequiredDesc":
+      "登录后会固定使用你的站点身份发表评论或留言，手动输入昵称、邮箱和访客头像的入口已关闭。",
     "waline.form.noLoginMethod": "当前还没有配置可用的评论登录方式。",
     "waline.form.loginToComment": "登录评论",
     "waline.form.nicknamePlaceholder": "输入要显示的名字",
@@ -241,14 +249,12 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "waline.form.preview": "预览",
     "waline.form.openEmojiPicker": "打开表情选择器",
     "waline.form.emoji": "表情",
-    "waline.form.searchEmoji": "搜索表情",
-    "waline.form.searchEmojiPlaceholder": "输入表情名、关键词或表情本身",
-    "waline.form.emojiNotFound": "没有找到匹配的表情。",
     "waline.form.image": "图片",
     "waline.form.previewPlaceholder": "这里会显示 Markdown 预览。",
     "waline.form.commentPlaceholder": "写下你的看法、补充或追问",
-    "waline.form.submitQueuedHint": "提交后会先进入审核队列；当前内容会固定使用你的站点昵称和头像。",
-    "waline.form.loginBeforeSubmitHint": "当前站点要求先登录后再发表评论或留言。",
+    "waline.form.submitQueuedHint": "",
+    "waline.form.loginBeforeSubmitHint":
+      "当前站点要求先登录后再发表评论或留言。",
     "waline.form.submitLoading": "提交中...",
     "waline.form.submitReply": "提交回复",
     "waline.form.submitComment": "提交评论",
@@ -262,10 +268,11 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "waline.list.pending": "待审核",
     "waline.list.pendingReviewSubmitted": "已提交，等待审核",
     "waline.list.emptyPublic": "还没有公开评论，第一条就从这里开始。",
-    "waline.list.emptyAfterReview": "当前还没有评论，第一条会在审核后显示在这里。",
+    "waline.list.emptyAfterReview": "当前还没有评论~",
     "waline.list.loadingMore": "加载中...",
     "waline.list.showMore": "显示更多",
-    "waline.surface.guestbookBodyPlaceholder": "写下一句问候、反馈或交换友链时想说的话",
+    "waline.surface.guestbookBodyPlaceholder":
+      "写下一句问候、反馈或交换友链时想说的话",
     "waline.surface.guestbookSubmit": "发表留言",
     "waline.surface.guestbookSubmitting": "提交中...",
     "waline.surface.guestbookLoading": "留言板正在更新...",
@@ -274,7 +281,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "waline.surface.loginMethodEmail": "邮箱",
     "waline.surface.missingPath": "当前内容缺少评论路径，暂时无法加载评论。",
     "waline.surface.imageUploadDisabled": "当前站点已关闭评论图片上传。",
-    "waline.surface.imageUploadMissingUrl": "图片上传成功，但没有返回可用地址。",
+    "waline.surface.imageUploadMissingUrl":
+      "图片上传成功，但没有返回可用地址。",
     "waline.surface.loginRequiredGuestbook": "当前站点要求登录后才能留言。",
     "waline.surface.loginRequiredComment": "当前站点要求登录后才能发表评论。",
     "waline.surface.nicknameRequired": "请先填写昵称。",
@@ -366,15 +374,19 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "runtime.apiFailed": "API request failed (HTTP {status})",
     "runtime.unreachable": "Unable to reach API {target}",
     "runtime.configLoadFailed": "Unable to load site configuration",
-    "community.avatarHelperCopy": "After login, comments are bound to your current email or third-party identity. Your email is never publicly shown.",
+    "community.avatarHelperCopy":
+      "After login, comments are bound to your current email or third-party identity. Your email is never publicly shown.",
     "siteAuth.requestFailed": "Request failed",
-    "siteAuth.networkError": "Request failed, please check your network connection",
+    "siteAuth.networkError":
+      "Request failed, please check your network connection",
     "comments.loading": "Loading comments...",
-    "comments.missingContext": "This page is missing comment context, so the comment surface cannot be mounted yet.",
+    "comments.missingContext":
+      "This page is missing comment context, so the comment surface cannot be mounted yet.",
     "comments.expand": "Show comments",
     "comments.collapse": "Hide comments",
     "preview.badge": "Preview",
-    "preview.description": "Preview mode. This content has not been published yet.",
+    "preview.description":
+      "Preview mode. This content has not been published yet.",
     "preview.mood": "Mood",
     "preview.weather": "Weather",
     "preview.defaultName": "Your Name",
@@ -403,7 +415,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "notFound.home": "Back to home",
     "notFound.back": "Go back",
     "notFound.title": "This page has gone missing",
-    "notFound.description": "It seems to have moved away from the current path.",
+    "notFound.description":
+      "It seems to have moved away from the current path.",
     "posts.allCategory": "All",
     "posts.fallbackCategory": "Uncategorized",
     "posts.searchPlaceholder": "Search posts...",
@@ -439,7 +452,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "diaryDetail.back": "Back",
     "diaryDetail.backToList": "Back to list",
     "diaryDetail.missingTitle": "Diary entry not found",
-    "diaryDetail.missingDescription": "The diary entry you requested is unavailable.",
+    "diaryDetail.missingDescription":
+      "The diary entry you requested is unavailable.",
     "diaryDetail.endLabel": "- Daily note end -",
     "diaryDetail.missingId": "Missing diary identifier",
     "thoughts.errorTitle": "Failed to load thoughts",
@@ -479,10 +493,13 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "friends.loadMore": "Load more",
     "friends.errorTitle": "Failed to load friends page",
     "friends.summaryTemplate": "{sites} sites · {articles} updates",
-    "friends.footerSummaryTemplate": "Connected to {sites} sites, fetched {articles} recent public updates",
-    "friends.randomPickerTemplate": "Pick one random post from the last {days} days",
+    "friends.footerSummaryTemplate":
+      "Connected to {sites} sites, fetched {articles} recent public updates",
+    "friends.randomPickerTemplate":
+      "Pick one random post from the last {days} days",
     "friends.randomRefresh": "Pick another",
-    "friends.randomEmptyTemplate": "No friend posts available in the last {days} days",
+    "friends.randomEmptyTemplate":
+      "No friend posts available in the last {days} days",
     "recentActivity.justNow": "Just now",
     "recentActivity.hoursAgo": "{count}h ago",
     "recentActivity.yesterday": "Yesterday",
@@ -501,8 +518,10 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "subscribe.notEnabled": "Email subscriptions are not enabled yet.",
     "subscribe.emailRequired": "Please enter your email.",
     "subscribe.typeRequired": "Select at least one content type.",
-    "subscribe.invalidResponse": "The subscription request returned an unexpected response. Please try again.",
-    "subscribe.success": "Confirmation email sent and subscription activated. Saved email: {email}.",
+    "subscribe.invalidResponse":
+      "The subscription request returned an unexpected response. Please try again.",
+    "subscribe.success":
+      "Confirmation email sent and subscription activated. Saved email: {email}.",
     "subscribe.failed": "Subscription failed. Please try again.",
     "subscribe.closeAria": "Close subscription dialog",
     "subscribe.openRss": "Open RSS link",
@@ -513,7 +532,8 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "subscribe.content.diary": "Diary",
     "subscribe.content.thoughts": "Thoughts",
     "subscribe.content.excerpts": "Excerpts",
-    "subscribe.emailUnavailablePlaceholder": "Email service is not configured yet. Stay tuned~",
+    "subscribe.emailUnavailablePlaceholder":
+      "Email service is not configured yet. Stay tuned~",
     "search.type.posts": "Posts",
     "search.type.diary": "Diary",
     "search.type.thoughts": "Thoughts",
@@ -540,8 +560,10 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "siteAuth.subscriptionEmail": "Subscription email",
     "siteAuth.unsubscribing": "Unsubscribing...",
     "siteAuth.unsubscribe": "Unsubscribe",
-    "siteAuth.noActiveSubscription": "No active subscriptions yet. Add one from the top-right Subscribe button.",
-    "siteAuth.maxTwoEmailsHint": "At most two emails are shown. Scroll to view more.",
+    "siteAuth.noActiveSubscription":
+      "No active subscriptions yet. Add one from the top-right Subscribe button.",
+    "siteAuth.maxTwoEmailsHint":
+      "At most two emails are shown. Scroll to view more.",
     "siteAuth.username": "Username",
     "siteAuth.editNickname": "Edit display nickname",
     "siteAuth.firstLoginNickname": "Set a display nickname on first login",
@@ -552,47 +574,52 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "siteAuth.updateBaseProfile": "Update base profile",
     "siteAuth.visitorProfile": "Visitor profile",
     "siteAuth.useThirdPartyDirect": "Continue with third-party profile",
-    "siteAuth.providerDisabled": "{provider} login is not enabled by site owner",
+    "siteAuth.providerDisabled":
+      "{provider} login is not enabled by site owner",
     "siteAuth.emailIdentityLogin": "Email identity login",
     "siteAuth.emailIdentityPlaceholder": "Enter email as identity",
     "siteAuth.continueWithEmail": "Continue with email",
     "siteAuth.verifyPasswordAndLogin": "Verify password and sign in",
-    "siteAuth.adminPasswordHint": "This email is bound to an admin identity. Enter the configured admin email password to continue as admin.",
+    "siteAuth.adminPasswordHint":
+      "This email is bound to an admin identity. Enter the configured admin email password to continue as admin.",
     "siteAuth.adminPasswordPlaceholder": "Enter admin email password",
     "siteAuth.profileTag": "Profile",
     "siteAuth.signInTag": "Sign in",
     "waline.avatar.openLibrary": "Open avatar library",
     "waline.avatar.occupied": "{label} is already in use",
-    "waline.emoji.groupDaily": "Daily",
-    "waline.emoji.groupInteraction": "Interaction",
-    "waline.emoji.groupAtmosphere": "Atmosphere",
-    "waline.common.requestFailed": "Comment request failed. Please try again later.",
+    "waline.common.requestFailed":
+      "Comment request failed. Please try again later.",
     "waline.form.replyingTo": "Reply {name}",
     "waline.form.checkingAuth": "Checking login status...",
     "waline.form.adminMode": "Admin mode",
     "waline.form.loggedIn": "Logged in",
-    "waline.form.adminSubmitHint": "Your nickname \"{name}\" and Hero flip visual will be used when posting comments.",
-    "waline.form.userSubmitHint": "Will submit with {name}'s nickname, email, and avatar.",
+    "waline.form.adminSubmitHint":
+      'Your nickname "{name}" and Hero flip visual will be used when posting comments.',
+    "waline.form.userSubmitHint":
+      "Will submit with {name}'s nickname, email, and avatar.",
     "waline.form.logout": "Log out",
     "waline.form.loginRequiredTitle": "Login required to publish",
-    "waline.form.loginRequiredDesc": "After login, your site identity is used for comments/guestbook. Manual nickname, email, and visitor avatar inputs are hidden.",
-    "waline.form.noLoginMethod": "No login methods are currently configured for comments.",
+    "waline.form.loginRequiredDesc":
+      "After login, your site identity is used for comments/guestbook. Manual nickname, email, and visitor avatar inputs are hidden.",
+    "waline.form.noLoginMethod":
+      "No login methods are currently configured for comments.",
     "waline.form.loginToComment": "Login to comment",
     "waline.form.nicknamePlaceholder": "Enter display name",
-    "waline.form.emailPlaceholder": "Used only for identity binding and never publicly shown",
+    "waline.form.emailPlaceholder":
+      "Used only for identity binding and never publicly shown",
     "waline.form.cancelReply": "Cancel reply",
     "waline.form.edit": "Write",
     "waline.form.preview": "Preview",
     "waline.form.openEmojiPicker": "Open emoji picker",
     "waline.form.emoji": "Emoji",
-    "waline.form.searchEmoji": "Search emoji",
-    "waline.form.searchEmojiPlaceholder": "Search by name, keyword, or emoji",
-    "waline.form.emojiNotFound": "No matching emoji found.",
     "waline.form.image": "Image",
     "waline.form.previewPlaceholder": "Markdown preview appears here.",
-    "waline.form.commentPlaceholder": "Share your thoughts, additions, or follow-up questions",
-    "waline.form.submitQueuedHint": "Submissions enter moderation first; your site nickname and avatar are used.",
-    "waline.form.loginBeforeSubmitHint": "Login is required before posting comments or guestbook notes.",
+    "waline.form.commentPlaceholder":
+      "Share your thoughts, additions, or follow-up questions",
+    "waline.form.submitQueuedHint":
+      "Submissions enter moderation first; your site nickname and avatar are used.",
+    "waline.form.loginBeforeSubmitHint":
+      "Login is required before posting comments or guestbook notes.",
     "waline.form.submitLoading": "Submitting...",
     "waline.form.submitReply": "Submit reply",
     "waline.form.submitComment": "Submit comment",
@@ -606,27 +633,37 @@ export const frontendTranslations: Record<FrontendLang, Record<string, string>> 
     "waline.list.pending": "Pending",
     "waline.list.pendingReviewSubmitted": "Submitted, pending review",
     "waline.list.emptyPublic": "No public comments yet. Be the first one.",
-    "waline.list.emptyAfterReview": "No comments yet. The first comment appears after moderation.",
+    "waline.list.emptyAfterReview":
+      "No comments yet. The first comment appears after moderation.",
     "waline.list.loadingMore": "Loading...",
     "waline.list.showMore": "Show more",
-    "waline.surface.guestbookBodyPlaceholder": "Leave a greeting, feedback, or words for link exchange",
+    "waline.surface.guestbookBodyPlaceholder":
+      "Leave a greeting, feedback, or words for link exchange",
     "waline.surface.guestbookSubmit": "Post guestbook note",
     "waline.surface.guestbookSubmitting": "Submitting...",
     "waline.surface.guestbookLoading": "Guestbook is updating...",
     "waline.surface.guestbookRetry": "Retry",
-    "waline.surface.guestbookEmpty": "No public notes yet. Write the first one here.",
+    "waline.surface.guestbookEmpty":
+      "No public notes yet. Write the first one here.",
     "waline.surface.loginMethodEmail": "Email",
     "waline.surface.missingPath": "Missing comment path for current content.",
-    "waline.surface.imageUploadDisabled": "Comment image upload is disabled on this site.",
-    "waline.surface.imageUploadMissingUrl": "Image upload succeeded but no usable URL was returned.",
-    "waline.surface.loginRequiredGuestbook": "Login is required to leave guestbook notes.",
-    "waline.surface.loginRequiredComment": "Login is required to post comments.",
+    "waline.surface.imageUploadDisabled":
+      "Comment image upload is disabled on this site.",
+    "waline.surface.imageUploadMissingUrl":
+      "Image upload succeeded but no usable URL was returned.",
+    "waline.surface.loginRequiredGuestbook":
+      "Login is required to leave guestbook notes.",
+    "waline.surface.loginRequiredComment":
+      "Login is required to post comments.",
     "waline.surface.nicknameRequired": "Please fill in a nickname.",
-    "waline.surface.emailRequired": "Please fill in email. Nickname is bound to email.",
-    "waline.surface.guestbookBodyRequired": "Guestbook content cannot be empty.",
+    "waline.surface.emailRequired":
+      "Please fill in email. Nickname is bound to email.",
+    "waline.surface.guestbookBodyRequired":
+      "Guestbook content cannot be empty.",
     "waline.surface.commentBodyRequired": "Comment content cannot be empty.",
     "waline.surface.avatarRequired": "Please choose an avatar first.",
-    "waline.surface.submitNotice": "Received. It will appear here after review.",
+    "waline.surface.submitNotice":
+      "Received. It will appear here after review.",
     "waline.surface.sectionGuestbook": "Guestbook",
     "waline.surface.sectionComments": "Comments",
     "waline.surface.collapseReplyBox": "Collapse reply box",

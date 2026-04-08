@@ -51,59 +51,74 @@ export interface EmojiChoice {
   keywords: string[];
 }
 
-export interface EmojiGroup {
-  title: string;
-  titleKey?: string;
-  items: EmojiChoice[];
-}
-
 /* ── Constants ── */
 
 export const PROFILE_STORAGE_PREFIX = "aerisun:comment-profile:";
 
-export const EMOJI_GROUPS: EmojiGroup[] = [
-  {
-    title: "\u65E5\u5E38",
-    titleKey: "waline.emoji.groupDaily",
-    items: [
-      { emoji: "\uD83D\uDE42", label: "\u5FAE\u7B11", keywords: ["\u5FAE\u7B11", "\u7B11", "\u5F00\u5FC3", "smile"] },
-      { emoji: "\uD83D\uDE0A", label: "\u5F00\u5FC3", keywords: ["\u5F00\u5FC3", "\u5FEB\u4E50", "\u9AD8\u5174"] },
-      { emoji: "\uD83D\uDE09", label: "\u7728\u773C", keywords: ["\u7728\u773C", "\u4FCA\u76AE", "wink"] },
-      { emoji: "\uD83E\uDD79", label: "\u611F\u52A8", keywords: ["\u611F\u52A8", "\u60F3\u54ED", "touching"] },
-      { emoji: "\uD83D\uDE0C", label: "\u653E\u677E", keywords: ["\u653E\u677E", "\u5B89\u5FC3", "calm"] },
-      { emoji: "\uD83E\uDD0D", label: "\u767D\u5FC3", keywords: ["\u767D\u5FC3", "\u7231\u5FC3", "love"] },
-      { emoji: "\u2728", label: "\u95EA\u5149", keywords: ["\u95EA\u5149", "\u9B54\u6CD5", "sparkle"] },
-      { emoji: "\uD83C\uDF37", label: "\u82B1\u6735", keywords: ["\u82B1", "\u6625\u5929", "flower"] },
-    ],
-  },
-  {
-    title: "\u4E92\u52A8",
-    titleKey: "waline.emoji.groupInteraction",
-    items: [
-      { emoji: "\uD83D\uDE04", label: "\u5927\u7B11", keywords: ["\u5927\u7B11", "\u54C8\u54C8", "laugh"] },
-      { emoji: "\uD83D\uDE02", label: "\u7B11\u54ED", keywords: ["\u7B11\u54ED", "\u7206\u7B11", "lol"] },
-      { emoji: "\uD83E\uDD73", label: "\u5E86\u795D", keywords: ["\u5E86\u795D", "\u6D3E\u5BF9", "party"] },
-      { emoji: "\uD83E\uDD1D", label: "\u63E1\u624B", keywords: ["\u63E1\u624B", "\u5408\u4F5C", "\u5408\u4F5C\u6109\u5FEB"] },
-      { emoji: "\uD83D\uDE4C", label: "\u4E3E\u624B", keywords: ["\u4E3E\u624B", "\u6B22\u547C", "cheer"] },
-      { emoji: "\uD83D\uDC4F", label: "\u9F13\u638C", keywords: ["\u9F13\u638C", "\u8D5E", "applause"] },
-      { emoji: "\uD83D\uDD25", label: "\u706B\u70ED", keywords: ["\u706B\u70ED", "\u5F88\u68D2", "hot"] },
-      { emoji: "\uD83D\uDCA1", label: "\u7075\u611F", keywords: ["\u7075\u611F", "\u70B9\u5B50", "idea"] },
-    ],
-  },
-  {
-    title: "\u6C1B\u56F4",
-    titleKey: "waline.emoji.groupAtmosphere",
-    items: [
-      { emoji: "\uD83E\uDEF6", label: "\u6BD4\u5FC3", keywords: ["\u6BD4\u5FC3", "\u559C\u6B22", "heart"] },
-      { emoji: "\uD83D\uDCAD", label: "\u601D\u8003", keywords: ["\u601D\u8003", "\u60F3\u6CD5", "idea"] },
-      { emoji: "\uD83C\uDF19", label: "\u6708\u4EAE", keywords: ["\u6708\u4EAE", "\u591C\u665A", "moon"] },
-      { emoji: "\u2615", label: "\u5496\u5561", keywords: ["\u5496\u5561", "\u4F11\u606F", "coffee"] },
-      { emoji: "\uD83C\uDF75", label: "\u8336", keywords: ["\u8336", "\u653E\u677E", "tea"] },
-      { emoji: "\uD83C\uDFA7", label: "\u97F3\u4E50", keywords: ["\u97F3\u4E50", "\u8033\u673A", "music"] },
-      { emoji: "\uD83D\uDDBC\uFE0F", label: "\u753B\u6846", keywords: ["\u56FE\u7247", "\u753B\u6846", "art"] },
-      { emoji: "\uD83D\uDCDD", label: "\u8BB0\u5F55", keywords: ["\u8BB0\u5F55", "\u7B14\u8BB0", "note"] },
-    ],
-  },
+export const EMOJI_CHOICES: EmojiChoice[] = [
+  { emoji: "\uD83D\uDE42", label: "\u5FAE\u7B11", keywords: ["\u5FAE\u7B11", "\u7B11", "\u5F00\u5FC3", "smile"] },
+  { emoji: "\uD83D\uDE0A", label: "\u5F00\u5FC3", keywords: ["\u5F00\u5FC3", "\u5FEB\u4E50", "\u9AD8\u5174"] },
+  { emoji: "\uD83D\uDE09", label: "\u7728\u773C", keywords: ["\u7728\u773C", "\u4FCA\u76AE", "wink"] },
+  { emoji: "\uD83E\uDD70", label: "\u6696\u5FC3", keywords: ["\u6696\u5FC3", "\u5FC3\u52A8", "warm"] },
+  { emoji: "\uD83E\uDEE0", label: "\u62E5\u62B1", keywords: ["\u62E5\u62B1", "\u5B89\u6170", "hug"] },
+  { emoji: "\uD83E\uDD79", label: "\u611F\u52A8", keywords: ["\u611F\u52A8", "\u60F3\u54ED", "touching"] },
+  { emoji: "\uD83D\uDE0C", label: "\u653E\u677E", keywords: ["\u653E\u677E", "\u5B89\u5FC3", "calm"] },
+  { emoji: "\uD83D\uDE34", label: "\u56F0\u4E86", keywords: ["\u56F0", "\u75B2\u60EB", "sleepy"] },
+  { emoji: "\uD83E\uDD17", label: "\u50BB\u7B11", keywords: ["\u50BB\u7B11", "\u5F00\u6717", "grin"] },
+  { emoji: "\uD83E\uDD73", label: "\u5FAE\u9189", keywords: ["\u5FAE\u9189", "\u653E\u677E", "tipsy"] },
+  { emoji: "\uD83E\uDD0D", label: "\u767D\u5FC3", keywords: ["\u767D\u5FC3", "\u7231\u5FC3", "love"] },
+  { emoji: "\u2728", label: "\u95EA\u5149", keywords: ["\u95EA\u5149", "\u9B54\u6CD5", "sparkle"] },
+  { emoji: "\uD83C\uDF37", label: "\u82B1\u6735", keywords: ["\u82B1", "\u6625\u5929", "flower"] },
+  { emoji: "\uD83C\uDF3F", label: "\u56DB\u53F6\u8349", keywords: ["\u56DB\u53F6\u8349", "\u5E78\u8FD0", "lucky"] },
+  { emoji: "\uD83D\uDE04", label: "\u5927\u7B11", keywords: ["\u5927\u7B11", "\u54C8\u54C8", "laugh"] },
+  { emoji: "\uD83D\uDE02", label: "\u7B11\u54ED", keywords: ["\u7B11\u54ED", "\u7206\u7B11", "lol"] },
+  { emoji: "\uD83D\uDE06", label: "\u76D8\u7B11", keywords: ["\u76D8\u7B11", "\u559C\u611F", "grinning"] },
+  { emoji: "\uD83E\uDD73", label: "\u5E86\u795D", keywords: ["\u5E86\u795D", "\u6D3E\u5BF9", "party"] },
+  { emoji: "\uD83E\uDD1D", label: "\u63E1\u624B", keywords: ["\u63E1\u624B", "\u5408\u4F5C", "\u5408\u4F5C\u6109\u5FEB"] },
+  { emoji: "\uD83D\uDE4C", label: "\u4E3E\u624B", keywords: ["\u4E3E\u624B", "\u6B22\u547C", "cheer"] },
+  { emoji: "\uD83D\uDC4F", label: "\u9F13\u638C", keywords: ["\u9F13\u638C", "\u8D5E", "applause"] },
+  { emoji: "\uD83D\uDC4D", label: "\u70B9\u8D5E", keywords: ["\u70B9\u8D5E", "\u8D5E\u540C", "like"] },
+  { emoji: "\uD83E\uDD18", label: "\u6253 call", keywords: ["call", "\u5E94\u63F4", "\u6253call"] },
+  { emoji: "\uD83D\uDD25", label: "\u706B\u70ED", keywords: ["\u706B\u70ED", "\u5F88\u68D2", "hot"] },
+  { emoji: "\uD83D\uDCA1", label: "\u7075\u611F", keywords: ["\u7075\u611F", "\u70B9\u5B50", "idea"] },
+  { emoji: "\uD83D\uDE4F", label: "\u8C22\u8C22", keywords: ["\u611F\u8C22", "\u8C22\u8C22", "thanks"] },
+  { emoji: "\uD83D\uDC4C", label: "\u6CA1\u95EE\u9898", keywords: ["ok", "\u6CA1\u95EE\u9898", "\u53EF\u4EE5"] },
+  { emoji: "\uD83E\uDD14", label: "\u601D\u8003", keywords: ["\u601D\u8003", "\u60F3\u6CD5", "thinking"] },
+  { emoji: "\uD83D\uDE2E", label: "\u60CA\u8BB6", keywords: ["\u60CA\u8BB6", "\u610F\u5916", "surprised"] },
+  { emoji: "\uD83D\uDE0D", label: "\u5FC3\u52A8", keywords: ["\u5FC3\u52A8", "\u559C\u6B22", "love"] },
+  { emoji: "\uD83E\uDD7A", label: "\u59D4\u5C48", keywords: ["\u59D4\u5C48", "\u60F3\u54ED", "sad"] },
+  { emoji: "\uD83D\uDE0F", label: "\u5F97\u610F", keywords: ["\u5F97\u610F", "\u5C0F\u5F97\u610F", "smirk"] },
+  { emoji: "\uD83D\uDE0E", label: "\u9177", keywords: ["\u9177", "\u6F47\u6D12", "cool"] },
+  { emoji: "\uD83E\uDD79", label: "\u7834\u9632", keywords: ["\u7834\u9632", "\u611F\u52A8", "moved"] },
+  { emoji: "\uD83D\uDE2D", label: "\u5927\u54ED", keywords: ["\u5927\u54ED", "\u6CEA\u76EE", "cry"] },
+  { emoji: "\uD83D\uDE24", label: "\u4E0A\u5934", keywords: ["\u4E0A\u5934", "\u6FC0\u52A8", "frustrated"] },
+  { emoji: "\uD83D\uDE2C", label: "\u5C34\u5C2C", keywords: ["\u5C34\u5C2C", "\u554A\u8FD9", "awkward"] },
+  { emoji: "\uD83E\uDEE1", label: "\u5FEB\u8981\u878D\u5316", keywords: ["\u878D\u5316", "\u592A\u53EF\u7231", "melt"] },
+  { emoji: "\uD83E\uDD72", label: "\u6492\u5A07", keywords: ["\u6492\u5A07", "\u53EF\u7231", "pleading"] },
+  { emoji: "\uD83E\uDEF6", label: "\u6BD4\u5FC3", keywords: ["\u6BD4\u5FC3", "\u559C\u6B22", "heart"] },
+  { emoji: "\uD83D\uDCAD", label: "\u804A\u804A", keywords: ["\u804A\u5929", "\u60F3\u6CD5", "chat"] },
+  { emoji: "\uD83C\uDF19", label: "\u6708\u4EAE", keywords: ["\u6708\u4EAE", "\u591C\u665A", "moon"] },
+  { emoji: "\u2615", label: "\u5496\u5561", keywords: ["\u5496\u5561", "\u4F11\u606F", "coffee"] },
+  { emoji: "\uD83C\uDF75", label: "\u8336", keywords: ["\u8336", "\u653E\u677E", "tea"] },
+  { emoji: "\uD83C\uDFA7", label: "\u97F3\u4E50", keywords: ["\u97F3\u4E50", "\u8033\u673A", "music"] },
+  { emoji: "\uD83D\uDDBC\uFE0F", label: "\u753B\u6846", keywords: ["\u56FE\u7247", "\u753B\u6846", "art"] },
+  { emoji: "\uD83D\uDCDD", label: "\u8BB0\u5F55", keywords: ["\u8BB0\u5F55", "\u7B14\u8BB0", "note"] },
+  { emoji: "\uD83D\uDCD6", label: "\u9605\u8BFB", keywords: ["\u9605\u8BFB", "\u4E66", "book"] },
+  { emoji: "\uD83D\uDD6F\uFE0F", label: "\u706F\u6CE1", keywords: ["\u6C1B\u56F4", "\u6696\u5149", "lamp"] },
+  { emoji: "\uD83C\uDF08", label: "\u5F69\u8679", keywords: ["\u5F69\u8679", "\u6C1B\u56F4", "rainbow"] },
+  { emoji: "\uD83C\uDF0C", label: "\u661F\u7A7A", keywords: ["\u661F\u7A7A", "\u591C\u666F", "night"] },
+  { emoji: "\uD83C\uDF70", label: "\u86CB\u7CD5", keywords: ["\u86CB\u7CD5", "\u751C", "cake"] },
+  { emoji: "\uD83C\uDF6A", label: "\u66F2\u5947", keywords: ["\u66F2\u5947", "\u96F6\u98DF", "cookie"] },
+  { emoji: "\uD83C\uDF5C", label: "\u62C9\u9762", keywords: ["\u9762", "\u62C9\u9762", "ramen"] },
+  { emoji: "\uD83C\uDF5F", label: "\u8591\u6761", keywords: ["\u8591\u6761", "\u5C0F\u5403", "fries"] },
+  { emoji: "\uD83C\uDF71", label: "\u4FBF\u5F53", keywords: ["\u4FBF\u5F53", "\u5403\u996D", "bento"] },
+  { emoji: "\uD83C\uDF53", label: "\u8349\u8393", keywords: ["\u8349\u8393", "\u6C34\u679C", "strawberry"] },
+  { emoji: "\uD83C\uDF79", label: "\u679C\u6C41", keywords: ["\u996E\u6599", "\u679C\u6C41", "juice"] },
+  { emoji: "\uD83E\uDD64", label: "\u51B7\u996E", keywords: ["\u51B7\u996E", "\u996E\u6599", "cup"] },
+  { emoji: "\uD83C\uDF7B", label: "\u5E72\u676F", keywords: ["\u5E72\u676F", "\u78B0\u676F", "cheers"] },
+  { emoji: "\uD83C\uDF68", label: "\u51B0\u6DC7\u6DCB", keywords: ["\u51B0\u6DC7\u6DCB", "\u751C\u54C1", "icecream"] },
+  { emoji: "\uD83C\uDF72", label: "\u70ED\u4E4E\u4E4E", keywords: ["\u70ED\u4E4E", "\u6696\u80C3", "soup"] },
+  { emoji: "\uD83C\uDF6C", label: "\u751C\u70B9", keywords: ["\u751C\u70B9", "\u96F6\u98DF", "candy"] },
 ];
 
 export const AVATAR_PICKER_COUNT = 16;
@@ -131,10 +146,7 @@ export const communityPopupClass =
   "liquid-glass-strong border border-[rgb(var(--shiro-border-rgb)/0.16)]";
 
 export const communityEmojiPopupClass =
-  "absolute right-0 top-[calc(100%+0.65rem)] z-20 w-[19rem] rounded-[1.15rem] border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-background/[0.94] p-3 shadow-[0_22px_60px_rgb(15_23_42/0.16)] backdrop-blur-xl dark:border-[rgb(var(--shiro-border-rgb)/0.3)] dark:bg-card/[0.96]";
-
-export const communityEmojiSearchClass =
-  "shiro-focus-ring w-full rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-background/[0.82] px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-foreground/35 dark:border-[rgb(var(--shiro-border-rgb)/0.24)] dark:bg-card/[0.92]";
+  "absolute right-0 top-[calc(100%+0.65rem)] z-20 w-[19rem] max-w-[calc(100vw-2rem)] rounded-[1.15rem] border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-background/[0.96] p-3 shadow-[0_22px_60px_rgb(15_23_42/0.16)] backdrop-blur-xl sm:w-[22rem] sm:max-w-[22rem] dark:border-[rgb(var(--shiro-border-rgb)/0.3)] dark:bg-card/[0.98]";
 
 export const communityAvatarClass =
   "border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-card/[0.84] object-cover shadow-sm";
@@ -295,21 +307,6 @@ export const formatTimestamp = (value: string) => {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
-};
-
-type EmojiGroupTranslator = (
-  key: string,
-  values?: Record<string, string | number>,
-  fallback?: string,
-) => string;
-
-export const getLocalizedEmojiGroups = (
-  translate: EmojiGroupTranslator = translateFrontendText,
-): EmojiGroup[] => {
-  return EMOJI_GROUPS.map((group) => ({
-    ...group,
-    title: group.titleKey ? translate(group.titleKey, undefined, group.title) : group.title,
-  }));
 };
 
 export const readStoredDraft = (storageKey: string): Partial<DraftState> => {

@@ -403,14 +403,28 @@ html.dark .aerisun-waline-host .wl-reaction img {
 
 .aerisun-comment-preview.prose {
   max-width: none;
+  min-width: 0;
   color: hsl(var(--foreground) / 0.78);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .aerisun-comment-body.prose {
   max-width: none;
+  min-width: 0;
   color: hsl(var(--foreground) / 0.76);
   font-size: 0.95rem;
   line-height: 1.9;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.aerisun-comment-preview.prose :where(p, li, blockquote, a, code, span, strong, em),
+.aerisun-comment-body.prose :where(p, li, blockquote, a, code, span, strong, em) {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .aerisun-comment-body.prose :where(p, ul, ol, blockquote, pre):first-child {

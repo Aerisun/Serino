@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PencilLine, Sparkles } from "lucide-react";
 import {
   createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost,
@@ -24,7 +24,7 @@ import {
   buildAvatarPresets,
   buildDefaultAvatarPreset,
   collectAvatarUsage,
-  getLocalizedEmojiGroups,
+  EMOJI_CHOICES,
   insertTextAtSelection,
   normalizeName,
   PROFILE_STORAGE_PREFIX,
@@ -104,16 +104,14 @@ const WalineSurface = ({
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
-  const [emojiQuery, setEmojiQuery] = useState("");
   const [editorMode, setEditorMode] = useState<EditorMode>("write");
   const [composerOpen, setComposerOpen] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const avatarPickerRef = useRef<HTMLDivElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
-  const emojiSearchRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const deferredBody = useDeferredValue(draft.body);
+  const deferredBody = draft.body;
 
   useEffect(() => {
     if (communityConfig) {
@@ -141,7 +139,6 @@ const WalineSurface = ({
   }, [communityConfig]);
 
   const resolvedConfig = config ?? DEFAULT_COMMUNITY_CONFIG;
-  const emojiSelectionEnabled = resolvedConfig.enable_enjoy_search !== false;
   const imageUploadsEnabled = resolvedConfig.image_uploader;
   const requiresAuthentication = true;
   const commentEmailLoginEnabled = resolvedConfig.anonymous_enabled && siteAuthEmailLoginEnabled;
@@ -324,28 +321,6 @@ const WalineSurface = ({
   }, [avatarPickerOpen, emojiPickerOpen]);
 
   useEffect(() => {
-    if (!emojiSelectionEnabled) {
-      setEmojiPickerOpen(false);
-      setEmojiQuery("");
-    }
-  }, [emojiSelectionEnabled]);
-
-  useEffect(() => {
-    if (!emojiPickerOpen) {
-      setEmojiQuery("");
-      return;
-    }
-
-    const frame = requestAnimationFrame(() => {
-      emojiSearchRef.current?.focus();
-    });
-
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [emojiPickerOpen]);
-
-  useEffect(() => {
     if (replyTarget) {
       setComposerOpen(true);
     }
@@ -392,36 +367,10 @@ const WalineSurface = ({
     });
   }, [draft.body]);
 
-  const deferredEmojiQuery = useDeferredValue(emojiQuery.trim().toLowerCase());
-  const localizedEmojiGroups = useMemo(() => getLocalizedEmojiGroups(t), [t]);
-
-  const filteredEmojiGroups = useMemo(() => {
-    const query = deferredEmojiQuery;
-    if (!query) {
-      return localizedEmojiGroups;
-    }
-    return localizedEmojiGroups
-      .map((group) => ({
-        ...group,
-        items: group.items.filter((choice) => {
-          const label = choice.label.toLowerCase();
-          return (
-            choice.emoji.includes(query)
-            || label.includes(query)
-            || choice.keywords.some((keyword) => keyword.toLowerCase().includes(query))
-          );
-        }),
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [deferredEmojiQuery, localizedEmojiGroups]);
-
   const handleEmojiInsert = useCallback((emoji: string) => {
-    if (!emojiSelectionEnabled) {
-      return;
-    }
     insertIntoBody(emoji);
     setEmojiPickerOpen(false);
-  }, [emojiSelectionEnabled, insertIntoBody]);
+  }, [insertIntoBody]);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!imageUploadsEnabled) {
@@ -592,15 +541,11 @@ const WalineSurface = ({
             onSetEditorMode={setEditorMode}
             deferredBody={deferredBody}
             textareaRef={textareaRef}
-            emojiSelectionEnabled={emojiSelectionEnabled}
             emojiPickerOpen={emojiPickerOpen}
             onToggleEmojiPicker={() => setEmojiPickerOpen((current) => !current)}
-            emojiQuery={emojiQuery}
-            onEmojiQueryChange={setEmojiQuery}
-            filteredEmojiGroups={filteredEmojiGroups}
+            emojiChoices={EMOJI_CHOICES}
             onEmojiInsert={handleEmojiInsert}
             emojiPickerRef={emojiPickerRef}
-            emojiSearchRef={emojiSearchRef}
             imageUploadsEnabled={imageUploadsEnabled}
             imageUploading={imageUploading}
             imageInputRef={imageInputRef}

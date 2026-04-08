@@ -227,16 +227,6 @@ export function CommunityTab() {
               t("siteConfig.commentImageUploaderDesc"),
             )}
           />
-          <AppleSwitch
-            checked={form.enable_enjoy_search}
-            onCheckedChange={(checked) =>
-              updateField("enable_enjoy_search", checked)
-            }
-            label={renderInlineSwitchLabel(
-              t("siteConfig.commentEnableEnjoySearch"),
-              t("siteConfig.commentEnableEnjoySearchDesc"),
-            )}
-          />
         </div>
 
         <CollapsibleSection
@@ -266,7 +256,7 @@ export function CommunityTab() {
               <Input
                 value={form.emoji_presets}
                 onChange={(e) => updateField("emoji_presets", e.target.value)}
-                placeholder="twemoji, qq, bilibili"
+                placeholder="weibo, qq, tieba, bilibili, twemoji, alus, bmoji"
               />
             </div>
 

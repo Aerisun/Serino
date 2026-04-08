@@ -28,7 +28,6 @@ export interface CommunityConfig {
   anonymous_enabled: boolean;
   moderation_mode: string;
   default_sorting: CommunityCommentSort;
-  enable_enjoy_search: boolean;
   image_uploader: boolean;
   emoji_presets: Array<string | WalineEmojiPreset>;
   avatar_helper_copy: string;
@@ -46,7 +45,6 @@ interface CommunityConfigResponse {
   anonymous_enabled?: boolean;
   moderation_mode?: string;
   default_sorting?: CommunityCommentSort;
-  enable_enjoy_search?: boolean;
   image_uploader?: boolean;
   emoji_presets?: Array<string | WalineEmojiPreset>;
   avatar_helper_copy?: string | null;
@@ -74,7 +72,6 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   anonymous_enabled: true,
   moderation_mode: "all_pending",
   default_sorting: "latest",
-  enable_enjoy_search: true,
   image_uploader: false,
   emoji_presets: DEFAULT_WALINE_EMOJI,
   avatar_helper_copy: translateFrontendText(
@@ -157,7 +154,6 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     anonymous_enabled: record.anonymous_enabled ?? DEFAULT_WALINE_COMMUNITY_CONFIG.anonymous_enabled,
     moderation_mode: normalizeModerationMode(record.moderation_mode),
     default_sorting: normalizeCommentSorting(record.default_sorting),
-    enable_enjoy_search: record.enable_enjoy_search ?? DEFAULT_WALINE_COMMUNITY_CONFIG.enable_enjoy_search,
     image_uploader: record.image_uploader ?? DEFAULT_WALINE_COMMUNITY_CONFIG.image_uploader,
     emoji_presets: (record.emoji_presets ?? DEFAULT_WALINE_COMMUNITY_CONFIG.emoji_presets).map(normalizeEmojiPreset),
     avatar_helper_copy: record.avatar_helper_copy ?? DEFAULT_WALINE_COMMUNITY_CONFIG.avatar_helper_copy,

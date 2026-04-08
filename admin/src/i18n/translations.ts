@@ -325,8 +325,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.commentHelperCopy": "辅助文案",
     "siteConfig.commentLoginMode": "登录要求",
     "siteConfig.commentAvatarStrategy": "默认头像样式",
-    "siteConfig.commentEnableEnjoySearch": "启用表情搜索",
-    "siteConfig.commentEnableEnjoySearchDesc": "让评论框支持搜索和挑选表情",
     "siteConfig.commentImageUploader": "允许图片上传",
     "siteConfig.commentImageUploaderDesc": "允许评论内容附加图片",
     "siteConfig.commentOauthUrl": "第三方登录地址",
@@ -1560,9 +1558,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "siteConfig.commentHelperCopy": "Helper Copy",
     "siteConfig.commentLoginMode": "Login Requirement",
     "siteConfig.commentAvatarStrategy": "Avatar Strategy",
-    "siteConfig.commentEnableEnjoySearch": "Enable enjoy Search",
-    "siteConfig.commentEnableEnjoySearchDesc":
-      "Let the editor search and pick emojis",
     "siteConfig.commentImageUploader": "Allow Image Upload",
     "siteConfig.commentImageUploaderDesc": "Allow images inside comments",
     "siteConfig.commentOauthUrl": "OAuth URL",
