@@ -4,6 +4,7 @@ import {
   isPreviewRequestMessage,
 } from "@serino/utils";
 import { useSystemInfoApiV1AdminSystemInfoGet } from "@serino/api-client/admin";
+import { resolveFrontendUrl } from "@/lib/frontend-url";
 
 interface UseContentPreviewOptions<T> {
   storageKey: string;
@@ -18,10 +19,7 @@ export function useContentPreview<T>({
 }: UseContentPreviewOptions<T>) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
-  const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(
-    /\/+$/,
-    "",
-  );
+  const frontendUrl = resolveFrontendUrl(systemInfo?.site_url);
   const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
   const previewUrl = new URL(previewPath, `${frontendUrl}/`).toString();
   const previewWindowRef = useRef<Window | null>(null);

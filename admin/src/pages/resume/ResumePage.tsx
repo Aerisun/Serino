@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { resolveFrontendUrl } from "@/lib/frontend-url";
 import { toast } from "sonner";
 
 type BasicsForm = {
@@ -147,10 +148,7 @@ export default function ResumePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const previewWindowRef = useRef<Window | null>(null);
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
-  const frontendUrl = (systemInfo?.site_url || "http://localhost:8080").replace(
-    /\/+$/,
-    "",
-  );
+  const frontendUrl = resolveFrontendUrl(systemInfo?.site_url);
   const frontendOrigin = new URL(frontendUrl, window.location.origin).origin;
   const storageKey = "aerisun-preview-resume";
   const previewPayload = useMemo<ResumePreviewPayload>(
