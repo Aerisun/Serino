@@ -1,21 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 SELF_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${SELF_PATH}")" && pwd)"
 INSTALLER_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
-if [[ "${1:-}" != "--as-root" ]] && [[ "$(id -u)" -ne 0 ]]; then
-  if command -v sudo >/dev/null 2>&1; then
-    exec sudo "$0" --as-root "$@"
-  fi
-  echo "需要 root 或 sudo 才能执行 sercli。" >&2
-  exit 1
-fi
-
-if [[ "${1:-}" == "--as-root" ]]; then
-  shift
-fi
+SERCLI_MAIN_ARGS=()
 
 # shellcheck disable=SC1091
 source "${INSTALLER_ROOT}/lib/common.sh"
@@ -27,46 +16,429 @@ source "${INSTALLER_ROOT}/lib/docker.sh"
 usage() {
   cat <<'EOF'
 用法：
-  sercli status
-  sercli logs [service...]
-  sercli restart
-  sercli upgrade [vX.Y.Z]
+  sercli help
+  sercli version
+  sercli status [--verbose|--json]
+  sercli migrate schema
+  sercli migrate data [--mode blocking|background|all]
+  sercli migrate status [--json]
+  sercli ps [compose-ps-args...]
+  sercli logs [--follow] [--tail N] [--since DURATION] [--list-services] [service...]
+  sercli start [--no-wait] [--timeout SEC]
+  sercli stop
+  sercli restart [--no-wait] [--timeout SEC]
+  sercli wait [--timeout SEC]
+  sercli upgrade [--check] [--ready-timeout SEC] [vX.Y.Z]
   sercli uninstall [--force]
   sercli doctor [--json]
 EOF
 }
 
+sercli_command_requires_root() {
+  case "${1:-help}" in
+    status|migrate|ps|logs|start|stop|restart|wait|upgrade|uninstall|doctor)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+sercli_prepare_execution() {
+  local args=("$@")
+  local as_root="false"
+  local command="help"
+
+  if [[ "${args[0]:-}" == "--as-root" ]]; then
+    as_root="true"
+    args=("${args[@]:1}")
+  fi
+
+  command="${args[0]:-help}"
+
+  if sercli_command_requires_root "${command}" && [[ "${as_root}" != "true" ]] && [[ "$(id -u)" -ne 0 ]]; then
+    if command -v sudo >/dev/null 2>&1; then
+      exec sudo "${SELF_PATH}" --as-root "${args[@]}"
+    fi
+    echo "需要 root 或 sudo 才能执行 sercli ${command}。" >&2
+    exit 1
+  fi
+
+  SERCLI_MAIN_ARGS=("${args[@]}")
+}
+
+load_release_env_if_present() {
+  if path_is_file "${AERISUN_ENV_FILE}"; then
+    load_env_file "${AERISUN_ENV_FILE}"
+  fi
+}
+
+sercli_validate_timeout() {
+  local timeout="$1"
+  [[ "${timeout}" =~ ^[0-9]+$ ]] || die "超时秒数必须是正整数：${timeout}"
+  [[ "${timeout}" -gt 0 ]] || die "超时秒数必须大于 0：${timeout}"
+}
+
+sercli_known_runtime_services() {
+  list_runtime_compose_services 2>/dev/null || printf '%s\n' api waline caddy
+}
+
+sercli_format_service_list() {
+  awk '
+    NF {
+      items[count++] = $0
+    }
+    END {
+      for (i = 0; i < count; i++) {
+        printf "%s", items[i]
+        if (i + 1 < count) {
+          printf ", "
+        }
+      }
+      printf "\n"
+    }
+  '
+}
+
+sercli_validate_requested_services() {
+  local -a requested=("$@")
+  local known=""
+  local service=""
+  local known_display=""
+
+  known="$(sercli_known_runtime_services)"
+  [[ -n "${known}" ]] || return 0
+  known_display="$(printf '%s\n' "${known}" | sercli_format_service_list)"
+
+  for service in "${requested[@]}"; do
+    if ! printf '%s\n' "${known}" | grep -qxF "${service}"; then
+      die "未知服务：${service}。可用服务：${known_display}"
+    fi
+  done
+}
+
+cmd_help() {
+  usage
+}
+
+cmd_version() {
+  local release_version="<未安装>"
+  local channel="<未知>"
+  local image_registry="<未知>"
+  local image_tag="<未知>"
+
+  load_release_env_if_present
+  if path_is_file "${AERISUN_ENV_FILE}"; then
+    release_version="$(resolve_release_version_value || true)"
+    release_version="${release_version:-<未知>}"
+    channel="${AERISUN_INSTALL_CHANNEL:-<未知>}"
+    image_registry="${AERISUN_IMAGE_REGISTRY:-<未知>}"
+    image_tag="${AERISUN_IMAGE_TAG:-<未知>}"
+  fi
+
+  printf 'sercli path: %s\n' "${SELF_PATH}"
+  printf 'installer root: %s\n' "${INSTALLER_ROOT}"
+  printf 'release version: %s\n' "${release_version}"
+  printf 'channel: %s\n' "${channel}"
+  printf 'image registry: %s\n' "${image_registry}"
+  printf 'image tag: %s\n' "${image_tag}"
+}
+
+cmd_ps() {
+  ensure_supported_existing_installation
+  compose ps "$@"
+}
+
 cmd_status() {
   ensure_supported_existing_installation
-  compose ps
-  echo
-  run_as_root systemctl --no-pager --full status "${SERINO_SYSTEMD_UNIT}" || true
-  echo
-  load_env_file "${AERISUN_ENV_FILE}"
-  echo "站点地址：${AERISUN_SITE_URL:-<未配置>}"
-  echo "当前镜像源：${AERISUN_IMAGE_REGISTRY:-<未配置>}"
-  echo "当前镜像标签：${AERISUN_IMAGE_TAG:-<未配置>}"
-  if curl --fail --silent --show-error "http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}" >/dev/null 2>&1; then
-    echo "健康检查：ok"
-  else
-    echo "健康检查：fail"
-    return 1
+
+  local verbose="false"
+  local json_mode="false"
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --verbose)
+        verbose="true"
+        ;;
+      --json)
+        json_mode="true"
+        ;;
+      *)
+        die "status 不支持参数：$1"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${verbose}" == "true" && "${json_mode}" == "true" ]]; then
+    die "status 不能同时使用 --verbose 和 --json。"
   fi
+
+  load_release_env_if_present
+
+  local backend_url=""
+  local health_status="fail"
+  local systemd_active=""
+  local systemd_enabled=""
+  local release_version=""
+
+  backend_url="$(resolve_backend_healthcheck_url)"
+  systemd_active="$(run_as_root systemctl is-active "${SERINO_SYSTEMD_UNIT}" 2>/dev/null || true)"
+  systemd_enabled="$(run_as_root systemctl is-enabled "${SERINO_SYSTEMD_UNIT}" 2>/dev/null || true)"
+  release_version="$(resolve_release_version_value || true)"
+
+  if curl --fail --silent --show-error "${backend_url}" >/dev/null 2>&1; then
+    health_status="ok"
+  fi
+
+  if [[ "${json_mode}" == "true" ]]; then
+    python3 - \
+      "${systemd_active:-unknown}" \
+      "${systemd_enabled:-unknown}" \
+      "${release_version:-<未知>}" \
+      "${AERISUN_INSTALL_CHANNEL:-<未知>}" \
+      "${AERISUN_SITE_URL:-<未配置>}" \
+      "${AERISUN_IMAGE_REGISTRY:-<未配置>}" \
+      "${AERISUN_IMAGE_TAG:-<未配置>}" \
+      "${backend_url}" \
+      "${health_status}" <<'PY'
+import json
+import sys
+
+payload = {
+    "systemd_active": sys.argv[1],
+    "systemd_enabled": sys.argv[2],
+    "release_version": sys.argv[3],
+    "channel": sys.argv[4],
+    "site_url": sys.argv[5],
+    "image_registry": sys.argv[6],
+    "image_tag": sys.argv[7],
+    "backend_health_url": sys.argv[8],
+    "backend_health": sys.argv[9],
+}
+print(json.dumps(payload, ensure_ascii=False))
+PY
+    [[ "${health_status}" == "ok" ]]
+    return
+  fi
+
+  printf 'systemd active: %s\n' "${systemd_active:-unknown}"
+  printf 'systemd enabled: %s\n' "${systemd_enabled:-unknown}"
+  printf 'release version: %s\n' "${release_version:-<未知>}"
+  printf 'channel: %s\n' "${AERISUN_INSTALL_CHANNEL:-<未知>}"
+  printf 'site url: %s\n' "${AERISUN_SITE_URL:-<未配置>}"
+  printf 'image registry: %s\n' "${AERISUN_IMAGE_REGISTRY:-<未配置>}"
+  printf 'image tag: %s\n' "${AERISUN_IMAGE_TAG:-<未配置>}"
+  printf 'backend health url: %s\n' "${backend_url}"
+  printf 'backend health: %s\n' "${health_status}"
+  echo
+  compose ps
+
+  if [[ "${verbose}" == "true" ]]; then
+    echo
+    run_as_root systemctl --no-pager --full status "${SERINO_SYSTEMD_UNIT}" || true
+  fi
+
+  [[ "${health_status}" == "ok" ]]
+}
+
+cmd_migrate() {
+  ensure_supported_existing_installation
+
+  local subcommand="${1:-status}"
+  shift || true
+
+  case "${subcommand}" in
+    schema)
+      [[ "$#" -eq 0 ]] || die "migrate schema 不支持额外参数。"
+      run_release_migrations
+      ;;
+    data)
+      local mode="blocking"
+      while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+          --mode)
+            [[ "$#" -ge 2 ]] || die "缺少 --mode 的参数值。"
+            mode="$2"
+            shift 2
+            ;;
+          *)
+            die "migrate data 不支持参数：$1"
+            ;;
+        esac
+      done
+      run_release_data_migrations "${mode}"
+      ;;
+    status)
+      local json_mode="false"
+      while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+          --json)
+            json_mode="true"
+            ;;
+          *)
+            die "migrate status 不支持参数：$1"
+            ;;
+        esac
+        shift
+      done
+
+      if [[ "${json_mode}" == "true" ]]; then
+        compose_api_task "data-migrate.sh" status --json
+      else
+        compose_api_task "data-migrate.sh" status
+      fi
+      ;;
+    *)
+      die "未知的 migrate 子命令：${subcommand}"
+      ;;
+  esac
 }
 
 cmd_logs() {
   ensure_supported_existing_installation
-  if [[ "$#" -gt 0 ]]; then
-    compose logs --tail 120 "$@"
+
+  local -a log_args=()
+  local -a services=()
+  local tail_set="false"
+  local list_services="false"
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -f|--follow|--timestamps|--no-color)
+        log_args+=("$1")
+        shift
+        ;;
+      --list-services)
+        list_services="true"
+        shift
+        ;;
+      --tail|--since)
+        [[ "$#" -ge 2 ]] || die "缺少 ${1} 的参数值。"
+        if [[ "$1" == "--tail" ]]; then
+          tail_set="true"
+        fi
+        log_args+=("$1" "$2")
+        shift 2
+        ;;
+      --)
+        shift
+        services+=("$@")
+        break
+        ;;
+      -*)
+        log_args+=("$1")
+        shift
+        ;;
+      *)
+        services+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  if [[ "${list_services}" == "true" ]]; then
+    [[ "${#log_args[@]}" -eq 0 && "${#services[@]}" -eq 0 ]] || die "--list-services 不能与其他 logs 参数同时使用。"
+    sercli_known_runtime_services
     return 0
   fi
-  compose logs --tail 120 api waline caddy
+
+  if [[ "${tail_set}" != "true" ]]; then
+    log_args=(--tail 120 "${log_args[@]}")
+  fi
+
+  if [[ "${#services[@]}" -eq 0 ]]; then
+    services=(api waline caddy)
+  else
+    sercli_validate_requested_services "${services[@]}"
+  fi
+
+  compose logs "${log_args[@]}" "${services[@]}"
+}
+
+cmd_start() {
+  ensure_supported_existing_installation
+
+  local wait_for_ready="true"
+  local timeout=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --no-wait)
+        wait_for_ready="false"
+        shift
+        ;;
+      --timeout)
+        [[ "$#" -ge 2 ]] || die "缺少 --timeout 的参数值。"
+        timeout="$2"
+        sercli_validate_timeout "${timeout}"
+        shift 2
+        ;;
+      *)
+        die "start 不支持参数：$1"
+        ;;
+    esac
+  done
+
+  start_serino_service
+  if [[ "${wait_for_ready}" == "true" ]]; then
+    wait_for_release_ready "${timeout}"
+  fi
+}
+
+cmd_stop() {
+  ensure_supported_existing_installation
+  [[ "$#" -eq 0 ]] || die "stop 不支持额外参数。"
+  stop_serino_service
 }
 
 cmd_restart() {
   ensure_supported_existing_installation
+
+  local wait_for_ready="true"
+  local timeout=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --no-wait)
+        wait_for_ready="false"
+        shift
+        ;;
+      --timeout)
+        [[ "$#" -ge 2 ]] || die "缺少 --timeout 的参数值。"
+        timeout="$2"
+        sercli_validate_timeout "${timeout}"
+        shift 2
+        ;;
+      *)
+        die "restart 不支持参数：$1"
+        ;;
+    esac
+  done
+
   restart_serino_service
-  wait_for_release_ready
+  if [[ "${wait_for_ready}" == "true" ]]; then
+    wait_for_release_ready "${timeout}"
+  fi
+}
+
+cmd_wait() {
+  ensure_supported_existing_installation
+
+  local timeout=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --timeout)
+        [[ "$#" -ge 2 ]] || die "缺少 --timeout 的参数值。"
+        timeout="$2"
+        sercli_validate_timeout "${timeout}"
+        shift 2
+        ;;
+      *)
+        die "wait 不支持参数：$1"
+        ;;
+    esac
+  done
+
+  wait_for_release_ready "${timeout}"
 }
 
 cmd_upgrade() {
@@ -82,18 +454,39 @@ cmd_doctor() {
 }
 
 main() {
-  local command="${1:-}"
+  local command="${1:-help}"
   shift || true
 
   case "${command}" in
+    help|-h|--help)
+      cmd_help "$@"
+      ;;
+    version|-V|--version)
+      cmd_version "$@"
+      ;;
     status)
       cmd_status "$@"
+      ;;
+    migrate)
+      cmd_migrate "$@"
+      ;;
+    ps)
+      cmd_ps "$@"
       ;;
     logs)
       cmd_logs "$@"
       ;;
+    start)
+      cmd_start "$@"
+      ;;
+    stop)
+      cmd_stop "$@"
+      ;;
     restart)
       cmd_restart "$@"
+      ;;
+    wait)
+      cmd_wait "$@"
       ;;
     upgrade)
       cmd_upgrade "$@"
@@ -105,10 +498,14 @@ main() {
       cmd_doctor "$@"
       ;;
     *)
-      usage
+      echo "未知命令：${command}" >&2
+      usage >&2
       exit 1
       ;;
   esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  sercli_prepare_execution "$@"
+  main "${SERCLI_MAIN_ARGS[@]}"
+fi

@@ -181,9 +181,9 @@ flowchart TB
 
     subgraph Infra["基础设施层"]
         DB["core/db.py"]
-        Seed["seed.py / dev_seed.py"]
+        Seed["production_baseline.py / dev_seed.py"]
         BootstrapAdmin["bootstrap_admin.py"]
-        Backfills["core/backfills/*"]
+        DataMigrations["core/data_migrations/*"]
         Settings["core/settings.py"]
     end
 
@@ -311,13 +311,15 @@ flowchart TB
     DevPreflight --> DevSeed["dev_seed 或 seed"]
 
     ProdBootstrap --> Migrate["alembic upgrade head"]
-    Migrate --> FirstCheck{"首次启动?"}
-    FirstCheck -->|是| BootstrapSeed["bootstrap seed"]
-    FirstCheck -->|是| FirstAdmin["创建首次管理员"]
-    FirstCheck -->|否| Backfill["run_pending_backfills()"]
+    Migrate --> Baseline["production baseline"]
+    Baseline --> Blocking["blocking data migrations"]
+    Blocking --> FirstAdmin["创建首次管理员"]
+    FirstAdmin --> Ready["等待 readyz"]
+    Ready --> Background["background data migrations"]
 
-    Backfill --> ConfigRevisions["ConfigRevision / AuditLog"]
-    Backfill --> MainDB[("aerisun.db")]
+    Blocking --> ConfigRevisions["ConfigRevision / AuditLog"]
+    Blocking --> MainDB[("aerisun.db")]
+    Background --> MainDB
 
     Restore["后台恢复\nbackup restore / config restore"] --> MainDB
     Restore --> WorkflowDB[("langgraph.db")]
@@ -330,15 +332,15 @@ flowchart TB
 | 场景 | 真实路径                                                                                 | 作用                                             |
 | ---- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | 开发 | `Makefile` -> `scripts/dev-start.sh` -> `backend/scripts/bootstrap.sh`                   | 预检数据库、按 seed profile 灌开发或生产风格数据 |
-| 首装 | `installer/install.sh` -> `docker-compose.release.yml` -> `backend/scripts/bootstrap.sh` | migration + bootstrap seed + 首次管理员          |
-| 升级 | `installer/upgrade.sh` -> `backend/scripts/bootstrap.sh`                                 | migration + backfill，不重复覆盖已有业务数据     |
+| 首装 | `installer/install.sh` -> `docker-compose.release.yml` -> `backend/scripts/bootstrap.sh` | schema migration + production baseline + blocking data migrations + 首次管理员 |
+| 升级 | `installer/upgrade.sh` -> `backend/scripts/bootstrap.sh`                                 | schema migration + blocking/background data migrations，不重复覆盖已有业务数据 |
 
 关键文件：
 
 - `backend/scripts/bootstrap.sh`
-- `backend/src/aerisun/core/seed.py`
+- `backend/src/aerisun/core/production_baseline.py`
 - `backend/src/aerisun/core/dev_seed.py`
-- `backend/src/aerisun/core/backfills/runner.py`
+- `backend/src/aerisun/core/data_migrations/runner.py`
 - `backend/src/aerisun/core/bootstrap_admin.py`
 
 ---

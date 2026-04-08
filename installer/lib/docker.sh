@@ -140,11 +140,70 @@ compose() {
   compose_with_env "${compose_runner}" "$(runtime_compose_file)" "$@"
 }
 
+list_runtime_compose_services() {
+  local compose_file=""
+  compose_file="$(runtime_compose_file)"
+  path_is_file "${compose_file}" || return 1
+
+  run_as_root python3 - "${compose_file}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+payload = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8")) or {}
+services = payload.get("services") or {}
+for name in services:
+    print(name)
+PY
+}
+
 compose_api_task() {
   local task="$1"
   shift
 
   compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@"
+}
+
+compose_api_task_background() {
+  local logfile="$1"
+  local task="$2"
+  shift 2
+
+  local compose_runner=""
+  local compose_file=""
+  compose_runner="$(resolve_compose_runner)"
+  compose_file="$(runtime_compose_file)"
+
+  run_as_root mkdir -p "${SERINO_LOG_ROOT}"
+
+  run_as_root bash -lc '
+    env_file="$1"
+    compose_file="$2"
+    project_name="$3"
+    compose_runner="$4"
+    logfile="$5"
+    task="$6"
+    shift 6
+
+    set -euo pipefail
+    [[ -f "${env_file}" ]] || {
+      echo "missing env file: ${env_file}" >&2
+      exit 1
+    }
+
+    set -a
+    # shellcheck disable=SC1090
+    source "${env_file}"
+    set +a
+    export COMPOSE_PROJECT_NAME="${project_name}"
+
+    if [[ "${compose_runner}" == "docker-compose" ]]; then
+      nohup docker-compose -f "${compose_file}" run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >>"${logfile}" 2>&1 </dev/null &
+    else
+      nohup docker compose -f "${compose_file}" run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >>"${logfile}" 2>&1 </dev/null &
+    fi
+  ' bash "${AERISUN_ENV_FILE}" "${compose_file}" "${AERISUN_COMPOSE_PROJECT_NAME}" "${compose_runner}" "${logfile}" "${task}" "$@"
 }
 
 daemon_reload() {
@@ -621,14 +680,27 @@ run_release_migrations() {
   compose_api_task "migrate.sh"
 }
 
-run_release_bootstrap() {
-  log_info "🌱 正在执行首装初始化..."
-  compose_api_task "bootstrap-prod.sh"
+run_release_baseline() {
+  log_info "🌱 正在执行生产 baseline..."
+  compose_api_task "baseline-prod.sh"
 }
 
-run_release_backfills() {
-  log_info "🛠️ 正在执行升级数据回填..."
-  compose_api_task "backfill.sh"
+run_release_admin_bootstrap() {
+  log_info "🔐 正在准备生产首次管理员..."
+  compose_api_task "first-admin-prod.sh"
+}
+
+run_release_data_migrations() {
+  local mode="${1:-blocking}"
+  log_info "🛠️ 正在执行版本化数据迁移（mode=${mode}）..."
+  compose_api_task "data-migrate.sh" apply --mode "${mode}"
+}
+
+schedule_release_background_data_migrations() {
+  local logfile="${SERINO_LOG_ROOT}/data-migrations-background.log"
+  log_info "🛰️ 正在调度后台数据迁移..."
+  compose_api_task "data-migrate.sh" schedule --mode background >/dev/null
+  compose_api_task_background "${logfile}" "data-migrate.sh" apply --mode background
 }
 
 wait_for_url() {
@@ -647,6 +719,13 @@ wait_for_url() {
     fi
     sleep 2
   done
+}
+
+resolve_release_ready_timeout() {
+  local timeout="${1:-${AERISUN_RELEASE_READY_TIMEOUT:-180}}"
+  [[ "${timeout}" =~ ^[0-9]+$ ]] || die "就绪等待超时必须是正整数秒数。"
+  [[ "${timeout}" -gt 0 ]] || die "就绪等待超时必须大于 0 秒。"
+  printf '%s' "${timeout}"
 }
 
 wait_for_domain_url() {
@@ -956,21 +1035,24 @@ EOF
 }
 
 wait_for_release_ready() {
+  local timeout_seconds=""
   load_env_file "${AERISUN_ENV_FILE}"
+  timeout_seconds="$(resolve_release_ready_timeout "${1:-}")"
 
-  local backend_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
-  wait_for_url "${backend_url}" 180 || die "后端健康检查未通过：${backend_url}"
+  local backend_url=""
+  backend_url="$(resolve_backend_healthcheck_url)"
+  wait_for_url "${backend_url}" "${timeout_seconds}" || die "后端健康检查未通过：${backend_url}"
 
   if [[ "${AERISUN_DOMAIN}" == http://* ]]; then
-    wait_for_url "${AERISUN_SITE_URL}/" 180 || die "前台未就绪：${AERISUN_SITE_URL}/"
-    wait_for_url "${AERISUN_SITE_URL}${AERISUN_ADMIN_BASE_PATH:-/admin/}" 180 || die "后台未就绪。"
-    wait_for_url "${AERISUN_WALINE_SERVER_URL}/" 180 || die "Waline 未就绪。"
+    wait_for_url "${AERISUN_SITE_URL}/" "${timeout_seconds}" || die "前台未就绪：${AERISUN_SITE_URL}/"
+    wait_for_url "${AERISUN_SITE_URL}${AERISUN_ADMIN_BASE_PATH:-/admin/}" "${timeout_seconds}" || die "后台未就绪。"
+    wait_for_url "${AERISUN_WALINE_SERVER_URL}/" "${timeout_seconds}" || die "Waline 未就绪。"
   else
-    wait_for_domain_url "${AERISUN_DOMAIN}" "/" 240 \
+    wait_for_domain_url "${AERISUN_DOMAIN}" "/" "${timeout_seconds}" \
       || die_domain_https_not_ready "${AERISUN_DOMAIN}" "前台" "/"
-    wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_ADMIN_BASE_PATH:-/admin/}" 240 \
+    wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_ADMIN_BASE_PATH:-/admin/}" "${timeout_seconds}" \
       || die_domain_https_not_ready "${AERISUN_DOMAIN}" "后台" "${AERISUN_ADMIN_BASE_PATH:-/admin/}"
-    wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_WALINE_BASE_PATH:-/waline}/" 240 \
+    wait_for_domain_url "${AERISUN_DOMAIN}" "${AERISUN_WALINE_BASE_PATH:-/waline}/" "${timeout_seconds}" \
       || die_domain_https_not_ready "${AERISUN_DOMAIN}" "Waline" "${AERISUN_WALINE_BASE_PATH:-/waline}/"
   fi
 }

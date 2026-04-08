@@ -70,7 +70,9 @@ def _apply_reference_baseline(session, *, force: bool = False) -> None:
         session.flush()
 
         session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
-        session.add_all([Poem(site_profile_id=site.id, order_index=index, content=text) for index, text in enumerate(DEFAULT_POEMS)])
+        session.add_all(
+            [Poem(site_profile_id=site.id, order_index=index, content=text) for index, text in enumerate(DEFAULT_POEMS)]
+        )
         insert_missing_page_copies(session, DEFAULT_PAGE_COPIES)
 
         resume = ResumeBasics(**{**DEFAULT_RESUME, "profile_image_url": seeded_assets["profile_image_url"]})

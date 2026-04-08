@@ -443,6 +443,7 @@ install_release_payload() {
   run_as_root install -d -o root -g root -m 0755 "${AERISUN_INSTALLER_DEST}"
   run_as_root install -d -o root -g root -m 0755 "${AERISUN_BIN_ROOT}"
   run_as_root cp -a "${source_root}/installer/." "${AERISUN_INSTALLER_DEST}/"
+  run_as_root chown -R root:root "${AERISUN_INSTALLER_DEST}"
   run_as_root chmod 0755 \
     "${AERISUN_INSTALLER_DEST}/install.sh" \
     "${AERISUN_INSTALLER_DEST}/doctor.sh" \

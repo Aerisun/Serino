@@ -11,7 +11,8 @@ source "${SCRIPT_DIR}/lib/docker.sh"
 
 JSON_MODE=false
 DOCTOR_TMP="$(make_temp_file)"
-trap 'rm -f "${DOCTOR_TMP}"' EXIT
+DOCTOR_STDERR_TMP="$(make_temp_file)"
+trap 'rm -f "${DOCTOR_TMP}" "${DOCTOR_STDERR_TMP}"' EXIT
 
 record_check() {
   local status="$1"
@@ -64,6 +65,108 @@ PY
 parse_env_value() {
   local key="$1"
   awk -F= -v wanted="${key}" '$1 == wanted {sub(/^[^=]*=/, ""); print; exit}' "${AERISUN_ENV_FILE}"
+}
+
+compact_error_output() {
+  local file="$1"
+  [[ -f "${file}" ]] || return 0
+
+  python3 - "${file}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+text = re.sub(r"\s+", " ", text).strip()
+if len(text) > 220:
+    text = text[:217].rstrip() + "..."
+print(text, end="")
+PY
+}
+
+run_doctor_api_script() {
+  local stderr_file="$1"
+  local script_name="$2"
+  shift 2
+
+  local status=0
+
+  if compose exec -T api /bin/bash "/app/backend/scripts/${script_name}" "$@" 2>"${stderr_file}"; then
+    return 0
+  fi
+
+  printf '%s\n' "[doctor] compose exec api 失败，回退到 compose run --rm --no-deps api" >>"${stderr_file}"
+  compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${script_name}" "$@" 2>>"${stderr_file}" || status=$?
+  return "${status}"
+}
+
+summarize_migration_report_json() {
+  local payload="$1"
+
+  python3 - <<'PY' "${payload}"
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+heads = payload.get("head_revisions") or []
+current = payload.get("current_revision")
+baseline = payload.get("baseline") or {}
+blocking = payload.get("blocking") or {}
+background = payload.get("background") or {}
+
+if current is None:
+    print("fail\tdata.schema_revision\t当前数据库缺少 alembic revision 记录。\tsercli migrate schema")
+elif current not in heads:
+    print(
+        f"fail\tdata.schema_revision\t当前数据库 revision={current}，未对齐 head={','.join(heads)}\tsercli migrate schema"
+    )
+else:
+    print(
+        f"ok\tdata.schema_revision\t当前 schema revision={current}，已对齐 head={','.join(heads)}。\t"
+    )
+
+if not baseline:
+    print("fail\tdata.baseline\t生产 baseline 未应用。\t重新执行安装流程以应用 production baseline")
+else:
+    print(
+        f"ok\tdata.baseline\t生产 baseline 已应用：{baseline.get('migration_key')}。\t"
+    )
+
+blocking_failed = blocking.get("failed") or []
+blocking_pending = blocking.get("pending") or []
+if blocking_failed:
+    print(
+        f"fail\tdata.migrations.blocking\t阻塞式数据迁移失败：{', '.join(blocking_failed)}\tsercli migrate data --mode blocking"
+    )
+elif blocking_pending:
+    print(
+        f"fail\tdata.migrations.blocking\t仍有待执行的阻塞式数据迁移：{', '.join(blocking_pending)}\tsercli migrate data --mode blocking"
+    )
+else:
+    print("ok\tdata.migrations.blocking\t阻塞式数据迁移已对齐。\t")
+
+background_failed = background.get("failed") or []
+background_scheduled = background.get("scheduled") or []
+background_running = background.get("running") or []
+background_pending = background.get("pending") or []
+if background_failed:
+    print(
+        f"fail\tdata.migrations.background\t后台数据迁移失败：{', '.join(background_failed)}\tsercli migrate data --mode background"
+    )
+elif background_scheduled or background_running:
+    details = []
+    if background_scheduled:
+        details.append(f"scheduled={','.join(background_scheduled)}")
+    if background_running:
+        details.append(f"running={','.join(background_running)}")
+    print(f"warn\tdata.migrations.background\t后台数据迁移仍在进行：{'; '.join(details)}\t")
+elif background_pending:
+    print(
+        f"warn\tdata.migrations.background\t存在待调度的后台数据迁移：{', '.join(background_pending)}\tsercli migrate data --mode background"
+    )
+else:
+    print("ok\tdata.migrations.background\t后台数据迁移已对齐。\t")
+PY
 }
 
 check_legacy_layout() {
@@ -262,7 +365,8 @@ check_bind_mount_writeability() {
 check_health_and_data_status() {
   load_env_file "${AERISUN_ENV_FILE}"
 
-  local backend_url="http://127.0.0.1:${AERISUN_PORT:-8000}${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/healthz}"
+  local backend_url=""
+  backend_url="$(resolve_backend_healthcheck_url)"
   if curl --fail --silent --show-error "${backend_url}" >/dev/null 2>&1; then
     record_check "ok" "health.api" "API 健康检查通过。" ""
   else
@@ -288,60 +392,27 @@ check_health_and_data_status() {
   fi
 
   local migration_report=""
-  migration_report="$(compose exec -T api uv run python -u - <<'PY' 2>/dev/null || true
-import json
-from sqlalchemy import text
-from alembic.config import Config
-from alembic.script import ScriptDirectory
-from aerisun.core.backfills.registry import REGISTERED_BACKFILLS
-from aerisun.core.backfills.state import list_applied_data_migrations
-from aerisun.core.db import get_session_factory
-
-config = Config("/app/backend/alembic.ini")
-script = ScriptDirectory.from_config(config)
-heads = script.get_heads()
-
-with get_session_factory()() as session:
-    current = session.execute(text("SELECT version_num FROM alembic_version")).scalar()
-    applied = list_applied_data_migrations(session, kind="backfill")
-
-pending = [spec.migration_key for spec in REGISTERED_BACKFILLS if spec.migration_key not in applied]
-
-print(json.dumps({
-    "current_revision": current,
-    "head_revisions": heads,
-    "pending_backfills": pending,
-}, ensure_ascii=False))
-PY
-)"
+  : > "${DOCTOR_STDERR_TMP}"
+  migration_report="$(run_doctor_api_script "${DOCTOR_STDERR_TMP}" "data-migrate.sh" status --json || true)"
 
   if [[ -z "${migration_report}" ]]; then
-    record_check "fail" "data.migrations" "无法获取 migration/backfill 状态。" "sercli logs api"
+    local migration_error=""
+    migration_error="$(compact_error_output "${DOCTOR_STDERR_TMP}")"
+    if [[ -n "${migration_error}" ]]; then
+      record_check "fail" "data.migrations" "无法获取 migration 状态：${migration_error}" "sercli logs api"
+    else
+      record_check "fail" "data.migrations" "无法获取 migration 状态。" "sercli logs api"
+    fi
     return
   fi
 
-  local migration_summary=""
-  migration_summary="$(python3 - <<'PY' "${migration_report}"
-import json
-import sys
-payload = json.loads(sys.argv[1])
-heads = payload.get("head_revisions") or []
-current = payload.get("current_revision")
-pending = payload.get("pending_backfills") or []
-if current not in heads:
-    print(f"fail\t当前数据库 revision={current}，未对齐 head={','.join(heads)}\tsercli upgrade")
-elif pending:
-    print(f"fail\t仍有未执行的 backfill：{', '.join(pending)}\tsercli upgrade")
-else:
-    print("ok\t数据库 migration 和 backfill 已对齐。")
-PY
-)"
-
   local status=""
+  local key=""
   local message=""
   local fix=""
-  IFS=$'\t' read -r status message fix <<<"${migration_summary}"
-  record_check "${status}" "data.migrations" "${message}" "${fix}"
+  while IFS=$'\t' read -r status key message fix; do
+    record_check "${status}" "${key}" "${message}" "${fix}"
+  done < <(summarize_migration_report_json "${migration_report}")
 }
 
 main() {
@@ -374,4 +445,6 @@ main() {
   fi
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

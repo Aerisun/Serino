@@ -26,7 +26,9 @@ logger = logging.getLogger("aerisun.data_migrations")
 
 def _reachable_specs(current_revision: str | None) -> tuple[DataMigrationSpec, ...]:
     return tuple(
-        spec for spec in get_registered_data_migrations() if revision_is_reachable(spec.schema_revision, current_revision)
+        spec
+        for spec in get_registered_data_migrations()
+        if revision_is_reachable(spec.schema_revision, current_revision)
     )
 
 

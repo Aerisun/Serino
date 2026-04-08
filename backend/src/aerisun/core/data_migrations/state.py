@@ -45,6 +45,7 @@ def ensure_migration_journal(session: Session) -> None:
 
 def list_migration_entries(session: Session) -> dict[str, MigrationJournalEntry]:
     ensure_migration_journal(session)
+
     def normalize_applied_at(value: object) -> datetime | None:
         if value is None or isinstance(value, datetime):
             return value

@@ -11,8 +11,10 @@ source "${SCRIPT_DIR}/lib/docker.sh"
 
 print_last_diagnostics() {
   if [[ -f "${AERISUN_INSTALLER_DEST}/doctor.sh" ]]; then
-    log_info "卸载前诊断摘要："
-    bash "${AERISUN_INSTALLER_DEST}/doctor.sh" || true
+    log_info "卸载前状态摘要（仅供参考，不影响继续卸载）："
+    if ! bash "${AERISUN_INSTALLER_DEST}/doctor.sh"; then
+      log_warn "上面的诊断失败项不会阻止彻底卸载。"
+    fi
   fi
 }
 
@@ -63,4 +65,6 @@ main() {
   log_info "Serino 已从当前机器彻底卸载。"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

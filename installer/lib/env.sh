@@ -75,6 +75,21 @@ build_url_from_host() {
   printf '%s://%s' "${scheme}" "$(format_host_for_url "${host}")"
 }
 
+resolve_backend_healthcheck_path() {
+  printf '%s' "${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"
+}
+
+resolve_backend_healthcheck_url() {
+  local port="${1:-${AERISUN_PORT:-8000}}"
+  printf 'http://127.0.0.1:%s%s' "${port}" "$(resolve_backend_healthcheck_path)"
+}
+
+resolve_release_version_value() {
+  local release_version=""
+  release_version="$(trim_env_input "${AERISUN_RELEASE_VERSION:-${AERISUN_IMAGE_TAG:-}}")"
+  printf '%s' "${release_version}"
+}
+
 load_env_file() {
   local file="$1"
   local tmp_file=""
@@ -212,8 +227,6 @@ AERISUN_CORS_ORIGINS=$(quote_env_literal "${AERISUN_CORS_ORIGINS_VALUE}")
 WALINE_SECURE_DOMAINS=${AERISUN_WALINE_SECURE_DOMAINS_VALUE}
 WALINE_JWT_TOKEN=${AERISUN_WALINE_JWT_TOKEN_VALUE}
 WALINE_GRAVATAR_STR=
-AERISUN_SEED_REFERENCE_DATA=true
-AERISUN_DATA_BACKFILL_ENABLED=true
 AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}")
 AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64=$(encode_env_b64 "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}")
 AERISUN_STORE_BIND_DIR=${AERISUN_DATA_DIR}

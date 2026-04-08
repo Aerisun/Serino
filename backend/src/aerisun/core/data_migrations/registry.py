@@ -10,7 +10,6 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 import aerisun.core.data_migrations.versions as versions_pkg
-
 from aerisun.core.data_migrations.schema import list_schema_revisions
 
 

@@ -107,11 +107,24 @@ def test_apply_production_baseline_uses_backend_system_asset_sources(tmp_path, m
             / "resources"
             / "system_assets"
         )
-        assert assets["site-og"].sha256 == hashlib.sha256((asset_root / "share_fallback_bg.webp").read_bytes()).hexdigest()
-        assert assets["site-icon"].sha256 == hashlib.sha256((asset_root / "browser_tab_icon.svg").read_bytes()).hexdigest()
-        assert assets["hero-image"].sha256 == hashlib.sha256((asset_root / "hero_flip_visual.webp").read_bytes()).hexdigest()
-        assert assets["hero-poster"].sha256 == hashlib.sha256((asset_root / "hero_video_poster.webp").read_bytes()).hexdigest()
-        assert assets["resume-avatar"].sha256 == hashlib.sha256((asset_root / "resume_avatar.webp").read_bytes()).hexdigest()
+        assert (
+            assets["site-og"].sha256 == hashlib.sha256((asset_root / "share_fallback_bg.webp").read_bytes()).hexdigest()
+        )
+        assert (
+            assets["site-icon"].sha256 == hashlib.sha256((asset_root / "browser_tab_icon.svg").read_bytes()).hexdigest()
+        )
+        assert (
+            assets["hero-image"].sha256
+            == hashlib.sha256((asset_root / "hero_flip_visual.webp").read_bytes()).hexdigest()
+        )
+        assert (
+            assets["hero-poster"].sha256
+            == hashlib.sha256((asset_root / "hero_video_poster.webp").read_bytes()).hexdigest()
+        )
+        assert (
+            assets["resume-avatar"].sha256
+            == hashlib.sha256((asset_root / "resume_avatar.webp").read_bytes()).hexdigest()
+        )
     finally:
         teardown_runtime_state()
 

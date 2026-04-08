@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -19,6 +20,16 @@ def run_installer_bash(script: str) -> str:
         text=True,
     )
     return completed.stdout
+
+
+def run_installer_bash_result(script: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["bash", "-lc", script],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_installer_ip_helpers_prefer_ipv4_and_bracket_ipv6_urls():
@@ -120,6 +131,264 @@ def test_settings_normalize_runtime_paths_under_store_dir():
     assert settings.backup_sync_tmp_dir == store_dir / ".backup-sync-tmp"
 
 
+def test_sercli_status_uses_readyz_fallback_and_release_summary():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+path_is_file() {
+  return 0
+}
+
+load_env_file() {
+  AERISUN_SITE_URL="https://example.test"
+  AERISUN_INSTALL_CHANNEL="stable"
+  AERISUN_IMAGE_REGISTRY="registry.example.com/serino"
+  AERISUN_IMAGE_TAG="v9.9.9"
+  AERISUN_RELEASE_VERSION="v9.9.9"
+  AERISUN_PORT="18000"
+  unset AERISUN_HEALTHCHECK_PATH
+}
+
+run_as_root() {
+  if [[ "${1:-}" == "systemctl" && "${2:-}" == "is-active" ]]; then
+    printf 'active\\n'
+    return 0
+  fi
+  if [[ "${1:-}" == "systemctl" && "${2:-}" == "is-enabled" ]]; then
+    printf 'enabled\\n'
+    return 0
+  fi
+  "$@"
+}
+
+compose() {
+  printf 'compose:%s\\n' "$*"
+}
+
+curl() {
+  SERCLI_CURL_ARGS="$*"
+  return 0
+}
+
+cmd_status
+printf 'curl:%s\\n' "${SERCLI_CURL_ARGS}"
+"""
+    )
+
+    assert "release version: v9.9.9" in output
+    assert "backend health url: http://127.0.0.1:18000/api/v1/site/readyz" in output
+    assert "backend health: ok" in output
+    assert "compose:ps" in output
+    assert "curl:--fail --silent --show-error http://127.0.0.1:18000/api/v1/site/readyz" in output
+
+
+def test_sercli_status_supports_json_output_for_automation():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+path_is_file() {
+  return 0
+}
+
+load_env_file() {
+  AERISUN_SITE_URL="https://example.test"
+  AERISUN_INSTALL_CHANNEL="stable"
+  AERISUN_IMAGE_REGISTRY="registry.example.com/serino"
+  AERISUN_IMAGE_TAG="v9.9.9"
+  AERISUN_RELEASE_VERSION="v9.9.9"
+  AERISUN_PORT="18000"
+}
+
+run_as_root() {
+  if [[ "${1:-}" == "systemctl" && "${2:-}" == "is-active" ]]; then
+    printf 'active\\n'
+    return 0
+  fi
+  if [[ "${1:-}" == "systemctl" && "${2:-}" == "is-enabled" ]]; then
+    printf 'enabled\\n'
+    return 0
+  fi
+  "$@"
+}
+
+curl() {
+  return 0
+}
+
+cmd_status --json
+"""
+    )
+
+    payload = json.loads(output)
+    assert payload == {
+        "systemd_active": "active",
+        "systemd_enabled": "enabled",
+        "release_version": "v9.9.9",
+        "channel": "stable",
+        "site_url": "https://example.test",
+        "image_registry": "registry.example.com/serino",
+        "image_tag": "v9.9.9",
+        "backend_health_url": "http://127.0.0.1:18000/api/v1/site/readyz",
+        "backend_health": "ok",
+    }
+
+
+def test_sercli_logs_defaults_to_core_services_and_preserves_options():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+compose() {
+  printf '%s\\n' "$*"
+}
+
+cmd_logs --follow --since 15m
+"""
+    ).strip()
+
+    assert output == "logs --tail 120 --follow --since 15m api waline caddy"
+
+
+def test_sercli_logs_can_list_known_runtime_services():
+    output = (
+        run_installer_bash(
+            """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+list_runtime_compose_services() {
+  printf 'api\\nwaline\\ncaddy\\n'
+}
+
+cmd_logs --list-services
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == ["api", "waline", "caddy"]
+
+
+def test_sercli_logs_rejects_unknown_service_names_early():
+    completed = run_installer_bash_result(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+list_runtime_compose_services() {
+  printf 'api\\nwaline\\ncaddy\\n'
+}
+
+cmd_logs web
+"""
+    )
+
+    assert completed.returncode == 1
+    assert "未知服务：web。可用服务：api, waline, caddy" in completed.stderr
+
+
+def test_sercli_migrate_data_forwards_mode_to_release_runner():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+run_release_data_migrations() {
+  printf 'mode:%s\\n' "${1:-}"
+}
+
+cmd_migrate data --mode background
+"""
+    ).strip()
+
+    assert output == "mode:background"
+
+
+def test_sercli_migrate_status_uses_data_migration_script():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+compose_api_task() {
+  printf '%s %s %s\\n' "$1" "$2" "$3"
+}
+
+cmd_migrate status --json
+"""
+    ).strip()
+
+    assert output == "data-migrate.sh status --json"
+
+
+def test_sercli_wait_forwards_custom_timeout():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+wait_for_release_ready() {
+  printf 'timeout:%s\\n' "${1:-<default>}"
+}
+
+cmd_wait --timeout 42
+"""
+    ).strip()
+
+    assert output == "timeout:42"
+
+
+def test_doctor_migration_summary_reports_baseline_and_background_lanes():
+    output = (
+        run_installer_bash(
+            """
+source installer/doctor.sh
+payload='{"current_revision":"0001_production_baseline","head_revisions":["0001_production_baseline"],"baseline":{"migration_key":"2026_04_production_baseline_v1","schema_revision":"0001_production_baseline","status":"applied"},"blocking":{"applied":[],"pending":[],"failed":[]},"background":{"applied":[],"pending":["0002_rehash_assets"],"scheduled":[],"running":[],"failed":[]}}'
+summarize_migration_report_json "${payload}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "ok\tdata.schema_revision\t当前 schema revision=0001_production_baseline，已对齐 head=0001_production_baseline。\t",
+        "ok\tdata.baseline\t生产 baseline 已应用：2026_04_production_baseline_v1。\t",
+        "ok\tdata.migrations.blocking\t阻塞式数据迁移已对齐。\t",
+        "warn\tdata.migrations.background\t存在待调度的后台数据迁移：0002_rehash_assets\tsercli migrate data --mode background",
+    ]
+
+
 def test_production_settings_default_runtime_paths_point_to_srv_store():
     from aerisun.core.settings import Settings
 
@@ -168,8 +437,8 @@ def test_deploy_contract_reuses_shared_env_keys():
     )
     assert healthcheck_curl in compose_text
     assert "WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}" in compose_text
-    assert "AERISUN_SEED_REFERENCE_DATA: ${AERISUN_SEED_REFERENCE_DATA:-true}" in release_compose_text
-    assert "AERISUN_DATA_BACKFILL_ENABLED: ${AERISUN_DATA_BACKFILL_ENABLED:-true}" in release_compose_text
+    assert "AERISUN_SEED_REFERENCE_DATA" not in release_compose_text
+    assert "AERISUN_DATA_BACKFILL_ENABLED" not in release_compose_text
     assert "AERISUN_API_BASE_PATH: ${AERISUN_API_BASE_PATH:-/api}" in compose_text
     assert "AERISUN_ADMIN_BASE_PATH: ${AERISUN_ADMIN_BASE_PATH:-/admin/}" in compose_text
     assert "AERISUN_WALINE_BASE_PATH: ${AERISUN_WALINE_BASE_PATH:-/waline}" in compose_text
@@ -191,7 +460,7 @@ def test_deploy_contract_reuses_shared_env_keys():
     assert 'LOCAL_IMAGE_REGISTRY="${AERISUN_SMOKE_IMAGE_REGISTRY:-serino-smoke-local}"' in smoke_text
     assert "AERISUN_IMAGE_REGISTRY=${LOCAL_IMAGE_REGISTRY}" in smoke_text
     assert "WALINE_JWT_TOKEN=smoke-0123456789abcdef0123456789abcdef" in smoke_text
-    assert "AERISUN_DATA_BACKFILL_ENABLED=true" in smoke_text
+    assert "AERISUN_DATA_BACKFILL_ENABLED" not in smoke_text
 
     assert 'healthcheck_path="${AERISUN_HEALTHCHECK_PATH:-/api/v1/site/readyz}"' in dev_smoke_text
     assert 'admin_base_path="${AERISUN_ADMIN_BASE_PATH:-/admin/}"' in dev_smoke_text
@@ -224,8 +493,8 @@ def test_production_defaults_do_not_track_dev_only_upstreams():
     assert "/var/lib/serino" in production_local_example_text
     assert "AERISUN_WORKFLOW_DB_PATH=/srv/aerisun/store/langgraph.db" in production_local_example_text
     assert "AERISUN_BACKUP_SYNC_TMP_DIR=/srv/aerisun/store/.backup-sync-tmp" in production_local_example_text
-    assert "AERISUN_SEED_REFERENCE_DATA=true" in production_local_example_text
-    assert "AERISUN_DATA_BACKFILL_ENABLED=true" in production_local_example_text
+    assert "AERISUN_SEED_REFERENCE_DATA" not in production_local_example_text
+    assert "AERISUN_DATA_BACKFILL_ENABLED" not in production_local_example_text
 
 
 def test_installer_runtime_paths_follow_serino_system_layout():
@@ -233,7 +502,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     compose_text = read_project_file("docker-compose.release.yml")
     sercli_text = read_project_file("installer/bin/sercli")
     doctor_text = read_project_file("installer/doctor.sh")
+    uninstall_text = read_project_file("installer/uninstall.sh")
     install_text = read_project_file("installer/install.sh")
+    upgrade_text = read_project_file("installer/upgrade.sh")
     download_text = read_project_file("installer/lib/download.sh")
     docker_text = read_project_file("installer/lib/docker.sh")
     env_text = read_project_file("installer/lib/env.sh")
@@ -244,6 +515,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     backend_bootstrap_text = read_project_file("backend/scripts/bootstrap.sh")
     backend_serve_text = read_project_file("backend/scripts/serve.sh")
     backend_migrate_text = read_project_file("backend/scripts/migrate.sh")
+    backend_baseline_prod_text = read_project_file("backend/scripts/baseline-prod.sh")
+    backend_first_admin_prod_text = read_project_file("backend/scripts/first-admin-prod.sh")
+    backend_data_migrate_text = read_project_file("backend/scripts/data-migrate.sh")
     backend_bootstrap_prod_text = read_project_file("backend/scripts/bootstrap-prod.sh")
     backend_backfill_text = read_project_file("backend/scripts/backfill.sh")
     backend_site_api_text = read_project_file("backend/src/aerisun/api/site.py")
@@ -295,6 +569,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_API_IMAGE_NAME="${AERISUN_API_IMAGE_NAME:-serino-api}"' in common_text
     assert 'AERISUN_WEB_IMAGE_NAME="${AERISUN_WEB_IMAGE_NAME:-serino-web}"' in common_text
     assert 'AERISUN_WALINE_IMAGE_NAME="${AERISUN_WALINE_IMAGE_NAME:-serino-waline}"' in common_text
+    assert "run_as_root chown -R root:root" in common_text
+    assert "resolve_backend_healthcheck_url() {" in env_text
+    assert "resolve_release_version_value() {" in env_text
 
     assert (
         "image: ${AERISUN_IMAGE_REGISTRY:-crpi-hwvtw8db2uk7bil0.cn-beijing.personal.cr.aliyuncs.com/serino}/${AERISUN_API_IMAGE_NAME:-serino-api}:${AERISUN_IMAGE_TAG:-latest}"
@@ -318,18 +595,45 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )
     assert "${AERISUN_STORE_BIND_DIR:-/var/lib/serino}:/srv/aerisun/store" in compose_text
 
+    assert "sercli help" in sercli_text
+    assert "sercli version" in sercli_text
     assert "sercli doctor [--json]" in sercli_text
+    assert "sercli migrate schema" in sercli_text
+    assert "sercli migrate data [--mode blocking|background|all]" in sercli_text
+    assert "sercli migrate status [--json]" in sercli_text
+    assert "sercli ps [compose-ps-args...]" in sercli_text
+    assert "sercli start [--no-wait]" in sercli_text
+    assert "sercli stop" in sercli_text
     assert 'exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"' in sercli_text
+    assert 'main "${SERCLI_MAIN_ARGS[@]}"' in sercli_text
+    assert "cmd_migrate() {" in sercli_text
+    assert "cmd_ps() {" in sercli_text
+    assert "cmd_start() {" in sercli_text
+    assert "cmd_stop() {" in sercli_text
     assert 'record_check "fail" "env.bootstrap_cleanup"' in doctor_text
     assert 'record_check "fail" "data.migrations"' in doctor_text
+    assert "run_doctor_api_script() {" in doctor_text
+    assert 'compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${script_name}" "$@"' in doctor_text
+    assert "data.schema_revision" in doctor_text
+    assert "data.baseline" in doctor_text
+    assert "data.migrations.blocking" in doctor_text
+    assert "data.migrations.background" in doctor_text
+    assert 'backend_url="$(resolve_backend_healthcheck_url)"' in doctor_text
+    assert 'log_info "卸载前状态摘要（仅供参考，不影响继续卸载）："' in uninstall_text
+    assert 'log_warn "上面的诊断失败项不会阻止彻底卸载。"' in uninstall_text
     assert 'local channel="${AERISUN_INSTALL_CHANNEL:-stable}"' in install_text
     assert "validate_release_compose_configuration" in install_text
     assert "if ! compose pull; then" in install_text
     assert "if ! run_release_migrations; then" in install_text
-    assert "if ! run_release_bootstrap; then" in install_text
+    assert "if ! run_release_baseline; then" in install_text
+    assert "if ! run_release_data_migrations blocking; then" in install_text
+    assert "if ! run_release_admin_bootstrap; then" in install_text
     assert "if ! enable_serino_service; then" in install_text
     assert "run_release_migrations" in install_text
-    assert "run_release_bootstrap" in install_text
+    assert "run_release_baseline" in install_text
+    assert "run_release_data_migrations blocking" in install_text
+    assert "run_release_admin_bootstrap" in install_text
+    assert "schedule_release_background_data_migrations || true" in install_text
     assert "print_service_start_failure_diagnostics" in install_text
     assert (
         'local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"'
@@ -337,13 +641,17 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )
     assert "compose_with_env() {" in docker_text
     assert "compose_api_task() {" in docker_text
+    assert "compose_api_task_background() {" in docker_text
     assert 'compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@"' in docker_text
     assert "run_release_migrations() {" in docker_text
-    assert "run_release_bootstrap() {" in docker_text
-    assert "run_release_backfills() {" in docker_text
+    assert "run_release_baseline() {" in docker_text
+    assert "run_release_admin_bootstrap() {" in docker_text
+    assert "run_release_data_migrations() {" in docker_text
+    assert "schedule_release_background_data_migrations() {" in docker_text
     assert "resolve_compose_runner() {" in docker_text
     assert "runtime_compose_file() {" in docker_text
     assert "render_release_compose_configuration() {" in docker_text
+    assert 'backend_url="$(resolve_backend_healthcheck_url)"' in docker_text
     assert 'source "${env_file}"' in docker_text
     assert "validate_release_compose_configuration() {" in docker_text
     assert (
@@ -359,6 +667,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "AERISUN_UBUNTU_APT_MIRROR_URL=${AERISUN_UBUNTU_APT_MIRROR_URL}" in env_text
     assert "AERISUN_DEBIAN_APT_MIRROR_URL=${AERISUN_DEBIAN_APT_MIRROR_URL}" in env_text
     assert 'AERISUN_DOCKER_REGISTRY_MIRRORS=$(quote_env_literal "${AERISUN_DOCKER_REGISTRY_MIRRORS}")' in env_text
+    assert "run_as_root chown -R root:root" in upgrade_text
     assert "yaml.safe_dump" in docker_text
     assert "probe_release_image" not in docker_text
     assert "run_as_root_quiet() {" in docker_text
@@ -411,18 +720,23 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "run_backend_uvicorn()" in runtime_lib_text
     assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_bootstrap_text
     assert "run_backend_alembic upgrade head" in backend_bootstrap_text
+    assert "生产运行时不会在应用启动阶段自动执行 baseline 或数据迁移。" in backend_bootstrap_text
     assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_serve_text
     assert 'run_backend_uvicorn "${UVICORN_ARGS[@]}"' in backend_serve_text
     assert 'command = [sys.executable, "-m", "alembic", "upgrade", "head"]' in backend_migrate_text
     assert 'print(".", end="", flush=True)' in backend_migrate_text
-    assert "seed_bootstrap_data()" in backend_bootstrap_prod_text
-    assert "ensure_first_boot_default_admin(is_first_boot=True)" in backend_bootstrap_prod_text
-    assert "run_pending_backfills()" in backend_backfill_text
+    assert "apply_production_baseline" in backend_baseline_prod_text
+    assert "ensure_first_boot_default_admin(is_first_boot=True)" in backend_first_admin_prod_text
+    assert "apply_pending_data_migrations" in backend_data_migrate_text
+    assert "schedule_pending_background_data_migrations" in backend_data_migrate_text
+    assert 'exec /bin/bash "${SCRIPT_DIR}/baseline-prod.sh" "$@"' in backend_bootstrap_prod_text
+    assert 'exec /bin/bash "${SCRIPT_DIR}/data-migrate.sh" apply --mode blocking "$@"' in backend_backfill_text
     assert '@base_router.get("/livez"' in backend_site_api_text
     assert '@base_router.get("/readyz"' in backend_site_api_text
     assert '@base_router.get("/healthz"' in backend_site_api_text
     assert "background_task = asyncio.create_task(background_services.start()" in backend_bootstrap_core_text
     assert "await start_visit_record_worker()" in backend_bootstrap_core_text
+    assert "run_pending_backfills()" not in backend_bootstrap_core_text
     assert "duration_ms=" not in backend_bootstrap_core_text
     assert 'logger.info("Application infrastructure ready in %.2fms"' in backend_bootstrap_core_text
     assert 'logger.info("Background services started in %.2fms"' in backend_bootstrap_core_text

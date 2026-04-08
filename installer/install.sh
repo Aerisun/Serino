@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+INSTALL_SCRIPT_SELF_PATH="${BASH_SOURCE[0]-}"
+
 bootstrap_log_info() {
   printf '[INFO] %s\n' "$*" >&2
 }
@@ -112,12 +114,23 @@ bootstrap_from_release() {
   exec "${tmp_dir}/installer/install.sh" --bundled "$@"
 }
 
-if [[ "${1:-}" != "--bundled" ]]; then
-  bootstrap_from_release "$@"
+INSTALL_SCRIPT_IS_EXECUTED="false"
+if [[ -z "${INSTALL_SCRIPT_SELF_PATH}" || "${INSTALL_SCRIPT_SELF_PATH}" == "$0" ]]; then
+  INSTALL_SCRIPT_IS_EXECUTED="true"
+  if [[ "${1:-}" != "--bundled" ]]; then
+    bootstrap_from_release "$@"
+  fi
+  if [[ "${1:-}" == "--bundled" ]]; then
+    shift
+  fi
 fi
-shift
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "${INSTALL_SCRIPT_SELF_PATH}" ]]; then
+  echo "安装器在 --bundled 模式下必须以文件方式执行，不能通过标准输入继续运行。" >&2
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${INSTALL_SCRIPT_SELF_PATH}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/common.sh"
 # shellcheck disable=SC1091
@@ -265,11 +278,23 @@ main() {
     AERISUN_INSTALL_CLEANUP_ARMED=0
     die "数据库迁移失败，安装已中止。可根据上面的报错信息修复后重试。"
   fi
-  if ! run_release_bootstrap; then
+  if ! run_release_baseline; then
     print_service_start_failure_diagnostics
     cleanup_failed_installation
     AERISUN_INSTALL_CLEANUP_ARMED=0
-    die "首装初始化失败，安装已中止。可根据上面的报错信息修复后重试。"
+    die "生产 baseline 初始化失败，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
+  if ! run_release_data_migrations blocking; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "阻塞式数据迁移失败，安装已中止。可根据上面的报错信息修复后重试。"
+  fi
+  if ! run_release_admin_bootstrap; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    die "首次管理员初始化失败，安装已中止。可根据上面的报错信息修复后重试。"
   fi
   log_info "🥳 正在启动站点服务..."
   if ! enable_serino_service; then
@@ -286,6 +311,7 @@ main() {
     die "站点服务在预期时间内未就绪，安装已中止。可根据上面的报错信息修复后重试。"
   fi
   verify_default_admin_login || die "服务已启动，但安装时设置的管理员登录检查失败。"
+  schedule_release_background_data_migrations || true
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64"
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64"
   AERISUN_INSTALL_CLEANUP_ARMED=0
@@ -305,4 +331,6 @@ main() {
   fi
 }
 
-main "$@"
+if [[ "${INSTALL_SCRIPT_IS_EXECUTED}" == "true" ]]; then
+  main "$@"
+fi

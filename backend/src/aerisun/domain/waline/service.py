@@ -4,7 +4,7 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from aerisun.core.settings import get_settings
@@ -579,19 +579,24 @@ def list_counter_history_by_date(
         rows = connection.execute(
             f"""
             SELECT
-                DATE(updatedAt) AS snapshot_date,
+                updatedAt AS snapshot_at,
                 url,
                 SUM(COALESCE(time, 0)) AS pageview_count,
                 SUM({reaction_sum}) AS reaction_count
             FROM wl_counter
-            GROUP BY DATE(updatedAt), url
-            ORDER BY DATE(updatedAt) ASC, url ASC
+            GROUP BY updatedAt, url
+            ORDER BY updatedAt ASC, url ASC
             """
         ).fetchall()
 
     history: dict[date, dict[str, WalineCounterStats]] = {}
     for row in rows:
-        snapshot_date = date.fromisoformat(str(row["snapshot_date"]))
+        snapshot_at_raw = str(row["snapshot_at"])
+        try:
+            snapshot_at = datetime.fromisoformat(snapshot_at_raw)
+        except ValueError:
+            snapshot_at = datetime.strptime(snapshot_at_raw, "%Y-%m-%d %H:%M:%S")
+        snapshot_date = snapshot_at.replace(tzinfo=UTC).astimezone(shanghai_now().tzinfo).date()
         history.setdefault(snapshot_date, {})[str(row["url"])] = WalineCounterStats(
             url=str(row["url"]),
             pageview_count=int(row["pageview_count"] or 0),

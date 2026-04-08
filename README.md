@@ -17,10 +17,36 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 ---
 
+## 📦 一键安装
+
+你只需要一台可联网（我国互联网即可）的 `Ubuntu/Debian` Linux 服务器，终端键入以下命令即可：
+
+```bash
+curl -fsSL https://install.aerisun.top/serino/install.sh | bash
+```
+
+<details>
+<summary>安装器会干什么：</summary>
+
+- 如果检测到旧版残留或现有安装，会先提示确认，随后清理旧布局与残留再继续。
+- 自动解析当前 stable 渠道版本，下载对应安装包并解压执行。
+- 先检查 Linux / systemd / root 或 sudo / CPU 架构，以及 80、443 端口是否空闲；如果使用域名安装，还会先做 DNS 预检。
+- 如果系统还没有 Docker，会自动安装并启用 Docker，随后检查 `docker compose` 可用性
+- 写入标准部署布局：程序与脚本放到 `/opt/serino`，生产配置放到 `/etc/serino/serino.env`，运行数据放到 `/var/lib/serino`，并安装 `sercli` 和 systemd 单元。
+- 生成并固化生产环境配置，包括站点地址、CORS、Waline 地址、安全域名、镜像仓库、`WALINE_JWT_TOKEN` 以及首次管理员账号和密码。
+- 按生成后的配置先拉取 API、前台和 Waline 镜像
+- 执行数据库迁移、应用 production baseline、执行阻塞式数据迁移，并初始化首次管理员
+- 随编排一起启动 Caddy，自动接管放行 80/443 入口并处理 HTTPS/TLS 证书签发
+- 启动站点并等待前台、后台、Waline 以及相应的 HTTPS 就绪，然后调度后台数据迁移
+
+</details>
+
+---
+
 ## 🚀 核心特性
 
-- 🛡️ **绝对隔离**：代码、数据与配置彻底解耦。无损升级确保历史积累与私有存，储零覆写。
-- 🚀 **一键安装升级**：一句命令行部署！安装、重启、升级流程收敛，部署维护更省心。
+- 🛡️ **绝对解耦**：`纯代码`与`数据配置`彻底分离！
+- 🚀 **方便省心**：一句命令行部署！安装、重启、升级、卸载一键完成，杜绝折腾！
 - ⚙️ **舒适配置**：告别修改源码，全站参数均通过分层设计的后台 UI 实时调整，清晰易拓。
 - 🎨 **极简美学**：素雅留白搭配内敛交互，带来全端自适应的无干扰沉浸阅读。
 - 📝 **扩展语法**：搭载强大的 Markdown 扩展解析引擎，轻松驾驭个性的多样化排版。
@@ -46,26 +72,18 @@ Serino 设计初衷是打造一个专注内容、方便配置、探索融入 Age
 
 ## 📖 系统设计与文档
 
-想要深入了解 Aerisun 背后“图解化”的核心架构，请阅读：
-
 - [项目架构 (Architecture)](docs/architecture.md)
+- [生产运维方案 (Operations)](docs/operations.md)
+- 发布前运维 smoke gate：`bash scripts/release-smoke-gate.sh`
 
 ---
 
-## 🐳 快速开始
-
-### 📦 一键自动化安装（推荐）
-
-面向可连接（可以不是国际）互联网的 `Ubuntu/Debian` Linux 环境。安装器将`自动配置 Docker、防火墙`并以`交互式向导`引导完成启动：
-
-```bash
-curl -fsSL https://install.aerisun.top/serino/install.sh | bash
-
-```
+## 手动部署与开发
 
 ### 🐳 Docker Compose 手动部署
 
-如果你偏好手控部署结构：
+如果你偏好手控部署结构，这条路径现在属于高级用法。  
+注意：生产容器启动不会自动执行 baseline 和数据迁移，所以不能再只靠 `docker compose up -d`。
 
 ```bash
 mkdir aerisun && cd aerisun
@@ -73,7 +91,13 @@ wget https://raw.githubusercontent.com/Aerisun/Aerisun/main/docker-compose.relea
 wget https://raw.githubusercontent.com/Aerisun/Aerisun/main/.env.production.local.example -O .env.production.local
 
 vim .env.production.local # 必须填写初始化管理员账号、密码等必要配置
+docker compose --env-file .env.production.local -f docker-compose.release.yml pull
+docker compose --env-file .env.production.local -f docker-compose.release.yml run --rm --no-deps api /bin/bash /app/backend/scripts/migrate.sh
+docker compose --env-file .env.production.local -f docker-compose.release.yml run --rm --no-deps api /bin/bash /app/backend/scripts/baseline-prod.sh
+docker compose --env-file .env.production.local -f docker-compose.release.yml run --rm --no-deps api /bin/bash /app/backend/scripts/data-migrate.sh apply --mode blocking
+docker compose --env-file .env.production.local -f docker-compose.release.yml run --rm --no-deps api /bin/bash /app/backend/scripts/first-admin-prod.sh
 docker compose --env-file .env.production.local -f docker-compose.release.yml up -d
+docker compose --env-file .env.production.local -f docker-compose.release.yml run --rm --no-deps api /bin/bash /app/backend/scripts/data-migrate.sh schedule --mode background
 
 ```
 
@@ -81,7 +105,7 @@ docker compose --env-file .env.production.local -f docker-compose.release.yml up
 
 ## 💻 本地开发指南
 
-环境要求：`Node.js 22.x+`、`pnpm`、`uv (Python)`。
+环境要求：`Node.js 22.x+`、`pnpm`、`uv`。
 
 ```bash
 # 1.拉取代码

@@ -40,6 +40,7 @@ restore_current_installation() {
   if [[ -d "${backup_dir}/installer" ]]; then
     run_as_root rm -rf "${AERISUN_INSTALLER_DEST}"
     run_as_root cp -a "${backup_dir}/installer" "${AERISUN_INSTALLER_DEST}"
+    run_as_root chown -R root:root "${AERISUN_INSTALLER_DEST}"
     run_as_root ln -sf "${AERISUN_INSTALLER_DEST}/bin/sercli" "${SERINO_BIN_LINK}"
     install_systemd_units "${backup_dir}"
   fi
@@ -52,8 +53,13 @@ restore_current_installation() {
   daemon_reload
 }
 
+run_upgrade_preflight() {
+  bash "${SCRIPT_DIR}/doctor.sh"
+}
+
 main() {
-  local version="${1:-}"
+  local version=""
+  local check_only="false"
   local manifest_file=""
   local bundle_dir=""
   local bundle_file=""
@@ -62,13 +68,37 @@ main() {
   local target_registry=""
   local target_image_tag=""
 
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --check)
+        check_only="true"
+        shift
+        ;;
+      --ready-timeout)
+        [[ "$#" -ge 2 ]] || die "缺少 --ready-timeout 的参数值。"
+        export AERISUN_RELEASE_READY_TIMEOUT="$2"
+        shift 2
+        ;;
+      -*)
+        die "upgrade 不支持参数：$1"
+        ;;
+      *)
+        if [[ -n "${version}" ]]; then
+          die "upgrade 只接受一个目标版本参数。"
+        fi
+        version="$1"
+        shift
+        ;;
+    esac
+  done
+
   require_supported_linux
   require_root_or_sudo
   ensure_supported_existing_installation
   ensure_service_user
   load_env_file "${AERISUN_ENV_FILE}"
 
-  bash "${SCRIPT_DIR}/doctor.sh"
+  run_upgrade_preflight
 
   if [[ -n "${version}" ]]; then
     AERISUN_INSTALL_VERSION="${version}"
@@ -79,6 +109,12 @@ main() {
   load_release_manifest "${version}" "${manifest_file}"
   target_registry="${AERISUN_IMAGE_REGISTRY}"
   target_image_tag="${AERISUN_IMAGE_TAG}"
+
+  if [[ "${check_only}" == "true" ]]; then
+    log_info "升级预检通过，目标版本：${version}"
+    return 0
+  fi
+
   bundle_dir="$(make_temp_dir)"
   bundle_file="${bundle_dir}/${AERISUN_INSTALL_BUNDLE_NAME}"
   download_release_asset "${version}" "${AERISUN_INSTALL_BUNDLE_NAME}" "${bundle_file}"
@@ -100,7 +136,7 @@ main() {
   normalize_production_env_file "${AERISUN_ENV_FILE}"
   validate_release_compose_configuration
 
-  if ! compose pull || ! run_release_migrations || ! run_release_backfills || ! enable_serino_service || ! wait_for_release_ready; then
+  if ! compose pull || ! run_release_migrations || ! run_release_data_migrations blocking || ! enable_serino_service || ! wait_for_release_ready; then
     log_warn "升级失败，正在回滚。"
     print_service_start_failure_diagnostics
     stop_serino_service
@@ -111,7 +147,11 @@ main() {
     die "升级失败，已回滚到旧版本。可执行 sercli doctor 与 sercli logs api waline caddy 查看诊断信息。"
   fi
 
+  schedule_release_background_data_migrations || true
+
   log_info "升级完成：${version}"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
