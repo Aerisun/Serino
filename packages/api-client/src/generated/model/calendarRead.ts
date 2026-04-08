@@ -4,13 +4,12 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { CalendarEventRead } from './calendarEventRead';
 
 export interface CalendarRead {
   /** Query range start date */
-  range_start: string;
+  range_start: unknown;
   /** Query range end date */
-  range_end: string;
+  range_end: unknown;
   /** List of calendar events */
-  events: CalendarEventRead[];
+  events: unknown;
 }

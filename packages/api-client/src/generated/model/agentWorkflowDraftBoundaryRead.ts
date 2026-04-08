@@ -6,8 +6,8 @@
  */
 
 export interface AgentWorkflowDraftBoundaryRead {
-  requires_platform_extension?: boolean;
-  summary?: string;
-  missing_capabilities?: string[];
-  recommended_actions?: string[];
+  requires_platform_extension?: unknown;
+  summary?: unknown;
+  missing_capabilities?: unknown;
+  recommended_actions?: unknown;
 }

@@ -96,6 +96,8 @@ export * from './agentWorkflowDraftCompileReportRead';
 export * from './agentWorkflowDraftCreateRead';
 export * from './agentWorkflowDraftCreateWrite';
 export * from './agentWorkflowDraftLockStateRead';
+export * from './agentWorkflowDraftLockStateReadInput';
+export * from './agentWorkflowDraftLockStateReadOutput';
 export * from './agentWorkflowDraftMessageRead';
 export * from './agentWorkflowDraftOptionRead';
 export * from './agentWorkflowDraftPreviewReadInput';

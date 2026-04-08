@@ -7,49 +7,49 @@
 
 export interface ContentEntryRead {
   /** URL-friendly unique identifier */
-  slug: string;
+  slug: unknown;
   /** Content display title */
-  title: string;
+  title: unknown;
   /** Brief summary or excerpt */
-  summary: string | null;
+  summary: unknown;
   /** Full content body in Markdown */
-  body: string;
+  body: unknown;
   /** List of tag names */
-  tags: string[];
+  tags: unknown;
   /** Publication status */
-  status: string;
+  status: unknown;
   /** Visibility level */
-  visibility: string;
+  visibility: unknown;
   /** Publication timestamp */
-  published_at: string | null;
+  published_at: unknown;
   /** Creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Last update timestamp */
-  updated_at: string;
+  updated_at: unknown;
   /** Content category */
-  category?: string | null;
+  category?: unknown;
   /** Estimated reading time */
-  read_time?: string | null;
+  read_time?: unknown;
   /** Formatted display date string */
-  display_date?: string | null;
+  display_date?: unknown;
   /** Relative time string (e.g. 3 days ago) */
-  relative_date?: string | null;
+  relative_date?: unknown;
   /** Total page views */
-  view_count?: number | null;
+  view_count?: unknown;
   /** Number of comments */
-  comment_count?: number | null;
+  comment_count?: unknown;
   /** Number of likes */
-  like_count?: number | null;
+  like_count?: unknown;
   /** Number of reposts */
-  repost_count?: number | null;
+  repost_count?: unknown;
   /** Author mood (diary-specific) */
-  mood?: string | null;
+  mood?: unknown;
   /** Weather description (diary-specific) */
-  weather?: string | null;
+  weather?: unknown;
   /** Associated poem text */
-  poem?: string | null;
+  poem?: unknown;
   /** Original author name */
-  author?: string | null;
+  author?: unknown;
   /** Source URL or reference */
-  source?: string | null;
+  source?: unknown;
 }

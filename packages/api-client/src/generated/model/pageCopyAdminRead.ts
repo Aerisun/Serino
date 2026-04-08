@@ -4,29 +4,28 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { PageCopyAdminReadExtras } from './pageCopyAdminReadExtras';
 
 export interface PageCopyAdminRead {
   /** Unique page copy identifier */
-  id: string;
+  id: unknown;
   /** Page identifier key */
-  page_key: string;
+  page_key: unknown;
   /** Page title heading */
-  title: string;
+  title: unknown;
   /** Page subtitle text */
-  subtitle: string;
+  subtitle: unknown;
   /** Search placeholder */
-  search_placeholder: string | null;
+  search_placeholder: unknown;
   /** Empty state message */
-  empty_message: string | null;
+  empty_message: unknown;
   /** Maximum page width */
-  max_width: string | null;
+  max_width: unknown;
   /** Default items per page */
-  page_size: number | null;
+  page_size: unknown;
   /** Additional configuration */
-  extras: PageCopyAdminReadExtras;
+  extras: unknown;
   /** Creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Last update timestamp */
-  updated_at: string;
+  updated_at: unknown;
 }

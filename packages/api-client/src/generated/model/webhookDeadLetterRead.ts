@@ -4,19 +4,18 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { WebhookDeadLetterReadPayload } from './webhookDeadLetterReadPayload';
 
 export interface WebhookDeadLetterRead {
-  id: string;
-  delivery_id: string;
-  subscription_id: string;
-  event_type: string;
-  event_id: string;
-  reason: string;
-  payload?: WebhookDeadLetterReadPayload;
-  last_response_status?: number | null;
-  last_error?: string | null;
-  dead_lettered_at: string;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  delivery_id: unknown;
+  subscription_id: unknown;
+  event_type: unknown;
+  event_id: unknown;
+  reason: unknown;
+  payload?: unknown;
+  last_response_status?: unknown;
+  last_error?: unknown;
+  dead_lettered_at: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

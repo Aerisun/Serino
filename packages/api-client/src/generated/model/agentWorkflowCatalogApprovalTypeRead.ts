@@ -4,11 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowCatalogApprovalTypeReadConfigSchema } from './agentWorkflowCatalogApprovalTypeReadConfigSchema';
 
 export interface AgentWorkflowCatalogApprovalTypeRead {
-  key: string;
-  label: string;
-  description?: string;
-  config_schema?: AgentWorkflowCatalogApprovalTypeReadConfigSchema;
+  key: unknown;
+  label: unknown;
+  description?: unknown;
+  config_schema?: unknown;
 }

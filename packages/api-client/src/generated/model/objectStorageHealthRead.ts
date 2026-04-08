@@ -4,10 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ObjectStorageHealthReadDetails } from './objectStorageHealthReadDetails';
 
 export interface ObjectStorageHealthRead {
-  ok: boolean;
-  summary: string;
-  details?: ObjectStorageHealthReadDetails;
+  ok: unknown;
+  summary: unknown;
+  details?: unknown;
 }

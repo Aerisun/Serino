@@ -1,48 +1,37 @@
 {
   "items": [
     {
-      "page_key": "activity",
-      "title": "友邻与最近动态",
-      "subtitle": "展示朋友动态、最近活动和贡献热力图。",
-      "search_placeholder": null,
       "empty_message": null,
-      "max_width": null,
-      "page_size": null,
       "extras": {
         "dashboardLabel": "Dashboard",
-        "friendCircleTitle": "朋友圈",
-        "friendCircleViewAllLabel": "查看全部",
+        "friendCircleEmptyMessage": "还没有公开的友邻动态",
         "friendCircleErrorTitle": "友邻动态加载失败",
         "friendCircleRetryLabel": "重试",
-        "friendCircleEmptyMessage": "还没有公开的友邻动态",
-        "recentActivityTitle": "最近动态",
+        "friendCircleTitle": "朋友圈",
+        "friendCircleViewAllLabel": "查看全部",
+        "heatmapAverageWeekLabel": "Avg / week",
+        "heatmapPeakWeekLabel": "Peak week",
+        "heatmapThisWeekLabel": "This week",
+        "heatmapTitle": "Activity",
+        "recentActivityEmptyMessage": "暂时还没有公开的最近动态",
         "recentActivityErrorTitle": "最近动态加载失败",
         "recentActivityRetryLabel": "重试",
-        "recentActivityEmptyMessage": "暂时还没有公开的最近动态",
-        "heatmapTitle": "Activity",
-        "heatmapThisWeekLabel": "This week",
-        "heatmapPeakWeekLabel": "Peak week",
-        "heatmapAverageWeekLabel": "Avg / week"
-      }
+        "recentActivityTitle": "最近动态"
+      },
+      "max_width": null,
+      "page_key": "activity",
+      "page_size": null,
+      "search_placeholder": null,
+      "subtitle": "展示朋友动态、最近活动和贡献热力图。",
+      "title": "友邻与最近动态"
     },
     {
-      "page_key": "calendar",
-      "title": "日历",
-      "subtitle": "记录每一天的痕迹。",
-      "search_placeholder": null,
       "empty_message": "日历里还没有内容",
-      "max_width": "max-w-4xl",
-      "page_size": null,
       "extras": {
-        "weekdayLabels": [
-          "周一",
-          "周二",
-          "周三",
-          "周四",
-          "周五",
-          "周六",
-          "周日"
-        ],
+        "diaryTypeLabel": "日记",
+        "errorTitle": "日历加载失败",
+        "excerptTypeLabel": "文摘",
+        "loadingLabel": "正在加载日历",
         "monthLabels": [
           "1月",
           "2月",
@@ -57,149 +46,160 @@
           "11月",
           "12月"
         ],
-        "loadingLabel": "正在加载日历",
-        "retryLabel": "重试加载",
-        "todayLabel": "今日",
-        "errorTitle": "日历加载失败",
-        "selectedEmptyMessage": "这一天没有记录",
         "postTypeLabel": "帖子",
-        "diaryTypeLabel": "日记",
-        "excerptTypeLabel": "文摘"
-      }
-    },
-    {
-      "page_key": "diary",
-      "title": "日记",
-      "subtitle": "每天一点点，记录生活的温度。",
-      "search_placeholder": null,
-      "empty_message": "今天还没有新的日记",
-      "max_width": "max-w-2xl",
-      "page_size": 15,
-      "extras": {
-        "errorTitle": "日记加载失败",
-        "retryLabel": "重试",
-        "loadMoreLabel": "加载更多...",
-        "detailCtaLabel": "查看详情",
-        "detailBackLabel": "返回",
-        "detailListLabel": "返回列表",
-        "detailMissingTitle": "日记不存在",
-        "detailMissingDescription": "你访问的日记暂时不存在。",
-        "detailEndLabel": "— 今日份记录 —"
-      }
-    },
-    {
-      "page_key": "excerpts",
-      "title": "文摘",
-      "subtitle": "整理那些让我停下来想一想的文摘。",
-      "search_placeholder": null,
-      "empty_message": "还没有整理好的文摘",
-      "max_width": "max-w-3xl",
-      "page_size": 15,
-      "extras": {
-        "modalCloseLabel": "关闭",
-        "commentsOpenLabel": "查看评论",
-        "commentsCloseLabel": "收起评论",
-        "errorTitle": "文摘加载失败",
-        "retryLabel": "重试",
-        "loadMoreLabel": "加载更多..."
-      }
-    },
-    {
-      "page_key": "friends",
-      "title": "朋友们",
-      "subtitle": "海内存知己，天涯若比邻",
-      "search_placeholder": null,
-      "empty_message": "暂时没有友链内容",
+        "retryLabel": "重试加载",
+        "selectedEmptyMessage": "这一天没有记录",
+        "todayLabel": "今日",
+        "weekdayLabels": [
+          "周一",
+          "周二",
+          "周三",
+          "周四",
+          "周五",
+          "周六",
+          "周日"
+        ]
+      },
       "max_width": "max-w-4xl",
-      "page_size": 10,
+      "page_key": "calendar",
+      "page_size": null,
+      "search_placeholder": null,
+      "subtitle": "记录每一天的痕迹。",
+      "title": "日历"
+    },
+    {
+      "empty_message": "今天还没有新的日记",
       "extras": {
+        "detailBackLabel": "返回",
+        "detailCtaLabel": "查看详情",
+        "detailEndLabel": "— 今日份记录 —",
+        "detailListLabel": "返回列表",
+        "detailMissingDescription": "你访问的日记暂时不存在。",
+        "detailMissingTitle": "日记不存在",
+        "errorTitle": "日记加载失败",
+        "loadMoreLabel": "加载更多...",
+        "retryLabel": "重试"
+      },
+      "max_width": "max-w-2xl",
+      "page_key": "diary",
+      "page_size": 15,
+      "search_placeholder": null,
+      "subtitle": "每天一点点，记录生活的温度。",
+      "title": "日记"
+    },
+    {
+      "empty_message": "还没有整理好的文摘",
+      "extras": {
+        "commentsCloseLabel": "收起评论",
+        "commentsOpenLabel": "查看评论",
+        "errorTitle": "文摘加载失败",
+        "loadMoreLabel": "加载更多...",
+        "modalCloseLabel": "关闭",
+        "retryLabel": "重试"
+      },
+      "max_width": "max-w-3xl",
+      "page_key": "excerpts",
+      "page_size": 15,
+      "search_placeholder": null,
+      "subtitle": "整理那些让我停下来想一想的文摘。",
+      "title": "文摘"
+    },
+    {
+      "empty_message": "暂时没有友链内容",
+      "extras": {
+        "applicationMarkdown": "## 友链申请\n\n这里可以自由编辑申请说明、交换模板、收录条件，或者任何想放在评论区上方的补充内容。\n\n- 建议按固定模板留言\n- 请先添加本站再申请\n- 站点需要可以稳定访问",
+        "autoRefreshSeconds": 666,
         "circle_title": "Friend Circle",
         "errorTitle": "友链页面加载失败",
-        "loadingLabel": "正在加载...",
-        "loadMoreLabel": "加载更多",
-        "retryLabel": "重试加载",
-        "refreshLabel": "刷新",
-        "refreshAriaLabel": "刷新友链动态",
-        "randomPickerLabel": "从最近 {days} 天里随机挑一篇",
-        "randomRefreshLabel": "换一篇",
-        "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
-        "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
         "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
-        "applicationMarkdown": "## 友链申请\n\n这里可以自由编辑申请说明、交换模板、收录条件，或者任何想放在评论区上方的补充内容。\n\n- 建议按固定模板留言\n- 请先添加本站再申请\n- 站点需要可以稳定访问",
+        "loadMoreLabel": "加载更多",
+        "loadingLabel": "正在加载...",
+        "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
+        "randomPickerLabel": "从最近 {days} 天里随机挑一篇",
         "randomRecentDays": 66,
-        "autoRefreshSeconds": 666,
-        "websiteHealthCheckEnabled": true,
-        "websiteHealthCheckIntervalMinutes": 360,
+        "randomRefreshLabel": "换一篇",
+        "refreshAriaLabel": "刷新友链动态",
+        "refreshLabel": "刷新",
+        "retryLabel": "重试加载",
         "rssHealthCheckEnabled": true,
-        "rssHealthCheckIntervalMinutes": 360
-      }
+        "rssHealthCheckIntervalMinutes": 360,
+        "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
+        "websiteHealthCheckEnabled": true,
+        "websiteHealthCheckIntervalMinutes": 360
+      },
+      "max_width": "max-w-4xl",
+      "page_key": "friends",
+      "page_size": 10,
+      "search_placeholder": null,
+      "subtitle": "海内存知己，天涯若比邻",
+      "title": "朋友们"
     },
     {
-      "page_key": "guestbook",
-      "title": "留言板",
-      "subtitle": "留下你的足迹，说点什么吧。",
-      "search_placeholder": null,
       "empty_message": "还没有人留言",
-      "max_width": "max-w-2xl",
-      "page_size": null,
       "extras": {
         "contentPlaceholder": "想说的话",
-        "submitLabel": "提交留言",
-        "submittingLabel": "提交留言",
         "loadingLabel": "留言板正在更新",
-        "retryLabel": "重试加载"
-      }
+        "retryLabel": "重试加载",
+        "submitLabel": "提交留言",
+        "submittingLabel": "提交留言"
+      },
+      "max_width": "max-w-2xl",
+      "page_key": "guestbook",
+      "page_size": null,
+      "search_placeholder": null,
+      "subtitle": "留下你的足迹，说点什么吧。",
+      "title": "留言板"
     },
     {
-      "page_key": "notFound",
-      "title": "这个页面没有留下来",
-      "subtitle": "似乎已经离开了当前的路径。",
-      "search_placeholder": null,
       "empty_message": null,
-      "max_width": null,
-      "page_size": null,
       "extras": {
-        "metaTitle": "页面未找到",
-        "metaDescription": "你访问的页面不存在，或者已经被移动。",
+        "backLabel": "返回上页",
         "badgeLabel": "404",
         "homeLabel": "返回首页",
-        "backLabel": "返回上页"
-      }
+        "metaDescription": "你访问的页面不存在，或者已经被移动。",
+        "metaTitle": "页面未找到"
+      },
+      "max_width": null,
+      "page_key": "notFound",
+      "page_size": null,
+      "search_placeholder": null,
+      "subtitle": "似乎已经离开了当前的路径。",
+      "title": "这个页面没有留下来"
     },
     {
-      "page_key": "posts",
-      "title": "Posts",
-      "subtitle": "整理过的碎碎念与实践记录。",
-      "search_placeholder": "搜索文章...",
       "empty_message": "没有找到匹配的文章",
-      "max_width": "max-w-3xl",
-      "page_size": 15,
       "extras": {
         "category_all_label": "全部",
         "category_fallback_label": "未分类",
-        "errorTitle": "文章加载失败",
-        "retryLabel": "重试",
-        "loadMoreLabel": "加载更多...",
         "detailBackLabel": "返回",
+        "detailEndLabel": "— 完 —",
         "detailListLabel": "返回列表",
-        "detailMissingTitle": "文章不存在",
         "detailMissingDescription": "你访问的文章暂时不存在。",
-        "detailEndLabel": "— 完 —"
-      }
+        "detailMissingTitle": "文章不存在",
+        "errorTitle": "文章加载失败",
+        "loadMoreLabel": "加载更多...",
+        "retryLabel": "重试"
+      },
+      "max_width": "max-w-3xl",
+      "page_key": "posts",
+      "page_size": 15,
+      "search_placeholder": "搜索文章...",
+      "subtitle": "整理过的碎碎念与实践记录。",
+      "title": "Posts"
     },
     {
-      "page_key": "thoughts",
-      "title": "碎碎念",
-      "subtitle": "一些不成文的碎碎念，随手记下的片段。",
-      "search_placeholder": null,
       "empty_message": "最近没有新的碎碎念",
-      "max_width": "max-w-2xl",
-      "page_size": 15,
       "extras": {
         "errorTitle": "碎碎念加载失败",
-        "retryLabel": "重试",
-        "loadMoreLabel": "加载更多..."
-      }
+        "loadMoreLabel": "加载更多...",
+        "retryLabel": "重试"
+      },
+      "max_width": "max-w-2xl",
+      "page_key": "thoughts",
+      "page_size": 15,
+      "search_placeholder": null,
+      "subtitle": "一些不成文的碎碎念，随手记下的片段。",
+      "title": "碎碎念"
     }
   ]
 }

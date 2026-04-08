@@ -7,7 +7,7 @@
 
 export interface HealthRead {
   /** Service health status */
-  status: string;
+  status: unknown;
   /** Current server timestamp */
-  timestamp: string;
+  timestamp: unknown;
 }

@@ -4,20 +4,19 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ObjectStorageSyncRecordReadRecordType } from './objectStorageSyncRecordReadRecordType';
 
 export interface ObjectStorageSyncRecordRead {
-  id: string;
-  record_type: ObjectStorageSyncRecordReadRecordType;
-  status: string;
-  object_key: string;
-  asset_id?: string | null;
-  asset_file_name?: string | null;
-  asset_resource_key?: string | null;
-  retry_count: number;
-  last_error?: string | null;
-  started_at?: string | null;
-  finished_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  record_type: unknown;
+  status: unknown;
+  object_key: unknown;
+  asset_id?: unknown;
+  asset_file_name?: unknown;
+  asset_resource_key?: unknown;
+  retry_count: unknown;
+  last_error?: unknown;
+  started_at?: unknown;
+  finished_at?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

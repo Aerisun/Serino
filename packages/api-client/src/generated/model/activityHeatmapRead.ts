@@ -4,12 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ActivityHeatmapStatsRead } from './activityHeatmapStatsRead';
-import type { ActivityHeatmapWeekRead } from './activityHeatmapWeekRead';
 
 export interface ActivityHeatmapRead {
   /** Aggregate heatmap statistics */
-  stats: ActivityHeatmapStatsRead;
+  stats: unknown;
   /** Weekly contribution data */
-  weeks: ActivityHeatmapWeekRead[];
+  weeks: unknown;
 }

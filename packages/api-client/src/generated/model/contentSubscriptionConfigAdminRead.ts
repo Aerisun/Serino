@@ -4,55 +4,54 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ContentSubscriptionConfigAdminReadSmtpAuthMode } from './contentSubscriptionConfigAdminReadSmtpAuthMode';
 
 export interface ContentSubscriptionConfigAdminRead {
   /** Subscription config id */
-  id: string;
+  id: unknown;
   /** Whether public subscription is enabled */
-  enabled: boolean;
+  enabled: unknown;
   /** SMTP authentication mode */
-  smtp_auth_mode: ContentSubscriptionConfigAdminReadSmtpAuthMode;
+  smtp_auth_mode: unknown;
   /** SMTP host */
-  smtp_host: string;
+  smtp_host: unknown;
   /** SMTP port */
-  smtp_port: number;
+  smtp_port: unknown;
   /** SMTP username */
-  smtp_username: string;
+  smtp_username: unknown;
   /** SMTP password */
-  smtp_password: string;
+  smtp_password: unknown;
   /** Microsoft OAuth tenant identifier */
-  smtp_oauth_tenant: string;
+  smtp_oauth_tenant: unknown;
   /** Microsoft OAuth client id */
-  smtp_oauth_client_id: string;
+  smtp_oauth_client_id: unknown;
   /** Microsoft OAuth client secret */
-  smtp_oauth_client_secret: string;
+  smtp_oauth_client_secret: unknown;
   /** Microsoft OAuth refresh token */
-  smtp_oauth_refresh_token: string;
+  smtp_oauth_refresh_token: unknown;
   /** SMTP sender email */
-  smtp_from_email: string;
+  smtp_from_email: unknown;
   /** SMTP sender display name */
-  smtp_from_name: string;
+  smtp_from_name: unknown;
   /** SMTP reply-to email */
-  smtp_reply_to: string;
+  smtp_reply_to: unknown;
   /** Whether STARTTLS is enabled */
-  smtp_use_tls: boolean;
+  smtp_use_tls: unknown;
   /** Whether implicit SSL is enabled */
-  smtp_use_ssl: boolean;
+  smtp_use_ssl: unknown;
   /** Whether SMTP test delivery succeeded for current settings */
-  smtp_test_passed: boolean;
+  smtp_test_passed: unknown;
   /** Last successful SMTP test timestamp */
-  smtp_tested_at: string | null;
+  smtp_tested_at: unknown;
   /** Content types users can subscribe to */
-  allowed_content_types: string[];
+  allowed_content_types: unknown;
   /** Email subject template */
-  mail_subject_template: string;
+  mail_subject_template: unknown;
   /** Email body template */
-  mail_body_template: string;
+  mail_body_template: unknown;
   /** Number of active subscribers */
-  subscriber_count?: number;
+  subscriber_count?: unknown;
   /** Creation time */
-  created_at: string;
+  created_at: unknown;
   /** Last update time */
-  updated_at: string;
+  updated_at: unknown;
 }

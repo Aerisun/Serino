@@ -4,27 +4,24 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentSkillMapReadWhen } from './agentSkillMapReadWhen';
-import type { AgentSkillMapReadWhere } from './agentSkillMapReadWhere';
-import type { AgentSkillMapReadWorkflow } from './agentSkillMapReadWorkflow';
 
 export interface AgentSkillMapRead {
   /** Skill map identifier */
-  id: string;
+  id: unknown;
   /** Skill map display name */
-  name: string;
+  name: unknown;
   /** What this skill map is for */
-  description: string;
+  description: unknown;
   /** Skill map version */
-  version: number;
+  version: unknown;
   /** Trigger conditions */
-  when?: AgentSkillMapReadWhen;
+  when?: unknown;
   /** Target MCP endpoint metadata */
-  where?: AgentSkillMapReadWhere;
+  where?: unknown;
   /** Usage docs URL the agent should read first */
-  docs_url: string;
+  docs_url: unknown;
   /** Suggested usage scenarios */
-  use_cases?: string[];
+  use_cases?: unknown;
   /** Workflow metadata */
-  workflow?: AgentSkillMapReadWorkflow;
+  workflow?: unknown;
 }

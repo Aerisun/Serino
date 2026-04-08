@@ -6,8 +6,8 @@
  */
 
 export interface AgentWorkflowDraftOptionRead {
-  label: string;
-  value: string;
-  description?: string;
-  requires_input?: boolean;
+  label: unknown;
+  value: unknown;
+  description?: unknown;
+  requires_input?: unknown;
 }

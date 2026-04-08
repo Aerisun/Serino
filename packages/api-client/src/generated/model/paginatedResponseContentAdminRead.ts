@@ -4,15 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ContentAdminRead } from './contentAdminRead';
 
 export interface PaginatedResponseContentAdminRead {
   /** Page of result items */
-  items: ContentAdminRead[];
+  items: unknown;
   /** Total number of items matching the query */
-  total: number;
+  total: unknown;
   /** Current page number (1-based) */
-  page: number;
+  page: unknown;
   /** Number of items per page */
-  page_size: number;
+  page_size: unknown;
 }

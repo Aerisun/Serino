@@ -4,23 +4,20 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentRunStepReadErrorPayload } from './agentRunStepReadErrorPayload';
-import type { AgentRunStepReadInputPayload } from './agentRunStepReadInputPayload';
-import type { AgentRunStepReadOutputPayload } from './agentRunStepReadOutputPayload';
 
 export interface AgentRunStepRead {
-  id: string;
-  run_id: string;
-  sequence_no: number;
-  node_key: string;
-  step_kind: string;
-  status: string;
-  narrative: string;
-  input_payload?: AgentRunStepReadInputPayload;
-  output_payload?: AgentRunStepReadOutputPayload;
-  error_payload?: AgentRunStepReadErrorPayload;
-  started_at?: string | null;
-  finished_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  run_id: unknown;
+  sequence_no: unknown;
+  node_key: unknown;
+  step_kind: unknown;
+  status: unknown;
+  narrative: unknown;
+  input_payload?: unknown;
+  output_payload?: unknown;
+  error_payload?: unknown;
+  started_at?: unknown;
+  finished_at?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

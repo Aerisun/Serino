@@ -4,11 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowTemplateReadWorkflow } from './agentWorkflowTemplateReadWorkflow';
 
 export interface AgentWorkflowTemplateRead {
-  key: string;
-  title: string;
-  description: string;
-  workflow?: AgentWorkflowTemplateReadWorkflow;
+  key: unknown;
+  title: unknown;
+  description: unknown;
+  workflow?: unknown;
 }

@@ -4,23 +4,22 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { BackupRunReadStatsJson } from './backupRunReadStatsJson';
 
 export interface BackupRunRead {
-  id: string;
-  job_name: string;
-  status: string;
-  transport?: string | null;
-  trigger_kind?: string | null;
-  queue_item_id?: string | null;
-  commit_id?: string | null;
-  stats_json?: BackupRunReadStatsJson;
-  retry_count?: number;
-  next_retry_at?: string | null;
-  last_error?: string | null;
-  started_at?: string | null;
-  finished_at?: string | null;
-  message?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  job_name: unknown;
+  status: unknown;
+  transport?: unknown;
+  trigger_kind?: unknown;
+  queue_item_id?: unknown;
+  commit_id?: unknown;
+  stats_json?: unknown;
+  retry_count?: unknown;
+  next_retry_at?: unknown;
+  last_error?: unknown;
+  started_at?: unknown;
+  finished_at?: unknown;
+  message?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

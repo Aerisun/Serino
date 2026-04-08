@@ -4,26 +4,20 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { DashboardAuxMetrics } from './dashboardAuxMetrics';
-import type { DashboardTrafficMetrics } from './dashboardTrafficMetrics';
-import type { DashboardVisitorMetrics } from './dashboardVisitorMetrics';
-import type { EnhancedDashboardStatsPostsByStatus } from './enhancedDashboardStatsPostsByStatus';
-import type { MonthlyCount } from './monthlyCount';
-import type { RecentContentItem } from './recentContentItem';
 
 export interface EnhancedDashboardStats {
-  posts: number;
-  diary_entries: number;
-  thoughts: number;
-  excerpts: number;
-  comments: number;
-  guestbook_entries: number;
-  friends: number;
-  assets: number;
-  posts_by_status?: EnhancedDashboardStatsPostsByStatus;
-  content_by_month?: MonthlyCount[];
-  recent_content?: RecentContentItem[];
-  traffic?: DashboardTrafficMetrics;
-  visitors?: DashboardVisitorMetrics;
-  aux_metrics?: DashboardAuxMetrics;
+  posts: unknown;
+  diary_entries: unknown;
+  thoughts: unknown;
+  excerpts: unknown;
+  comments: unknown;
+  guestbook_entries: unknown;
+  friends: unknown;
+  assets: unknown;
+  posts_by_status?: unknown;
+  content_by_month?: unknown;
+  recent_content?: unknown;
+  traffic?: unknown;
+  visitors?: unknown;
+  aux_metrics?: unknown;
 }

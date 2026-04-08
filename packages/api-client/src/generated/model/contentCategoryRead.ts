@@ -7,11 +7,11 @@
 
 export interface ContentCategoryRead {
   /** Category identifier */
-  id: string;
+  id: unknown;
   /** Content type bucket */
-  content_type: string;
+  content_type: unknown;
   /** Category name */
-  name: string;
+  name: unknown;
   /** How many entries use this category */
-  usage_count?: number;
+  usage_count?: unknown;
 }

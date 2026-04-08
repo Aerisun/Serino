@@ -4,30 +4,24 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowDraftBoundaryRead } from './agentWorkflowDraftBoundaryRead';
-import type { AgentWorkflowDraftCompileReportRead } from './agentWorkflowDraftCompileReportRead';
-import type { AgentWorkflowDraftMessageRead } from './agentWorkflowDraftMessageRead';
-import type { AgentWorkflowDraftOptionRead } from './agentWorkflowDraftOptionRead';
-import type { AgentWorkflowDraftPreviewReadOutput } from './agentWorkflowDraftPreviewReadOutput';
-import type { AgentWorkflowDraftQuestionRead } from './agentWorkflowDraftQuestionRead';
 
 export interface AgentWorkflowDraftRead {
-  id?: string;
-  status?: string;
-  stage?: string;
-  summary?: string;
-  ready_to_create?: boolean;
-  suggested_template?: string | null;
-  boundary?: AgentWorkflowDraftBoundaryRead;
-  questions?: AgentWorkflowDraftQuestionRead[];
-  current_question?: string;
-  options?: AgentWorkflowDraftOptionRead[];
-  working_document?: string;
-  sketch_preview?: AgentWorkflowDraftPreviewReadOutput | null;
-  semantic_preview?: AgentWorkflowDraftPreviewReadOutput | null;
-  graph_candidate?: AgentWorkflowDraftPreviewReadOutput | null;
-  compile_report?: AgentWorkflowDraftCompileReportRead;
-  messages?: AgentWorkflowDraftMessageRead[];
-  created_at: string;
-  updated_at: string;
+  id?: unknown;
+  status?: unknown;
+  stage?: unknown;
+  summary?: unknown;
+  ready_to_create?: unknown;
+  suggested_template?: unknown;
+  boundary?: unknown;
+  questions?: unknown;
+  current_question?: unknown;
+  options?: unknown;
+  working_document?: unknown;
+  sketch_preview?: unknown;
+  semantic_preview?: unknown;
+  graph_candidate?: unknown;
+  compile_report?: unknown;
+  messages?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

@@ -7,13 +7,13 @@
 
 export interface SocialLinkRead {
   /** Social platform display name */
-  name: string;
+  name: unknown;
   /** Social profile URL */
-  href: string;
+  href: unknown;
   /** Icon identifier */
-  icon_key: string;
+  icon_key: unknown;
   /** Display location: hero or footer */
-  placement: string;
+  placement: unknown;
   /** Sort order */
-  order_index: number;
+  order_index: unknown;
 }

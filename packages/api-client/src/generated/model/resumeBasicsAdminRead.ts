@@ -7,19 +7,19 @@
 
 export interface ResumeBasicsAdminRead {
   /** Unique resume basics identifier */
-  id: string;
+  id: unknown;
   /** Resume page title */
-  title: string;
+  title: unknown;
   /** Markdown resume body */
-  summary: string;
+  summary: unknown;
   /** Current base location */
-  location: string;
+  location: unknown;
   /** Primary contact email */
-  email: string;
+  email: unknown;
   /** Profile image URL */
-  profile_image_url: string;
+  profile_image_url: unknown;
   /** Creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Last update timestamp */
-  updated_at: string;
+  updated_at: unknown;
 }

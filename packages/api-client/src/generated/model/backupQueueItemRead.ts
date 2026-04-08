@@ -4,20 +4,19 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { BackupQueueItemReadDatasetVersions } from './backupQueueItemReadDatasetVersions';
 
 export interface BackupQueueItemRead {
-  id: string;
-  transport: string;
-  trigger_kind: string;
-  status: string;
-  dataset_versions: BackupQueueItemReadDatasetVersions;
-  verified_chunks: string[];
-  retry_count: number;
-  next_retry_at: string | null;
-  last_error: string | null;
-  started_at: string | null;
-  finished_at: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  transport: unknown;
+  trigger_kind: unknown;
+  status: unknown;
+  dataset_versions: unknown;
+  verified_chunks: unknown;
+  retry_count: unknown;
+  next_retry_at: unknown;
+  last_error: unknown;
+  started_at: unknown;
+  finished_at: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

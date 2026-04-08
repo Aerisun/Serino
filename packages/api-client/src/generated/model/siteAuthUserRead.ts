@@ -7,23 +7,23 @@
 
 export interface SiteAuthUserRead {
   /** Public site user id */
-  id: string;
+  id: unknown;
   /** Login identifier email */
-  email: string;
+  email: unknown;
   /** Display name */
-  display_name: string;
+  display_name: unknown;
   /** Public avatar URL */
-  avatar_url: string;
+  avatar_url: unknown;
   /** Display name currently used in public surfaces */
-  effective_display_name: string;
+  effective_display_name: unknown;
   /** Avatar currently used in public surfaces */
-  effective_avatar_url: string;
+  effective_avatar_url: unknown;
   /** Primary auth provider */
-  primary_auth_provider: string;
+  primary_auth_provider: unknown;
   /** Whether the current site session is admin-elevated */
-  is_admin?: boolean;
+  is_admin?: unknown;
   /** Whether the current admin-elevated site session can enter the admin console */
-  can_access_admin_console?: boolean;
+  can_access_admin_console?: unknown;
   /** Last login time */
-  last_login_at?: string | null;
+  last_login_at?: unknown;
 }

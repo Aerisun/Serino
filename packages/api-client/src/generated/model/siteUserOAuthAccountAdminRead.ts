@@ -4,15 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { SiteUserOAuthAccountAdminReadProvider } from './siteUserOAuthAccountAdminReadProvider';
 
 export interface SiteUserOAuthAccountAdminRead {
   /** OAuth provider */
-  provider: SiteUserOAuthAccountAdminReadProvider;
+  provider: unknown;
   /** Provider-side email */
-  provider_email?: string | null;
+  provider_email?: unknown;
   /** Provider-side display name */
-  provider_display_name?: string | null;
+  provider_display_name?: unknown;
   /** Binding creation time */
-  created_at: string;
+  created_at: unknown;
 }

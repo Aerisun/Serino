@@ -4,9 +4,8 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { RecentActivityItemRead } from './recentActivityItemRead';
 
 export interface RecentActivityRead {
   /** List of recent activity items */
-  items: RecentActivityItemRead[];
+  items: unknown;
 }

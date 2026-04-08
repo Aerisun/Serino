@@ -4,14 +4,13 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { SurfaceDraftPatchItemReadSpec } from './surfaceDraftPatchItemReadSpec';
 
 export interface SurfaceDraftPatchItemRead {
-  action: string;
-  surface_kind: string;
-  surface_key: string;
-  reason?: string;
-  impact?: string;
-  human_summary?: string;
-  spec?: SurfaceDraftPatchItemReadSpec;
+  action: unknown;
+  surface_kind: unknown;
+  surface_key: unknown;
+  reason?: unknown;
+  impact?: unknown;
+  human_summary?: unknown;
+  spec?: unknown;
 }

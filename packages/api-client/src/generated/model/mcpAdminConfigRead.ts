@@ -4,38 +4,36 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { McpCapabilityConfigRead } from './mcpCapabilityConfigRead';
-import type { McpPresetRead } from './mcpPresetRead';
 
 export interface McpAdminConfigRead {
   /** Selected API key identifier */
-  api_key_id?: string | null;
+  api_key_id?: unknown;
   /** Selected API key display name */
-  api_key_name?: string | null;
+  api_key_name?: unknown;
   /** Scopes currently granted to the selected API key */
-  api_key_scopes?: string[];
+  api_key_scopes?: unknown;
   /** Whether MCP public access is enabled */
-  public_access: boolean;
+  public_access: unknown;
   /** Currently selected preset key */
-  selected_preset: string;
+  selected_preset: unknown;
   /** Whether enabled capabilities were customized from the preset */
-  is_customized?: boolean;
+  is_customized?: unknown;
   /** How many capabilities are currently enabled */
-  enabled_capability_count?: number;
+  enabled_capability_count?: unknown;
   /** How many capabilities exist in the MCP catalog */
-  available_capability_count?: number;
+  available_capability_count?: unknown;
   /** Canonical MCP usage document URL */
-  usage_url: string;
+  usage_url: unknown;
   /** MCP endpoint URL */
-  endpoint: string;
+  endpoint: unknown;
   /** MCP transport */
-  transport: string;
+  transport: unknown;
   /** Scopes required to connect to MCP */
-  required_scopes?: string[];
+  required_scopes?: unknown;
   /** Suggested scopes based on enabled capabilities */
-  recommended_scopes?: string[];
+  recommended_scopes?: unknown;
   /** Recommended MCP exposure presets */
-  presets?: McpPresetRead[];
+  presets?: unknown;
   /** Full MCP capability catalog with enabled state for the selected API key */
-  capabilities?: McpCapabilityConfigRead[];
+  capabilities?: unknown;
 }

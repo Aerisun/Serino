@@ -7,25 +7,25 @@
 
 export interface FriendAdminRead {
   /** Unique friend identifier */
-  id: string;
+  id: unknown;
   /** Friend site display name */
-  name: string;
+  name: unknown;
   /** Friend site URL */
-  url: string;
+  url: unknown;
   /** Avatar image URL */
-  avatar_url: string | null;
+  avatar_url: unknown;
   /** Short description */
-  description: string | null;
+  description: unknown;
   /** Website status */
-  status: string;
+  status: unknown;
   /** RSS status derived from the configured feed sources */
-  rss_status: string;
+  rss_status: unknown;
   /** Last website availability check timestamp */
-  last_checked_at: string | null;
+  last_checked_at: unknown;
   /** Last website availability error message */
-  last_error: string | null;
+  last_error: unknown;
   /** Creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Last update timestamp */
-  updated_at: string;
+  updated_at: unknown;
 }

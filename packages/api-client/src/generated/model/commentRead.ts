@@ -7,27 +7,27 @@
 
 export interface CommentRead {
   /** Unique comment identifier */
-  id: string;
+  id: unknown;
   /** Parent comment ID for threaded replies */
-  parent_id: string | null;
+  parent_id: unknown;
   /** Comment author display name */
-  author_name: string;
+  author_name: unknown;
   /** Comment body text */
-  body: string;
+  body: unknown;
   /** Moderation status */
-  status: string;
+  status: unknown;
   /** Comment creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Avatar identifier or key */
-  avatar?: string | null;
+  avatar?: unknown;
   /** Full avatar image URL */
-  avatar_url?: string | null;
+  avatar_url?: unknown;
   /** Number of likes on this comment */
-  like_count?: number;
+  like_count?: unknown;
   /** Whether the current user liked this comment */
-  liked?: boolean;
+  liked?: unknown;
   /** Whether the commenter is the content author */
-  is_author?: boolean;
+  is_author?: unknown;
   /** Nested reply comments */
-  replies?: CommentRead[];
+  replies?: unknown;
 }

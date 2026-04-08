@@ -6,13 +6,13 @@
  */
 
 export interface ApiKeyAdminRead {
-  id: string;
-  key_name: string;
-  key_prefix: string;
-  key_suffix: string;
-  enabled: boolean;
-  scopes: string[];
-  last_used_at: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  key_name: unknown;
+  key_prefix: unknown;
+  key_suffix: unknown;
+  enabled: unknown;
+  scopes: unknown;
+  last_used_at: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

@@ -4,10 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowDraftOptionRead } from './agentWorkflowDraftOptionRead';
 
 export interface AgentWorkflowDraftQuestionRead {
-  key?: string;
-  prompt: string;
-  options?: AgentWorkflowDraftOptionRead[];
+  key?: unknown;
+  prompt: unknown;
+  options?: unknown;
 }

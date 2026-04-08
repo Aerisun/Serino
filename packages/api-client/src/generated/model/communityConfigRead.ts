@@ -4,35 +4,34 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { CommunitySurfaceRead } from './communitySurfaceRead';
 
 export interface CommunityConfigRead {
   /** Comment provider name */
-  provider: string;
+  provider: unknown;
   /** Comment server URL */
-  server_url: string;
+  server_url: unknown;
   /** Comment-enabled surfaces */
-  surfaces: CommunitySurfaceRead[];
+  surfaces: unknown;
   /** Commenter metadata fields */
-  meta: string[];
+  meta: unknown;
   /** Required metadata fields */
-  required_meta: string[];
+  required_meta: unknown;
   /** Emoji preset CDN URLs */
-  emoji_presets: string[];
+  emoji_presets: unknown;
   /** Image uploads allowed */
-  image_uploader: boolean;
+  image_uploader: unknown;
   /** Whether email login is allowed for commenting */
-  anonymous_enabled: boolean;
+  anonymous_enabled: unknown;
   /** Moderation mode */
-  moderation_mode: string;
+  moderation_mode: unknown;
   /** Default sort order */
-  default_sorting: string;
+  default_sorting: unknown;
   /** Initial comments loaded per batch */
-  page_size: number;
+  page_size: unknown;
   /** Max image upload size in bytes */
-  image_max_bytes?: number | null;
+  image_max_bytes?: unknown;
   /** Avatar helper text */
-  avatar_helper_copy: string;
+  avatar_helper_copy: unknown;
   /** Migration progress state */
-  migration_state: string;
+  migration_state: unknown;
 }

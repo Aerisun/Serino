@@ -7,11 +7,11 @@
 
 export interface AgentUsageTroubleshootingRead {
   /** HTTP status code or error tag */
-  code: string;
+  code: unknown;
   /** Observed symptom */
-  symptom: string;
+  symptom: unknown;
   /** Likely causes */
-  likely_causes?: string[];
+  likely_causes?: unknown;
   /** Recommended fixes */
-  fixes?: string[];
+  fixes?: unknown;
 }

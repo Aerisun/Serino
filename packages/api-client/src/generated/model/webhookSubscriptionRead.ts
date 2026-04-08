@@ -4,25 +4,23 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { WebhookSubscriptionReadBackoffPolicy } from './webhookSubscriptionReadBackoffPolicy';
-import type { WebhookSubscriptionReadHeaders } from './webhookSubscriptionReadHeaders';
 
 export interface WebhookSubscriptionRead {
-  id: string;
-  name: string;
-  status: string;
-  target_url: string;
-  secret?: string | null;
-  event_types?: string[];
-  timeout_seconds: number;
-  max_attempts: number;
-  backoff_policy?: WebhookSubscriptionReadBackoffPolicy;
-  headers?: WebhookSubscriptionReadHeaders;
-  last_delivery_at?: string | null;
-  last_success_at?: string | null;
-  last_test_status?: string | null;
-  last_test_error?: string | null;
-  last_tested_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  name: unknown;
+  status: unknown;
+  target_url: unknown;
+  secret?: unknown;
+  event_types?: unknown;
+  timeout_seconds: unknown;
+  max_attempts: unknown;
+  backoff_policy?: unknown;
+  headers?: unknown;
+  last_delivery_at?: unknown;
+  last_success_at?: unknown;
+  last_test_status?: unknown;
+  last_test_error?: unknown;
+  last_tested_at?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

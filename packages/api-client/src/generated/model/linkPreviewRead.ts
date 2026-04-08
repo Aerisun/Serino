@@ -7,27 +7,27 @@
 
 export interface LinkPreviewRead {
   /** Original normalized URL */
-  url: string;
+  url: unknown;
   /** Resolved URL after redirects or canonical resolution */
-  resolved_url: string;
+  resolved_url: unknown;
   /** Resolved hostname */
-  hostname: string;
+  hostname: unknown;
   /** Resolved page title */
-  title?: string | null;
+  title?: unknown;
   /** Resolved page description */
-  description?: string | null;
+  description?: unknown;
   /** Resolved site name */
-  site_name?: string | null;
+  site_name?: unknown;
   /** Preview image URL */
-  image_url?: string | null;
+  image_url?: unknown;
   /** Preview image width if declared */
-  image_width?: number | null;
+  image_width?: unknown;
   /** Preview image height if declared */
-  image_height?: number | null;
+  image_height?: unknown;
   /** Site icon URL */
-  icon_url?: string | null;
+  icon_url?: unknown;
   /** Whether preview metadata was successfully fetched */
-  available?: boolean;
+  available?: unknown;
   /** Optional fetch error detail */
-  error?: string | null;
+  error?: unknown;
 }

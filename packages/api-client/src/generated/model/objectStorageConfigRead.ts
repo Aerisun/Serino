@@ -6,23 +6,23 @@
  */
 
 export interface ObjectStorageConfigRead {
-  enabled: boolean;
-  provider: 'bitiful';
-  bucket: string;
-  endpoint: string;
-  region: string;
-  public_base_url: string;
-  access_key: string;
-  secret_key_configured: boolean;
-  cdn_token_key_configured: boolean;
-  health_check_enabled: boolean;
-  upload_expire_seconds: number;
-  public_download_expire_seconds: number;
-  mirror_bandwidth_limit_bps: number;
-  mirror_retry_count: number;
-  last_health_ok?: boolean | null;
-  last_health_error?: string | null;
-  last_health_checked_at?: string | null;
-  remote_sync_scanned_count?: number | null;
-  remote_sync_enqueued_count?: number | null;
+  enabled: unknown;
+  provider: unknown;
+  bucket: unknown;
+  endpoint: unknown;
+  region: unknown;
+  public_base_url: unknown;
+  access_key: unknown;
+  secret_key_configured: unknown;
+  cdn_token_key_configured: unknown;
+  health_check_enabled: unknown;
+  upload_expire_seconds: unknown;
+  public_download_expire_seconds: unknown;
+  mirror_bandwidth_limit_bps: unknown;
+  mirror_retry_count: unknown;
+  last_health_ok?: unknown;
+  last_health_error?: unknown;
+  last_health_checked_at?: unknown;
+  remote_sync_scanned_count?: unknown;
+  remote_sync_enqueued_count?: unknown;
 }

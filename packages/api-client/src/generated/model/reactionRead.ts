@@ -7,13 +7,13 @@
 
 export interface ReactionRead {
   /** Content type */
-  content_type: string;
+  content_type: unknown;
   /** Content slug */
-  content_slug: string;
+  content_slug: unknown;
   /** Reaction type identifier */
-  reaction_type: string;
+  reaction_type: unknown;
   /** Total reaction count */
-  total: number;
+  total: unknown;
   /** Whether the provided client token currently has this reaction active */
-  active?: boolean;
+  active?: unknown;
 }

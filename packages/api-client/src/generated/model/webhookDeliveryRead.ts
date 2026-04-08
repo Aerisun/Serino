@@ -4,25 +4,23 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { WebhookDeliveryReadHeaders } from './webhookDeliveryReadHeaders';
-import type { WebhookDeliveryReadPayload } from './webhookDeliveryReadPayload';
 
 export interface WebhookDeliveryRead {
-  id: string;
-  subscription_id: string;
-  event_type: string;
-  event_id: string;
-  status: string;
-  target_url: string;
-  payload?: WebhookDeliveryReadPayload;
-  headers?: WebhookDeliveryReadHeaders;
-  attempt_count: number;
-  next_attempt_at?: string | null;
-  last_attempt_at?: string | null;
-  last_response_status?: number | null;
-  last_response_body?: string | null;
-  last_error?: string | null;
-  delivered_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  subscription_id: unknown;
+  event_type: unknown;
+  event_id: unknown;
+  status: unknown;
+  target_url: unknown;
+  payload?: unknown;
+  headers?: unknown;
+  attempt_count: unknown;
+  next_attempt_at?: unknown;
+  last_attempt_at?: unknown;
+  last_response_status?: unknown;
+  last_response_body?: unknown;
+  last_error?: unknown;
+  delivered_at?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

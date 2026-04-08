@@ -4,22 +4,18 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowCatalogOperationReadExamplesItem } from './agentWorkflowCatalogOperationReadExamplesItem';
-import type { AgentWorkflowCatalogOperationReadInputSchema } from './agentWorkflowCatalogOperationReadInputSchema';
-import type { AgentWorkflowCatalogOperationReadInvocation } from './agentWorkflowCatalogOperationReadInvocation';
-import type { AgentWorkflowCatalogOperationReadOutputSchema } from './agentWorkflowCatalogOperationReadOutputSchema';
 
 export interface AgentWorkflowCatalogOperationRead {
-  key: string;
-  operation_type: string;
-  label: string;
-  description?: string;
-  group_key?: string;
-  group_label?: string;
-  risk_level?: string;
-  required_scopes?: string[];
-  input_schema?: AgentWorkflowCatalogOperationReadInputSchema;
-  output_schema?: AgentWorkflowCatalogOperationReadOutputSchema;
-  invocation?: AgentWorkflowCatalogOperationReadInvocation;
-  examples?: AgentWorkflowCatalogOperationReadExamplesItem[];
+  key: unknown;
+  operation_type: unknown;
+  label: unknown;
+  description?: unknown;
+  group_key?: unknown;
+  group_label?: unknown;
+  risk_level?: unknown;
+  required_scopes?: unknown;
+  input_schema?: unknown;
+  output_schema?: unknown;
+  invocation?: unknown;
+  examples?: unknown;
 }

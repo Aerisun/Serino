@@ -4,13 +4,12 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentUsageMcpTemplateReadSequenceItem } from './agentUsageMcpTemplateReadSequenceItem';
 
 export interface AgentUsageMcpTemplateRead {
   /** Stable template identifier */
-  id: string;
+  id: unknown;
   /** Template purpose */
-  description: string;
+  description: unknown;
   /** Ordered MCP request sequence */
-  sequence?: AgentUsageMcpTemplateReadSequenceItem[];
+  sequence?: unknown;
 }

@@ -4,12 +4,9 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentRunRead } from './agentRunRead';
-import type { AgentRunStepRead } from './agentRunStepRead';
-import type { AgentWorkflowValidationRead } from './agentWorkflowValidationRead';
 
 export interface AgentWorkflowRunCreateRead {
-  run: AgentRunRead;
-  steps?: AgentRunStepRead[];
-  validation?: AgentWorkflowValidationRead;
+  run: unknown;
+  steps?: unknown;
+  validation?: unknown;
 }

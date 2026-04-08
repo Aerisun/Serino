@@ -7,11 +7,11 @@
 
 export interface AgentUsageScopeGuideRead {
   /** Scopes required to establish MCP connection */
-  required_for_connection?: string[];
+  required_for_connection?: unknown;
   /** Scopes granted to current API key */
-  available_on_current_key?: string[];
+  available_on_current_key?: unknown;
   /** Recommended scopes for full capability coverage */
-  recommended_for_full_management?: string[];
+  recommended_for_full_management?: unknown;
   /** Recommended scopes not present on current API key */
-  missing_recommended_scopes?: string[];
+  missing_recommended_scopes?: unknown;
 }

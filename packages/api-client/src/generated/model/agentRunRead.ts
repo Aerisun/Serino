@@ -4,28 +4,25 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentRunReadContextPayload } from './agentRunReadContextPayload';
-import type { AgentRunReadInputPayload } from './agentRunReadInputPayload';
-import type { AgentRunReadResultPayload } from './agentRunReadResultPayload';
 
 export interface AgentRunRead {
-  id: string;
-  workflow_key: string;
-  status: string;
-  trigger_kind: string;
-  trigger_event?: string | null;
-  target_type?: string | null;
-  target_id?: string | null;
-  thread_id: string;
-  latest_checkpoint_id?: string | null;
-  checkpoint_ns?: string | null;
-  input_payload?: AgentRunReadInputPayload;
-  context_payload?: AgentRunReadContextPayload;
-  result_payload?: AgentRunReadResultPayload;
-  error_code?: string | null;
-  error_message?: string | null;
-  started_at?: string | null;
-  finished_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  workflow_key: unknown;
+  status: unknown;
+  trigger_kind: unknown;
+  trigger_event?: unknown;
+  target_type?: unknown;
+  target_id?: unknown;
+  thread_id: unknown;
+  latest_checkpoint_id?: unknown;
+  checkpoint_ns?: unknown;
+  input_payload?: unknown;
+  context_payload?: unknown;
+  result_payload?: unknown;
+  error_code?: unknown;
+  error_message?: unknown;
+  started_at?: unknown;
+  finished_at?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

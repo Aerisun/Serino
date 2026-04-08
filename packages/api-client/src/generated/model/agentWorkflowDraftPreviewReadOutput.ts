@@ -4,17 +4,13 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowDraftLockStateRead } from './agentWorkflowDraftLockStateRead';
-import type { AgentWorkflowGraphOutput } from './agentWorkflowGraphOutput';
-import type { AgentWorkflowRuntimePolicy } from './agentWorkflowRuntimePolicy';
-import type { AgentWorkflowTriggerBinding } from './agentWorkflowTriggerBinding';
 
 export interface AgentWorkflowDraftPreviewReadOutput {
-  name?: string;
-  description?: string;
-  graph?: AgentWorkflowGraphOutput;
-  trigger_bindings?: AgentWorkflowTriggerBinding[];
-  runtime_policy?: AgentWorkflowRuntimePolicy;
-  notes?: string[];
-  lock_state?: AgentWorkflowDraftLockStateRead;
+  name?: unknown;
+  description?: unknown;
+  graph?: unknown;
+  trigger_bindings?: unknown;
+  runtime_policy?: unknown;
+  notes?: unknown;
+  lock_state?: unknown;
 }

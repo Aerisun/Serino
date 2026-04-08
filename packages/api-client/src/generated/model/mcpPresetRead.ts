@@ -7,11 +7,11 @@
 
 export interface McpPresetRead {
   /** Preset identifier */
-  key: string;
+  key: unknown;
   /** Preset display name */
-  name: string;
+  name: unknown;
   /** Preset description */
-  description: string;
+  description: unknown;
   /** Capabilities enabled by this preset */
-  capability_ids?: string[];
+  capability_ids?: unknown;
 }

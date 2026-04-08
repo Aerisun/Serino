@@ -6,21 +6,13 @@
  */
 
 export interface AgentModelConfigRead {
-  enabled?: boolean;
-  provider?: string;
-  base_url?: string;
-  model?: string;
-  api_key?: string;
-  /**
-     * @minimum 0
-     * @maximum 2
-     */
-  temperature?: number;
-  /**
-     * @minimum 5
-     * @maximum 300
-     */
-  timeout_seconds?: number;
-  advisory_prompt?: string;
-  is_ready?: boolean;
+  enabled?: unknown;
+  provider?: unknown;
+  base_url?: unknown;
+  model?: unknown;
+  api_key?: unknown;
+  temperature?: unknown;
+  timeout_seconds?: unknown;
+  advisory_prompt?: unknown;
+  is_ready?: unknown;
 }

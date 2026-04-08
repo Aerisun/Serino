@@ -6,16 +6,16 @@
  */
 
 export interface CommentAdminRead {
-  id: string;
-  content_type: string;
-  content_slug: string;
-  parent_id: string | null;
-  author_name: string;
-  author_email: string | null;
+  id: unknown;
+  content_type: unknown;
+  content_slug: unknown;
+  parent_id: unknown;
+  author_name: unknown;
+  author_email: unknown;
   /** Normalized auth provider */
-  auth_provider?: string | null;
-  body: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
+  auth_provider?: unknown;
+  body: unknown;
+  status: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

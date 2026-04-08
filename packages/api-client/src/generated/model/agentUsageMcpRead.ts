@@ -4,24 +4,22 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentUsageCapabilityRead } from './agentUsageCapabilityRead';
-import type { AgentUsageMcpTemplateRead } from './agentUsageMcpTemplateRead';
 
 export interface AgentUsageMcpRead {
   /** MCP endpoint URL */
-  endpoint: string;
+  endpoint: unknown;
   /** MCP transport */
-  transport: string;
+  transport: unknown;
   /** Scopes required to connect to MCP */
-  required_scopes?: string[];
+  required_scopes?: unknown;
   /** Scopes available on the current API key */
-  available_scopes?: string[];
+  available_scopes?: unknown;
   /** Visible MCP tools */
-  tools?: AgentUsageCapabilityRead[];
+  tools?: unknown;
   /** Visible MCP resources */
-  resources?: AgentUsageCapabilityRead[];
+  resources?: unknown;
   /** High-signal MCP call sequences */
-  call_templates?: AgentUsageMcpTemplateRead[];
+  call_templates?: unknown;
   /** Practical usage hints for agents */
-  usage_hints?: string[];
+  usage_hints?: unknown;
 }

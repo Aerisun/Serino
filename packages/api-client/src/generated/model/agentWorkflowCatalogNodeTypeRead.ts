@@ -4,19 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowCatalogNodeTypeReadConfigSchema } from './agentWorkflowCatalogNodeTypeReadConfigSchema';
-import type { AgentWorkflowCatalogNodeTypeReadDefaultConfig } from './agentWorkflowCatalogNodeTypeReadDefaultConfig';
-import type { AgentWorkflowCatalogPortRead } from './agentWorkflowCatalogPortRead';
 
 export interface AgentWorkflowCatalogNodeTypeRead {
-  type: string;
-  label: string;
-  category: string;
-  description?: string;
-  icon?: string;
-  default_config?: AgentWorkflowCatalogNodeTypeReadDefaultConfig;
-  config_schema?: AgentWorkflowCatalogNodeTypeReadConfigSchema;
-  input_ports?: AgentWorkflowCatalogPortRead[];
-  output_ports?: AgentWorkflowCatalogPortRead[];
-  risk_level?: string;
+  type: unknown;
+  label: unknown;
+  category: unknown;
+  description?: unknown;
+  icon?: unknown;
+  default_config?: unknown;
+  config_schema?: unknown;
+  input_ports?: unknown;
+  output_ports?: unknown;
+  risk_level?: unknown;
 }

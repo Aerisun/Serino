@@ -1,68 +1,54 @@
 {
-  "site": {
-    "name": "Felix",
-    "title": "Aerisun",
-    "bio": "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。",
-    "role": "UI/UX Designer · Frontend Developer",
-    "og_image": "/media/internal/assets/site-og/05758e3247f5.webp",
-    "site_icon_url": "/media/internal/assets/site-icon/4cc8bfdd4830.svg",
-    "hero_image_url": "/media/internal/assets/hero-image/9c5bd7ee9001.webp",
-    "hero_poster_url": "/media/internal/assets/hero-poster/05758e3247f5.webp",
-    "filing_info": "",
-    "hero_actions": [
-      {
-        "label": "简历",
-        "href": "/resume",
-        "icon_key": "resume"
-      },
-      {
-        "label": "留言板",
-        "href": "/guestbook",
-        "icon_key": "guestbook"
-      }
-    ],
-    "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
-    "poem_source": "hitokoto",
-    "poem_hitokoto_types": [
-      "d",
-      "i"
-    ],
-    "poem_hitokoto_keywords": [],
-    "feature_flags": {
-      "toc": true,
-      "reading_progress": true,
-      "social_sharing": true,
-      "content_subscription": false
-    }
-  },
-  "social_links": [
+  "navigation": [
     {
-      "name": "GitHub",
-      "href": "https://github.com/",
-      "icon_key": "github",
-      "placement": "hero",
-      "order_index": 0
+      "children": [
+        {
+          "href": "/resume",
+          "label": "简历"
+        },
+        {
+          "href": "/guestbook",
+          "label": "留言板"
+        },
+        {
+          "href": "/calendar",
+          "label": "日历"
+        }
+      ],
+      "href": "/",
+      "label": "首页",
+      "trigger": "arrow"
     },
     {
-      "name": "Telegram",
-      "href": "https://t.me/",
-      "icon_key": "telegram",
-      "placement": "hero",
-      "order_index": 1
+      "children": [],
+      "href": "/posts",
+      "label": "帖子",
+      "trigger": "none"
     },
     {
-      "name": "X",
-      "href": "https://x.com/",
-      "icon_key": "x",
-      "placement": "hero",
-      "order_index": 2
+      "children": [],
+      "href": "/friends",
+      "label": "友链",
+      "trigger": "none"
     },
     {
-      "name": "网易云",
-      "href": "https://music.163.com/",
-      "icon_key": "netease",
-      "placement": "footer",
-      "order_index": 3
+      "children": [
+        {
+          "href": "/thoughts",
+          "label": "碎碎念"
+        },
+        {
+          "href": "/diary",
+          "label": "日记"
+        },
+        {
+          "href": "/excerpts",
+          "label": "文摘"
+        }
+      ],
+      "href": null,
+      "label": "更多",
+      "trigger": "hover"
     }
   ],
   "poems": [
@@ -115,56 +101,70 @@
       "order_index": 11
     }
   ],
-  "navigation": [
+  "site": {
+    "bio": "我做网页设计，也写前端，把视觉、节奏、内容和交互整理成一个自然流动的个人空间。",
+    "feature_flags": {
+      "content_subscription": false,
+      "reading_progress": true,
+      "social_sharing": true,
+      "toc": true
+    },
+    "filing_info": "",
+    "hero_actions": [
+      {
+        "href": "/resume",
+        "icon_key": "resume",
+        "label": "简历"
+      },
+      {
+        "href": "/guestbook",
+        "icon_key": "guestbook",
+        "label": "留言板"
+      }
+    ],
+    "hero_image_url": "/media/internal/assets/hero-image/9c5bd7ee9001.webp",
+    "hero_poster_url": "/media/internal/assets/hero-poster/05758e3247f5.webp",
+    "hero_video_url": "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4",
+    "name": "Felix",
+    "og_image": "/media/internal/assets/site-og/05758e3247f5.webp",
+    "poem_hitokoto_keywords": [],
+    "poem_hitokoto_types": [
+      "d",
+      "i"
+    ],
+    "poem_source": "hitokoto",
+    "role": "UI/UX Designer · Frontend Developer",
+    "site_icon_url": "/media/internal/assets/site-icon/4cc8bfdd4830.svg",
+    "title": "Aerisun"
+  },
+  "social_links": [
     {
-      "label": "首页",
-      "trigger": "arrow",
-      "href": "/",
-      "children": [
-        {
-          "label": "简历",
-          "href": "/resume"
-        },
-        {
-          "label": "留言板",
-          "href": "/guestbook"
-        },
-        {
-          "label": "日历",
-          "href": "/calendar"
-        }
-      ]
+      "href": "https://github.com/",
+      "icon_key": "github",
+      "name": "GitHub",
+      "order_index": 0,
+      "placement": "hero"
     },
     {
-      "label": "帖子",
-      "trigger": "none",
-      "href": "/posts",
-      "children": []
+      "href": "https://t.me/",
+      "icon_key": "telegram",
+      "name": "Telegram",
+      "order_index": 1,
+      "placement": "hero"
     },
     {
-      "label": "友链",
-      "trigger": "none",
-      "href": "/friends",
-      "children": []
+      "href": "https://x.com/",
+      "icon_key": "x",
+      "name": "X",
+      "order_index": 2,
+      "placement": "hero"
     },
     {
-      "label": "更多",
-      "trigger": "hover",
-      "href": null,
-      "children": [
-        {
-          "label": "碎碎念",
-          "href": "/thoughts"
-        },
-        {
-          "label": "日记",
-          "href": "/diary"
-        },
-        {
-          "label": "文摘",
-          "href": "/excerpts"
-        }
-      ]
+      "href": "https://music.163.com/",
+      "icon_key": "netease",
+      "name": "网易云",
+      "order_index": 3,
+      "placement": "footer"
     }
   ]
 }

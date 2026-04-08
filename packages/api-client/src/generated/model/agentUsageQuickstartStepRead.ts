@@ -7,13 +7,13 @@
 
 export interface AgentUsageQuickstartStepRead {
   /** Step sequence number */
-  order: number;
+  order: unknown;
   /** Short step title */
-  title: string;
+  title: unknown;
   /** What this step verifies */
-  goal: string;
+  goal: unknown;
   /** Copy-pasteable command snippet */
-  command: string;
+  command: unknown;
   /** Expected success signal */
-  expected_result: string;
+  expected_result: unknown;
 }

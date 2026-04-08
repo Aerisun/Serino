@@ -6,7 +6,7 @@
  */
 
 export interface AgentWorkflowDraftMessageRead {
-  role: string;
-  content: string;
-  created_at: string;
+  role: unknown;
+  content: unknown;
+  created_at: unknown;
 }

@@ -4,25 +4,24 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ConfigDiffLineRead } from './configDiffLineRead';
 
 export interface ConfigRevisionDetailRead {
-  id: string;
-  actor_id: string | null;
-  resource_key: string;
-  resource_label: string;
-  operation: string;
-  resource_version: string;
-  summary: string;
-  changed_fields?: string[];
-  sensitive_fields?: string[];
-  restored_from_revision_id?: string | null;
-  created_at: string;
+  id: unknown;
+  actor_id: unknown;
+  resource_key: unknown;
+  resource_label: unknown;
+  operation: unknown;
+  resource_version: unknown;
+  summary: unknown;
+  changed_fields?: unknown;
+  sensitive_fields?: unknown;
+  restored_from_revision_id?: unknown;
+  created_at: unknown;
   /** Masked preview of the config before the change */
   before_preview?: unknown;
   /** Masked preview of the config after the change */
   after_preview?: unknown;
-  diff_lines?: ConfigDiffLineRead[];
+  diff_lines?: unknown;
   /** Whether the revision can be restored */
-  restorable?: boolean;
+  restorable?: unknown;
 }

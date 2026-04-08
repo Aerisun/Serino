@@ -21,46 +21,11 @@ export const ReadSiteBootstrapScriptBootstrapJsGetResponse = zod.unknown()
 /**
  * @summary 获取站点配置
  */
-export const readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault = `hitokoto`;
-
 export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
-  "site": zod.object({
-  "name": zod.string().describe('Site owner name'),
-  "title": zod.string().describe('Site title'),
-  "bio": zod.string().describe('Short biography'),
-  "role": zod.string().describe('Professional role'),
-  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
-  "site_icon_url": zod.string().describe('Browser tab icon path'),
-  "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
-  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
-  "hero_actions": zod.array(zod.record(zod.string(), zod.unknown())).describe('Hero section action buttons'),
-  "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
-  "poem_source": zod.enum(['custom', 'hitokoto']).default(readSiteConfigApiV1SiteSiteGetResponseSitePoemSourceDefault).describe('Poem source mode'),
-  "poem_hitokoto_types": zod.array(zod.string()).optional().describe('Hitokoto category codes'),
-  "poem_hitokoto_keywords": zod.array(zod.string()).optional().describe('Hitokoto preferred keywords'),
-  "feature_flags": zod.record(zod.string(), zod.unknown()).optional().describe('Feature toggle flags')
-}).describe('Site profile configuration'),
-  "social_links": zod.array(zod.object({
-  "name": zod.string().describe('Social platform display name'),
-  "href": zod.string().describe('Social profile URL'),
-  "icon_key": zod.string().describe('Icon identifier'),
-  "placement": zod.string().describe('Display location: hero or footer'),
-  "order_index": zod.number().describe('Sort order')
-})).describe('Social media links'),
-  "poems": zod.array(zod.object({
-  "content": zod.string().describe('Poem text content'),
-  "order_index": zod.number().describe('Display order')
-})).describe('Featured poems'),
-  "navigation": zod.array(zod.object({
-  "label": zod.string().describe('Navigation item label'),
-  "trigger": zod.string().describe('Interaction trigger type'),
-  "href": zod.union([zod.string(),zod.null()]).optional().describe('Navigation URL'),
-  "children": zod.array(zod.object({
-  "label": zod.string().describe('Child navigation label'),
-  "href": zod.string().describe('Child navigation URL')
-})).optional().describe('Nested child navigation items')
-})).optional().describe('Navigation menu items')
+  "site": zod.unknown().describe('Site profile configuration'),
+  "social_links": zod.unknown().describe('Social media links'),
+  "poems": zod.unknown().describe('Featured poems'),
+  "navigation": zod.unknown().optional().describe('Navigation menu items')
 })
 
 
@@ -68,132 +33,52 @@ export const ReadSiteConfigApiV1SiteSiteGetResponse = zod.object({
  * @summary 获取页面文案
  */
 export const ReadPageCopyApiV1SitePagesGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "page_key": zod.string().describe('Page identifier key'),
-  "title": zod.string().describe('Page title'),
-  "subtitle": zod.string().describe('Page subtitle'),
-  "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder text'),
-  "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
-  "max_width": zod.union([zod.string(),zod.null()]).describe('Max page width CSS value'),
-  "page_size": zod.union([zod.number(),zod.null()]).describe('Items per page'),
-  "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration')
-})).describe('List of page configurations')
+  "items": zod.unknown().describe('List of page configurations')
 })
 
 
 /**
  * @summary 获取社区评论配置
  */
-export const readCommunityConfigApiV1SiteCommunityConfigGetResponseImageMaxBytesDefault = 524288;
-
 export const ReadCommunityConfigApiV1SiteCommunityConfigGetResponse = zod.object({
-  "provider": zod.string().describe('Comment provider name'),
-  "server_url": zod.string().describe('Comment server URL'),
-  "surfaces": zod.array(zod.object({
-  "key": zod.string().describe('Surface identifier'),
-  "label": zod.string().describe('Display label'),
-  "path": zod.string().describe('URL path pattern'),
-  "enabled": zod.boolean().describe('Whether comments are enabled')
-})).describe('Comment-enabled surfaces'),
-  "meta": zod.array(zod.string()).describe('Commenter metadata fields'),
-  "required_meta": zod.array(zod.string()).describe('Required metadata fields'),
-  "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
-  "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
-  "moderation_mode": zod.string().describe('Moderation mode'),
-  "default_sorting": zod.string().describe('Default sort order'),
-  "page_size": zod.number().describe('Initial comments loaded per batch'),
-  "image_max_bytes": zod.union([zod.number(),zod.null()]).default(readCommunityConfigApiV1SiteCommunityConfigGetResponseImageMaxBytesDefault).describe('Max image upload size in bytes'),
-  "avatar_helper_copy": zod.string().describe('Avatar helper text'),
-  "migration_state": zod.string().describe('Migration progress state')
+  "provider": zod.unknown().describe('Comment provider name'),
+  "server_url": zod.unknown().describe('Comment server URL'),
+  "surfaces": zod.unknown().describe('Comment-enabled surfaces'),
+  "meta": zod.unknown().describe('Commenter metadata fields'),
+  "required_meta": zod.unknown().describe('Required metadata fields'),
+  "emoji_presets": zod.unknown().describe('Emoji preset CDN URLs'),
+  "image_uploader": zod.unknown().describe('Image uploads allowed'),
+  "anonymous_enabled": zod.unknown().describe('Whether email login is allowed for commenting'),
+  "moderation_mode": zod.unknown().describe('Moderation mode'),
+  "default_sorting": zod.unknown().describe('Default sort order'),
+  "page_size": zod.unknown().describe('Initial comments loaded per batch'),
+  "image_max_bytes": zod.unknown().optional().describe('Max image upload size in bytes'),
+  "avatar_helper_copy": zod.unknown().describe('Avatar helper text'),
+  "migration_state": zod.unknown().describe('Migration progress state')
 })
 
 
 /**
  * @summary 获取简历数据
  */
-export const readResumeApiV1SiteResumeGetResponseLocationDefault = ``;
-export const readResumeApiV1SiteResumeGetResponseEmailDefault = ``;
-export const readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault = ``;
-
 export const ReadResumeApiV1SiteResumeGetResponse = zod.object({
-  "title": zod.string().describe('Resume page title'),
-  "summary": zod.string().describe('Professional summary'),
-  "location": zod.string().default(readResumeApiV1SiteResumeGetResponseLocationDefault).describe('Current base location'),
-  "email": zod.string().default(readResumeApiV1SiteResumeGetResponseEmailDefault).describe('Primary contact email'),
-  "profile_image_url": zod.string().default(readResumeApiV1SiteResumeGetResponseProfileImageUrlDefault).describe('Profile image URL')
+  "title": zod.unknown().describe('Resume page title'),
+  "summary": zod.unknown().describe('Professional summary'),
+  "location": zod.unknown().optional().describe('Current base location'),
+  "email": zod.unknown().optional().describe('Primary contact email'),
+  "profile_image_url": zod.unknown().optional().describe('Profile image URL')
 })
 
 
 /**
  * @summary 获取前端启动配置聚合包
  */
-export const readBootstrapApiV1SiteBootstrapGetResponseSiteSitePoemSourceDefault = `hitokoto`;
-export const readBootstrapApiV1SiteBootstrapGetResponseResumeLocationDefault = ``;
-export const readBootstrapApiV1SiteBootstrapGetResponseResumeEmailDefault = ``;
-export const readBootstrapApiV1SiteBootstrapGetResponseResumeProfileImageUrlDefault = ``;
-
 export const ReadBootstrapApiV1SiteBootstrapGetResponse = zod.object({
-  "revision": zod.string().describe('Stable revision hash for the current public site bootstrap payload'),
-  "generated_at": zod.string().datetime({}).describe('UTC timestamp for when the bootstrap payload was generated'),
-  "site": zod.object({
-  "site": zod.object({
-  "name": zod.string().describe('Site owner name'),
-  "title": zod.string().describe('Site title'),
-  "bio": zod.string().describe('Short biography'),
-  "role": zod.string().describe('Professional role'),
-  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
-  "site_icon_url": zod.string().describe('Browser tab icon path'),
-  "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
-  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
-  "hero_actions": zod.array(zod.record(zod.string(), zod.unknown())).describe('Hero section action buttons'),
-  "hero_video_url": zod.union([zod.string(),zod.null()]).optional().describe('Hero background video URL'),
-  "poem_source": zod.enum(['custom', 'hitokoto']).default(readBootstrapApiV1SiteBootstrapGetResponseSiteSitePoemSourceDefault).describe('Poem source mode'),
-  "poem_hitokoto_types": zod.array(zod.string()).optional().describe('Hitokoto category codes'),
-  "poem_hitokoto_keywords": zod.array(zod.string()).optional().describe('Hitokoto preferred keywords'),
-  "feature_flags": zod.record(zod.string(), zod.unknown()).optional().describe('Feature toggle flags')
-}).describe('Site profile configuration'),
-  "social_links": zod.array(zod.object({
-  "name": zod.string().describe('Social platform display name'),
-  "href": zod.string().describe('Social profile URL'),
-  "icon_key": zod.string().describe('Icon identifier'),
-  "placement": zod.string().describe('Display location: hero or footer'),
-  "order_index": zod.number().describe('Sort order')
-})).describe('Social media links'),
-  "poems": zod.array(zod.object({
-  "content": zod.string().describe('Poem text content'),
-  "order_index": zod.number().describe('Display order')
-})).describe('Featured poems'),
-  "navigation": zod.array(zod.object({
-  "label": zod.string().describe('Navigation item label'),
-  "trigger": zod.string().describe('Interaction trigger type'),
-  "href": zod.union([zod.string(),zod.null()]).optional().describe('Navigation URL'),
-  "children": zod.array(zod.object({
-  "label": zod.string().describe('Child navigation label'),
-  "href": zod.string().describe('Child navigation URL')
-})).optional().describe('Nested child navigation items')
-})).optional().describe('Navigation menu items')
-}).describe('Site profile and navigation bundle'),
-  "pages": zod.object({
-  "items": zod.array(zod.object({
-  "page_key": zod.string().describe('Page identifier key'),
-  "title": zod.string().describe('Page title'),
-  "subtitle": zod.string().describe('Page subtitle'),
-  "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder text'),
-  "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
-  "max_width": zod.union([zod.string(),zod.null()]).describe('Max page width CSS value'),
-  "page_size": zod.union([zod.number(),zod.null()]).describe('Items per page'),
-  "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration')
-})).describe('List of page configurations')
-}).describe('Page copy bundle'),
-  "resume": zod.object({
-  "title": zod.string().describe('Resume page title'),
-  "summary": zod.string().describe('Professional summary'),
-  "location": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeLocationDefault).describe('Current base location'),
-  "email": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeEmailDefault).describe('Primary contact email'),
-  "profile_image_url": zod.string().default(readBootstrapApiV1SiteBootstrapGetResponseResumeProfileImageUrlDefault).describe('Profile image URL')
-}).describe('Resume basics bundle')
+  "revision": zod.unknown().describe('Stable revision hash for the current public site bootstrap payload'),
+  "generated_at": zod.unknown().describe('上海时间戳，表示当前站点引导数据生成时间'),
+  "site": zod.unknown().describe('Site profile and navigation bundle'),
+  "pages": zod.unknown().describe('Page copy bundle'),
+  "resume": zod.unknown().describe('Resume basics bundle')
 })
 
 
@@ -209,9 +94,9 @@ export const ReadPoemPreviewApiV1SitePoemPreviewGetQueryParams = zod.object({
 })
 
 export const ReadPoemPreviewApiV1SitePoemPreviewGetResponse = zod.object({
-  "mode": zod.enum(['custom', 'hitokoto']).describe('Resolved poem source mode'),
-  "content": zod.string().describe('Poem content shown on the homepage'),
-  "attribution": zod.union([zod.string(),zod.null()]).optional().describe('Optional source attribution')
+  "mode": zod.unknown().describe('Resolved poem source mode'),
+  "content": zod.unknown().describe('Poem content shown on the homepage'),
+  "attribution": zod.unknown().optional().describe('Optional source attribution')
 })
 
 
@@ -222,21 +107,19 @@ export const ReadLinkPreviewApiV1SiteLinkPreviewGetQueryParams = zod.object({
   "url": zod.string().describe('需要预览的 http\/https 外链')
 })
 
-export const readLinkPreviewApiV1SiteLinkPreviewGetResponseAvailableDefault = true;
-
 export const ReadLinkPreviewApiV1SiteLinkPreviewGetResponse = zod.object({
-  "url": zod.string().describe('Original normalized URL'),
-  "resolved_url": zod.string().describe('Resolved URL after redirects or canonical resolution'),
-  "hostname": zod.string().describe('Resolved hostname'),
-  "title": zod.union([zod.string(),zod.null()]).optional().describe('Resolved page title'),
-  "description": zod.union([zod.string(),zod.null()]).optional().describe('Resolved page description'),
-  "site_name": zod.union([zod.string(),zod.null()]).optional().describe('Resolved site name'),
-  "image_url": zod.union([zod.string(),zod.null()]).optional().describe('Preview image URL'),
-  "image_width": zod.union([zod.number(),zod.null()]).optional().describe('Preview image width if declared'),
-  "image_height": zod.union([zod.number(),zod.null()]).optional().describe('Preview image height if declared'),
-  "icon_url": zod.union([zod.string(),zod.null()]).optional().describe('Site icon URL'),
-  "available": zod.boolean().default(readLinkPreviewApiV1SiteLinkPreviewGetResponseAvailableDefault).describe('Whether preview metadata was successfully fetched'),
-  "error": zod.union([zod.string(),zod.null()]).optional().describe('Optional fetch error detail')
+  "url": zod.unknown().describe('Original normalized URL'),
+  "resolved_url": zod.unknown().describe('Resolved URL after redirects or canonical resolution'),
+  "hostname": zod.unknown().describe('Resolved hostname'),
+  "title": zod.unknown().optional().describe('Resolved page title'),
+  "description": zod.unknown().optional().describe('Resolved page description'),
+  "site_name": zod.unknown().optional().describe('Resolved site name'),
+  "image_url": zod.unknown().optional().describe('Preview image URL'),
+  "image_width": zod.unknown().optional().describe('Preview image width if declared'),
+  "image_height": zod.unknown().optional().describe('Preview image height if declared'),
+  "icon_url": zod.unknown().optional().describe('Site icon URL'),
+  "available": zod.unknown().optional().describe('Whether preview metadata was successfully fetched'),
+  "error": zod.unknown().optional().describe('Optional fetch error detail')
 })
 
 
@@ -266,37 +149,10 @@ export const ReadPostsApiV1SitePostsGetQueryParams = zod.object({
   "offset": zod.number().min(readPostsApiV1SitePostsGetQueryOffsetMin).default(readPostsApiV1SitePostsGetQueryOffsetDefault)
 })
 
-export const readPostsApiV1SitePostsGetResponseTotalDefault = 0;
-export const readPostsApiV1SitePostsGetResponseHasMoreDefault = false;
-
 export const ReadPostsApiV1SitePostsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Content display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
-  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
-  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
-  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
-  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
-  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
-  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
-})).describe('List of content entries'),
-  "total": zod.number().default(readPostsApiV1SitePostsGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readPostsApiV1SitePostsGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "items": zod.unknown().describe('List of content entries'),
+  "total": zod.unknown().optional().describe('Total number of matching entries'),
+  "has_more": zod.unknown().optional().describe('Whether more entries are available')
 })
 
 
@@ -308,29 +164,29 @@ export const ReadPostApiV1SitePostsSlugGetParams = zod.object({
 })
 
 export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Content display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
-  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
-  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
-  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
-  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
-  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
-  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Content display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "read_time": zod.unknown().optional().describe('Estimated reading time'),
+  "display_date": zod.unknown().optional().describe('Formatted display date string'),
+  "relative_date": zod.unknown().optional().describe('Relative time string (e.g. 3 days ago)'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "comment_count": zod.unknown().optional().describe('Number of comments'),
+  "like_count": zod.unknown().optional().describe('Number of likes'),
+  "repost_count": zod.unknown().optional().describe('Number of reposts'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference')
 })
 
 
@@ -350,37 +206,10 @@ export const ReadDiaryApiV1SiteDiaryGetQueryParams = zod.object({
   "offset": zod.number().min(readDiaryApiV1SiteDiaryGetQueryOffsetMin).default(readDiaryApiV1SiteDiaryGetQueryOffsetDefault)
 })
 
-export const readDiaryApiV1SiteDiaryGetResponseTotalDefault = 0;
-export const readDiaryApiV1SiteDiaryGetResponseHasMoreDefault = false;
-
 export const ReadDiaryApiV1SiteDiaryGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Content display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
-  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
-  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
-  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
-  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
-  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
-  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
-})).describe('List of content entries'),
-  "total": zod.number().default(readDiaryApiV1SiteDiaryGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readDiaryApiV1SiteDiaryGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "items": zod.unknown().describe('List of content entries'),
+  "total": zod.unknown().optional().describe('Total number of matching entries'),
+  "has_more": zod.unknown().optional().describe('Whether more entries are available')
 })
 
 
@@ -392,29 +221,29 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetParams = zod.object({
 })
 
 export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Content display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
-  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
-  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
-  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
-  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
-  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
-  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Content display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "read_time": zod.unknown().optional().describe('Estimated reading time'),
+  "display_date": zod.unknown().optional().describe('Formatted display date string'),
+  "relative_date": zod.unknown().optional().describe('Relative time string (e.g. 3 days ago)'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "comment_count": zod.unknown().optional().describe('Number of comments'),
+  "like_count": zod.unknown().optional().describe('Number of likes'),
+  "repost_count": zod.unknown().optional().describe('Number of reposts'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference')
 })
 
 
@@ -434,37 +263,10 @@ export const ReadThoughtsApiV1SiteThoughtsGetQueryParams = zod.object({
   "offset": zod.number().min(readThoughtsApiV1SiteThoughtsGetQueryOffsetMin).default(readThoughtsApiV1SiteThoughtsGetQueryOffsetDefault)
 })
 
-export const readThoughtsApiV1SiteThoughtsGetResponseTotalDefault = 0;
-export const readThoughtsApiV1SiteThoughtsGetResponseHasMoreDefault = false;
-
 export const ReadThoughtsApiV1SiteThoughtsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Content display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
-  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
-  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
-  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
-  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
-  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
-  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
-})).describe('List of content entries'),
-  "total": zod.number().default(readThoughtsApiV1SiteThoughtsGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readThoughtsApiV1SiteThoughtsGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "items": zod.unknown().describe('List of content entries'),
+  "total": zod.unknown().optional().describe('Total number of matching entries'),
+  "has_more": zod.unknown().optional().describe('Whether more entries are available')
 })
 
 
@@ -484,37 +286,10 @@ export const ReadExcerptsApiV1SiteExcerptsGetQueryParams = zod.object({
   "offset": zod.number().min(readExcerptsApiV1SiteExcerptsGetQueryOffsetMin).default(readExcerptsApiV1SiteExcerptsGetQueryOffsetDefault)
 })
 
-export const readExcerptsApiV1SiteExcerptsGetResponseTotalDefault = 0;
-export const readExcerptsApiV1SiteExcerptsGetResponseHasMoreDefault = false;
-
 export const ReadExcerptsApiV1SiteExcerptsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Content display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "read_time": zod.union([zod.string(),zod.null()]).optional().describe('Estimated reading time'),
-  "display_date": zod.union([zod.string(),zod.null()]).optional().describe('Formatted display date string'),
-  "relative_date": zod.union([zod.string(),zod.null()]).optional().describe('Relative time string (e.g. 3 days ago)'),
-  "view_count": zod.union([zod.number(),zod.null()]).optional().describe('Total page views'),
-  "comment_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of comments'),
-  "like_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of likes'),
-  "repost_count": zod.union([zod.number(),zod.null()]).optional().describe('Number of reposts'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference')
-})).describe('List of content entries'),
-  "total": zod.number().default(readExcerptsApiV1SiteExcerptsGetResponseTotalDefault).describe('Total number of matching entries'),
-  "has_more": zod.boolean().default(readExcerptsApiV1SiteExcerptsGetResponseHasMoreDefault).describe('Whether more entries are available')
+  "items": zod.unknown().describe('List of content entries'),
+  "total": zod.unknown().optional().describe('Total number of matching entries'),
+  "has_more": zod.unknown().optional().describe('Whether more entries are available')
 })
 
 
@@ -531,13 +306,7 @@ export const ReadFriendsApiV1SiteFriendsGetQueryParams = zod.object({
 })
 
 export const ReadFriendsApiV1SiteFriendsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "name": zod.string().describe('Friend site name'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "avatar": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
-  "url": zod.string().describe('Friend site URL'),
-  "status": zod.string().describe('Website status')
-})).describe('List of friend links')
+  "items": zod.unknown().describe('List of friend links')
 })
 
 
@@ -554,14 +323,7 @@ export const ReadFriendFeedApiV1SiteFriendFeedGetQueryParams = zod.object({
 })
 
 export const ReadFriendFeedApiV1SiteFriendFeedGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "title": zod.string().describe('Feed item title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Feed item summary'),
-  "url": zod.string().describe('Feed item URL'),
-  "blogName": zod.string().describe('Source blog name'),
-  "avatar": zod.union([zod.string(),zod.null()]).describe('Source blog avatar'),
-  "publishedAt": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp')
-})).describe('List of friend feed items')
+  "items": zod.unknown().describe('List of friend feed items')
 })
 
 
@@ -574,15 +336,9 @@ export const ReadCalendarApiV1SiteCalendarGetQueryParams = zod.object({
 })
 
 export const ReadCalendarApiV1SiteCalendarGetResponse = zod.object({
-  "range_start": zod.string().describe('Query range start date'),
-  "range_end": zod.string().describe('Query range end date'),
-  "events": zod.array(zod.object({
-  "date": zod.string().describe('Event date in YYYY-MM-DD format'),
-  "type": zod.string().describe('Event type: post, diary, thought, or excerpt'),
-  "title": zod.string().describe('Event title'),
-  "slug": zod.string().describe('Content slug'),
-  "href": zod.string().describe('Frontend URL path')
-})).describe('List of calendar events')
+  "range_start": zod.unknown().describe('Query range start date'),
+  "range_end": zod.unknown().describe('Query range end date'),
+  "events": zod.unknown().describe('List of calendar events')
 })
 
 
@@ -599,15 +355,7 @@ export const ReadRecentActivityApiV1SiteRecentActivityGetQueryParams = zod.objec
 })
 
 export const ReadRecentActivityApiV1SiteRecentActivityGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "kind": zod.string().describe('Activity type: comment, guestbook, reaction, or publish_\*'),
-  "actor_name": zod.string().describe('Name of the person who performed the action'),
-  "actor_avatar": zod.string().describe('Actor avatar URL'),
-  "target_title": zod.string().describe('Title of the target content, when applicable'),
-  "excerpt": zod.union([zod.string(),zod.null()]).describe('Brief excerpt or content preview'),
-  "created_at": zod.string().datetime({}).describe('Activity timestamp'),
-  "href": zod.string().describe('Frontend URL path to the related content')
-})).describe('List of recent activity items')
+  "items": zod.unknown().describe('List of recent activity items')
 })
 
 
@@ -625,18 +373,8 @@ export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetQueryParams = zod.obj
 })
 
 export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetResponse = zod.object({
-  "stats": zod.object({
-  "total_contributions": zod.number().describe('Total contributions in the period'),
-  "peak_week": zod.number().describe('Highest weekly contribution count'),
-  "average_per_week": zod.number().describe('Average contributions per week')
-}).describe('Aggregate heatmap statistics'),
-  "weeks": zod.array(zod.object({
-  "week_start": zod.string().describe('Week start date in YYYY-MM-DD format'),
-  "total": zod.number().describe('Total contributions in this week'),
-  "days": zod.array(zod.number()).describe('Daily contribution counts (7 values, Mon-Sun)'),
-  "month_label": zod.string().describe('Month label for display'),
-  "label": zod.string().describe('Week label for display')
-})).describe('Weekly contribution data')
+  "stats": zod.unknown().describe('Aggregate heatmap statistics'),
+  "weeks": zod.unknown().describe('Weekly contribution data')
 })
 
 
@@ -644,8 +382,8 @@ export const ReadActivityHeatmapApiV1SiteActivityHeatmapGetResponse = zod.object
  * @summary 存活检查
  */
 export const LivezApiV1SiteLivezGetResponse = zod.object({
-  "status": zod.string().describe('Service health status'),
-  "timestamp": zod.string().datetime({}).describe('Current server timestamp')
+  "status": zod.unknown().describe('Service health status'),
+  "timestamp": zod.unknown().describe('Current server timestamp')
 })
 
 
@@ -653,8 +391,8 @@ export const LivezApiV1SiteLivezGetResponse = zod.object({
  * @summary 就绪检查
  */
 export const ReadyzApiV1SiteReadyzGetResponse = zod.object({
-  "status": zod.string().describe('Service health status'),
-  "timestamp": zod.string().datetime({}).describe('Current server timestamp')
+  "status": zod.unknown().describe('Service health status'),
+  "timestamp": zod.unknown().describe('Current server timestamp')
 })
 
 
@@ -662,31 +400,29 @@ export const ReadyzApiV1SiteReadyzGetResponse = zod.object({
  * @summary 健康检查
  */
 export const HealthzApiV1SiteHealthzGetResponse = zod.object({
-  "status": zod.string().describe('Service health status'),
-  "timestamp": zod.string().datetime({}).describe('Current server timestamp')
+  "status": zod.unknown().describe('Service health status'),
+  "timestamp": zod.unknown().describe('Current server timestamp')
 })
 
 
 /**
  * @summary 获取当前站点用户状态
  */
-export const readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault = false;
-export const readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneCanAccessAdminConsoleDefault = false;
 export const readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault = true;
 
 export const ReadSiteAuthStateApiV1SiteAuthMeGetResponse = zod.object({
   "authenticated": zod.boolean().describe('Whether the current request is authenticated'),
   "user": zod.union([zod.object({
-  "id": zod.string().describe('Public site user id'),
-  "email": zod.string().describe('Login identifier email'),
-  "display_name": zod.string().describe('Display name'),
-  "avatar_url": zod.string().describe('Public avatar URL'),
-  "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
-  "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
-  "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneIsAdminDefault).describe('Whether the current site session is admin-elevated'),
-  "can_access_admin_console": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseUserOneCanAccessAdminConsoleDefault).describe('Whether the current admin-elevated site session can enter the admin console'),
-  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+  "id": zod.unknown().describe('Public site user id'),
+  "email": zod.unknown().describe('Login identifier email'),
+  "display_name": zod.unknown().describe('Display name'),
+  "avatar_url": zod.unknown().describe('Public avatar URL'),
+  "effective_display_name": zod.unknown().describe('Display name currently used in public surfaces'),
+  "effective_avatar_url": zod.unknown().describe('Avatar currently used in public surfaces'),
+  "primary_auth_provider": zod.unknown().describe('Primary auth provider'),
+  "is_admin": zod.unknown().optional().describe('Whether the current site session is admin-elevated'),
+  "can_access_admin_console": zod.unknown().optional().describe('Whether the current admin-elevated site session can enter the admin console'),
+  "last_login_at": zod.unknown().optional().describe('Last login time')
 }),zod.null()]).optional().describe('Current site user'),
   "email_login_enabled": zod.boolean().default(readSiteAuthStateApiV1SiteAuthMeGetResponseEmailLoginEnabledDefault).describe('Whether email login is enabled'),
   "oauth_providers": zod.array(zod.string()).optional().describe('Enabled oauth providers')
@@ -701,20 +437,17 @@ export const UpdateMyProfileApiV1SiteAuthMePatchBody = zod.object({
   "avatar_url": zod.string().describe('Updated avatar URL')
 })
 
-export const updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault = false;
-export const updateMyProfileApiV1SiteAuthMePatchResponseCanAccessAdminConsoleDefault = false;
-
 export const UpdateMyProfileApiV1SiteAuthMePatchResponse = zod.object({
-  "id": zod.string().describe('Public site user id'),
-  "email": zod.string().describe('Login identifier email'),
-  "display_name": zod.string().describe('Display name'),
-  "avatar_url": zod.string().describe('Public avatar URL'),
-  "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
-  "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
-  "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(updateMyProfileApiV1SiteAuthMePatchResponseIsAdminDefault).describe('Whether the current site session is admin-elevated'),
-  "can_access_admin_console": zod.boolean().default(updateMyProfileApiV1SiteAuthMePatchResponseCanAccessAdminConsoleDefault).describe('Whether the current admin-elevated site session can enter the admin console'),
-  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+  "id": zod.unknown().describe('Public site user id'),
+  "email": zod.unknown().describe('Login identifier email'),
+  "display_name": zod.unknown().describe('Display name'),
+  "avatar_url": zod.unknown().describe('Public avatar URL'),
+  "effective_display_name": zod.unknown().describe('Display name currently used in public surfaces'),
+  "effective_avatar_url": zod.unknown().describe('Avatar currently used in public surfaces'),
+  "primary_auth_provider": zod.unknown().describe('Primary auth provider'),
+  "is_admin": zod.unknown().optional().describe('Whether the current site session is admin-elevated'),
+  "can_access_admin_console": zod.unknown().optional().describe('Whether the current admin-elevated site session can enter the admin console'),
+  "last_login_at": zod.unknown().optional().describe('Last login time')
 })
 
 
@@ -735,9 +468,9 @@ export const ReadAvatarCandidatesApiV1SiteAuthAvatarCandidatesGetResponse = zod.
   "batch": zod.number().describe('Current avatar candidate batch'),
   "total_batches": zod.number().describe('Total number of avatar candidate batches'),
   "avatar_candidates": zod.array(zod.object({
-  "key": zod.string().describe('Avatar option key'),
-  "label": zod.string().describe('Avatar option label'),
-  "avatar_url": zod.string().describe('Avatar option URL')
+  "key": zod.unknown().describe('Avatar option key'),
+  "label": zod.unknown().describe('Avatar option label'),
+  "avatar_url": zod.unknown().describe('Avatar option URL')
 })).optional().describe('Avatar candidates')
 })
 
@@ -754,8 +487,6 @@ export const EmailLoginApiV1SiteAuthEmailPostBody = zod.object({
 
 export const emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault = false;
 export const emailLoginApiV1SiteAuthEmailPostResponseRequiresAdminPasswordDefault = false;
-export const emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault = false;
-export const emailLoginApiV1SiteAuthEmailPostResponseUserOneCanAccessAdminConsoleDefault = false;
 export const emailLoginApiV1SiteAuthEmailPostResponseAvatarBatchDefault = 0;
 export const emailLoginApiV1SiteAuthEmailPostResponseAvatarTotalBatchesDefault = 1;
 
@@ -764,22 +495,22 @@ export const EmailLoginApiV1SiteAuthEmailPostResponse = zod.object({
   "requires_profile": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault).describe('Whether first-login profile setup is required'),
   "requires_admin_password": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresAdminPasswordDefault).describe('Whether admin email login requires the shared admin password before creating a session'),
   "user": zod.union([zod.object({
-  "id": zod.string().describe('Public site user id'),
-  "email": zod.string().describe('Login identifier email'),
-  "display_name": zod.string().describe('Display name'),
-  "avatar_url": zod.string().describe('Public avatar URL'),
-  "effective_display_name": zod.string().describe('Display name currently used in public surfaces'),
-  "effective_avatar_url": zod.string().describe('Avatar currently used in public surfaces'),
-  "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "is_admin": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseUserOneIsAdminDefault).describe('Whether the current site session is admin-elevated'),
-  "can_access_admin_console": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseUserOneCanAccessAdminConsoleDefault).describe('Whether the current admin-elevated site session can enter the admin console'),
-  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
+  "id": zod.unknown().describe('Public site user id'),
+  "email": zod.unknown().describe('Login identifier email'),
+  "display_name": zod.unknown().describe('Display name'),
+  "avatar_url": zod.unknown().describe('Public avatar URL'),
+  "effective_display_name": zod.unknown().describe('Display name currently used in public surfaces'),
+  "effective_avatar_url": zod.unknown().describe('Avatar currently used in public surfaces'),
+  "primary_auth_provider": zod.unknown().describe('Primary auth provider'),
+  "is_admin": zod.unknown().optional().describe('Whether the current site session is admin-elevated'),
+  "can_access_admin_console": zod.unknown().optional().describe('Whether the current admin-elevated site session can enter the admin console'),
+  "last_login_at": zod.unknown().optional().describe('Last login time')
 }),zod.null()]).optional().describe('Current site user when authenticated'),
   "suggested_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Suggested display name for first login'),
   "avatar_candidates": zod.array(zod.object({
-  "key": zod.string().describe('Avatar option key'),
-  "label": zod.string().describe('Avatar option label'),
-  "avatar_url": zod.string().describe('Avatar option URL')
+  "key": zod.unknown().describe('Avatar option key'),
+  "label": zod.unknown().describe('Avatar option label'),
+  "avatar_url": zod.unknown().describe('Avatar option URL')
 })).optional().describe('Avatar candidates'),
   "avatar_batch": zod.number().default(emailLoginApiV1SiteAuthEmailPostResponseAvatarBatchDefault).describe('Current avatar candidate batch'),
   "avatar_total_batches": zod.number().default(emailLoginApiV1SiteAuthEmailPostResponseAvatarTotalBatchesDefault).describe('Total number of avatar candidate batches')
@@ -834,24 +565,12 @@ export const ReadGuestbookApiV1SiteInteractionsGuestbookGetQueryParams = zod.obj
   "page_size": zod.number().min(1).max(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeMax).default(readGuestbookApiV1SiteInteractionsGuestbookGetQueryPageSizeDefault)
 })
 
-export const readGuestbookApiV1SiteInteractionsGuestbookGetResponseItemsItemIsAuthorDefault = false;
-
 export const ReadGuestbookApiV1SiteInteractionsGuestbookGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique guestbook entry identifier'),
-  "name": zod.string().describe('Guest display name'),
-  "website": zod.union([zod.string(),zod.null()]).describe('Guest personal website URL'),
-  "body": zod.string().describe('Guestbook message body'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
-  "is_author": zod.boolean().default(readGuestbookApiV1SiteInteractionsGuestbookGetResponseItemsItemIsAuthorDefault).describe('Whether the guestbook author is the site owner')
-})).describe('List of guestbook entries'),
-  "total": zod.number().describe('Total number of public guestbook entries'),
-  "page": zod.number().describe('Current page number'),
-  "page_size": zod.number().describe('Number of guestbook entries per page'),
-  "has_more": zod.boolean().describe('Whether more guestbook entries can be loaded')
+  "items": zod.unknown().describe('List of guestbook entries'),
+  "total": zod.unknown().describe('Total number of public guestbook entries'),
+  "page": zod.unknown().describe('Current page number'),
+  "page_size": zod.unknown().describe('Number of guestbook entries per page'),
+  "has_more": zod.unknown().describe('Whether more guestbook entries can be loaded')
 })
 
 
@@ -867,21 +586,9 @@ export const CreateGuestbookApiV1SiteInteractionsGuestbookPostBody = zod.object(
   "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
 })
 
-export const createGuestbookApiV1SiteInteractionsGuestbookPostResponseItemIsAuthorDefault = false;
-
 export const CreateGuestbookApiV1SiteInteractionsGuestbookPostResponse = zod.object({
-  "item": zod.object({
-  "id": zod.string().describe('Unique guestbook entry identifier'),
-  "name": zod.string().describe('Guest display name'),
-  "website": zod.union([zod.string(),zod.null()]).describe('Guest personal website URL'),
-  "body": zod.string().describe('Guestbook message body'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Entry creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
-  "is_author": zod.boolean().default(createGuestbookApiV1SiteInteractionsGuestbookPostResponseItemIsAuthorDefault).describe('Whether the guestbook author is the site owner')
-}).describe('Created guestbook entry'),
-  "accepted": zod.boolean().describe('Whether the entry was auto-approved')
+  "item": zod.unknown().describe('Created guestbook entry'),
+  "accepted": zod.unknown().describe('Whether the entry was auto-approved')
 })
 
 
@@ -905,29 +612,12 @@ export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPar
   "page_size": zod.number().min(1).max(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageSizeMax).default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPageSizeDefault)
 })
 
-export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikeCountDefault = 0;
-export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikedDefault = false;
-export const readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemIsAuthorDefault = false;
-
 export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique comment identifier'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent comment ID for threaded replies'),
-  "author_name": zod.string().describe('Comment author display name'),
-  "body": zod.string().describe('Comment body text'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Comment creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
-  "like_count": zod.number().default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikeCountDefault).describe('Number of likes on this comment'),
-  "liked": zod.boolean().default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemLikedDefault).describe('Whether the current user liked this comment'),
-  "is_author": zod.boolean().default(readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponseItemsItemIsAuthorDefault).describe('Whether the commenter is the content author'),
-  "replies": zod.array(zod.unknown()).optional().describe('Nested reply comments')
-}).describe('Created comment')).describe('List of comments'),
-  "total": zod.number().describe('Total number of root comment threads'),
-  "page": zod.number().describe('Current page number'),
-  "page_size": zod.number().describe('Number of root comment threads per page'),
-  "has_more": zod.boolean().describe('Whether more root comment threads can be loaded')
+  "items": zod.unknown().describe('List of comments'),
+  "total": zod.unknown().describe('Total number of root comment threads'),
+  "page": zod.unknown().describe('Current page number'),
+  "page_size": zod.unknown().describe('Number of root comment threads per page'),
+  "has_more": zod.unknown().describe('Whether more root comment threads can be loaded')
 })
 
 
@@ -948,26 +638,9 @@ export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostBody =
   "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
 })
 
-export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikeCountDefault = 0;
-export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikedDefault = false;
-export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemIsAuthorDefault = false;
-
 export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponse = zod.object({
-  "item": zod.object({
-  "id": zod.string().describe('Unique comment identifier'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent comment ID for threaded replies'),
-  "author_name": zod.string().describe('Comment author display name'),
-  "body": zod.string().describe('Comment body text'),
-  "status": zod.string().describe('Moderation status'),
-  "created_at": zod.string().datetime({}).describe('Comment creation timestamp'),
-  "avatar": zod.union([zod.string(),zod.null()]).optional().describe('Avatar identifier or key'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Full avatar image URL'),
-  "like_count": zod.number().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikeCountDefault).describe('Number of likes on this comment'),
-  "liked": zod.boolean().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemLikedDefault).describe('Whether the current user liked this comment'),
-  "is_author": zod.boolean().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponseItemIsAuthorDefault).describe('Whether the commenter is the content author'),
-  "replies": zod.array(zod.unknown()).optional().describe('Nested reply comments')
-}).describe('Created comment'),
-  "accepted": zod.boolean().describe('Whether the comment was auto-approved')
+  "item": zod.unknown().describe('Created comment'),
+  "accepted": zod.unknown().describe('Whether the comment was auto-approved')
 })
 
 
@@ -981,14 +654,12 @@ export const CreateReactionApiV1SiteInteractionsReactionsPostBody = zod.object({
   "client_token": zod.union([zod.string(),zod.null()]).optional().describe('Client-side deduplication token')
 })
 
-export const createReactionApiV1SiteInteractionsReactionsPostResponseActiveDefault = false;
-
 export const CreateReactionApiV1SiteInteractionsReactionsPostResponse = zod.object({
-  "content_type": zod.string().describe('Content type'),
-  "content_slug": zod.string().describe('Content slug'),
-  "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count'),
-  "active": zod.boolean().default(createReactionApiV1SiteInteractionsReactionsPostResponseActiveDefault).describe('Whether the provided client token currently has this reaction active')
+  "content_type": zod.unknown().describe('Content type'),
+  "content_slug": zod.unknown().describe('Content slug'),
+  "reaction_type": zod.unknown().describe('Reaction type identifier'),
+  "total": zod.unknown().describe('Total reaction count'),
+  "active": zod.unknown().optional().describe('Whether the provided client token currently has this reaction active')
 })
 
 
@@ -1005,14 +676,12 @@ export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTy
   "client_token": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponseActiveDefault = false;
-
 export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse = zod.object({
-  "content_type": zod.string().describe('Content type'),
-  "content_slug": zod.string().describe('Content slug'),
-  "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count'),
-  "active": zod.boolean().default(readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponseActiveDefault).describe('Whether the provided client token currently has this reaction active')
+  "content_type": zod.unknown().describe('Content type'),
+  "content_slug": zod.unknown().describe('Content slug'),
+  "reaction_type": zod.unknown().describe('Reaction type identifier'),
+  "total": zod.unknown().describe('Total reaction count'),
+  "active": zod.unknown().optional().describe('Whether the provided client token currently has this reaction active')
 })
 
 
@@ -1032,14 +701,12 @@ export const DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReaction
   "client_token": zod.string().min(1)
 })
 
-export const deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseActiveDefault = false;
-
 export const DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse = zod.object({
-  "content_type": zod.string().describe('Content type'),
-  "content_slug": zod.string().describe('Content slug'),
-  "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count'),
-  "active": zod.boolean().default(deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseActiveDefault).describe('Whether the provided client token currently has this reaction active')
+  "content_type": zod.unknown().describe('Content type'),
+  "content_slug": zod.unknown().describe('Content slug'),
+  "reaction_type": zod.unknown().describe('Reaction type identifier'),
+  "total": zod.unknown().describe('Total reaction count'),
+  "active": zod.unknown().optional().describe('Whether the provided client token currently has this reaction active')
 })
 
 
@@ -1146,108 +813,19 @@ export const UnsubscribeMySubscriptionApiV1SiteSubscriptionsMeDeleteResponse = z
  * Capability discovery endpoint for external agents.
  * @summary Agent Usage
  */
-export const agentUsageApiAgentUsageGetResponseEndpointsItemMethodDefault = `GET`;
-
 export const AgentUsageApiAgentUsageGetResponse = zod.object({
-  "schema_version": zod.string().describe('Usage schema version'),
-  "generated_at": zod.string().datetime({}).describe('Server generation timestamp'),
-  "name": zod.string().describe('Usage document name'),
-  "objective": zod.string().describe('Primary goal of this usage document'),
-  "auth": zod.object({
-  "type": zod.string().describe('Authentication type'),
-  "header": zod.string().describe('HTTP header used for authentication'),
-  "format": zod.string().describe('Expected header value format'),
-  "example": zod.string().describe('Authentication header example'),
-  "notes": zod.array(zod.string()).optional().describe('Additional auth notes')
-}).describe('Authentication instructions'),
-  "endpoints": zod.array(zod.object({
-  "id": zod.string().describe('Stable endpoint identifier'),
-  "url": zod.string().describe('Absolute endpoint URL'),
-  "method": zod.string().default(agentUsageApiAgentUsageGetResponseEndpointsItemMethodDefault).describe('HTTP method'),
-  "description": zod.string().describe('What this endpoint is for'),
-  "required_headers": zod.array(zod.string()).optional().describe('Required request headers'),
-  "expected_status": zod.array(zod.number()).optional().describe('Expected success status codes')
-})).optional().describe('Key endpoints agents should use'),
-  "scope_guide": zod.object({
-  "required_for_connection": zod.array(zod.string()).optional().describe('Scopes required to establish MCP connection'),
-  "available_on_current_key": zod.array(zod.string()).optional().describe('Scopes granted to current API key'),
-  "recommended_for_full_management": zod.array(zod.string()).optional().describe('Recommended scopes for full capability coverage'),
-  "missing_recommended_scopes": zod.array(zod.string()).optional().describe('Recommended scopes not present on current API key')
-}).describe('Scope guidance for current API key'),
-  "quickstart": zod.object({
-  "summary": zod.string().describe('What the quickstart achieves'),
-  "environment": zod.record(zod.string(), zod.string()).optional().describe('Environment variables used by commands'),
-  "steps": zod.array(zod.object({
-  "order": zod.number().describe('Step sequence number'),
-  "title": zod.string().describe('Short step title'),
-  "goal": zod.string().describe('What this step verifies'),
-  "command": zod.string().describe('Copy-pasteable command snippet'),
-  "expected_result": zod.string().describe('Expected success signal')
-})).optional().describe('Ordered quickstart steps')
-}).describe('Copy-pasteable first-run path'),
-  "playbooks": zod.array(zod.object({
-  "id": zod.string().describe('Stable playbook identifier'),
-  "title": zod.string().describe('Playbook title'),
-  "description": zod.string().describe('Playbook purpose'),
-  "available": zod.boolean().describe('Whether current API key can execute this playbook end-to-end'),
-  "risk_level": zod.string().describe('Operational risk level'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required by this playbook'),
-  "steps": zod.array(zod.object({
-  "order": zod.number().describe('Step sequence number'),
-  "title": zod.string().describe('Short step title'),
-  "action_type": zod.string().describe('Action category such as mcp_call or curl'),
-  "payload": zod.record(zod.string(), zod.unknown()).optional().describe('Machine-readable action payload'),
-  "success_criteria": zod.string().describe('How to determine the step succeeded')
-})).optional().describe('Ordered steps'),
-  "verification": zod.array(zod.string()).optional().describe('Post-run checks')
-})).optional().describe('Task-oriented execution playbooks'),
-  "mcp": zod.object({
-  "endpoint": zod.string().describe('MCP endpoint URL'),
-  "transport": zod.string().describe('MCP transport'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
-  "available_scopes": zod.array(zod.string()).optional().describe('Scopes available on the current API key'),
-  "tools": zod.array(zod.object({
-  "id": zod.string().describe('Stable capability identifier'),
-  "name": zod.string().describe('Capability name'),
-  "kind": zod.string().describe('Capability kind: tool or resource'),
-  "description": zod.string().describe('Human-readable capability description'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
-  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
-  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
-})).optional().describe('Visible MCP tools'),
-  "resources": zod.array(zod.object({
-  "id": zod.string().describe('Stable capability identifier'),
-  "name": zod.string().describe('Capability name'),
-  "kind": zod.string().describe('Capability kind: tool or resource'),
-  "description": zod.string().describe('Human-readable capability description'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
-  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
-  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
-})).optional().describe('Visible MCP resources'),
-  "call_templates": zod.array(zod.object({
-  "id": zod.string().describe('Stable template identifier'),
-  "description": zod.string().describe('Template purpose'),
-  "sequence": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Ordered MCP request sequence')
-})).optional().describe('High-signal MCP call sequences'),
-  "usage_hints": zod.array(zod.string()).optional().describe('Practical usage hints for agents')
-}).describe('MCP capability summary'),
-  "troubleshooting": zod.array(zod.object({
-  "code": zod.string().describe('HTTP status code or error tag'),
-  "symptom": zod.string().describe('Observed symptom'),
-  "likely_causes": zod.array(zod.string()).optional().describe('Likely causes'),
-  "fixes": zod.array(zod.string()).optional().describe('Recommended fixes')
-})).optional().describe('Common failures and recovery actions'),
-  "skill_maps": zod.array(zod.object({
-  "id": zod.string().describe('Skill map identifier'),
-  "name": zod.string().describe('Skill map display name'),
-  "description": zod.string().describe('What this skill map is for'),
-  "version": zod.number().describe('Skill map version'),
-  "when": zod.record(zod.string(), zod.unknown()).optional().describe('Trigger conditions'),
-  "where": zod.record(zod.string(), zod.unknown()).optional().describe('Target MCP endpoint metadata'),
-  "docs_url": zod.string().describe('Usage docs URL the agent should read first'),
-  "use_cases": zod.array(zod.string()).optional().describe('Suggested usage scenarios'),
-  "workflow": zod.record(zod.string(), zod.unknown()).optional().describe('Workflow metadata')
-})).optional().describe('Local agent skill maps')
+  "schema_version": zod.unknown().describe('Usage schema version'),
+  "generated_at": zod.unknown().describe('Server generation timestamp'),
+  "name": zod.unknown().describe('Usage document name'),
+  "objective": zod.unknown().describe('Primary goal of this usage document'),
+  "auth": zod.unknown().describe('Authentication instructions'),
+  "endpoints": zod.unknown().optional().describe('Key endpoints agents should use'),
+  "scope_guide": zod.unknown().describe('Scope guidance for current API key'),
+  "quickstart": zod.unknown().describe('Copy-pasteable first-run path'),
+  "playbooks": zod.unknown().optional().describe('Task-oriented execution playbooks'),
+  "mcp": zod.unknown().describe('MCP capability summary'),
+  "troubleshooting": zod.unknown().optional().describe('Common failures and recovery actions'),
+  "skill_maps": zod.unknown().optional().describe('Local agent skill maps')
 })
 
 
@@ -1269,35 +847,11 @@ export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKey
 
 export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostBody = zod.union([zod.record(zod.string(), zod.unknown()),zod.null()])
 
-export const postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseOkDefault = true;
-export const postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseAcceptedDefault = true;
-export const postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseSummaryDefault = ``;
-
 export const PostWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponse = zod.object({
-  "ok": zod.boolean().default(postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseOkDefault),
-  "run": zod.union([zod.object({
-  "id": zod.string(),
-  "workflow_key": zod.string(),
-  "status": zod.string(),
-  "trigger_kind": zod.string(),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "target_id": zod.union([zod.string(),zod.null()]).optional(),
-  "thread_id": zod.string(),
-  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
-  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_code": zod.union([zod.string(),zod.null()]).optional(),
-  "error_message": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-}),zod.null()]).optional(),
-  "accepted": zod.boolean().default(postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseAcceptedDefault),
-  "summary": zod.string().default(postWorkflowWebhookTriggerApiV1AutomationWebhookTriggersWorkflowKeyBindingIdPostResponseSummaryDefault)
+  "ok": zod.unknown().optional(),
+  "run": zod.unknown().optional(),
+  "accepted": zod.unknown().optional(),
+  "summary": zod.unknown().optional()
 })
 
 
@@ -1310,19 +864,17 @@ export const LoginApiV1AdminAuthLoginPostBody = zod.object({
 })
 
 export const LoginApiV1AdminAuthLoginPostResponse = zod.object({
-  "token": zod.string(),
-  "expires_at": zod.string().datetime({})
+  "token": zod.unknown(),
+  "expires_at": zod.unknown()
 })
 
 
 /**
  * @summary 获取管理员登录方式
  */
-export const loginOptionsApiV1AdminAuthOptionsGetResponseEmailEnabledDefault = false;
-
 export const LoginOptionsApiV1AdminAuthOptionsGetResponse = zod.object({
-  "oauth_providers": zod.array(zod.string()).optional(),
-  "email_enabled": zod.boolean().default(loginOptionsApiV1AdminAuthOptionsGetResponseEmailEnabledDefault)
+  "oauth_providers": zod.unknown().optional(),
+  "email_enabled": zod.unknown().optional()
 })
 
 
@@ -1335,8 +887,8 @@ export const LoginWithBoundEmailApiV1AdminAuthEmailPostBody = zod.object({
 })
 
 export const LoginWithBoundEmailApiV1AdminAuthEmailPostResponse = zod.object({
-  "token": zod.string(),
-  "expires_at": zod.string().datetime({})
+  "token": zod.unknown(),
+  "expires_at": zod.unknown()
 })
 
 
@@ -1344,8 +896,8 @@ export const LoginWithBoundEmailApiV1AdminAuthEmailPostResponse = zod.object({
  * @summary 将当前前台管理员身份换成后台登录
  */
 export const ExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse = zod.object({
-  "token": zod.string(),
-  "expires_at": zod.string().datetime({})
+  "token": zod.unknown(),
+  "expires_at": zod.unknown()
 })
 
 
@@ -1353,10 +905,10 @@ export const ExchangeSiteUserLoginApiV1AdminAuthExchangeSiteUserPostResponse = z
  * @summary 获取当前管理员信息
  */
 export const MeApiV1AdminAuthMeGetResponse = zod.object({
-  "id": zod.string(),
-  "username": zod.string(),
-  "is_active": zod.boolean(),
-  "created_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "username": zod.unknown(),
+  "is_active": zod.unknown(),
+  "created_at": zod.unknown()
 })
 
 
@@ -1377,23 +929,21 @@ export const UpdateProfileEndpointApiV1AdminAuthProfilePutBody = zod.object({
 })
 
 export const UpdateProfileEndpointApiV1AdminAuthProfilePutResponse = zod.object({
-  "id": zod.string(),
-  "username": zod.string(),
-  "is_active": zod.boolean(),
-  "created_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "username": zod.unknown(),
+  "is_active": zod.unknown(),
+  "created_at": zod.unknown()
 })
 
 
 /**
  * @summary 获取活跃会话列表
  */
-export const listSessionsEndpointApiV1AdminAuthSessionsGetResponseIsCurrentDefault = false;
-
 export const ListSessionsEndpointApiV1AdminAuthSessionsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "created_at": zod.string().datetime({}),
-  "expires_at": zod.string().datetime({}),
-  "is_current": zod.boolean().default(listSessionsEndpointApiV1AdminAuthSessionsGetResponseIsCurrentDefault)
+  "id": zod.unknown(),
+  "created_at": zod.unknown(),
+  "expires_at": zod.unknown(),
+  "is_current": zod.unknown().optional()
 })
 export const ListSessionsEndpointApiV1AdminAuthSessionsGetResponse = zod.array(ListSessionsEndpointApiV1AdminAuthSessionsGetResponseItem)
 
@@ -1428,36 +978,11 @@ export const ListPostsQueryParams = zod.object({
   "sort_order": zod.string().default(listPostsQuerySortOrderDefault)
 })
 
-export const listPostsResponseItemsItemViewCountDefault = 0;
-export const listPostsResponseItemsItemIsPinnedDefault = false;
-export const listPostsResponseItemsItemPinOrderDefault = 0;
-
 export const ListPostsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(listPostsResponseItemsItemViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(listPostsResponseItemsItemIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(listPostsResponseItemsItemPinOrderDefault).describe('Sort order among pinned items')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -1498,31 +1023,27 @@ export const GetPostsParams = zod.object({
   "item_id": zod.string()
 })
 
-export const getPostsResponseViewCountDefault = 0;
-export const getPostsResponseIsPinnedDefault = false;
-export const getPostsResponsePinOrderDefault = 0;
-
 export const GetPostsResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(getPostsResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(getPostsResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(getPostsResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -1553,31 +1074,27 @@ export const UpdatePostsBody = zod.object({
   "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items')
 })
 
-export const updatePostsResponseViewCountDefault = 0;
-export const updatePostsResponseIsPinnedDefault = false;
-export const updatePostsResponsePinOrderDefault = 0;
-
 export const UpdatePostsResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(updatePostsResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(updatePostsResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(updatePostsResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -1636,36 +1153,11 @@ export const ListDiaryQueryParams = zod.object({
   "sort_order": zod.string().default(listDiaryQuerySortOrderDefault)
 })
 
-export const listDiaryResponseItemsItemViewCountDefault = 0;
-export const listDiaryResponseItemsItemIsPinnedDefault = false;
-export const listDiaryResponseItemsItemPinOrderDefault = 0;
-
 export const ListDiaryResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(listDiaryResponseItemsItemViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(listDiaryResponseItemsItemIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(listDiaryResponseItemsItemPinOrderDefault).describe('Sort order among pinned items')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -1706,31 +1198,27 @@ export const GetDiaryParams = zod.object({
   "item_id": zod.string()
 })
 
-export const getDiaryResponseViewCountDefault = 0;
-export const getDiaryResponseIsPinnedDefault = false;
-export const getDiaryResponsePinOrderDefault = 0;
-
 export const GetDiaryResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(getDiaryResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(getDiaryResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(getDiaryResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -1761,31 +1249,27 @@ export const UpdateDiaryBody = zod.object({
   "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items')
 })
 
-export const updateDiaryResponseViewCountDefault = 0;
-export const updateDiaryResponseIsPinnedDefault = false;
-export const updateDiaryResponsePinOrderDefault = 0;
-
 export const UpdateDiaryResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(updateDiaryResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(updateDiaryResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(updateDiaryResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -1844,36 +1328,11 @@ export const ListThoughtsQueryParams = zod.object({
   "sort_order": zod.string().default(listThoughtsQuerySortOrderDefault)
 })
 
-export const listThoughtsResponseItemsItemViewCountDefault = 0;
-export const listThoughtsResponseItemsItemIsPinnedDefault = false;
-export const listThoughtsResponseItemsItemPinOrderDefault = 0;
-
 export const ListThoughtsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(listThoughtsResponseItemsItemViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(listThoughtsResponseItemsItemIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(listThoughtsResponseItemsItemPinOrderDefault).describe('Sort order among pinned items')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -1914,31 +1373,27 @@ export const GetThoughtsParams = zod.object({
   "item_id": zod.string()
 })
 
-export const getThoughtsResponseViewCountDefault = 0;
-export const getThoughtsResponseIsPinnedDefault = false;
-export const getThoughtsResponsePinOrderDefault = 0;
-
 export const GetThoughtsResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(getThoughtsResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(getThoughtsResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(getThoughtsResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -1969,31 +1424,27 @@ export const UpdateThoughtsBody = zod.object({
   "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items')
 })
 
-export const updateThoughtsResponseViewCountDefault = 0;
-export const updateThoughtsResponseIsPinnedDefault = false;
-export const updateThoughtsResponsePinOrderDefault = 0;
-
 export const UpdateThoughtsResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(updateThoughtsResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(updateThoughtsResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(updateThoughtsResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -2052,36 +1503,11 @@ export const ListExcerptsQueryParams = zod.object({
   "sort_order": zod.string().default(listExcerptsQuerySortOrderDefault)
 })
 
-export const listExcerptsResponseItemsItemViewCountDefault = 0;
-export const listExcerptsResponseItemsItemIsPinnedDefault = false;
-export const listExcerptsResponseItemsItemPinOrderDefault = 0;
-
 export const ListExcerptsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(listExcerptsResponseItemsItemViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(listExcerptsResponseItemsItemIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(listExcerptsResponseItemsItemPinOrderDefault).describe('Sort order among pinned items')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -2122,31 +1548,27 @@ export const GetExcerptsParams = zod.object({
   "item_id": zod.string()
 })
 
-export const getExcerptsResponseViewCountDefault = 0;
-export const getExcerptsResponseIsPinnedDefault = false;
-export const getExcerptsResponsePinOrderDefault = 0;
-
 export const GetExcerptsResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(getExcerptsResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(getExcerptsResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(getExcerptsResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -2177,31 +1599,27 @@ export const UpdateExcerptsBody = zod.object({
   "pin_order": zod.union([zod.number(),zod.null()]).optional().describe('Sort order among pinned items')
 })
 
-export const updateExcerptsResponseViewCountDefault = 0;
-export const updateExcerptsResponseIsPinnedDefault = false;
-export const updateExcerptsResponsePinOrderDefault = 0;
-
 export const UpdateExcerptsResponse = zod.object({
-  "id": zod.string().describe('Unique content identifier'),
-  "slug": zod.string().describe('URL-friendly unique identifier'),
-  "title": zod.string().describe('Display title'),
-  "summary": zod.union([zod.string(),zod.null()]).describe('Brief summary or excerpt'),
-  "body": zod.string().describe('Full content body in Markdown'),
-  "tags": zod.array(zod.string()).describe('List of tag names'),
-  "status": zod.string().describe('Publication status'),
-  "visibility": zod.string().describe('Visibility level'),
-  "published_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Publication timestamp'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp'),
-  "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category'),
-  "mood": zod.union([zod.string(),zod.null()]).optional().describe('Author mood (diary-specific)'),
-  "weather": zod.union([zod.string(),zod.null()]).optional().describe('Weather description (diary-specific)'),
-  "poem": zod.union([zod.string(),zod.null()]).optional().describe('Associated poem text'),
-  "author_name": zod.union([zod.string(),zod.null()]).optional().describe('Original author name'),
-  "source": zod.union([zod.string(),zod.null()]).optional().describe('Source URL or reference'),
-  "view_count": zod.number().default(updateExcerptsResponseViewCountDefault).describe('Total page views'),
-  "is_pinned": zod.boolean().default(updateExcerptsResponseIsPinnedDefault).describe('Whether pinned to top'),
-  "pin_order": zod.number().default(updateExcerptsResponsePinOrderDefault).describe('Sort order among pinned items')
+  "id": zod.unknown().describe('Unique content identifier'),
+  "slug": zod.unknown().describe('URL-friendly unique identifier'),
+  "title": zod.unknown().describe('Display title'),
+  "summary": zod.unknown().describe('Brief summary or excerpt'),
+  "body": zod.unknown().describe('Full content body in Markdown'),
+  "tags": zod.unknown().describe('List of tag names'),
+  "status": zod.unknown().describe('Publication status'),
+  "visibility": zod.unknown().describe('Visibility level'),
+  "published_at": zod.unknown().describe('Publication timestamp'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp'),
+  "category": zod.unknown().optional().describe('Content category'),
+  "mood": zod.unknown().optional().describe('Author mood (diary-specific)'),
+  "weather": zod.unknown().optional().describe('Weather description (diary-specific)'),
+  "poem": zod.unknown().optional().describe('Associated poem text'),
+  "author_name": zod.unknown().optional().describe('Original author name'),
+  "source": zod.unknown().optional().describe('Source URL or reference'),
+  "view_count": zod.unknown().optional().describe('Total page views'),
+  "is_pinned": zod.unknown().optional().describe('Whether pinned to top'),
+  "pin_order": zod.unknown().optional().describe('Sort order among pinned items')
 })
 
 
@@ -2260,24 +1678,24 @@ export const PostGenerateDiaryPoemApiV1AdminDiaryGeneratePoemPostResponse = zod.
  * @summary 获取站点资料
  */
 export const GetProfileApiV1AdminSiteConfigProfileGetResponse = zod.object({
-  "id": zod.string().describe('Unique profile identifier'),
-  "name": zod.string().describe('Site owner display name'),
-  "title": zod.string().describe('Site title'),
-  "bio": zod.string().describe('Short biography'),
-  "role": zod.string().describe('Professional role or tagline'),
-  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
-  "site_icon_url": zod.string().describe('Browser tab icon path'),
-  "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
-  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
-  "hero_actions": zod.string().describe('Hero action buttons JSON'),
-  "hero_video_url": zod.union([zod.string(),zod.null()]).describe('Hero background video URL'),
-  "poem_source": zod.enum(['custom', 'hitokoto']).describe('Poem source mode'),
-  "poem_hitokoto_types": zod.array(zod.string()).describe('Hitokoto category codes'),
-  "poem_hitokoto_keywords": zod.array(zod.string()).describe('Hitokoto preferred keywords'),
-  "feature_flags": zod.record(zod.string(), zod.unknown()).describe('Feature toggle flags'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique profile identifier'),
+  "name": zod.unknown().describe('Site owner display name'),
+  "title": zod.unknown().describe('Site title'),
+  "bio": zod.unknown().describe('Short biography'),
+  "role": zod.unknown().describe('Professional role or tagline'),
+  "og_image": zod.unknown().describe('Open Graph\/Twitter sharing image path'),
+  "site_icon_url": zod.unknown().describe('Browser tab icon path'),
+  "hero_image_url": zod.unknown().describe('Hero image path'),
+  "hero_poster_url": zod.unknown().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.unknown().describe('Regulatory filing or ICP notice'),
+  "hero_actions": zod.unknown().describe('Hero action buttons JSON'),
+  "hero_video_url": zod.unknown().describe('Hero background video URL'),
+  "poem_source": zod.unknown().describe('Poem source mode'),
+  "poem_hitokoto_types": zod.unknown().describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.unknown().describe('Hitokoto preferred keywords'),
+  "feature_flags": zod.unknown().describe('Feature toggle flags'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2303,55 +1721,48 @@ export const UpdateProfileApiV1AdminSiteConfigProfilePutBody = zod.object({
 })
 
 export const UpdateProfileApiV1AdminSiteConfigProfilePutResponse = zod.object({
-  "id": zod.string().describe('Unique profile identifier'),
-  "name": zod.string().describe('Site owner display name'),
-  "title": zod.string().describe('Site title'),
-  "bio": zod.string().describe('Short biography'),
-  "role": zod.string().describe('Professional role or tagline'),
-  "og_image": zod.string().describe('Open Graph\/Twitter sharing image path'),
-  "site_icon_url": zod.string().describe('Browser tab icon path'),
-  "hero_image_url": zod.string().describe('Hero image path'),
-  "hero_poster_url": zod.string().describe('Hero video poster and fallback background image path'),
-  "filing_info": zod.string().describe('Regulatory filing or ICP notice'),
-  "hero_actions": zod.string().describe('Hero action buttons JSON'),
-  "hero_video_url": zod.union([zod.string(),zod.null()]).describe('Hero background video URL'),
-  "poem_source": zod.enum(['custom', 'hitokoto']).describe('Poem source mode'),
-  "poem_hitokoto_types": zod.array(zod.string()).describe('Hitokoto category codes'),
-  "poem_hitokoto_keywords": zod.array(zod.string()).describe('Hitokoto preferred keywords'),
-  "feature_flags": zod.record(zod.string(), zod.unknown()).describe('Feature toggle flags'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique profile identifier'),
+  "name": zod.unknown().describe('Site owner display name'),
+  "title": zod.unknown().describe('Site title'),
+  "bio": zod.unknown().describe('Short biography'),
+  "role": zod.unknown().describe('Professional role or tagline'),
+  "og_image": zod.unknown().describe('Open Graph\/Twitter sharing image path'),
+  "site_icon_url": zod.unknown().describe('Browser tab icon path'),
+  "hero_image_url": zod.unknown().describe('Hero image path'),
+  "hero_poster_url": zod.unknown().describe('Hero video poster and fallback background image path'),
+  "filing_info": zod.unknown().describe('Regulatory filing or ICP notice'),
+  "hero_actions": zod.unknown().describe('Hero action buttons JSON'),
+  "hero_video_url": zod.unknown().describe('Hero background video URL'),
+  "poem_source": zod.unknown().describe('Poem source mode'),
+  "poem_hitokoto_types": zod.unknown().describe('Hitokoto category codes'),
+  "poem_hitokoto_keywords": zod.unknown().describe('Hitokoto preferred keywords'),
+  "feature_flags": zod.unknown().describe('Feature toggle flags'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
 /**
  * @summary 获取社区评论配置
  */
-export const getCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponseImageMaxBytesDefault = 524288;
-
 export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = zod.object({
-  "id": zod.string().describe('Unique community config identifier'),
-  "provider": zod.string().describe('Comment system provider'),
-  "server_url": zod.string().describe('Comment server URL'),
-  "surfaces": zod.array(zod.object({
-  "key": zod.string().describe('Surface identifier'),
-  "label": zod.string().describe('Display label'),
-  "path": zod.string().describe('URL path pattern'),
-  "enabled": zod.boolean().describe('Whether comments are enabled')
-})).describe('Comment-enabled surfaces'),
-  "meta": zod.array(zod.string()).describe('Commenter metadata fields'),
-  "required_meta": zod.array(zod.string()).describe('Required metadata fields'),
-  "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
-  "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
-  "moderation_mode": zod.string().describe('Comment moderation mode'),
-  "default_sorting": zod.string().describe('Default sort order'),
-  "page_size": zod.number().describe('Initial comments loaded per batch'),
-  "image_max_bytes": zod.union([zod.number(),zod.null()]).default(getCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponseImageMaxBytesDefault).describe('Max upload image size in bytes'),
-  "avatar_helper_copy": zod.string().describe('Avatar helper text'),
-  "migration_state": zod.string().describe('Waline migration state'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique community config identifier'),
+  "provider": zod.unknown().describe('Comment system provider'),
+  "server_url": zod.unknown().describe('Comment server URL'),
+  "surfaces": zod.unknown().describe('Comment-enabled surfaces'),
+  "meta": zod.unknown().describe('Commenter metadata fields'),
+  "required_meta": zod.unknown().describe('Required metadata fields'),
+  "emoji_presets": zod.unknown().describe('Emoji preset CDN URLs'),
+  "image_uploader": zod.unknown().describe('Image uploads allowed'),
+  "anonymous_enabled": zod.unknown().describe('Whether email login is allowed for commenting'),
+  "moderation_mode": zod.unknown().describe('Comment moderation mode'),
+  "default_sorting": zod.unknown().describe('Default sort order'),
+  "page_size": zod.unknown().describe('Initial comments loaded per batch'),
+  "image_max_bytes": zod.unknown().optional().describe('Max upload image size in bytes'),
+  "avatar_helper_copy": zod.unknown().describe('Avatar helper text'),
+  "migration_state": zod.unknown().describe('Waline migration state'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2380,31 +1791,24 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = z
   "migration_state": zod.union([zod.string(),zod.null()]).optional().describe('Waline migration state')
 })
 
-export const updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponseImageMaxBytesDefault = 524288;
-
 export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse = zod.object({
-  "id": zod.string().describe('Unique community config identifier'),
-  "provider": zod.string().describe('Comment system provider'),
-  "server_url": zod.string().describe('Comment server URL'),
-  "surfaces": zod.array(zod.object({
-  "key": zod.string().describe('Surface identifier'),
-  "label": zod.string().describe('Display label'),
-  "path": zod.string().describe('URL path pattern'),
-  "enabled": zod.boolean().describe('Whether comments are enabled')
-})).describe('Comment-enabled surfaces'),
-  "meta": zod.array(zod.string()).describe('Commenter metadata fields'),
-  "required_meta": zod.array(zod.string()).describe('Required metadata fields'),
-  "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
-  "image_uploader": zod.boolean().describe('Image uploads allowed'),
-  "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
-  "moderation_mode": zod.string().describe('Comment moderation mode'),
-  "default_sorting": zod.string().describe('Default sort order'),
-  "page_size": zod.number().describe('Initial comments loaded per batch'),
-  "image_max_bytes": zod.union([zod.number(),zod.null()]).default(updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponseImageMaxBytesDefault).describe('Max upload image size in bytes'),
-  "avatar_helper_copy": zod.string().describe('Avatar helper text'),
-  "migration_state": zod.string().describe('Waline migration state'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique community config identifier'),
+  "provider": zod.unknown().describe('Comment system provider'),
+  "server_url": zod.unknown().describe('Comment server URL'),
+  "surfaces": zod.unknown().describe('Comment-enabled surfaces'),
+  "meta": zod.unknown().describe('Commenter metadata fields'),
+  "required_meta": zod.unknown().describe('Required metadata fields'),
+  "emoji_presets": zod.unknown().describe('Emoji preset CDN URLs'),
+  "image_uploader": zod.unknown().describe('Image uploads allowed'),
+  "anonymous_enabled": zod.unknown().describe('Whether email login is allowed for commenting'),
+  "moderation_mode": zod.unknown().describe('Comment moderation mode'),
+  "default_sorting": zod.unknown().describe('Default sort order'),
+  "page_size": zod.unknown().describe('Initial comments loaded per batch'),
+  "image_max_bytes": zod.unknown().optional().describe('Max upload image size in bytes'),
+  "avatar_helper_copy": zod.unknown().describe('Avatar helper text'),
+  "migration_state": zod.unknown().describe('Waline migration state'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2431,20 +1835,10 @@ export const ListSocialLinksQueryParams = zod.object({
 })
 
 export const ListSocialLinksResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique social link identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "name": zod.string().describe('Social platform name'),
-  "href": zod.string().describe('Social profile URL'),
-  "icon_key": zod.string().describe('Icon identifier'),
-  "placement": zod.string().describe('Display location'),
-  "order_index": zod.number().describe('Sort order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -2472,15 +1866,15 @@ export const GetSocialLinksParams = zod.object({
 })
 
 export const GetSocialLinksResponse = zod.object({
-  "id": zod.string().describe('Unique social link identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "name": zod.string().describe('Social platform name'),
-  "href": zod.string().describe('Social profile URL'),
-  "icon_key": zod.string().describe('Icon identifier'),
-  "placement": zod.string().describe('Display location'),
-  "order_index": zod.number().describe('Sort order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique social link identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "name": zod.unknown().describe('Social platform name'),
+  "href": zod.unknown().describe('Social profile URL'),
+  "icon_key": zod.unknown().describe('Icon identifier'),
+  "placement": zod.unknown().describe('Display location'),
+  "order_index": zod.unknown().describe('Sort order'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2500,15 +1894,15 @@ export const UpdateSocialLinksBody = zod.object({
 })
 
 export const UpdateSocialLinksResponse = zod.object({
-  "id": zod.string().describe('Unique social link identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "name": zod.string().describe('Social platform name'),
-  "href": zod.string().describe('Social profile URL'),
-  "icon_key": zod.string().describe('Icon identifier'),
-  "placement": zod.string().describe('Display location'),
-  "order_index": zod.number().describe('Sort order'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique social link identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "name": zod.unknown().describe('Social platform name'),
+  "href": zod.unknown().describe('Social profile URL'),
+  "icon_key": zod.unknown().describe('Icon identifier'),
+  "placement": zod.unknown().describe('Display location'),
+  "order_index": zod.unknown().describe('Sort order'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2568,17 +1962,10 @@ export const ListPoemsQueryParams = zod.object({
 })
 
 export const ListPoemsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique poem identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "order_index": zod.number().describe('Display order'),
-  "content": zod.string().describe('Poem text content'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -2602,12 +1989,12 @@ export const GetPoemsParams = zod.object({
 })
 
 export const GetPoemsResponse = zod.object({
-  "id": zod.string().describe('Unique poem identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "order_index": zod.number().describe('Display order'),
-  "content": zod.string().describe('Poem text content'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique poem identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "order_index": zod.unknown().describe('Display order'),
+  "content": zod.unknown().describe('Poem text content'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2624,12 +2011,12 @@ export const UpdatePoemsBody = zod.object({
 })
 
 export const UpdatePoemsResponse = zod.object({
-  "id": zod.string().describe('Unique poem identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "order_index": zod.number().describe('Display order'),
-  "content": zod.string().describe('Poem text content'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique poem identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "order_index": zod.unknown().describe('Display order'),
+  "content": zod.unknown().describe('Poem text content'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2689,22 +2076,10 @@ export const ListPageCopyQueryParams = zod.object({
 })
 
 export const ListPageCopyResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique page copy identifier'),
-  "page_key": zod.string().describe('Page identifier key'),
-  "title": zod.string().describe('Page title heading'),
-  "subtitle": zod.string().describe('Page subtitle text'),
-  "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder'),
-  "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
-  "max_width": zod.union([zod.string(),zod.null()]).describe('Maximum page width'),
-  "page_size": zod.union([zod.number(),zod.null()]).describe('Default items per page'),
-  "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -2735,17 +2110,17 @@ export const GetPageCopyParams = zod.object({
 })
 
 export const GetPageCopyResponse = zod.object({
-  "id": zod.string().describe('Unique page copy identifier'),
-  "page_key": zod.string().describe('Page identifier key'),
-  "title": zod.string().describe('Page title heading'),
-  "subtitle": zod.string().describe('Page subtitle text'),
-  "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder'),
-  "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
-  "max_width": zod.union([zod.string(),zod.null()]).describe('Maximum page width'),
-  "page_size": zod.union([zod.number(),zod.null()]).describe('Default items per page'),
-  "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique page copy identifier'),
+  "page_key": zod.unknown().describe('Page identifier key'),
+  "title": zod.unknown().describe('Page title heading'),
+  "subtitle": zod.unknown().describe('Page subtitle text'),
+  "search_placeholder": zod.unknown().describe('Search placeholder'),
+  "empty_message": zod.unknown().describe('Empty state message'),
+  "max_width": zod.unknown().describe('Maximum page width'),
+  "page_size": zod.unknown().describe('Default items per page'),
+  "extras": zod.unknown().describe('Additional configuration'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2771,17 +2146,17 @@ export const UpdatePageCopyBody = zod.object({
 })
 
 export const UpdatePageCopyResponse = zod.object({
-  "id": zod.string().describe('Unique page copy identifier'),
-  "page_key": zod.string().describe('Page identifier key'),
-  "title": zod.string().describe('Page title heading'),
-  "subtitle": zod.string().describe('Page subtitle text'),
-  "search_placeholder": zod.union([zod.string(),zod.null()]).describe('Search placeholder'),
-  "empty_message": zod.union([zod.string(),zod.null()]).describe('Empty state message'),
-  "max_width": zod.union([zod.string(),zod.null()]).describe('Maximum page width'),
-  "page_size": zod.union([zod.number(),zod.null()]).describe('Default items per page'),
-  "extras": zod.record(zod.string(), zod.unknown()).describe('Additional configuration'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique page copy identifier'),
+  "page_key": zod.unknown().describe('Page identifier key'),
+  "title": zod.unknown().describe('Page title heading'),
+  "subtitle": zod.unknown().describe('Page subtitle text'),
+  "search_placeholder": zod.unknown().describe('Search placeholder'),
+  "empty_message": zod.unknown().describe('Empty state message'),
+  "max_width": zod.unknown().describe('Maximum page width'),
+  "page_size": zod.unknown().describe('Default items per page'),
+  "extras": zod.unknown().describe('Additional configuration'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2829,18 +2204,18 @@ export const ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutBodyItem = zod
 export const ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutBody = zod.array(ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutBodyItem)
 
 export const ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutResponseItem = zod.object({
-  "id": zod.string().describe('Unique nav item identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent nav item ID'),
-  "label": zod.string().describe('Navigation label'),
-  "href": zod.union([zod.string(),zod.null()]).describe('Link URL'),
-  "icon_key": zod.union([zod.string(),zod.null()]).describe('Icon identifier'),
-  "page_key": zod.union([zod.string(),zod.null()]).describe('Associated page key'),
-  "trigger": zod.string().describe('Interaction trigger type'),
-  "order_index": zod.number().describe('Display order'),
-  "is_enabled": zod.boolean().describe('Whether visible'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique nav item identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "parent_id": zod.unknown().describe('Parent nav item ID'),
+  "label": zod.unknown().describe('Navigation label'),
+  "href": zod.unknown().describe('Link URL'),
+  "icon_key": zod.unknown().describe('Icon identifier'),
+  "page_key": zod.unknown().describe('Associated page key'),
+  "trigger": zod.unknown().describe('Interaction trigger type'),
+  "order_index": zod.unknown().describe('Display order'),
+  "is_enabled": zod.unknown().describe('Whether visible'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 export const ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutResponse = zod.array(ReorderNavItemsApiV1AdminSiteConfigNavItemsReorderPutResponseItem)
 
@@ -2868,23 +2243,10 @@ export const ListNavItemsQueryParams = zod.object({
 })
 
 export const ListNavItemsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique nav item identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent nav item ID'),
-  "label": zod.string().describe('Navigation label'),
-  "href": zod.union([zod.string(),zod.null()]).describe('Link URL'),
-  "icon_key": zod.union([zod.string(),zod.null()]).describe('Icon identifier'),
-  "page_key": zod.union([zod.string(),zod.null()]).describe('Associated page key'),
-  "trigger": zod.string().describe('Interaction trigger type'),
-  "order_index": zod.number().describe('Display order'),
-  "is_enabled": zod.boolean().describe('Whether visible'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -2916,18 +2278,18 @@ export const GetNavItemsParams = zod.object({
 })
 
 export const GetNavItemsResponse = zod.object({
-  "id": zod.string().describe('Unique nav item identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent nav item ID'),
-  "label": zod.string().describe('Navigation label'),
-  "href": zod.union([zod.string(),zod.null()]).describe('Link URL'),
-  "icon_key": zod.union([zod.string(),zod.null()]).describe('Icon identifier'),
-  "page_key": zod.union([zod.string(),zod.null()]).describe('Associated page key'),
-  "trigger": zod.string().describe('Interaction trigger type'),
-  "order_index": zod.number().describe('Display order'),
-  "is_enabled": zod.boolean().describe('Whether visible'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique nav item identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "parent_id": zod.unknown().describe('Parent nav item ID'),
+  "label": zod.unknown().describe('Navigation label'),
+  "href": zod.unknown().describe('Link URL'),
+  "icon_key": zod.unknown().describe('Icon identifier'),
+  "page_key": zod.unknown().describe('Associated page key'),
+  "trigger": zod.unknown().describe('Interaction trigger type'),
+  "order_index": zod.unknown().describe('Display order'),
+  "is_enabled": zod.unknown().describe('Whether visible'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -2950,18 +2312,18 @@ export const UpdateNavItemsBody = zod.object({
 })
 
 export const UpdateNavItemsResponse = zod.object({
-  "id": zod.string().describe('Unique nav item identifier'),
-  "site_profile_id": zod.string().describe('Associated site profile ID'),
-  "parent_id": zod.union([zod.string(),zod.null()]).describe('Parent nav item ID'),
-  "label": zod.string().describe('Navigation label'),
-  "href": zod.union([zod.string(),zod.null()]).describe('Link URL'),
-  "icon_key": zod.union([zod.string(),zod.null()]).describe('Icon identifier'),
-  "page_key": zod.union([zod.string(),zod.null()]).describe('Associated page key'),
-  "trigger": zod.string().describe('Interaction trigger type'),
-  "order_index": zod.number().describe('Display order'),
-  "is_enabled": zod.boolean().describe('Whether visible'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique nav item identifier'),
+  "site_profile_id": zod.unknown().describe('Associated site profile ID'),
+  "parent_id": zod.unknown().describe('Parent nav item ID'),
+  "label": zod.unknown().describe('Navigation label'),
+  "href": zod.unknown().describe('Link URL'),
+  "icon_key": zod.unknown().describe('Icon identifier'),
+  "page_key": zod.unknown().describe('Associated page key'),
+  "trigger": zod.unknown().describe('Interaction trigger type'),
+  "order_index": zod.unknown().describe('Display order'),
+  "is_enabled": zod.unknown().describe('Whether visible'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -3001,33 +2363,31 @@ export const BulkStatusNavItemsResponse = zod.object({
 /**
  * @summary 获取内容订阅配置
  */
-export const getContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponseSubscriberCountDefault = 0;
-
 export const GetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponse = zod.object({
-  "id": zod.string().describe('Subscription config id'),
-  "enabled": zod.boolean().describe('Whether public subscription is enabled'),
-  "smtp_auth_mode": zod.enum(['password', 'microsoft_oauth2']).describe('SMTP authentication mode'),
-  "smtp_host": zod.string().describe('SMTP host'),
-  "smtp_port": zod.number().describe('SMTP port'),
-  "smtp_username": zod.string().describe('SMTP username'),
-  "smtp_password": zod.string().describe('SMTP password'),
-  "smtp_oauth_tenant": zod.string().describe('Microsoft OAuth tenant identifier'),
-  "smtp_oauth_client_id": zod.string().describe('Microsoft OAuth client id'),
-  "smtp_oauth_client_secret": zod.string().describe('Microsoft OAuth client secret'),
-  "smtp_oauth_refresh_token": zod.string().describe('Microsoft OAuth refresh token'),
-  "smtp_from_email": zod.string().describe('SMTP sender email'),
-  "smtp_from_name": zod.string().describe('SMTP sender display name'),
-  "smtp_reply_to": zod.string().describe('SMTP reply-to email'),
-  "smtp_use_tls": zod.boolean().describe('Whether STARTTLS is enabled'),
-  "smtp_use_ssl": zod.boolean().describe('Whether implicit SSL is enabled'),
-  "smtp_test_passed": zod.boolean().describe('Whether SMTP test delivery succeeded for current settings'),
-  "smtp_tested_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last successful SMTP test timestamp'),
-  "allowed_content_types": zod.array(zod.string()).describe('Content types users can subscribe to'),
-  "mail_subject_template": zod.string().describe('Email subject template'),
-  "mail_body_template": zod.string().describe('Email body template'),
-  "subscriber_count": zod.number().default(getContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetResponseSubscriberCountDefault).describe('Number of active subscribers'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Subscription config id'),
+  "enabled": zod.unknown().describe('Whether public subscription is enabled'),
+  "smtp_auth_mode": zod.unknown().describe('SMTP authentication mode'),
+  "smtp_host": zod.unknown().describe('SMTP host'),
+  "smtp_port": zod.unknown().describe('SMTP port'),
+  "smtp_username": zod.unknown().describe('SMTP username'),
+  "smtp_password": zod.unknown().describe('SMTP password'),
+  "smtp_oauth_tenant": zod.unknown().describe('Microsoft OAuth tenant identifier'),
+  "smtp_oauth_client_id": zod.unknown().describe('Microsoft OAuth client id'),
+  "smtp_oauth_client_secret": zod.unknown().describe('Microsoft OAuth client secret'),
+  "smtp_oauth_refresh_token": zod.unknown().describe('Microsoft OAuth refresh token'),
+  "smtp_from_email": zod.unknown().describe('SMTP sender email'),
+  "smtp_from_name": zod.unknown().describe('SMTP sender display name'),
+  "smtp_reply_to": zod.unknown().describe('SMTP reply-to email'),
+  "smtp_use_tls": zod.unknown().describe('Whether STARTTLS is enabled'),
+  "smtp_use_ssl": zod.unknown().describe('Whether implicit SSL is enabled'),
+  "smtp_test_passed": zod.unknown().describe('Whether SMTP test delivery succeeded for current settings'),
+  "smtp_tested_at": zod.unknown().describe('Last successful SMTP test timestamp'),
+  "allowed_content_types": zod.unknown().describe('Content types users can subscribe to'),
+  "mail_subject_template": zod.unknown().describe('Email subject template'),
+  "mail_body_template": zod.unknown().describe('Email body template'),
+  "subscriber_count": zod.unknown().optional().describe('Number of active subscribers'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 
@@ -3055,33 +2415,31 @@ export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutBody
   "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template')
 })
 
-export const updateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponseSubscriberCountDefault = 0;
-
 export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponse = zod.object({
-  "id": zod.string().describe('Subscription config id'),
-  "enabled": zod.boolean().describe('Whether public subscription is enabled'),
-  "smtp_auth_mode": zod.enum(['password', 'microsoft_oauth2']).describe('SMTP authentication mode'),
-  "smtp_host": zod.string().describe('SMTP host'),
-  "smtp_port": zod.number().describe('SMTP port'),
-  "smtp_username": zod.string().describe('SMTP username'),
-  "smtp_password": zod.string().describe('SMTP password'),
-  "smtp_oauth_tenant": zod.string().describe('Microsoft OAuth tenant identifier'),
-  "smtp_oauth_client_id": zod.string().describe('Microsoft OAuth client id'),
-  "smtp_oauth_client_secret": zod.string().describe('Microsoft OAuth client secret'),
-  "smtp_oauth_refresh_token": zod.string().describe('Microsoft OAuth refresh token'),
-  "smtp_from_email": zod.string().describe('SMTP sender email'),
-  "smtp_from_name": zod.string().describe('SMTP sender display name'),
-  "smtp_reply_to": zod.string().describe('SMTP reply-to email'),
-  "smtp_use_tls": zod.boolean().describe('Whether STARTTLS is enabled'),
-  "smtp_use_ssl": zod.boolean().describe('Whether implicit SSL is enabled'),
-  "smtp_test_passed": zod.boolean().describe('Whether SMTP test delivery succeeded for current settings'),
-  "smtp_tested_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last successful SMTP test timestamp'),
-  "allowed_content_types": zod.array(zod.string()).describe('Content types users can subscribe to'),
-  "mail_subject_template": zod.string().describe('Email subject template'),
-  "mail_body_template": zod.string().describe('Email body template'),
-  "subscriber_count": zod.number().default(updateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponseSubscriberCountDefault).describe('Number of active subscribers'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Subscription config id'),
+  "enabled": zod.unknown().describe('Whether public subscription is enabled'),
+  "smtp_auth_mode": zod.unknown().describe('SMTP authentication mode'),
+  "smtp_host": zod.unknown().describe('SMTP host'),
+  "smtp_port": zod.unknown().describe('SMTP port'),
+  "smtp_username": zod.unknown().describe('SMTP username'),
+  "smtp_password": zod.unknown().describe('SMTP password'),
+  "smtp_oauth_tenant": zod.unknown().describe('Microsoft OAuth tenant identifier'),
+  "smtp_oauth_client_id": zod.unknown().describe('Microsoft OAuth client id'),
+  "smtp_oauth_client_secret": zod.unknown().describe('Microsoft OAuth client secret'),
+  "smtp_oauth_refresh_token": zod.unknown().describe('Microsoft OAuth refresh token'),
+  "smtp_from_email": zod.unknown().describe('SMTP sender email'),
+  "smtp_from_name": zod.unknown().describe('SMTP sender display name'),
+  "smtp_reply_to": zod.unknown().describe('SMTP reply-to email'),
+  "smtp_use_tls": zod.unknown().describe('Whether STARTTLS is enabled'),
+  "smtp_use_ssl": zod.unknown().describe('Whether implicit SSL is enabled'),
+  "smtp_test_passed": zod.unknown().describe('Whether SMTP test delivery succeeded for current settings'),
+  "smtp_tested_at": zod.unknown().describe('Last successful SMTP test timestamp'),
+  "allowed_content_types": zod.unknown().describe('Content types users can subscribe to'),
+  "mail_subject_template": zod.unknown().describe('Email subject template'),
+  "mail_body_template": zod.unknown().describe('Email body template'),
+  "subscriber_count": zod.unknown().optional().describe('Number of active subscribers'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 
@@ -3138,27 +2496,11 @@ export const ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPar
   "page_size": zod.number().min(1).max(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageSizeMax).default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetQueryPageSizeDefault)
 })
 
-export const listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseItemsItemSentCountDefault = 0;
-
 export const ListContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "email": zod.string().describe('Subscriber email'),
-  "is_active": zod.boolean().describe('Whether subscription is active'),
-  "content_types": zod.array(zod.string()).optional().describe('Subscribed content types'),
-  "auth_mode": zod.enum(['email', 'binding', 'unknown']).describe('Whether the initiating visitor is email-only, bound account user, or unknown'),
-  "initiator_email": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor email'),
-  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor display name'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor avatar'),
-  "primary_auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor primary auth provider'),
-  "oauth_providers": zod.array(zod.string()).optional().describe('Initiating visitor OAuth providers'),
-  "sent_count": zod.number().default(listContentSubscribersApiV1AdminSubscriptionsSubscribersGetResponseItemsItemSentCountDefault).describe('Number of successful deliveries'),
-  "last_sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last successful delivery time'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -3182,22 +2524,10 @@ export const ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmai
 })
 
 export const ListContentSubscriberMessagesApiV1AdminSubscriptionsSubscribersEmailMessagesGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Delivery id'),
-  "subscriber_email": zod.string().describe('Subscriber email'),
-  "content_type": zod.string().describe('Content type'),
-  "content_slug": zod.string().describe('Content slug'),
-  "content_title": zod.string().describe('Content title'),
-  "content_url": zod.string().describe('Public content URL'),
-  "status": zod.string().describe('Delivery status'),
-  "error_message": zod.union([zod.string(),zod.null()]).optional().describe('Delivery error detail'),
-  "sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Delivery time'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -3212,22 +2542,20 @@ export const UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatch
   "is_active": zod.boolean().describe('Whether subscription is active')
 })
 
-export const updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseSentCountDefault = 0;
-
 export const UpdateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponse = zod.object({
-  "email": zod.string().describe('Subscriber email'),
-  "is_active": zod.boolean().describe('Whether subscription is active'),
-  "content_types": zod.array(zod.string()).optional().describe('Subscribed content types'),
-  "auth_mode": zod.enum(['email', 'binding', 'unknown']).describe('Whether the initiating visitor is email-only, bound account user, or unknown'),
-  "initiator_email": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor email'),
-  "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor display name'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor avatar'),
-  "primary_auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Initiating visitor primary auth provider'),
-  "oauth_providers": zod.array(zod.string()).optional().describe('Initiating visitor OAuth providers'),
-  "sent_count": zod.number().default(updateContentSubscriberApiV1AdminSubscriptionsSubscribersEmailPatchResponseSentCountDefault).describe('Number of successful deliveries'),
-  "last_sent_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last successful delivery time'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "email": zod.unknown().describe('Subscriber email'),
+  "is_active": zod.unknown().describe('Whether subscription is active'),
+  "content_types": zod.unknown().optional().describe('Subscribed content types'),
+  "auth_mode": zod.unknown().describe('Whether the initiating visitor is email-only, bound account user, or unknown'),
+  "initiator_email": zod.unknown().optional().describe('Initiating visitor email'),
+  "display_name": zod.unknown().optional().describe('Initiating visitor display name'),
+  "avatar_url": zod.unknown().optional().describe('Initiating visitor avatar'),
+  "primary_auth_provider": zod.unknown().optional().describe('Initiating visitor primary auth provider'),
+  "oauth_providers": zod.unknown().optional().describe('Initiating visitor OAuth providers'),
+  "sent_count": zod.unknown().optional().describe('Number of successful deliveries'),
+  "last_sent_at": zod.unknown().optional().describe('Last successful delivery time'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 
@@ -3242,13 +2570,9 @@ export const DeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelet
 /**
  * @summary 获取出站代理配置
  */
-export const getProxyConfigApiV1AdminProxyConfigGetResponseProxyPortOneMax = 65535;
-
-export const getProxyConfigApiV1AdminProxyConfigGetResponseWebhookEnabledDefault = false;
-
 export const GetProxyConfigApiV1AdminProxyConfigGetResponse = zod.object({
-  "proxy_port": zod.union([zod.number().min(1).max(getProxyConfigApiV1AdminProxyConfigGetResponseProxyPortOneMax),zod.null()]).optional(),
-  "webhook_enabled": zod.boolean().default(getProxyConfigApiV1AdminProxyConfigGetResponseWebhookEnabledDefault)
+  "proxy_port": zod.unknown().optional(),
+  "webhook_enabled": zod.unknown().optional()
 })
 
 
@@ -3264,13 +2588,9 @@ export const PutProxyConfigApiV1AdminProxyConfigPutBody = zod.object({
   "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional()
 })
 
-export const putProxyConfigApiV1AdminProxyConfigPutResponseProxyPortOneMax = 65535;
-
-export const putProxyConfigApiV1AdminProxyConfigPutResponseWebhookEnabledDefault = false;
-
 export const PutProxyConfigApiV1AdminProxyConfigPutResponse = zod.object({
-  "proxy_port": zod.union([zod.number().min(1).max(putProxyConfigApiV1AdminProxyConfigPutResponseProxyPortOneMax),zod.null()]).optional(),
-  "webhook_enabled": zod.boolean().default(putProxyConfigApiV1AdminProxyConfigPutResponseWebhookEnabledDefault)
+  "proxy_port": zod.unknown().optional(),
+  "webhook_enabled": zod.unknown().optional()
 })
 
 
@@ -3287,11 +2607,11 @@ export const PostProxyConfigTestApiV1AdminProxyConfigTestPostBody = zod.object({
 })
 
 export const PostProxyConfigTestApiV1AdminProxyConfigTestPostResponse = zod.object({
-  "ok": zod.boolean(),
-  "proxy_url": zod.string(),
-  "summary": zod.string(),
-  "latency_ms": zod.union([zod.number(),zod.null()]).optional(),
-  "status_code": zod.union([zod.number(),zod.null()]).optional()
+  "ok": zod.unknown(),
+  "proxy_url": zod.unknown(),
+  "summary": zod.unknown(),
+  "latency_ms": zod.unknown().optional(),
+  "status_code": zod.unknown().optional()
 })
 
 
@@ -3299,25 +2619,25 @@ export const PostProxyConfigTestApiV1AdminProxyConfigTestPostResponse = zod.obje
  * @summary 获取 OSS 加速配置
  */
 export const GetObjectStorageConfigApiV1AdminObjectStorageConfigGetResponse = zod.object({
-  "enabled": zod.boolean(),
-  "provider": zod.literal("bitiful"),
-  "bucket": zod.string(),
-  "endpoint": zod.string(),
-  "region": zod.string(),
-  "public_base_url": zod.string(),
-  "access_key": zod.string(),
-  "secret_key_configured": zod.boolean(),
-  "cdn_token_key_configured": zod.boolean(),
-  "health_check_enabled": zod.boolean(),
-  "upload_expire_seconds": zod.number(),
-  "public_download_expire_seconds": zod.number(),
-  "mirror_bandwidth_limit_bps": zod.number(),
-  "mirror_retry_count": zod.number(),
-  "last_health_ok": zod.union([zod.boolean(),zod.null()]).optional(),
-  "last_health_error": zod.union([zod.string(),zod.null()]).optional(),
-  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "remote_sync_scanned_count": zod.union([zod.number(),zod.null()]).optional(),
-  "remote_sync_enqueued_count": zod.union([zod.number(),zod.null()]).optional()
+  "enabled": zod.unknown(),
+  "provider": zod.unknown(),
+  "bucket": zod.unknown(),
+  "endpoint": zod.unknown(),
+  "region": zod.unknown(),
+  "public_base_url": zod.unknown(),
+  "access_key": zod.unknown(),
+  "secret_key_configured": zod.unknown(),
+  "cdn_token_key_configured": zod.unknown(),
+  "health_check_enabled": zod.unknown(),
+  "upload_expire_seconds": zod.unknown(),
+  "public_download_expire_seconds": zod.unknown(),
+  "mirror_bandwidth_limit_bps": zod.unknown(),
+  "mirror_retry_count": zod.unknown(),
+  "last_health_ok": zod.unknown().optional(),
+  "last_health_error": zod.unknown().optional(),
+  "last_health_checked_at": zod.unknown().optional(),
+  "remote_sync_scanned_count": zod.unknown().optional(),
+  "remote_sync_enqueued_count": zod.unknown().optional()
 })
 
 
@@ -3370,25 +2690,25 @@ export const PutObjectStorageConfigApiV1AdminObjectStorageConfigPutBody = zod.ob
 })
 
 export const PutObjectStorageConfigApiV1AdminObjectStorageConfigPutResponse = zod.object({
-  "enabled": zod.boolean(),
-  "provider": zod.literal("bitiful"),
-  "bucket": zod.string(),
-  "endpoint": zod.string(),
-  "region": zod.string(),
-  "public_base_url": zod.string(),
-  "access_key": zod.string(),
-  "secret_key_configured": zod.boolean(),
-  "cdn_token_key_configured": zod.boolean(),
-  "health_check_enabled": zod.boolean(),
-  "upload_expire_seconds": zod.number(),
-  "public_download_expire_seconds": zod.number(),
-  "mirror_bandwidth_limit_bps": zod.number(),
-  "mirror_retry_count": zod.number(),
-  "last_health_ok": zod.union([zod.boolean(),zod.null()]).optional(),
-  "last_health_error": zod.union([zod.string(),zod.null()]).optional(),
-  "last_health_checked_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "remote_sync_scanned_count": zod.union([zod.number(),zod.null()]).optional(),
-  "remote_sync_enqueued_count": zod.union([zod.number(),zod.null()]).optional()
+  "enabled": zod.unknown(),
+  "provider": zod.unknown(),
+  "bucket": zod.unknown(),
+  "endpoint": zod.unknown(),
+  "region": zod.unknown(),
+  "public_base_url": zod.unknown(),
+  "access_key": zod.unknown(),
+  "secret_key_configured": zod.unknown(),
+  "cdn_token_key_configured": zod.unknown(),
+  "health_check_enabled": zod.unknown(),
+  "upload_expire_seconds": zod.unknown(),
+  "public_download_expire_seconds": zod.unknown(),
+  "mirror_bandwidth_limit_bps": zod.unknown(),
+  "mirror_retry_count": zod.unknown(),
+  "last_health_ok": zod.unknown().optional(),
+  "last_health_error": zod.unknown().optional(),
+  "last_health_checked_at": zod.unknown().optional(),
+  "remote_sync_scanned_count": zod.unknown().optional(),
+  "remote_sync_enqueued_count": zod.unknown().optional()
 })
 
 
@@ -3441,9 +2761,9 @@ export const PostObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostBod
 })
 
 export const PostObjectStorageConfigTestApiV1AdminObjectStorageConfigTestPostResponse = zod.object({
-  "ok": zod.boolean(),
-  "summary": zod.string(),
-  "details": zod.record(zod.string(), zod.unknown()).optional()
+  "ok": zod.unknown(),
+  "summary": zod.unknown(),
+  "details": zod.unknown().optional()
 })
 
 
@@ -3460,19 +2780,19 @@ export const GetObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetQue
 })
 
 export const GetObjectStorageSyncRecordsApiV1AdminObjectStorageSyncRecordsGetResponse = zod.record(zod.string(), zod.union([zod.array(zod.object({
-  "id": zod.string(),
-  "record_type": zod.enum(['mirror', 'remote_delete', 'remote_upload']),
-  "status": zod.string(),
-  "object_key": zod.string(),
-  "asset_id": zod.union([zod.string(),zod.null()]).optional(),
-  "asset_file_name": zod.union([zod.string(),zod.null()]).optional(),
-  "asset_resource_key": zod.union([zod.string(),zod.null()]).optional(),
-  "retry_count": zod.number(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "record_type": zod.unknown(),
+  "status": zod.unknown(),
+  "object_key": zod.unknown(),
+  "asset_id": zod.unknown().optional(),
+  "asset_file_name": zod.unknown().optional(),
+  "asset_resource_key": zod.unknown().optional(),
+  "retry_count": zod.unknown(),
+  "last_error": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })),zod.number()]))
 
 
@@ -3499,19 +2819,10 @@ export const ListBasicsQueryParams = zod.object({
 })
 
 export const ListBasicsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique resume basics identifier'),
-  "title": zod.string().describe('Resume page title'),
-  "summary": zod.string().describe('Markdown resume body'),
-  "location": zod.string().describe('Current base location'),
-  "email": zod.string().describe('Primary contact email'),
-  "profile_image_url": zod.string().describe('Profile image URL'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -3539,14 +2850,14 @@ export const GetBasicsParams = zod.object({
 })
 
 export const GetBasicsResponse = zod.object({
-  "id": zod.string().describe('Unique resume basics identifier'),
-  "title": zod.string().describe('Resume page title'),
-  "summary": zod.string().describe('Markdown resume body'),
-  "location": zod.string().describe('Current base location'),
-  "email": zod.string().describe('Primary contact email'),
-  "profile_image_url": zod.string().describe('Profile image URL'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique resume basics identifier'),
+  "title": zod.unknown().describe('Resume page title'),
+  "summary": zod.unknown().describe('Markdown resume body'),
+  "location": zod.unknown().describe('Current base location'),
+  "email": zod.unknown().describe('Primary contact email'),
+  "profile_image_url": zod.unknown().describe('Profile image URL'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -3566,14 +2877,14 @@ export const UpdateBasicsBody = zod.object({
 })
 
 export const UpdateBasicsResponse = zod.object({
-  "id": zod.string().describe('Unique resume basics identifier'),
-  "title": zod.string().describe('Resume page title'),
-  "summary": zod.string().describe('Markdown resume body'),
-  "location": zod.string().describe('Current base location'),
-  "email": zod.string().describe('Primary contact email'),
-  "profile_image_url": zod.string().describe('Profile image URL'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique resume basics identifier'),
+  "title": zod.unknown().describe('Resume page title'),
+  "summary": zod.unknown().describe('Markdown resume body'),
+  "location": zod.unknown().describe('Current base location'),
+  "email": zod.unknown().describe('Primary contact email'),
+  "profile_image_url": zod.unknown().describe('Profile image URL'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -3633,22 +2944,10 @@ export const ListFriendsQueryParams = zod.object({
 })
 
 export const ListFriendsResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Unique friend identifier'),
-  "name": zod.string().describe('Friend site display name'),
-  "url": zod.string().describe('Friend site URL'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "status": zod.string().describe('Website status'),
-  "rss_status": zod.string().describe('RSS status derived from the configured feed sources'),
-  "last_checked_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last website availability check timestamp'),
-  "last_error": zod.union([zod.string(),zod.null()]).describe('Last website availability error message'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -3674,17 +2973,17 @@ export const GetFriendsParams = zod.object({
 })
 
 export const GetFriendsResponse = zod.object({
-  "id": zod.string().describe('Unique friend identifier'),
-  "name": zod.string().describe('Friend site display name'),
-  "url": zod.string().describe('Friend site URL'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "status": zod.string().describe('Website status'),
-  "rss_status": zod.string().describe('RSS status derived from the configured feed sources'),
-  "last_checked_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last website availability check timestamp'),
-  "last_error": zod.union([zod.string(),zod.null()]).describe('Last website availability error message'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique friend identifier'),
+  "name": zod.unknown().describe('Friend site display name'),
+  "url": zod.unknown().describe('Friend site URL'),
+  "avatar_url": zod.unknown().describe('Avatar image URL'),
+  "description": zod.unknown().describe('Short description'),
+  "status": zod.unknown().describe('Website status'),
+  "rss_status": zod.unknown().describe('RSS status derived from the configured feed sources'),
+  "last_checked_at": zod.unknown().describe('Last website availability check timestamp'),
+  "last_error": zod.unknown().describe('Last website availability error message'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -3704,17 +3003,17 @@ export const UpdateFriendsBody = zod.object({
 })
 
 export const UpdateFriendsResponse = zod.object({
-  "id": zod.string().describe('Unique friend identifier'),
-  "name": zod.string().describe('Friend site display name'),
-  "url": zod.string().describe('Friend site URL'),
-  "avatar_url": zod.union([zod.string(),zod.null()]).describe('Avatar image URL'),
-  "description": zod.union([zod.string(),zod.null()]).describe('Short description'),
-  "status": zod.string().describe('Website status'),
-  "rss_status": zod.string().describe('RSS status derived from the configured feed sources'),
-  "last_checked_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last website availability check timestamp'),
-  "last_error": zod.union([zod.string(),zod.null()]).describe('Last website availability error message'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique friend identifier'),
+  "name": zod.unknown().describe('Friend site display name'),
+  "url": zod.unknown().describe('Friend site URL'),
+  "avatar_url": zod.unknown().describe('Avatar image URL'),
+  "description": zod.unknown().describe('Short description'),
+  "status": zod.unknown().describe('Website status'),
+  "rss_status": zod.unknown().describe('RSS status derived from the configured feed sources'),
+  "last_checked_at": zod.unknown().describe('Last website availability check timestamp'),
+  "last_error": zod.unknown().describe('Last website availability error message'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -3817,16 +3116,16 @@ export const ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetParams = zod.
 })
 
 export const ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetResponseItem = zod.object({
-  "id": zod.string().describe('Unique feed source identifier'),
-  "friend_id": zod.string().describe('Associated friend ID'),
-  "feed_url": zod.string().describe('RSS\/Atom feed URL'),
-  "last_fetched_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last RSS fetch\/check timestamp'),
-  "is_enabled": zod.boolean().describe('Whether actively crawled'),
-  "rss_status": zod.string().describe('Current RSS status for this source'),
-  "etag": zod.union([zod.string(),zod.null()]).optional().describe('HTTP ETag for conditional requests'),
-  "last_error": zod.union([zod.string(),zod.null()]).optional().describe('Last crawl error message'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique feed source identifier'),
+  "friend_id": zod.unknown().describe('Associated friend ID'),
+  "feed_url": zod.unknown().describe('RSS\/Atom feed URL'),
+  "last_fetched_at": zod.unknown().describe('Last RSS fetch\/check timestamp'),
+  "is_enabled": zod.unknown().describe('Whether actively crawled'),
+  "rss_status": zod.unknown().describe('Current RSS status for this source'),
+  "etag": zod.unknown().optional().describe('HTTP ETag for conditional requests'),
+  "last_error": zod.unknown().optional().describe('Last crawl error message'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 export const ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetResponse = zod.array(ListFriendFeedsApiV1AdminSocialFriendsFriendIdFeedsGetResponseItem)
 
@@ -3860,16 +3159,16 @@ export const UpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutBody = zod.object({
 })
 
 export const UpdateFriendFeedApiV1AdminSocialFeedsFeedIdPutResponse = zod.object({
-  "id": zod.string().describe('Unique feed source identifier'),
-  "friend_id": zod.string().describe('Associated friend ID'),
-  "feed_url": zod.string().describe('RSS\/Atom feed URL'),
-  "last_fetched_at": zod.union([zod.string().datetime({}),zod.null()]).describe('Last RSS fetch\/check timestamp'),
-  "is_enabled": zod.boolean().describe('Whether actively crawled'),
-  "rss_status": zod.string().describe('Current RSS status for this source'),
-  "etag": zod.union([zod.string(),zod.null()]).optional().describe('HTTP ETag for conditional requests'),
-  "last_error": zod.union([zod.string(),zod.null()]).optional().describe('Last crawl error message'),
-  "created_at": zod.string().datetime({}).describe('Creation timestamp'),
-  "updated_at": zod.string().datetime({}).describe('Last update timestamp')
+  "id": zod.unknown().describe('Unique feed source identifier'),
+  "friend_id": zod.unknown().describe('Associated friend ID'),
+  "feed_url": zod.unknown().describe('RSS\/Atom feed URL'),
+  "last_fetched_at": zod.unknown().describe('Last RSS fetch\/check timestamp'),
+  "is_enabled": zod.unknown().describe('Whether actively crawled'),
+  "rss_status": zod.unknown().describe('Current RSS status for this source'),
+  "etag": zod.unknown().optional().describe('HTTP ETag for conditional requests'),
+  "last_error": zod.unknown().optional().describe('Last crawl error message'),
+  "created_at": zod.unknown().describe('Creation timestamp'),
+  "updated_at": zod.unknown().describe('Last update timestamp')
 })
 
 
@@ -3904,22 +3203,10 @@ export const ListCommentsApiV1AdminModerationCommentsGetQueryParams = zod.object
 })
 
 export const ListCommentsApiV1AdminModerationCommentsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "content_type": zod.string(),
-  "content_slug": zod.string(),
-  "parent_id": zod.union([zod.string(),zod.null()]),
-  "author_name": zod.string(),
-  "author_email": zod.union([zod.string(),zod.null()]),
-  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
-  "body": zod.string(),
-  "status": zod.string(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -3936,17 +3223,17 @@ export const ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModerat
 })
 
 export const ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostResponse = zod.object({
-  "id": zod.string(),
-  "content_type": zod.string(),
-  "content_slug": zod.string(),
-  "parent_id": zod.union([zod.string(),zod.null()]),
-  "author_name": zod.string(),
-  "author_email": zod.union([zod.string(),zod.null()]),
-  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
-  "body": zod.string(),
-  "status": zod.string(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "content_type": zod.unknown(),
+  "content_slug": zod.unknown(),
+  "parent_id": zod.unknown(),
+  "author_name": zod.unknown(),
+  "author_email": zod.unknown(),
+  "auth_provider": zod.unknown().optional().describe('Normalized auth provider'),
+  "body": zod.unknown(),
+  "status": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -3972,20 +3259,10 @@ export const ListGuestbookApiV1AdminModerationGuestbookGetQueryParams = zod.obje
 })
 
 export const ListGuestbookApiV1AdminModerationGuestbookGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "email": zod.union([zod.string(),zod.null()]),
-  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
-  "website": zod.union([zod.string(),zod.null()]),
-  "body": zod.string(),
-  "status": zod.string(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -4002,15 +3279,15 @@ export const ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModera
 })
 
 export const ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePostResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "email": zod.union([zod.string(),zod.null()]),
-  "auth_provider": zod.union([zod.string(),zod.null()]).optional().describe('Normalized auth provider'),
-  "website": zod.union([zod.string(),zod.null()]),
-  "body": zod.string(),
-  "status": zod.string(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "name": zod.unknown(),
+  "email": zod.unknown(),
+  "auth_provider": zod.unknown().optional().describe('Normalized auth provider'),
+  "website": zod.unknown(),
+  "body": zod.unknown(),
+  "status": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4036,31 +3313,10 @@ export const ListAssetsEndpointApiV1AdminAssetsGetQueryParams = zod.object({
 })
 
 export const ListAssetsEndpointApiV1AdminAssetsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "file_name": zod.string(),
-  "resource_key": zod.string(),
-  "visibility": zod.enum(['internal', 'public']),
-  "scope": zod.enum(['system', 'user']),
-  "category": zod.string(),
-  "note": zod.union([zod.string(),zod.null()]),
-  "storage_path": zod.string(),
-  "internal_url": zod.string(),
-  "public_url": zod.union([zod.string(),zod.null()]),
-  "mime_type": zod.union([zod.string(),zod.null()]),
-  "byte_size": zod.union([zod.number(),zod.null()]),
-  "sha256": zod.union([zod.string(),zod.null()]),
-  "storage_provider": zod.string(),
-  "remote_status": zod.string(),
-  "mirror_status": zod.string(),
-  "mirror_last_error": zod.union([zod.string(),zod.null()]),
-  "oss_acceleration_enabled_at_upload": zod.boolean(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -4112,35 +3368,14 @@ export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostBody = zod.obj
 })
 
 export const InitUploadAssetEndpointApiV1AdminAssetsInitUploadPostResponse = zod.object({
-  "mode": zod.enum(['local', 'oss', 'existing']),
-  "asset_id": zod.union([zod.string(),zod.null()]).optional(),
-  "resource_key": zod.union([zod.string(),zod.null()]).optional(),
-  "upload_url": zod.union([zod.string(),zod.null()]).optional(),
-  "upload_method": zod.union([zod.literal("PUT"),zod.null()]).optional(),
-  "upload_headers": zod.record(zod.string(), zod.string()).optional(),
-  "expires_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "asset": zod.union([zod.object({
-  "id": zod.string(),
-  "file_name": zod.string(),
-  "resource_key": zod.string(),
-  "visibility": zod.enum(['internal', 'public']),
-  "scope": zod.enum(['system', 'user']),
-  "category": zod.string(),
-  "note": zod.union([zod.string(),zod.null()]),
-  "storage_path": zod.string(),
-  "internal_url": zod.string(),
-  "public_url": zod.union([zod.string(),zod.null()]),
-  "mime_type": zod.union([zod.string(),zod.null()]),
-  "byte_size": zod.union([zod.number(),zod.null()]),
-  "sha256": zod.union([zod.string(),zod.null()]),
-  "storage_provider": zod.string(),
-  "remote_status": zod.string(),
-  "mirror_status": zod.string(),
-  "mirror_last_error": zod.union([zod.string(),zod.null()]),
-  "oss_acceleration_enabled_at_upload": zod.boolean(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-}),zod.null()]).optional()
+  "mode": zod.unknown(),
+  "asset_id": zod.unknown().optional(),
+  "resource_key": zod.unknown().optional(),
+  "upload_url": zod.unknown().optional(),
+  "upload_method": zod.unknown().optional(),
+  "upload_headers": zod.unknown().optional(),
+  "expires_at": zod.unknown().optional(),
+  "asset": zod.unknown().optional()
 })
 
 
@@ -4152,26 +3387,26 @@ export const CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostBody =
 })
 
 export const CompleteUploadAssetEndpointApiV1AdminAssetsCompleteUploadPostResponse = zod.object({
-  "id": zod.string(),
-  "file_name": zod.string(),
-  "resource_key": zod.string(),
-  "visibility": zod.enum(['internal', 'public']),
-  "scope": zod.enum(['system', 'user']),
-  "category": zod.string(),
-  "note": zod.union([zod.string(),zod.null()]),
-  "storage_path": zod.string(),
-  "internal_url": zod.string(),
-  "public_url": zod.union([zod.string(),zod.null()]),
-  "mime_type": zod.union([zod.string(),zod.null()]),
-  "byte_size": zod.union([zod.number(),zod.null()]),
-  "sha256": zod.union([zod.string(),zod.null()]),
-  "storage_provider": zod.string(),
-  "remote_status": zod.string(),
-  "mirror_status": zod.string(),
-  "mirror_last_error": zod.union([zod.string(),zod.null()]),
-  "oss_acceleration_enabled_at_upload": zod.boolean(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "file_name": zod.unknown(),
+  "resource_key": zod.unknown(),
+  "visibility": zod.unknown(),
+  "scope": zod.unknown(),
+  "category": zod.unknown(),
+  "note": zod.unknown(),
+  "storage_path": zod.unknown(),
+  "internal_url": zod.unknown(),
+  "public_url": zod.unknown(),
+  "mime_type": zod.unknown(),
+  "byte_size": zod.unknown(),
+  "sha256": zod.unknown(),
+  "storage_provider": zod.unknown(),
+  "remote_status": zod.unknown(),
+  "mirror_status": zod.unknown(),
+  "mirror_last_error": zod.unknown(),
+  "oss_acceleration_enabled_at_upload": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4195,26 +3430,26 @@ export const GetAssetEndpointApiV1AdminAssetsAssetIdGetParams = zod.object({
 })
 
 export const GetAssetEndpointApiV1AdminAssetsAssetIdGetResponse = zod.object({
-  "id": zod.string(),
-  "file_name": zod.string(),
-  "resource_key": zod.string(),
-  "visibility": zod.enum(['internal', 'public']),
-  "scope": zod.enum(['system', 'user']),
-  "category": zod.string(),
-  "note": zod.union([zod.string(),zod.null()]),
-  "storage_path": zod.string(),
-  "internal_url": zod.string(),
-  "public_url": zod.union([zod.string(),zod.null()]),
-  "mime_type": zod.union([zod.string(),zod.null()]),
-  "byte_size": zod.union([zod.number(),zod.null()]),
-  "sha256": zod.union([zod.string(),zod.null()]),
-  "storage_provider": zod.string(),
-  "remote_status": zod.string(),
-  "mirror_status": zod.string(),
-  "mirror_last_error": zod.union([zod.string(),zod.null()]),
-  "oss_acceleration_enabled_at_upload": zod.boolean(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "file_name": zod.unknown(),
+  "resource_key": zod.unknown(),
+  "visibility": zod.unknown(),
+  "scope": zod.unknown(),
+  "category": zod.unknown(),
+  "note": zod.unknown(),
+  "storage_path": zod.unknown(),
+  "internal_url": zod.unknown(),
+  "public_url": zod.unknown(),
+  "mime_type": zod.unknown(),
+  "byte_size": zod.unknown(),
+  "sha256": zod.unknown(),
+  "storage_provider": zod.unknown(),
+  "remote_status": zod.unknown(),
+  "mirror_status": zod.unknown(),
+  "mirror_last_error": zod.unknown(),
+  "oss_acceleration_enabled_at_upload": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4233,26 +3468,26 @@ export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchBody = zod.object({
 })
 
 export const UpdateAssetEndpointApiV1AdminAssetsAssetIdPatchResponse = zod.object({
-  "id": zod.string(),
-  "file_name": zod.string(),
-  "resource_key": zod.string(),
-  "visibility": zod.enum(['internal', 'public']),
-  "scope": zod.enum(['system', 'user']),
-  "category": zod.string(),
-  "note": zod.union([zod.string(),zod.null()]),
-  "storage_path": zod.string(),
-  "internal_url": zod.string(),
-  "public_url": zod.union([zod.string(),zod.null()]),
-  "mime_type": zod.union([zod.string(),zod.null()]),
-  "byte_size": zod.union([zod.number(),zod.null()]),
-  "sha256": zod.union([zod.string(),zod.null()]),
-  "storage_provider": zod.string(),
-  "remote_status": zod.string(),
-  "mirror_status": zod.string(),
-  "mirror_last_error": zod.union([zod.string(),zod.null()]),
-  "oss_acceleration_enabled_at_upload": zod.boolean(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "file_name": zod.unknown(),
+  "resource_key": zod.unknown(),
+  "visibility": zod.unknown(),
+  "scope": zod.unknown(),
+  "category": zod.unknown(),
+  "note": zod.unknown(),
+  "storage_path": zod.unknown(),
+  "internal_url": zod.unknown(),
+  "public_url": zod.unknown(),
+  "mime_type": zod.unknown(),
+  "byte_size": zod.unknown(),
+  "sha256": zod.unknown(),
+  "storage_provider": zod.unknown(),
+  "remote_status": zod.unknown(),
+  "mirror_status": zod.unknown(),
+  "mirror_last_error": zod.unknown(),
+  "oss_acceleration_enabled_at_upload": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4284,19 +3519,10 @@ export const ListAuditLogsApiV1AdminSystemAuditLogsGetQueryParams = zod.object({
 })
 
 export const ListAuditLogsApiV1AdminSystemAuditLogsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "actor_type": zod.string(),
-  "actor_id": zod.union([zod.string(),zod.null()]),
-  "action": zod.string(),
-  "target_type": zod.union([zod.string(),zod.null()]),
-  "target_id": zod.union([zod.string(),zod.null()]),
-  "payload": zod.record(zod.string(), zod.unknown()),
-  "created_at": zod.string().datetime({})
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -4320,22 +3546,10 @@ export const ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetQueryParams = 
 })
 
 export const ListConfigRevisionsApiV1AdminSystemConfigRevisionsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "actor_id": zod.union([zod.string(),zod.null()]),
-  "resource_key": zod.string(),
-  "resource_label": zod.string(),
-  "operation": zod.string(),
-  "resource_version": zod.string(),
-  "summary": zod.string(),
-  "changed_fields": zod.array(zod.string()).optional(),
-  "sensitive_fields": zod.array(zod.string()).optional(),
-  "restored_from_revision_id": zod.union([zod.string(),zod.null()]).optional(),
-  "created_at": zod.string().datetime({})
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -4346,28 +3560,22 @@ export const GetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet
   "revision_id": zod.string()
 })
 
-export const getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseRestorableDefault = true;
-
 export const GetConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponse = zod.object({
-  "id": zod.string(),
-  "actor_id": zod.union([zod.string(),zod.null()]),
-  "resource_key": zod.string(),
-  "resource_label": zod.string(),
-  "operation": zod.string(),
-  "resource_version": zod.string(),
-  "summary": zod.string(),
-  "changed_fields": zod.array(zod.string()).optional(),
-  "sensitive_fields": zod.array(zod.string()).optional(),
-  "restored_from_revision_id": zod.union([zod.string(),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
+  "id": zod.unknown(),
+  "actor_id": zod.unknown(),
+  "resource_key": zod.unknown(),
+  "resource_label": zod.unknown(),
+  "operation": zod.unknown(),
+  "resource_version": zod.unknown(),
+  "summary": zod.unknown(),
+  "changed_fields": zod.unknown().optional(),
+  "sensitive_fields": zod.unknown().optional(),
+  "restored_from_revision_id": zod.unknown().optional(),
+  "created_at": zod.unknown(),
   "before_preview": zod.unknown().optional().describe('Masked preview of the config before the change'),
   "after_preview": zod.unknown().optional().describe('Masked preview of the config after the change'),
-  "diff_lines": zod.array(zod.object({
-  "path": zod.string().describe('Flattened JSON path for the changed field'),
-  "before": zod.string().describe('Human-readable previous value'),
-  "after": zod.string().describe('Human-readable next value')
-})).optional(),
-  "restorable": zod.boolean().default(getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGetResponseRestorableDefault).describe('Whether the revision can be restored')
+  "diff_lines": zod.unknown().optional(),
+  "restorable": zod.unknown().optional().describe('Whether the revision can be restored')
 })
 
 
@@ -4385,28 +3593,22 @@ export const RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdResto
   "reason": zod.union([zod.string(),zod.null()]).optional().describe('Optional operator note recorded in the restore summary')
 })
 
-export const restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseRestorableDefault = true;
-
 export const RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponse = zod.object({
-  "id": zod.string(),
-  "actor_id": zod.union([zod.string(),zod.null()]),
-  "resource_key": zod.string(),
-  "resource_label": zod.string(),
-  "operation": zod.string(),
-  "resource_version": zod.string(),
-  "summary": zod.string(),
-  "changed_fields": zod.array(zod.string()).optional(),
-  "sensitive_fields": zod.array(zod.string()).optional(),
-  "restored_from_revision_id": zod.union([zod.string(),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
+  "id": zod.unknown(),
+  "actor_id": zod.unknown(),
+  "resource_key": zod.unknown(),
+  "resource_label": zod.unknown(),
+  "operation": zod.unknown(),
+  "resource_version": zod.unknown(),
+  "summary": zod.unknown(),
+  "changed_fields": zod.unknown().optional(),
+  "sensitive_fields": zod.unknown().optional(),
+  "restored_from_revision_id": zod.unknown().optional(),
+  "created_at": zod.unknown(),
   "before_preview": zod.unknown().optional().describe('Masked preview of the config before the change'),
   "after_preview": zod.unknown().optional().describe('Masked preview of the config after the change'),
-  "diff_lines": zod.array(zod.object({
-  "path": zod.string().describe('Flattened JSON path for the changed field'),
-  "before": zod.string().describe('Human-readable previous value'),
-  "after": zod.string().describe('Human-readable next value')
-})).optional(),
-  "restorable": zod.boolean().default(restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePostResponseRestorableDefault).describe('Whether the revision can be restored')
+  "diff_lines": zod.unknown().optional(),
+  "restorable": zod.unknown().optional().describe('Whether the revision can be restored')
 })
 
 
@@ -4414,16 +3616,16 @@ export const RestoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdResto
  * @summary 获取备份列表
  */
 export const ListBackupsApiV1AdminSystemBackupsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "snapshot_type": zod.string(),
-  "status": zod.string(),
-  "db_path": zod.string(),
-  "replica_url": zod.union([zod.string(),zod.null()]),
-  "backup_path": zod.union([zod.string(),zod.null()]),
-  "checksum": zod.union([zod.string(),zod.null()]),
-  "completed_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "snapshot_type": zod.unknown(),
+  "status": zod.unknown(),
+  "db_path": zod.unknown(),
+  "replica_url": zod.unknown(),
+  "backup_path": zod.unknown(),
+  "checksum": zod.unknown(),
+  "completed_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const ListBackupsApiV1AdminSystemBackupsGetResponse = zod.array(ListBackupsApiV1AdminSystemBackupsGetResponseItem)
 
@@ -4436,63 +3638,44 @@ export const RestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostParams = z
 })
 
 export const RestoreBackupApiV1AdminSystemBackupsSnapshotIdRestorePostResponse = zod.object({
-  "id": zod.string(),
-  "snapshot_type": zod.string(),
-  "status": zod.string(),
-  "db_path": zod.string(),
-  "replica_url": zod.union([zod.string(),zod.null()]),
-  "backup_path": zod.union([zod.string(),zod.null()]),
-  "checksum": zod.union([zod.string(),zod.null()]),
-  "completed_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "snapshot_type": zod.unknown(),
+  "status": zod.unknown(),
+  "db_path": zod.unknown(),
+  "replica_url": zod.unknown(),
+  "backup_path": zod.unknown(),
+  "checksum": zod.unknown(),
+  "completed_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
 /**
  * @summary 获取备份同步配置
  */
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEnabledDefault = false;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponsePausedDefault = false;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseIntervalMinutesDefault = 60;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault = `sftp`;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSiteSlugDefault = `aerisun`;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEncryptRuntimeDataDefault = false;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetriesDefault = 3;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRetryBackoffSecondsDefault = 300;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetentionCountDefault = 0;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyReadyDefault = false;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyAcknowledgedDefault = false;
-export const getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseArchivedRecoveryKeyCountDefault = 0;
-
 export const GetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponse = zod.object({
-  "id": zod.string(),
-  "enabled": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEnabledDefault),
-  "paused": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponsePausedDefault),
-  "interval_minutes": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseIntervalMinutesDefault),
-  "transport_mode": zod.string().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseTransportModeDefault),
-  "site_slug": zod.string().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseSiteSlugDefault),
-  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "encrypt_runtime_data": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseEncryptRuntimeDataDefault),
-  "max_retries": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetriesDefault),
-  "retry_backoff_seconds": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseMaxRetentionCountDefault),
-  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "recovery_key_ready": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyReadyDefault),
-  "recovery_key_acknowledged": zod.boolean().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseRecoveryKeyAcknowledgedDefault),
-  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
-  "archived_recovery_key_count": zod.number().default(getBackupSyncConfigApiV1AdminSystemBackupSyncConfigGetResponseArchivedRecoveryKeyCountDefault),
-  "transport": zod.object({
-  "mode": zod.string(),
-  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
-  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_username": zod.union([zod.string(),zod.null()]).optional()
-}),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "enabled": zod.unknown().optional(),
+  "paused": zod.unknown().optional(),
+  "interval_minutes": zod.unknown().optional(),
+  "transport_mode": zod.unknown().optional(),
+  "site_slug": zod.unknown().optional(),
+  "credential_ref": zod.unknown().optional(),
+  "encrypt_runtime_data": zod.unknown().optional(),
+  "max_retries": zod.unknown().optional(),
+  "retry_backoff_seconds": zod.unknown().optional(),
+  "max_retention_count": zod.unknown().optional(),
+  "last_scheduled_at": zod.unknown().optional(),
+  "last_synced_at": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "recovery_key_ready": zod.unknown().optional(),
+  "recovery_key_acknowledged": zod.unknown().optional(),
+  "active_recovery_key_fingerprint": zod.unknown().optional(),
+  "archived_recovery_key_count": zod.unknown().optional(),
+  "transport": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4526,47 +3709,28 @@ export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBody = zod
   "max_retention_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutBodyMaxRetentionCountDefault)
 })
 
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEnabledDefault = false;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponsePausedDefault = false;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseIntervalMinutesDefault = 60;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault = `sftp`;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSiteSlugDefault = `aerisun`;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEncryptRuntimeDataDefault = false;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetriesDefault = 3;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRetryBackoffSecondsDefault = 300;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetentionCountDefault = 0;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyReadyDefault = false;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyAcknowledgedDefault = false;
-export const updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseArchivedRecoveryKeyCountDefault = 0;
-
 export const UpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponse = zod.object({
-  "id": zod.string(),
-  "enabled": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEnabledDefault),
-  "paused": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponsePausedDefault),
-  "interval_minutes": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseIntervalMinutesDefault),
-  "transport_mode": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseTransportModeDefault),
-  "site_slug": zod.string().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseSiteSlugDefault),
-  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "encrypt_runtime_data": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseEncryptRuntimeDataDefault),
-  "max_retries": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetriesDefault),
-  "retry_backoff_seconds": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseMaxRetentionCountDefault),
-  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "recovery_key_ready": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyReadyDefault),
-  "recovery_key_acknowledged": zod.boolean().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseRecoveryKeyAcknowledgedDefault),
-  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
-  "archived_recovery_key_count": zod.number().default(updateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPutResponseArchivedRecoveryKeyCountDefault),
-  "transport": zod.object({
-  "mode": zod.string(),
-  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
-  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_username": zod.union([zod.string(),zod.null()]).optional()
-}),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "enabled": zod.unknown().optional(),
+  "paused": zod.unknown().optional(),
+  "interval_minutes": zod.unknown().optional(),
+  "transport_mode": zod.unknown().optional(),
+  "site_slug": zod.unknown().optional(),
+  "credential_ref": zod.unknown().optional(),
+  "encrypt_runtime_data": zod.unknown().optional(),
+  "max_retries": zod.unknown().optional(),
+  "retry_backoff_seconds": zod.unknown().optional(),
+  "max_retention_count": zod.unknown().optional(),
+  "last_scheduled_at": zod.unknown().optional(),
+  "last_synced_at": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "recovery_key_ready": zod.unknown().optional(),
+  "recovery_key_acknowledged": zod.unknown().optional(),
+  "active_recovery_key_fingerprint": zod.unknown().optional(),
+  "archived_recovery_key_count": zod.unknown().optional(),
+  "transport": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4693,19 +3857,19 @@ export const TestBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPostRespons
  * @summary 获取备份同步队列
  */
 export const ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponseItem = zod.object({
-  "id": zod.string(),
-  "transport": zod.string(),
-  "trigger_kind": zod.string(),
-  "status": zod.string(),
-  "dataset_versions": zod.record(zod.string(), zod.unknown()),
-  "verified_chunks": zod.array(zod.string()),
-  "retry_count": zod.number(),
-  "next_retry_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "last_error": zod.union([zod.string(),zod.null()]),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "transport": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "status": zod.unknown(),
+  "dataset_versions": zod.unknown(),
+  "verified_chunks": zod.unknown(),
+  "retry_count": zod.unknown(),
+  "next_retry_at": zod.unknown(),
+  "last_error": zod.unknown(),
+  "started_at": zod.unknown(),
+  "finished_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse = zod.array(ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponseItem)
 
@@ -4713,25 +3877,23 @@ export const ListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetResponse = zod
 /**
  * @summary 获取备份同步运行记录
  */
-export const listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseRetryCountDefault = 0;
-
 export const ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "job_name": zod.string(),
-  "status": zod.string(),
-  "transport": zod.union([zod.string(),zod.null()]).optional(),
-  "trigger_kind": zod.union([zod.string(),zod.null()]).optional(),
-  "queue_item_id": zod.union([zod.string(),zod.null()]).optional(),
-  "commit_id": zod.union([zod.string(),zod.null()]).optional(),
-  "stats_json": zod.record(zod.string(), zod.unknown()).optional(),
-  "retry_count": zod.number().default(listBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseRetryCountDefault),
-  "next_retry_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "message": zod.union([zod.string(),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "job_name": zod.unknown(),
+  "status": zod.unknown(),
+  "transport": zod.unknown().optional(),
+  "trigger_kind": zod.unknown().optional(),
+  "queue_item_id": zod.unknown().optional(),
+  "commit_id": zod.unknown().optional(),
+  "stats_json": zod.unknown().optional(),
+  "retry_count": zod.unknown().optional(),
+  "next_retry_at": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "message": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponse = zod.array(ListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetResponseItem)
 
@@ -4743,119 +3905,79 @@ export const RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostParams =
   "run_id": zod.string()
 })
 
-export const retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseRetryCountDefault = 0;
-
 export const RetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponse = zod.object({
-  "id": zod.string(),
-  "job_name": zod.string(),
-  "status": zod.string(),
-  "transport": zod.union([zod.string(),zod.null()]).optional(),
-  "trigger_kind": zod.union([zod.string(),zod.null()]).optional(),
-  "queue_item_id": zod.union([zod.string(),zod.null()]).optional(),
-  "commit_id": zod.union([zod.string(),zod.null()]).optional(),
-  "stats_json": zod.record(zod.string(), zod.unknown()).optional(),
-  "retry_count": zod.number().default(retryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPostResponseRetryCountDefault),
-  "next_retry_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "message": zod.union([zod.string(),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "job_name": zod.unknown(),
+  "status": zod.unknown(),
+  "transport": zod.unknown().optional(),
+  "trigger_kind": zod.unknown().optional(),
+  "queue_item_id": zod.unknown().optional(),
+  "commit_id": zod.unknown().optional(),
+  "stats_json": zod.unknown().optional(),
+  "retry_count": zod.unknown().optional(),
+  "next_retry_at": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "message": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
 /**
  * @summary 暂停备份同步
  */
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEnabledDefault = false;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponsePausedDefault = false;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseIntervalMinutesDefault = 60;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault = `sftp`;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSiteSlugDefault = `aerisun`;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEncryptRuntimeDataDefault = false;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetriesDefault = 3;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRetryBackoffSecondsDefault = 300;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetentionCountDefault = 0;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyReadyDefault = false;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyAcknowledgedDefault = false;
-export const pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseArchivedRecoveryKeyCountDefault = 0;
-
 export const PauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponse = zod.object({
-  "id": zod.string(),
-  "enabled": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEnabledDefault),
-  "paused": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponsePausedDefault),
-  "interval_minutes": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseIntervalMinutesDefault),
-  "transport_mode": zod.string().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseTransportModeDefault),
-  "site_slug": zod.string().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseSiteSlugDefault),
-  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "encrypt_runtime_data": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseEncryptRuntimeDataDefault),
-  "max_retries": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetriesDefault),
-  "retry_backoff_seconds": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseMaxRetentionCountDefault),
-  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "recovery_key_ready": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyReadyDefault),
-  "recovery_key_acknowledged": zod.boolean().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseRecoveryKeyAcknowledgedDefault),
-  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
-  "archived_recovery_key_count": zod.number().default(pauseBackupSyncApiV1AdminSystemBackupSyncPausePostResponseArchivedRecoveryKeyCountDefault),
-  "transport": zod.object({
-  "mode": zod.string(),
-  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
-  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_username": zod.union([zod.string(),zod.null()]).optional()
-}),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "enabled": zod.unknown().optional(),
+  "paused": zod.unknown().optional(),
+  "interval_minutes": zod.unknown().optional(),
+  "transport_mode": zod.unknown().optional(),
+  "site_slug": zod.unknown().optional(),
+  "credential_ref": zod.unknown().optional(),
+  "encrypt_runtime_data": zod.unknown().optional(),
+  "max_retries": zod.unknown().optional(),
+  "retry_backoff_seconds": zod.unknown().optional(),
+  "max_retention_count": zod.unknown().optional(),
+  "last_scheduled_at": zod.unknown().optional(),
+  "last_synced_at": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "recovery_key_ready": zod.unknown().optional(),
+  "recovery_key_acknowledged": zod.unknown().optional(),
+  "active_recovery_key_fingerprint": zod.unknown().optional(),
+  "archived_recovery_key_count": zod.unknown().optional(),
+  "transport": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
 /**
  * @summary 恢复备份同步
  */
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEnabledDefault = false;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponsePausedDefault = false;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseIntervalMinutesDefault = 60;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault = `sftp`;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSiteSlugDefault = `aerisun`;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEncryptRuntimeDataDefault = false;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetriesDefault = 3;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRetryBackoffSecondsDefault = 300;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetentionCountDefault = 0;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyReadyDefault = false;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyAcknowledgedDefault = false;
-export const resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseArchivedRecoveryKeyCountDefault = 0;
-
 export const ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = zod.object({
-  "id": zod.string(),
-  "enabled": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEnabledDefault),
-  "paused": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponsePausedDefault),
-  "interval_minutes": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseIntervalMinutesDefault),
-  "transport_mode": zod.string().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseTransportModeDefault),
-  "site_slug": zod.string().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseSiteSlugDefault),
-  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
-  "encrypt_runtime_data": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseEncryptRuntimeDataDefault),
-  "max_retries": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetriesDefault),
-  "retry_backoff_seconds": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRetryBackoffSecondsDefault),
-  "max_retention_count": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseMaxRetentionCountDefault),
-  "last_scheduled_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_synced_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "recovery_key_ready": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyReadyDefault),
-  "recovery_key_acknowledged": zod.boolean().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseRecoveryKeyAcknowledgedDefault),
-  "active_recovery_key_fingerprint": zod.union([zod.string(),zod.null()]).optional(),
-  "archived_recovery_key_count": zod.number().default(resumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponseArchivedRecoveryKeyCountDefault),
-  "transport": zod.object({
-  "mode": zod.string(),
-  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
-  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
-  "remote_username": zod.union([zod.string(),zod.null()]).optional()
-}),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "enabled": zod.unknown().optional(),
+  "paused": zod.unknown().optional(),
+  "interval_minutes": zod.unknown().optional(),
+  "transport_mode": zod.unknown().optional(),
+  "site_slug": zod.unknown().optional(),
+  "credential_ref": zod.unknown().optional(),
+  "encrypt_runtime_data": zod.unknown().optional(),
+  "max_retries": zod.unknown().optional(),
+  "retry_backoff_seconds": zod.unknown().optional(),
+  "max_retention_count": zod.unknown().optional(),
+  "last_scheduled_at": zod.unknown().optional(),
+  "last_synced_at": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "recovery_key_ready": zod.unknown().optional(),
+  "recovery_key_acknowledged": zod.unknown().optional(),
+  "active_recovery_key_fingerprint": zod.unknown().optional(),
+  "archived_recovery_key_count": zod.unknown().optional(),
+  "transport": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -4863,20 +3985,20 @@ export const ResumeBackupSyncApiV1AdminSystemBackupSyncResumePostResponse = zod.
  * @summary 获取备份提交记录
  */
 export const ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "transport": zod.string(),
-  "trigger_kind": zod.string(),
-  "site_slug": zod.string(),
-  "remote_commit_id": zod.string(),
-  "manifest_digest": zod.string(),
-  "backup_path": zod.union([zod.string(),zod.null()]),
-  "datasets": zod.record(zod.string(), zod.unknown()),
-  "stats_json": zod.record(zod.string(), zod.unknown()),
-  "snapshot_started_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "snapshot_finished_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "restored_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "transport": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "site_slug": zod.unknown(),
+  "remote_commit_id": zod.unknown(),
+  "manifest_digest": zod.unknown(),
+  "backup_path": zod.unknown(),
+  "datasets": zod.unknown(),
+  "stats_json": zod.unknown(),
+  "snapshot_started_at": zod.unknown(),
+  "snapshot_finished_at": zod.unknown(),
+  "restored_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponse = zod.array(ListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetResponseItem)
 
@@ -4889,133 +4011,41 @@ export const RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestore
 })
 
 export const RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePostResponse = zod.object({
-  "id": zod.string(),
-  "transport": zod.string(),
-  "trigger_kind": zod.string(),
-  "site_slug": zod.string(),
-  "remote_commit_id": zod.string(),
-  "manifest_digest": zod.string(),
-  "backup_path": zod.union([zod.string(),zod.null()]),
-  "datasets": zod.record(zod.string(), zod.unknown()),
-  "stats_json": zod.record(zod.string(), zod.unknown()),
-  "snapshot_started_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "snapshot_finished_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "restored_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "transport": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "site_slug": zod.unknown(),
+  "remote_commit_id": zod.unknown(),
+  "manifest_digest": zod.unknown(),
+  "backup_path": zod.unknown(),
+  "datasets": zod.unknown(),
+  "stats_json": zod.unknown(),
+  "snapshot_started_at": zod.unknown(),
+  "snapshot_finished_at": zod.unknown(),
+  "restored_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
 /**
  * @summary 获取仪表盘统计
  */
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemPostsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemDiaryDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemThoughtsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemExcerptsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTotalViewsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemViewsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemShareDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemViewsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemShareDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficHistoryItemViewsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTotalVisitsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors24hDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors7dDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsAverageRequestDurationMsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemViewsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemShareDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsHistoryItemViewsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsRecentVisitsItemIsBotDefault = false;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPendingModerationDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedPostsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedDiaryEntriesDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedThoughtsDefault = 0;
-export const dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedExcerptsDefault = 0;
-
 export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.object({
-  "posts": zod.number(),
-  "diary_entries": zod.number(),
-  "thoughts": zod.number(),
-  "excerpts": zod.number(),
-  "comments": zod.number(),
-  "guestbook_entries": zod.number(),
-  "friends": zod.number(),
-  "assets": zod.number(),
-  "posts_by_status": zod.record(zod.string(), zod.number()).optional(),
-  "content_by_month": zod.array(zod.object({
-  "month": zod.string(),
-  "posts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemPostsDefault),
-  "diary": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemDiaryDefault),
-  "thoughts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemThoughtsDefault),
-  "excerpts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseContentByMonthItemExcerptsDefault)
-})).optional(),
-  "recent_content": zod.array(zod.object({
-  "id": zod.string(),
-  "title": zod.string(),
-  "content_type": zod.string(),
-  "status": zod.string(),
-  "updated_at": zod.string().datetime({})
-})).optional(),
-  "traffic": zod.object({
-  "total_views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTotalViewsDefault),
-  "top_pages": zod.array(zod.object({
-  "url": zod.string(),
-  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemViewsDefault),
-  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficTopPagesItemShareDefault),
-  "title": zod.union([zod.string(),zod.null()]).optional()
-})).optional(),
-  "distribution": zod.array(zod.object({
-  "url": zod.string(),
-  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemViewsDefault),
-  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficDistributionItemShareDefault),
-  "title": zod.union([zod.string(),zod.null()]).optional()
-})).optional(),
-  "history": zod.array(zod.object({
-  "date": zod.string().date(),
-  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseTrafficHistoryItemViewsDefault)
-})).optional(),
-  "last_snapshot_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
-}).optional(),
-  "visitors": zod.object({
-  "total_visits": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTotalVisitsDefault),
-  "unique_visitors_24h": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors24hDefault),
-  "unique_visitors_7d": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsUniqueVisitors7dDefault),
-  "average_request_duration_ms": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsAverageRequestDurationMsDefault),
-  "top_pages": zod.array(zod.object({
-  "url": zod.string(),
-  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemViewsDefault),
-  "share": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsTopPagesItemShareDefault),
-  "title": zod.union([zod.string(),zod.null()]).optional()
-})).optional(),
-  "history": zod.array(zod.object({
-  "date": zod.string().date(),
-  "views": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsHistoryItemViewsDefault)
-})).optional(),
-  "recent_visits": zod.array(zod.object({
-  "id": zod.string(),
-  "visited_at": zod.string().datetime({}),
-  "path": zod.string(),
-  "ip_address": zod.string(),
-  "location": zod.union([zod.string(),zod.null()]).optional(),
-  "isp": zod.union([zod.string(),zod.null()]).optional(),
-  "owner": zod.union([zod.string(),zod.null()]).optional(),
-  "status_text": zod.union([zod.string(),zod.null()]).optional(),
-  "user_agent": zod.union([zod.string(),zod.null()]).optional(),
-  "referer": zod.union([zod.string(),zod.null()]).optional(),
-  "status_code": zod.number(),
-  "duration_ms": zod.number(),
-  "is_bot": zod.boolean().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseVisitorsRecentVisitsItemIsBotDefault)
-})).optional(),
-  "last_visit_at": zod.union([zod.string().datetime({}),zod.null()]).optional()
-}).optional(),
-  "aux_metrics": zod.object({
-  "pending_moderation": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPendingModerationDefault),
-  "published_posts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedPostsDefault),
-  "published_diary_entries": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedDiaryEntriesDefault),
-  "published_thoughts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedThoughtsDefault),
-  "published_excerpts": zod.number().default(dashboardStatsApiV1AdminSystemDashboardStatsGetResponseAuxMetricsPublishedExcerptsDefault)
-}).optional()
+  "posts": zod.unknown(),
+  "diary_entries": zod.unknown(),
+  "thoughts": zod.unknown(),
+  "excerpts": zod.unknown(),
+  "comments": zod.unknown(),
+  "guestbook_entries": zod.unknown(),
+  "friends": zod.unknown(),
+  "assets": zod.unknown(),
+  "posts_by_status": zod.unknown().optional(),
+  "content_by_month": zod.unknown().optional(),
+  "recent_content": zod.unknown().optional(),
+  "traffic": zod.unknown().optional(),
+  "visitors": zod.unknown().optional(),
+  "aux_metrics": zod.unknown().optional()
 })
 
 
@@ -5039,27 +4069,11 @@ export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryParams = zod.ob
   "include_bots": zod.boolean().default(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryIncludeBotsDefault)
 })
 
-export const visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseItemsItemIsBotDefault = false;
-
 export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string(),
-  "visited_at": zod.string().datetime({}),
-  "path": zod.string(),
-  "ip_address": zod.string(),
-  "location": zod.union([zod.string(),zod.null()]).optional(),
-  "isp": zod.union([zod.string(),zod.null()]).optional(),
-  "owner": zod.union([zod.string(),zod.null()]).optional(),
-  "status_text": zod.union([zod.string(),zod.null()]).optional(),
-  "user_agent": zod.union([zod.string(),zod.null()]).optional(),
-  "referer": zod.union([zod.string(),zod.null()]).optional(),
-  "status_code": zod.number(),
-  "duration_ms": zod.number(),
-  "is_bot": zod.boolean().default(visitorRecordsApiV1AdminSystemVisitorRecordsGetResponseItemsItemIsBotDefault)
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -5083,15 +4097,15 @@ export const SystemInfoApiV1AdminSystemInfoGetResponse = zod.object({
  * @summary 获取 API 密钥列表
  */
 export const ListApiKeysApiV1AdminIntegrationsApiKeysGetResponseItem = zod.object({
-  "id": zod.string(),
-  "key_name": zod.string(),
-  "key_prefix": zod.string(),
-  "key_suffix": zod.string(),
-  "enabled": zod.boolean(),
-  "scopes": zod.array(zod.string()),
-  "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "key_name": zod.unknown(),
+  "key_prefix": zod.unknown(),
+  "key_suffix": zod.unknown(),
+  "enabled": zod.unknown(),
+  "scopes": zod.unknown(),
+  "last_used_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const ListApiKeysApiV1AdminIntegrationsApiKeysGetResponse = zod.array(ListApiKeysApiV1AdminIntegrationsApiKeysGetResponseItem)
 
@@ -5119,15 +4133,15 @@ export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutBody = zod.object(
 })
 
 export const UpdateApiKeyApiV1AdminIntegrationsApiKeysKeyIdPutResponse = zod.object({
-  "id": zod.string(),
-  "key_name": zod.string(),
-  "key_prefix": zod.string(),
-  "key_suffix": zod.string(),
-  "enabled": zod.boolean(),
-  "scopes": zod.array(zod.string()),
-  "last_used_at": zod.union([zod.string().datetime({}),zod.null()]),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "key_name": zod.unknown(),
+  "key_prefix": zod.unknown(),
+  "key_suffix": zod.unknown(),
+  "enabled": zod.unknown(),
+  "scopes": zod.unknown(),
+  "last_used_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -5159,109 +4173,20 @@ export const ListFeedsApiV1AdminIntegrationsFeedsGetResponse = zod.object({
 /**
  * @summary 获取 Agent 使用说明
  */
-export const getAgentUsageApiV1AdminIntegrationsAgentUsageGetResponseItemEndpointsItemMethodDefault = `GET`;
-
 export const GetAgentUsageApiV1AdminIntegrationsAgentUsageGetResponse = zod.object({
   "item": zod.object({
-  "schema_version": zod.string().describe('Usage schema version'),
-  "generated_at": zod.string().datetime({}).describe('Server generation timestamp'),
-  "name": zod.string().describe('Usage document name'),
-  "objective": zod.string().describe('Primary goal of this usage document'),
-  "auth": zod.object({
-  "type": zod.string().describe('Authentication type'),
-  "header": zod.string().describe('HTTP header used for authentication'),
-  "format": zod.string().describe('Expected header value format'),
-  "example": zod.string().describe('Authentication header example'),
-  "notes": zod.array(zod.string()).optional().describe('Additional auth notes')
-}).describe('Authentication instructions'),
-  "endpoints": zod.array(zod.object({
-  "id": zod.string().describe('Stable endpoint identifier'),
-  "url": zod.string().describe('Absolute endpoint URL'),
-  "method": zod.string().default(getAgentUsageApiV1AdminIntegrationsAgentUsageGetResponseItemEndpointsItemMethodDefault).describe('HTTP method'),
-  "description": zod.string().describe('What this endpoint is for'),
-  "required_headers": zod.array(zod.string()).optional().describe('Required request headers'),
-  "expected_status": zod.array(zod.number()).optional().describe('Expected success status codes')
-})).optional().describe('Key endpoints agents should use'),
-  "scope_guide": zod.object({
-  "required_for_connection": zod.array(zod.string()).optional().describe('Scopes required to establish MCP connection'),
-  "available_on_current_key": zod.array(zod.string()).optional().describe('Scopes granted to current API key'),
-  "recommended_for_full_management": zod.array(zod.string()).optional().describe('Recommended scopes for full capability coverage'),
-  "missing_recommended_scopes": zod.array(zod.string()).optional().describe('Recommended scopes not present on current API key')
-}).describe('Scope guidance for current API key'),
-  "quickstart": zod.object({
-  "summary": zod.string().describe('What the quickstart achieves'),
-  "environment": zod.record(zod.string(), zod.string()).optional().describe('Environment variables used by commands'),
-  "steps": zod.array(zod.object({
-  "order": zod.number().describe('Step sequence number'),
-  "title": zod.string().describe('Short step title'),
-  "goal": zod.string().describe('What this step verifies'),
-  "command": zod.string().describe('Copy-pasteable command snippet'),
-  "expected_result": zod.string().describe('Expected success signal')
-})).optional().describe('Ordered quickstart steps')
-}).describe('Copy-pasteable first-run path'),
-  "playbooks": zod.array(zod.object({
-  "id": zod.string().describe('Stable playbook identifier'),
-  "title": zod.string().describe('Playbook title'),
-  "description": zod.string().describe('Playbook purpose'),
-  "available": zod.boolean().describe('Whether current API key can execute this playbook end-to-end'),
-  "risk_level": zod.string().describe('Operational risk level'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required by this playbook'),
-  "steps": zod.array(zod.object({
-  "order": zod.number().describe('Step sequence number'),
-  "title": zod.string().describe('Short step title'),
-  "action_type": zod.string().describe('Action category such as mcp_call or curl'),
-  "payload": zod.record(zod.string(), zod.unknown()).optional().describe('Machine-readable action payload'),
-  "success_criteria": zod.string().describe('How to determine the step succeeded')
-})).optional().describe('Ordered steps'),
-  "verification": zod.array(zod.string()).optional().describe('Post-run checks')
-})).optional().describe('Task-oriented execution playbooks'),
-  "mcp": zod.object({
-  "endpoint": zod.string().describe('MCP endpoint URL'),
-  "transport": zod.string().describe('MCP transport'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
-  "available_scopes": zod.array(zod.string()).optional().describe('Scopes available on the current API key'),
-  "tools": zod.array(zod.object({
-  "id": zod.string().describe('Stable capability identifier'),
-  "name": zod.string().describe('Capability name'),
-  "kind": zod.string().describe('Capability kind: tool or resource'),
-  "description": zod.string().describe('Human-readable capability description'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
-  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
-  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
-})).optional().describe('Visible MCP tools'),
-  "resources": zod.array(zod.object({
-  "id": zod.string().describe('Stable capability identifier'),
-  "name": zod.string().describe('Capability name'),
-  "kind": zod.string().describe('Capability kind: tool or resource'),
-  "description": zod.string().describe('Human-readable capability description'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
-  "invocation": zod.record(zod.string(), zod.unknown()).optional().describe('How to invoke this capability'),
-  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Optional few-shot examples')
-})).optional().describe('Visible MCP resources'),
-  "call_templates": zod.array(zod.object({
-  "id": zod.string().describe('Stable template identifier'),
-  "description": zod.string().describe('Template purpose'),
-  "sequence": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Ordered MCP request sequence')
-})).optional().describe('High-signal MCP call sequences'),
-  "usage_hints": zod.array(zod.string()).optional().describe('Practical usage hints for agents')
-}).describe('MCP capability summary'),
-  "troubleshooting": zod.array(zod.object({
-  "code": zod.string().describe('HTTP status code or error tag'),
-  "symptom": zod.string().describe('Observed symptom'),
-  "likely_causes": zod.array(zod.string()).optional().describe('Likely causes'),
-  "fixes": zod.array(zod.string()).optional().describe('Recommended fixes')
-})).optional().describe('Common failures and recovery actions'),
-  "skill_maps": zod.array(zod.object({
-  "id": zod.string().describe('Skill map identifier'),
-  "name": zod.string().describe('Skill map display name'),
-  "description": zod.string().describe('What this skill map is for'),
-  "version": zod.number().describe('Skill map version'),
-  "when": zod.record(zod.string(), zod.unknown()).optional().describe('Trigger conditions'),
-  "where": zod.record(zod.string(), zod.unknown()).optional().describe('Target MCP endpoint metadata'),
-  "docs_url": zod.string().describe('Usage docs URL the agent should read first'),
-  "use_cases": zod.array(zod.string()).optional().describe('Suggested usage scenarios'),
-  "workflow": zod.record(zod.string(), zod.unknown()).optional().describe('Workflow metadata')
-})).optional().describe('Local agent skill maps')
+  "schema_version": zod.unknown().describe('Usage schema version'),
+  "generated_at": zod.unknown().describe('Server generation timestamp'),
+  "name": zod.unknown().describe('Usage document name'),
+  "objective": zod.unknown().describe('Primary goal of this usage document'),
+  "auth": zod.unknown().describe('Authentication instructions'),
+  "endpoints": zod.unknown().optional().describe('Key endpoints agents should use'),
+  "scope_guide": zod.unknown().describe('Scope guidance for current API key'),
+  "quickstart": zod.unknown().describe('Copy-pasteable first-run path'),
+  "playbooks": zod.unknown().optional().describe('Task-oriented execution playbooks'),
+  "mcp": zod.unknown().describe('MCP capability summary'),
+  "troubleshooting": zod.unknown().optional().describe('Common failures and recovery actions'),
+  "skill_maps": zod.unknown().optional().describe('Local agent skill maps')
 })
 })
 
@@ -5273,38 +4198,22 @@ export const GetMcpConfigApiV1AdminIntegrationsMcpConfigGetQueryParams = zod.obj
   "api_key_id": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseIsCustomizedDefault = false;
-export const getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseEnabledCapabilityCountDefault = 0;
-export const getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseAvailableCapabilityCountDefault = 0;
-
 export const GetMcpConfigApiV1AdminIntegrationsMcpConfigGetResponse = zod.object({
-  "api_key_id": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key identifier'),
-  "api_key_name": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key display name'),
-  "api_key_scopes": zod.array(zod.string()).optional().describe('Scopes currently granted to the selected API key'),
-  "public_access": zod.boolean().describe('Whether MCP public access is enabled'),
-  "selected_preset": zod.string().describe('Currently selected preset key'),
-  "is_customized": zod.boolean().default(getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseIsCustomizedDefault).describe('Whether enabled capabilities were customized from the preset'),
-  "enabled_capability_count": zod.number().default(getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseEnabledCapabilityCountDefault).describe('How many capabilities are currently enabled'),
-  "available_capability_count": zod.number().default(getMcpConfigApiV1AdminIntegrationsMcpConfigGetResponseAvailableCapabilityCountDefault).describe('How many capabilities exist in the MCP catalog'),
-  "usage_url": zod.string().describe('Canonical MCP usage document URL'),
-  "endpoint": zod.string().describe('MCP endpoint URL'),
-  "transport": zod.string().describe('MCP transport'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
-  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested scopes based on enabled capabilities'),
-  "presets": zod.array(zod.object({
-  "key": zod.string().describe('Preset identifier'),
-  "name": zod.string().describe('Preset display name'),
-  "description": zod.string().describe('Preset description'),
-  "capability_ids": zod.array(zod.string()).optional().describe('Capabilities enabled by this preset')
-})).optional().describe('Recommended MCP exposure presets'),
-  "capabilities": zod.array(zod.object({
-  "id": zod.string().describe('Stable capability identifier'),
-  "name": zod.string().describe('Capability name'),
-  "kind": zod.string().describe('Capability kind: tool or resource'),
-  "description": zod.string().describe('Human-readable capability description'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
-  "enabled": zod.boolean().describe('Whether this capability is enabled for MCP exposure')
-})).optional().describe('Full MCP capability catalog with enabled state for the selected API key')
+  "api_key_id": zod.unknown().optional().describe('Selected API key identifier'),
+  "api_key_name": zod.unknown().optional().describe('Selected API key display name'),
+  "api_key_scopes": zod.unknown().optional().describe('Scopes currently granted to the selected API key'),
+  "public_access": zod.unknown().describe('Whether MCP public access is enabled'),
+  "selected_preset": zod.unknown().describe('Currently selected preset key'),
+  "is_customized": zod.unknown().optional().describe('Whether enabled capabilities were customized from the preset'),
+  "enabled_capability_count": zod.unknown().optional().describe('How many capabilities are currently enabled'),
+  "available_capability_count": zod.unknown().optional().describe('How many capabilities exist in the MCP catalog'),
+  "usage_url": zod.unknown().describe('Canonical MCP usage document URL'),
+  "endpoint": zod.unknown().describe('MCP endpoint URL'),
+  "transport": zod.unknown().describe('MCP transport'),
+  "required_scopes": zod.unknown().optional().describe('Scopes required to connect to MCP'),
+  "recommended_scopes": zod.unknown().optional().describe('Suggested scopes based on enabled capabilities'),
+  "presets": zod.unknown().optional().describe('Recommended MCP exposure presets'),
+  "capabilities": zod.unknown().optional().describe('Full MCP capability catalog with enabled state for the selected API key')
 })
 
 
@@ -5319,70 +4228,38 @@ export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutBody = zod.object(
   "public_access": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether MCP public access is enabled')
 })
 
-export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseIsCustomizedDefault = false;
-export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseEnabledCapabilityCountDefault = 0;
-export const updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseAvailableCapabilityCountDefault = 0;
-
 export const UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponse = zod.object({
-  "api_key_id": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key identifier'),
-  "api_key_name": zod.union([zod.string(),zod.null()]).optional().describe('Selected API key display name'),
-  "api_key_scopes": zod.array(zod.string()).optional().describe('Scopes currently granted to the selected API key'),
-  "public_access": zod.boolean().describe('Whether MCP public access is enabled'),
-  "selected_preset": zod.string().describe('Currently selected preset key'),
-  "is_customized": zod.boolean().default(updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseIsCustomizedDefault).describe('Whether enabled capabilities were customized from the preset'),
-  "enabled_capability_count": zod.number().default(updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseEnabledCapabilityCountDefault).describe('How many capabilities are currently enabled'),
-  "available_capability_count": zod.number().default(updateMcpConfigApiV1AdminIntegrationsMcpConfigPutResponseAvailableCapabilityCountDefault).describe('How many capabilities exist in the MCP catalog'),
-  "usage_url": zod.string().describe('Canonical MCP usage document URL'),
-  "endpoint": zod.string().describe('MCP endpoint URL'),
-  "transport": zod.string().describe('MCP transport'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to connect to MCP'),
-  "recommended_scopes": zod.array(zod.string()).optional().describe('Suggested scopes based on enabled capabilities'),
-  "presets": zod.array(zod.object({
-  "key": zod.string().describe('Preset identifier'),
-  "name": zod.string().describe('Preset display name'),
-  "description": zod.string().describe('Preset description'),
-  "capability_ids": zod.array(zod.string()).optional().describe('Capabilities enabled by this preset')
-})).optional().describe('Recommended MCP exposure presets'),
-  "capabilities": zod.array(zod.object({
-  "id": zod.string().describe('Stable capability identifier'),
-  "name": zod.string().describe('Capability name'),
-  "kind": zod.string().describe('Capability kind: tool or resource'),
-  "description": zod.string().describe('Human-readable capability description'),
-  "required_scopes": zod.array(zod.string()).optional().describe('Scopes required to access this capability'),
-  "enabled": zod.boolean().describe('Whether this capability is enabled for MCP exposure')
-})).optional().describe('Full MCP capability catalog with enabled state for the selected API key')
+  "api_key_id": zod.unknown().optional().describe('Selected API key identifier'),
+  "api_key_name": zod.unknown().optional().describe('Selected API key display name'),
+  "api_key_scopes": zod.unknown().optional().describe('Scopes currently granted to the selected API key'),
+  "public_access": zod.unknown().describe('Whether MCP public access is enabled'),
+  "selected_preset": zod.unknown().describe('Currently selected preset key'),
+  "is_customized": zod.unknown().optional().describe('Whether enabled capabilities were customized from the preset'),
+  "enabled_capability_count": zod.unknown().optional().describe('How many capabilities are currently enabled'),
+  "available_capability_count": zod.unknown().optional().describe('How many capabilities exist in the MCP catalog'),
+  "usage_url": zod.unknown().describe('Canonical MCP usage document URL'),
+  "endpoint": zod.unknown().describe('MCP endpoint URL'),
+  "transport": zod.unknown().describe('MCP transport'),
+  "required_scopes": zod.unknown().optional().describe('Scopes required to connect to MCP'),
+  "recommended_scopes": zod.unknown().optional().describe('Suggested scopes based on enabled capabilities'),
+  "presets": zod.unknown().optional().describe('Recommended MCP exposure presets'),
+  "capabilities": zod.unknown().optional().describe('Full MCP capability catalog with enabled state for the selected API key')
 })
 
 
 /**
  * @summary 获取 Agent 模型配置
  */
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseEnabledDefault = false;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseProviderDefault = `openai_compatible`;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseBaseUrlDefault = ``;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseModelDefault = ``;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseApiKeyDefault = ``;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureDefault = 0.2;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMin = 0;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMax = 2;
-
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsDefault = 20;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMin = 5;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMax = 300;
-
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseAdvisoryPromptDefault = ``;
-export const getModelConfigApiV1AdminAutomationModelConfigGetResponseIsReadyDefault = false;
-
 export const GetModelConfigApiV1AdminAutomationModelConfigGetResponse = zod.object({
-  "enabled": zod.boolean().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseEnabledDefault),
-  "provider": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseProviderDefault),
-  "base_url": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseBaseUrlDefault),
-  "model": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseModelDefault),
-  "api_key": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseApiKeyDefault),
-  "temperature": zod.number().min(getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMin).max(getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureMax).default(getModelConfigApiV1AdminAutomationModelConfigGetResponseTemperatureDefault),
-  "timeout_seconds": zod.number().min(getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMin).max(getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsMax).default(getModelConfigApiV1AdminAutomationModelConfigGetResponseTimeoutSecondsDefault),
-  "advisory_prompt": zod.string().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseAdvisoryPromptDefault),
-  "is_ready": zod.boolean().default(getModelConfigApiV1AdminAutomationModelConfigGetResponseIsReadyDefault)
+  "enabled": zod.unknown().optional(),
+  "provider": zod.unknown().optional(),
+  "base_url": zod.unknown().optional(),
+  "model": zod.unknown().optional(),
+  "api_key": zod.unknown().optional(),
+  "temperature": zod.unknown().optional(),
+  "timeout_seconds": zod.unknown().optional(),
+  "advisory_prompt": zod.unknown().optional(),
+  "is_ready": zod.unknown().optional()
 })
 
 
@@ -5408,32 +4285,16 @@ export const PutModelConfigApiV1AdminAutomationModelConfigPutBody = zod.object({
   "advisory_prompt": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseEnabledDefault = false;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseProviderDefault = `openai_compatible`;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseBaseUrlDefault = ``;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseModelDefault = ``;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseApiKeyDefault = ``;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureDefault = 0.2;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMin = 0;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMax = 2;
-
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsDefault = 20;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMin = 5;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMax = 300;
-
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseAdvisoryPromptDefault = ``;
-export const putModelConfigApiV1AdminAutomationModelConfigPutResponseIsReadyDefault = false;
-
 export const PutModelConfigApiV1AdminAutomationModelConfigPutResponse = zod.object({
-  "enabled": zod.boolean().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseEnabledDefault),
-  "provider": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseProviderDefault),
-  "base_url": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseBaseUrlDefault),
-  "model": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseModelDefault),
-  "api_key": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseApiKeyDefault),
-  "temperature": zod.number().min(putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMin).max(putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureMax).default(putModelConfigApiV1AdminAutomationModelConfigPutResponseTemperatureDefault),
-  "timeout_seconds": zod.number().min(putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMin).max(putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsMax).default(putModelConfigApiV1AdminAutomationModelConfigPutResponseTimeoutSecondsDefault),
-  "advisory_prompt": zod.string().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseAdvisoryPromptDefault),
-  "is_ready": zod.boolean().default(putModelConfigApiV1AdminAutomationModelConfigPutResponseIsReadyDefault)
+  "enabled": zod.unknown().optional(),
+  "provider": zod.unknown().optional(),
+  "base_url": zod.unknown().optional(),
+  "model": zod.unknown().optional(),
+  "api_key": zod.unknown().optional(),
+  "temperature": zod.unknown().optional(),
+  "timeout_seconds": zod.unknown().optional(),
+  "advisory_prompt": zod.unknown().optional(),
+  "is_ready": zod.unknown().optional()
 })
 
 
@@ -5459,136 +4320,32 @@ export const PostModelConfigTestApiV1AdminAutomationModelConfigTestPostBody = zo
   "advisory_prompt": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseOkDefault = true;
-
 export const PostModelConfigTestApiV1AdminAutomationModelConfigTestPostResponse = zod.object({
-  "ok": zod.boolean().default(postModelConfigTestApiV1AdminAutomationModelConfigTestPostResponseOkDefault),
-  "model": zod.string(),
-  "endpoint": zod.string(),
-  "summary": zod.string()
+  "ok": zod.unknown().optional(),
+  "model": zod.unknown(),
+  "endpoint": zod.unknown(),
+  "summary": zod.unknown()
 })
 
 
 /**
  * @summary 获取 Agent 工作流
  */
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseEnabledDefault = true;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSchemaVersionDefault = 2;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionDefault = 2;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionMax = 10;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemIdMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemTypeMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelDefault = ``;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelMax = 160;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemIdMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceHandleOneMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetHandleOneMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelDefault = ``;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelMax = 160;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeDefault = `default`;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeMax = 80;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportXDefault = 0;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportYDefault = 0;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportZoomDefault = 1;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemIdMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemTypeMax = 120;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelDefault = ``;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelMax = 160;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemEnabledDefault = true;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeDefault = `risk_based`;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeMax = 80;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsDefault = 80;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsMax = 500;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyDefaultModelOneMax = 160;
-
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNodeCountDefault = 0;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryOperationCountDefault = 0;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryHighRiskOperationCountDefault = 0;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNarrativeDefault = ``;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault = false;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault = ``;
-export const getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault = false;
-
 export const GetWorkflowsApiV1AdminAutomationWorkflowsGetResponseItem = zod.object({
-  "key": zod.string(),
-  "name": zod.string(),
-  "description": zod.string(),
-  "enabled": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseEnabledDefault),
-  "schema_version": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSchemaVersionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemTypeMax),
-  "label": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemLabelDefault),
-  "type": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportXDefault),
-  "y": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportYDefault),
-  "zoom": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemTypeMax),
-  "label": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsMax).default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "summary": zod.object({
-  "trigger_labels": zod.array(zod.string()).optional(),
-  "node_count": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNodeCountDefault),
-  "operation_count": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryOperationCountDefault),
-  "high_risk_operation_count": zod.number().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryHighRiskOperationCountDefault),
-  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
-  "narrative": zod.string().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseSummaryNarrativeDefault)
-}).optional(),
-  "built_in": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseBuiltInDefault),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "instructions": zod.string().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseInstructionsDefault),
-  "require_human_approval": zod.boolean().default(getWorkflowsApiV1AdminAutomationWorkflowsGetResponseRequireHumanApprovalDefault)
+  "key": zod.unknown(),
+  "name": zod.unknown(),
+  "description": zod.unknown(),
+  "enabled": zod.unknown().optional(),
+  "schema_version": zod.unknown().optional(),
+  "graph": zod.unknown().optional(),
+  "trigger_bindings": zod.unknown().optional(),
+  "runtime_policy": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "built_in": zod.unknown().optional(),
+  "trigger_event": zod.unknown().optional(),
+  "target_type": zod.unknown().optional(),
+  "instructions": zod.unknown().optional(),
+  "require_human_approval": zod.unknown().optional()
 })
 export const GetWorkflowsApiV1AdminAutomationWorkflowsGetResponse = zod.array(GetWorkflowsApiV1AdminAutomationWorkflowsGetResponseItem)
 
@@ -5727,200 +4484,17 @@ export const GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetQueryParams
   "workflow_key": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemIconDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemRequiredDefault = true;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemRequiredDefault = true;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemRiskLevelDefault = `low`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerTypesItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemSystemValueDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupKeyDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupLabelDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupKeyDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupLabelDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemRiskLevelDefault = `low`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseApprovalTypesItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseVariableSourcesItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemBaseCapabilityDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemKindDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemWorkflowLocalDefault = false;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDomainDefault = `misc`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemSensitivityDefault = `business`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemLabelDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRiskLevelDefault = `low`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRequiresApprovalDefault = false;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemSurfaceModeDefault = `atomic`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemActionKeyDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDomainDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemBaseCapabilityDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemKindDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemWorkflowLocalDefault = false;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemLabelDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRiskLevelDefault = `low`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresApprovalDefault = false;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresRefDefault = false;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemLabelDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault = ``;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault = `low`;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault = false;
-export const getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault = false;
-
 export const GetWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponse = zod.object({
-  "node_types": zod.array(zod.object({
-  "type": zod.string(),
-  "label": zod.string(),
-  "category": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemDescriptionDefault),
-  "icon": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemIconDefault),
-  "default_config": zod.record(zod.string(), zod.unknown()).optional(),
-  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "input_ports": zod.array(zod.object({
-  "id": zod.string(),
-  "label": zod.string(),
-  "side": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemDescriptionDefault),
-  "match_values": zod.array(zod.string()).optional(),
-  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
-  "required": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemInputPortsItemRequiredDefault)
-})).optional(),
-  "output_ports": zod.array(zod.object({
-  "id": zod.string(),
-  "label": zod.string(),
-  "side": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemDescriptionDefault),
-  "match_values": zod.array(zod.string()).optional(),
-  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
-  "required": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemOutputPortsItemRequiredDefault)
-})).optional(),
-  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseNodeTypesItemRiskLevelDefault)
-})).optional(),
-  "trigger_types": zod.array(zod.object({
-  "type": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerTypesItemDescriptionDefault),
-  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "example_config": zod.record(zod.string(), zod.unknown()).optional(),
-  "supports_target_types": zod.array(zod.string()).optional()
-})).optional(),
-  "trigger_events": zod.array(zod.object({
-  "value": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemDescriptionDefault),
-  "system_value": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemSystemValueDefault),
-  "group_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupKeyDefault),
-  "group_label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseTriggerEventsItemGroupLabelDefault),
-  "target_types": zod.array(zod.string()).optional(),
-  "payload_fields": zod.array(zod.record(zod.string(), zod.string())).optional(),
-  "example_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "parameters": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-})).optional(),
-  "operation_catalog": zod.array(zod.object({
-  "key": zod.string(),
-  "operation_type": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemDescriptionDefault),
-  "group_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupKeyDefault),
-  "group_label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemGroupLabelDefault),
-  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseOperationCatalogItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "invocation": zod.record(zod.string(), zod.unknown()).optional(),
-  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-})).optional(),
-  "approval_types": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseApprovalTypesItemDescriptionDefault),
-  "config_schema": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "expression_catalog": zod.object({
-  "helpers": zod.array(zod.record(zod.string(), zod.string())).optional(),
-  "variables": zod.array(zod.record(zod.string(), zod.string())).optional(),
-  "examples": zod.array(zod.string()).optional()
-}).optional(),
-  "template_catalog": zod.array(zod.object({
-  "key": zod.string(),
-  "title": zod.string(),
-  "description": zod.string(),
-  "workflow": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "variable_sources": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseVariableSourcesItemDescriptionDefault),
-  "payload_schema": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "readonly_tools": zod.array(zod.object({
-  "key": zod.string(),
-  "base_capability": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemBaseCapabilityDefault),
-  "kind": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemKindDefault),
-  "workflow_local": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemWorkflowLocalDefault),
-  "domain": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDomainDefault),
-  "sensitivity": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemSensitivityDefault),
-  "label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemLabelDefault),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemDescriptionDefault),
-  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "response_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
-  "requires_approval": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseReadonlyToolsItemRequiresApprovalDefault),
-  "allowed_args": zod.array(zod.string()).optional(),
-  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
-  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
-  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
-})).optional(),
-  "workflow_local_action_surfaces": zod.array(zod.object({
-  "key": zod.string(),
-  "surface_mode": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemSurfaceModeDefault),
-  "action_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemActionKeyDefault),
-  "domain": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDomainDefault),
-  "base_capability": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemBaseCapabilityDefault),
-  "kind": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemKindDefault),
-  "workflow_local": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemWorkflowLocalDefault),
-  "label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemLabelDefault),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemDescriptionDefault),
-  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
-  "allowed_args": zod.array(zod.string()).optional(),
-  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
-  "requires_approval": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresApprovalDefault),
-  "requires_ref": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemRequiresRefDefault),
-  "allowed_source_query_keys": zod.array(zod.string()).optional(),
-  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
-  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional(),
-  "entries": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemLabelDefault),
-  "description": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault),
-  "action_key": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault),
-  "base_capability": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault),
-  "risk_level": zod.string().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
-  "allowed_args": zod.array(zod.string()).optional(),
-  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
-  "requires_approval": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault),
-  "requires_ref": zod.boolean().default(getWorkflowCatalogApiV1AdminAutomationWorkflowCatalogGetResponseWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault),
-  "allowed_source_query_keys": zod.array(zod.string()).optional(),
-  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
-  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
-})).optional()
-})).optional()
+  "node_types": zod.unknown().optional(),
+  "trigger_types": zod.unknown().optional(),
+  "trigger_events": zod.unknown().optional(),
+  "operation_catalog": zod.unknown().optional(),
+  "approval_types": zod.unknown().optional(),
+  "expression_catalog": zod.unknown().optional(),
+  "template_catalog": zod.unknown().optional(),
+  "variable_sources": zod.unknown().optional(),
+  "readonly_tools": zod.unknown().optional(),
+  "workflow_local_action_surfaces": zod.unknown().optional()
 })
 
 
@@ -5931,36 +4505,17 @@ export const GetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurf
   "workflow_key": zod.string()
 })
 
-export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneStatusDefault = `active`;
-export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneSummaryDefault = ``;
-export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneReadyToApplyDefault = false;
-export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemReasonDefault = ``;
-export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemImpactDefault = ``;
-export const getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemHumanSummaryDefault = ``;
-
 export const GetWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponse = zod.union([zod.object({
-  "workflow_key": zod.string(),
-  "status": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneStatusDefault),
-  "summary": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneSummaryDefault),
-  "ready_to_apply": zod.boolean().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOneReadyToApplyDefault),
-  "messages": zod.array(zod.object({
-  "role": zod.string(),
-  "content": zod.string(),
-  "created_at": zod.string().datetime({})
-})).optional(),
-  "patches": zod.array(zod.object({
-  "action": zod.string(),
-  "surface_kind": zod.string(),
-  "surface_key": zod.string(),
-  "reason": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemReasonDefault),
-  "impact": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemImpactDefault),
-  "human_summary": zod.string().default(getWorkflowSurfaceDraftApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftGetResponseOnePatchesItemHumanSummaryDefault),
-  "spec": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "graph_mutation": zod.record(zod.string(), zod.unknown()).optional(),
-  "validation_issues": zod.array(zod.string()).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "workflow_key": zod.unknown(),
+  "status": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "ready_to_apply": zod.unknown().optional(),
+  "messages": zod.unknown().optional(),
+  "patches": zod.unknown().optional(),
+  "graph_mutation": zod.unknown().optional(),
+  "validation_issues": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 }),zod.null()])
 
 
@@ -5987,36 +4542,17 @@ export const PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflo
   "message": zod.string().min(1).max(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostBodyMessageMax)
 })
 
-export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseStatusDefault = `active`;
-export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseSummaryDefault = ``;
-export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseReadyToApplyDefault = false;
-export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemReasonDefault = ``;
-export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemImpactDefault = ``;
-export const postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemHumanSummaryDefault = ``;
-
 export const PostWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponse = zod.object({
-  "workflow_key": zod.string(),
-  "status": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseStatusDefault),
-  "summary": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseSummaryDefault),
-  "ready_to_apply": zod.boolean().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponseReadyToApplyDefault),
-  "messages": zod.array(zod.object({
-  "role": zod.string(),
-  "content": zod.string(),
-  "created_at": zod.string().datetime({})
-})).optional(),
-  "patches": zod.array(zod.object({
-  "action": zod.string(),
-  "surface_kind": zod.string(),
-  "surface_key": zod.string(),
-  "reason": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemReasonDefault),
-  "impact": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemImpactDefault),
-  "human_summary": zod.string().default(postWorkflowSurfaceDraftMessageApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftMessagesPostResponsePatchesItemHumanSummaryDefault),
-  "spec": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "graph_mutation": zod.record(zod.string(), zod.unknown()).optional(),
-  "validation_issues": zod.array(zod.string()).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "workflow_key": zod.unknown(),
+  "status": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "ready_to_apply": zod.unknown().optional(),
+  "messages": zod.unknown().optional(),
+  "patches": zod.unknown().optional(),
+  "graph_mutation": zod.unknown().optional(),
+  "validation_issues": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -6027,323 +4563,11 @@ export const PostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowK
   "workflow_key": zod.string()
 })
 
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseOkDefault = true;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseSummaryDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowEnabledDefault = true;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSchemaVersionDefault = 2;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionDefault = 2;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionMax = 10;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemIdMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemTypeMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelMax = 160;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemIdMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceHandleOneMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetHandleOneMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelMax = 160;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeDefault = `default`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeMax = 80;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportXDefault = 0;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportYDefault = 0;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportZoomDefault = 1;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemIdMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemTypeMax = 120;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelMax = 160;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemEnabledDefault = true;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeDefault = `risk_based`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeMax = 80;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsDefault = 80;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsMax = 500;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyDefaultModelOneMax = 160;
-
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNodeCountDefault = 0;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryOperationCountDefault = 0;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryHighRiskOperationCountDefault = 0;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNarrativeDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowBuiltInDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowInstructionsDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRequireHumanApprovalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemIconDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemRequiredDefault = true;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemRequiredDefault = true;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemRiskLevelDefault = `low`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerTypesItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemSystemValueDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupKeyDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupKeyDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemRiskLevelDefault = `low`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneApprovalTypesItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneVariableSourcesItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemBaseCapabilityDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemKindDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemWorkflowLocalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDomainDefault = `misc`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemSensitivityDefault = `business`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRiskLevelDefault = `low`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRequiresApprovalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemSurfaceModeDefault = `atomic`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemActionKeyDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDomainDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemBaseCapabilityDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemKindDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemWorkflowLocalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRiskLevelDefault = `low`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresApprovalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresRefDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemLabelDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault = ``;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault = `low`;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault = false;
-export const postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault = false;
-
 export const PostWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponse = zod.object({
-  "ok": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseOkDefault),
-  "summary": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseSummaryDefault),
-  "workflow": zod.object({
-  "key": zod.string(),
-  "name": zod.string(),
-  "description": zod.string(),
-  "enabled": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowEnabledDefault),
-  "schema_version": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSchemaVersionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemTypeMax),
-  "label": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemLabelDefault),
-  "type": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportXDefault),
-  "y": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportYDefault),
-  "zoom": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemTypeMax),
-  "label": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsMax).default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "summary": zod.object({
-  "trigger_labels": zod.array(zod.string()).optional(),
-  "node_count": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNodeCountDefault),
-  "operation_count": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryOperationCountDefault),
-  "high_risk_operation_count": zod.number().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryHighRiskOperationCountDefault),
-  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
-  "narrative": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowSummaryNarrativeDefault)
-}).optional(),
-  "built_in": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowBuiltInDefault),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "instructions": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowInstructionsDefault),
-  "require_human_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseWorkflowRequireHumanApprovalDefault)
-}),
-  "catalog": zod.union([zod.object({
-  "node_types": zod.array(zod.object({
-  "type": zod.string(),
-  "label": zod.string(),
-  "category": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemDescriptionDefault),
-  "icon": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemIconDefault),
-  "default_config": zod.record(zod.string(), zod.unknown()).optional(),
-  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "input_ports": zod.array(zod.object({
-  "id": zod.string(),
-  "label": zod.string(),
-  "side": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemDescriptionDefault),
-  "match_values": zod.array(zod.string()).optional(),
-  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
-  "required": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemInputPortsItemRequiredDefault)
-})).optional(),
-  "output_ports": zod.array(zod.object({
-  "id": zod.string(),
-  "label": zod.string(),
-  "side": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemDescriptionDefault),
-  "match_values": zod.array(zod.string()).optional(),
-  "data_schema": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional(),
-  "required": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemOutputPortsItemRequiredDefault)
-})).optional(),
-  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneNodeTypesItemRiskLevelDefault)
-})).optional(),
-  "trigger_types": zod.array(zod.object({
-  "type": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerTypesItemDescriptionDefault),
-  "config_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "example_config": zod.record(zod.string(), zod.unknown()).optional(),
-  "supports_target_types": zod.array(zod.string()).optional()
-})).optional(),
-  "trigger_events": zod.array(zod.object({
-  "value": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemDescriptionDefault),
-  "system_value": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemSystemValueDefault),
-  "group_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupKeyDefault),
-  "group_label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneTriggerEventsItemGroupLabelDefault),
-  "target_types": zod.array(zod.string()).optional(),
-  "payload_fields": zod.array(zod.record(zod.string(), zod.string())).optional(),
-  "example_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "parameters": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-})).optional(),
-  "operation_catalog": zod.array(zod.object({
-  "key": zod.string(),
-  "operation_type": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemDescriptionDefault),
-  "group_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupKeyDefault),
-  "group_label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemGroupLabelDefault),
-  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneOperationCatalogItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "invocation": zod.record(zod.string(), zod.unknown()).optional(),
-  "examples": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-})).optional(),
-  "approval_types": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneApprovalTypesItemDescriptionDefault),
-  "config_schema": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "expression_catalog": zod.object({
-  "helpers": zod.array(zod.record(zod.string(), zod.string())).optional(),
-  "variables": zod.array(zod.record(zod.string(), zod.string())).optional(),
-  "examples": zod.array(zod.string()).optional()
-}).optional(),
-  "template_catalog": zod.array(zod.object({
-  "key": zod.string(),
-  "title": zod.string(),
-  "description": zod.string(),
-  "workflow": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "variable_sources": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneVariableSourcesItemDescriptionDefault),
-  "payload_schema": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "readonly_tools": zod.array(zod.object({
-  "key": zod.string(),
-  "base_capability": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemBaseCapabilityDefault),
-  "kind": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemKindDefault),
-  "workflow_local": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemWorkflowLocalDefault),
-  "domain": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDomainDefault),
-  "sensitivity": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemSensitivityDefault),
-  "label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemLabelDefault),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemDescriptionDefault),
-  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "response_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
-  "requires_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneReadonlyToolsItemRequiresApprovalDefault),
-  "allowed_args": zod.array(zod.string()).optional(),
-  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
-  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
-  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
-})).optional(),
-  "workflow_local_action_surfaces": zod.array(zod.object({
-  "key": zod.string(),
-  "surface_mode": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemSurfaceModeDefault),
-  "action_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemActionKeyDefault),
-  "domain": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDomainDefault),
-  "base_capability": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemBaseCapabilityDefault),
-  "kind": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemKindDefault),
-  "workflow_local": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemWorkflowLocalDefault),
-  "label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemLabelDefault),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemDescriptionDefault),
-  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
-  "allowed_args": zod.array(zod.string()).optional(),
-  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
-  "requires_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresApprovalDefault),
-  "requires_ref": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemRequiresRefDefault),
-  "allowed_source_query_keys": zod.array(zod.string()).optional(),
-  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
-  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional(),
-  "entries": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemLabelDefault),
-  "description": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemDescriptionDefault),
-  "action_key": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemActionKeyDefault),
-  "base_capability": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemBaseCapabilityDefault),
-  "risk_level": zod.string().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRiskLevelDefault),
-  "required_scopes": zod.array(zod.string()).optional(),
-  "fixed_args": zod.record(zod.string(), zod.unknown()).optional(),
-  "allowed_args": zod.array(zod.string()).optional(),
-  "bound_args": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional(),
-  "input_schema": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_projection": zod.record(zod.string(), zod.unknown()).optional(),
-  "requires_approval": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresApprovalDefault),
-  "requires_ref": zod.boolean().default(postWorkflowSurfaceDraftApplyApiV1AdminAutomationWorkflowsWorkflowKeySurfaceDraftApplyPostResponseCatalogOneWorkflowLocalActionSurfacesItemEntriesItemRequiresRefDefault),
-  "allowed_source_query_keys": zod.array(zod.string()).optional(),
-  "ref_binding": zod.record(zod.string(), zod.unknown()).optional(),
-  "human_card": zod.record(zod.string(), zod.array(zod.string())).optional()
-})).optional()
-})).optional()
-}),zod.null()]).optional()
+  "ok": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "workflow": zod.unknown(),
+  "catalog": zod.unknown().optional()
 })
 
 
@@ -6473,21 +4697,9 @@ export const PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBody =
   "instructions": zod.union([zod.string().max(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostBodyInstructionsOneMax),zod.null()]).optional()
 })
 
-export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseOkDefault = true;
-export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemLevelDefault = `error`;
-export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemCodeDefault = ``;
-export const postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemPathDefault = ``;
-
 export const PostWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponse = zod.object({
-  "ok": zod.boolean().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseOkDefault),
-  "issues": zod.array(zod.object({
-  "level": zod.string().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemLevelDefault),
-  "code": zod.string().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemCodeDefault),
-  "message": zod.string(),
-  "path": zod.string().default(postWorkflowValidateApiV1AdminAutomationWorkflowsValidatePostResponseIssuesItemPathDefault),
-  "node_id": zod.union([zod.string(),zod.null()]).optional(),
-  "edge_id": zod.union([zod.string(),zod.null()]).optional()
-})).optional()
+  "ok": zod.unknown().optional(),
+  "issues": zod.unknown().optional()
 })
 
 
@@ -6844,123 +5056,21 @@ export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBody = zod.ob
   "instructions": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutBodyInstructionsOneMax),zod.null()]).optional()
 })
 
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseEnabledDefault = true;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSchemaVersionDefault = 2;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionDefault = 2;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionMax = 10;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemIdMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemTypeMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelDefault = ``;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelMax = 160;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemIdMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceHandleOneMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetHandleOneMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelDefault = ``;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelMax = 160;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeDefault = `default`;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeMax = 80;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportXDefault = 0;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportYDefault = 0;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportZoomDefault = 1;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemIdMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemTypeMax = 120;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelDefault = ``;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelMax = 160;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemEnabledDefault = true;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeDefault = `risk_based`;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeMax = 80;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsDefault = 80;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsMax = 500;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyDefaultModelOneMax = 160;
-
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNodeCountDefault = 0;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryOperationCountDefault = 0;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryHighRiskOperationCountDefault = 0;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNarrativeDefault = ``;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault = false;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault = ``;
-export const putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault = false;
-
 export const PutWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponse = zod.object({
-  "key": zod.string(),
-  "name": zod.string(),
-  "description": zod.string(),
-  "enabled": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseEnabledDefault),
-  "schema_version": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSchemaVersionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemTypeMax),
-  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemLabelDefault),
-  "type": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportXDefault),
-  "y": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportYDefault),
-  "zoom": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemTypeMax),
-  "label": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsMax).default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "summary": zod.object({
-  "trigger_labels": zod.array(zod.string()).optional(),
-  "node_count": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNodeCountDefault),
-  "operation_count": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryOperationCountDefault),
-  "high_risk_operation_count": zod.number().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryHighRiskOperationCountDefault),
-  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
-  "narrative": zod.string().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseSummaryNarrativeDefault)
-}).optional(),
-  "built_in": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseBuiltInDefault),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "instructions": zod.string().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseInstructionsDefault),
-  "require_human_approval": zod.boolean().default(putWorkflowApiV1AdminAutomationWorkflowsWorkflowKeyPutResponseRequireHumanApprovalDefault)
+  "key": zod.unknown(),
+  "name": zod.unknown(),
+  "description": zod.unknown(),
+  "enabled": zod.unknown().optional(),
+  "schema_version": zod.unknown().optional(),
+  "graph": zod.unknown().optional(),
+  "trigger_bindings": zod.unknown().optional(),
+  "runtime_policy": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "built_in": zod.unknown().optional(),
+  "trigger_event": zod.unknown().optional(),
+  "target_type": zod.unknown().optional(),
+  "instructions": zod.unknown().optional(),
+  "require_human_approval": zod.unknown().optional()
 })
 
 
@@ -6999,60 +5109,10 @@ export const PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBody
   "execute_immediately": zod.boolean().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostBodyExecuteImmediatelyDefault)
 })
 
-export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationOkDefault = true;
-export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemLevelDefault = `error`;
-export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemCodeDefault = ``;
-export const postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemPathDefault = ``;
-
 export const PostWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponse = zod.object({
-  "run": zod.object({
-  "id": zod.string(),
-  "workflow_key": zod.string(),
-  "status": zod.string(),
-  "trigger_kind": zod.string(),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "target_id": zod.union([zod.string(),zod.null()]).optional(),
-  "thread_id": zod.string(),
-  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
-  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_code": zod.union([zod.string(),zod.null()]).optional(),
-  "error_message": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-}),
-  "steps": zod.array(zod.object({
-  "id": zod.string(),
-  "run_id": zod.string(),
-  "sequence_no": zod.number(),
-  "node_key": zod.string(),
-  "step_kind": zod.string(),
-  "status": zod.string(),
-  "narrative": zod.string(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})).optional(),
-  "validation": zod.object({
-  "ok": zod.boolean().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationOkDefault),
-  "issues": zod.array(zod.object({
-  "level": zod.string().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemLevelDefault),
-  "code": zod.string().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemCodeDefault),
-  "message": zod.string(),
-  "path": zod.string().default(postWorkflowRunApiV1AdminAutomationWorkflowsWorkflowKeyRunsPostResponseValidationIssuesItemPathDefault),
-  "node_id": zod.union([zod.string(),zod.null()]).optional(),
-  "edge_id": zod.union([zod.string(),zod.null()]).optional()
-})).optional()
-}).optional()
+  "run": zod.unknown(),
+  "steps": zod.unknown().optional(),
+  "validation": zod.unknown().optional()
 })
 
 
@@ -7083,60 +5143,10 @@ export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRuns
   "execute_immediately": zod.boolean().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostBodyExecuteImmediatelyDefault)
 })
 
-export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationOkDefault = true;
-export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemLevelDefault = `error`;
-export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemCodeDefault = ``;
-export const postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemPathDefault = ``;
-
 export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponse = zod.object({
-  "run": zod.object({
-  "id": zod.string(),
-  "workflow_key": zod.string(),
-  "status": zod.string(),
-  "trigger_kind": zod.string(),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "target_id": zod.union([zod.string(),zod.null()]).optional(),
-  "thread_id": zod.string(),
-  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
-  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_code": zod.union([zod.string(),zod.null()]).optional(),
-  "error_message": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-}),
-  "steps": zod.array(zod.object({
-  "id": zod.string(),
-  "run_id": zod.string(),
-  "sequence_no": zod.number(),
-  "node_key": zod.string(),
-  "step_kind": zod.string(),
-  "status": zod.string(),
-  "narrative": zod.string(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
-})).optional(),
-  "validation": zod.object({
-  "ok": zod.boolean().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationOkDefault),
-  "issues": zod.array(zod.object({
-  "level": zod.string().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemLevelDefault),
-  "code": zod.string().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemCodeDefault),
-  "message": zod.string(),
-  "path": zod.string().default(postWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRunsPostResponseValidationIssuesItemPathDefault),
-  "node_id": zod.union([zod.string(),zod.null()]).optional(),
-  "edge_id": zod.union([zod.string(),zod.null()]).optional()
-})).optional()
-}).optional()
+  "run": zod.unknown(),
+  "steps": zod.unknown().optional(),
+  "validation": zod.unknown().optional()
 })
 
 
@@ -7144,25 +5154,25 @@ export const PostWorkflowTestRunApiV1AdminAutomationWorkflowsWorkflowKeyTestRuns
  * @summary 获取 Agent 运行记录
  */
 export const GetRunsApiV1AdminAutomationRunsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "workflow_key": zod.string(),
-  "status": zod.string(),
-  "trigger_kind": zod.string(),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "target_id": zod.union([zod.string(),zod.null()]).optional(),
-  "thread_id": zod.string(),
-  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
-  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_code": zod.union([zod.string(),zod.null()]).optional(),
-  "error_message": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "workflow_key": zod.unknown(),
+  "status": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "trigger_event": zod.unknown().optional(),
+  "target_type": zod.unknown().optional(),
+  "target_id": zod.unknown().optional(),
+  "thread_id": zod.unknown(),
+  "latest_checkpoint_id": zod.unknown().optional(),
+  "checkpoint_ns": zod.unknown().optional(),
+  "input_payload": zod.unknown().optional(),
+  "context_payload": zod.unknown().optional(),
+  "result_payload": zod.unknown().optional(),
+  "error_code": zod.unknown().optional(),
+  "error_message": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const GetRunsApiV1AdminAutomationRunsGetResponse = zod.array(GetRunsApiV1AdminAutomationRunsGetResponseItem)
 
@@ -7175,25 +5185,25 @@ export const GetRunApiV1AdminAutomationRunsRunIdGetParams = zod.object({
 })
 
 export const GetRunApiV1AdminAutomationRunsRunIdGetResponse = zod.object({
-  "id": zod.string(),
-  "workflow_key": zod.string(),
-  "status": zod.string(),
-  "trigger_kind": zod.string(),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "target_id": zod.union([zod.string(),zod.null()]).optional(),
-  "thread_id": zod.string(),
-  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
-  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_code": zod.union([zod.string(),zod.null()]).optional(),
-  "error_message": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "workflow_key": zod.unknown(),
+  "status": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "trigger_event": zod.unknown().optional(),
+  "target_type": zod.unknown().optional(),
+  "target_id": zod.unknown().optional(),
+  "thread_id": zod.unknown(),
+  "latest_checkpoint_id": zod.unknown().optional(),
+  "checkpoint_ns": zod.unknown().optional(),
+  "input_payload": zod.unknown().optional(),
+  "context_payload": zod.unknown().optional(),
+  "result_payload": zod.unknown().optional(),
+  "error_code": zod.unknown().optional(),
+  "error_message": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -7205,20 +5215,20 @@ export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetParams = zod.object
 })
 
 export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "run_id": zod.string(),
-  "sequence_no": zod.number(),
-  "node_key": zod.string(),
-  "step_kind": zod.string(),
-  "status": zod.string(),
-  "narrative": zod.string(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "output_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "run_id": zod.unknown(),
+  "sequence_no": zod.unknown(),
+  "node_key": zod.unknown(),
+  "step_kind": zod.unknown(),
+  "status": zod.unknown(),
+  "narrative": zod.unknown(),
+  "input_payload": zod.unknown().optional(),
+  "output_payload": zod.unknown().optional(),
+  "error_payload": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponse = zod.array(GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponseItem)
 
@@ -7227,21 +5237,21 @@ export const GetRunStepsApiV1AdminAutomationRunsRunIdStepsGetResponse = zod.arra
  * @summary 获取待审批项目
  */
 export const GetApprovalsApiV1AdminAutomationApprovalsGetResponseItem = zod.object({
-  "id": zod.string(),
-  "run_id": zod.string(),
-  "step_id": zod.union([zod.string(),zod.null()]).optional(),
-  "interrupt_id": zod.string(),
-  "node_key": zod.string(),
-  "approval_type": zod.string(),
-  "status": zod.string(),
-  "request_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "response_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "requested_by_type": zod.string(),
-  "resolved_by_type": zod.union([zod.string(),zod.null()]).optional(),
-  "resolved_by_id": zod.union([zod.string(),zod.null()]).optional(),
-  "resolved_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "run_id": zod.unknown(),
+  "step_id": zod.unknown().optional(),
+  "interrupt_id": zod.unknown(),
+  "node_key": zod.unknown(),
+  "approval_type": zod.unknown(),
+  "status": zod.unknown(),
+  "request_payload": zod.unknown().optional(),
+  "response_payload": zod.unknown().optional(),
+  "requested_by_type": zod.unknown(),
+  "resolved_by_type": zod.unknown().optional(),
+  "resolved_by_id": zod.unknown().optional(),
+  "resolved_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const GetApprovalsApiV1AdminAutomationApprovalsGetResponse = zod.array(GetApprovalsApiV1AdminAutomationApprovalsGetResponseItem)
 
@@ -7261,25 +5271,25 @@ export const PostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecision
 })
 
 export const PostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPostResponse = zod.object({
-  "id": zod.string(),
-  "workflow_key": zod.string(),
-  "status": zod.string(),
-  "trigger_kind": zod.string(),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "target_id": zod.union([zod.string(),zod.null()]).optional(),
-  "thread_id": zod.string(),
-  "latest_checkpoint_id": zod.union([zod.string(),zod.null()]).optional(),
-  "checkpoint_ns": zod.union([zod.string(),zod.null()]).optional(),
-  "input_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "context_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "result_payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "error_code": zod.union([zod.string(),zod.null()]).optional(),
-  "error_message": zod.union([zod.string(),zod.null()]).optional(),
-  "started_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "finished_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "workflow_key": zod.unknown(),
+  "status": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "trigger_event": zod.unknown().optional(),
+  "target_type": zod.unknown().optional(),
+  "target_id": zod.unknown().optional(),
+  "thread_id": zod.unknown(),
+  "latest_checkpoint_id": zod.unknown().optional(),
+  "checkpoint_ns": zod.unknown().optional(),
+  "input_payload": zod.unknown().optional(),
+  "context_payload": zod.unknown().optional(),
+  "result_payload": zod.unknown().optional(),
+  "error_code": zod.unknown().optional(),
+  "error_message": zod.unknown().optional(),
+  "started_at": zod.unknown().optional(),
+  "finished_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -7287,23 +5297,23 @@ export const PostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecision
  * @summary 获取 Webhook 订阅
  */
 export const GetWebhooksApiV1AdminAutomationWebhooksGetResponseItem = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "status": zod.string(),
-  "target_url": zod.string(),
-  "secret": zod.union([zod.string(),zod.null()]).optional(),
-  "event_types": zod.array(zod.string()).optional(),
-  "timeout_seconds": zod.number(),
-  "max_attempts": zod.number(),
-  "backoff_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "headers": zod.record(zod.string(), zod.unknown()).optional(),
-  "last_delivery_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_success_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_test_status": zod.union([zod.string(),zod.null()]).optional(),
-  "last_test_error": zod.union([zod.string(),zod.null()]).optional(),
-  "last_tested_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "name": zod.unknown(),
+  "status": zod.unknown(),
+  "target_url": zod.unknown(),
+  "secret": zod.unknown().optional(),
+  "event_types": zod.unknown().optional(),
+  "timeout_seconds": zod.unknown(),
+  "max_attempts": zod.unknown(),
+  "backoff_policy": zod.unknown().optional(),
+  "headers": zod.unknown().optional(),
+  "last_delivery_at": zod.unknown().optional(),
+  "last_success_at": zod.unknown().optional(),
+  "last_test_status": zod.unknown().optional(),
+  "last_test_error": zod.unknown().optional(),
+  "last_tested_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const GetWebhooksApiV1AdminAutomationWebhooksGetResponse = zod.array(GetWebhooksApiV1AdminAutomationWebhooksGetResponseItem)
 
@@ -7365,15 +5375,13 @@ export const PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConne
   "send_test_message": zod.boolean().default(postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostBodySendTestMessageDefault)
 })
 
-export const postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseOkDefault = false;
-
 export const PostWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponse = zod.object({
-  "ok": zod.boolean().default(postWebhookTelegramConnectApiV1AdminAutomationWebhooksTelegramConnectPostResponseOkDefault),
-  "status": zod.string(),
-  "summary": zod.string(),
-  "bot_username": zod.union([zod.string(),zod.null()]).optional(),
-  "chat_id": zod.union([zod.number(),zod.string(),zod.null()]).optional(),
-  "target_url": zod.union([zod.string(),zod.null()]).optional()
+  "ok": zod.unknown().optional(),
+  "status": zod.unknown(),
+  "summary": zod.unknown(),
+  "bot_username": zod.unknown().optional(),
+  "chat_id": zod.unknown().optional(),
+  "target_url": zod.unknown().optional()
 })
 
 
@@ -7396,23 +5404,23 @@ export const PutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPutBody = zod.o
 })
 
 export const PutWebhookApiV1AdminAutomationWebhooksSubscriptionIdPutResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "status": zod.string(),
-  "target_url": zod.string(),
-  "secret": zod.union([zod.string(),zod.null()]).optional(),
-  "event_types": zod.array(zod.string()).optional(),
-  "timeout_seconds": zod.number(),
-  "max_attempts": zod.number(),
-  "backoff_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "headers": zod.record(zod.string(), zod.unknown()).optional(),
-  "last_delivery_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_success_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_test_status": zod.union([zod.string(),zod.null()]).optional(),
-  "last_test_error": zod.union([zod.string(),zod.null()]).optional(),
-  "last_tested_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "name": zod.unknown(),
+  "status": zod.unknown(),
+  "target_url": zod.unknown(),
+  "secret": zod.unknown().optional(),
+  "event_types": zod.unknown().optional(),
+  "timeout_seconds": zod.unknown(),
+  "max_attempts": zod.unknown(),
+  "backoff_policy": zod.unknown().optional(),
+  "headers": zod.unknown().optional(),
+  "last_delivery_at": zod.unknown().optional(),
+  "last_success_at": zod.unknown().optional(),
+  "last_test_status": zod.unknown().optional(),
+  "last_test_error": zod.unknown().optional(),
+  "last_tested_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -7428,23 +5436,23 @@ export const DeleteWebhookApiV1AdminAutomationWebhooksSubscriptionIdDeleteParams
  * @summary 获取 Webhook 投递记录
  */
 export const GetDeliveriesApiV1AdminAutomationDeliveriesGetResponseItem = zod.object({
-  "id": zod.string(),
-  "subscription_id": zod.string(),
-  "event_type": zod.string(),
-  "event_id": zod.string(),
-  "status": zod.string(),
-  "target_url": zod.string(),
-  "payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "headers": zod.record(zod.string(), zod.unknown()).optional(),
-  "attempt_count": zod.number(),
-  "next_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
-  "last_response_body": zod.union([zod.string(),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "subscription_id": zod.unknown(),
+  "event_type": zod.unknown(),
+  "event_id": zod.unknown(),
+  "status": zod.unknown(),
+  "target_url": zod.unknown(),
+  "payload": zod.unknown().optional(),
+  "headers": zod.unknown().optional(),
+  "attempt_count": zod.unknown(),
+  "next_attempt_at": zod.unknown().optional(),
+  "last_attempt_at": zod.unknown().optional(),
+  "last_response_status": zod.unknown().optional(),
+  "last_response_body": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "delivered_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const GetDeliveriesApiV1AdminAutomationDeliveriesGetResponse = zod.array(GetDeliveriesApiV1AdminAutomationDeliveriesGetResponseItem)
 
@@ -7457,23 +5465,23 @@ export const PostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPostP
 })
 
 export const PostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPostResponse = zod.object({
-  "id": zod.string(),
-  "subscription_id": zod.string(),
-  "event_type": zod.string(),
-  "event_id": zod.string(),
-  "status": zod.string(),
-  "target_url": zod.string(),
-  "payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "headers": zod.record(zod.string(), zod.unknown()).optional(),
-  "attempt_count": zod.number(),
-  "next_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
-  "last_response_body": zod.union([zod.string(),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "subscription_id": zod.unknown(),
+  "event_type": zod.unknown(),
+  "event_id": zod.unknown(),
+  "status": zod.unknown(),
+  "target_url": zod.unknown(),
+  "payload": zod.unknown().optional(),
+  "headers": zod.unknown().optional(),
+  "attempt_count": zod.unknown(),
+  "next_attempt_at": zod.unknown().optional(),
+  "last_attempt_at": zod.unknown().optional(),
+  "last_response_status": zod.unknown().optional(),
+  "last_response_body": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "delivered_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -7481,18 +5489,18 @@ export const PostDeliveryRetryApiV1AdminAutomationDeliveriesDeliveryIdRetryPostR
  * @summary 获取 Webhook 死信列表
  */
 export const GetDeadLettersApiV1AdminAutomationDeadLettersGetResponseItem = zod.object({
-  "id": zod.string(),
-  "delivery_id": zod.string(),
-  "subscription_id": zod.string(),
-  "event_type": zod.string(),
-  "event_id": zod.string(),
-  "reason": zod.string(),
-  "payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "dead_lettered_at": zod.string().datetime({}),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "delivery_id": zod.unknown(),
+  "subscription_id": zod.unknown(),
+  "event_type": zod.unknown(),
+  "event_id": zod.unknown(),
+  "reason": zod.unknown(),
+  "payload": zod.unknown().optional(),
+  "last_response_status": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "dead_lettered_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 export const GetDeadLettersApiV1AdminAutomationDeadLettersGetResponse = zod.array(GetDeadLettersApiV1AdminAutomationDeadLettersGetResponseItem)
 
@@ -7505,401 +5513,48 @@ export const PostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdRepl
 })
 
 export const PostDeadLetterReplayApiV1AdminAutomationDeadLettersDeadLetterIdReplayPostResponse = zod.object({
-  "id": zod.string(),
-  "subscription_id": zod.string(),
-  "event_type": zod.string(),
-  "event_id": zod.string(),
-  "status": zod.string(),
-  "target_url": zod.string(),
-  "payload": zod.record(zod.string(), zod.unknown()).optional(),
-  "headers": zod.record(zod.string(), zod.unknown()).optional(),
-  "attempt_count": zod.number(),
-  "next_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_attempt_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "last_response_status": zod.union([zod.number(),zod.null()]).optional(),
-  "last_response_body": zod.union([zod.string(),zod.null()]).optional(),
-  "last_error": zod.union([zod.string(),zod.null()]).optional(),
-  "delivered_at": zod.union([zod.string().datetime({}),zod.null()]).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown(),
+  "subscription_id": zod.unknown(),
+  "event_type": zod.unknown(),
+  "event_id": zod.unknown(),
+  "status": zod.unknown(),
+  "target_url": zod.unknown(),
+  "payload": zod.unknown().optional(),
+  "headers": zod.unknown().optional(),
+  "attempt_count": zod.unknown(),
+  "next_attempt_at": zod.unknown().optional(),
+  "last_attempt_at": zod.unknown().optional(),
+  "last_response_status": zod.unknown().optional(),
+  "last_response_body": zod.unknown().optional(),
+  "last_error": zod.unknown().optional(),
+  "delivered_at": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
 /**
  * @summary 获取 Agent 工作流草稿
  */
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault = `global`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault = `active`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStageDefault = `intent_collecting`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundaryRequiresPlatformExtensionDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundarySummaryDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneNameDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionDefault = 2;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionMax = 10;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemTypeMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeDefault = `default`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeMax = 80;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportXDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportYDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportZoomDefault = 1;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemTypeMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemEnabledDefault = true;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeMax = 80;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsDefault = 80;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsMax = 500;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyDefaultModelOneMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneNameDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionDefault = 2;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionMax = 10;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemTypeMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeDefault = `default`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeMax = 80;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportXDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportYDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportZoomDefault = 1;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemTypeMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemEnabledDefault = true;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeMax = 80;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsDefault = 80;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsMax = 500;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyDefaultModelOneMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneNameDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneDescriptionDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionDefault = 2;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionMax = 10;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemTypeMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceHandleOneMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetHandleOneMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeDefault = `default`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeMax = 80;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportXDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportYDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportZoomDefault = 1;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemIdMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemTypeMax = 120;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemEnabledDefault = true;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeDefault = `risk_based`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeMax = 80;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsDefault = 80;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsMax = 500;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyDefaultModelOneMax = 160;
-
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportStatusDefault = `idle`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportAttemptsDefault = 0;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportSummaryDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemLevelDefault = `error`;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemCodeDefault = ``;
-export const getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemPathDefault = ``;
-
 export const GetWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponse = zod.union([zod.object({
-  "id": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneIdDefault),
-  "status": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStatusDefault),
-  "stage": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneStageDefault),
-  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSummaryDefault),
-  "ready_to_create": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneReadyToCreateDefault),
-  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
-  "boundary": zod.object({
-  "requires_platform_extension": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundaryRequiresPlatformExtensionDefault),
-  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneBoundarySummaryDefault),
-  "missing_capabilities": zod.array(zod.string()).optional(),
-  "recommended_actions": zod.array(zod.string()).optional()
-}).optional(),
-  "questions": zod.array(zod.object({
-  "key": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemKeyDefault),
-  "prompt": zod.string(),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneQuestionsItemOptionsItemRequiresInputDefault)
-})).optional()
-})).optional(),
-  "current_question": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCurrentQuestionDefault),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneOptionsItemRequiresInputDefault)
-})).optional(),
-  "working_document": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneWorkingDocumentDefault),
-  "sketch_preview": zod.union([zod.object({
-  "name": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneNameDefault),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneDescriptionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemTypeMax),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemLabelDefault),
-  "type": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportXDefault),
-  "y": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportYDefault),
-  "zoom": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemTypeMax),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSketchPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "notes": zod.array(zod.string()).optional(),
-  "lock_state": zod.object({
-  "locked_nodes": zod.array(zod.string()).optional(),
-  "locked_edges": zod.array(zod.string()).optional(),
-  "locked_semantics": zod.array(zod.string()).optional()
-}).optional()
-}),zod.null()]).optional(),
-  "semantic_preview": zod.union([zod.object({
-  "name": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneNameDefault),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneDescriptionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemTypeMax),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemLabelDefault),
-  "type": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportXDefault),
-  "y": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportYDefault),
-  "zoom": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemTypeMax),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneSemanticPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "notes": zod.array(zod.string()).optional(),
-  "lock_state": zod.object({
-  "locked_nodes": zod.array(zod.string()).optional(),
-  "locked_edges": zod.array(zod.string()).optional(),
-  "locked_semantics": zod.array(zod.string()).optional()
-}).optional()
-}),zod.null()]).optional(),
-  "graph_candidate": zod.union([zod.object({
-  "name": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneNameDefault),
-  "description": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneDescriptionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemTypeMax),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemLabelDefault),
-  "type": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportXDefault),
-  "y": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportYDefault),
-  "zoom": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemTypeMax),
-  "label": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsMax).default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneGraphCandidateOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "notes": zod.array(zod.string()).optional(),
-  "lock_state": zod.object({
-  "locked_nodes": zod.array(zod.string()).optional(),
-  "locked_edges": zod.array(zod.string()).optional(),
-  "locked_semantics": zod.array(zod.string()).optional()
-}).optional()
-}),zod.null()]).optional(),
-  "compile_report": zod.object({
-  "status": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportStatusDefault),
-  "attempts": zod.number().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportAttemptsDefault),
-  "summary": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportSummaryDefault),
-  "issues": zod.array(zod.object({
-  "level": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemLevelDefault),
-  "code": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemCodeDefault),
-  "message": zod.string(),
-  "path": zod.string().default(getWorkflowDraftApiV1AdminAutomationWorkflowDraftGetResponseOneCompileReportIssuesItemPathDefault),
-  "node_id": zod.union([zod.string(),zod.null()]).optional(),
-  "edge_id": zod.union([zod.string(),zod.null()]).optional()
-})).optional()
-}).optional(),
-  "messages": zod.array(zod.object({
-  "role": zod.string(),
-  "content": zod.string(),
-  "created_at": zod.string().datetime({})
-})).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown().optional(),
+  "status": zod.unknown().optional(),
+  "stage": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "ready_to_create": zod.unknown().optional(),
+  "suggested_template": zod.unknown().optional(),
+  "boundary": zod.unknown().optional(),
+  "questions": zod.unknown().optional(),
+  "current_question": zod.unknown().optional(),
+  "options": zod.unknown().optional(),
+  "working_document": zod.unknown().optional(),
+  "sketch_preview": zod.unknown().optional(),
+  "semantic_preview": zod.unknown().optional(),
+  "graph_candidate": zod.unknown().optional(),
+  "compile_report": zod.unknown().optional(),
+  "messages": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 }),zod.null()])
 
 
@@ -8014,378 +5669,25 @@ export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPo
 }),zod.null()]).optional()
 })
 
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault = `global`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault = `active`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStageDefault = `intent_collecting`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundaryRequiresPlatformExtensionDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundarySummaryDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneNameDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionDefault = 2;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionMax = 10;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemTypeMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeDefault = `default`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeMax = 80;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportXDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportYDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportZoomDefault = 1;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemTypeMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemEnabledDefault = true;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeMax = 80;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsDefault = 80;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsMax = 500;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyDefaultModelOneMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneNameDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionDefault = 2;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionMax = 10;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemTypeMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceHandleOneMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetHandleOneMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeDefault = `default`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeMax = 80;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportXDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportYDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportZoomDefault = 1;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemTypeMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemEnabledDefault = true;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeDefault = `risk_based`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeMax = 80;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsDefault = 80;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsMax = 500;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyDefaultModelOneMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneNameDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneDescriptionDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionDefault = 2;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionMax = 10;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemTypeMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceHandleOneMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetHandleOneMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeDefault = `default`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeMax = 80;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportXDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportYDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportZoomDefault = 1;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemIdMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemTypeMax = 120;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemEnabledDefault = true;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeDefault = `risk_based`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeMax = 80;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsDefault = 80;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsMax = 500;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyDefaultModelOneMax = 160;
-
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportStatusDefault = `idle`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportAttemptsDefault = 0;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportSummaryDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemLevelDefault = `error`;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemCodeDefault = ``;
-export const postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemPathDefault = ``;
-
 export const PostWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponse = zod.object({
-  "id": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseIdDefault),
-  "status": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStatusDefault),
-  "stage": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseStageDefault),
-  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSummaryDefault),
-  "ready_to_create": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseReadyToCreateDefault),
-  "suggested_template": zod.union([zod.string(),zod.null()]).optional(),
-  "boundary": zod.object({
-  "requires_platform_extension": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundaryRequiresPlatformExtensionDefault),
-  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseBoundarySummaryDefault),
-  "missing_capabilities": zod.array(zod.string()).optional(),
-  "recommended_actions": zod.array(zod.string()).optional()
-}).optional(),
-  "questions": zod.array(zod.object({
-  "key": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemKeyDefault),
-  "prompt": zod.string(),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseQuestionsItemOptionsItemRequiresInputDefault)
-})).optional()
-})).optional(),
-  "current_question": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCurrentQuestionDefault),
-  "options": zod.array(zod.object({
-  "label": zod.string(),
-  "value": zod.string(),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemDescriptionDefault),
-  "requires_input": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseOptionsItemRequiresInputDefault)
-})).optional(),
-  "working_document": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseWorkingDocumentDefault),
-  "sketch_preview": zod.union([zod.object({
-  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneNameDefault),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneDescriptionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemLabelDefault),
-  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportXDefault),
-  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportYDefault),
-  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSketchPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "notes": zod.array(zod.string()).optional(),
-  "lock_state": zod.object({
-  "locked_nodes": zod.array(zod.string()).optional(),
-  "locked_edges": zod.array(zod.string()).optional(),
-  "locked_semantics": zod.array(zod.string()).optional()
-}).optional()
-}),zod.null()]).optional(),
-  "semantic_preview": zod.union([zod.object({
-  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneNameDefault),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneDescriptionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemLabelDefault),
-  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportXDefault),
-  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportYDefault),
-  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseSemanticPreviewOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "notes": zod.array(zod.string()).optional(),
-  "lock_state": zod.object({
-  "locked_nodes": zod.array(zod.string()).optional(),
-  "locked_edges": zod.array(zod.string()).optional(),
-  "locked_semantics": zod.array(zod.string()).optional()
-}).optional()
-}),zod.null()]).optional(),
-  "graph_candidate": zod.union([zod.object({
-  "name": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneNameDefault),
-  "description": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneDescriptionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemLabelDefault),
-  "type": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportXDefault),
-  "y": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportYDefault),
-  "zoom": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsMax).default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseGraphCandidateOneRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "notes": zod.array(zod.string()).optional(),
-  "lock_state": zod.object({
-  "locked_nodes": zod.array(zod.string()).optional(),
-  "locked_edges": zod.array(zod.string()).optional(),
-  "locked_semantics": zod.array(zod.string()).optional()
-}).optional()
-}),zod.null()]).optional(),
-  "compile_report": zod.object({
-  "status": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportStatusDefault),
-  "attempts": zod.number().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportAttemptsDefault),
-  "summary": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportSummaryDefault),
-  "issues": zod.array(zod.object({
-  "level": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemLevelDefault),
-  "code": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemCodeDefault),
-  "message": zod.string(),
-  "path": zod.string().default(postWorkflowDraftMessageApiV1AdminAutomationWorkflowDraftMessagesPostResponseCompileReportIssuesItemPathDefault),
-  "node_id": zod.union([zod.string(),zod.null()]).optional(),
-  "edge_id": zod.union([zod.string(),zod.null()]).optional()
-})).optional()
-}).optional(),
-  "messages": zod.array(zod.object({
-  "role": zod.string(),
-  "content": zod.string(),
-  "created_at": zod.string().datetime({})
-})).optional(),
-  "created_at": zod.string().datetime({}),
-  "updated_at": zod.string().datetime({})
+  "id": zod.unknown().optional(),
+  "status": zod.unknown().optional(),
+  "stage": zod.unknown().optional(),
+  "summary": zod.unknown().optional(),
+  "ready_to_create": zod.unknown().optional(),
+  "suggested_template": zod.unknown().optional(),
+  "boundary": zod.unknown().optional(),
+  "questions": zod.unknown().optional(),
+  "current_question": zod.unknown().optional(),
+  "options": zod.unknown().optional(),
+  "working_document": zod.unknown().optional(),
+  "sketch_preview": zod.unknown().optional(),
+  "semantic_preview": zod.unknown().optional(),
+  "graph_candidate": zod.unknown().optional(),
+  "compile_report": zod.unknown().optional(),
+  "messages": zod.unknown().optional(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
 })
 
 
@@ -8613,130 +5915,11 @@ export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostB
 }),zod.null()]).optional()
 })
 
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSchemaVersionDefault = 2;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionDefault = 2;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionMax = 10;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemIdMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemTypeMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelDefault = ``;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelMax = 160;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemIdMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceHandleOneMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetHandleOneMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelDefault = ``;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelMax = 160;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeDefault = `default`;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeMax = 80;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportXDefault = 0;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportYDefault = 0;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportZoomDefault = 1;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemIdMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemTypeMax = 120;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelDefault = ``;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelMax = 160;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemEnabledDefault = true;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeDefault = `risk_based`;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeMax = 80;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault = false;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsDefault = 80;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsMax = 500;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyDefaultModelOneMax = 160;
-
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNodeCountDefault = 0;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryOperationCountDefault = 0;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryHighRiskOperationCountDefault = 0;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNarrativeDefault = ``;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault = false;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault = ``;
-export const postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault = false;
-
 export const PostWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponse = zod.object({
-  "ok": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseOkDefault),
-  "summary": zod.string(),
-  "draft_cleared": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseDraftClearedDefault),
-  "workflow": zod.object({
-  "key": zod.string(),
-  "name": zod.string(),
-  "description": zod.string(),
-  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowEnabledDefault),
-  "schema_version": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSchemaVersionDefault),
-  "graph": zod.object({
-  "version": zod.number().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphVersionDefault),
-  "nodes": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphNodesItemLabelDefault),
-  "position": zod.object({
-  "x": zod.number(),
-  "y": zod.number()
-}),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "edges": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemIdMax),
-  "source": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceMax),
-  "target": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetMax),
-  "source_handle": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemSourceHandleOneMax),zod.null()]).optional(),
-  "target_handle": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTargetHandleOneMax),zod.null()]).optional(),
-  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemLabelDefault),
-  "type": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphEdgesItemTypeDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "viewport": zod.object({
-  "x": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportXDefault),
-  "y": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportYDefault),
-  "zoom": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowGraphViewportZoomDefault)
-}).optional()
-}).optional(),
-  "trigger_bindings": zod.array(zod.object({
-  "id": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemIdMax),
-  "type": zod.string().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemTypeMax),
-  "label": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemLabelDefault),
-  "enabled": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowTriggerBindingsItemEnabledDefault),
-  "config": zod.record(zod.string(), zod.unknown()).optional()
-})).optional(),
-  "runtime_policy": zod.object({
-  "approval_mode": zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyApprovalModeDefault),
-  "allow_high_risk_without_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyAllowHighRiskWithoutApprovalDefault),
-  "max_steps": zod.number().min(1).max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsMax).default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyMaxStepsDefault),
-  "retry_policy": zod.record(zod.string(), zod.unknown()).optional(),
-  "default_model": zod.union([zod.string().max(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRuntimePolicyDefaultModelOneMax),zod.null()]).optional()
-}).optional(),
-  "summary": zod.object({
-  "trigger_labels": zod.array(zod.string()).optional(),
-  "node_count": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNodeCountDefault),
-  "operation_count": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryOperationCountDefault),
-  "high_risk_operation_count": zod.number().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryHighRiskOperationCountDefault),
-  "built_from_template": zod.union([zod.string(),zod.null()]).optional(),
-  "narrative": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowSummaryNarrativeDefault)
-}).optional(),
-  "built_in": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowBuiltInDefault),
-  "trigger_event": zod.union([zod.string(),zod.null()]).optional(),
-  "target_type": zod.union([zod.string(),zod.null()]).optional(),
-  "instructions": zod.string().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowInstructionsDefault),
-  "require_human_approval": zod.boolean().default(postWorkflowDraftCreateApiV1AdminAutomationWorkflowDraftCreatePostResponseWorkflowRequireHumanApprovalDefault)
-})
+  "ok": zod.unknown().optional(),
+  "summary": zod.unknown(),
+  "draft_cleared": zod.unknown().optional(),
+  "workflow": zod.unknown()
 })
 
 
@@ -8771,13 +5954,11 @@ export const ListContentCategoriesQueryParams = zod.object({
   "content_type": zod.union([zod.string(),zod.null()]).optional()
 })
 
-export const listContentCategoriesResponseUsageCountDefault = 0;
-
 export const ListContentCategoriesResponseItem = zod.object({
-  "id": zod.string().describe('Category identifier'),
-  "content_type": zod.string().describe('Content type bucket'),
-  "name": zod.string().describe('Category name'),
-  "usage_count": zod.number().default(listContentCategoriesResponseUsageCountDefault).describe('How many entries use this category')
+  "id": zod.unknown().describe('Category identifier'),
+  "content_type": zod.unknown().describe('Content type bucket'),
+  "name": zod.unknown().describe('Category name'),
+  "usage_count": zod.unknown().optional().describe('How many entries use this category')
 })
 export const ListContentCategoriesResponse = zod.array(ListContentCategoriesResponseItem)
 
@@ -8794,13 +5975,11 @@ export const CreateContentCategoryBody = zod.object({
   "name": zod.string().min(1).max(createContentCategoryBodyNameMax).describe('Category name')
 })
 
-export const createContentCategoryResponseUsageCountDefault = 0;
-
 export const CreateContentCategoryResponse = zod.object({
-  "id": zod.string().describe('Category identifier'),
-  "content_type": zod.string().describe('Content type bucket'),
-  "name": zod.string().describe('Category name'),
-  "usage_count": zod.number().default(createContentCategoryResponseUsageCountDefault).describe('How many entries use this category')
+  "id": zod.unknown().describe('Category identifier'),
+  "content_type": zod.unknown().describe('Content type bucket'),
+  "name": zod.unknown().describe('Category name'),
+  "usage_count": zod.unknown().optional().describe('How many entries use this category')
 })
 
 
@@ -8819,13 +5998,11 @@ export const UpdateContentCategoryBody = zod.object({
   "name": zod.string().min(1).max(updateContentCategoryBodyNameMax).describe('Category name')
 })
 
-export const updateContentCategoryResponseUsageCountDefault = 0;
-
 export const UpdateContentCategoryResponse = zod.object({
-  "id": zod.string().describe('Category identifier'),
-  "content_type": zod.string().describe('Content type bucket'),
-  "name": zod.string().describe('Category name'),
-  "usage_count": zod.number().default(updateContentCategoryResponseUsageCountDefault).describe('How many entries use this category')
+  "id": zod.unknown().describe('Category identifier'),
+  "content_type": zod.unknown().describe('Content type bucket'),
+  "name": zod.unknown().describe('Category name'),
+  "usage_count": zod.unknown().optional().describe('How many entries use this category')
 })
 
 
@@ -8877,19 +6054,19 @@ export const ImportContentApiV1AdminContentImportPostResponse = zod.object({
  * @summary 获取访客认证配置
  */
 export const GetVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = zod.object({
-  "id": zod.string().describe('Visitor auth config id'),
-  "email_login_enabled": zod.boolean().describe('Whether email login is enabled'),
-  "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
-  "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
-  "admin_console_auth_methods": zod.array(zod.string()).optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
-  "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
-  "admin_email_password_set": zod.boolean().describe('Whether the shared admin email password has been configured'),
-  "google_client_id": zod.string().describe('Google OAuth client id'),
-  "google_client_secret": zod.string().describe('Google OAuth client secret'),
-  "github_client_id": zod.string().describe('GitHub OAuth client id'),
-  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Visitor auth config id'),
+  "email_login_enabled": zod.unknown().describe('Whether email login is enabled'),
+  "visitor_oauth_providers": zod.unknown().optional().describe('OAuth providers enabled for visitor binding'),
+  "admin_auth_methods": zod.unknown().optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_console_auth_methods": zod.unknown().optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
+  "admin_email_enabled": zod.unknown().describe('Whether email can be used as an admin identity'),
+  "admin_email_password_set": zod.unknown().describe('Whether the shared admin email password has been configured'),
+  "google_client_id": zod.unknown().describe('Google OAuth client id'),
+  "google_client_secret": zod.unknown().describe('Google OAuth client secret'),
+  "github_client_id": zod.unknown().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.unknown().describe('GitHub OAuth client secret'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 
@@ -8910,19 +6087,19 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutBody = zod.object
 })
 
 export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.object({
-  "id": zod.string().describe('Visitor auth config id'),
-  "email_login_enabled": zod.boolean().describe('Whether email login is enabled'),
-  "visitor_oauth_providers": zod.array(zod.string()).optional().describe('OAuth providers enabled for visitor binding'),
-  "admin_auth_methods": zod.array(zod.string()).optional().describe('Auth methods reserved for admin-side usage'),
-  "admin_console_auth_methods": zod.array(zod.string()).optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
-  "admin_email_enabled": zod.boolean().describe('Whether email can be used as an admin identity'),
-  "admin_email_password_set": zod.boolean().describe('Whether the shared admin email password has been configured'),
-  "google_client_id": zod.string().describe('Google OAuth client id'),
-  "google_client_secret": zod.string().describe('Google OAuth client secret'),
-  "github_client_id": zod.string().describe('GitHub OAuth client id'),
-  "github_client_secret": zod.string().describe('GitHub OAuth client secret'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Visitor auth config id'),
+  "email_login_enabled": zod.unknown().describe('Whether email login is enabled'),
+  "visitor_oauth_providers": zod.unknown().optional().describe('OAuth providers enabled for visitor binding'),
+  "admin_auth_methods": zod.unknown().optional().describe('Auth methods reserved for admin-side usage'),
+  "admin_console_auth_methods": zod.unknown().optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
+  "admin_email_enabled": zod.unknown().describe('Whether email can be used as an admin identity'),
+  "admin_email_password_set": zod.unknown().describe('Whether the shared admin email password has been configured'),
+  "google_client_id": zod.unknown().describe('Google OAuth client id'),
+  "google_client_secret": zod.unknown().describe('Google OAuth client secret'),
+  "github_client_id": zod.unknown().describe('GitHub OAuth client id'),
+  "github_client_secret": zod.unknown().describe('GitHub OAuth client secret'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 
@@ -8945,26 +6122,10 @@ export const ListVisitorUsersApiV1AdminVisitorsUsersGetQueryParams = zod.object(
 })
 
 export const ListVisitorUsersApiV1AdminVisitorsUsersGetResponse = zod.object({
-  "items": zod.array(zod.object({
-  "id": zod.string().describe('Site user id'),
-  "email": zod.string().describe('Login email identifier'),
-  "display_name": zod.string().describe('Current display name'),
-  "avatar_url": zod.string().describe('Current avatar URL'),
-  "primary_auth_provider": zod.string().describe('Primary auth provider'),
-  "auth_mode": zod.enum(['email', 'binding']).describe('Whether this user is email-only or has OAuth bindings'),
-  "oauth_accounts": zod.array(zod.object({
-  "provider": zod.enum(['google', 'github']).describe('OAuth provider'),
-  "provider_email": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side email'),
-  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name'),
-  "created_at": zod.string().datetime({}).describe('Binding creation time')
-})).optional().describe('Linked OAuth accounts'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time'),
-  "last_login_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Last login time')
-})).describe('Page of result items'),
-  "total": zod.number().describe('Total number of items matching the query'),
-  "page": zod.number().describe('Current page number (1-based)'),
-  "page_size": zod.number().describe('Number of items per page')
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
 })
 
 
@@ -8972,16 +6133,16 @@ export const ListVisitorUsersApiV1AdminVisitorsUsersGetResponse = zod.object({
  * @summary 获取管理员前台身份绑定
  */
 export const ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponseItem = zod.object({
-  "id": zod.string().describe('Admin identity id'),
-  "site_user_id": zod.string().describe('Bound site user id'),
-  "provider": zod.enum(['email', 'google', 'github']).describe('Bound auth provider'),
-  "identifier": zod.string().describe('Provider identifier used for the binding'),
-  "email": zod.string().describe('Normalized email used by the binding'),
-  "site_user_display_name": zod.string().describe('Underlying site user display name'),
-  "site_user_avatar_url": zod.string().describe('Underlying site user avatar'),
-  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name if present'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Admin identity id'),
+  "site_user_id": zod.unknown().describe('Bound site user id'),
+  "provider": zod.unknown().describe('Bound auth provider'),
+  "identifier": zod.unknown().describe('Provider identifier used for the binding'),
+  "email": zod.unknown().describe('Normalized email used by the binding'),
+  "site_user_display_name": zod.unknown().describe('Underlying site user display name'),
+  "site_user_avatar_url": zod.unknown().describe('Underlying site user avatar'),
+  "provider_display_name": zod.unknown().optional().describe('Provider-side display name if present'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 export const ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponse = zod.array(ListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetResponseItem)
 
@@ -8994,16 +6155,16 @@ export const BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostBod
 })
 
 export const BindAdminIdentityEmailApiV1AdminVisitorsAdminIdentitiesEmailPostResponse = zod.object({
-  "id": zod.string().describe('Admin identity id'),
-  "site_user_id": zod.string().describe('Bound site user id'),
-  "provider": zod.enum(['email', 'google', 'github']).describe('Bound auth provider'),
-  "identifier": zod.string().describe('Provider identifier used for the binding'),
-  "email": zod.string().describe('Normalized email used by the binding'),
-  "site_user_display_name": zod.string().describe('Underlying site user display name'),
-  "site_user_avatar_url": zod.string().describe('Underlying site user avatar'),
-  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name if present'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Admin identity id'),
+  "site_user_id": zod.unknown().describe('Bound site user id'),
+  "provider": zod.unknown().describe('Bound auth provider'),
+  "identifier": zod.unknown().describe('Provider identifier used for the binding'),
+  "email": zod.unknown().describe('Normalized email used by the binding'),
+  "site_user_display_name": zod.unknown().describe('Underlying site user display name'),
+  "site_user_avatar_url": zod.unknown().describe('Underlying site user avatar'),
+  "provider_display_name": zod.unknown().optional().describe('Provider-side display name if present'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 
@@ -9015,16 +6176,16 @@ export const BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurren
 })
 
 export const BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostResponse = zod.object({
-  "id": zod.string().describe('Admin identity id'),
-  "site_user_id": zod.string().describe('Bound site user id'),
-  "provider": zod.enum(['email', 'google', 'github']).describe('Bound auth provider'),
-  "identifier": zod.string().describe('Provider identifier used for the binding'),
-  "email": zod.string().describe('Normalized email used by the binding'),
-  "site_user_display_name": zod.string().describe('Underlying site user display name'),
-  "site_user_avatar_url": zod.string().describe('Underlying site user avatar'),
-  "provider_display_name": zod.union([zod.string(),zod.null()]).optional().describe('Provider-side display name if present'),
-  "created_at": zod.string().datetime({}).describe('Creation time'),
-  "updated_at": zod.string().datetime({}).describe('Last update time')
+  "id": zod.unknown().describe('Admin identity id'),
+  "site_user_id": zod.unknown().describe('Bound site user id'),
+  "provider": zod.unknown().describe('Bound auth provider'),
+  "identifier": zod.unknown().describe('Provider identifier used for the binding'),
+  "email": zod.unknown().describe('Normalized email used by the binding'),
+  "site_user_display_name": zod.unknown().describe('Underlying site user display name'),
+  "site_user_avatar_url": zod.unknown().describe('Underlying site user avatar'),
+  "provider_display_name": zod.unknown().optional().describe('Provider-side display name if present'),
+  "created_at": zod.unknown().describe('Creation time'),
+  "updated_at": zod.unknown().describe('Last update time')
 })
 
 

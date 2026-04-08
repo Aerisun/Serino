@@ -6,10 +6,10 @@
  */
 
 export interface AgentWorkflowSummaryRead {
-  trigger_labels?: string[];
-  node_count?: number;
-  operation_count?: number;
-  high_risk_operation_count?: number;
-  built_from_template?: string | null;
-  narrative?: string;
+  trigger_labels?: unknown;
+  node_count?: unknown;
+  operation_count?: unknown;
+  high_risk_operation_count?: unknown;
+  built_from_template?: unknown;
+  narrative?: unknown;
 }

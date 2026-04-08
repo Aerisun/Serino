@@ -6,8 +6,8 @@
  */
 
 export interface AdminUserRead {
-  id: string;
-  username: string;
-  is_active: boolean;
-  created_at: string;
+  id: unknown;
+  username: unknown;
+  is_active: unknown;
+  created_at: unknown;
 }

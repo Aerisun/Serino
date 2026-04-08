@@ -4,11 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentRunRead } from './agentRunRead';
 
 export interface AgentWorkflowWebhookTriggerRead {
-  ok?: boolean;
-  run?: AgentRunRead | null;
-  accepted?: boolean;
-  summary?: string;
+  ok?: unknown;
+  run?: unknown;
+  accepted?: unknown;
+  summary?: unknown;
 }

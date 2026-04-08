@@ -4,17 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { CommentRead } from './commentRead';
 
 export interface CommentCollectionRead {
   /** List of comments */
-  items: CommentRead[];
+  items: unknown;
   /** Total number of root comment threads */
-  total: number;
+  total: unknown;
   /** Current page number */
-  page: number;
+  page: unknown;
   /** Number of root comment threads per page */
-  page_size: number;
+  page_size: unknown;
   /** Whether more root comment threads can be loaded */
-  has_more: boolean;
+  has_more: unknown;
 }

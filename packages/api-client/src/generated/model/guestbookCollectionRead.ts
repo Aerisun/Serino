@@ -4,17 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { GuestbookEntryRead } from './guestbookEntryRead';
 
 export interface GuestbookCollectionRead {
   /** List of guestbook entries */
-  items: GuestbookEntryRead[];
+  items: unknown;
   /** Total number of public guestbook entries */
-  total: number;
+  total: unknown;
   /** Current page number */
-  page: number;
+  page: unknown;
   /** Number of guestbook entries per page */
-  page_size: number;
+  page_size: unknown;
   /** Whether more guestbook entries can be loaded */
-  has_more: boolean;
+  has_more: unknown;
 }

@@ -4,11 +4,10 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowVariableSourceReadPayloadSchema } from './agentWorkflowVariableSourceReadPayloadSchema';
 
 export interface AgentWorkflowVariableSourceRead {
-  key: string;
-  label: string;
-  description?: string;
-  payload_schema?: AgentWorkflowVariableSourceReadPayloadSchema;
+  key: unknown;
+  label: unknown;
+  description?: unknown;
+  payload_schema?: unknown;
 }

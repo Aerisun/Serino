@@ -4,13 +4,12 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { SitePoemPreviewReadMode } from './sitePoemPreviewReadMode';
 
 export interface SitePoemPreviewRead {
   /** Resolved poem source mode */
-  mode: SitePoemPreviewReadMode;
+  mode: unknown;
   /** Poem content shown on the homepage */
-  content: string;
+  content: unknown;
   /** Optional source attribution */
-  attribution?: string | null;
+  attribution?: unknown;
 }

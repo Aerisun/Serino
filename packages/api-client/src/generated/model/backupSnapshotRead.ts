@@ -6,14 +6,14 @@
  */
 
 export interface BackupSnapshotRead {
-  id: string;
-  snapshot_type: string;
-  status: string;
-  db_path: string;
-  replica_url: string | null;
-  backup_path: string | null;
-  checksum: string | null;
-  completed_at: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  snapshot_type: unknown;
+  status: unknown;
+  db_path: unknown;
+  replica_url: unknown;
+  backup_path: unknown;
+  checksum: unknown;
+  completed_at: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

@@ -7,9 +7,9 @@
 
 export interface SiteAuthAvatarCandidate {
   /** Avatar option key */
-  key: string;
+  key: unknown;
   /** Avatar option label */
-  label: string;
+  label: unknown;
   /** Avatar option URL */
-  avatar_url: string;
+  avatar_url: unknown;
 }

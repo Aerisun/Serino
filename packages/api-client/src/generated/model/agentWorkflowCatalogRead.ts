@@ -4,26 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { ActionSurfaceRead } from './actionSurfaceRead';
-import type { AgentWorkflowCatalogApprovalTypeRead } from './agentWorkflowCatalogApprovalTypeRead';
-import type { AgentWorkflowCatalogNodeTypeRead } from './agentWorkflowCatalogNodeTypeRead';
-import type { AgentWorkflowCatalogOperationRead } from './agentWorkflowCatalogOperationRead';
-import type { AgentWorkflowCatalogOptionRead } from './agentWorkflowCatalogOptionRead';
-import type { AgentWorkflowCatalogTriggerTypeRead } from './agentWorkflowCatalogTriggerTypeRead';
-import type { AgentWorkflowExpressionCatalogRead } from './agentWorkflowExpressionCatalogRead';
-import type { AgentWorkflowTemplateRead } from './agentWorkflowTemplateRead';
-import type { AgentWorkflowVariableSourceRead } from './agentWorkflowVariableSourceRead';
-import type { ToolSurfaceRead } from './toolSurfaceRead';
 
 export interface AgentWorkflowCatalogRead {
-  node_types?: AgentWorkflowCatalogNodeTypeRead[];
-  trigger_types?: AgentWorkflowCatalogTriggerTypeRead[];
-  trigger_events?: AgentWorkflowCatalogOptionRead[];
-  operation_catalog?: AgentWorkflowCatalogOperationRead[];
-  approval_types?: AgentWorkflowCatalogApprovalTypeRead[];
-  expression_catalog?: AgentWorkflowExpressionCatalogRead;
-  template_catalog?: AgentWorkflowTemplateRead[];
-  variable_sources?: AgentWorkflowVariableSourceRead[];
-  readonly_tools?: ToolSurfaceRead[];
-  workflow_local_action_surfaces?: ActionSurfaceRead[];
+  node_types?: unknown;
+  trigger_types?: unknown;
+  trigger_events?: unknown;
+  operation_catalog?: unknown;
+  approval_types?: unknown;
+  expression_catalog?: unknown;
+  template_catalog?: unknown;
+  variable_sources?: unknown;
+  readonly_tools?: unknown;
+  workflow_local_action_surfaces?: unknown;
 }

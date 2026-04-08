@@ -4,28 +4,27 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { BackupTransportConfig } from './backupTransportConfig';
 
 export interface BackupSyncConfig {
-  id: string;
-  enabled?: boolean;
-  paused?: boolean;
-  interval_minutes?: number;
-  transport_mode?: string;
-  site_slug?: string;
-  credential_ref?: string | null;
-  encrypt_runtime_data?: boolean;
-  max_retries?: number;
-  retry_backoff_seconds?: number;
-  max_retention_count?: number;
-  last_scheduled_at?: string | null;
-  last_synced_at?: string | null;
-  last_error?: string | null;
-  recovery_key_ready?: boolean;
-  recovery_key_acknowledged?: boolean;
-  active_recovery_key_fingerprint?: string | null;
-  archived_recovery_key_count?: number;
-  transport: BackupTransportConfig;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  enabled?: unknown;
+  paused?: unknown;
+  interval_minutes?: unknown;
+  transport_mode?: unknown;
+  site_slug?: unknown;
+  credential_ref?: unknown;
+  encrypt_runtime_data?: unknown;
+  max_retries?: unknown;
+  retry_backoff_seconds?: unknown;
+  max_retention_count?: unknown;
+  last_scheduled_at?: unknown;
+  last_synced_at?: unknown;
+  last_error?: unknown;
+  recovery_key_ready?: unknown;
+  recovery_key_acknowledged?: unknown;
+  active_recovery_key_fingerprint?: unknown;
+  archived_recovery_key_count?: unknown;
+  transport: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

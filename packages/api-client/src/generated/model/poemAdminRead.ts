@@ -7,15 +7,15 @@
 
 export interface PoemAdminRead {
   /** Unique poem identifier */
-  id: string;
+  id: unknown;
   /** Associated site profile ID */
-  site_profile_id: string;
+  site_profile_id: unknown;
   /** Display order */
-  order_index: number;
+  order_index: unknown;
   /** Poem text content */
-  content: string;
+  content: unknown;
   /** Creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Last update timestamp */
-  updated_at: string;
+  updated_at: unknown;
 }

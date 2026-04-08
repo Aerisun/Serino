@@ -7,13 +7,13 @@
 
 export interface ResumeRead {
   /** Resume page title */
-  title: string;
+  title: unknown;
   /** Professional summary */
-  summary: string;
+  summary: unknown;
   /** Current base location */
-  location?: string;
+  location?: unknown;
   /** Primary contact email */
-  email?: string;
+  email?: unknown;
   /** Profile image URL */
-  profile_image_url?: string;
+  profile_image_url?: unknown;
 }

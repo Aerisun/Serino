@@ -4,19 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { SurfaceDraftMessageRead } from './surfaceDraftMessageRead';
-import type { SurfaceDraftPatchItemRead } from './surfaceDraftPatchItemRead';
-import type { SurfaceDraftReadGraphMutation } from './surfaceDraftReadGraphMutation';
 
 export interface SurfaceDraftRead {
-  workflow_key: string;
-  status?: string;
-  summary?: string;
-  ready_to_apply?: boolean;
-  messages?: SurfaceDraftMessageRead[];
-  patches?: SurfaceDraftPatchItemRead[];
-  graph_mutation?: SurfaceDraftReadGraphMutation;
-  validation_issues?: string[];
-  created_at: string;
-  updated_at: string;
+  workflow_key: unknown;
+  status?: unknown;
+  summary?: unknown;
+  ready_to_apply?: unknown;
+  messages?: unknown;
+  patches?: unknown;
+  graph_mutation?: unknown;
+  validation_issues?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

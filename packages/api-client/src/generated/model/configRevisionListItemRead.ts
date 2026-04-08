@@ -6,15 +6,15 @@
  */
 
 export interface ConfigRevisionListItemRead {
-  id: string;
-  actor_id: string | null;
-  resource_key: string;
-  resource_label: string;
-  operation: string;
-  resource_version: string;
-  summary: string;
-  changed_fields?: string[];
-  sensitive_fields?: string[];
-  restored_from_revision_id?: string | null;
-  created_at: string;
+  id: unknown;
+  actor_id: unknown;
+  resource_key: unknown;
+  resource_label: unknown;
+  operation: unknown;
+  resource_version: unknown;
+  summary: unknown;
+  changed_fields?: unknown;
+  sensitive_fields?: unknown;
+  restored_from_revision_id?: unknown;
+  created_at: unknown;
 }

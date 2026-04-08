@@ -6,9 +6,9 @@
  */
 
 export interface OutboundProxyHealthRead {
-  ok: boolean;
-  proxy_url: string;
-  summary: string;
-  latency_ms?: number | null;
-  status_code?: number | null;
+  ok: unknown;
+  proxy_url: unknown;
+  summary: unknown;
+  latency_ms?: unknown;
+  status_code?: unknown;
 }

@@ -4,15 +4,14 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AuditLogReadPayload } from './auditLogReadPayload';
 
 export interface AuditLogRead {
-  id: string;
-  actor_type: string;
-  actor_id: string | null;
-  action: string;
-  target_type: string | null;
-  target_id: string | null;
-  payload: AuditLogReadPayload;
-  created_at: string;
+  id: unknown;
+  actor_type: unknown;
+  actor_id: unknown;
+  action: unknown;
+  target_type: unknown;
+  target_id: unknown;
+  payload: unknown;
+  created_at: unknown;
 }

@@ -4,9 +4,8 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { PageCopyRead } from './pageCopyRead';
 
 export interface PageCollectionRead {
   /** List of page configurations */
-  items: PageCopyRead[];
+  items: unknown;
 }

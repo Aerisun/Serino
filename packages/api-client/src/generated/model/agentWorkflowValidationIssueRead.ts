@@ -6,10 +6,10 @@
  */
 
 export interface AgentWorkflowValidationIssueRead {
-  level?: string;
-  code?: string;
-  message: string;
-  path?: string;
-  node_id?: string | null;
-  edge_id?: string | null;
+  level?: unknown;
+  code?: unknown;
+  message: unknown;
+  path?: unknown;
+  node_id?: unknown;
+  edge_id?: unknown;
 }

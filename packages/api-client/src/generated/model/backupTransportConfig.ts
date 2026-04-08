@@ -6,9 +6,9 @@
  */
 
 export interface BackupTransportConfig {
-  mode: string;
-  remote_host?: string | null;
-  remote_port?: number | null;
-  remote_path?: string | null;
-  remote_username?: string | null;
+  mode: unknown;
+  remote_host?: unknown;
+  remote_port?: unknown;
+  remote_path?: unknown;
+  remote_username?: unknown;
 }

@@ -4,39 +4,36 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { SiteProfileReadFeatureFlags } from './siteProfileReadFeatureFlags';
-import type { SiteProfileReadHeroActionsItem } from './siteProfileReadHeroActionsItem';
-import type { SiteProfileReadPoemSource } from './siteProfileReadPoemSource';
 
 export interface SiteProfileRead {
   /** Site owner name */
-  name: string;
+  name: unknown;
   /** Site title */
-  title: string;
+  title: unknown;
   /** Short biography */
-  bio: string;
+  bio: unknown;
   /** Professional role */
-  role: string;
+  role: unknown;
   /** Open Graph/Twitter sharing image path */
-  og_image: string;
+  og_image: unknown;
   /** Browser tab icon path */
-  site_icon_url: string;
+  site_icon_url: unknown;
   /** Hero image path */
-  hero_image_url: string;
+  hero_image_url: unknown;
   /** Hero video poster and fallback background image path */
-  hero_poster_url: string;
+  hero_poster_url: unknown;
   /** Regulatory filing or ICP notice */
-  filing_info: string;
+  filing_info: unknown;
   /** Hero section action buttons */
-  hero_actions: SiteProfileReadHeroActionsItem[];
+  hero_actions: unknown;
   /** Hero background video URL */
-  hero_video_url?: string | null;
+  hero_video_url?: unknown;
   /** Poem source mode */
-  poem_source?: SiteProfileReadPoemSource;
+  poem_source?: unknown;
   /** Hitokoto category codes */
-  poem_hitokoto_types?: string[];
+  poem_hitokoto_types?: unknown;
   /** Hitokoto preferred keywords */
-  poem_hitokoto_keywords?: string[];
+  poem_hitokoto_keywords?: unknown;
   /** Feature toggle flags */
-  feature_flags?: SiteProfileReadFeatureFlags;
+  feature_flags?: unknown;
 }

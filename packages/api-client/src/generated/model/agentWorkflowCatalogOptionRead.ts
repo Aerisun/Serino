@@ -4,19 +4,16 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentWorkflowCatalogOptionReadExamplePayload } from './agentWorkflowCatalogOptionReadExamplePayload';
-import type { AgentWorkflowCatalogOptionReadParametersItem } from './agentWorkflowCatalogOptionReadParametersItem';
-import type { AgentWorkflowCatalogOptionReadPayloadFieldsItem } from './agentWorkflowCatalogOptionReadPayloadFieldsItem';
 
 export interface AgentWorkflowCatalogOptionRead {
-  value: string;
-  label: string;
-  description?: string;
-  system_value?: string;
-  group_key?: string;
-  group_label?: string;
-  target_types?: string[];
-  payload_fields?: AgentWorkflowCatalogOptionReadPayloadFieldsItem[];
-  example_payload?: AgentWorkflowCatalogOptionReadExamplePayload;
-  parameters?: AgentWorkflowCatalogOptionReadParametersItem[];
+  value: unknown;
+  label: unknown;
+  description?: unknown;
+  system_value?: unknown;
+  group_key?: unknown;
+  group_label?: unknown;
+  target_types?: unknown;
+  payload_fields?: unknown;
+  example_payload?: unknown;
+  parameters?: unknown;
 }

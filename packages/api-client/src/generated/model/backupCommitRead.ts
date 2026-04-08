@@ -4,22 +4,20 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { BackupCommitReadDatasets } from './backupCommitReadDatasets';
-import type { BackupCommitReadStatsJson } from './backupCommitReadStatsJson';
 
 export interface BackupCommitRead {
-  id: string;
-  transport: string;
-  trigger_kind: string;
-  site_slug: string;
-  remote_commit_id: string;
-  manifest_digest: string;
-  backup_path: string | null;
-  datasets: BackupCommitReadDatasets;
-  stats_json: BackupCommitReadStatsJson;
-  snapshot_started_at: string | null;
-  snapshot_finished_at: string | null;
-  restored_at: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  transport: unknown;
+  trigger_kind: unknown;
+  site_slug: unknown;
+  remote_commit_id: unknown;
+  manifest_digest: unknown;
+  backup_path: unknown;
+  datasets: unknown;
+  stats_json: unknown;
+  snapshot_started_at: unknown;
+  snapshot_finished_at: unknown;
+  restored_at: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

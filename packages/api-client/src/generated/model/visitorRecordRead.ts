@@ -6,17 +6,17 @@
  */
 
 export interface VisitorRecordRead {
-  id: string;
-  visited_at: string;
-  path: string;
-  ip_address: string;
-  location?: string | null;
-  isp?: string | null;
-  owner?: string | null;
-  status_text?: string | null;
-  user_agent?: string | null;
-  referer?: string | null;
-  status_code: number;
-  duration_ms: number;
-  is_bot?: boolean;
+  id: unknown;
+  visited_at: unknown;
+  path: unknown;
+  ip_address: unknown;
+  location?: unknown;
+  isp?: unknown;
+  owner?: unknown;
+  status_text?: unknown;
+  user_agent?: unknown;
+  referer?: unknown;
+  status_code: unknown;
+  duration_ms: unknown;
+  is_bot?: unknown;
 }

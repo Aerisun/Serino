@@ -6,10 +6,10 @@
  */
 
 export interface TelegramWebhookConnectRead {
-  ok?: boolean;
-  status: string;
-  summary: string;
-  bot_username?: string | null;
-  chat_id?: number | string | null;
-  target_url?: string | null;
+  ok?: unknown;
+  status: unknown;
+  summary: unknown;
+  bot_username?: unknown;
+  chat_id?: unknown;
+  target_url?: unknown;
 }

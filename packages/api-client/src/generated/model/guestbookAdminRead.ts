@@ -6,14 +6,14 @@
  */
 
 export interface GuestbookAdminRead {
-  id: string;
-  name: string;
-  email: string | null;
+  id: unknown;
+  name: unknown;
+  email: unknown;
   /** Normalized auth provider */
-  auth_provider?: string | null;
-  website: string | null;
-  body: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
+  auth_provider?: unknown;
+  website: unknown;
+  body: unknown;
+  status: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

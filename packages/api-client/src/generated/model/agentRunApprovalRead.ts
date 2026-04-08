@@ -4,23 +4,21 @@
  * Aerisun API
  * OpenAPI spec version: 0.1.0
  */
-import type { AgentRunApprovalReadRequestPayload } from './agentRunApprovalReadRequestPayload';
-import type { AgentRunApprovalReadResponsePayload } from './agentRunApprovalReadResponsePayload';
 
 export interface AgentRunApprovalRead {
-  id: string;
-  run_id: string;
-  step_id?: string | null;
-  interrupt_id: string;
-  node_key: string;
-  approval_type: string;
-  status: string;
-  request_payload?: AgentRunApprovalReadRequestPayload;
-  response_payload?: AgentRunApprovalReadResponsePayload;
-  requested_by_type: string;
-  resolved_by_type?: string | null;
-  resolved_by_id?: string | null;
-  resolved_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  id: unknown;
+  run_id: unknown;
+  step_id?: unknown;
+  interrupt_id: unknown;
+  node_key: unknown;
+  approval_type: unknown;
+  status: unknown;
+  request_payload?: unknown;
+  response_payload?: unknown;
+  requested_by_type: unknown;
+  resolved_by_type?: unknown;
+  resolved_by_id?: unknown;
+  resolved_at?: unknown;
+  created_at: unknown;
+  updated_at: unknown;
 }

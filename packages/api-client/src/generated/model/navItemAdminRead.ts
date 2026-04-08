@@ -7,27 +7,27 @@
 
 export interface NavItemAdminRead {
   /** Unique nav item identifier */
-  id: string;
+  id: unknown;
   /** Associated site profile ID */
-  site_profile_id: string;
+  site_profile_id: unknown;
   /** Parent nav item ID */
-  parent_id: string | null;
+  parent_id: unknown;
   /** Navigation label */
-  label: string;
+  label: unknown;
   /** Link URL */
-  href: string | null;
+  href: unknown;
   /** Icon identifier */
-  icon_key: string | null;
+  icon_key: unknown;
   /** Associated page key */
-  page_key: string | null;
+  page_key: unknown;
   /** Interaction trigger type */
-  trigger: string;
+  trigger: unknown;
   /** Display order */
-  order_index: number;
+  order_index: unknown;
   /** Whether visible */
-  is_enabled: boolean;
+  is_enabled: unknown;
   /** Creation timestamp */
-  created_at: string;
+  created_at: unknown;
   /** Last update timestamp */
-  updated_at: string;
+  updated_at: unknown;
 }

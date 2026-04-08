@@ -7,15 +7,15 @@
 
 export interface FriendFeedItemRead {
   /** Feed item title */
-  title: string;
+  title: unknown;
   /** Feed item summary */
-  summary: string | null;
+  summary: unknown;
   /** Feed item URL */
-  url: string;
+  url: unknown;
   /** Source blog name */
-  blogName: string;
+  blogName: unknown;
   /** Source blog avatar */
-  avatar: string | null;
+  avatar: unknown;
   /** Publication timestamp */
-  publishedAt: string | null;
+  publishedAt: unknown;
 }
