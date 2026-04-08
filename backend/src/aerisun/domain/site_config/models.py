@@ -105,7 +105,6 @@ class CommunityConfig(Base, TimestampMixin):
     meta: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     required_meta: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     emoji_presets: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
-    enable_enjoy_search: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     image_uploader: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     anonymous_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     moderation_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="all_pending")

@@ -27,6 +27,7 @@ from aerisun.domain.engagement.service import (
     list_public_comments,
     list_public_guestbook_entries,
     read_public_reaction,
+    remove_public_reaction,
     register_public_reaction,
 )
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
@@ -112,9 +113,33 @@ def read_reaction(
     content_type: str,
     slug: str,
     reaction_type: str,
+    client_token: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ) -> ReactionRead:
-    return read_public_reaction(session, content_type, slug, reaction_type)
+    return read_public_reaction(session, content_type, slug, reaction_type, client_token=client_token)
+
+
+@base_router.delete(
+    "/reactions/{content_type}/{slug}/{reaction_type}",
+    response_model=ReactionRead,
+    summary="取消互动反应",
+)
+@limiter.limit(RATE_WRITE_REACTION)
+def delete_reaction(
+    request: Request,
+    content_type: str,
+    slug: str,
+    reaction_type: str,
+    client_token: str = Query(..., min_length=1),
+    session: Session = Depends(get_session),
+) -> ReactionRead:
+    return remove_public_reaction(
+        session,
+        content_type=content_type,
+        content_slug=slug,
+        reaction_type=reaction_type,
+        client_token=client_token,
+    )
 
 
 @base_router.post("/comment-image", response_model=CommentImageUploadResponse, summary="评论图片上传")

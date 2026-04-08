@@ -59,6 +59,11 @@ def create_reaction(session: Session, **kwargs) -> Reaction:
     return reaction
 
 
+def delete_reaction(session: Session, reaction: Reaction) -> None:
+    """Delete an existing Reaction record. Caller must commit."""
+    session.delete(reaction)
+
+
 def count_reactions(
     session: Session,
     content_type: str,

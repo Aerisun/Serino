@@ -880,17 +880,31 @@ def register_public_reaction(session: Session, payload: ReactionCreate) -> React
         content_slug=payload.content_slug,
         reaction_type=payload.reaction_type,
         total=total,
+        active=True,
     )
 
 
-def read_public_reaction(
+def remove_public_reaction(
     session: Session,
+    *,
     content_type: str,
     content_slug: str,
     reaction_type: str,
+    client_token: str,
 ) -> ReactionRead:
     if not repo.content_exists(session, content_type, content_slug):
         raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
+
+    existing = repo.find_reaction(
+        session,
+        content_type=content_type,
+        content_slug=content_slug,
+        reaction_type=reaction_type,
+        client_token=client_token,
+    )
+    if existing is not None:
+        repo.delete_reaction(session, existing)
+        session.commit()
 
     total = repo.count_reactions(
         session,
@@ -904,6 +918,46 @@ def read_public_reaction(
         content_slug=content_slug,
         reaction_type=reaction_type,
         total=total,
+        active=False,
+    )
+
+
+def read_public_reaction(
+    session: Session,
+    content_type: str,
+    content_slug: str,
+    reaction_type: str,
+    client_token: str | None = None,
+) -> ReactionRead:
+    if not repo.content_exists(session, content_type, content_slug):
+        raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
+
+    total = repo.count_reactions(
+        session,
+        content_type=content_type,
+        content_slug=content_slug,
+        reaction_type=reaction_type,
+    )
+
+    active = False
+    if client_token:
+        active = (
+            repo.find_reaction(
+                session,
+                content_type=content_type,
+                content_slug=content_slug,
+                reaction_type=reaction_type,
+                client_token=client_token,
+            )
+            is not None
+        )
+
+    return ReactionRead(
+        content_type=content_type,
+        content_slug=content_slug,
+        reaction_type=reaction_type,
+        total=total,
+        active=active,
     )
 
 

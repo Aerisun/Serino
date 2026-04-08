@@ -613,3 +613,71 @@ def test_create_reaction_returns_total(client) -> None:
     payload = response.json()
     assert payload["reaction_type"] == "like"
     assert payload["total"] >= 3
+    assert payload["active"] is True
+
+
+def test_read_reaction_reports_active_state_for_client_token(client) -> None:
+    token = "pytest-active-token"
+
+    create_response = client.post(
+        "/api/v1/site-interactions/reactions",
+        json={
+            "content_type": "posts",
+            "content_slug": "from-zero-design-system",
+            "reaction_type": "like",
+            "client_token": token,
+        },
+    )
+    assert create_response.status_code == 200
+
+    active_response = client.get(
+        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
+        params={"client_token": token},
+    )
+    assert active_response.status_code == 200
+    active_payload = active_response.json()
+    assert active_payload["active"] is True
+
+    inactive_response = client.get(
+        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
+        params={"client_token": "pytest-other-token"},
+    )
+    assert inactive_response.status_code == 200
+    inactive_payload = inactive_response.json()
+    assert inactive_payload["active"] is False
+    assert inactive_payload["total"] == active_payload["total"]
+
+
+def test_delete_reaction_removes_client_reaction(client) -> None:
+    token = "pytest-delete-token"
+
+    initial = client.get(
+        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
+        params={"client_token": token},
+    )
+    assert initial.status_code == 200
+    initial_payload = initial.json()
+    assert initial_payload["active"] is False
+
+    created = client.post(
+        "/api/v1/site-interactions/reactions",
+        json={
+            "content_type": "posts",
+            "content_slug": "from-zero-design-system",
+            "reaction_type": "like",
+            "client_token": token,
+        },
+    )
+    assert created.status_code == 200
+    created_payload = created.json()
+    assert created_payload["active"] is True
+    assert created_payload["total"] == initial_payload["total"] + 1
+
+    deleted = client.delete(
+        "/api/v1/site-interactions/reactions/posts/from-zero-design-system/like",
+        params={"client_token": token},
+    )
+    assert deleted.status_code == 200
+    deleted_payload = deleted.json()
+    assert deleted_payload["active"] is False
+    assert deleted_payload["total"] == initial_payload["total"]

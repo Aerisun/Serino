@@ -121,6 +121,7 @@ def _assert_head_schema(db_path, *, expect_data_updates: bool) -> None:
         "guest_avatar_mode",
         "draft_enabled",
         "avatar_strategy",
+        "enable_enjoy_search",
     } & community_config_columns == set()
     assert {"resource_key", "visibility", "category", "note", "scope"} <= assets_columns
     assert {

@@ -442,7 +442,6 @@ def _community_capture(session: Session) -> dict[str, Any]:
             "meta": list(config.meta or []),
             "required_meta": list(config.required_meta or []),
             "emoji_presets": list(config.emoji_presets or []),
-            "enable_enjoy_search": config.enable_enjoy_search,
             "image_uploader": config.image_uploader,
             "anonymous_enabled": config.anonymous_enabled,
             "moderation_mode": normalize_comment_moderation_mode(config.moderation_mode),

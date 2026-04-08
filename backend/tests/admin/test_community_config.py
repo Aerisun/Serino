@@ -67,7 +67,6 @@ def test_admin_community_config_round_trip(client) -> None:
         "meta": current["meta"],
         "required_meta": current["required_meta"],
         "emoji_presets": current["emoji_presets"],
-        "enable_enjoy_search": current["enable_enjoy_search"],
         "image_uploader": current["image_uploader"],
         "anonymous_enabled": False,
         "moderation_mode": "no_review",
@@ -86,6 +85,7 @@ def test_admin_community_config_round_trip(client) -> None:
     response = client.get("/api/v1/admin/site-config/community-config", headers=headers)
     assert response.status_code == 200
     refreshed = response.json()
+    assert "enable_enjoy_search" not in refreshed
     assert refreshed["anonymous_enabled"] is False
     assert refreshed["moderation_mode"] == "no_review"
     assert refreshed["default_sorting"] == "oldest"
