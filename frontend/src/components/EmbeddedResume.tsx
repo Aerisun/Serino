@@ -17,6 +17,19 @@ export default function EmbeddedResume({
   profileImageUrl,
   contacts,
 }: EmbeddedResumeProps) {
+  const hasContacts = Boolean(contacts?.location || contacts?.email);
+  const profileImage = profileImageUrl ? (
+    <div className="relative h-28 w-28 overflow-hidden rounded-[1.7rem] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-[rgb(var(--shiro-panel-rgb)/0.22)] p-1.5 shadow-[0_14px_32px_rgba(15,23,42,0.1)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.18)] sm:h-32 sm:w-32">
+      <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[linear-gradient(145deg,transparent,rgb(var(--shiro-sheen-rgb)/0.2))]" />
+      <div className="absolute inset-1 rounded-[1.38rem] bg-[radial-gradient(circle_at_28%_28%,rgb(var(--shiro-glow-rgb)/0.28),transparent_58%)]" />
+      <img
+        src={profileImageUrl}
+        alt=""
+        className="relative z-10 h-full w-full rounded-[1.32rem] object-cover"
+      />
+    </div>
+  ) : null;
+
   return (
     <section className="relative mx-auto max-w-[980px] px-2 py-4 md:py-6">
       <div className="pointer-events-none absolute inset-x-8 top-5 h-56 rounded-[3rem] bg-[radial-gradient(circle_at_top,rgb(var(--shiro-glow-rgb)/0.18),transparent_68%)] blur-3xl" />
@@ -31,14 +44,36 @@ export default function EmbeddedResume({
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0 flex-1">
               <h2
-                className="pl-2 text-[4.2rem] leading-[0.82] tracking-[-0.02em] text-foreground md:pl-3 md:text-[5.8rem]"
+                className="text-center text-[4.2rem] leading-[0.82] tracking-[-0.02em] text-foreground sm:pl-2 sm:text-left md:pl-3 md:text-[5.8rem]"
                 style={{ fontFamily: '"Pinyon Script", cursive' }}
               >
                 {name || "Your Name"}
               </h2>
 
-              {contacts?.location || contacts?.email ? (
-                <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-2 pl-1 text-[0.98rem] tracking-[0.01em] text-foreground/58 md:pl-2">
+              {profileImage || hasContacts ? (
+                <div className="mt-5 flex items-center gap-5 sm:hidden">
+                  {profileImage}
+                  {hasContacts ? (
+                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 pl-1 pr-1 text-[0.94rem] leading-tight tracking-[0.01em] text-foreground/58">
+                      {contacts?.location ? (
+                        <span className="inline-flex min-w-0 items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-[rgb(var(--shiro-accent-rgb)/0.74)]" />
+                          <span className="truncate">{contacts.location}</span>
+                        </span>
+                      ) : null}
+                      {contacts?.email ? (
+                        <span className="inline-flex min-w-0 items-center gap-2">
+                          <Mail className="h-3.5 w-3.5 shrink-0 text-[rgb(var(--shiro-accent-rgb)/0.74)]" />
+                          <span className="break-all">{contacts.email}</span>
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {hasContacts ? (
+                <div className="mt-5 hidden flex-wrap items-center gap-x-8 gap-y-2 pl-1 text-[0.98rem] tracking-[0.01em] text-foreground/58 sm:flex md:pl-2">
                   {contacts?.location ? (
                     <span className="inline-flex whitespace-nowrap items-center gap-2">
                       <MapPin className="h-3.5 w-3.5 text-[rgb(var(--shiro-accent-rgb)/0.74)]" />
@@ -55,20 +90,8 @@ export default function EmbeddedResume({
               ) : null}
             </div>
 
-            <aside className="flex shrink-0 justify-start sm:justify-end sm:pr-4 lg:pr-10">
-              {profileImageUrl ? (
-                <div className="relative h-32 w-32 overflow-hidden rounded-[1.7rem] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-[rgb(var(--shiro-panel-rgb)/0.22)] p-1.5 shadow-[0_14px_32px_rgba(15,23,42,0.1)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.18)]">
-                  <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[linear-gradient(145deg,transparent,rgb(var(--shiro-sheen-rgb)/0.2))]" />
-                  <div className="absolute inset-1 rounded-[1.38rem] bg-[radial-gradient(circle_at_28%_28%,rgb(var(--shiro-glow-rgb)/0.28),transparent_58%)]" />
-                  <img
-                    src={profileImageUrl}
-                    alt=""
-                    className="relative z-10 h-full w-full rounded-[1.32rem] object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="h-0 w-0" />
-              )}
+            <aside className="hidden shrink-0 justify-start sm:flex sm:justify-end sm:pr-4 lg:pr-10">
+              {profileImage || <div className="h-0 w-0" />}
             </aside>
           </div>
 
