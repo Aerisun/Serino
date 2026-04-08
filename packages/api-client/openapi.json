@@ -1766,6 +1766,90 @@
               "type": "string",
               "title": "Reaction Type"
             }
+          },
+          {
+            "name": "client_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "site-interactions"
+        ],
+        "summary": "取消互动反应",
+        "operationId": "delete_reaction_api_v1_site_interactions_reactions__content_type___slug___reaction_type__delete",
+        "parameters": [
+          {
+            "name": "content_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Content Type"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "reaction_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Reaction Type"
+            }
+          },
+          {
+            "name": "client_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Client Token"
+            }
           }
         ],
         "responses": {
@@ -19513,11 +19597,6 @@
             "title": "Emoji Presets",
             "description": "Emoji preset CDN URLs"
           },
-          "enable_enjoy_search": {
-            "type": "boolean",
-            "title": "Enable Enjoy Search",
-            "description": "Emoji search enabled"
-          },
           "image_uploader": {
             "type": "boolean",
             "title": "Image Uploader",
@@ -19588,7 +19667,6 @@
           "meta",
           "required_meta",
           "emoji_presets",
-          "enable_enjoy_search",
           "image_uploader",
           "anonymous_enabled",
           "moderation_mode",
@@ -19644,11 +19722,6 @@
             "type": "array",
             "title": "Emoji Presets",
             "description": "Emoji preset CDN URLs"
-          },
-          "enable_enjoy_search": {
-            "type": "boolean",
-            "title": "Enable Enjoy Search",
-            "description": "Emoji search enabled"
           },
           "image_uploader": {
             "type": "boolean",
@@ -19707,7 +19780,6 @@
           "meta",
           "required_meta",
           "emoji_presets",
-          "enable_enjoy_search",
           "image_uploader",
           "anonymous_enabled",
           "moderation_mode",
@@ -19803,18 +19875,6 @@
             ],
             "title": "Emoji Presets",
             "description": "Emoji preset CDN URLs"
-          },
-          "enable_enjoy_search": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enable Enjoy Search",
-            "description": "Enable emoji search"
           },
           "image_uploader": {
             "anyOf": [
@@ -25994,6 +26054,12 @@
             "type": "integer",
             "title": "Total",
             "description": "Total reaction count"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "description": "Whether the provided client token currently has this reaction active",
+            "default": false
           }
         },
         "type": "object",

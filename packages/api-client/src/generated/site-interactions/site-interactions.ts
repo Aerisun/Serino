@@ -29,6 +29,7 @@ import type {
   CommentCreate,
   CommentCreateResponse,
   CommentImageUploadResponse,
+  DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams,
   GuestbookCollectionRead,
   GuestbookCreate,
   GuestbookCreateResponse,
@@ -36,7 +37,8 @@ import type {
   ReactionCreate,
   ReactionRead,
   ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetParams,
-  ReadGuestbookApiV1SiteInteractionsGuestbookGetParams
+  ReadGuestbookApiV1SiteInteractionsGuestbookGetParams,
+  ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams
 } from '../model';
 
 import { customInstance } from '../../mutators/public-instance';
@@ -609,19 +611,28 @@ export type readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTyp
 
 export const getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetUrl = (contentType: string,
     slug: string,
-    reactionType: string,) => {
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}`
+  return stringifiedParams.length > 0 ? `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}?${stringifiedParams}` : `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}`
 }
 
 export const readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet = async (contentType: string,
     slug: string,
-    reactionType: string, options?: RequestInit): Promise<readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse> => {
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams, options?: RequestInit): Promise<readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse> => {
 
-  return customInstance<readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse>(getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetUrl(contentType,slug,reactionType),
+  return customInstance<readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse>(getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetUrl(contentType,slug,reactionType,params),
   {
     ...options,
     method: 'GET'
@@ -636,25 +647,27 @@ export const readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTy
 
 export const getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryKey = (contentType: string,
     slug: string,
-    reactionType: string,) => {
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams,) => {
     return [
-    `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}`
+    `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
 export const getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryOptions = <TData = Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError = ErrorType<HTTPValidationError>>(contentType: string,
     slug: string,
-    reactionType: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryKey(contentType,slug,reactionType);
+  const queryKey =  queryOptions?.queryKey ?? getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryKey(contentType,slug,reactionType,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>> = ({ signal }) => readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet(contentType,slug,reactionType, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>> = ({ signal }) => readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet(contentType,slug,reactionType,params, { signal, ...requestOptions });
 
 
 
@@ -670,7 +683,8 @@ export type ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTyp
 export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet<TData = Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError = ErrorType<HTTPValidationError>>(
  contentType: string,
     slug: string,
-    reactionType: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>> & Pick<
+    reactionType: string,
+    params: undefined |  ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>,
           TError,
@@ -682,7 +696,8 @@ export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReac
 export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet<TData = Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError = ErrorType<HTTPValidationError>>(
  contentType: string,
     slug: string,
-    reactionType: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>> & Pick<
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>,
           TError,
@@ -694,7 +709,8 @@ export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReac
 export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet<TData = Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError = ErrorType<HTTPValidationError>>(
  contentType: string,
     slug: string,
-    reactionType: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -704,11 +720,12 @@ export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReac
 export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet<TData = Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError = ErrorType<HTTPValidationError>>(
  contentType: string,
     slug: string,
-    reactionType: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+    reactionType: string,
+    params?: ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryOptions(contentType,slug,reactionType,options)
+  const queryOptions = getReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryOptions(contentType,slug,reactionType,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -719,6 +736,107 @@ export function useReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReac
 
 
 /**
+ * @summary 取消互动反应
+ */
+export type deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse200 = {
+  data: ReactionRead
+  status: 200
+}
+
+export type deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseSuccess = (deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse200) & {
+  headers: Headers;
+};
+export type deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseError = (deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse = (deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseSuccess | deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseError)
+
+export const getDeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteUrl = (contentType: string,
+    slug: string,
+    reactionType: string,
+    params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}?${stringifiedParams}` : `/api/v1/site-interactions/reactions/${contentType}/${slug}/${reactionType}`
+}
+
+export const deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete = async (contentType: string,
+    slug: string,
+    reactionType: string,
+    params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams, options?: RequestInit): Promise<deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse> => {
+
+  return customInstance<deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse>(getDeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteUrl(contentType,slug,reactionType,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete>>, TError,{contentType: string;slug: string;reactionType: string;params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete>>, TError,{contentType: string;slug: string;reactionType: string;params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams}, TContext> => {
+
+const mutationKey = ['deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete>>, {contentType: string;slug: string;reactionType: string;params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams}> = (props) => {
+          const {contentType,slug,reactionType,params} = props ?? {};
+
+          return  deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete(contentType,slug,reactionType,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete>>>
+
+    export type DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 取消互动反应
+ */
+export const useDeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete>>, TError,{contentType: string;slug: string;reactionType: string;params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDelete>>,
+        TError,
+        {contentType: string;slug: string;reactionType: string;params: DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams},
+        TContext
+      > => {
+      return useMutation(getDeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 评论图片上传
  */
 export type uploadCommentImageApiV1SiteInteractionsCommentImagePostResponse200 = {

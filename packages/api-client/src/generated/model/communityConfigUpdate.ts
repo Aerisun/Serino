@@ -19,8 +19,6 @@ export interface CommunityConfigUpdate {
   required_meta?: string[] | null;
   /** Emoji preset CDN URLs */
   emoji_presets?: string[] | null;
-  /** Enable emoji search */
-  enable_enjoy_search?: boolean | null;
   /** Allow image uploads in comments */
   image_uploader?: boolean | null;
   /** Allow email login for commenting */

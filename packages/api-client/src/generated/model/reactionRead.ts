@@ -14,4 +14,6 @@ export interface ReactionRead {
   reaction_type: string;
   /** Total reaction count */
   total: number;
+  /** Whether the provided client token currently has this reaction active */
+  active?: boolean;
 }

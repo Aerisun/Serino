@@ -21,8 +21,6 @@ export interface CommunityConfigAdminRead {
   required_meta: string[];
   /** Emoji preset CDN URLs */
   emoji_presets: string[];
-  /** Emoji search enabled */
-  enable_enjoy_search: boolean;
   /** Image uploads allowed */
   image_uploader: boolean;
   /** Whether email login is allowed for commenting */

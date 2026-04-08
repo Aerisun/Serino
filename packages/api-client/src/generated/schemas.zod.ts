@@ -98,7 +98,6 @@ export const ReadCommunityConfigApiV1SiteCommunityConfigGetResponse = zod.object
   "meta": zod.array(zod.string()).describe('Commenter metadata fields'),
   "required_meta": zod.array(zod.string()).describe('Required metadata fields'),
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
-  "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
   "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Moderation mode'),
@@ -982,11 +981,14 @@ export const CreateReactionApiV1SiteInteractionsReactionsPostBody = zod.object({
   "client_token": zod.union([zod.string(),zod.null()]).optional().describe('Client-side deduplication token')
 })
 
+export const createReactionApiV1SiteInteractionsReactionsPostResponseActiveDefault = false;
+
 export const CreateReactionApiV1SiteInteractionsReactionsPostResponse = zod.object({
   "content_type": zod.string().describe('Content type'),
   "content_slug": zod.string().describe('Content slug'),
   "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count')
+  "total": zod.number().describe('Total reaction count'),
+  "active": zod.boolean().default(createReactionApiV1SiteInteractionsReactionsPostResponseActiveDefault).describe('Whether the provided client token currently has this reaction active')
 })
 
 
@@ -999,11 +1001,45 @@ export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTy
   "reaction_type": zod.string()
 })
 
+export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetQueryParams = zod.object({
+  "client_token": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponseActiveDefault = false;
+
 export const ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponse = zod.object({
   "content_type": zod.string().describe('Content type'),
   "content_slug": zod.string().describe('Content slug'),
   "reaction_type": zod.string().describe('Reaction type identifier'),
-  "total": zod.number().describe('Total reaction count')
+  "total": zod.number().describe('Total reaction count'),
+  "active": zod.boolean().default(readReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetResponseActiveDefault).describe('Whether the provided client token currently has this reaction active')
+})
+
+
+/**
+ * @summary 取消互动反应
+ */
+export const DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams = zod.object({
+  "content_type": zod.string(),
+  "slug": zod.string(),
+  "reaction_type": zod.string()
+})
+
+
+
+
+export const DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteQueryParams = zod.object({
+  "client_token": zod.string().min(1)
+})
+
+export const deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseActiveDefault = false;
+
+export const DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponse = zod.object({
+  "content_type": zod.string().describe('Content type'),
+  "content_slug": zod.string().describe('Content slug'),
+  "reaction_type": zod.string().describe('Reaction type identifier'),
+  "total": zod.number().describe('Total reaction count'),
+  "active": zod.boolean().default(deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteResponseActiveDefault).describe('Whether the provided client token currently has this reaction active')
 })
 
 
@@ -2306,7 +2342,6 @@ export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = 
   "meta": zod.array(zod.string()).describe('Commenter metadata fields'),
   "required_meta": zod.array(zod.string()).describe('Required metadata fields'),
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
-  "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
   "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Comment moderation mode'),
@@ -2335,7 +2370,6 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = z
   "meta": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Commenter metadata fields'),
   "required_meta": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Required metadata fields'),
   "emoji_presets": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Emoji preset CDN URLs'),
-  "enable_enjoy_search": zod.union([zod.boolean(),zod.null()]).optional().describe('Enable emoji search'),
   "image_uploader": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow image uploads in comments'),
   "anonymous_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Allow email login for commenting'),
   "moderation_mode": zod.union([zod.string(),zod.null()]).optional().describe('Comment moderation mode'),
@@ -2361,7 +2395,6 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
   "meta": zod.array(zod.string()).describe('Commenter metadata fields'),
   "required_meta": zod.array(zod.string()).describe('Required metadata fields'),
   "emoji_presets": zod.array(zod.string()).describe('Emoji preset CDN URLs'),
-  "enable_enjoy_search": zod.boolean().describe('Emoji search enabled'),
   "image_uploader": zod.boolean().describe('Image uploads allowed'),
   "anonymous_enabled": zod.boolean().describe('Whether email login is allowed for commenting'),
   "moderation_mode": zod.string().describe('Comment moderation mode'),
