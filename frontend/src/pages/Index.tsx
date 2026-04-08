@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useTheme } from "@serino/theme";
 import Navbar from "@/components/Navbar";
 import HeroContent from "@/components/HeroContent";
@@ -6,6 +6,7 @@ import LazyOnVisible from "@/components/LazyOnVisible";
 import PageMeta from "@/components/PageMeta";
 import { useSiteConfig } from "@/contexts/runtime-config";
 import { useDeferredActivation } from "@/hooks/useDeferredActivation";
+import { scheduleIdleTask, shouldBackgroundPrefetch } from "@/lib/idle";
 import { lazyWithPreload } from "@/lib/lazy";
 
 const ActivitySection = lazyWithPreload(() => import("@/components/ActivitySection"));
@@ -21,6 +22,16 @@ const Index = () => {
   const heroOverlayClass = "bg-black/12";
   const showVideo = Boolean(videoUrl) && videoActivated && !videoFailed;
   const showImageFallback = Boolean(posterUrl);
+
+  useEffect(() => {
+    if (!shouldBackgroundPrefetch()) {
+      return;
+    }
+
+    return scheduleIdleTask(() => {
+      void ActivitySection.preload();
+    }, 1_600);
+  }, []);
 
   return (
     <div

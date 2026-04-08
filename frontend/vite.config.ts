@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import fs from "fs";
@@ -223,12 +223,22 @@ export default defineConfig(({ mode }) => {
             {
               urlPattern: apiBasePathPattern,
               handler: "NetworkFirst",
-              options: { cacheName: "api-cache", expiration: { maxEntries: 50, maxAgeSeconds: 300 } },
+              options: {
+                cacheName: "api-cache",
+                networkTimeoutSeconds: 3,
+                cacheableResponse: { statuses: [0, 200] },
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 },
+              },
             },
             {
               urlPattern: /\/bootstrap\.js$/,
-              handler: "StaleWhileRevalidate",
-              options: { cacheName: "bootstrap-cache", expiration: { maxEntries: 2, maxAgeSeconds: 600 } },
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "bootstrap-cache",
+                networkTimeoutSeconds: 2,
+                cacheableResponse: { statuses: [0, 200] },
+                expiration: { maxEntries: 2, maxAgeSeconds: 120 },
+              },
             },
             {
               urlPattern: /\.(woff2?|ttf|otf)$/,
@@ -241,9 +251,22 @@ export default defineConfig(({ mode }) => {
               options: { cacheName: "rich-content", expiration: { maxEntries: 60, maxAgeSeconds: 86400 * 30 } },
             },
             {
-              urlPattern: /\.(js|css|png|jpg|jpeg|svg|gif|woff2?)$/,
+              urlPattern: /\/media\/.+\.(png|jpe?g|svg|gif|webp|avif|mp4|webm)$/i,
+              handler: "StaleWhileRevalidate",
+              options: {
+                cacheName: "media-cache",
+                cacheableResponse: { statuses: [0, 200] },
+                expiration: { maxEntries: 160, maxAgeSeconds: 86400 * 7 },
+              },
+            },
+            {
+              urlPattern: /\/assets\/.+\.(js|css|png|jpe?g|svg|gif|webp|avif|woff2?)$/i,
               handler: "CacheFirst",
-              options: { cacheName: "asset-cache", expiration: { maxEntries: 100, maxAgeSeconds: 86400 * 30 } },
+              options: {
+                cacheName: "asset-cache",
+                cacheableResponse: { statuses: [0, 200] },
+                expiration: { maxEntries: 120, maxAgeSeconds: 86400 * 30 },
+              },
             },
           ],
         },

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -12,12 +12,13 @@ import { useFrontendI18n } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
 import { formatPublishedDate } from "@/lib/api/utils";
+import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel } from "@/lib/preview";
 import { readThoughtsApiV1SiteThoughtsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 
-const CommentSection = lazy(() => import("@/components/CommentSection"));
+const CommentSection = lazyWithPreload(() => import("@/components/CommentSection"));
 
 interface Thought {
   id: string;
@@ -124,7 +125,8 @@ const Thoughts = () => {
   const location = useLocation();
   const previewStorageKey =
     new URLSearchParams(location.search).get("previewStorageKey") || "";
-  const config = usePageConfig().thoughts as unknown as ThoughtsPageConfig;
+  const pages = usePageConfig();
+  const config = pages.thoughts as unknown as ThoughtsPageConfig;
   const errorTitle = config.errorTitle ?? t("thoughts.errorTitle");
   const retryLabel = config.retryLabel ?? t("common.retry");
   const loadMoreLabel = config.loadMoreLabel ?? t("thoughts.loadingMore");
@@ -135,8 +137,7 @@ const Thoughts = () => {
   );
   const searchPlaceholder = config.searchPlaceholder ?? t("thoughts.searchPlaceholder");
   const [search, setSearch] = useState("");
-  const [rawSearch, setRawSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deferredSearch = useDeferredValue(search);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
   const { data: previewData } = usePreviewChannel(previewStorageKey);
 
@@ -149,7 +150,7 @@ const Thoughts = () => {
     sentinelRef,
     reload,
   } = useInfiniteList({
-    queryKey: ["site", "thoughts"],
+    queryKey: ["site", "thoughts", pageSize],
     queryFn: async (p) => {
       const data = (await readThoughtsApiV1SiteThoughtsGet(p)).data;
 
@@ -164,6 +165,8 @@ const Thoughts = () => {
     },
     pageSize,
     mapItem: mapRemoteThought,
+    staleTime: 2 * 60_000,
+    gcTime: 20 * 60_000,
   });
   const previewThought =
     previewData?.type === "thoughts" ? buildPreviewThought(previewData, t("common.draft")) : null;
@@ -180,14 +183,6 @@ const Thoughts = () => {
   const viewStatus: typeof status =
     previewThought && status !== "ready" ? "ready" : status;
 
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
-
   const allCategories = useMemo(
     () => [
       allCategoryLabel,
@@ -202,14 +197,14 @@ const Thoughts = () => {
     return displayItems.filter((thought) => {
       const matchSearch = matchesSearchText(
         [thought.content, thought.date, thought.mood, thought.category],
-        search,
+        deferredSearch,
       );
       const matchCategory =
         activeCategory === allCategoryLabel ||
         thought.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [activeCategory, allCategoryLabel, displayItems, search]);
+  }, [activeCategory, allCategoryLabel, deferredSearch, displayItems]);
 
   useEffect(() => {
     const targetId = previewThought?.id || location.hash.slice(1);
@@ -242,15 +237,8 @@ const Thoughts = () => {
           <input
             type="text"
             placeholder={searchPlaceholder}
-            value={rawSearch}
-            onChange={(event) => {
-              const value = event.target.value;
-              setRawSearch(value);
-              if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-              }
-              debounceRef.current = setTimeout(() => setSearch(value), 300);
-            }}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             maxLength={100}
             aria-label={searchPlaceholder}
             className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
@@ -390,6 +378,9 @@ const Thoughts = () => {
                 />
                 <button
                   type="button"
+                  onMouseEnter={() => void CommentSection.preload()}
+                  onFocus={() => void CommentSection.preload()}
+                  onTouchStart={() => void CommentSection.preload()}
                   onClick={() =>
                     setExpandedCommentId(
                       expandedCommentId === thought.id ? null : thought.id,

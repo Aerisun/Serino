@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, FileText, Tag } from "lucide-react";
@@ -23,7 +23,7 @@ import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { lazyWithPreload } from "@/lib/lazy";
 
-const CommentSection = lazy(() => import("@/components/CommentSection"));
+const CommentSection = lazyWithPreload(() => import("@/components/CommentSection"));
 const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
 
 interface PostData {
@@ -36,7 +36,6 @@ interface PostData {
   likes: number;
   views: number;
   comments: number;
-  wordCount: string;
   content: string;
 }
 
@@ -76,8 +75,6 @@ const estimateWordCount = (value: string, lang: FrontendLang, wordsLabel: string
 const buildRemotePost = (
   entry: ContentEntryRead,
   fallbackCategoryLabel: string,
-  lang: FrontendLang,
-  wordsLabel: string,
 ): PostData => ({
   slug: entry.slug,
   title: entry.title,
@@ -88,15 +85,12 @@ const buildRemotePost = (
   likes: entry.like_count ?? 0,
   views: entry.view_count ?? 0,
   comments: entry.comment_count ?? 0,
-  wordCount: estimateWordCount(entry.body, lang, wordsLabel),
   content: entry.body,
 });
 
 const buildPreviewPost = (
   preview: ContentPreviewData,
   fallbackCategoryLabel: string,
-  lang: FrontendLang,
-  wordsLabel: string,
   draftLabel: string,
 ): PostData => ({
   slug: preview.slug || "",
@@ -108,9 +102,52 @@ const buildPreviewPost = (
   likes: 0,
   views: 0,
   comments: 0,
-  wordCount: estimateWordCount(preview.body || "", lang, wordsLabel),
   content: preview.body || "",
 });
+
+const useEstimatedWordCount = (
+  content: string,
+  lang: FrontendLang,
+  wordsLabel: string,
+) => {
+  const [wordCount, setWordCount] = useState("");
+
+  useEffect(() => {
+    if (!content) {
+      setWordCount("");
+      return;
+    }
+
+    let cancelled = false;
+    const compute = () => {
+      if (cancelled) {
+        return;
+      }
+      setWordCount(estimateWordCount(content, lang, wordsLabel));
+    };
+
+    if (typeof window === "undefined") {
+      compute();
+      return;
+    }
+
+    if ("requestIdleCallback" in window) {
+      const handle = window.requestIdleCallback(compute, { timeout: 240 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(handle);
+      };
+    }
+
+    const handle = window.setTimeout(compute, 32);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [content, lang, wordsLabel]);
+
+  return wordCount;
+};
 
 const PostDetail = () => {
   const { t, lang } = useFrontendI18n();
@@ -135,15 +172,21 @@ const PostDetail = () => {
   const slug = id ? decodeURIComponent(id) : "";
   const { data: previewData, isLoading: isPreviewLoading } =
     usePreviewChannel(previewStorageKey);
-  const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, { query: { enabled: !!id } });
+  const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, {
+    query: {
+      enabled: !!id,
+      staleTime: 5 * 60_000,
+      gcTime: 20 * 60_000,
+    },
+  });
 
   const previewPost =
     previewData?.type === "posts"
-      ? buildPreviewPost(previewData, fallbackCategoryLabel, lang, t("common.words"), t("common.draft"))
+      ? buildPreviewPost(previewData, fallbackCategoryLabel, t("common.draft"))
       : null;
   const post =
     previewPost ??
-    (response?.data ? buildRemotePost(response.data, fallbackCategoryLabel, lang, t("common.words")) : null);
+    (response?.data ? buildRemotePost(response.data, fallbackCategoryLabel) : null);
   const is404 = isError && error != null && typeof error === "object" && "response" in error && (error as { response?: { status?: number } }).response?.status === 404;
   const status: "loading" | "ready" | "empty" | "error" = previewPost
     ? "ready"
@@ -160,10 +203,12 @@ const PostDetail = () => {
       : error instanceof Error ? error.message : errorTitle
     : !id ? t("postDetail.missingId") : "";
   const showArticleEnhancements = Boolean(post) && featureFlags.toc;
+  const wordCount = useEstimatedWordCount(post?.content ?? "", lang, t("common.words"));
 
   useEffect(() => {
     if (post) {
       void ArticleMarkdownRenderer.preload();
+      void CommentSection.preload();
     }
   }, [post]);
 
@@ -250,7 +295,14 @@ const PostDetail = () => {
                 </span>
                 <span className="flex items-center gap-1">
                   <FileText className="h-3 w-3" />
-                  {post.wordCount}
+                  {wordCount ? (
+                    wordCount
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-3 w-14 rounded-full bg-foreground/[0.05]"
+                    />
+                  )}
                 </span>
               </div>
 

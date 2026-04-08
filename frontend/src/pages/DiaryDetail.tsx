@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import {
@@ -37,7 +37,7 @@ import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { lazyWithPreload } from "@/lib/lazy";
 
-const CommentSection = lazy(() => import("@/components/CommentSection"));
+const CommentSection = lazyWithPreload(() => import("@/components/CommentSection"));
 const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
 
 type Weather =
@@ -178,7 +178,11 @@ const DiaryDetail = () => {
     error,
     refetch,
   } = useReadDiaryEntryApiV1SiteDiarySlugGet(slug, {
-    query: { enabled: !!id },
+    query: {
+      enabled: !!id,
+      staleTime: 5 * 60_000,
+      gcTime: 20 * 60_000,
+    },
   });
 
   const previewEntry =
@@ -219,6 +223,7 @@ const DiaryDetail = () => {
   useEffect(() => {
     if (entry) {
       void ArticleMarkdownRenderer.preload();
+      void CommentSection.preload();
     }
   }, [entry]);
 

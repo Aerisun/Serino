@@ -11,6 +11,8 @@ import { clampPageSize } from "@/lib/page-size";
 import { translateFrontendText } from "@/i18n";
 
 const DEFAULT_IMAGE_MAX_BYTES = 512 * 1024;
+const COMMUNITY_CONFIG_CACHE_KEY = "aerisun:community-config";
+const COMMUNITY_CONFIG_CACHE_TTL_MS = 15 * 60_000;
 
 export interface CommunitySurfaceConfig {
   key: string;
@@ -84,6 +86,11 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   migration_state: "not_started",
 };
 
+let cachedCommunityConfig: CommunityConfig | null = null;
+let cachedCommunityConfigExpiresAt = 0;
+let inflightCommunityConfigRequest: Promise<CommunityConfig> | null = null;
+const hintedCommunityOrigins = new Set<string>();
+
 const normalizeCommentSorting = (value: unknown): CommunityCommentSort => {
   return value === "oldest" || value === "hottest" ? value : "latest";
 };
@@ -134,6 +141,53 @@ const normalizeServerURL = (raw: string): string => {
   }
 };
 
+const appendConnectionHint = (rel: "dns-prefetch" | "preconnect", href: string) => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const exists = document.head.querySelector(`link[rel="${rel}"][href="${href}"]`);
+  if (exists) {
+    return;
+  }
+
+  const link = document.createElement("link");
+  link.rel = rel;
+  link.href = href;
+  if (rel === "preconnect") {
+    link.crossOrigin = "anonymous";
+  }
+  document.head.appendChild(link);
+};
+
+const hintCommunityOrigin = (value: string) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin === window.location.origin || hintedCommunityOrigins.has(parsed.origin)) {
+      return;
+    }
+
+    hintedCommunityOrigins.add(parsed.origin);
+    appendConnectionHint("dns-prefetch", parsed.origin);
+    appendConnectionHint("preconnect", parsed.origin);
+  } catch {
+    // Ignore malformed hint URLs.
+  }
+};
+
+const hintCommunityConnections = (config: CommunityConfig) => {
+  hintCommunityOrigin(config.server_url);
+  for (const preset of config.emoji_presets) {
+    if (typeof preset === "string") {
+      hintCommunityOrigin(preset);
+    }
+  }
+};
+
 const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
   if (!payload || typeof payload !== "object") {
     return DEFAULT_WALINE_COMMUNITY_CONFIG;
@@ -163,15 +217,101 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
   };
 };
 
-export async function loadCommunityConfig(init?: RequestInit): Promise<CommunityConfig> {
+const readStoredCommunityConfig = () => {
+  const now = Date.now();
+  if (cachedCommunityConfig && cachedCommunityConfigExpiresAt > now) {
+    return cachedCommunityConfig;
+  }
+
+  cachedCommunityConfig = null;
+  cachedCommunityConfigExpiresAt = 0;
+
+  if (typeof sessionStorage === "undefined") {
+    return null;
+  }
+
   try {
-    const response = await readCommunityConfigApiV1SiteCommunityConfigGet(init);
-    return normalizeCommunityConfig(response.data);
+    const raw = sessionStorage.getItem(COMMUNITY_CONFIG_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as { expiresAt?: number; value?: CommunityConfig };
+    if (!parsed || typeof parsed.expiresAt !== "number" || !parsed.value) {
+      sessionStorage.removeItem(COMMUNITY_CONFIG_CACHE_KEY);
+      return null;
+    }
+
+    if (parsed.expiresAt <= now) {
+      sessionStorage.removeItem(COMMUNITY_CONFIG_CACHE_KEY);
+      return null;
+    }
+
+    cachedCommunityConfig = parsed.value;
+    cachedCommunityConfigExpiresAt = parsed.expiresAt;
+    return parsed.value;
   } catch {
-    return {
-      ...DEFAULT_WALINE_COMMUNITY_CONFIG,
-      server_url: normalizeServerURL(""),
-    };
+    try {
+      sessionStorage.removeItem(COMMUNITY_CONFIG_CACHE_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+    return null;
+  }
+};
+
+const writeStoredCommunityConfig = (value: CommunityConfig) => {
+  const expiresAt = Date.now() + COMMUNITY_CONFIG_CACHE_TTL_MS;
+  cachedCommunityConfig = value;
+  cachedCommunityConfigExpiresAt = expiresAt;
+
+  if (typeof sessionStorage === "undefined") {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(
+      COMMUNITY_CONFIG_CACHE_KEY,
+      JSON.stringify({ expiresAt, value }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+export async function loadCommunityConfig(init?: RequestInit): Promise<CommunityConfig> {
+  const cached = readStoredCommunityConfig();
+  if (cached) {
+    hintCommunityConnections(cached);
+    return cached;
+  }
+
+  if (inflightCommunityConfigRequest) {
+    return inflightCommunityConfigRequest;
+  }
+
+  inflightCommunityConfigRequest = (async () => {
+    let nextConfig: CommunityConfig;
+
+    try {
+      const response = await readCommunityConfigApiV1SiteCommunityConfigGet(init);
+      nextConfig = normalizeCommunityConfig(response.data);
+    } catch {
+      nextConfig = {
+        ...DEFAULT_WALINE_COMMUNITY_CONFIG,
+        server_url: normalizeServerURL(""),
+      };
+    }
+
+    hintCommunityConnections(nextConfig);
+    writeStoredCommunityConfig(nextConfig);
+    return nextConfig;
+  })();
+
+  try {
+    return await inflightCommunityConfigRequest;
+  } finally {
+    inflightCommunityConfigRequest = null;
   }
 }
 

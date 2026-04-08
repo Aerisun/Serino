@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, FileText, BookOpen, Feather } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import { useReadCalendarApiV1SiteCalendarGet } from "@serino/api-client/site";
 import type { CalendarEventRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { prefetchCalendarMonthData, warmInternalHref } from "@/lib/route-preload";
 import { getBeijingNowParts, normalizeDateKey } from "@/lib/time";
 
 interface CalendarEvent {
@@ -120,7 +122,9 @@ const getMonthLabels = (value: unknown, lang: FrontendLang) => {
 
 const CalendarPage = () => {
   const { t, lang } = useFrontendI18n();
-  const config = usePageConfig().calendar as unknown as CalendarPageConfig;
+  const queryClient = useQueryClient();
+  const pages = usePageConfig();
+  const config = pages.calendar as unknown as CalendarPageConfig;
   const weekdayLabels = getWeekdayLabels(config.weekdayLabels, t);
   const monthLabels = getMonthLabels(config.monthLabels, lang);
   const loadingLabel = config.loadingLabel ?? t("calendar.loadingLabel");
@@ -158,7 +162,15 @@ const CalendarPage = () => {
   const rangeStart = formatDateKey(new Date(year, month, 1));
   const rangeEnd = formatDateKey(new Date(year, month + 1, 0));
 
-  const { data: response, isLoading, isError, error, refetch } = useReadCalendarApiV1SiteCalendarGet({ from: rangeStart, to: rangeEnd });
+  const { data: response, isLoading, isError, error, refetch } = useReadCalendarApiV1SiteCalendarGet(
+    { from: rangeStart, to: rangeEnd },
+    {
+      query: {
+        staleTime: 5 * 60_000,
+        gcTime: 20 * 60_000,
+      },
+    },
+  );
   const calendarEvents = useMemo(
     () =>
       (response?.data?.events ?? [])
@@ -202,6 +214,27 @@ const CalendarPage = () => {
   }
 
   const hasMonthData = calendarEvents.length > 0;
+
+  useEffect(() => {
+    const monthFloor = 2024 * 12;
+    const monthCeiling = today.year * 12 + Math.max(today.month - 1, 0);
+    const neighbors = [month - 1, month + 1]
+      .map((candidateMonth) => new Date(year, candidateMonth, 1))
+      .filter((candidate) => {
+        const value = candidate.getFullYear() * 12 + candidate.getMonth();
+        return value >= monthFloor && value <= monthCeiling;
+      });
+
+    void Promise.allSettled(
+      neighbors.map((candidate) =>
+        prefetchCalendarMonthData(
+          queryClient,
+          candidate.getFullYear(),
+          candidate.getMonth(),
+        ),
+      ),
+    );
+  }, [month, queryClient, today.month, today.year, year]);
 
   return (
     <PageShell
@@ -390,6 +423,21 @@ const CalendarPage = () => {
                     type="button"
                     key={`${event.href}-${index}`}
                     className={`group rounded-xl p-3 text-left transition-[background-color,border-color,box-shadow] ${event.href ? "hover:bg-[rgb(var(--shiro-panel-rgb)/0.16)] hover:shadow-[inset_0_1px_0_rgb(var(--shiro-accent-rgb)/0.04)]" : ""}`}
+                    onMouseEnter={() => {
+                      if (event.href) {
+                        void warmInternalHref({ href: event.href, queryClient, pages });
+                      }
+                    }}
+                    onFocus={() => {
+                      if (event.href) {
+                        void warmInternalHref({ href: event.href, queryClient, pages });
+                      }
+                    }}
+                    onTouchStart={() => {
+                      if (event.href) {
+                        void warmInternalHref({ href: event.href, queryClient, pages });
+                      }
+                    }}
                     onClick={() => {
                       if (event.href) {
                         navigate(event.href);

@@ -61,7 +61,7 @@ const PageMeta = ({
     setMeta('meta[name="twitter:title"]', resolvedPageTitle);
     setMeta('meta[name="twitter:description"]', resolvedDescription);
     setMeta('meta[name="twitter:image"]', resolvedImage);
-    const resolvedIcon = site.siteIconUrl || "";
+    const resolvedIcon = site.siteIconUrl || "data:,";
     syncHeadLink("icon", resolvedIcon);
     syncHeadLink("shortcut icon", resolvedIcon);
   }, [resolvedAuthor, resolvedDescription, resolvedImage, resolvedPageTitle, resolvedSiteTitle, site.siteIconUrl]);

@@ -3,6 +3,7 @@ import { Monitor, Moon, Rss, Sun } from "lucide-react";
 import { useReadActivityHeatmapApiV1SiteActivityHeatmapGet } from "@serino/api-client/site";
 import { useTheme } from "@serino/theme";
 import { useSiteConfig } from "@/contexts/runtime-config";
+import { useDeferredActivation } from "@/hooks/useDeferredActivation";
 import { useFrontendI18n } from "@/i18n";
 import { SocialIcon } from "@/components/icons/SocialIcon";
 import { getBeijingNowParts } from "@/lib/time";
@@ -49,12 +50,19 @@ const Footer = ({ enabled = true }: FooterProps) => {
   const site = useSiteConfig();
   const { t } = useFrontendI18n();
   const { theme, setTheme } = useTheme();
+  const queryEnabled = useDeferredActivation(enabled, [enabled]);
   const { data: heatmapResponse } = useReadActivityHeatmapApiV1SiteActivityHeatmapGet(
     {
       weeks: 52,
       tz: "Asia/Shanghai",
     },
-    { query: { enabled } },
+    {
+      query: {
+        enabled: queryEnabled,
+        staleTime: 5 * 60_000,
+        gcTime: 20 * 60_000,
+      },
+    },
   );
 
   const ownerName = site.name.trim() || site.title.trim() || "Aerisun";

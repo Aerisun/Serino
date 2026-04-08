@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { useSiteConfig } from "@/contexts/runtime-config";
+import { usePageConfig, useSiteConfig } from "@/contexts/runtime-config";
 import { SocialIcon } from "@/components/icons/SocialIcon";
 import { API_BASE_PATH } from "@/lib/api";
 import { useDeferredActivation } from "@/hooks/useDeferredActivation";
+import { warmInternalHref } from "@/lib/route-preload";
 
 const EMPTY_POEMS = [""];
 const POEM_PREVIEW_ENDPOINT = `${API_BASE_PATH}/v1/site/poem-preview`;
@@ -29,9 +32,30 @@ const fetchPoemPreview = async () => {
   return payload.content.trim();
 };
 
+const resolveInternalHref = (href: string) => {
+  if (typeof window === "undefined") {
+    return href.startsWith("/") ? href : null;
+  }
+
+  try {
+    const parsed = new URL(href, window.location.origin);
+
+    if (parsed.origin !== window.location.origin) {
+      return null;
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+};
+
 const HeroContent = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const site = useSiteConfig();
+  const pages = usePageConfig();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const heroSocialLinks = site.socialLinks.filter(
     (link) => link.placement === "hero" || link.placement === "both",
   );
@@ -42,6 +66,12 @@ const HeroContent = () => {
   ]);
   const [poem, setPoem] = useState(() => fallbackPoems[0]);
   const [flipped, setFlipped] = useState(false);
+  const warmHref = useCallback(
+    (href: string) => {
+      void warmInternalHref({ href, queryClient, pages });
+    },
+    [pages, queryClient],
+  );
 
   useEffect(() => {
     if (site.poemSource !== "hitokoto" || !remotePoemActivation) {
@@ -171,6 +201,7 @@ const HeroContent = () => {
                   className="h-full w-full object-cover"
                   loading="lazy"
                   decoding="async"
+                  fetchPriority="low"
                 />
               </div>
             </div>
@@ -236,21 +267,53 @@ const HeroContent = () => {
           })}
         >
           {site.heroActions.map((cta) => (
-            <a
-              key={cta.label}
-              href={cta.href}
-              className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full liquid-glass-hero text-white/72 transition-[width,color] duration-300 ease-out hover:w-[7rem] hover:text-white focus-visible:w-[7rem] focus-visible:text-white active:scale-[0.97]"
-            >
-              <span className="absolute inset-y-0 left-0 flex w-11 items-center justify-center">
-                <SocialIcon
-                  iconKey={cta.iconKey}
-                  className="h-[18px] w-[18px] shrink-0"
-                />
-              </span>
-              <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 pr-0 text-sm font-body font-medium opacity-0 transition-all duration-300 ease-out group-hover:max-w-[4.5rem] group-hover:pl-11 group-hover:pr-4 group-hover:opacity-100 group-focus-visible:max-w-[4.5rem] group-focus-visible:pl-11 group-focus-visible:pr-4 group-focus-visible:opacity-100">
-                {cta.label}
-              </span>
-            </a>
+            (() => {
+              const internalHref = resolveInternalHref(cta.href);
+              const className =
+                "group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full liquid-glass-hero text-white/72 transition-[width,color] duration-300 ease-out hover:w-[7rem] hover:text-white focus-visible:w-[7rem] focus-visible:text-white active:scale-[0.97]";
+              const content = (
+                <>
+                  <span className="absolute inset-y-0 left-0 flex w-11 items-center justify-center">
+                    <SocialIcon
+                      iconKey={cta.iconKey}
+                      className="h-[18px] w-[18px] shrink-0"
+                    />
+                  </span>
+                  <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 pr-0 text-sm font-body font-medium opacity-0 transition-all duration-300 ease-out group-hover:max-w-[4.5rem] group-hover:pl-11 group-hover:pr-4 group-hover:opacity-100 group-focus-visible:max-w-[4.5rem] group-focus-visible:pl-11 group-focus-visible:pr-4 group-focus-visible:opacity-100">
+                    {cta.label}
+                  </span>
+                </>
+              );
+
+              if (internalHref) {
+                return (
+                  <button
+                    key={cta.label}
+                    type="button"
+                    onMouseEnter={() => warmHref(internalHref)}
+                    onFocus={() => warmHref(internalHref)}
+                    onTouchStart={() => warmHref(internalHref)}
+                    onClick={() => navigate(internalHref)}
+                    className={className}
+                  >
+                    {content}
+                  </button>
+                );
+              }
+
+              return (
+                <a
+                  key={cta.label}
+                  href={cta.href}
+                  onMouseEnter={() => warmHref(cta.href)}
+                  onFocus={() => warmHref(cta.href)}
+                  onTouchStart={() => warmHref(cta.href)}
+                  className={className}
+                >
+                  {content}
+                </a>
+              );
+            })()
           ))}
         </motion.div>
       </div>

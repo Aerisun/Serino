@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -26,6 +27,7 @@ import { useFrontendI18n, type FrontendLang } from "@/i18n";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { formatPublishedDate, splitContentParagraphs } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
+import { warmInternalHref } from "@/lib/route-preload";
 import { formatDateInBeijing, getBeijingDateParts } from "@/lib/time";
 import { readDiaryApiV1SiteDiaryGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
@@ -150,7 +152,9 @@ const matchesSearchText = (fields: Array<string | null | undefined>, query: stri
 
 const Diary = () => {
   const { t, lang } = useFrontendI18n();
-  const config = usePageConfig().diary as unknown as DiaryPageConfig;
+  const queryClient = useQueryClient();
+  const pages = usePageConfig();
+  const config = pages.diary as unknown as DiaryPageConfig;
   const errorTitle = config.errorTitle ?? t("diary.errorTitle");
   const retryLabel = config.retryLabel ?? t("common.retry");
   const loadMoreLabel = config.loadMoreLabel ?? t("diary.loadingMore");
@@ -160,11 +164,16 @@ const Diary = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const pageSize = clampPageSize(config.pageSize, 15);
   const [search, setSearch] = useState("");
-  const [rawSearch, setRawSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deferredSearch = useDeferredValue(search);
+  const warmDetail = useCallback(
+    (slug: string) => {
+      void warmInternalHref({ href: `/diary/${slug}`, queryClient, pages });
+    },
+    [pages, queryClient],
+  );
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
-    queryKey: ["site", "diary"],
+    queryKey: ["site", "diary", pageSize],
     queryFn: async (p) => {
       const data = (await readDiaryApiV1SiteDiaryGet(p)).data;
 
@@ -179,24 +188,18 @@ const Diary = () => {
     },
     pageSize,
     mapItem: (entry, index) => mapRemoteDiaryEntry(entry, index, t, lang),
+    staleTime: 5 * 60_000,
+    gcTime: 20 * 60_000,
   });
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
 
   const filtered = useMemo(() => {
     return items.filter((entry) =>
       matchesSearchText(
         [entry.date, entry.day, entry.weekday, entry.weatherLabel, entry.mood, entry.content, entry.poem],
-        search,
+        deferredSearch,
       ),
     );
-  }, [items, search]);
+  }, [deferredSearch, items]);
 
   const renderPoem = (poem?: string) => {
     const parts = splitPoemAuthor(poem);
@@ -230,15 +233,8 @@ const Diary = () => {
           <input
             type="text"
             placeholder={searchPlaceholder}
-            value={rawSearch}
-            onChange={(event) => {
-              const value = event.target.value;
-              setRawSearch(value);
-              if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-              }
-              debounceRef.current = setTimeout(() => setSearch(value), 300);
-            }}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             maxLength={100}
             aria-label={searchPlaceholder}
             className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
@@ -306,6 +302,9 @@ const Diary = () => {
               >
                 <button
                   type="button"
+                  onMouseEnter={() => warmDetail(entry.slug)}
+                  onFocus={() => warmDetail(entry.slug)}
+                  onTouchStart={() => warmDetail(entry.slug)}
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                   className="w-full text-left"
                 >
@@ -370,6 +369,7 @@ const Diary = () => {
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation();
+                                warmDetail(entry.slug);
                                 navigate(`/diary/${entry.slug}`);
                               }}
                               className="ml-auto text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"

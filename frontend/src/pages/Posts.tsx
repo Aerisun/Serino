@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Eye, MessageCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import ArchiveBadge from "@/components/ArchiveBadge";
 import PageShell from "@/components/PageShell";
 import { staggerItem } from "@/config";
@@ -9,11 +10,12 @@ import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { formatPostCount } from "@/lib/format";
 import { formatPublishedDate } from "@/lib/api/utils";
-import { readPostsApiV1SitePostsGet } from "@serino/api-client/site";
+import { readPostApiV1SitePostsSlugGet, readPostsApiV1SitePostsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 import { clampPageSize } from "@/lib/page-size";
+import { preloadPostDetailPage } from "@/lib/route-preload";
 
 interface Post {
   slug: string;
@@ -61,15 +63,19 @@ const Posts = () => {
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
   const pageSize = clampPageSize(config.pageSize, 15);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const deferredSearch = useDeferredValue(search);
 
   const { items, status, errorMessage, hasMore, isLoadingMore, sentinelRef, reload } = useInfiniteList({
-    queryKey: ["site", "posts"],
+    queryKey: ["site", "posts", pageSize],
     queryFn: (p) => readPostsApiV1SitePostsGet(p).then(r => r.data),
     pageSize,
     mapItem: (entry) => ({
       ...mapRemotePost(entry),
       category: entry.category || fallbackCategoryLabel,
     }),
+    staleTime: 5 * 60_000,
+    gcTime: 20 * 60_000,
   });
 
   useEffect(() => {
@@ -78,21 +84,35 @@ const Posts = () => {
     };
   }, []);
 
-  const allCategories = [
+  const allCategories = useMemo(() => [
     allCategoryLabel,
     ...Array.from(new Set(items.map((item) => item.category))).filter(
       (category) => category !== fallbackCategoryLabel,
     ),
-  ];
+  ], [allCategoryLabel, fallbackCategoryLabel, items]);
 
-  const filtered = items.filter((post) => {
-    const matchSearch =
-      !search ||
-      post.title.toLowerCase().includes(search.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(search.toLowerCase());
-    const matchCategory = activeCategory === allCategoryLabel || post.category === activeCategory;
-    return matchSearch && matchCategory;
-  });
+  const filtered = useMemo(() => {
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
+
+    return items.filter((post) => {
+      const matchSearch =
+        !normalizedSearch ||
+        post.title.toLowerCase().includes(normalizedSearch) ||
+        post.excerpt.toLowerCase().includes(normalizedSearch);
+      const matchCategory = activeCategory === allCategoryLabel || post.category === activeCategory;
+      return matchSearch && matchCategory;
+    });
+  }, [activeCategory, allCategoryLabel, deferredSearch, items]);
+
+  const prefetchPostDetail = useCallback((slug: string) => {
+    void preloadPostDetailPage();
+    void queryClient.prefetchQuery({
+      queryKey: [`/api/v1/site/posts/${slug}`],
+      queryFn: () => readPostApiV1SitePostsSlugGet(slug),
+      staleTime: 5 * 60_000,
+      gcTime: 20 * 60_000,
+    });
+  }, [queryClient]);
 
   return (
     <PageShell
@@ -194,6 +214,9 @@ const Posts = () => {
               key={post.slug}
               className="group cursor-pointer border-t border-foreground/6 py-6 transition-[background-color,border-color,box-shadow] first:border-t-0 hover:bg-[rgb(var(--shiro-panel-rgb)/0.18)] hover:border-[rgb(var(--shiro-border-rgb)/0.2)]"
               onClick={() => navigate(`/posts/${post.slug}`)}
+              onMouseEnter={() => prefetchPostDetail(post.slug)}
+              onFocus={() => prefetchPostDetail(post.slug)}
+              onTouchStart={() => prefetchPostDetail(post.slug)}
               {...staggerItem(i, {
                 baseDelay: config.motion.delay + 0.04,
                 step: config.motion.stagger,

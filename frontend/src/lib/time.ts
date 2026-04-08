@@ -37,7 +37,7 @@ export function formatDateInBeijing(
   }).format(parsed);
 }
 
-export function getBeijingDateParts(value: DateLike) {
+export function getBeijingDateParts(value: DateLike | null | undefined) {
   const parsed = parseDate(value);
   if (!parsed) {
     return null;
@@ -79,4 +79,16 @@ export function normalizeDateKey(value: string): string {
     return value;
   }
   return getBeijingDateKey(value);
+}
+
+export function formatIsoInBeijing(value: DateLike | null | undefined): string {
+  const parts = getBeijingDateParts(value);
+  if (!parts) {
+    return "";
+  }
+  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}T${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")}+08:00`;
+}
+
+export function getCurrentBeijingIsoString(): string {
+  return formatIsoInBeijing(Date.now());
 }

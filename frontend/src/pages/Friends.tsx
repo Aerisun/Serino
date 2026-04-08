@@ -144,7 +144,12 @@ const Friends = () => {
     isError: friendsError,
     error: friendsErr,
     refetch: refetchFriends,
-  } = useReadFriendsApiV1SiteFriendsGet();
+  } = useReadFriendsApiV1SiteFriendsGet(undefined, {
+    query: {
+      staleTime: 15 * 60_000,
+      gcTime: 30 * 60_000,
+    },
+  });
   const {
     data: feedResponse,
     isLoading: feedLoading,
@@ -159,6 +164,8 @@ const Friends = () => {
       query: {
         refetchInterval: autoRefreshMs,
         refetchOnWindowFocus: false,
+        staleTime: 2 * 60_000,
+        gcTime: 20 * 60_000,
       },
     },
   );
@@ -313,6 +320,8 @@ const Friends = () => {
                         alt={friend.name}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                         loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
                       />
                     ) : null}
                   </div>
@@ -402,6 +411,8 @@ const Friends = () => {
                         alt={selectedRandomPost.blogName}
                         className="h-full w-full object-cover"
                         loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
                       />
                     ) : null}
                   </div>
@@ -494,6 +505,8 @@ const Friends = () => {
                     alt={post.blogName}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
                   />
                 ) : null}
               </div>

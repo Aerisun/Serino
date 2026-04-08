@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -17,7 +18,8 @@ import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { useSiteConfig } from "@/contexts/runtime-config";
+import { usePageConfig, useSiteConfig } from "@/contexts/runtime-config";
+import { warmInternalHref } from "@/lib/route-preload";
 import type { NavItem } from "@/lib/runtime-config";
 
 type NavbarGlassVariant = "default" | "hero";
@@ -55,11 +57,13 @@ const NavDropdown = ({
   navigate,
   pathname,
   glassVariant,
+  onWarmHref,
 }: {
   item: NavItem;
   navigate: (path: string) => void;
   pathname: string;
   glassVariant: NavbarGlassVariant;
+  onWarmHref: (href: string | undefined) => void;
 }) => {
   const { t } = useFrontendI18n();
   const [open, setOpen] = useState(false);
@@ -126,6 +130,9 @@ const NavDropdown = ({
   }, []);
 
   const handleEnter = () => {
+    onWarmHref(item.href);
+    item.children?.forEach((child) => onWarmHref(child.href));
+
     if (item.trigger === "hover") {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       updateMenuPosition();
@@ -180,6 +187,9 @@ const NavDropdown = ({
                   {item.children!.map((child) => (
                     <button
                       key={child.label}
+                      onMouseEnter={() => onWarmHref(child.href)}
+                      onFocus={() => onWarmHref(child.href)}
+                      onTouchStart={() => onWarmHref(child.href)}
                       onClick={() => {
                         navigate(child.href);
                         setOpen(false);
@@ -202,6 +212,8 @@ const NavDropdown = ({
       ref={triggerRef}
       onMouseEnter={item.trigger === "hover" ? handleEnter : undefined}
       onMouseLeave={item.trigger === "hover" ? handleLeave : undefined}
+      onFocusCapture={() => handleEnter()}
+      onTouchStart={() => handleEnter()}
       className="flex items-center"
     >
       {item.trigger === "arrow" ? (
@@ -266,8 +278,10 @@ interface NavbarProps {
 const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const { t } = useFrontendI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const site = useSiteConfig();
+  const pages = usePageConfig();
   const subscriptionAvailable = site.featureFlags.content_subscription;
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -379,6 +393,15 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
     setMobileExpanded(null);
     navigate(path);
   };
+  const warmHref = useCallback(
+    (href: string | undefined) => {
+      if (!href) {
+        return;
+      }
+      void warmInternalHref({ href, queryClient, pages });
+    },
+    [pages, queryClient],
+  );
 
   const mobileMenu =
     typeof document !== "undefined"
@@ -424,7 +447,20 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                             <button type="button" onClick={() => {
                               if (item.trigger === "arrow" && item.href) { goTo(item.href); }
                               else { setMobileExpanded((prev) => prev === item.label ? null : item.label); }
-                            }} className={`flex-1 px-4 py-3 text-left text-sm font-body font-medium transition-colors ${
+                            }}
+                              onMouseEnter={() => {
+                                warmHref(item.href);
+                                item.children?.forEach((child) => warmHref(child.href));
+                              }}
+                              onFocus={() => {
+                                warmHref(item.href);
+                                item.children?.forEach((child) => warmHref(child.href));
+                              }}
+                              onTouchStart={() => {
+                                warmHref(item.href);
+                                item.children?.forEach((child) => warmHref(child.href));
+                              }}
+                              className={`flex-1 px-4 py-3 text-left text-sm font-body font-medium transition-colors ${
                               getItemIsActive(item, location.pathname)
                                 ? "text-[rgb(var(--shiro-accent-rgb)/0.8)]"
                                 : mobileItemTextClass
@@ -443,7 +479,11 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                                 transition={transition({ duration: 0.3, reducedMotion: prefersReducedMotion })} className="overflow-hidden">
                                 <div className="px-2 pb-2 grid gap-0.5">
                                   {item.children!.map((child) => (
-                                    <button key={child.label} type="button" onClick={() => goTo(child.href)}
+                                    <button key={child.label} type="button"
+                                      onMouseEnter={() => warmHref(child.href)}
+                                      onFocus={() => warmHref(child.href)}
+                                      onTouchStart={() => warmHref(child.href)}
+                                      onClick={() => goTo(child.href)}
                                       className={`rounded-xl px-3 py-2.5 text-left text-sm font-body transition-colors ${
                                         isPathActive(child.href, location.pathname)
                                           ? glassVariant === "hero"
@@ -460,7 +500,11 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                           </AnimatePresence>
                         </div>
                       ) : (
-                        <button key={item.label} type="button" onClick={() => item.href && goTo(item.href)}
+                        <button key={item.label} type="button"
+                          onMouseEnter={() => warmHref(item.href)}
+                          onFocus={() => warmHref(item.href)}
+                          onTouchStart={() => warmHref(item.href)}
+                          onClick={() => item.href && goTo(item.href)}
                           className={`rounded-2xl px-4 py-3 text-left text-sm font-body font-medium transition-colors ${
                             getItemIsActive(item, location.pathname)
                               ? glassVariant === "hero"
@@ -631,10 +675,14 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 navigate={goTo}
                 pathname={location.pathname}
                 glassVariant={glassVariant}
+                onWarmHref={warmHref}
               />
             ) : (
               <button
                 key={item.label}
+                onMouseEnter={() => warmHref(item.href)}
+                onFocus={() => warmHref(item.href)}
+                onTouchStart={() => warmHref(item.href)}
                 onClick={() => item.href && goTo(item.href)}
                 className={`relative px-3 py-2 text-sm font-medium font-body transition-colors whitespace-nowrap ${
                   getItemIsActive(item, location.pathname)

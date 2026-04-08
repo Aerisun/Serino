@@ -26,6 +26,9 @@ export default function EmbeddedResume({
         src={profileImageUrl}
         alt=""
         className="relative z-10 h-full w-full rounded-[1.32rem] object-cover"
+        loading="eager"
+        decoding="async"
+        fetchPriority="high"
       />
     </div>
   ) : null;

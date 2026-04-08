@@ -1,10 +1,8 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { PencilLine, Sparkles } from "lucide-react";
 import {
   createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost,
   createGuestbookApiV1SiteInteractionsGuestbookPost,
-  readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGet,
-  readGuestbookApiV1SiteInteractionsGuestbookGet,
   uploadCommentImageApiV1SiteInteractionsCommentImagePost,
 } from "@serino/api-client/site-interactions";
 import {
@@ -16,6 +14,13 @@ import {
 import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";
 import { usePageConfig } from "@/contexts/runtime-config";
+import {
+  invalidateCommunityEntryCache,
+  primeCommentPage,
+  primeGuestbookPage,
+  readCachedCommentPage,
+  readCachedGuestbookPage,
+} from "@/lib/community-cache";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { prepareImageUploadFile } from "@serino/utils";
 import WalineCommentForm from "./WalineCommentForm";
@@ -41,6 +46,12 @@ import {
   type ReplyTarget,
 } from "./waline-types";
 import "./WalineSurface.css";
+
+interface CommunityPageSnapshot<T> {
+  items: T[];
+  hasMore: boolean;
+  page: number;
+}
 
 export interface WalineSurfaceProps {
   surface: CommunitySurface;
@@ -69,7 +80,6 @@ const WalineSurface = ({
   const guestbookRetryLabel = String(guestbookPageConfig.retryLabel ?? t("waline.surface.guestbookRetry"));
   const guestbookEmptyMessage = String(guestbookPageConfig.emptyMessage ?? t("waline.surface.guestbookEmpty"));
   const storageKey = `${PROFILE_STORAGE_PREFIX}${surface}:${slug ?? "guestbook"}`;
-  const storedDraft = readStoredDraft(storageKey);
   const {
     user: siteUser,
     loading: authLoading,
@@ -91,12 +101,15 @@ const WalineSurface = ({
   const [hasMoreEntries, setHasMoreEntries] = useState(false);
   const [pendingComments, setPendingComments] = useState<CommunityCommentItem[]>([]);
   const [pendingGuestbookEntries, setPendingGuestbookEntries] = useState<CommunityGuestbookItem[]>([]);
-  const [draft, setDraft] = useState<DraftState>({
-    name: typeof storedDraft.name === "string" ? storedDraft.name : "",
-    email: typeof storedDraft.email === "string" ? storedDraft.email : "",
-    website: typeof storedDraft.website === "string" ? storedDraft.website : "",
-    body: "",
-    avatarKey: typeof storedDraft.avatarKey === "string" ? storedDraft.avatarKey : "",
+  const [draft, setDraft] = useState<DraftState>(() => {
+    const storedDraft = readStoredDraft(storageKey);
+    return {
+      name: typeof storedDraft.name === "string" ? storedDraft.name : "",
+      email: typeof storedDraft.email === "string" ? storedDraft.email : "",
+      website: typeof storedDraft.website === "string" ? storedDraft.website : "",
+      body: "",
+      avatarKey: typeof storedDraft.avatarKey === "string" ? storedDraft.avatarKey : "",
+    };
   });
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -111,7 +124,7 @@ const WalineSurface = ({
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const deferredBody = draft.body;
+  const deferredBody = useDeferredValue(draft.body);
 
   useEffect(() => {
     if (communityConfig) {
@@ -209,7 +222,107 @@ const WalineSurface = ({
 
   const initialPageSize = Math.max(1, resolvedConfig.page_size ?? 10);
 
-  const loadEntries = useCallback(async (requestedPageCount = 1) => {
+  const applyEntryPages = useCallback((
+    pages: Array<CommunityPageSnapshot<CommunityCommentItem> | CommunityPageSnapshot<CommunityGuestbookItem>>,
+  ) => {
+    const orderedPages = [...pages].sort((left, right) => left.page - right.page);
+    const lastPage = orderedPages.at(-1);
+    const mergedItems = orderedPages.flatMap((page) => page.items);
+
+    if (isGuestbook) {
+      setGuestbookEntries(
+        sortGuestbookEntries(mergedItems as CommunityGuestbookItem[], resolvedConfig.default_sorting),
+      );
+    } else {
+      setComments(
+        sortComments(mergedItems as CommunityCommentItem[], resolvedConfig.default_sorting),
+      );
+    }
+
+    setLoadedPageCount(lastPage?.page ?? 1);
+    setHasMoreEntries(Boolean(lastPage?.hasMore));
+  }, [isGuestbook, resolvedConfig.default_sorting]);
+
+  const readCachedPages = useCallback((requestedPageCount: number) => {
+    const pages: Array<CommunityPageSnapshot<CommunityCommentItem> | CommunityPageSnapshot<CommunityGuestbookItem>> = [];
+
+    for (let page = 1; page <= requestedPageCount; page += 1) {
+      const cached = isGuestbook
+        ? readCachedGuestbookPage({ page, pageSize: initialPageSize })
+        : slug
+          ? readCachedCommentPage({
+              surface,
+              slug,
+              page,
+              pageSize: initialPageSize,
+            })
+          : null;
+
+      if (!cached) {
+        break;
+      }
+
+      pages.push({
+        items: cached.items,
+        hasMore: cached.hasMore,
+        page: cached.page,
+      });
+
+      if (!cached.hasMore) {
+        break;
+      }
+    }
+
+    return pages;
+  }, [initialPageSize, isGuestbook, slug, surface]);
+
+  const fetchEntryPage = useCallback(async (
+    page: number,
+    forceNetwork = false,
+  ): Promise<CommunityPageSnapshot<CommunityCommentItem> | CommunityPageSnapshot<CommunityGuestbookItem>> => {
+    if (isGuestbook) {
+      const payload = await primeGuestbookPage(
+        { page, pageSize: initialPageSize },
+        { forceNetwork },
+      );
+
+      return {
+        items: payload.items,
+        hasMore: payload.hasMore,
+        page: payload.page,
+      };
+    }
+
+    if (!slug) {
+      throw new Error(t("waline.surface.missingPath"));
+    }
+
+    const payload = await primeCommentPage(
+      {
+        surface,
+        slug,
+        page,
+        pageSize: initialPageSize,
+      },
+      { forceNetwork },
+    );
+
+    return {
+      items: payload.items,
+      hasMore: payload.hasMore,
+      page: payload.page,
+    };
+  }, [initialPageSize, isGuestbook, slug, surface, t]);
+
+  const loadEntries = useCallback(async (
+    requestedPageCount = 1,
+    options?: {
+      fetchNextPageOnly?: boolean;
+      forceNetwork?: boolean;
+      silent?: boolean;
+      reconcileAfterAppend?: boolean;
+    },
+  ) => {
     if (!isGuestbook && !slug) {
       setLoadError(t("waline.surface.missingPath"));
       setLoadingEntries(false);
@@ -218,86 +331,76 @@ const WalineSurface = ({
     }
 
     const nextPageCount = Math.max(1, requestedPageCount);
-    const loadMoreRequest = nextPageCount > 1;
-    if (loadMoreRequest) {
-      setLoadingMoreEntries(true);
-    } else {
-      setLoadingEntries(true);
+    const loadMoreRequest = Boolean(options?.fetchNextPageOnly && nextPageCount > loadedPageCount);
+
+    if (!options?.silent) {
+      if (loadMoreRequest) {
+        setLoadingMoreEntries(true);
+      } else {
+        setLoadingEntries(true);
+      }
     }
+
     setLoadError(null);
 
     try {
-      if (isGuestbook) {
-        const collected: CommunityGuestbookItem[] = [];
-        let hasMore = false;
-        let loadedPages = 0;
-        for (let page = 1; page <= nextPageCount; page += 1) {
-          const response = await readGuestbookApiV1SiteInteractionsGuestbookGet({
-            page,
-            page_size: initialPageSize,
+      if (loadMoreRequest) {
+        const nextPage = await fetchEntryPage(nextPageCount, options?.forceNetwork);
+        const mergedPages = [
+          ...readCachedPages(nextPageCount - 1),
+          nextPage,
+        ];
+        applyEntryPages(mergedPages);
+
+        if (options?.reconcileAfterAppend) {
+          startTransition(() => {
+            void loadEntries(nextPageCount, {
+              silent: true,
+              forceNetwork: true,
+            });
           });
-          collected.push(
-            ...sortGuestbookEntries(
-              response.data.items as CommunityGuestbookItem[],
-              resolvedConfig.default_sorting,
-            ),
-          );
-          hasMore = Boolean(response.data.has_more);
-          loadedPages = page;
-          if (!hasMore) {
-            break;
-          }
         }
-        setGuestbookEntries(collected);
-        setLoadedPageCount(loadedPages || 1);
-        setHasMoreEntries(hasMore);
+
         return;
       }
 
-      const collected: CommunityCommentItem[] = [];
-      let hasMore = false;
-      let loadedPages = 0;
-      for (let page = 1; page <= nextPageCount; page += 1) {
-        const response = await readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGet(
-          surface,
-          slug ?? "",
-          {
-            page,
-            page_size: initialPageSize,
-          },
-        );
-        collected.push(
-          ...sortComments(
-            response.data.items as CommunityCommentItem[],
-            resolvedConfig.default_sorting,
-          ),
-        );
-        hasMore = Boolean(response.data.has_more);
-        loadedPages = page;
-        if (!hasMore) {
-          break;
-        }
-      }
-      setComments(collected);
-      setLoadedPageCount(loadedPages || 1);
-      setHasMoreEntries(hasMore);
+      const pages = await Promise.all(
+        Array.from({ length: nextPageCount }, (_, index) =>
+          fetchEntryPage(index + 1, options?.forceNetwork),
+        ),
+      );
+      applyEntryPages(pages);
     } catch (error) {
-      setLoadError(resolveApiError(error, t("waline.common.requestFailed")));
+      if (!options?.silent || (isGuestbook ? guestbookEntries.length === 0 : comments.length === 0)) {
+        setLoadError(resolveApiError(error, t("waline.common.requestFailed")));
+      }
     } finally {
-      setLoadingEntries(false);
-      setLoadingMoreEntries(false);
+      if (!options?.silent) {
+        setLoadingEntries(false);
+        setLoadingMoreEntries(false);
+      }
     }
-  }, [initialPageSize, isGuestbook, resolvedConfig.default_sorting, slug, surface, t]);
+  }, [applyEntryPages, comments.length, fetchEntryPage, guestbookEntries.length, isGuestbook, loadedPageCount, readCachedPages, slug, t]);
 
   useEffect(() => {
-    void loadEntries(1);
-  }, [loadEntries]);
+    const cachedPages = readCachedPages(1);
+    if (cachedPages.length > 0) {
+      applyEntryPages(cachedPages);
+      setLoadingEntries(false);
+    }
+
+    void loadEntries(1, { silent: cachedPages.length > 0, forceNetwork: cachedPages.length > 0 });
+  }, [applyEntryPages, loadEntries, readCachedPages]);
 
   const loadMoreEntries = useCallback(() => {
     if (loadingEntries || loadingMoreEntries || !hasMoreEntries) {
       return;
     }
-    void loadEntries(loadedPageCount + 1);
+
+    void loadEntries(loadedPageCount + 1, {
+      fetchNextPageOnly: true,
+      reconcileAfterAppend: true,
+    });
   }, [hasMoreEntries, loadEntries, loadedPageCount, loadingEntries, loadingMoreEntries]);
 
   useEffect(() => {
@@ -476,8 +579,12 @@ const WalineSurface = ({
       setReplyTarget(null);
       setComposerOpen(false);
       setSubmitNotice(t("waline.surface.submitNotice"));
+      invalidateCommunityEntryCache(surface, slug);
       startTransition(() => {
-        void loadEntries(loadedPageCount);
+        void loadEntries(loadedPageCount, {
+          silent: true,
+          forceNetwork: true,
+        });
       });
     } catch (error) {
       setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
@@ -582,7 +689,7 @@ const WalineSurface = ({
         hasMoreEntries={hasMoreEntries}
         onReply={setReplyTarget}
         onLoadMore={loadMoreEntries}
-        onRetry={() => void loadEntries(loadedPageCount)}
+        onRetry={() => void loadEntries(loadedPageCount, { forceNetwork: true })}
         guestbookLoadingLabel={guestbookLoadingLabel}
         guestbookRetryLabel={guestbookRetryLabel}
         guestbookEmptyMessage={guestbookEmptyMessage}

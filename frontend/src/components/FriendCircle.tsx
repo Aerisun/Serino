@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useReadFriendFeedApiV1SiteFriendFeedGet } from "@serino/api-client/site";
@@ -7,6 +8,8 @@ import type { FriendFeedItemRead } from "@serino/api-client/models";
 import { useFrontendI18n } from "@/i18n";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useContainedWheelScroll } from "@/hooks/use-contained-wheel-scroll";
+import { useDeferredActivation } from "@/hooks/useDeferredActivation";
+import { warmInternalHref } from "@/lib/route-preload";
 
 interface FriendPost {
   avatar: string;
@@ -31,6 +34,9 @@ interface FriendCircleProps {
 const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
   const { t } = useFrontendI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const pages = usePageConfig();
+  const queryEnabled = useDeferredActivation(enabled, [enabled]);
   const { regionRef, scrollViewportRef } =
     useContainedWheelScroll<HTMLDivElement>();
   const setScrollRefs = useCallback(
@@ -40,8 +46,7 @@ const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
     },
     [regionRef, scrollViewportRef],
   );
-  const config =
-    (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
+  const config = (pages.activity as Record<string, unknown> | undefined) ?? {};
   const title = String(config.friendCircleTitle ?? t("friendCircle.title"));
   const viewAllLabel = String(
     config.friendCircleViewAllLabel ?? t("friendCircle.viewAll"),
@@ -64,13 +69,20 @@ const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
     refetch,
   } = useReadFriendFeedApiV1SiteFriendFeedGet(
     { limit: 12 },
-    { query: { enabled } },
+    {
+      query: {
+        enabled: queryEnabled,
+        staleTime: 2 * 60_000,
+        gcTime: 15 * 60_000,
+      },
+    },
   );
   const friendPosts = useMemo(
     () => response?.data?.items?.map(normalizeFriendPost) ?? [],
     [response],
   );
   const status: "loading" | "ready" | "empty" | "error" = isLoading
+    || (enabled && !queryEnabled && !response?.data)
     ? "loading"
     : isError
       ? "error"
@@ -104,6 +116,15 @@ const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
             {refreshLabel}
           </button>
           <button
+            onMouseEnter={() => {
+              void warmInternalHref({ href: "/friends", queryClient, pages });
+            }}
+            onFocus={() => {
+              void warmInternalHref({ href: "/friends", queryClient, pages });
+            }}
+            onTouchStart={() => {
+              void warmInternalHref({ href: "/friends", queryClient, pages });
+            }}
             onClick={() => navigate("/friends")}
             className="flex items-center gap-1 text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)]"
           >
@@ -186,6 +207,8 @@ const FriendCircle = ({ enabled = true }: FriendCircleProps) => {
                     alt={post.blogName}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
                   />
                 ) : null}
               </div>

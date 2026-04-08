@@ -1,14 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Heart, MessageCircle } from "lucide-react";
 import { useLocation, useParams } from "react-router-dom";
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useContentReaction, type ContentReactionSurface } from "@/hooks/use-content-reaction";
-import {
-  loadCommunityConfig,
-  type CommunityConfig,
-} from "@/lib/community-config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 
 type CommentSurface = ContentReactionSurface | "guestbook";
@@ -76,7 +72,6 @@ const CommentSection = ({
   const location = useLocation();
   const { id } = useParams();
   const [showComments, setShowComments] = useState(false);
-  const [config, setConfig] = useState<CommunityConfig | null>(null);
 
   const contentContext = useMemo(
     () => resolveCommentContext(contentType, contentSlug, location.pathname, id),
@@ -94,13 +89,6 @@ const CommentSection = ({
   const shouldLoadSurface = contentContext !== null && (!isCollapsible || showComments);
 
   useEffect(() => {
-    if (!shouldLoadSurface || config) {
-      return;
-    }
-    loadCommunityConfig().then(setConfig).catch(() => {});
-  }, [config, shouldLoadSurface]);
-
-  useEffect(() => {
     setShowComments(!isCollapsible && contentContext !== null);
   }, [contentContext, isCollapsible]);
 
@@ -116,7 +104,6 @@ const CommentSection = ({
         <WalineSurface
           surface={contentContext.contentType}
           slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
-          communityConfig={config}
         />
       </Suspense>
     ) : null

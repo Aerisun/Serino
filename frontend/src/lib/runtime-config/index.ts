@@ -5,6 +5,7 @@ import {
 } from "@serino/api-client/site";
 import { API_BASE_PATH } from "@/lib/api";
 import { clampPageSize } from "@/lib/page-size";
+import { getCurrentBeijingIsoString } from "@/lib/time";
 
 // ---------------------------------------------------------------------------
 // Width mapping (code constant — not personal data)
@@ -413,7 +414,7 @@ const persistRuntimeBootstrap = (payload: RuntimeBootstrapResponse) => {
 
   const cached: CachedRuntimeBootstrap = {
     revision: payload.revision,
-    stored_at: new Date().toISOString(),
+    stored_at: getCurrentBeijingIsoString(),
     payload,
   };
 

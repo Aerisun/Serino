@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTheme } from "@serino/theme";
 import {
@@ -8,9 +9,11 @@ import type {
   ActivityHeatmapWeekRead,
 } from "@serino/api-client/models";
 import { CalendarDays } from "lucide-react";
+import { useDeferredActivation } from "@/hooks/useDeferredActivation";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
 import { useFrontendI18n } from "@/i18n";
 import { usePageConfig } from "@/contexts/runtime-config";
+import { warmInternalHref } from "@/lib/route-preload";
 
 interface WeeklyData {
   week: number;
@@ -80,12 +83,15 @@ interface ActivityHeatmapProps {
 
 const ActivityHeatmap = ({ enabled = true }: ActivityHeatmapProps) => {
   const { t } = useFrontendI18n();
+  const queryClient = useQueryClient();
+  const pages = usePageConfig();
+  const queryEnabled = useDeferredActivation(enabled, [enabled]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const [time, setTime] = useState(0);
   const prefersReducedMotion = useReducedMotionPreference();
   const { resolvedTheme } = useTheme();
-  const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
+  const config = (pages.activity as Record<string, unknown> | undefined) ?? {};
   const title = String(config.heatmapTitle ?? t("heatmap.title"));
   const stats = [
     { key: "thisWeek", label: String(config.heatmapThisWeekLabel ?? t("heatmap.thisWeek")) },
@@ -100,12 +106,19 @@ const ActivityHeatmap = ({ enabled = true }: ActivityHeatmapProps) => {
         weeks: 52,
         tz: "Asia/Shanghai",
       },
-      { query: { enabled } },
+      {
+        query: {
+          enabled: queryEnabled,
+          staleTime: 5 * 60_000,
+          gcTime: 20 * 60_000,
+        },
+      },
     );
   const remoteWeeks = response?.data?.weeks;
   const data = useMemo(() => (remoteWeeks ? normalizeHeatmapWeeks(remoteWeeks) : []), [remoteWeeks]);
   const remoteStats = response?.data?.stats ?? null;
   const status: "loading" | "ready" | "empty" | "error" = isLoading
+    || (enabled && !queryEnabled && !response?.data)
     ? "loading"
     : isError
       ? "error"
@@ -215,6 +228,15 @@ const ActivityHeatmap = ({ enabled = true }: ActivityHeatmapProps) => {
         </h3>
         <Link
           to="/calendar"
+          onMouseEnter={() => {
+            void warmInternalHref({ href: "/calendar", queryClient, pages });
+          }}
+          onFocus={() => {
+            void warmInternalHref({ href: "/calendar", queryClient, pages });
+          }}
+          onTouchStart={() => {
+            void warmInternalHref({ href: "/calendar", queryClient, pages });
+          }}
           className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1.5 text-xs font-body font-medium text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)] transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.9)] dark:bg-card/[0.82]"
           aria-label={t("heatmap.calendarAria")}
         >

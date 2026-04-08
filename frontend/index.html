@@ -8,6 +8,7 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," sizes="any" />
     <meta name="theme-color" content="#ffffff">
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>站点加载中</title>
@@ -25,6 +26,101 @@
     <meta name="twitter:description" content="站点配置加载中。" />
     <meta name="twitter:image" content="" />
     <script src="/bootstrap.js"></script>
+    <script>
+      (function () {
+        var applyIcon = function (href) {
+          if (typeof href !== "string") return;
+          var normalized = href.trim();
+          if (!normalized) return;
+          ["icon", "shortcut icon"].forEach(function (rel) {
+            var link = document.head.querySelector('link[rel="' + rel + '"]');
+            if (!link) {
+              link = document.createElement("link");
+              link.rel = rel;
+              document.head.appendChild(link);
+            }
+            link.href = normalized;
+            if (rel === "icon") {
+              link.setAttribute("sizes", "any");
+            }
+          });
+        };
+        var ensureHint = function (rel, href, attrs) {
+          if (typeof href !== "string" || !href) return;
+          var selector = 'link[rel="' + rel + '"][href="' + href + '"]';
+          if (document.head.querySelector(selector)) return;
+          var link = document.createElement("link");
+          link.rel = rel;
+          link.href = href;
+          if (attrs && attrs.as) {
+            link.as = attrs.as;
+          }
+          if (attrs && attrs.fetchPriority) {
+            link.setAttribute("fetchpriority", attrs.fetchPriority);
+          }
+          if (attrs && attrs.crossOrigin) {
+            link.crossOrigin = attrs.crossOrigin;
+          }
+          document.head.appendChild(link);
+        };
+        var hintExternalOrigin = function (href) {
+          if (typeof href !== "string") return;
+          var normalized = href.trim();
+          if (!normalized) return;
+          try {
+            var parsed = new URL(normalized, window.location.origin);
+            if (parsed.origin === window.location.origin) return;
+            ensureHint("dns-prefetch", parsed.origin);
+            ensureHint("preconnect", parsed.origin, { crossOrigin: "anonymous" });
+          } catch (error) {}
+        };
+        var preloadHomepagePoster = function (href) {
+          if (window.location.pathname !== "/" || typeof href !== "string") return;
+          var normalized = href.trim();
+          if (!normalized) return;
+          try {
+            var parsed = new URL(normalized, window.location.origin);
+            ensureHint("preload", parsed.href, {
+              as: "image",
+              fetchPriority: "high",
+              crossOrigin: parsed.origin === window.location.origin ? undefined : "anonymous",
+            });
+          } catch (error) {}
+        };
+        var applyRuntimeHints = function (payload) {
+          var site = payload && payload.site ? payload.site : payload;
+          if (!site) return;
+          hintExternalOrigin(site.site_icon_url);
+          hintExternalOrigin(site.hero_image_url);
+          hintExternalOrigin(site.hero_poster_url);
+          hintExternalOrigin(site.hero_video_url);
+          hintExternalOrigin(site.og_image);
+          preloadHomepagePoster(site.hero_poster_url || site.hero_image_url || site.og_image);
+        };
+        var bootstrap = window.__AERISUN_BOOTSTRAP__;
+        var bootstrapIcon =
+          bootstrap &&
+          bootstrap.site &&
+          bootstrap.site.site &&
+          bootstrap.site.site.site_icon_url;
+        applyRuntimeHints(bootstrap && bootstrap.site);
+        if (typeof bootstrapIcon === "string" && bootstrapIcon.trim()) {
+          applyIcon(bootstrapIcon);
+          return;
+        }
+        fetch("/api/v1/site/site", {
+          headers: { Accept: "application/json" },
+        })
+          .then(function (response) {
+            return response.ok ? response.json() : null;
+          })
+          .then(function (payload) {
+            applyRuntimeHints(payload);
+            applyIcon(payload && payload.site && payload.site.site_icon_url);
+          })
+          .catch(function () {});
+      })();
+    </script>
   </head>
 
   <body>

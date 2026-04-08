@@ -12,6 +12,8 @@ interface UseInfiniteListOptions<TRemote, TLocal> {
   pageSize: number;
   mapItem: (item: TRemote, index: number) => TLocal;
   enabled?: boolean;
+  staleTime?: number;
+  gcTime?: number;
 }
 
 interface UseInfiniteListResult<TLocal> {
@@ -27,7 +29,15 @@ interface UseInfiniteListResult<TLocal> {
 export function useInfiniteList<TRemote, TLocal>(
   options: UseInfiniteListOptions<TRemote, TLocal>,
 ): UseInfiniteListResult<TLocal> {
-  const { queryKey, queryFn, pageSize, mapItem, enabled = true } = options;
+  const {
+    queryKey,
+    queryFn,
+    pageSize,
+    mapItem,
+    enabled = true,
+    staleTime = 30_000,
+    gcTime = 15 * 60_000,
+  } = options;
   const safePageSize = clampPageSize(pageSize, 20);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
@@ -51,6 +61,8 @@ export function useInfiniteList<TRemote, TLocal>(
       return totalItems;
     },
     enabled,
+    staleTime,
+    gcTime,
   });
 
   const items = useMemo(() => {

@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, FileText, Heart, MessageCircle, PencilLine, Quote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useReadRecentActivityApiV1SiteRecentActivityGet } from "@serino/api-client/site";
@@ -6,6 +7,8 @@ import type { RecentActivityItemRead } from "@serino/api-client/models";
 import { useFrontendI18n } from "@/i18n";
 import { usePageConfig } from "@/contexts/runtime-config";
 import { useContainedWheelScroll } from "@/hooks/use-contained-wheel-scroll";
+import { useDeferredActivation } from "@/hooks/useDeferredActivation";
+import { warmInternalHref } from "@/lib/route-preload";
 import { formatDateInBeijing } from "@/lib/time";
 
 type ActivityType =
@@ -252,28 +255,47 @@ interface RecentActivityProps {
 const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
   const { t, lang } = useFrontendI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const pages = usePageConfig();
+  const queryEnabled = useDeferredActivation(enabled, [enabled]);
   const { regionRef, scrollViewportRef } =
     useContainedWheelScroll<HTMLDivElement>();
   const setScrollRefs = useCallback((node: HTMLDivElement | null) => {
     regionRef.current = node;
     scrollViewportRef.current = node;
   }, [regionRef, scrollViewportRef]);
-  const config = (usePageConfig().activity as Record<string, unknown> | undefined) ?? {};
+  const config = (pages.activity as Record<string, unknown> | undefined) ?? {};
   const title = String(config.recentActivityTitle ?? t("recentActivity.title"));
   const errorTitle = String(config.recentActivityErrorTitle ?? t("recentActivity.errorTitle"));
   const retryLabel = String(config.recentActivityRetryLabel ?? t("recentActivity.retryLabel"));
   const emptyMessage = String(config.recentActivityEmptyMessage ?? t("recentActivity.emptyMessage"));
+  const warmHref = useCallback(
+    (href: string | undefined) => {
+      if (!href) {
+        return;
+      }
+      void warmInternalHref({ href, queryClient, pages });
+    },
+    [pages, queryClient],
+  );
 
   const { data: response, isLoading, isError, error, refetch } =
     useReadRecentActivityApiV1SiteRecentActivityGet(
       { limit: 8 },
-      { query: { enabled } },
+      {
+        query: {
+          enabled: queryEnabled,
+          staleTime: 60_000,
+          gcTime: 10 * 60_000,
+        },
+      },
     );
   const activities = useMemo(
     () => response?.data?.items?.map((item) => normalizeActivity(item, t, lang)) ?? [],
     [lang, response, t],
   );
   const status: "loading" | "ready" | "empty" | "error" = isLoading
+    || (enabled && !queryEnabled && !response?.data)
     ? "loading"
     : isError
       ? "error"
@@ -419,6 +441,9 @@ const RecentActivity = ({ enabled = true }: RecentActivityProps) => {
                   key={`${item.type}-${item.user}-${item.date}-${index}`}
                   type="button"
                   className="block w-full pb-5 last:pb-0"
+                  onMouseEnter={() => warmHref(item.href)}
+                  onFocus={() => warmHref(item.href)}
+                  onTouchStart={() => warmHref(item.href)}
                   onClick={() => navigate(item.href!)}
                 >
                   {content}

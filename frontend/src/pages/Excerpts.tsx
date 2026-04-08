@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, MessageCircle, Search, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -10,13 +10,14 @@ import { usePageConfig } from "@/contexts/runtime-config";
 import { useFrontendI18n } from "@/i18n";
 import { formatPublishedDate } from "@/lib/api/utils";
 import { clampPageSize } from "@/lib/page-size";
+import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel } from "@/lib/preview";
 import { readExcerptsApiV1SiteExcerptsGet } from "@serino/api-client/site";
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { useInfiniteList } from "@/hooks/use-infinite-list";
 
-const CommentSection = lazy(() => import("@/components/CommentSection"));
+const CommentSection = lazyWithPreload(() => import("@/components/CommentSection"));
 
 interface Excerpt {
   id: string;
@@ -95,7 +96,8 @@ const Excerpts = () => {
   const location = useLocation();
   const previewStorageKey =
     new URLSearchParams(location.search).get("previewStorageKey") || "";
-  const config = usePageConfig().excerpts as unknown as ExcerptsPageConfig;
+  const pages = usePageConfig();
+  const config = pages.excerpts as unknown as ExcerptsPageConfig;
   const errorTitle = config.errorTitle ?? t("excerpts.errorTitle");
   const retryLabel = config.retryLabel ?? t("common.retry");
   const loadMoreLabel = config.loadMoreLabel ?? t("excerpts.loadingMore");
@@ -108,8 +110,7 @@ const Excerpts = () => {
   const [showModalComments, setShowModalComments] = useState(false);
   const searchPlaceholder = config.searchPlaceholder ?? t("excerpts.searchPlaceholder");
   const [search, setSearch] = useState("");
-  const [rawSearch, setRawSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deferredSearch = useDeferredValue(search);
   const previewOpenedRef = useRef<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(allCategoryLabel);
   const { data: previewData } = usePreviewChannel(previewStorageKey);
@@ -123,7 +124,7 @@ const Excerpts = () => {
     sentinelRef,
     reload,
   } = useInfiniteList({
-    queryKey: ["site", "excerpts"],
+    queryKey: ["site", "excerpts", pageSize],
     queryFn: async (p) => {
       const data = (await readExcerptsApiV1SiteExcerptsGet(p)).data;
 
@@ -138,6 +139,8 @@ const Excerpts = () => {
     },
     pageSize,
     mapItem: mapRemoteExcerpt,
+    staleTime: 5 * 60_000,
+    gcTime: 20 * 60_000,
   });
   const previewExcerpt =
     previewData?.type === "excerpts" ? buildPreviewExcerpt(previewData, t("common.draft")) : null;
@@ -153,14 +156,6 @@ const Excerpts = () => {
   }, [items, previewExcerpt]);
   const viewStatus: typeof status =
     previewExcerpt && status !== "ready" ? "ready" : status;
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
 
   const allCategories = useMemo(
     () => [
@@ -182,14 +177,14 @@ const Excerpts = () => {
           excerpt.content,
           excerpt.category,
         ],
-        search,
+        deferredSearch,
       );
       const matchCategory =
         activeCategory === allCategoryLabel ||
         excerpt.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [activeCategory, allCategoryLabel, displayItems, search]);
+  }, [activeCategory, allCategoryLabel, deferredSearch, displayItems]);
 
   const selected = useMemo(
     () => displayItems.find((excerpt) => excerpt.id === selectedId) ?? null,
@@ -243,15 +238,8 @@ const Excerpts = () => {
           <input
             type="text"
             placeholder={searchPlaceholder}
-            value={rawSearch}
-            onChange={(event) => {
-              const value = event.target.value;
-              setRawSearch(value);
-              if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-              }
-              debounceRef.current = setTimeout(() => setSearch(value), 300);
-            }}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             maxLength={100}
             aria-label={searchPlaceholder}
             className="w-full rounded-xl border border-foreground/8 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/25 outline-none transition-colors focus:border-[rgb(var(--shiro-border-rgb)/0.32)] focus:bg-[rgb(var(--shiro-panel-rgb)/0.35)]"
@@ -473,6 +461,9 @@ const Excerpts = () => {
                 <div className="mt-6 border-t border-foreground/[0.06] pt-4">
                   <button
                     type="button"
+                    onMouseEnter={() => void CommentSection.preload()}
+                    onFocus={() => void CommentSection.preload()}
+                    onTouchStart={() => void CommentSection.preload()}
                     onClick={() => setShowModalComments((v) => !v)}
                     className={`flex items-center gap-2 text-xs font-body transition-colors ${
                       showModalComments
