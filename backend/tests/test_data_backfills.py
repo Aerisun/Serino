@@ -43,7 +43,6 @@ def test_run_pending_backfills_marks_bootstrap_baseline_without_replaying_histor
 
 def test_run_pending_backfills_skips_when_schema_not_ready(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
-    from aerisun.core.settings import get_settings
 
     configure_runtime_environment(tmp_path, monkeypatch)
     reset_runtime_state()

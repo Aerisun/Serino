@@ -34,4 +34,4 @@ USER aerisun
 
 EXPOSE 8000
 
-CMD ["/bin/bash", "/app/backend/scripts/serve.sh"]
+CMD ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]

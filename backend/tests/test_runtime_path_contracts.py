@@ -436,7 +436,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     )[0]
     assert "record_daily_traffic_snapshot(session)" not in start_block
     assert "uv sync --frozen --no-dev --no-editable" in backend_dockerfile_text
-    assert 'CMD ["/bin/bash", "/app/backend/scripts/serve.sh"]' in backend_dockerfile_text
+    assert 'CMD ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' in backend_dockerfile_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in compose_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/serve.sh"]' not in compose_text
     assert 'command: ["/bin/bash", "/app/backend/scripts/bootstrap.sh"]' not in dev_compose_text
