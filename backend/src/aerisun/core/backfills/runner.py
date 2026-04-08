@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 
+from sqlalchemy import inspect
+
 from aerisun.core.backfills.registry import REGISTERED_BACKFILLS
 from aerisun.core.backfills.state import (
     ensure_data_migration_table,
@@ -18,10 +20,33 @@ from aerisun.core.db import get_session_factory
 logger = logging.getLogger("aerisun.backfill")
 
 
+_BACKFILL_REQUIRED_TABLES = (
+    "site_profile",
+    "resume_basics",
+    "community_config",
+    "page_copy",
+)
+
+
+def _schema_ready_for_backfills(session) -> bool:
+    engine = session.get_bind()
+    inspector = inspect(engine)
+    missing = [table for table in _BACKFILL_REQUIRED_TABLES if not inspector.has_table(table)]
+    if missing:
+        logger.warning(
+            "Skipping data backfills because schema is not ready yet (missing tables: %s)",
+            ", ".join(missing),
+        )
+        return False
+    return True
+
+
 def run_pending_backfills() -> list[str]:
     session_factory = get_session_factory()
     applied_migrations: list[str] = []
     with session_factory() as session:
+        if not _schema_ready_for_backfills(session):
+            return []
         ensure_data_migration_table(session)
         bootstrap_records = list_applied_data_migrations(session, kind="bootstrap")
         completed = list_applied_data_migrations(session, kind="backfill")

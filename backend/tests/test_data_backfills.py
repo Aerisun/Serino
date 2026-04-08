@@ -41,6 +41,20 @@ def test_run_pending_backfills_marks_bootstrap_baseline_without_replaying_histor
         teardown_runtime_state()
 
 
+def test_run_pending_backfills_skips_when_schema_not_ready(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+    from aerisun.core.settings import get_settings
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        get_settings().ensure_directories()
+        applied = run_pending_backfills()
+        assert applied == []
+    finally:
+        teardown_runtime_state()
+
+
 def test_run_pending_backfills_applies_registered_repairs_once(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 

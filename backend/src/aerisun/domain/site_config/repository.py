@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from aerisun.domain.site_config.models import (
@@ -55,7 +56,13 @@ def find_enabled_nav_items(session: Session, site_profile_id: str) -> list[NavIt
 
 def find_all_page_copies(session: Session) -> list[PageCopy]:
     """Get all page copies ordered by page_key."""
-    return list(session.scalars(select(PageCopy).order_by(PageCopy.page_key.asc())).all())
+    try:
+        return list(session.scalars(select(PageCopy).order_by(PageCopy.page_key.asc())).all())
+    except OperationalError as exc:
+        message = str(exc).lower()
+        if "no such table" in message and "page_copy" in message:
+            return []
+        raise
 
 
 def find_community_config(session: Session) -> CommunityConfig | None:
