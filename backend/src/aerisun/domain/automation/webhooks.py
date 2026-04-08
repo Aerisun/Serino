@@ -8,7 +8,7 @@ import hmac
 import json
 import logging
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from uuid import uuid4
@@ -16,6 +16,7 @@ from uuid import uuid4
 import httpx
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation.models import AutomationEvent, WebhookDelivery, WebhookSubscription
 from aerisun.domain.automation.schemas import (
@@ -141,7 +142,7 @@ def _save_webhook_test_result(
         raise ResourceNotFound("Webhook subscription not found")
     subscription.last_test_status = "succeeded" if ok else "failed"
     subscription.last_test_error = None if ok else summary
-    subscription.last_tested_at = datetime.now(UTC)
+    subscription.last_tested_at = shanghai_now()
     session.commit()
 
 
@@ -381,14 +382,14 @@ def trigger_delivery_retry(session: Session, *, delivery_id: str) -> WebhookDeli
     if delivery is None:
         raise ResourceNotFound("Webhook delivery not found")
     delivery.status = "pending"
-    delivery.next_attempt_at = datetime.now(UTC)
+    delivery.next_attempt_at = shanghai_now()
     session.commit()
     session.refresh(delivery)
     return WebhookDeliveryRead.model_validate(delivery)
 
 
 def dispatch_due_webhooks(session: Session) -> int:
-    now = datetime.now(UTC)
+    now = shanghai_now()
     deliveries = repo.list_due_webhook_deliveries(session, now=now)
     processed = 0
     for delivery in deliveries:
@@ -426,7 +427,7 @@ def _deliver_once(session: Session, delivery: WebhookDelivery, *, now: datetime)
         delivery.last_response_body = response.text[:2000]
         if response.status_code < 400:
             delivery.status = "succeeded"
-            delivery.delivered_at = datetime.now(UTC)
+            delivery.delivered_at = shanghai_now()
         elif response.status_code in {408, 409, 429} or response.status_code >= 500:
             _schedule_retry_or_dead_letter(
                 session,
@@ -464,7 +465,7 @@ def _schedule_retry_or_dead_letter(
         return
     backoff = min(30 * (4 ** max(delivery.attempt_count - 1, 0)), 7200)
     delivery.status = "retry_scheduled"
-    delivery.next_attempt_at = datetime.now(UTC) + timedelta(seconds=backoff)
+    delivery.next_attempt_at = shanghai_now() + timedelta(seconds=backoff)
     session.commit()
 
 
@@ -576,7 +577,7 @@ def _sign_feishu_url(target_url: str, secret: str) -> str:
         return target_url
     parsed = urlparse(target_url)
     query_items = dict(parse_qsl(parsed.query, keep_blank_values=True))
-    timestamp = str(int(datetime.now(UTC).timestamp()))
+    timestamp = str(int(shanghai_now().timestamp()))
     string_to_sign = f"{timestamp}\n{secret}"
     digest = hmac.new(secret.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256).digest()
     query_items.update(

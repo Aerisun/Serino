@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 import aerisun.domain.ops.service as ops_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.core.time import BEIJING_TZ, shanghai_now
 from aerisun.domain.ops.models import TrafficDailySnapshot, VisitRecord
 from aerisun.domain.waline.service import set_counter_value
 from tests.admin.test_backup_sync import FakeBackupTransport, _write_backup_credentials
@@ -19,7 +20,7 @@ INTEGRATIONS_BASE = "/api/v1/admin/integrations"
 class _FixedDateTime(datetime):
     @classmethod
     def now(cls, tz=None):  # type: ignore[override]
-        current = cls(2026, 4, 1, 15, 45, tzinfo=UTC)
+        current = cls(2026, 4, 1, 15, 45, tzinfo=BEIJING_TZ)
         return current if tz is None else current.astimezone(tz)
 
 
@@ -87,7 +88,7 @@ class TestDashboardStats:
         set_counter_value(url="/guestbook", pageview_count=999)
 
         factory = get_session_factory()
-        today = datetime.now(UTC).date()
+        today = shanghai_now().date()
         with factory() as session:
             session.add_all(
                 [
@@ -142,7 +143,7 @@ class TestDashboardStats:
 
     def test_dashboard_stats_returns_visitor_analytics(self, client, admin_headers):
         factory = get_session_factory()
-        now = datetime.now(UTC)
+        now = shanghai_now()
         with factory() as session:
             session.add_all(
                 [
@@ -195,13 +196,13 @@ class TestDashboardStats:
         assert payload["last_visit_at"] is not None
 
     def test_dashboard_stats_groups_visitor_history_by_beijing_day(self, client, admin_headers, monkeypatch):
-        monkeypatch.setattr(ops_service, "datetime", _FixedDateTime)
+        monkeypatch.setattr(ops_service, "shanghai_now", lambda: _FixedDateTime.now(BEIJING_TZ))
         factory = get_session_factory()
         with factory() as session:
             session.add_all(
                 [
                     VisitRecord(
-                        visited_at=datetime(2026, 3, 31, 16, 30, tzinfo=UTC),
+                        visited_at=datetime(2026, 3, 31, 16, 30, tzinfo=BEIJING_TZ),
                         path="/posts/beijing-midnight",
                         ip_address="203.0.113.31",
                         user_agent="Mozilla/5.0",
@@ -211,7 +212,7 @@ class TestDashboardStats:
                         is_bot=False,
                     ),
                     VisitRecord(
-                        visited_at=datetime(2026, 4, 1, 14, 30, tzinfo=UTC),
+                        visited_at=datetime(2026, 4, 1, 14, 30, tzinfo=BEIJING_TZ),
                         path="/posts/beijing-midnight",
                         ip_address="203.0.113.32",
                         user_agent="Mozilla/5.0",
@@ -231,7 +232,7 @@ class TestDashboardStats:
 
     def test_list_visitor_records(self, client, admin_headers):
         factory = get_session_factory()
-        now = datetime.now(UTC)
+        now = shanghai_now()
         with factory() as session:
             session.add(
                 VisitRecord(

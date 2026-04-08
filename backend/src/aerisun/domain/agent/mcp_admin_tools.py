@@ -1015,14 +1015,13 @@ def list_admin_sessions(
     page: int = 1,
     page_size: int = 100,
 ) -> dict[str, Any]:
-    from datetime import UTC, datetime
-
+    from aerisun.core.time import shanghai_now
     from aerisun.domain.iam.models import AdminSession, AdminUser
 
     resolved_admin_id = str(admin_user_id or "").strip() or None
     safe_page = max(1, int(page or 1))
     safe_page_size = max(1, min(int(page_size or 100), 200))
-    now = datetime.now(UTC)
+    now = shanghai_now()
 
     query = session.query(AdminSession, AdminUser).join(AdminUser, AdminUser.id == AdminSession.admin_user_id)
     if resolved_admin_id:

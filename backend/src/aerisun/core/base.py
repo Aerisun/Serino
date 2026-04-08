@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from aerisun.core.time import shanghai_now
+
 
 def utcnow() -> datetime:
-    return datetime.now(UTC)
+    return shanghai_now()
 
 
 def uuid_str() -> str:

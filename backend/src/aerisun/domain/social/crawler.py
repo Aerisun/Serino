@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin, urlparse
 
@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.base import utcnow
 from aerisun.core.settings import Settings
+from aerisun.core.time import BEIJING_TZ, normalize_shanghai_datetime
 
 if TYPE_CHECKING:
     from aerisun.domain.social.models import Friend, FriendFeedSource
@@ -79,7 +80,7 @@ _TIME_FORMATS = [
 
 
 def _parse_published_time(time_str: str) -> datetime | None:
-    """Parse a time string from an RSS/Atom entry into a UTC datetime."""
+    """Parse a time string from an RSS/Atom entry into a Shanghai datetime."""
     if not time_str:
         return None
 
@@ -101,10 +102,7 @@ def _parse_published_time(time_str: str) -> datetime | None:
         logger.warning("Cannot parse time string: %s", time_str)
         return None
 
-    # Ensure timezone-aware, default to UTC
-    parsed = parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
-
-    return parsed
+    return normalize_shanghai_datetime(parsed)
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +221,7 @@ def _parse_feed(
 
     # Sort by published time descending, then limit
     entries.sort(
-        key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=UTC),
+        key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=BEIJING_TZ),
         reverse=True,
     )
     return entries[:max_items]
@@ -393,7 +391,7 @@ def crawl_single_source(
 
         # Sort and limit
         entries.sort(
-            key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=UTC),
+            key=lambda x: x["published_at"] or datetime.min.replace(tzinfo=BEIJING_TZ),
             reverse=True,
         )
         entries = entries[: settings.feed_crawl_max_items_per_source]

@@ -8,7 +8,7 @@ import logging
 import os
 import sqlite3
 from collections import Counter
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import select
@@ -42,7 +42,7 @@ from aerisun.core.seed_steps.waline import (
     seed_waline_counter_data,
 )
 from aerisun.core.settings import get_settings
-from aerisun.core.time import beijing_today
+from aerisun.core.time import BEIJING_TZ, beijing_today
 from aerisun.domain.automation.models import WebhookSubscription
 from aerisun.domain.automation.settings import AGENT_MODEL_CONFIG_FLAG_KEY, DEFAULT_AGENT_MODEL_CONFIG
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
@@ -62,7 +62,7 @@ from aerisun.domain.site_config.models import (
 )
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.subscription.models import ContentSubscriptionConfig
-from aerisun.domain.waline.service import build_comment_path
+from aerisun.domain.waline.service import build_comment_path, connect_waline_db
 
 DEFAULT_HERO_VIDEO_URL = (
     "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
@@ -854,7 +854,7 @@ DEFAULT_POSTS = [
         "tags": ["design-system", "frontend"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 21, 9, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 21, 9, 0, tzinfo=BEIJING_TZ),
         "category": "设计",
         "view_count": 1247,
     },
@@ -869,7 +869,7 @@ DEFAULT_POSTS = [
         "tags": ["css", "glass", "performance"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 18, 20, 30, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 18, 20, 30, tzinfo=BEIJING_TZ),
         "category": "技术",
         "view_count": 3082,
     },
@@ -884,7 +884,7 @@ DEFAULT_POSTS = [
         "tags": ["essay", "career"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 14, 8, 15, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 14, 8, 15, tzinfo=BEIJING_TZ),
         "category": "随想",
         "view_count": 892,
     },
@@ -899,7 +899,7 @@ DEFAULT_POSTS = [
         "tags": ["react", "architecture"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 12, 16, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 12, 16, 0, tzinfo=BEIJING_TZ),
         "category": "技术",
         "view_count": 2156,
     },
@@ -914,7 +914,7 @@ DEFAULT_POSTS = [
         "tags": ["typography", "layout"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 9, 10, 45, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 9, 10, 45, tzinfo=BEIJING_TZ),
         "category": "设计",
         "view_count": 1873,
     },
@@ -929,7 +929,7 @@ DEFAULT_POSTS = [
         "tags": ["animation", "react"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 6, 19, 20, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 6, 19, 20, tzinfo=BEIJING_TZ),
         "category": "技术",
         "view_count": 4210,
     },
@@ -944,7 +944,7 @@ DEFAULT_POSTS = [
         "tags": ["workflow", "productivity"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 3, 9, 50, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 3, 9, 50, tzinfo=BEIJING_TZ),
         "category": "随想",
         "view_count": 625,
     },
@@ -959,7 +959,7 @@ DEFAULT_POSTS = [
         "tags": ["dark-mode", "ui"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 2, 28, 21, 5, tzinfo=UTC),
+        "published_at": datetime(2026, 2, 28, 21, 5, tzinfo=BEIJING_TZ),
         "category": "设计",
         "view_count": 3140,
     },
@@ -977,7 +977,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["life", "spring"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 21, 12, 0, tzinfo=BEIJING_TZ),
         "weather": "sunny",
         "mood": "☀️",
         "poem": "春风如贵客，一到便繁华。——袁枚",
@@ -993,7 +993,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["rain", "worklog"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 19, 14, 45, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 19, 14, 45, tzinfo=BEIJING_TZ),
         "weather": "rainy",
         "mood": "🌧️",
         "poem": "小楼一夜听春雨，深巷明朝卖杏花。——陆游",
@@ -1009,7 +1009,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["library", "reading"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 17, 18, 10, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 17, 18, 10, tzinfo=BEIJING_TZ),
         "weather": "windy",
         "mood": "🍃",
         "poem": "解落三秋叶，能开二月花。——李峤",
@@ -1025,7 +1025,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["commute", "sunset"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 15, 18, 40, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 15, 18, 40, tzinfo=BEIJING_TZ),
         "weather": "cloudy",
         "mood": "🌇",
         "poem": "落霞与孤鹜齐飞，秋水共长天一色。——王勃",
@@ -1041,7 +1041,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["weekend", "cleanup"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 13, 11, 20, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 13, 11, 20, tzinfo=BEIJING_TZ),
         "weather": "sunny",
         "mood": "🧺",
         "poem": "偷得浮生半日闲。——李涉",
@@ -1057,7 +1057,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["night", "css"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 11, 0, 35, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 11, 0, 35, tzinfo=BEIJING_TZ),
         "weather": "rainy",
         "mood": "🍵",
         "poem": "何当共剪西窗烛，却话巴山夜雨时。——李商隐",
@@ -1073,7 +1073,7 @@ DEFAULT_DIARY_ENTRIES = [
         "tags": ["bookstore", "reading"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 9, 16, 5, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 9, 16, 5, tzinfo=BEIJING_TZ),
         "weather": "cloudy",
         "mood": "📚",
         "poem": "纸上得来终觉浅，绝知此事要躬行。——陆游",
@@ -1089,7 +1089,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["design", "typography"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 21, 15, 5, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 21, 15, 5, tzinfo=BEIJING_TZ),
         "mood": "🎨",
     },
     {
@@ -1103,7 +1103,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["product", "reflection"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 20, 10, 20, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 20, 10, 20, tzinfo=BEIJING_TZ),
         "mood": "💭",
     },
     {
@@ -1114,7 +1114,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["frontend", "craft"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 16, 9, 35, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 16, 9, 35, tzinfo=BEIJING_TZ),
         "mood": "☕",
     },
     {
@@ -1128,7 +1128,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["ui", "editing"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 15, 9, 10, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 15, 9, 10, tzinfo=BEIJING_TZ),
         "mood": "✂️",
     },
     {
@@ -1142,7 +1142,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["motion", "frontend"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 13, 22, 40, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 13, 22, 40, tzinfo=BEIJING_TZ),
         "mood": "🌫️",
     },
     {
@@ -1156,7 +1156,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["details", "product"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 12, 20, 15, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 12, 20, 15, tzinfo=BEIJING_TZ),
         "mood": "✨",
     },
     {
@@ -1170,7 +1170,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["tone", "writing"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 10, 8, 25, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 8, 25, tzinfo=BEIJING_TZ),
         "mood": "🫧",
     },
     {
@@ -1184,7 +1184,7 @@ DEFAULT_THOUGHTS = [
         "tags": ["shipping", "workflow"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 8, 17, 50, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 8, 17, 50, tzinfo=BEIJING_TZ),
         "mood": "🛠️",
     },
 ]
@@ -1198,7 +1198,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["reading", "aesthetics"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 17, 8, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 17, 8, 0, tzinfo=BEIJING_TZ),
         "author_name": "李欧梵",
         "source": "《中国现代文学与现代性十讲》",
     },
@@ -1213,7 +1213,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["reading", "minimalism"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 15, 11, 30, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 15, 11, 30, tzinfo=BEIJING_TZ),
         "author_name": "Dieter Rams",
         "source": "Less but Better",
     },
@@ -1225,7 +1225,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["writing", "habits"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 12, 19, 45, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 12, 19, 45, tzinfo=BEIJING_TZ),
         "author_name": "村上春树",
         "source": "《我的职业是小说家》",
     },
@@ -1240,7 +1240,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["reading", "pace"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 10, 14, 10, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 14, 10, tzinfo=BEIJING_TZ),
         "author_name": "约翰·伯格",
         "source": "《观看之道》",
     },
@@ -1255,7 +1255,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["reading", "interface"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 8, 11, 5, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 8, 11, 5, tzinfo=BEIJING_TZ),
         "author_name": "原研哉",
         "source": "《设计中的设计》",
     },
@@ -1270,7 +1270,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["materials", "design"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 6, 10, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 6, 10, 0, tzinfo=BEIJING_TZ),
         "author_name": "彼得·卒姆托",
         "source": "《思考建筑》",
     },
@@ -1282,7 +1282,7 @@ DEFAULT_EXCERPTS = [
         "tags": ["systems", "product"],
         "status": "published",
         "visibility": "public",
-        "published_at": datetime(2026, 3, 4, 9, 25, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 4, 9, 25, tzinfo=BEIJING_TZ),
         "author_name": "唐纳德·诺曼",
         "source": "《设计心理学》",
     },
@@ -1383,67 +1383,67 @@ DEFAULT_FRIEND_FEED_SOURCES = [
     {
         "friend_name": "Miku's Blog",
         "feed_url": "https://miku.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 16, 9, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 16, 9, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "AkaraChen",
         "feed_url": "https://akara.example.com/rss.xml",
-        "last_fetched_at": datetime(2026, 3, 10, 12, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 10, 12, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "夏目的博客",
         "feed_url": "https://natsume.example.com/atom.xml",
-        "last_fetched_at": datetime(2026, 3, 18, 10, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 18, 10, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "保罗的小宇宙",
         "feed_url": "https://paul.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 16, 21, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 16, 21, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "猫羽のブログ",
         "feed_url": "https://nekoha.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 19, 13, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 19, 13, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "Erhecy's Blog",
         "feed_url": "https://erhecy.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 18, 18, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 18, 18, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "轻雅阁",
         "feed_url": "https://qingya.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 18, 7, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 18, 7, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "柏园猫のBlog",
         "feed_url": "https://baiyuan.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 17, 22, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 17, 22, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "Lucifer's Blog",
         "feed_url": "https://lucifer.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 17, 20, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 17, 20, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
     {
         "friend_name": "Quiet Terminal",
         "feed_url": "https://quiet-terminal.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 19, 11, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 19, 11, 0, tzinfo=BEIJING_TZ),
         "is_enabled": False,
     },
     {
         "friend_name": "Sunset Archive",
         "feed_url": "https://sunset-archive.example.com/feed.xml",
-        "last_fetched_at": datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+        "last_fetched_at": datetime(2026, 3, 20, 8, 0, tzinfo=BEIJING_TZ),
         "is_enabled": True,
     },
 ]
@@ -1454,7 +1454,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "“糖”",
         "url": "https://miku.example.com/posts/candy",
         "summary": "一篇关于日常感受的短文。",
-        "published_at": datetime(2026, 3, 16, 8, 30, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 16, 8, 30, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1462,7 +1462,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "如何使用 Cloudflare API 为网站新增数据监测大屏",
         "url": "https://akara.example.com/posts/cloudflare-dashboard",
         "summary": "记录一次网站数据面板搭建过程。",
-        "published_at": datetime(2026, 3, 10, 11, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 11, 0, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1470,7 +1470,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "网络流算法详解",
         "url": "https://natsume.example.com/posts/network-flow",
         "summary": "把几类经典网络流题型梳理成一份笔记。",
-        "published_at": datetime(2026, 3, 18, 9, 30, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 18, 9, 30, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1478,7 +1478,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "在博客中优雅地添加 Bilibili 追番页面",
         "url": "https://erhecy.example.com/posts/bilibili-following",
         "summary": "记录一次追番页面和数据同步的实现过程。",
-        "published_at": datetime(2026, 3, 13, 18, 45, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 13, 18, 45, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1486,7 +1486,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "一招解决 Origin 运行报错：找不到 mfc140u.dll",
         "url": "https://baiyuan.example.com/posts/fix-mfc140u",
         "summary": "整理一次桌面软件依赖缺失的排查记录。",
-        "published_at": datetime(2026, 3, 11, 8, 20, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 11, 8, 20, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1494,7 +1494,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "Hand Motion Retargeting",
         "url": "https://paul.example.com/posts/hand-motion-retargeting",
         "summary": "记录手部动作重定向的一些实验。",
-        "published_at": datetime(2026, 3, 10, 16, 10, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 16, 10, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1502,7 +1502,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "To panic! or Not to panic!",
         "url": "https://lucifer.example.com/posts/to-panic-or-not",
         "summary": "关于错误恢复和调试心态的一篇记录。",
-        "published_at": datetime(2026, 3, 10, 14, 25, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 14, 25, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1510,7 +1510,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "碎碎念：找实习、生病与一块薯饼的治愈",
         "url": "https://qingya.example.com/posts/internship-and-hashbrown",
         "summary": "把最近一段时间的生活碎片整理成一篇短文。",
-        "published_at": datetime(2026, 3, 10, 9, 50, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 9, 50, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1518,7 +1518,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "AI 时代的重构方式：从 RFC 到五个 Plan",
         "url": "https://nekoha.example.com/posts/ai-refactor-rfc-plan",
         "summary": "记录一次多人并行协作下的重构节奏。",
-        "published_at": datetime(2026, 3, 10, 8, 40, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 10, 8, 40, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1526,7 +1526,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "使用 Python 绘制中国省份管网老化分布地图",
         "url": "https://baiyuan.example.com/posts/pipeline-aging-map",
         "summary": "一次数据可视化小练习。",
-        "published_at": datetime(2026, 3, 6, 16, 30, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 6, 16, 30, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1534,7 +1534,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "键盘上的春节",
         "url": "https://nekoha.example.com/posts/spring-festival-on-keyboard",
         "summary": "把节日气息写进键帽与输入法里。",
-        "published_at": datetime(2026, 3, 2, 11, 15, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 2, 11, 15, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1542,7 +1542,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "TraceDiary 开发复盘：我如何并行协作 4 个 Agent",
         "url": "https://paul.example.com/posts/tracediary-retro",
         "summary": "一次 Agent 并行协作开发的过程记录。",
-        "published_at": datetime(2026, 2, 27, 20, 10, tzinfo=UTC),
+        "published_at": datetime(2026, 2, 27, 20, 10, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1550,7 +1550,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "Astrbot / 夕颜是如何炼成的",
         "url": "https://akara.example.com/posts/astrbot-build-log",
         "summary": "一次机器人项目从想法到落地的复盘。",
-        "published_at": datetime(2026, 2, 27, 18, 20, tzinfo=UTC),
+        "published_at": datetime(2026, 2, 27, 18, 20, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1558,7 +1558,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "我用 Vibe Coding 开发了一个照片标注工具 ImgStamp",
         "url": "https://paul.example.com/posts/imgstamp",
         "summary": "一个小工具项目的从零到一。",
-        "published_at": datetime(2026, 2, 26, 21, 5, tzinfo=UTC),
+        "published_at": datetime(2026, 2, 26, 21, 5, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1566,7 +1566,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "Gravatar Mirror",
         "url": "https://akara.example.com/posts/gravatar-mirror",
         "summary": "给头像服务做一次加速与镜像。",
-        "published_at": datetime(2026, 2, 25, 9, 0, tzinfo=UTC),
+        "published_at": datetime(2026, 2, 25, 9, 0, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1574,7 +1574,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "这篇不会出现在公开接口里",
         "url": "https://quiet-terminal.example.com/posts/private-feed-entry",
         "summary": "用于验证禁用 feed source 不会被 public API 返回。",
-        "published_at": datetime(2026, 3, 19, 10, 30, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 19, 10, 30, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
     {
@@ -1582,7 +1582,7 @@ DEFAULT_FRIEND_FEED_ITEMS = [
         "title": "归档站点的旧文章",
         "url": "https://sunset-archive.example.com/posts/archive-note",
         "summary": "用于验证 archived 友链不会出现在 public feed。",
-        "published_at": datetime(2026, 3, 20, 7, 45, tzinfo=UTC),
+        "published_at": datetime(2026, 3, 20, 7, 45, tzinfo=BEIJING_TZ),
         "raw_payload": {"source": "seed"},
     },
 ]
@@ -1594,7 +1594,7 @@ DEFAULT_LEGACY_GUESTBOOK_ENTRIES = [
         "website": "https://elena.example.com",
         "body": "你的博客设计真的很稳，评论区换成现在这套以后，整体气质终于统一起来了。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=BEIJING_TZ),
     },
     {
         "name": "新访客",
@@ -1602,7 +1602,7 @@ DEFAULT_LEGACY_GUESTBOOK_ENTRIES = [
         "website": None,
         "body": "测试一条待审核留言，方便在后台里看见 pending 状态。",
         "status": "pending",
-        "created_at": datetime(2026, 3, 21, 10, 30, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 21, 10, 30, tzinfo=BEIJING_TZ),
     },
 ]
 
@@ -1617,7 +1617,7 @@ DEFAULT_LEGACY_COMMENTS = [
             "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。"
         ),
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
     {
@@ -1628,7 +1628,7 @@ DEFAULT_LEGACY_COMMENTS = [
         "author_email": None,
         "body": "谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=BEIJING_TZ),
         "parent_key": "legacy-post-root",
     },
     {
@@ -1639,7 +1639,7 @@ DEFAULT_LEGACY_COMMENTS = [
         "author_email": "kai@example.com",
         "body": "这一篇的性能部分很有用。`backdrop-filter` 一旦铺太大，低端设备确实会立刻吃不消。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
     {
@@ -1650,7 +1650,7 @@ DEFAULT_LEGACY_COMMENTS = [
         "author_email": None,
         "body": "这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
 ]
@@ -1666,7 +1666,7 @@ DEFAULT_WALINE_COMMENTS = [
             "写得真好，尤其是关于节奏感的那段，让我重新想了一遍自己的排版系统。支持 **Markdown** 的评论区看着顺手多了。"
         ),
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 8, 30, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
     {
@@ -1677,7 +1677,7 @@ DEFAULT_WALINE_COMMENTS = [
         "link": None,
         "comment": "谢谢，你这句“排版系统”很精准。我后面也想把评论区的样式继续收得更稳一些。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 9, 5, tzinfo=BEIJING_TZ),
         "parent_key": "waline-post-root",
     },
     {
@@ -1688,7 +1688,7 @@ DEFAULT_WALINE_COMMENTS = [
         "link": "https://kai.example.com",
         "comment": "这一篇的性能部分很有用。`backdrop-filter` 一旦铺太大，低端设备确实会立刻吃不消。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 11, 20, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
     {
@@ -1699,7 +1699,7 @@ DEFAULT_WALINE_COMMENTS = [
         "link": None,
         "comment": "这篇日记读起来很有画面感，尤其是“夜风里有隐约的花香”这一句。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 21, 10, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
     {
@@ -1710,7 +1710,7 @@ DEFAULT_WALINE_COMMENTS = [
         "link": "https://elena.example.com",
         "comment": "你的博客设计真的很稳，评论区换成现在这套以后，整体气质终于统一起来了。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 21, 10, 0, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
     {
@@ -1721,7 +1721,7 @@ DEFAULT_WALINE_COMMENTS = [
         "link": None,
         "comment": "在这里读到很多温柔又克制的表达，留言板也和整站气质贴得很紧。",
         "status": "approved",
-        "created_at": datetime(2026, 3, 15, 10, 30, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 15, 10, 30, tzinfo=BEIJING_TZ),
         "parent_key": None,
     },
 ]
@@ -1732,24 +1732,24 @@ DEFAULT_REACTIONS = [
         "content_slug": "from-zero-design-system",
         "reaction_type": "like",
         "client_token": "Elena Torres",
-        "created_at": datetime(2026, 3, 20, 22, 10, tzinfo=UTC),
-        "updated_at": datetime(2026, 3, 20, 22, 10, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 20, 22, 10, tzinfo=BEIJING_TZ),
+        "updated_at": datetime(2026, 3, 20, 22, 10, tzinfo=BEIJING_TZ),
     },
     {
         "content_type": "posts",
         "content_slug": "from-zero-design-system",
         "reaction_type": "like",
         "client_token": "Kai Nakamura",
-        "created_at": datetime(2026, 3, 21, 11, 20, tzinfo=UTC),
-        "updated_at": datetime(2026, 3, 21, 11, 20, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 21, 11, 20, tzinfo=BEIJING_TZ),
+        "updated_at": datetime(2026, 3, 21, 11, 20, tzinfo=BEIJING_TZ),
     },
     {
         "content_type": "diary",
         "content_slug": "spring-equinox-and-warm-light",
         "reaction_type": "like",
         "client_token": "David Okoro",
-        "created_at": datetime(2026, 3, 21, 13, 40, tzinfo=UTC),
-        "updated_at": datetime(2026, 3, 21, 13, 40, tzinfo=UTC),
+        "created_at": datetime(2026, 3, 21, 13, 40, tzinfo=BEIJING_TZ),
+        "updated_at": datetime(2026, 3, 21, 13, 40, tzinfo=BEIJING_TZ),
     },
 ]
 
@@ -1998,6 +1998,112 @@ def _determine_incremental_reseed_blocks(
     return {block for block in active_blocks if stored_fingerprints.get(block) != current_fingerprints.get(block)}
 
 
+def _has_all_seed_values(session: Session, column, expected_values: set[object]) -> bool:
+    if not expected_values:
+        return True
+    existing_values = set(session.scalars(select(column)).all())
+    return expected_values.issubset(existing_values)
+
+
+def _has_seed_waline_data() -> bool:
+    expected_comment_count = len(DEV_WALINE_COMMENTS)
+    expected_counter_count = len(DEFAULT_WALINE_COUNTERS)
+    if expected_comment_count == 0 and expected_counter_count == 0:
+        return True
+
+    settings = get_settings()
+    if not settings.waline_db_path.exists():
+        return False
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        if "wl_comment" not in tables or "wl_counter" not in tables:
+            return False
+
+        comment_count = int(connection.execute("SELECT COUNT(*) FROM wl_comment").fetchone()[0])
+        counter_count = int(connection.execute("SELECT COUNT(*) FROM wl_counter").fetchone()[0])
+        if expected_comment_count > 0 and comment_count == 0:
+            return False
+        if expected_counter_count > 0 and counter_count == 0:
+            return False
+    return True
+
+
+def _detect_missing_seed_blocks(session: Session, *, include_dev_data: bool) -> set[str]:
+    missing_blocks: set[str] = set()
+
+    content_complete = all(
+        (
+            _has_all_seed_values(session, PostEntry.slug, {item["slug"] for item in DEFAULT_POSTS}),
+            _has_all_seed_values(session, DiaryEntry.slug, {item["slug"] for item in DEFAULT_DIARY_ENTRIES}),
+            _has_all_seed_values(session, ThoughtEntry.slug, {item["slug"] for item in DEFAULT_THOUGHTS}),
+            _has_all_seed_values(session, ExcerptEntry.slug, {item["slug"] for item in DEFAULT_EXCERPTS}),
+        )
+    )
+    if not content_complete:
+        missing_blocks.add("content")
+
+    admin_complete = _has_rows(session, AdminUser)
+    if not admin_complete:
+        missing_blocks.add("admin")
+
+    if not include_dev_data:
+        return missing_blocks
+
+    social_complete = all(
+        (
+            _has_all_seed_values(session, Friend.name, {item["name"] for item in DEV_FRIENDS}),
+            _has_all_seed_values(
+                session,
+                FriendFeedSource.feed_url,
+                {item["feed_url"] for item in DEV_FRIEND_FEED_SOURCES},
+            ),
+            _has_all_seed_values(session, FriendFeedItem.url, {item["url"] for item in DEV_FRIEND_FEED_ITEMS}),
+        )
+    )
+    if not social_complete:
+        missing_blocks.add("social")
+
+    reaction_keys = {
+        (
+            item["content_type"],
+            item["content_slug"],
+            item["reaction_type"],
+            item["client_token"],
+        )
+        for item in DEV_REACTIONS
+    }
+    existing_reaction_keys = {
+        (content_type, content_slug, reaction_type, client_token)
+        for content_type, content_slug, reaction_type, client_token in session.execute(
+            select(
+                Reaction.content_type,
+                Reaction.content_slug,
+                Reaction.reaction_type,
+                Reaction.client_token,
+            )
+        ).all()
+    }
+    engagement_complete = (
+        reaction_keys.issubset(existing_reaction_keys)
+        and (len(DEV_LEGACY_GUESTBOOK_ENTRIES) == 0 or _has_rows(session, GuestbookEntry))
+        and (len(DEV_LEGACY_COMMENTS) == 0 or _has_rows(session, Comment))
+    )
+    if not engagement_complete:
+        missing_blocks.add("engagement")
+
+    ops_complete = (len(DEV_TRAFFIC_SNAPSHOTS) == 0 or _has_rows(session, TrafficDailySnapshot)) and _has_rows(
+        session, VisitRecord
+    )
+    if not ops_complete:
+        missing_blocks.add("ops")
+
+    if not _has_seed_waline_data():
+        missing_blocks.add("waline")
+
+    return missing_blocks
+
+
 def _clear_seed_models(session: Session, models: list[type], *, label: str) -> None:
     _logger = logging.getLogger("aerisun.seed")
     _logger.info("Incremental reseed: clearing block '%s'", label)
@@ -2185,9 +2291,10 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
     }
     reseed_all_blocks = not incremental_force
     current_block_fingerprints = _compute_seed_block_fingerprints(include_dev_data=include_dev_data)
-    blocks_to_reseed: set[str] = set()
+    changed_blocks: set[str] = set()
+    missing_blocks: set[str] = set()
     if incremental_force:
-        blocks_to_reseed = _determine_incremental_reseed_blocks(
+        changed_blocks = _determine_incremental_reseed_blocks(
             settings.db_path,
             current_fingerprints=current_block_fingerprints,
             include_dev_data=include_dev_data,
@@ -2202,18 +2309,26 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
             purge_managed_media_root()
         elif incremental_force:
             _logger = logging.getLogger("aerisun.seed")
-            if blocks_to_reseed:
+            missing_blocks = _detect_missing_seed_blocks(session, include_dev_data=include_dev_data)
+
+            if changed_blocks:
                 _logger.info(
-                    "Force reseed: incremental blocks -> %s",
-                    ", ".join(sorted(blocks_to_reseed)),
+                    "Force reseed: changed seed blocks -> %s",
+                    ", ".join(sorted(changed_blocks)),
                 )
             else:
-                _logger.info("Force reseed: no changed seed blocks detected, skipping reseed")
+                _logger.info("Force reseed: no changed seed blocks detected")
+
+            if missing_blocks:
+                _logger.info(
+                    "Force reseed: sample data missing for blocks -> %s",
+                    ", ".join(sorted(missing_blocks)),
+                )
 
             preserved_blocks: set[str] = set()
-            if "content" in blocks_to_reseed and _should_preserve_content_block(session):
+            if "content" in changed_blocks and _should_preserve_content_block(session):
                 preserved_blocks.add("content")
-            if "social" in blocks_to_reseed and _should_preserve_social_block(session):
+            if "social" in changed_blocks and _should_preserve_social_block(session):
                 preserved_blocks.add("social")
 
             if preserved_blocks:
@@ -2221,23 +2336,25 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
                     "Incremental reseed: preserve existing blocks -> %s",
                     ", ".join(sorted(preserved_blocks)),
                 )
-                blocks_to_reseed -= preserved_blocks
+                changed_blocks -= preserved_blocks
 
             for block in _active_seed_blocks(include_dev_data):
                 if block == "waline":
                     continue
-                if block in blocks_to_reseed:
+                if block in changed_blocks:
                     _clear_seed_block_data(session, block)
 
-            if include_dev_data and "waline" in blocks_to_reseed:
+            if include_dev_data and "waline" in changed_blocks:
                 clear_waline_seed_data()
 
-        run_core = reseed_all_blocks or "core" in blocks_to_reseed
-        run_content = reseed_all_blocks or "content" in blocks_to_reseed
-        run_social = include_dev_data and (reseed_all_blocks or "social" in blocks_to_reseed)
-        run_engagement = include_dev_data and (reseed_all_blocks or "engagement" in blocks_to_reseed)
-        run_ops = include_dev_data and (reseed_all_blocks or "ops" in blocks_to_reseed)
-        run_admin = reseed_all_blocks or "admin" in blocks_to_reseed
+        blocks_to_seed = changed_blocks | missing_blocks
+
+        run_core = reseed_all_blocks or "core" in blocks_to_seed
+        run_content = reseed_all_blocks or "content" in blocks_to_seed
+        run_social = include_dev_data and (reseed_all_blocks or "social" in blocks_to_seed)
+        run_engagement = include_dev_data and (reseed_all_blocks or "engagement" in blocks_to_seed)
+        run_ops = include_dev_data and (reseed_all_blocks or "ops" in blocks_to_seed)
+        run_admin = reseed_all_blocks or "admin" in blocks_to_seed
 
         if run_core:
             _seed_core_reference_data(session)
@@ -2272,7 +2389,8 @@ def _seed_reference_data(*, force: bool = False, include_dev_data: bool = True) 
     finally:
         session.close()
 
-    run_waline = include_dev_data and (reseed_all_blocks or "waline" in blocks_to_reseed)
+    blocks_to_seed = changed_blocks | missing_blocks
+    run_waline = include_dev_data and (reseed_all_blocks or "waline" in blocks_to_seed)
     if run_waline:
         seed_waline_comment_data(default_waline_comments=DEV_WALINE_COMMENTS)
         seed_waline_counter_data(default_waline_counters=DEFAULT_WALINE_COUNTERS)

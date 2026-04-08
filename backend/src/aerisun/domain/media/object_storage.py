@@ -5,7 +5,7 @@ import logging
 import mimetypes
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.base import utcnow, uuid_str
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.core.time import normalize_shanghai_datetime
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.media import repository as repo
 from aerisun.domain.media.models import (
@@ -127,8 +128,8 @@ class BitifulObjectStorageProvider:
     def head_object(self, *, object_key: str) -> ObjectHead:
         response = self._client.head_object(Bucket=self._bucket, Key=object_key)
         last_modified = response.get("LastModified")
-        if isinstance(last_modified, datetime) and last_modified.tzinfo is None:
-            last_modified = last_modified.replace(tzinfo=UTC)
+        if isinstance(last_modified, datetime):
+            last_modified = normalize_shanghai_datetime(last_modified)
         return ObjectHead(
             content_length=int(response.get("ContentLength")) if response.get("ContentLength") is not None else None,
             content_type=str(response.get("ContentType") or "").strip() or None,

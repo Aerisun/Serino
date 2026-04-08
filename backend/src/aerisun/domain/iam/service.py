@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import bcrypt
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import (
     AuthenticationFailed,
     PermissionDenied,
@@ -89,7 +90,7 @@ def create_admin_session(session: Session, admin_user_id: str, ttl_hours: int | 
     settings = get_settings()
     ttl = ttl_hours or getattr(settings, "session_ttl_hours", SESSION_TTL_HOURS)
     token = secrets.token_urlsafe(64)
-    expires_at = datetime.now(UTC) + timedelta(hours=ttl)
+    expires_at = shanghai_now() + timedelta(hours=ttl)
     repo.create_session(session, admin_user_id=admin_user_id, token=token, expires_at=expires_at)
     session.commit()
     return LoginResponse(token=token, expires_at=expires_at)
@@ -125,7 +126,7 @@ def list_admin_sessions(
     session: Session, admin_user_id: str, current_token: str | None = None
 ) -> list[AdminSessionRead]:
     """List active (not expired) sessions for the given admin user."""
-    now = datetime.now(UTC)
+    now = shanghai_now()
     active = repo.find_active_sessions(session, admin_user_id, now=now)
     return [
         AdminSessionRead(
@@ -152,8 +153,8 @@ def validate_session_token(session: Session, token: str) -> AdminUser:
     admin_session = repo.find_session_by_token(session, token)
     if admin_session is None:
         raise AuthenticationFailed("Invalid or expired session token")
-    now_utc = datetime.now(UTC)
-    now = now_utc.replace(tzinfo=None) if admin_session.expires_at.tzinfo is None else now_utc
+    now_current = shanghai_now()
+    now = now_current.replace(tzinfo=None) if admin_session.expires_at.tzinfo is None else now_current
     if admin_session.expires_at < now:
         session.delete(admin_session)
         session.commit()
@@ -186,7 +187,7 @@ def validate_api_key(session: Session, token: str, required_scopes: tuple[str, .
         if repaired:
             session.commit()
         raise PermissionDenied(f"Missing required scopes: {', '.join(missing)}")
-    key.last_used_at = datetime.now(UTC)
+    key.last_used_at = shanghai_now()
     session.commit()
     return key
 

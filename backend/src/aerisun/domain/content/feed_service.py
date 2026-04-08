@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC
 from email.utils import format_datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import to_beijing_datetime
 from aerisun.domain.content.schemas import ContentCollectionRead
 from aerisun.domain.content.service import (
     list_public_diary_entries,
@@ -144,7 +144,7 @@ def build_feed_rss_xml(session: Session, site_url: str, feed_key: str, *, limit:
 
         published_at = item.published_at or item.created_at
         if published_at is not None:
-            normalized = published_at.astimezone(UTC) if published_at.tzinfo else published_at.replace(tzinfo=UTC)
+            normalized = to_beijing_datetime(published_at)
             SubElement(entry, "pubDate").text = format_datetime(normalized)
             if latest_updated is None or normalized > latest_updated:
                 latest_updated = normalized

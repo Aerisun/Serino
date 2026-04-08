@@ -6,7 +6,7 @@ import random
 import socket
 from collections import deque
 from copy import deepcopy
-from datetime import UTC, datetime
+from datetime import datetime
 from html.parser import HTMLParser
 from ipaddress import ip_address
 from threading import Lock, Thread
@@ -18,6 +18,7 @@ import httpx
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 from aerisun.domain.site_config import repository as repo
 from aerisun.domain.site_config.schemas import (
@@ -72,6 +73,8 @@ _HITOKOTO_REQUEST_LOCK = Lock()
 _HITOKOTO_NEXT_REQUEST_AT = 0.0
 _LINK_PREVIEW_CACHE: dict[str, tuple[float, LinkPreviewRead]] = {}
 _LINK_PREVIEW_CACHE_LOCK = Lock()
+_BOOTSTRAP_REVISION_GENERATED_AT: dict[str, datetime] = {}
+_BOOTSTRAP_REVISION_LOCK = Lock()
 
 
 class _LinkPreviewHTMLParser(HTMLParser):
@@ -696,10 +699,16 @@ def get_site_bootstrap(session: Session) -> SiteBootstrapRead:
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
+    with _BOOTSTRAP_REVISION_LOCK:
+        generated_at = _BOOTSTRAP_REVISION_GENERATED_AT.get(revision)
+        if generated_at is None:
+            generated_at = shanghai_now().replace(microsecond=0)
+            _BOOTSTRAP_REVISION_GENERATED_AT.clear()
+            _BOOTSTRAP_REVISION_GENERATED_AT[revision] = generated_at
 
     return SiteBootstrapRead(
         revision=revision,
-        generated_at=datetime.now(UTC),
+        generated_at=generated_at,
         site=site,
         pages=pages,
         resume=resume,

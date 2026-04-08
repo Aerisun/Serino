@@ -157,7 +157,7 @@ class ResumeRead(ModelBase):
 
 class SiteBootstrapRead(ModelBase):
     revision: str = Field(description="Stable revision hash for the current public site bootstrap payload")
-    generated_at: datetime = Field(description="UTC timestamp for when the bootstrap payload was generated")
+    generated_at: datetime = Field(description="上海时间戳，表示当前站点引导数据生成时间")
     site: SiteConfigRead = Field(description="Site profile and navigation bundle")
     pages: PageCollectionRead = Field(description="Page copy bundle")
     resume: ResumeRead = Field(description="Resume basics bundle")

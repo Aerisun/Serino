@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import normalize_shanghai_datetime
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.engagement.models import Reaction
 
@@ -19,7 +20,7 @@ CONTENT_MODELS: dict[str, type] = {
 
 
 def _normalize_timestamp(value: datetime) -> datetime:
-    return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+    return normalize_shanghai_datetime(value)
 
 
 def find_content_events(session: Session) -> list[tuple[datetime, str, str, str, str]]:

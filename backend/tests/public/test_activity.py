@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 import aerisun.domain.activity.service as activity_service
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.core.time import BEIJING_TZ
 from aerisun.domain.content.models import PostEntry
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.waline.service import connect_waline_db
@@ -13,7 +14,7 @@ from aerisun.domain.waline.service import connect_waline_db
 class _FixedDateTime(datetime):
     @classmethod
     def now(cls, tz=None):  # type: ignore[override]
-        current = cls(2026, 3, 27, 12, tzinfo=UTC)
+        current = cls(2026, 3, 27, 12, tzinfo=BEIJING_TZ)
         return current if tz is None else current.astimezone(tz)
 
 
@@ -37,7 +38,7 @@ def test_read_calendar_uses_beijing_date_boundary(client) -> None:
                 summary="Boundary summary",
                 status="published",
                 visibility="public",
-                published_at=datetime(2026, 3, 31, 16, 30, tzinfo=UTC),
+                published_at=datetime(2026, 4, 1, 0, 30, tzinfo=BEIJING_TZ),
             )
         )
         session.commit()
@@ -114,4 +115,4 @@ def test_read_activity_heatmap_includes_thoughts_and_likes_in_shanghai_timezone(
     assert sum(days) == 0
     assert sorted(days) == [0, 0, 0, 0, 0, 0, 0]
     assert payload["weeks"][-2]["week_start"] == "2026-03-16"
-    assert payload["weeks"][-2]["total"] == 18
+    assert payload["weeks"][-2]["total"] == 17

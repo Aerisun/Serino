@@ -1,21 +1,29 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 BEIJING_TZ = ZoneInfo("Asia/Shanghai")
 
 
-def normalize_utc_datetime(value: datetime) -> datetime:
-    return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+def shanghai_now() -> datetime:
+    return datetime.now(BEIJING_TZ)
+
+
+def normalize_shanghai_datetime(value: datetime) -> datetime:
+    return value.astimezone(BEIJING_TZ) if value.tzinfo else value.replace(tzinfo=BEIJING_TZ)
 
 
 def to_beijing_datetime(value: datetime) -> datetime:
-    return normalize_utc_datetime(value).astimezone(BEIJING_TZ)
+    return normalize_shanghai_datetime(value)
+
+
+def format_beijing_iso_datetime(value: datetime) -> str:
+    return to_beijing_datetime(value).isoformat()
 
 
 def beijing_today() -> date:
-    return datetime.now(BEIJING_TZ).date()
+    return shanghai_now().date()
 
 
 def beijing_date(value: datetime) -> date:
@@ -23,6 +31,6 @@ def beijing_date(value: datetime) -> date:
 
 
 def beijing_day_bounds(value: date) -> tuple[datetime, datetime]:
-    start = datetime.combine(value, time.min, tzinfo=BEIJING_TZ).astimezone(UTC)
-    end = datetime.combine(value + timedelta(days=1), time.min, tzinfo=BEIJING_TZ).astimezone(UTC)
+    start = datetime.combine(value, time.min, tzinfo=BEIJING_TZ)
+    end = datetime.combine(value + timedelta(days=1), time.min, tzinfo=BEIJING_TZ)
     return start, end

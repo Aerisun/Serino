@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import bcrypt
 
 from aerisun.core.db import get_session_factory
+from aerisun.core.time import shanghai_now
 from aerisun.domain.iam.models import AdminSession, AdminUser
 
 
 def _create_admin_token(username: str = "community-config-admin") -> str:
     session_factory = get_session_factory()
     token = "community-config-session-token"
-    expires_at = datetime.now(UTC) + timedelta(hours=24)
+    expires_at = shanghai_now() + timedelta(hours=24)
 
     with session_factory() as session:
         user = session.query(AdminUser).filter(AdminUser.username == username).first()

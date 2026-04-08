@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any, Literal
 
 from sqlalchemy import JSON, DateTime, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from aerisun.core.base import Base, TimestampMixin, uuid_str
+from aerisun.core.base import Base, TimestampMixin, utcnow, uuid_str
 
 AutomationStatus = Literal[
     "queued",
@@ -218,9 +218,7 @@ class WebhookDeadLetter(Base, TimestampMixin):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     last_response_status: Mapped[int | None] = mapped_column(Integer)
     last_error: Mapped[str | None] = mapped_column(Text)
-    dead_lettered_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
-    )
+    dead_lettered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
 
 @dataclass(slots=True)

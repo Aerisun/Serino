@@ -90,7 +90,9 @@ class ReactionRead(ModelBase):
     content_slug: str = Field(description="Content slug")
     reaction_type: str = Field(description="Reaction type identifier")
     total: int = Field(description="Total reaction count")
-    active: bool = Field(default=False, description="Whether the provided client token currently has this reaction active")
+    active: bool = Field(
+        default=False, description="Whether the provided client token currently has this reaction active"
+    )
 
 
 CommentRead.model_rebuild()

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation._helpers import fallback_workflow_config
 from aerisun.domain.automation.runs import (
@@ -47,7 +47,7 @@ def resolve_approval(
     approval.response_payload = decision_payload
     approval.resolved_by_type = "admin"
     approval.resolved_by_id = actor_id
-    approval.resolved_at = datetime.now(UTC)
+    approval.resolved_at = shanghai_now()
     workflow_config = find_agent_workflow(session, run.workflow_key) or fallback_workflow_config(run)
     workflow_snapshot = _run_workflow_snapshot(run, workflow_config)
     repo.add_agent_run_step(
@@ -59,7 +59,7 @@ def resolve_approval(
         status="running",
         narrative="管理员已提交审批结果，准备恢复工作流。",
         input_payload=decision_payload,
-        started_at=datetime.now(UTC),
+        started_at=shanghai_now(),
     )
     session.commit()
 

@@ -10,6 +10,7 @@ from aerisun.core.backfills.versions import (
     v20260403_page_copy_defaults,
     v20260403_runtime_config_defaults,
     v20260403_system_asset_references,
+    v20260408_shanghai_timestamps,
 )
 
 
@@ -36,4 +37,5 @@ REGISTERED_BACKFILLS: tuple[BackfillSpec, ...] = (
     _spec(v20260403_community_config_defaults),
     _spec(v20260403_system_asset_references),
     _spec(v20260403_runtime_config_defaults),
+    _spec(v20260408_shanghai_timestamps),
 )

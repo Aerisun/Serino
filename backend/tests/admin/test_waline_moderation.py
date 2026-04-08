@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import bcrypt
 
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.core.time import shanghai_now
 from aerisun.domain.iam.models import AdminSession, AdminUser
 from aerisun.domain.waline.service import connect_waline_db
 
@@ -14,7 +15,7 @@ from aerisun.domain.waline.service import connect_waline_db
 def _create_admin_token(username: str = "waline-admin") -> str:
     session_factory = get_session_factory()
     token = "waline-admin-session-token"
-    expires_at = datetime.now(UTC) + timedelta(hours=24)
+    expires_at = shanghai_now() + timedelta(hours=24)
 
     with session_factory() as session:
         user = session.query(AdminUser).filter(AdminUser.username == username).first()

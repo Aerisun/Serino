@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from ipaddress import ip_address
 
 import httpx
 
 from aerisun.core.settings import get_settings
+from aerisun.core.time import shanghai_now
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def lookup_ip_geolocation(ip: str) -> IpGeoResult:
     if not settings.ip_geo_enabled or not _is_public_ip(ip):
         return IpGeoResult()
 
-    now = datetime.now(UTC)
+    now = shanghai_now()
     cached = _CACHE.get(ip)
     if cached and cached[0] > now:
         return cached[1]

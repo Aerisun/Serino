@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import BEIJING_TZ, normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation._helpers import fallback_workflow_config
 from aerisun.domain.automation.models import AgentRun
@@ -204,7 +205,7 @@ def _mark_run_cancelled(
     reason: str,
 ) -> None:
     run.status = "cancelled"
-    run.finished_at = datetime.now(UTC)
+    run.finished_at = shanghai_now()
     run.result_payload = {"skipped": True, "reason": reason, "workflow_key": run.workflow_key}
     repo.add_agent_run_step(
         session,
@@ -215,7 +216,7 @@ def _mark_run_cancelled(
         status="cancelled",
         narrative=narrative,
         output_payload=run.result_payload,
-        finished_at=datetime.now(UTC),
+        finished_at=shanghai_now(),
     )
 
 
@@ -229,7 +230,7 @@ def _mark_run_failed(
     error_message: str,
 ) -> None:
     run.status = "failed"
-    run.finished_at = datetime.now(UTC)
+    run.finished_at = shanghai_now()
     run.error_code = error_code
     run.error_message = error_message
     repo.add_agent_run_step(
@@ -241,7 +242,7 @@ def _mark_run_failed(
         status="failed",
         narrative=narrative,
         error_payload={"error_code": run.error_code, "error_message": run.error_message},
-        finished_at=datetime.now(UTC),
+        finished_at=shanghai_now(),
     )
 
 
@@ -276,9 +277,9 @@ def _persist_graph_trace_steps(session: Session, run: AgentRun, trace: list[dict
         finished_at = None
         if isinstance(finished_at_raw, str):
             try:
-                finished_at = datetime.fromisoformat(finished_at_raw)
+                finished_at = normalize_shanghai_datetime(datetime.fromisoformat(finished_at_raw))
             except ValueError:
-                finished_at = datetime.now(UTC)
+                finished_at = shanghai_now()
         repo.add_agent_run_step(
             session,
             run_id=run.id,
@@ -290,7 +291,7 @@ def _persist_graph_trace_steps(session: Session, run: AgentRun, trace: list[dict
             input_payload=dict(entry.get("input_payload") or {}),
             output_payload=dict(entry.get("output_payload") or {}),
             error_payload=dict(entry.get("error_payload") or {}),
-            finished_at=finished_at or datetime.now(UTC),
+            finished_at=finished_at or shanghai_now(),
         )
         next_sequence += 1
 
@@ -331,7 +332,7 @@ def _next_resume_value(run: AgentRun, *, now: datetime) -> dict[str, Any] | None
         resume_at_raw = str(pending_wait.get("resume_at") or "").strip()
         if resume_at_raw:
             try:
-                resume_at = datetime.fromisoformat(resume_at_raw)
+                resume_at = normalize_shanghai_datetime(datetime.fromisoformat(resume_at_raw))
             except ValueError:
                 resume_at = now
             if resume_at > now:
@@ -341,7 +342,7 @@ def _next_resume_value(run: AgentRun, *, now: datetime) -> dict[str, Any] | None
         timeout_at_raw = str(pending_wait.get("timeout_at") or "").strip()
         if timeout_at_raw:
             try:
-                timeout_at = datetime.fromisoformat(timeout_at_raw)
+                timeout_at = normalize_shanghai_datetime(datetime.fromisoformat(timeout_at_raw))
             except ValueError:
                 timeout_at = now
             if timeout_at <= now:
@@ -390,7 +391,7 @@ def _finalize_interrupt(
             status="interrupted",
             narrative="工作流请求人工审批。",
             output_payload={"request": interrupt_payload},
-            finished_at=datetime.now(UTC),
+            finished_at=shanghai_now(),
         )
         interrupt_id = getattr(first_interrupt, "id", None) or f"{run.id}:approval"
         repo.create_agent_run_approval(
@@ -419,7 +420,7 @@ def _finalize_interrupt(
             status="interrupted",
             narrative="工作流进入等待状态。",
             output_payload={"request": interrupt_payload},
-            finished_at=datetime.now(UTC),
+            finished_at=shanghai_now(),
         )
         return
 
@@ -428,7 +429,7 @@ def _finalize_interrupt(
 
 def _complete_run_from_result(session: Session, *, run: AgentRun, result: dict[str, Any]) -> None:
     run.status = "completed"
-    run.finished_at = datetime.now(UTC)
+    run.finished_at = shanghai_now()
     run.result_payload = _extract_result_payload(result)
     repo.add_agent_run_step(
         session,
@@ -439,12 +440,12 @@ def _complete_run_from_result(session: Session, *, run: AgentRun, result: dict[s
         status="completed",
         narrative="工作流已完成。",
         output_payload=run.result_payload,
-        finished_at=datetime.now(UTC),
+        finished_at=shanghai_now(),
     )
 
 
 def _execute_one_run(session: Session, runtime: AutomationRuntime, run: AgentRun) -> bool:
-    now = datetime.now(UTC)
+    now = shanghai_now()
     resume_value = _next_resume_value(run, now=now)
     pending_wait = _pending_wait_payload(run)
     if pending_wait and resume_value is None:
@@ -558,7 +559,7 @@ def _schedule_slot(config: dict[str, Any], *, now: datetime) -> tuple[bool, str]
         return True, f"interval:{slot_start}"
     cron = str(config.get("cron") or "").strip()
     if cron:
-        trigger = CronTrigger.from_crontab(cron, timezone=str(now.tzinfo or UTC))
+        trigger = CronTrigger.from_crontab(cron, timezone=str(now.tzinfo or BEIJING_TZ))
         previous_window = now - timedelta(minutes=1)
         next_fire = trigger.get_next_fire_time(None, previous_window)
         if next_fire is not None and next_fire <= now:
@@ -567,7 +568,7 @@ def _schedule_slot(config: dict[str, Any], *, now: datetime) -> tuple[bool, str]
 
 
 def dispatch_due_schedule_runs(session: Session, *, now: datetime | None = None) -> int:
-    current = now or datetime.now(UTC)
+    current = normalize_shanghai_datetime(now) if now is not None else shanghai_now()
     existing_slots = {
         (
             item.workflow_key,

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import ValidationError
 from aerisun.domain.media.models import Asset
 from aerisun.domain.site_auth import repository as repo
@@ -307,9 +308,7 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
 
     existing = repo.find_user_by_email(session, normalized_email)
     if existing is not None:
-        from datetime import UTC, datetime
-
-        existing.last_login_at = datetime.now(UTC)
+        existing.last_login_at = shanghai_now()
         session.commit()
         session.refresh(existing)
         token = create_site_session(
@@ -353,15 +352,13 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
             None,
         )
 
-    from datetime import UTC, datetime
-
     user = repo.create_user(
         session,
         email=normalized_email,
         display_name=display_name,
         avatar_url=avatar_url,
         primary_auth_provider="email",
-        last_login_at=datetime.now(UTC),
+        last_login_at=shanghai_now(),
     )
     session.commit()
     session.refresh(user)

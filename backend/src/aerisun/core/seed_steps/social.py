@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.engagement.models import Reaction
 from aerisun.domain.ops.models import TrafficDailySnapshot, VisitRecord
 from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
@@ -114,7 +115,7 @@ def seed_visit_record_data(session: Session) -> None:
     if existing and int(existing) > 0:
         return
 
-    now = datetime.now(UTC)
+    now = shanghai_now()
     sample = []
     ip_pool = [
         "203.0.113.10",

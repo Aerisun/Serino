@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.automation.models import (
     AgentRun,
     AgentRunApproval,
@@ -281,7 +282,7 @@ def create_webhook_delivery(
         target_url=subscription.target_url,
         payload=event.model_dump(),
         headers=subscription.headers,
-        next_attempt_at=datetime.now(UTC),
+        next_attempt_at=shanghai_now(),
     )
     session.add(delivery)
     return delivery

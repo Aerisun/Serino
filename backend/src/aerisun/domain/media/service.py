@@ -3,11 +3,12 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import PayloadTooLarge, ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
 from aerisun.domain.media import repository as repo
@@ -301,7 +302,7 @@ def prepare_asset_upload(session: Session, payload: AssetUploadPlanWrite) -> Ass
         upload_url=upload_url,
         upload_method="PUT",
         upload_headers={},
-        expires_at=datetime.now(tz=UTC) + timedelta(seconds=int(config.upload_expire_seconds or 300)),
+        expires_at=shanghai_now() + timedelta(seconds=int(config.upload_expire_seconds or 300)),
     )
 
 
@@ -323,7 +324,7 @@ def complete_asset_upload(session: Session, payload: AssetUploadCompleteWrite) -
     head = provider.head_object(object_key=str(asset.remote_object_key or asset.resource_key))
     asset.storage_provider = "bitiful"
     asset.remote_status = "available"
-    asset.remote_uploaded_at = datetime.now(tz=UTC)
+    asset.remote_uploaded_at = shanghai_now()
     asset.remote_etag = head.etag
     asset.byte_size = asset.byte_size or head.content_length
     asset.mime_type = asset.mime_type or head.content_type
@@ -412,7 +413,7 @@ def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> 
                             )
                     asset.remote_object_key = next_resource_key
                     asset.remote_status = "available"
-                    asset.remote_uploaded_at = datetime.now(tz=UTC)
+                    asset.remote_uploaded_at = shanghai_now()
                 except Exception:
                     logger.exception("Failed to move remote asset object; keeping previous remote key")
 

@@ -27,8 +27,8 @@ from aerisun.domain.engagement.service import (
     list_public_comments,
     list_public_guestbook_entries,
     read_public_reaction,
-    remove_public_reaction,
     register_public_reaction,
+    remove_public_reaction,
 )
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 

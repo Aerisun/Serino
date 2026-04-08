@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aerisun.core.time import beijing_date, normalize_utc_datetime
+from aerisun.core.time import beijing_date, normalize_shanghai_datetime
 from aerisun.domain.activity import repository as repo
 from aerisun.domain.activity.schemas import (
     ActivityHeatmapRead,
@@ -31,7 +31,7 @@ def _avatar_for_name(name: str) -> str:
 
 
 def _normalize_timestamp(value: datetime) -> datetime:
-    return normalize_utc_datetime(value)
+    return normalize_shanghai_datetime(value)
 
 
 def _trim_excerpt(value: str | None, limit: int = 72) -> str | None:

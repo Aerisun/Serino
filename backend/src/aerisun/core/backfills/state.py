@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+from aerisun.core.base import utcnow
 
 DATA_MIGRATIONS_TABLE = "_aerisun_data_migrations"
 BOOTSTRAP_MIGRATION_KEY = "bootstrap_seed_v1"
@@ -50,7 +50,7 @@ def record_data_migration(session: Session, *, migration_key: str, kind: str) ->
         {
             "migration_key": migration_key,
             "kind": kind,
-            "applied_at": datetime.now(UTC),
+            "applied_at": utcnow(),
         },
     )
     session.flush()

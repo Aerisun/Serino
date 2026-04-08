@@ -208,7 +208,17 @@ DEFAULT_PAGE_COPIES = [
             "randomEmptyTemplate": "最近 {days} 天还没有可展示的友链文章",
             "summaryTemplate": "{sites} 个站点 · 共 {articles} 条动态",
             "footerSummaryTemplate": "已连接 {sites} 个站点，最近抓取 {articles} 条公开动态",
-            "applicationMarkdown": "## 友链申请\n\n这里可以自由编辑申请说明、交换模板、收录条件，或者任何想放在评论区上方的补充内容。\n\n- 建议按固定模板留言\n- 请先添加本站再申请\n- 站点需要可以稳定访问",
+            "applicationMarkdown": (
+                "## 友链申请\n\n"
+                "站点链接：:copy[https://your_site.com]\n\n"
+                "站长昵称：:copy[uName]\n\n"
+                "站长头像：:copy[资源里面上传存放公开的资源链接]\n\n"
+                "站点描述：:copy[your bio]\n\n"
+                "申请时还请按照上述模板留言，同时注意：\n\n"
+                "- 申请友链前请务必确保贵站有我站的友链\n\n"
+                "- 确保您的网站合法合规，不侵犯读者权益\n\n"
+                "- 请确保您的站点可以被稳定访问"
+            ),
             "randomRecentDays": 66,
             "autoRefreshSeconds": 666,
             "websiteHealthCheckEnabled": True,

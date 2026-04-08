@@ -15,7 +15,7 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
 from typing import Any, Protocol
@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.base import uuid_str
 from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
+from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.exceptions import ResourceNotFound, StateConflict, ValidationError
 from aerisun.domain.ops import repository as repo
 from aerisun.domain.ops.schemas import (
@@ -116,7 +117,7 @@ class BackupTransport(Protocol):
 
 
 def _utcnow() -> datetime:
-    return datetime.now(UTC)
+    return shanghai_now()
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -145,12 +146,10 @@ def _fingerprint_public_key(raw_public_bytes: bytes) -> str:
     return hashlib.sha256(raw_public_bytes).hexdigest()
 
 
-def _as_utc(value: datetime | None) -> datetime | None:
+def _as_shanghai(value: datetime | None) -> datetime | None:
     if value is None:
         return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+    return normalize_shanghai_datetime(value)
 
 
 def load_backup_credentials(credential_ref: str) -> BackupCredentialBundle:
@@ -840,7 +839,7 @@ def dispatch_backup_sync() -> BackupRunRead | None:
     with session_factory() as session:
         config = get_or_create_backup_sync_config(session)
         if config.enabled and not config.paused:
-            last_reference = _as_utc(config.last_scheduled_at or config.last_synced_at or config.created_at)
+            last_reference = _as_shanghai(config.last_scheduled_at or config.last_synced_at or config.created_at)
             if (
                 last_reference is None or now >= last_reference + timedelta(minutes=config.interval_minutes)
             ) and repo.find_active_backup_queue_item(session) is None:

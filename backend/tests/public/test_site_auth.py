@@ -52,9 +52,8 @@ def _seed_bound_google_admin(
     provider_subject: str,
     console_methods: list[str] | None = None,
 ) -> None:
-    from datetime import UTC, datetime
-
     from aerisun.core.db import get_session_factory
+    from aerisun.core.time import shanghai_now
     from aerisun.domain.iam.models import AdminUser
     from aerisun.domain.site_auth.admin_binding import upsert_admin_identity
     from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
@@ -84,7 +83,7 @@ def _seed_bound_google_admin(
                 display_name="Google Admin",
                 avatar_url="https://example.com/google-admin.png",
                 primary_auth_provider="google",
-                last_login_at=datetime.now(UTC),
+                last_login_at=shanghai_now(),
             )
             session.add(user)
             session.flush()

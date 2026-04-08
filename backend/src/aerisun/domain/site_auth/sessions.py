@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import AuthenticationFailed, PermissionDenied
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
@@ -25,7 +26,7 @@ def create_site_session(
     settings = get_settings()
     ttl = ttl_hours or getattr(settings, "public_session_ttl_hours", SESSION_TTL_HOURS)
     token = secrets.token_urlsafe(64)
-    expires_at = datetime.now(UTC) + timedelta(hours=ttl)
+    expires_at = shanghai_now() + timedelta(hours=ttl)
     repo.create_session(
         session,
         site_user_id=site_user_id,
@@ -42,8 +43,8 @@ def validate_site_session(session: Session, token: str) -> SiteUserSession:
     site_session = repo.find_session_by_token(session, token)
     if site_session is None:
         raise AuthenticationFailed("Invalid or expired session token")
-    now_utc = datetime.now(UTC)
-    now = now_utc.replace(tzinfo=None) if site_session.expires_at.tzinfo is None else now_utc
+    now_current = shanghai_now()
+    now = now_current.replace(tzinfo=None) if site_session.expires_at.tzinfo is None else now_current
     if site_session.expires_at < now:
         session.delete(site_session)
         session.commit()

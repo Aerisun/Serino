@@ -35,6 +35,7 @@ def test_run_pending_backfills_marks_bootstrap_baseline_without_replaying_histor
             "20260403_community_config_defaults",
             "20260403_system_asset_references",
             "20260403_runtime_config_defaults",
+            "20260408_shanghai_timestamps",
         }
     finally:
         teardown_runtime_state()
@@ -90,6 +91,7 @@ def test_run_pending_backfills_applies_registered_repairs_once(tmp_path, monkeyp
             "20260403_community_config_defaults",
             "20260403_system_asset_references",
             "20260403_runtime_config_defaults",
+            "20260408_shanghai_timestamps",
         ]
         assert run_pending_backfills() == []
 
@@ -178,12 +180,13 @@ def test_run_pending_backfills_records_config_revisions_and_audit(tmp_path, monk
             "subscriptions.config",
         }
         assert all(item.summary.startswith("升级数据回填：") for item in revisions)
-        assert len(audits) == 4
+        assert len(audits) == 5
         assert {item.payload["migration_key"] for item in audits} == {
             "20260403_page_copy_defaults",
             "20260403_community_config_defaults",
             "20260403_system_asset_references",
             "20260403_runtime_config_defaults",
+            "20260408_shanghai_timestamps",
         }
     finally:
         teardown_runtime_state()

@@ -5,7 +5,7 @@ import contextlib
 import sys
 import time
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import structlog
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.runtime_version import get_runtime_version
 from aerisun.core.settings import get_settings
-from aerisun.core.time import beijing_today
+from aerisun.core.time import BEIJING_TZ, beijing_today, shanghai_now
 from aerisun.domain.activity.repository import batch_resolve_titles
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
 from aerisun.domain.media.models import Asset
@@ -465,7 +465,7 @@ def _resolve_content_titles_for_paths(session: Session, paths: list[str]) -> dic
 
 
 def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
-    now = datetime.now(UTC)
+    now = shanghai_now()
     history_days = 14
     start_date = now.date() - timedelta(days=history_days - 1)
     history_rows = repo.list_visit_history_by_day(session, start_date=start_date, end_date=now.date())
@@ -481,7 +481,7 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
         )
 
     recent_records, _ = repo.find_visit_records_paginated(session, page=1, page_size=10)
-    total_visits = repo.count_visit_records_since(session, since=datetime.fromtimestamp(0, UTC))
+    total_visits = repo.count_visit_records_since(session, since=datetime.fromtimestamp(0, BEIJING_TZ))
     unique_visitors_24h = repo.count_unique_visitors_since(session, since=now - timedelta(hours=24))
     unique_visitors_7d = repo.count_unique_visitors_since(session, since=now - timedelta(days=7))
     average_request_duration_ms = repo.average_visit_duration_since(session, since=now - timedelta(days=7))
@@ -582,7 +582,7 @@ def list_visitor_records(
 
 
 def cleanup_old_visit_records(session: Session, *, retention_days: int = 30) -> int:
-    deleted = repo.delete_visit_records_before(session, before=datetime.now(UTC) - timedelta(days=retention_days))
+    deleted = repo.delete_visit_records_before(session, before=shanghai_now() - timedelta(days=retention_days))
     if deleted:
         session.commit()
     return deleted
@@ -590,7 +590,7 @@ def cleanup_old_visit_records(session: Session, *, retention_days: int = 30) -> 
 
 def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
     """Aggregate dashboard statistics from all domains."""
-    now = datetime.now(UTC)
+    now = shanghai_now()
     six_months_ago = now - timedelta(days=180)
 
     posts_count = repo.count_model(session, PostEntry)

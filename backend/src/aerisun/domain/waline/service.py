@@ -4,10 +4,11 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from aerisun.core.settings import get_settings
+from aerisun.core.time import normalize_shanghai_datetime, shanghai_now
 from aerisun.domain.exceptions import StateConflict, ValidationError
 
 WALINE_GUESTBOOK_PATH = "/guestbook"
@@ -60,24 +61,20 @@ def get_waline_db_path() -> Path:
 
 def _to_sql_timestamp(value: datetime | str | None) -> str:
     if value is None:
-        return datetime.now(UTC).replace(tzinfo=None).isoformat(sep=" ", timespec="seconds")
+        return shanghai_now().isoformat(sep=" ", timespec="seconds")
     if isinstance(value, str):
         return value
-    if value.tzinfo is not None:
-        value = value.astimezone(UTC).replace(tzinfo=None)
-    return value.isoformat(sep=" ", timespec="seconds")
+    return normalize_shanghai_datetime(value).isoformat(sep=" ", timespec="seconds")
 
 
 def _parse_sql_timestamp(value: str | None) -> datetime:
     if not value:
-        return datetime.now(UTC)
+        return shanghai_now()
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError:
         parsed = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
+    return normalize_shanghai_datetime(parsed)
 
 
 def _normalize_status(value: str | None) -> str:

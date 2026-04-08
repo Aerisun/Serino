@@ -9,6 +9,7 @@ from typing import Any, Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import format_beijing_iso_datetime
 from aerisun.domain.automation.schemas import AgentWorkflowRead
 from aerisun.domain.automation.settings import (
     AGENT_MODEL_CONFIG_FLAG_KEY,
@@ -664,7 +665,7 @@ def _capture_subscriptions_config(session: Session) -> dict[str, Any]:
             "smtp_use_tls": config.smtp_use_tls,
             "smtp_use_ssl": config.smtp_use_ssl,
             "smtp_test_passed": config.smtp_test_passed,
-            "smtp_tested_at": config.smtp_tested_at.isoformat() if config.smtp_tested_at else None,
+            "smtp_tested_at": format_beijing_iso_datetime(config.smtp_tested_at) if config.smtp_tested_at else None,
             "allowed_content_types": list(config.allowed_content_types or []),
             "mail_subject_template": config.mail_subject_template,
             "mail_body_template": config.mail_body_template,

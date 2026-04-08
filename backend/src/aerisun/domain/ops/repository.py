@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from aerisun.core.time import beijing_date, beijing_day_bounds, beijing_today
+from aerisun.core.time import beijing_date, beijing_day_bounds, beijing_today, normalize_shanghai_datetime
 from aerisun.domain.ops.models import (
     AuditLog,
     BackupCommit,
@@ -33,9 +33,9 @@ def _apply_visit_filters(
     if ip:
         query = query.filter(VisitRecord.ip_address.contains(ip))
     if date_from:
-        query = query.filter(VisitRecord.visited_at >= datetime.fromisoformat(date_from))
+        query = query.filter(VisitRecord.visited_at >= normalize_shanghai_datetime(datetime.fromisoformat(date_from)))
     if date_to:
-        query = query.filter(VisitRecord.visited_at <= datetime.fromisoformat(date_to))
+        query = query.filter(VisitRecord.visited_at <= normalize_shanghai_datetime(datetime.fromisoformat(date_to)))
     if not include_bots:
         query = query.filter(VisitRecord.is_bot.is_(False))
     return query
@@ -58,9 +58,9 @@ def find_audit_logs_paginated(
     if actor_id:
         q = q.filter(AuditLog.actor_id == actor_id)
     if date_from:
-        q = q.filter(AuditLog.created_at >= datetime.fromisoformat(date_from))
+        q = q.filter(AuditLog.created_at >= normalize_shanghai_datetime(datetime.fromisoformat(date_from)))
     if date_to:
-        q = q.filter(AuditLog.created_at <= datetime.fromisoformat(date_to))
+        q = q.filter(AuditLog.created_at <= normalize_shanghai_datetime(datetime.fromisoformat(date_to)))
     total = q.count()
     items = list(q.order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all())
     return items, total
@@ -324,9 +324,7 @@ def get_latest_traffic_snapshot_timestamp(session: Session) -> datetime | None:
     value = session.query(func.max(TrafficDailySnapshot.updated_at)).scalar()
     if value is None:
         return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+    return normalize_shanghai_datetime(value)
 
 
 def has_traffic_snapshot_for_date(session: Session, *, snapshot_date: date) -> bool:
@@ -465,9 +463,7 @@ def get_latest_visit_timestamp(session: Session, *, include_bots: bool = False) 
     value = query.scalar()
     if value is None:
         return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+    return normalize_shanghai_datetime(value)
 
 
 def delete_visit_records_before(session: Session, *, before: datetime) -> int:

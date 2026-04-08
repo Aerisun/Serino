@@ -30,7 +30,9 @@ def register_middleware(app: FastAPI, settings: Settings) -> None:
         allow_origin_regex=(
             None
             if allow_any_origin
-            else r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$" if dev_localhost else None
+            else r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$"
+            if dev_localhost
+            else None
         ),
         allow_credentials=True,
         allow_methods=["*"],

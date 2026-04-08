@@ -69,6 +69,8 @@ def test_read_site_bootstrap_returns_aggregated_payload(client) -> None:
 
     assert response.status_code == 200
     assert response.headers["cache-control"] == "public, max-age=60, stale-while-revalidate=300"
+    assert response.headers["etag"]
+    assert response.headers["last-modified"]
 
     payload = response.json()
     assert payload["revision"]
@@ -84,11 +86,36 @@ def test_read_site_bootstrap_script_assigns_window_payload(client) -> None:
     assert response.status_code == 200
     assert response.headers["cache-control"] == "public, max-age=60, stale-while-revalidate=300"
     assert response.headers["content-type"].startswith("application/javascript")
+    assert response.headers["etag"]
+    assert response.headers["last-modified"]
 
     body = response.text
     assert body.startswith("window.__AERISUN_BOOTSTRAP__=")
     assert '"revision":"' in body
     assert '"resume":{' in body
+
+
+def test_read_site_bootstrap_supports_conditional_get(client) -> None:
+    response = client.get("/api/v1/site/bootstrap")
+
+    assert response.status_code == 200
+
+    etag = response.headers["etag"]
+    last_modified = response.headers["last-modified"]
+
+    not_modified_by_etag = client.get(
+        "/api/v1/site/bootstrap",
+        headers={"If-None-Match": etag},
+    )
+    assert not_modified_by_etag.status_code == 304
+    assert not not_modified_by_etag.content
+
+    not_modified_by_last_modified = client.get(
+        "/api/v1/site/bootstrap",
+        headers={"If-Modified-Since": last_modified},
+    )
+    assert not_modified_by_last_modified.status_code == 304
+    assert not not_modified_by_last_modified.content
 
 
 @respx.mock

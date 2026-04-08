@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import httpx
 import respx
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.social.crawler import (
     _check_feed,
     _parse_published_time,
@@ -41,8 +42,7 @@ def test_parse_published_time_date_only():
 def test_parse_published_time_with_timezone():
     result = _parse_published_time("2024-01-01T20:00:00+08:00")
     assert result is not None
-    # Should be converted to UTC: 12:00
-    assert result.hour == 12
+    assert result.hour == 20
 
 
 def test_parse_published_time_empty():
@@ -313,8 +313,8 @@ def test_crawl_single_source_filters_future_articles(client):
     from aerisun.core.settings import get_settings
     from aerisun.domain.social.models import FriendFeedItem
 
-    future_date = datetime.now(UTC) + timedelta(days=10)
-    future_str = future_date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    future_date = shanghai_now() + timedelta(days=10)
+    future_str = future_date.strftime("%a, %d %b %Y %H:%M:%S %z")
 
     rss_with_future = f"""\
 <?xml version="1.0" encoding="UTF-8"?>

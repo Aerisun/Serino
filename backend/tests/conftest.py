@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import UTC
 
 import httpx
 import pytest
@@ -39,11 +38,12 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> Iterator[httpx.Client]:
 @pytest.fixture()
 def admin_headers(client) -> dict[str, str]:
     """Create an admin user and session, return authentication headers."""
-    from datetime import datetime, timedelta
+    from datetime import timedelta
 
     import bcrypt
 
     from aerisun.core.db import get_session_factory
+    from aerisun.core.time import shanghai_now
     from aerisun.domain.iam.models import AdminSession, AdminUser
 
     factory = get_session_factory()
@@ -63,11 +63,11 @@ def admin_headers(client) -> dict[str, str]:
                 AdminSession(
                     admin_user_id=user.id,
                     session_token=token,
-                    expires_at=datetime.now(UTC) + timedelta(hours=24),
+                    expires_at=shanghai_now() + timedelta(hours=24),
                 )
             )
         else:
-            existing.expires_at = datetime.now(UTC) + timedelta(hours=24)
+            existing.expires_at = shanghai_now() + timedelta(hours=24)
         session.commit()
     return {"Authorization": f"Bearer {token}"}
 

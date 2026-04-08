@@ -5,9 +5,12 @@ from aerisun.core.db_preflight import compute_seed_fingerprint, run_preflight, s
 from aerisun.core.dev_seed import seed_development_data
 from aerisun.core.seed_profile import resolve_seed_path
 from aerisun.core.settings import get_settings
+from aerisun.domain.content.models import PostEntry
+from aerisun.domain.engagement.models import Comment, GuestbookEntry, Reaction
+from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.models import TrafficDailySnapshot
 from aerisun.domain.site_config.models import CommunityConfig
-from aerisun.domain.social.models import Friend
+from aerisun.domain.social.models import Friend, FriendFeedItem, FriendFeedSource
 from aerisun.domain.waline.service import connect_waline_db
 
 
@@ -160,6 +163,56 @@ def test_seed_development_data_force_reseeds_waline_rows(client) -> None:
 
 def test_seed_development_data_force_reseed_cleans_media_root(tmp_path, monkeypatch) -> None:
     _assert_force_reseed_cleans_orphan_media(seed_development_data, tmp_path, monkeypatch)
+
+
+def test_incremental_force_reseed_restores_missing_dev_sample_blocks(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    monkeypatch.setenv("AERISUN_ENVIRONMENT", "development")
+    reset_runtime_state()
+    try:
+        seed_development_data(force=True)
+        settings = get_settings()
+        session_factory = get_session_factory()
+
+        with session_factory() as session:
+            session.query(FriendFeedItem).delete()
+            session.query(FriendFeedSource).delete()
+            session.query(Friend).delete()
+            session.query(PostEntry).delete()
+            session.query(Comment).delete()
+            session.query(GuestbookEntry).delete()
+            session.query(Reaction).delete()
+            session.query(TrafficDailySnapshot).delete()
+            session.query(AdminUser).delete()
+            session.commit()
+
+        with connect_waline_db(settings.waline_db_path) as connection:
+            connection.execute("DELETE FROM wl_comment")
+            connection.execute("DELETE FROM wl_counter")
+            connection.commit()
+
+        monkeypatch.setenv("FORCE_RESEED", "true")
+        seed_development_data(force=True)
+
+        with session_factory() as session:
+            assert session.query(PostEntry).count() > 0
+            assert session.query(Friend).count() > 0
+            assert session.query(Comment).count() > 0
+            assert session.query(GuestbookEntry).count() > 0
+            assert session.query(Reaction).count() > 0
+            assert session.query(TrafficDailySnapshot).count() > 0
+            assert session.query(AdminUser).count() > 0
+
+        with connect_waline_db(settings.waline_db_path) as connection:
+            waline_comments = connection.execute("SELECT COUNT(*) FROM wl_comment").fetchone()
+            waline_counters = connection.execute("SELECT COUNT(*) FROM wl_counter").fetchone()
+
+        assert int(waline_comments[0]) > 0
+        assert int(waline_counters[0]) > 0
+    finally:
+        teardown_runtime_state()
 
 
 def test_seed_profile_switch_from_dev_seed_to_seed_triggers_reseed(tmp_path, monkeypatch) -> None:

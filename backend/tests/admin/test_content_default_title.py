@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 
 import pytest
 
 from aerisun.core.db import get_session_factory
+from aerisun.core.time import BEIJING_TZ
 from aerisun.domain.content import service as content_service
 from aerisun.domain.content.models import ThoughtEntry
 
@@ -76,7 +77,7 @@ def test_default_title_endpoint_counts_published_and_archived_entries(client, ad
     with session_factory() as session:
         archived_entry = session.query(ThoughtEntry).filter(ThoughtEntry.id == second_id).one()
         archived_entry.published_at = None
-        archived_entry.created_at = datetime(2026, 4, 4, 18, 0, tzinfo=UTC)
+        archived_entry.created_at = datetime(2026, 4, 5, 2, 0, tzinfo=BEIJING_TZ)
         session.commit()
 
     response = client.get(

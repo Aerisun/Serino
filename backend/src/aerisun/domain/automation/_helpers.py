@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
+from aerisun.core.time import shanghai_now
 from aerisun.domain.agent.service import build_workflow_planning_usage_context
 from aerisun.domain.automation.models import AgentRun
 from aerisun.domain.automation.schemas import AgentWorkflowRead
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def now_utc() -> datetime:
-    return datetime.now(UTC)
+    return shanghai_now()
 
 
 def ensure_workflow_ai_model(session: Session) -> dict[str, Any]:

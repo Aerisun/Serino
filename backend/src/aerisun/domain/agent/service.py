@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 import yaml
 from sqlalchemy.orm import Session
 
 from aerisun.agent_skillmaps import SKILLMAPS_DIR
 from aerisun.api.admin.scopes import AGENT_CONNECT, CONTENT_READ, CONTENT_WRITE
+from aerisun.core.time import format_beijing_iso_datetime, shanghai_now
 from aerisun.domain.agent.mcp_introspection import list_registered_mcp_capabilities
 from aerisun.domain.agent.mcp_settings import (
     filter_capabilities_for_scopes,
@@ -386,7 +385,7 @@ def build_workflow_planning_usage_context(session: Session, site_url: str) -> di
     return {
         "usage_document": {
             "schema_version": usage.schema_version,
-            "generated_at": usage.generated_at.isoformat(),
+            "generated_at": format_beijing_iso_datetime(usage.generated_at),
             "objective": usage.objective,
         },
         "capabilities": [item.model_dump(mode="json") for item in [*usage.mcp.tools, *usage.mcp.resources]],
@@ -494,7 +493,7 @@ def build_agent_usage(
 
     return AgentUsageRead(
         schema_version="2026-03-usage-v2",
-        generated_at=datetime.now(UTC),
+        generated_at=shanghai_now(),
         name="Aerisun Agent Usage",
         objective=(
             "Provide executable MCP and REST guidance so an agent can discover capabilities, "

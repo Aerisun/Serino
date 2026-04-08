@@ -6,7 +6,7 @@ import json
 import logging
 import sqlite3
 from contextlib import suppress
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -18,6 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
 from aerisun.core.db import get_session_factory
+from aerisun.core.time import format_beijing_iso_datetime, shanghai_now
 from aerisun.domain.agent.capabilities.registry import get_capability_definition
 from aerisun.domain.automation import repository as repo
 from aerisun.domain.automation.ai_contract_context import build_ai_contract_context
@@ -201,7 +202,7 @@ def _append_trace(
             "input_payload": input_payload or {},
             "output_payload": output_payload or {},
             "error_payload": error_payload or {},
-            "finished_at": datetime.now(UTC).isoformat(),
+            "finished_at": format_beijing_iso_datetime(shanghai_now()),
         }
     )
     return trace
@@ -227,7 +228,7 @@ def _lookup_path(data: Any, path: str) -> Any:
 
 def _load_target_context(state: WorkflowExecutionState) -> WorkflowExecutionState:
     payload = dict(state.get("context_payload") or {})
-    payload.setdefault("loaded_at", datetime.now(UTC).isoformat())
+    payload.setdefault("loaded_at", format_beijing_iso_datetime(shanghai_now()))
     return {"context_payload": payload}
 
 
@@ -2474,17 +2475,17 @@ def _execute_delay_node(
         except ValueError as exc:
             raise ValidationError(f"Invalid delay until timestamp: {until_raw}") from exc
     else:
-        resume_at = datetime.now(UTC) + timedelta(seconds=max(delay_seconds, 1))
+        resume_at = shanghai_now() + timedelta(seconds=max(delay_seconds, 1))
     response = interrupt(
         {
             "kind": "wait",
             "wait_type": "delay",
             "node_id": node_id,
-            "resume_at": resume_at.isoformat(),
+            "resume_at": format_beijing_iso_datetime(resume_at),
         }
     )
     payload = {
-        "resumed_at": str(dict(response or {}).get("resumed_at") or datetime.now(UTC).isoformat()),
+        "resumed_at": str(dict(response or {}).get("resumed_at") or format_beijing_iso_datetime(shanghai_now())),
     }
     return {
         "node_outputs": _set_node_output(state, node_id=node_id, value=payload),
@@ -2510,7 +2511,7 @@ def _execute_wait_for_event_node(
             "node_id": node_id,
             "event_type": str(node_config.get("event_type") or "").strip(),
             "target_type": str(node_config.get("target_type") or "").strip() or None,
-            "timeout_at": (datetime.now(UTC) + timedelta(seconds=max(timeout_seconds, 1))).isoformat(),
+            "timeout_at": format_beijing_iso_datetime(shanghai_now() + timedelta(seconds=max(timeout_seconds, 1))),
         }
     )
     response_payload = dict(response or {})
@@ -2596,7 +2597,7 @@ def _execute_poll_node(
                 "kind": "wait",
                 "wait_type": "poll",
                 "node_id": node_id,
-                "resume_at": (datetime.now(UTC) + timedelta(seconds=max(interval_seconds, 1))).isoformat(),
+                "resume_at": format_beijing_iso_datetime(shanghai_now() + timedelta(seconds=max(interval_seconds, 1))),
                 "attempt": attempt + 1,
             }
         )
@@ -2633,7 +2634,7 @@ def _execute_approval_node(
         token = {
             "granted": decision.get("action") != "reject",
             "approval_type": str(node_config.get("approval_type") or "manual_review"),
-            "reviewed_at": datetime.now(UTC).isoformat(),
+            "reviewed_at": format_beijing_iso_datetime(shanghai_now()),
         }
         payload = {"decision": decision, "token": token}
     else:

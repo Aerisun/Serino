@@ -6,13 +6,13 @@ import logging
 import time
 import uuid
 from contextvars import ContextVar
-from datetime import UTC, datetime
 
 import structlog
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.ops.service import VisitRecordPayload, enqueue_visit_record
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         structlog.contextvars.bind_contextvars(request_id=rid)
         start = time.perf_counter()
         should_track_visit = _is_public_visit_candidate(request)
-        visited_at = datetime.now(UTC)
+        visited_at = shanghai_now()
         client_ip = _get_client_ip(request) if should_track_visit else ""
         user_agent = request.headers.get("user-agent") if should_track_visit else None
         referer = request.headers.get("referer") if should_track_visit else None

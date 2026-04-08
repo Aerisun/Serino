@@ -5,12 +5,12 @@ import json
 import logging
 import secrets
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from urllib.parse import urlencode
 
 import httpx
 from sqlalchemy.orm import Session
 
+from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import AuthenticationFailed, ValidationError
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.schemas import OAuthProviderCallbackResult
@@ -223,7 +223,7 @@ def complete_oauth_login(
             display_name=profile.display_name or suggest_display_name(profile.email),
             avatar_url=profile.avatar_url or build_avatar_candidates(profile.email, 1)[0].avatar_url,
             primary_auth_provider=provider,
-            last_login_at=datetime.now(UTC),
+            last_login_at=shanghai_now(),
         )
         session.flush()
     else:
@@ -231,7 +231,7 @@ def complete_oauth_login(
         if profile.avatar_url:
             user.avatar_url = profile.avatar_url
         user.primary_auth_provider = provider
-        user.last_login_at = datetime.now(UTC)
+        user.last_login_at = shanghai_now()
 
     if oauth_account is None:
         repo.create_oauth_account(

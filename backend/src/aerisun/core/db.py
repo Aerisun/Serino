@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Iterator
+from datetime import date, datetime
 from functools import lru_cache
 from pathlib import Path
 
@@ -11,12 +13,30 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from aerisun.core.base import Base
 from aerisun.core.settings import get_settings
+from aerisun.core.time import normalize_shanghai_datetime
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 
 
+def _adapt_sqlite_date(value: date) -> str:
+    return value.isoformat()
+
+
+def _adapt_sqlite_datetime(value: datetime) -> str:
+    return normalize_shanghai_datetime(value).isoformat(sep=" ")
+
+
+def _register_sqlite_adapters() -> None:
+    # Python 3.12+ deprecates sqlite3's implicit datetime adapter. Registering
+    # an explicit ISO-8601 adapter preserves current storage semantics and keeps
+    # test output warning-free.
+    sqlite3.register_adapter(date, _adapt_sqlite_date)
+    sqlite3.register_adapter(datetime, _adapt_sqlite_datetime)
+
+
 @lru_cache(maxsize=1)
 def get_engine() -> object:
+    _register_sqlite_adapters()
     settings = get_settings()
     engine = create_engine(
         settings.database_url,
