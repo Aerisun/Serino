@@ -1,5 +1,4 @@
 const BEIJING_TIME_ZONE = "Asia/Shanghai";
-const BEIJING_UTC_OFFSET_HOURS = 8;
 
 type DateLike = string | number | Date;
 
@@ -22,7 +21,7 @@ function parseDate(value: DateLike | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function getBeijingDateParts(value: DateLike) {
+function getBeijingDateParts(value: DateLike | null | undefined) {
   const parsed = parseDate(value);
   if (!parsed) {
     return null;
@@ -85,13 +84,11 @@ export function datetimeLocalInBeijingToIso(value: string): string {
   }
 
   const [, yearRaw, monthRaw, dayRaw, hourRaw, minuteRaw] = matched;
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  const day = Number(dayRaw);
-  const hour = Number(hourRaw);
-  const minute = Number(minuteRaw);
-  const utcDate = new Date(Date.UTC(year, month - 1, day, hour - BEIJING_UTC_OFFSET_HOURS, minute));
-  const normalized = getBeijingDateParts(utcDate);
+  const shiftedDate = new Date(`${yearRaw}-${monthRaw}-${dayRaw}T${hourRaw}:${minuteRaw}:00+08:00`);
+  if (Number.isNaN(shiftedDate.getTime())) {
+    return "";
+  }
+  const normalized = getBeijingDateParts(shiftedDate);
   if (
     !normalized ||
     normalized.year !== yearRaw ||
@@ -102,7 +99,7 @@ export function datetimeLocalInBeijingToIso(value: string): string {
   ) {
     return "";
   }
-  return utcDate.toISOString();
+  return `${yearRaw}-${monthRaw}-${dayRaw}T${hourRaw}:${minuteRaw}:00+08:00`;
 }
 
 export function isValidBeijingDatetimeLocal(value: string): boolean {
@@ -110,4 +107,12 @@ export function isValidBeijingDatetimeLocal(value: string): boolean {
     return true;
   }
   return Boolean(datetimeLocalInBeijingToIso(value));
+}
+
+export function getCurrentBeijingIsoString(): string {
+  const parts = getBeijingDateParts(Date.now());
+  if (!parts) {
+    return "";
+  }
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+08:00`;
 }

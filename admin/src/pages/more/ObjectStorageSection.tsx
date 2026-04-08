@@ -363,7 +363,16 @@ export function ObjectStorageSection() {
         </Button>
       }
     >
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (save.isPending) {
+            return;
+          }
+          void save.mutateAsync(buildPayload(form));
+        }}
+      >
         <AppleSwitch
           checked={form.enabled}
           onCheckedChange={(checked) =>
@@ -539,7 +548,7 @@ export function ObjectStorageSection() {
         {health ? (
           <p className="text-sm text-muted-foreground">{health.summary}</p>
         ) : null}
-      </div>
+      </form>
     </ConfigSettingsCard>
   );
 }
@@ -584,6 +593,7 @@ function Field({
         disabled={disabled}
         placeholder={placeholder}
         type={type}
+        autoComplete={type === "password" ? "new-password" : undefined}
       />
     </label>
   );

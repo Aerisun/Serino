@@ -3,7 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," sizes="any" />
     <title>Aerisun Admin</title>
+    <script>
+      (function () {
+        var applyIcon = function (href) {
+          if (typeof href !== "string") return;
+          var normalized = href.trim();
+          if (!normalized) return;
+          ["icon", "shortcut icon"].forEach(function (rel) {
+            var link = document.head.querySelector('link[rel="' + rel + '"]');
+            if (!link) {
+              link = document.createElement("link");
+              link.rel = rel;
+              document.head.appendChild(link);
+            }
+            link.href = normalized;
+            if (rel === "icon") {
+              link.setAttribute("sizes", "any");
+            }
+          });
+        };
+        fetch("/api/v1/site/site", {
+          headers: { Accept: "application/json" },
+        })
+          .then(function (response) {
+            return response.ok ? response.json() : null;
+          })
+          .then(function (payload) {
+            applyIcon(payload && payload.site && payload.site.site_icon_url);
+          })
+          .catch(function () {});
+      })();
+    </script>
     <script>
       (function(){
         var currentKey='aerisun-admin-theme';

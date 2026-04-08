@@ -96,7 +96,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.management": "管理",
     "nav.system": "系统",
     "nav.admin": "管理",
-    "nav.adminPanel": "Aerisun 管理面板",
+    "nav.adminPanel": "Serino 管理面板",
     "nav.settings": "设置",
     "nav.logout": "退出登录",
 

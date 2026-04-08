@@ -327,10 +327,24 @@ export default function SystemInfoPage() {
                 </div>
 
                 <CollapsibleSection title={t("settings.changePassword")}>
-                  <div className="space-y-4">
+                  <form
+                    className="space-y-4"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (
+                        passwordSaving ||
+                        !currentPassword.trim() ||
+                        !newPassword.trim() ||
+                        !confirmPassword.trim()
+                      ) {
+                        return;
+                      }
+                      void handlePasswordChange();
+                    }}
+                  >
                     <div className="flex items-center justify-end">
                       <Button
-                        onClick={handlePasswordChange}
+                        type="submit"
                         disabled={
                           passwordSaving ||
                           !currentPassword.trim() ||
@@ -346,6 +360,7 @@ export default function SystemInfoPage() {
                       <label className="mb-1 block text-sm font-medium">{t("settings.currentPassword")}</label>
                       <Input
                         type="password"
+                        autoComplete="current-password"
                         value={currentPassword}
                         placeholder="••••••••"
                         onChange={(e) => setCurrentPassword(e.target.value)}
@@ -355,6 +370,7 @@ export default function SystemInfoPage() {
                       <label className="mb-1 block text-sm font-medium">{t("settings.newPassword")}</label>
                       <Input
                         type="password"
+                        autoComplete="new-password"
                         value={newPassword}
                         placeholder="••••••••"
                         onChange={(e) => setNewPassword(e.target.value)}
@@ -364,12 +380,13 @@ export default function SystemInfoPage() {
                       <label className="mb-1 block text-sm font-medium">{t("settings.confirmPassword")}</label>
                       <Input
                         type="password"
+                        autoComplete="new-password"
                         value={confirmPassword}
                         placeholder="••••••••"
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
                     </div>
-                  </div>
+                  </form>
                 </CollapsibleSection>
               </div>
             </ConfigSettingsCard>

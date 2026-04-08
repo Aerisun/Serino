@@ -613,7 +613,16 @@ export function ExternalConfigSection() {
         </Button>
       )}
     >
-      <div className="space-y-5">
+      <form
+        className="space-y-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (saveSubscription.isPending || isTesting || isSavingWithCheck) {
+            return;
+          }
+          void handleSave();
+        }}
+      >
         <div className="grid gap-4 md:grid-cols-2">
           {primaryFields.map((field) => (
             <div key={field.key} className="space-y-2">
@@ -632,6 +641,13 @@ export function ExternalConfigSection() {
               <Input
                 id={field.key}
                 type={field.type}
+                autoComplete={
+                  field.type === "password"
+                    ? "new-password"
+                    : field.type === "email"
+                      ? "email"
+                      : undefined
+                }
                 value={field.value}
                 placeholder={field.placeholder}
                 onChange={(event) =>
@@ -670,6 +686,7 @@ export function ExternalConfigSection() {
                   <Input
                     id={field.key}
                     type={field.type}
+                    autoComplete={field.type === "email" ? "email" : undefined}
                     value={field.value}
                     placeholder={field.placeholder}
                     onChange={(event) =>
@@ -713,7 +730,7 @@ export function ExternalConfigSection() {
             </div>
           </div>
         </CollapsibleSection>
-      </div>
+      </form>
     </ConfigSettingsCard>
   );
 }

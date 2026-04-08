@@ -1,12 +1,14 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 export { extractApiErrorMessage as getMutationErrorMessage } from "./api-error";
+import { getCurrentBeijingIsoString } from "./time";
 
 export type ContentEditorSaveMode = "draft" | "confirm";
 export type EditorContentType = "posts" | "diary" | "thoughts" | "excerpts";
 
 const MANUAL_PUBLISHED_AT_PREF_KEY = "aerisun-admin-published-at-manual-v1";
 const EDITOR_DRAFT_STORAGE_PREFIX = "aerisun-admin-editor-draft-v1";
+const PUBLIC_CONTENT_REFRESH_KEY = "aerisun:content-updated:v1";
 
 type SaveableContentForm = {
   status?: string | null;
@@ -105,7 +107,9 @@ export function buildNextContentSaveForm<T extends SaveableContentForm>(
   const nextPublishedAt =
     mode === "draft"
       ? (form.published_at ?? null)
-      : (isPublishedAtManual && form.published_at ? form.published_at : (form.published_at ?? new Date().toISOString()));
+      : (isPublishedAtManual && form.published_at
+          ? form.published_at
+          : (form.published_at ?? getCurrentBeijingIsoString()));
 
   return {
     ...form,
@@ -128,6 +132,25 @@ export async function invalidateContentEditorQueries(
   if (detailQueryKey) {
     await queryClient.invalidateQueries({ queryKey: detailQueryKey });
   }
+}
+
+export function announcePublicContentChange(contentType: EditorContentType) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const payload = {
+    contentType,
+    updatedAt: getCurrentBeijingIsoString(),
+  };
+
+  try {
+    window.localStorage.setItem(PUBLIC_CONTENT_REFRESH_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore localStorage failures.
+  }
+
+  window.dispatchEvent(new CustomEvent("aerisun:content-updated", { detail: payload }));
 }
 
 function editorDraftKey(contentType: EditorContentType, draftId: string) {

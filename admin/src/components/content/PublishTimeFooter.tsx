@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import {
   datetimeLocalInBeijingToIso,
+  getCurrentBeijingIsoString,
   isValidBeijingDatetimeLocal,
   isoToDatetimeLocalInBeijing,
 } from "@/lib/time";
@@ -70,7 +71,7 @@ export function PublishTimeFooter({
       setHasInteracted(false);
     } else {
       // 切换到"自定义"，使用当前时间
-      const now = new Date().toISOString();
+      const now = getCurrentBeijingIsoString();
       onChange(now);
       setInputValue(isoToDatetimeLocal(now));
       setIsValidFormat(true);

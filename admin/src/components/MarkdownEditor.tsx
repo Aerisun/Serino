@@ -14,8 +14,6 @@ import {
   Expand,
   Minimize2,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/Button";
 import {
@@ -32,6 +30,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { extractApiErrorMessage } from "@/lib/api-error";
+import MarkdownPreview from "@/components/MarkdownPreview";
 import { toast } from "sonner";
 
 interface MarkdownEditorProps {
@@ -343,12 +342,10 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
       </Dialog>
       {preview ? (
         <div
-          className={`prose prose-sm dark:prose-invert max-w-none p-4 ${autoExpand ? "overflow-visible" : "overflow-auto"}`}
+          className={`p-4 ${autoExpand ? "overflow-visible" : "overflow-auto"}`}
           style={autoExpand ? { minHeight } : { minHeight, maxHeight: minHeight }}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {value}
-          </ReactMarkdown>
+          <MarkdownPreview content={value} />
         </div>
       ) : (
         <textarea

@@ -254,7 +254,16 @@ export function AgentModelConfigSection() {
         </Button>
       )}
     >
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!canSave || test.isPending || save.isPending) {
+            return;
+          }
+          void handleSave();
+        }}
+      >
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>{copy.model}</Label>
@@ -304,7 +313,7 @@ export function AgentModelConfigSection() {
             />
           </div>
         </div>
-      </div>
+      </form>
     </ConfigSettingsCard>
   );
 }

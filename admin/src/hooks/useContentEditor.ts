@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useContentPreview } from "@/lib/useContentPreview";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import {
+  announcePublicContentChange,
   buildNextContentSaveForm,
   clearEditorDraftSnapshot,
   hasMeaningfulEditorContent,
@@ -220,6 +221,7 @@ export function useContentEditor(config: ContentEditorConfig) {
   const { mutate: deleteItem } = config.hooks.useDelete({
     mutation: {
       onSuccess: () => {
+        announcePublicContentChange(config.contentType);
         void invalidateQueries();
         toast.success(t("common.operationSuccess"));
         navigate(config.listRoute);
@@ -331,6 +333,9 @@ export function useContentEditor(config: ContentEditorConfig) {
       }
       if (showSuccessToast) {
         toast.success(t("common.operationSuccess"));
+      }
+      if (mode === "confirm") {
+        announcePublicContentChange(config.contentType);
       }
       if (navigateToList) {
         navigate(config.listRoute);

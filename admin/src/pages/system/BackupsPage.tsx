@@ -946,7 +946,16 @@ export default function BackupsPage() {
           </DialogHeader>
           <div className="space-y-4">
             {!recoveryKeyResult ? (
-              <>
+              <form
+                className="space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (isRecoveryKeyPending || recoveryPassphrase.length < 8) {
+                    return;
+                  }
+                  void handleRecoveryKeySubmit();
+                }}
+              >
                 <Field
                   label={
                     <LabelWithHelp
@@ -958,20 +967,21 @@ export default function BackupsPage() {
                 >
                   <Input
                     type="password"
+                    autoComplete="new-password"
                     value={recoveryPassphrase}
                     onChange={(event) => setRecoveryPassphrase(event.target.value)}
                     placeholder="********"
                   />
                 </Field>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setKeyDialogOpen(false)} disabled={isRecoveryKeyPending}>
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setKeyDialogOpen(false)} disabled={isRecoveryKeyPending}>
                       {t("common.cancel")}
                     </Button>
-                  <Button onClick={() => void handleRecoveryKeySubmit()} disabled={isRecoveryKeyPending || recoveryPassphrase.length < 8}>
+                  <Button type="submit" disabled={isRecoveryKeyPending || recoveryPassphrase.length < 8}>
                     {keyDialogMode === "rotate" ? t("system.rotateRecoveryKey") : t("system.exportRecoveryKey")}
                   </Button>
                 </div>
-              </>
+              </form>
             ) : (
               <>
                 <div className="rounded-[var(--admin-radius-md)] border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
