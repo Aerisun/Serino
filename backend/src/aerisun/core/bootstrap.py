@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from time import perf_counter
 
-from aerisun.core.backfills import run_pending_backfills
 from aerisun.core.db import dispose_engine
 from aerisun.core.db_preflight import compute_seed_fingerprint, get_stored_seed_fingerprint, store_seed_metadata
 from aerisun.core.logging import setup_logging
@@ -98,8 +97,6 @@ async def lifespan(_app):
     settings.ensure_directories()
     setup_logging(settings)
     _refresh_bootstrap_seed_on_reload_if_needed()
-    if settings.data_backfill_enabled:
-        run_pending_backfills()
     check_insecure_defaults(settings)
     init_sentry(settings)
     logger.info("Application infrastructure ready in %.2fms", (perf_counter() - infra_started_at) * 1000)

@@ -9,13 +9,10 @@ from sqlalchemy.orm import Session
 
 import aerisun.domain.automation.models
 import aerisun.domain.subscription.models  # noqa: F401
-from aerisun.core.backfills.state import clear_data_migration_records, mark_bootstrap_seed_applied
-from aerisun.core.db import get_session_factory, init_db
-from aerisun.core.seed_steps.assets import purge_managed_media_root
+from aerisun.core.data_migrations.state import clear_migration_journal
 from aerisun.core.seed_steps.common import is_empty
 from aerisun.core.seed_steps.content import insert_missing_page_copies, seed_missing_page_copies
 from aerisun.core.seed_steps.system_assets import normalize_core_system_asset_references, seed_core_system_asset_urls
-from aerisun.core.seed_steps.waline import clear_waline_seed_data
 from aerisun.core.settings import get_settings
 from aerisun.domain.automation.models import (
     AgentRun,
@@ -631,20 +628,26 @@ def backfill_runtime_config_defaults(session: Session) -> None:
     backfill_agent_model_config_defaults(session)
 
 
-def _seed_config_history_and_audit(session: Session) -> None:
+def _seed_config_history_and_audit(
+    session: Session,
+    *,
+    resources: tuple[str, ...] = PRODUCTION_CONFIG_HISTORY_RESOURCES,
+    operation: str = "baseline",
+    summary_prefix: str = "生产 baseline 初始化",
+) -> None:
     if not is_empty(session, ConfigRevision):
         return
 
-    for resource_key in PRODUCTION_CONFIG_HISTORY_RESOURCES:
+    for resource_key in resources:
         snapshot = capture_config_resource(session, resource_key)
         create_config_revision(
             session,
             actor_id=None,
             resource_key=resource_key,
-            operation="seed",
+            operation=operation,
             before_snapshot=None,
             after_snapshot=snapshot,
-            summary_override=f"生产种子初始化：{resource_key}",
+            summary_override=f"{summary_prefix}：{resource_key}",
             commit=False,
         )
 
@@ -727,7 +730,7 @@ def _clear_seed_data(session: Session) -> None:
         count = session.query(model).delete()
         if count:
             _logger.info("  Cleared %d rows from %s", count, model.__tablename__)
-    clear_data_migration_records(session)
+    clear_migration_journal(session)
     session.flush()
 
 
@@ -779,57 +782,9 @@ def backfill_system_asset_references(session: Session) -> None:
 
 
 def _seed_bootstrap_reference_data(*, force: bool = False) -> None:
-    get_settings().ensure_directories()
-    init_db()
-    session = get_session_factory()()
-    try:
-        if force:
-            _clear_seed_data(session)
-            clear_waline_seed_data()
-            session.commit()
-            purge_managed_media_root()
+    from aerisun.core.production_baseline import apply_production_baseline
 
-        seeded_assets = seed_core_system_asset_urls(session)
-
-        if is_empty(session, SiteProfile):
-            site = SiteProfile(
-                **{
-                    **DEFAULT_SITE_PROFILE,
-                    "og_image": seeded_assets["og_image"],
-                    "site_icon_url": seeded_assets["site_icon_url"],
-                    "hero_image_url": seeded_assets["hero_image_url"],
-                    "hero_poster_url": seeded_assets["hero_poster_url"],
-                }
-            )
-            session.add(site)
-            session.flush()
-
-            session.add_all([SocialLink(site_profile_id=site.id, **item) for item in DEFAULT_SOCIAL_LINKS])
-            session.add_all(
-                [
-                    Poem(site_profile_id=site.id, order_index=index, content=text)
-                    for index, text in enumerate(DEFAULT_POEMS)
-                ]
-            )
-            insert_missing_page_copies(session, DEFAULT_PAGE_COPIES)
-
-            resume = ResumeBasics(**{**DEFAULT_RESUME, "profile_image_url": seeded_assets["profile_image_url"]})
-            session.add(resume)
-            session.flush()
-
-        current_site = session.scalars(select(SiteProfile).order_by(SiteProfile.created_at.asc())).first()
-        if current_site is not None:
-            _seed_nav_items(session, site_id=current_site.id)
-
-        _seed_community_config(session, force=force)
-        _seed_site_auth_config(session, force=force)
-        _seed_subscription_config_from_settings(session, force=force)
-        _seed_agent_model_config(session, force=force)
-        _seed_config_history_and_audit(session)
-        mark_bootstrap_seed_applied(session)
-        session.commit()
-    finally:
-        session.close()
+    apply_production_baseline(force=force)
 
 
 def seed_bootstrap_data(*, force: bool = False) -> None:
@@ -837,7 +792,7 @@ def seed_bootstrap_data(*, force: bool = False) -> None:
 
 
 def seed_reference_data(*, force: bool = False) -> None:
-    """Production-safe seed entrypoint."""
+    """Reference-data compatibility wrapper used by development tooling."""
     seed_bootstrap_data(force=force)
 
 

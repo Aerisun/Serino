@@ -22,7 +22,7 @@ def capture_resource_snapshots(session: Session, resource_keys: tuple[str, ...])
     return {resource_key: capture_optional_resource(session, resource_key) for resource_key in resource_keys}
 
 
-def create_backfill_config_revisions(
+def create_data_migration_config_revisions(
     session: Session,
     *,
     resource_keys: tuple[str, ...],
@@ -41,32 +41,34 @@ def create_backfill_config_revisions(
             session,
             actor_id=None,
             resource_key=resource_key,
-            operation="backfill",
+            operation="data_migration",
             before_snapshot=None if before_snapshot is _MISSING else before_snapshot,
             after_snapshot=None if after_snapshot is _MISSING else after_snapshot,
-            summary_override=f"升级数据回填：{summary}",
+            summary_override=f"版本化数据迁移：{summary}",
             commit=False,
         )
         changed_resources.append(resource_key)
     return changed_resources
 
 
-def create_backfill_audit_log(
+def create_data_migration_audit_log(
     session: Session,
     *,
     migration_key: str,
     summary: str,
+    mode: str,
     changed_resources: list[str],
 ) -> AuditLog:
     log = AuditLog(
         actor_type="system",
         actor_id=None,
-        action="DATA BACKFILL APPLY",
+        action="DATA MIGRATION APPLY",
         target_type="data_migration",
         target_id=None,
         payload={
             "migration_key": migration_key,
             "summary": summary,
+            "mode": mode,
             "changed_resources": changed_resources,
         },
     )

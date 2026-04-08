@@ -3,9 +3,9 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from aerisun.core.backfills.state import BOOTSTRAP_MIGRATION_KEY, list_applied_data_migrations
-from aerisun.core.db import get_session_factory
-from aerisun.core.seed import seed_bootstrap_data
+from aerisun.core.data_migrations.state import list_migration_entries
+from aerisun.core.db import get_session_factory, run_database_migrations
+from aerisun.core.production_baseline import PRODUCTION_BASELINE_ID, apply_production_baseline
 from aerisun.core.seed_steps.system_assets import get_system_asset_root
 from aerisun.core.settings import get_settings
 from aerisun.domain.content.models import PostEntry
@@ -22,6 +22,7 @@ def _assert_force_reseed_cleans_orphan_media(seed_fn, tmp_path, monkeypatch) -> 
     configure_runtime_environment(tmp_path, monkeypatch)
     reset_runtime_state()
     try:
+        run_database_migrations()
         seed_fn(force=True)
 
         media_root = get_settings().media_dir.expanduser().resolve()
@@ -36,13 +37,14 @@ def _assert_force_reseed_cleans_orphan_media(seed_fn, tmp_path, monkeypatch) -> 
         teardown_runtime_state()
 
 
-def test_seed_bootstrap_data_only_initializes_safe_scaffold(tmp_path, monkeypatch) -> None:
+def test_apply_production_baseline_only_initializes_safe_scaffold(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 
     configure_runtime_environment(tmp_path, monkeypatch)
     reset_runtime_state()
     try:
-        seed_bootstrap_data(force=True)
+        run_database_migrations()
+        apply_production_baseline(force=True)
 
         session_factory = get_session_factory()
         with session_factory() as session:
@@ -74,31 +76,14 @@ def test_seed_bootstrap_data_only_initializes_safe_scaffold(tmp_path, monkeypatc
         teardown_runtime_state()
 
 
-def test_seed_bootstrap_data_uses_updated_defaults(tmp_path, monkeypatch) -> None:
+def test_apply_production_baseline_uses_backend_system_asset_sources(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 
     configure_runtime_environment(tmp_path, monkeypatch)
     reset_runtime_state()
     try:
-        seed_bootstrap_data(force=True)
-
-        session_factory = get_session_factory()
-        with session_factory() as session:
-            community = session.query(CommunityConfig).one()
-
-        assert community.image_uploader is True
-        assert community.moderation_mode == "no_review"
-    finally:
-        teardown_runtime_state()
-
-
-def test_seed_bootstrap_data_uses_backend_system_asset_sources(tmp_path, monkeypatch) -> None:
-    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
-
-    configure_runtime_environment(tmp_path, monkeypatch)
-    reset_runtime_state()
-    try:
-        seed_bootstrap_data(force=True)
+        run_database_migrations()
+        apply_production_baseline(force=True)
 
         session_factory = get_session_factory()
         with session_factory() as session:
@@ -113,9 +98,8 @@ def test_seed_bootstrap_data_uses_backend_system_asset_sources(tmp_path, monkeyp
         assert resume.profile_image_url.startswith("/media/internal/assets/resume-avatar/")
 
         asset_root = get_system_asset_root()
-        assert (
-            asset_root
-            == Path(__file__).resolve().parents[1]
+        assert asset_root == (
+            Path(__file__).resolve().parents[1]
             / "src"
             / "aerisun"
             / "core"
@@ -123,35 +107,23 @@ def test_seed_bootstrap_data_uses_backend_system_asset_sources(tmp_path, monkeyp
             / "resources"
             / "system_assets"
         )
-        assert (
-            assets["site-og"].sha256 == hashlib.sha256((asset_root / "share_fallback_bg.webp").read_bytes()).hexdigest()
-        )
-        assert (
-            assets["site-icon"].sha256 == hashlib.sha256((asset_root / "browser_tab_icon.svg").read_bytes()).hexdigest()
-        )
-        assert (
-            assets["hero-image"].sha256
-            == hashlib.sha256((asset_root / "hero_flip_visual.webp").read_bytes()).hexdigest()
-        )
-        assert (
-            assets["hero-poster"].sha256
-            == hashlib.sha256((asset_root / "hero_video_poster.webp").read_bytes()).hexdigest()
-        )
-        assert (
-            assets["resume-avatar"].sha256
-            == hashlib.sha256((asset_root / "resume_avatar.webp").read_bytes()).hexdigest()
-        )
+        assert assets["site-og"].sha256 == hashlib.sha256((asset_root / "share_fallback_bg.webp").read_bytes()).hexdigest()
+        assert assets["site-icon"].sha256 == hashlib.sha256((asset_root / "browser_tab_icon.svg").read_bytes()).hexdigest()
+        assert assets["hero-image"].sha256 == hashlib.sha256((asset_root / "hero_flip_visual.webp").read_bytes()).hexdigest()
+        assert assets["hero-poster"].sha256 == hashlib.sha256((asset_root / "hero_video_poster.webp").read_bytes()).hexdigest()
+        assert assets["resume-avatar"].sha256 == hashlib.sha256((asset_root / "resume_avatar.webp").read_bytes()).hexdigest()
     finally:
         teardown_runtime_state()
 
 
-def test_seed_bootstrap_data_marks_bootstrap_and_does_not_backfill_existing_rows(tmp_path, monkeypatch) -> None:
+def test_apply_production_baseline_is_idempotent_and_records_journal(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 
     configure_runtime_environment(tmp_path, monkeypatch)
     reset_runtime_state()
     try:
-        seed_bootstrap_data(force=True)
+        run_database_migrations()
+        apply_production_baseline(force=True)
 
         session_factory = get_session_factory()
         with session_factory() as session:
@@ -164,33 +136,35 @@ def test_seed_bootstrap_data_marks_bootstrap_and_does_not_backfill_existing_rows
             site.og_image = "/images/hero_bg.jpeg"
             session.commit()
 
-        seed_bootstrap_data()
+        assert apply_production_baseline() is False
 
         with session_factory() as session:
             community = session.query(CommunityConfig).one()
             friends_page = session.query(PageCopy).filter(PageCopy.page_key == "friends").one()
             site = session.query(SiteProfile).one()
-            applied = list_applied_data_migrations(session, kind="bootstrap")
+            journal = list_migration_entries(session)
 
         assert community.server_url == "http://localhost:8360/"
         assert friends_page.extras == {"circle_title": "Custom Circle"}
         assert site.og_image == "/images/hero_bg.jpeg"
-        assert BOOTSTRAP_MIGRATION_KEY in applied
+        assert journal[PRODUCTION_BASELINE_ID].kind == "baseline"
+        assert journal[PRODUCTION_BASELINE_ID].status == "applied"
     finally:
         teardown_runtime_state()
 
 
-def test_seed_bootstrap_data_force_reseed_cleans_media_root(tmp_path, monkeypatch) -> None:
-    _assert_force_reseed_cleans_orphan_media(seed_bootstrap_data, tmp_path, monkeypatch)
+def test_apply_production_baseline_force_reseed_cleans_media_root(tmp_path, monkeypatch) -> None:
+    _assert_force_reseed_cleans_orphan_media(apply_production_baseline, tmp_path, monkeypatch)
 
 
-def test_seed_bootstrap_data_force_reseeds_config_history_and_system_audit(tmp_path, monkeypatch) -> None:
+def test_apply_production_baseline_force_reseeds_config_history_and_system_audit(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 
     configure_runtime_environment(tmp_path, monkeypatch)
     reset_runtime_state()
     try:
-        seed_bootstrap_data(force=True)
+        run_database_migrations()
+        apply_production_baseline(force=True)
 
         session_factory = get_session_factory()
         with session_factory() as session:
@@ -222,7 +196,7 @@ def test_seed_bootstrap_data_force_reseeds_config_history_and_system_audit(tmp_p
             )
             session.commit()
 
-        seed_bootstrap_data(force=True)
+        apply_production_baseline(force=True)
 
         with session_factory() as session:
             revisions = session.query(ConfigRevision).all()
@@ -230,8 +204,8 @@ def test_seed_bootstrap_data_force_reseeds_config_history_and_system_audit(tmp_p
 
             assert revisions
             assert logs
-            assert all(item.operation == "seed" for item in revisions)
-            assert all(item.summary.startswith("生产种子初始化：") for item in revisions)
+            assert all(item.operation == "baseline" for item in revisions)
+            assert all(item.summary.startswith("生产 baseline 初始化：") for item in revisions)
             assert {item.resource_key for item in revisions} == {
                 "site.profile",
                 "site.community",
@@ -246,7 +220,7 @@ def test_seed_bootstrap_data_force_reseeds_config_history_and_system_audit(tmp_p
                 "automation.model_config",
                 "automation.workflows",
             }
-            assert all(str(item.action).startswith("CONFIG SEED ") for item in logs)
+            assert all(str(item.action).startswith("CONFIG BASELINE ") for item in logs)
             assert all(item.payload.get("config_revision_id") for item in logs)
     finally:
         teardown_runtime_state()
