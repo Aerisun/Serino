@@ -26,14 +26,33 @@ has_failures() {
   grep -q '^fail	' "${DOCTOR_TMP}" 2>/dev/null
 }
 
+doctor_status_icon() {
+  case "$1" in
+    ok)
+      printf '%s' "✅"
+      ;;
+    fail)
+      printf '%s' "❌"
+      ;;
+    warn)
+      printf '%s' "⚠️"
+      ;;
+    *)
+      printf '[%s]' "$1"
+      ;;
+  esac
+}
+
 emit_text_report() {
   local status=""
   local key=""
   local message=""
   local fix=""
+  local icon=""
 
   while IFS=$'\t' read -r status key message fix; do
-    printf '[%s] %s: %s\n' "${status}" "${key}" "${message}"
+    icon="$(doctor_status_icon "${status}")"
+    printf '%s %s: %s\n' "${icon}" "${key}" "${message}"
     if [[ -n "${fix}" ]]; then
       printf '  修复建议：%s\n' "${fix}"
     fi

@@ -42,7 +42,7 @@ for raw_line in process.stdout:
 
 return_code = process.wait()
 if migration_steps:
-    print(f"     已完成 {migration_steps} 步迁移。", flush=True)
+    print(f"     已完成 {migration_steps} 步迁移", flush=True)
 else:
     print("     数据库结构已是最新。", flush=True)
 

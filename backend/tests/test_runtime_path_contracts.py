@@ -180,11 +180,92 @@ printf 'curl:%s\\n' "${SERCLI_CURL_ARGS}"
 """
     )
 
-    assert "release version: v9.9.9" in output
-    assert "backend health url: http://127.0.0.1:18000/api/v1/site/readyz" in output
-    assert "backend health: ok" in output
+    assert "Serino 状态" in output
+    assert "发布版本" in output and "v9.9.9" in output
+    assert "健康检查" in output and "http://127.0.0.1:18000/api/v1/site/readyz" in output
+    assert "后端就绪" in output and "正常" in output
+    assert "容器服务" in output
     assert "compose:ps" in output
     assert "curl:--fail --silent --show-error http://127.0.0.1:18000/api/v1/site/readyz" in output
+
+
+def test_sercli_version_prints_human_readable_summary():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+path_is_file() {
+  return 0
+}
+
+load_env_file() {
+  AERISUN_INSTALL_CHANNEL='stable'
+  AERISUN_IMAGE_REGISTRY='registry.example.com/serino'
+  AERISUN_IMAGE_TAG='v9.9.9'
+  AERISUN_RELEASE_VERSION='v9.9.9'
+}
+
+cmd_version
+"""
+    )
+
+    assert "Serino 版本" in output
+    assert "发布版本" in output and "v9.9.9" in output
+    assert "发布渠道" in output and "stable" in output
+    assert "镜像版本" in output and "registry.example.com/serino:v9.9.9" in output
+    assert "安装器目录" in output
+    assert "sercli 路径" in output
+
+
+def test_validate_release_compose_configuration_accepts_env_urls_without_install_value_vars():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/docker.sh
+
+AERISUN_APP_ROOT='/tmp/serino-app'
+AERISUN_IMAGE_REGISTRY='registry.example.com/serino'
+AERISUN_API_IMAGE_NAME='serino-api'
+AERISUN_WEB_IMAGE_NAME='serino-web'
+AERISUN_WALINE_IMAGE_NAME='serino-waline'
+AERISUN_IMAGE_TAG='v9.9.9'
+AERISUN_SITE_URL='https://example.test'
+AERISUN_WALINE_SERVER_URL='https://example.test/waline'
+AERISUN_RENDERED_COMPOSE_FILE='/tmp/serino-runtime.yml'
+
+run_as_root() {
+  "$@"
+}
+
+make_root_temp_file_in_dir() {
+  mktemp /tmp/serino-compose.XXXXXX.yml
+}
+
+render_release_compose_configuration() {
+  cat > "$1" <<'EOF'
+services:
+  api:
+    image: registry.example.com/serino/serino-api:v9.9.9
+    environment:
+      AERISUN_SITE_URL: https://example.test
+      AERISUN_WALINE_SERVER_URL: https://example.test/waline
+  caddy:
+    image: registry.example.com/serino/serino-web:v9.9.9
+  waline:
+    image: registry.example.com/serino/serino-waline:v9.9.9
+    environment:
+      SITE_URL: https://example.test
+      SERVER_URL: https://example.test/waline
+EOF
+}
+
+validate_release_compose_configuration
+printf 'ok\\n'
+"""
+    ).strip()
+
+    assert output == "ok"
 
 
 def test_sercli_status_supports_json_output_for_automation():
@@ -261,6 +342,80 @@ cmd_logs --follow --since 15m
     ).strip()
 
     assert output == "logs --tail 120 --follow --since 15m api waline caddy"
+
+
+def test_sercli_help_surfaces_common_ops_before_help_footer():
+    output = run_installer_bash(
+        """
+source installer/bin/sercli
+
+cmd_help
+"""
+    )
+
+    assert output.index("sercli status [--verbose|--json]") < output.index("sercli help")
+    assert output.index("sercli doctor [--json]") < output.index("sercli help")
+    assert output.index("sercli upgrade [--check] [--ready-timeout SEC] [vX.Y.Z]") < output.index("sercli help")
+    assert output.index("sercli uninstall [--force]") < output.index("sercli help")
+
+
+def test_compose_api_task_hides_ephemeral_compose_progress_noise():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+compose() {
+  printf '[+] Running 1/1\\n'
+  printf ' ✔ Network serino_default Created\\n'
+  printf 'Container serino-api-run-abc123 Creating\\n'
+  printf 'Container serino-api-run-abc123 Created\\n'
+  printf '生产 baseline 已完成。\\n'
+}
+
+compose_api_task baseline-prod.sh
+"""
+    ).strip()
+
+    assert output == "生产 baseline 已完成。"
+
+
+def test_compose_api_task_quiet_success_suppresses_normal_success_output():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+compose() {
+  printf 'Container serino-api-run-abc123 Creating\\n'
+  printf 'Container serino-api-run-abc123 Created\\n'
+  printf '已创建生产环境首次管理员账号。\\n'
+}
+
+compose_api_task_quiet_success first-admin-prod.sh
+"""
+    ).strip()
+
+    assert output == ""
+
+
+def test_run_release_data_migrations_uses_progress_mode_for_installer_output():
+    completed = run_installer_bash_result(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+compose_api_task() {
+  printf '%s\\n' "$*"
+}
+
+run_release_data_migrations blocking
+"""
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout.strip() == "data-migrate.sh apply --mode blocking --progress"
+    assert completed.stderr.strip() == "[INFO] 🛠️ 正在执行版本化数据迁移..."
 
 
 def test_sercli_logs_can_list_known_runtime_services():
@@ -386,6 +541,31 @@ summarize_migration_report_json "${payload}"
         "ok\tdata.baseline\t生产 baseline 已应用：2026_04_production_baseline_v1。\t",
         "ok\tdata.migrations.blocking\t阻塞式数据迁移已对齐。\t",
         "warn\tdata.migrations.background\t存在待调度的后台数据迁移：0002_rehash_assets\tsercli migrate data --mode background",
+    ]
+
+
+def test_doctor_text_report_uses_icons_for_statuses():
+    output = (
+        run_installer_bash(
+            """
+source installer/doctor.sh
+: > "${DOCTOR_TMP}"
+record_check ok layout.legacy '未检测到旧版安装布局残留。' ''
+record_check fail serino.service 'serino.service 已启用但当前未运行。' 'sudo systemctl restart serino.service'
+record_check warn data.migrations.background '存在待调度的后台数据迁移。' 'sercli migrate data --mode background'
+emit_text_report
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "✅ layout.legacy: 未检测到旧版安装布局残留。",
+        "❌ serino.service: serino.service 已启用但当前未运行。",
+        "  修复建议：sudo systemctl restart serino.service",
+        "⚠️ data.migrations.background: 存在待调度的后台数据迁移。",
+        "  修复建议：sercli migrate data --mode background",
     ]
 
 

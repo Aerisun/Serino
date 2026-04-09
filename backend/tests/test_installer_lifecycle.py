@@ -371,6 +371,84 @@ main v2.0.0
     ]
 
 
+def test_upgrade_main_validates_compose_with_loaded_env_urls() -> None:
+    completed = run_project_bash(
+        """
+source installer/upgrade.sh
+
+record() {
+  printf '%s\\n' "$1"
+}
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+ensure_supported_existing_installation() { :; }
+ensure_service_user() { :; }
+load_env_file() {
+  AERISUN_IMAGE_REGISTRY='registry.example.com/current'
+  AERISUN_IMAGE_TAG='v1.0.0'
+  AERISUN_SITE_URL='https://example.test'
+  AERISUN_WALINE_SERVER_URL='https://example.test/waline'
+}
+run_upgrade_preflight() { record run_upgrade_preflight; }
+resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
+make_temp_file() { printf '/tmp/manifest'; }
+make_temp_dir() { printf '/tmp/bundle'; }
+load_release_manifest() {
+  record "load_release_manifest:$1"
+  AERISUN_IMAGE_REGISTRY='registry.example.com/next'
+  AERISUN_IMAGE_TAG='v2.0.0'
+}
+download_release_asset() { record "download_release_asset:$1"; }
+tar() { record "tar:$*"; }
+date() { printf '20260408112233'; }
+stop_serino_service() { record stop_serino_service; }
+backup_current_installation() { record "backup_current_installation:$1"; }
+resolve_active_registry() {
+  printf '%s' "$1"
+}
+install_release_payload() { record install_release_payload; }
+set_env_value() { record "set_env_value:$2=$3"; }
+normalize_production_env_file() { record normalize_production_env_file; }
+validate_release_compose_configuration() {
+  printf '%s|%s\\n' "${AERISUN_SITE_URL:-}" "${AERISUN_WALINE_SERVER_URL:-}"
+  record validate_release_compose_configuration
+}
+compose() {
+  record "compose:$*"
+}
+run_release_migrations() { record run_release_migrations; }
+run_release_data_migrations() { record "run_release_data_migrations:$1"; }
+enable_serino_service() { record enable_serino_service; }
+wait_for_release_ready() { record wait_for_release_ready; }
+schedule_release_background_data_migrations() { record schedule_release_background_data_migrations; }
+
+main v2.0.0
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "run_upgrade_preflight",
+        "load_release_manifest:v2.0.0",
+        "download_release_asset:v2.0.0",
+        "tar:-xzf /tmp/bundle/aerisun-installer-bundle.tar.gz -C /tmp/bundle",
+        "stop_serino_service",
+        "backup_current_installation:/var/backups/serino/upgrade-20260408112233",
+        "install_release_payload",
+        "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
+        "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
+        "normalize_production_env_file",
+        "https://example.test|https://example.test/waline",
+        "validate_release_compose_configuration",
+        "compose:pull",
+        "run_release_migrations",
+        "run_release_data_migrations:blocking",
+        "enable_serino_service",
+        "wait_for_release_ready",
+        "schedule_release_background_data_migrations",
+    ]
+
+
 def test_release_smoke_gate_runs_shell_backend_and_docker_steps_in_order() -> None:
     completed = run_project_bash(
         """

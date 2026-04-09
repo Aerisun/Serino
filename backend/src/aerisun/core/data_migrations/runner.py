@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from aerisun.core.data_migrations.registry import DataMigrationSpec, get_registered_data_migrations
 from aerisun.core.data_migrations.schema import get_current_schema_revision, get_head_revisions, revision_is_reachable
@@ -93,7 +94,11 @@ def collect_migration_status() -> dict[str, object]:
         }
 
 
-def apply_pending_data_migrations(*, mode: str) -> list[str]:
+def apply_pending_data_migrations(
+    *,
+    mode: str,
+    on_applied: Callable[[DataMigrationSpec], None] | None = None,
+) -> list[str]:
     if mode not in {"blocking", "background", "all"}:
         raise ValueError(f"Unsupported data migration mode: {mode}")
 
@@ -149,6 +154,8 @@ def apply_pending_data_migrations(*, mode: str) -> list[str]:
                 )
                 session.commit()
                 applied.append(spec.migration_key)
+                if on_applied is not None:
+                    on_applied(spec)
             except Exception as exc:
                 session.rollback()
                 with session_factory() as error_session:

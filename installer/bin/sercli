@@ -15,22 +15,33 @@ source "${INSTALLER_ROOT}/lib/docker.sh"
 
 usage() {
   cat <<'EOF'
-用法：
-  sercli help
-  sercli version
-  sercli status [--verbose|--json]
-  sercli migrate schema
-  sercli migrate data [--mode blocking|background|all]
-  sercli migrate status [--json]
-  sercli ps [compose-ps-args...]
+sercli 命令
+
+常用
+  sercli status [--verbose|--json]                           查看服务、版本与健康检查
+  sercli doctor [--json]                                    执行运行诊断
+  sercli upgrade [--check] [--ready-timeout SEC] [vX.Y.Z]   升级到指定版本
+  sercli uninstall [--force]                                彻底卸载当前安装
+
+观测
+  sercli migrate status [--json]                            查看 schema / baseline / 数据迁移状态
+  sercli ps [compose-ps-args...]                            查看运行中的容器
   sercli logs [--follow] [--tail N] [--since DURATION] [--list-services] [service...]
-  sercli start [--no-wait] [--timeout SEC]
-  sercli stop
-  sercli restart [--no-wait] [--timeout SEC]
-  sercli wait [--timeout SEC]
-  sercli upgrade [--check] [--ready-timeout SEC] [vX.Y.Z]
-  sercli uninstall [--force]
-  sercli doctor [--json]
+                                                            查看服务日志
+  sercli version                                            查看当前安装版本
+
+控制
+  sercli start [--no-wait] [--timeout SEC]                  启动服务
+  sercli stop                                               停止服务
+  sercli restart [--no-wait] [--timeout SEC]                重启服务
+  sercli wait [--timeout SEC]                               等待服务 ready
+
+迁移
+  sercli migrate schema                                     执行数据库结构迁移
+  sercli migrate data [--mode blocking|background|all]      执行数据迁移
+
+发布
+  sercli help
 EOF
 }
 
@@ -118,6 +129,73 @@ sercli_validate_requested_services() {
   done
 }
 
+sercli_print_heading() {
+  printf '%s\n' "$1"
+}
+
+sercli_print_field() {
+  local label="$1"
+  local value="$2"
+  printf '  %-12s %s\n' "${label}" "${value}"
+}
+
+sercli_humanize_health() {
+  case "$1" in
+    ok)
+      printf '%s' "正常"
+      ;;
+    fail)
+      printf '%s' "异常"
+      ;;
+    *)
+      printf '%s' "${1:-未知}"
+      ;;
+  esac
+}
+
+sercli_humanize_systemd_active() {
+  case "$1" in
+    active)
+      printf '%s' "运行中"
+      ;;
+    inactive)
+      printf '%s' "未运行"
+      ;;
+    failed)
+      printf '%s' "启动失败"
+      ;;
+    activating)
+      printf '%s' "启动中"
+      ;;
+    deactivating)
+      printf '%s' "停止中"
+      ;;
+    *)
+      printf '%s' "${1:-未知}"
+      ;;
+  esac
+}
+
+sercli_humanize_systemd_enabled() {
+  case "$1" in
+    enabled)
+      printf '%s' "已启用"
+      ;;
+    disabled)
+      printf '%s' "未启用"
+      ;;
+    static)
+      printf '%s' "静态"
+      ;;
+    masked)
+      printf '%s' "已屏蔽"
+      ;;
+    *)
+      printf '%s' "${1:-未知}"
+      ;;
+  esac
+}
+
 cmd_help() {
   usage
 }
@@ -137,12 +215,12 @@ cmd_version() {
     image_tag="${AERISUN_IMAGE_TAG:-<未知>}"
   fi
 
-  printf 'sercli path: %s\n' "${SELF_PATH}"
-  printf 'installer root: %s\n' "${INSTALLER_ROOT}"
-  printf 'release version: %s\n' "${release_version}"
-  printf 'channel: %s\n' "${channel}"
-  printf 'image registry: %s\n' "${image_registry}"
-  printf 'image tag: %s\n' "${image_tag}"
+  sercli_print_heading "Serino 版本"
+  sercli_print_field "发布版本" "${release_version}"
+  sercli_print_field "发布渠道" "${channel}"
+  sercli_print_field "镜像版本" "${image_registry}:${image_tag}"
+  sercli_print_field "安装器目录" "${INSTALLER_ROOT}"
+  sercli_print_field "sercli 路径" "${SELF_PATH}"
 }
 
 cmd_ps() {
@@ -222,20 +300,22 @@ PY
     return
   fi
 
-  printf 'systemd active: %s\n' "${systemd_active:-unknown}"
-  printf 'systemd enabled: %s\n' "${systemd_enabled:-unknown}"
-  printf 'release version: %s\n' "${release_version:-<未知>}"
-  printf 'channel: %s\n' "${AERISUN_INSTALL_CHANNEL:-<未知>}"
-  printf 'site url: %s\n' "${AERISUN_SITE_URL:-<未配置>}"
-  printf 'image registry: %s\n' "${AERISUN_IMAGE_REGISTRY:-<未配置>}"
-  printf 'image tag: %s\n' "${AERISUN_IMAGE_TAG:-<未配置>}"
-  printf 'backend health url: %s\n' "${backend_url}"
-  printf 'backend health: %s\n' "${health_status}"
+  sercli_print_heading "Serino 状态"
+  sercli_print_field "服务状态" "$(sercli_humanize_systemd_active "${systemd_active:-unknown}")"
+  sercli_print_field "开机启动" "$(sercli_humanize_systemd_enabled "${systemd_enabled:-unknown}")"
+  sercli_print_field "发布版本" "${release_version:-<未知>}"
+  sercli_print_field "发布渠道" "${AERISUN_INSTALL_CHANNEL:-<未知>}"
+  sercli_print_field "站点地址" "${AERISUN_SITE_URL:-<未配置>}"
+  sercli_print_field "镜像版本" "${AERISUN_IMAGE_REGISTRY:-<未配置>}:${AERISUN_IMAGE_TAG:-<未配置>}"
+  sercli_print_field "后端就绪" "$(sercli_humanize_health "${health_status}")"
+  sercli_print_field "健康检查" "${backend_url}"
   echo
+  sercli_print_heading "容器服务"
   compose ps
 
   if [[ "${verbose}" == "true" ]]; then
     echo
+    sercli_print_heading "systemd 详情"
     run_as_root systemctl --no-pager --full status "${SERINO_SYSTEMD_UNIT}" || true
   fi
 

@@ -107,6 +107,53 @@ def test_apply_pending_data_migrations_records_journal_revisions_and_audit(tmp_p
         teardown_runtime_state()
 
 
+def test_apply_pending_data_migrations_reports_progress_callback_in_order(tmp_path, monkeypatch) -> None:
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        run_database_migrations()
+        apply_production_baseline(force=True)
+
+        applied_order: list[str] = []
+
+        first_spec = DataMigrationSpec(
+            migration_key="0001_fill_defaults",
+            schema_revision=PRODUCTION_BASELINE_SCHEMA_REVISION,
+            summary="修复默认值",
+            mode="blocking",
+            apply=lambda session: None,
+            resource_keys=(),
+            checksum="fill-defaults",
+            module_name="tests.fill_defaults",
+        )
+        second_spec = DataMigrationSpec(
+            migration_key="0001_sync_assets",
+            schema_revision=PRODUCTION_BASELINE_SCHEMA_REVISION,
+            summary="同步资源引用",
+            mode="blocking",
+            apply=lambda session: None,
+            resource_keys=(),
+            checksum="sync-assets",
+            module_name="tests.sync_assets",
+        )
+        monkeypatch.setattr(
+            "aerisun.core.data_migrations.runner.get_registered_data_migrations",
+            lambda: (first_spec, second_spec),
+        )
+
+        applied = apply_pending_data_migrations(
+            mode="blocking",
+            on_applied=lambda spec: applied_order.append(spec.migration_key),
+        )
+
+        assert applied == ["0001_fill_defaults", "0001_sync_assets"]
+        assert applied_order == applied
+    finally:
+        teardown_runtime_state()
+
+
 def test_schedule_pending_background_data_migrations_marks_scheduled_without_applying(tmp_path, monkeypatch) -> None:
     from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
 

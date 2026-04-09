@@ -14,6 +14,7 @@ fi
 
 mode="blocking"
 json_mode="false"
+progress_mode="false"
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -29,6 +30,10 @@ while [[ "$#" -gt 0 ]]; do
       json_mode="true"
       shift
       ;;
+    --progress)
+      progress_mode="true"
+      shift
+      ;;
     *)
       echo "不支持的参数：$1" >&2
       exit 1
@@ -38,9 +43,10 @@ done
 
 case "${command}" in
   apply)
-    MODE="${mode}" run_backend_python -u - <<'PY'
+    MODE="${mode}" PROGRESS_MODE="${progress_mode}" run_backend_python -u - <<'PY'
 import os
 
+from aerisun.core.data_migrations.registry import DataMigrationSpec
 from aerisun.core.data_migrations.runner import apply_pending_data_migrations
 from aerisun.core.settings import get_settings
 
@@ -52,8 +58,21 @@ def log(message: str) -> None:
 settings = get_settings()
 settings.ensure_directories()
 mode = os.environ["MODE"]
-applied = apply_pending_data_migrations(mode=mode)
-if applied:
+progress_mode = os.environ["PROGRESS_MODE"] == "true"
+
+
+def mark_progress(_spec: DataMigrationSpec) -> None:
+    print(".", end="", flush=True)
+
+
+applied = apply_pending_data_migrations(
+    mode=mode,
+    on_applied=mark_progress if progress_mode else None,
+)
+if progress_mode:
+    if applied:
+        print("", flush=True)
+elif applied:
     log(f"已执行版本化数据迁移（mode={mode}）：{', '.join(applied)}")
 else:
     log(f"没有待执行的版本化数据迁移（mode={mode}）。")

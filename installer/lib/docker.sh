@@ -161,8 +161,57 @@ PY
 compose_api_task() {
   local task="$1"
   shift
+  local output_file=""
+  local status=0
 
-  compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@"
+  output_file="$(make_temp_file)"
+  if compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >"${output_file}" 2>&1; then
+    status=0
+  else
+    status=$?
+  fi
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "${line}" =~ ^[[:space:]]*\[\+\][[:space:]].*$ ]]; then
+      continue
+    fi
+    if [[ "${line}" =~ ^[[:space:]]*([[:graph:]]+[[:space:]]+)?(Container|Network|Volume)[[:space:]]+[^[:space:]]+[[:space:]]+(Creating|Created|Starting|Started|Running|Waiting|Recreated|Removed)$ ]]; then
+      continue
+    fi
+    printf '%s\n' "${line}"
+  done < "${output_file}"
+
+  cleanup_temp_file "${output_file}"
+  return "${status}"
+}
+
+compose_api_task_quiet_success() {
+  local task="$1"
+  shift
+  local output_file=""
+  local status=0
+
+  output_file="$(make_temp_file)"
+  if compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >"${output_file}" 2>&1; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if [[ "${status}" != "0" ]] || install_debug_enabled; then
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+      if [[ "${line}" =~ ^[[:space:]]*\[\+\][[:space:]].*$ ]]; then
+        continue
+      fi
+      if [[ "${line}" =~ ^[[:space:]]*([[:graph:]]+[[:space:]]+)?(Container|Network|Volume)[[:space:]]+[^[:space:]]+[[:space:]]+(Creating|Created|Starting|Started|Running|Waiting|Recreated|Removed)$ ]]; then
+        continue
+      fi
+      printf '%s\n' "${line}"
+    done < "${output_file}"
+  fi
+
+  cleanup_temp_file "${output_file}"
+  return "${status}"
 }
 
 compose_api_task_background() {
@@ -601,6 +650,8 @@ resolve_active_registry() {
 
 validate_release_compose_configuration() {
   local rendered_file=""
+  local expected_site_url=""
+  local expected_waline_url=""
 
   rendered_file="$(make_root_temp_file_in_dir "${AERISUN_APP_ROOT}" ".docker-compose.rendered.XXXXXX.yml")"
   if ! render_release_compose_configuration "${rendered_file}"; then
@@ -608,12 +659,19 @@ validate_release_compose_configuration() {
     die "安装配置校验失败，无法渲染最终 docker compose 配置。"
   fi
 
+  expected_site_url="$(derive_site_url_value || true)"
+  [[ -n "${expected_site_url}" ]] || die "安装配置校验失败，缺少可用的站点地址配置。"
+  expected_waline_url="$(trim_env_input "${AERISUN_WALINE_SERVER_URL:-${AERISUN_WALINE_SERVER_URL_VALUE:-}}")"
+  if [[ -z "${expected_waline_url}" ]]; then
+    expected_waline_url="${expected_site_url}${AERISUN_WALINE_BASE_PATH:-/waline}"
+  fi
+
   run_as_root python3 - "${rendered_file}" \
     "${AERISUN_IMAGE_REGISTRY}/${AERISUN_API_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
     "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WEB_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
     "${AERISUN_IMAGE_REGISTRY}/${AERISUN_WALINE_IMAGE_NAME}:${AERISUN_IMAGE_TAG}" \
-    "${AERISUN_SITE_URL_VALUE}" \
-    "${AERISUN_WALINE_SERVER_URL_VALUE}" <<'PY' || {
+    "${expected_site_url}" \
+    "${expected_waline_url}" <<'PY' || {
 import sys
 from pathlib import Path
 
@@ -681,25 +739,29 @@ run_release_migrations() {
 }
 
 run_release_baseline() {
-  log_info "🌱 正在执行生产 baseline..."
-  compose_api_task "baseline-prod.sh"
+  log_info "🌱 baseline 生产数据初始化..."
+  compose_api_task_quiet_success "baseline-prod.sh"
 }
 
 run_release_admin_bootstrap() {
-  log_info "🔐 正在准备生产首次管理员..."
-  compose_api_task "first-admin-prod.sh"
+  log_info "🔐 正在准备管理员首登账号..."
+  compose_api_task_quiet_success "first-admin-prod.sh"
 }
 
 run_release_data_migrations() {
   local mode="${1:-blocking}"
-  log_info "🛠️ 正在执行版本化数据迁移（mode=${mode}）..."
-  compose_api_task "data-migrate.sh" apply --mode "${mode}"
+  if [[ "${mode}" == "blocking" ]]; then
+    log_info "🛠️ 正在执行版本化数据迁移..."
+  else
+    log_info "🛠️ 正在执行版本化数据迁移（mode=${mode}）..."
+  fi
+  compose_api_task "data-migrate.sh" apply --mode "${mode}" --progress
 }
 
 schedule_release_background_data_migrations() {
   local logfile="${SERINO_LOG_ROOT}/data-migrations-background.log"
   log_info "🛰️ 正在调度后台数据迁移..."
-  compose_api_task "data-migrate.sh" schedule --mode background >/dev/null
+  compose_api_task_quiet_success "data-migrate.sh" schedule --mode background
   compose_api_task_background "${logfile}" "data-migrate.sh" apply --mode background
 }
 
