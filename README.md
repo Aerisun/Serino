@@ -124,6 +124,7 @@ make dev-stop   # 停止整套本地开发环境
 
 curl -fsSL https://install.aerisun.top/serino/dev/vX.Y.Z/install.sh | bash # 测试安装（除了使用最新的 dev 渠道和镜像来源，别的与正式安装器完全一致）
 # 单台机器一次只应选择一个渠道，切换先行 `sercli uninstall --force` 再重装；因为 CDN 缓存的关系，所以使用版本号避免错误
+# 网络不稳定失败可以调节 max-concurrent-downloads
 ```
 
 - 默认前台地址：`http://127.0.0.1:8080/`

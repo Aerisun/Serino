@@ -195,6 +195,9 @@ main() {
   local bundle_root="${AERISUN_TEMPLATE_ROOT}"
   local active_registry=""
   local preflight_action=""
+  local summary_site_url=""
+  local summary_site_probe_url=""
+  local summary_admin_url=""
 
   require_supported_linux
   require_root_or_sudo
@@ -315,21 +318,32 @@ main() {
   schedule_release_background_data_migrations || true
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64"
   unset_env_value "${AERISUN_ENV_FILE}" "AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64"
-  AERISUN_INSTALL_CLEANUP_ARMED=0
 
   if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "domain" ]]; then
-    print_install_summary \
-      "${AERISUN_SITE_URL_VALUE}" \
-      "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}" \
-      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}" \
-      "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}"
+    summary_site_url="${AERISUN_SITE_URL_VALUE}"
+    summary_site_probe_url="${AERISUN_SITE_URL_VALUE}/"
   else
-    print_install_summary \
-      "${AERISUN_SITE_URL_VALUE}/" \
-      "${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}" \
-      "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}" \
-      "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}"
+    summary_site_url="${AERISUN_SITE_URL_VALUE}/"
+    summary_site_probe_url="${summary_site_url}"
   fi
+  summary_admin_url="${AERISUN_SITE_URL_VALUE}${AERISUN_ADMIN_BASE_PATH:-/admin/}"
+
+  if ! verify_install_summary_endpoints "${summary_site_probe_url}" "${summary_admin_url}"; then
+    print_service_start_failure_diagnostics
+    cleanup_failed_installation
+    AERISUN_INSTALL_CLEANUP_ARMED=0
+    if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "ip" ]]; then
+      die "安装完成前的最终访问校验失败：当前填写的 IPv4 绑定有误，常见原因是把代理出口地址填成了服务器 IP。请改填这台服务器真实 IPv4（优先公网 IPv4，没有公网再用内网）后重新安装。"
+    fi
+    die "安装完成前的最终访问校验失败，网站首页或网站管理台仍不可访问。可根据上面的报错信息修复后重试。"
+  fi
+
+  AERISUN_INSTALL_CLEANUP_ARMED=0
+  print_install_summary \
+    "${summary_site_url}" \
+    "${summary_admin_url}" \
+    "${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}" \
+    "${AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE}"
 }
 
 if [[ "${INSTALL_SCRIPT_IS_EXECUTED}" == "true" ]]; then
