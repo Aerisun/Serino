@@ -265,7 +265,7 @@ cmd_status() {
   systemd_enabled="$(run_as_root systemctl is-enabled "${SERINO_SYSTEMD_UNIT}" 2>/dev/null || true)"
   release_version="$(resolve_release_version_value || true)"
 
-  if curl --fail --silent --show-error "${backend_url}" >/dev/null 2>&1; then
+  if curl_self_check "${backend_url}" >/dev/null 2>&1; then
     health_status="ok"
   fi
 

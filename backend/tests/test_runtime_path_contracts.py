@@ -101,6 +101,86 @@ printf '%s\\n' "${AERISUN_WALINE_SECURE_DOMAINS_VALUE}"
     ]
 
 
+def test_guess_host_for_ip_mode_prefers_non_proxy_public_ipv4():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    printf '8.8.8.8'
+    return 0
+  fi
+  printf '1.1.1.1'
+  return 0
+}
+
+printf '%s\\n' "$(guess_host_for_ip_mode)"
+"""
+    ).strip()
+
+    assert output == "8.8.8.8"
+
+
+def test_validate_ip_mode_host_accepts_local_private_ipv4_and_rejects_proxy_exit_ipv4():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+list_local_ipv4_candidates() {
+  printf '10.0.0.8\\n'
+}
+
+detect_public_ipv4_without_proxy() {
+  printf '8.8.8.8'
+}
+
+detect_public_ipv4_with_proxy() {
+  printf '1.1.1.1'
+}
+
+if validate_ip_mode_host 'example.com' >/dev/null; then
+  printf 'unexpected-domain-ok\\n'
+else
+  printf '%s\\n' "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
+fi
+
+if validate_ip_mode_host '10.0.0.8' >/dev/null; then
+  printf 'local-ok\\n'
+else
+  printf '%s\\n' "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
+fi
+
+if validate_ip_mode_host '1.1.1.1' >/dev/null; then
+  printf 'unexpected-proxy-ok\\n'
+else
+  printf '%s\\n' "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
+fi
+
+public_value="$(validate_ip_mode_host '8.8.8.8')"
+public_status="$?"
+printf '%s\\n' "${public_value}"
+printf '%s\\n' "${public_status}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "IP 模式仅支持这台服务器的真实 IPv4 地址，请不要填写域名、IPv6 或主机名。",
+        "local-ok",
+        "当前填写的 IPv4 看起来是代理出口地址，不是这台服务器的真实 IP。请填写本机内网 IPv4 或真实公网 IPv4。",
+        "8.8.8.8",
+        "0",
+    ]
+
+
 def test_settings_normalize_runtime_paths_under_store_dir():
     from aerisun.core.settings import (
         PROJECT_ROOT as SETTINGS_PROJECT_ROOT,
@@ -186,7 +266,10 @@ printf 'curl:%s\\n' "${SERCLI_CURL_ARGS}"
     assert "后端就绪" in output and "正常" in output
     assert "容器服务" in output
     assert "compose:ps" in output
-    assert "curl:--fail --silent --show-error http://127.0.0.1:18000/api/v1/site/readyz" in output
+    assert (
+        "curl:--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://127.0.0.1:18000/api/v1/site/readyz"
+        in output
+    )
 
 
 def test_sercli_version_prints_human_readable_summary():
@@ -378,6 +461,90 @@ compose_api_task baseline-prod.sh
     ).strip()
 
     assert output == "生产 baseline 已完成。"
+
+
+def test_compose_api_task_hides_ansi_wrapped_ephemeral_compose_progress_noise():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+compose() {
+  printf ' \033[32mNetwork serino_default Creating\033[0m\\n'
+  printf ' \033[32mNetwork serino_default Created\033[0m\\n'
+  printf ' \033[32mContainer serino-api-run-abc123 Creating\033[0m\\n'
+  printf ' \033[32mContainer serino-api-run-abc123 Created\033[0m\\n'
+  printf '已创建生产环境首次管理员账号。\\n'
+}
+
+compose_api_task first-admin-prod.sh
+"""
+    ).strip()
+
+    assert output == "已创建生产环境首次管理员账号。"
+
+
+def test_wait_for_release_ready_bypasses_proxy_for_ip_mode_urls():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/docker.sh
+
+AERISUN_ENV_FILE="$(mktemp /tmp/serino-env.XXXXXX)"
+SERINO_CURL_LOG="$(mktemp /tmp/serino-curl.XXXXXX)"
+cat > "${AERISUN_ENV_FILE}" <<'EOF'
+AERISUN_DOMAIN=http://198.51.100.42
+AERISUN_SITE_URL=http://198.51.100.42
+AERISUN_WALINE_SERVER_URL=http://198.51.100.42/waline
+AERISUN_PORT=18000
+EOF
+
+curl() {
+  printf '%s\\n' "$*" >> "${SERINO_CURL_LOG}"
+  return 0
+}
+
+wait_for_release_ready 3
+cat "${SERINO_CURL_LOG}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://127.0.0.1:18000/api/v1/site/readyz",
+        "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://198.51.100.42/",
+        "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://198.51.100.42/admin/",
+        "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 http://198.51.100.42/waline/",
+    ]
+
+
+def test_wait_for_domain_url_bypasses_proxy_for_local_https_ready_checks():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/docker.sh
+
+SERINO_CURL_LOG="$(mktemp /tmp/serino-curl-domain.XXXXXX)"
+
+curl() {
+  printf '%s\\n' "$*" >> "${SERINO_CURL_LOG}"
+  return 0
+}
+
+wait_for_domain_url example.test / 3
+cat "${SERINO_CURL_LOG}"
+"""
+    ).strip()
+
+    assert (
+        output
+        == "--noproxy * --fail --silent --show-error --connect-timeout 5 --max-time 10 --insecure --resolve example.test:443:127.0.0.1 https://example.test/"
+    )
 
 
 def test_compose_api_task_quiet_success_suppresses_normal_success_output():
@@ -809,6 +976,9 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "if ! run_release_data_migrations blocking; then" in install_text
     assert "if ! run_release_admin_bootstrap; then" in install_text
     assert "if ! enable_serino_service; then" in install_text
+    assert (
+        'if ! verify_install_summary_endpoints "${summary_site_probe_url}" "${summary_admin_url}"; then' in install_text
+    )
     assert "run_release_migrations" in install_text
     assert "run_release_baseline" in install_text
     assert "run_release_data_migrations blocking" in install_text
@@ -828,6 +998,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "run_release_admin_bootstrap() {" in docker_text
     assert "run_release_data_migrations() {" in docker_text
     assert "schedule_release_background_data_migrations() {" in docker_text
+    assert "verify_install_summary_endpoints() {" in docker_text
     assert "resolve_compose_runner() {" in docker_text
     assert "runtime_compose_file() {" in docker_text
     assert "render_release_compose_configuration() {" in docker_text
@@ -967,6 +1138,19 @@ def test_release_workflow_refreshes_bitiful_installer_cache():
     assert '"${BINFEN_INSTALL_BASE_URL}/latest.env"' in workflow_text
     assert '"${DEV_INSTALL_BASE_URL}/install.sh"' in workflow_text
     assert '"${DEV_INSTALL_BASE_URL}/latest.env"' in workflow_text
+    assert "if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')" in workflow_text
+    assert (
+        "if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release') && needs.release-readiness.result == 'success' && needs.docker-build.result == 'success' }}"
+        in workflow_text
+    )
+    assert (
+        "if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release') && needs.docker-smoke.result == 'success' }}"
+        in workflow_text
+    )
+    assert (
+        "if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release') && needs.docker-publish.result == 'success' }}"
+        in workflow_text
+    )
 
 
 def test_installer_systemd_units_switch_to_serino_names():

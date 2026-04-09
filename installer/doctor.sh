@@ -386,25 +386,25 @@ check_health_and_data_status() {
 
   local backend_url=""
   backend_url="$(resolve_backend_healthcheck_url)"
-  if curl --fail --silent --show-error "${backend_url}" >/dev/null 2>&1; then
+  if curl_self_check "${backend_url}" >/dev/null 2>&1; then
     record_check "ok" "health.api" "API 健康检查通过。" ""
   else
     record_check "fail" "health.api" "API 健康检查未通过：${backend_url}" "sercli logs api"
   fi
 
-  if [[ -n "${AERISUN_SITE_URL:-}" ]] && curl --fail --silent --show-error "${AERISUN_SITE_URL}/" >/dev/null 2>&1; then
+  if [[ -n "${AERISUN_SITE_URL:-}" ]] && curl_self_check "${AERISUN_SITE_URL}/" >/dev/null 2>&1; then
     record_check "ok" "health.site" "站点首页可访问。" ""
   else
     record_check "fail" "health.site" "站点首页不可访问：${AERISUN_SITE_URL:-<unknown>}/" "sercli logs caddy"
   fi
 
-  if [[ -n "${AERISUN_SITE_URL:-}" ]] && curl --fail --silent --show-error "${AERISUN_SITE_URL}${AERISUN_ADMIN_BASE_PATH:-/admin/}" >/dev/null 2>&1; then
+  if [[ -n "${AERISUN_SITE_URL:-}" ]] && curl_self_check "${AERISUN_SITE_URL}${AERISUN_ADMIN_BASE_PATH:-/admin/}" >/dev/null 2>&1; then
     record_check "ok" "health.admin" "网站管理台可访问。" ""
   else
     record_check "fail" "health.admin" "网站管理台不可访问。" "sercli logs caddy api"
   fi
 
-  if [[ -n "${AERISUN_WALINE_SERVER_URL:-}" ]] && curl --fail --silent --show-error "${AERISUN_WALINE_SERVER_URL}/" >/dev/null 2>&1; then
+  if [[ -n "${AERISUN_WALINE_SERVER_URL:-}" ]] && curl_self_check "${AERISUN_WALINE_SERVER_URL}/" >/dev/null 2>&1; then
     record_check "ok" "health.waline" "Waline 可访问。" ""
   else
     record_check "fail" "health.waline" "Waline 不可访问。" "sercli logs waline caddy"

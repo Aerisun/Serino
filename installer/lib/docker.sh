@@ -140,6 +140,28 @@ compose() {
   compose_with_env "${compose_runner}" "$(runtime_compose_file)" "$@"
 }
 
+normalize_compose_output_line() {
+  local line="$1"
+
+  line="${line//$'\r'/}"
+  line="$(printf '%s' "${line}" | sed -E $'s/\x1B\\[[0-9;?]*[ -/]*[@-~]//g')"
+  printf '%s' "${line}"
+}
+
+compose_output_line_is_noise() {
+  local line="$1"
+
+  [[ -z "${line//[[:space:]]/}" ]] && return 0
+  if [[ "${line}" =~ ^[[:space:]]*\[\+\][[:space:]].*$ ]]; then
+    return 0
+  fi
+  if [[ "${line}" =~ ^[[:space:]]*([[:graph:]]+[[:space:]]+)?(Container|Network|Volume)[[:space:]]+[^[:space:]]+[[:space:]]+(Creating|Created|Starting|Started|Running|Waiting|Recreated|Removed)$ ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
 list_runtime_compose_services() {
   local compose_file=""
   compose_file="$(runtime_compose_file)"
@@ -163,6 +185,8 @@ compose_api_task() {
   shift
   local output_file=""
   local status=0
+  local line=""
+  local normalized_line=""
 
   output_file="$(make_temp_file)"
   if compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >"${output_file}" 2>&1; then
@@ -172,13 +196,11 @@ compose_api_task() {
   fi
 
   while IFS= read -r line || [[ -n "${line}" ]]; do
-    if [[ "${line}" =~ ^[[:space:]]*\[\+\][[:space:]].*$ ]]; then
+    normalized_line="$(normalize_compose_output_line "${line}")"
+    if compose_output_line_is_noise "${normalized_line}"; then
       continue
     fi
-    if [[ "${line}" =~ ^[[:space:]]*([[:graph:]]+[[:space:]]+)?(Container|Network|Volume)[[:space:]]+[^[:space:]]+[[:space:]]+(Creating|Created|Starting|Started|Running|Waiting|Recreated|Removed)$ ]]; then
-      continue
-    fi
-    printf '%s\n' "${line}"
+    printf '%s\n' "${normalized_line}"
   done < "${output_file}"
 
   cleanup_temp_file "${output_file}"
@@ -190,6 +212,8 @@ compose_api_task_quiet_success() {
   shift
   local output_file=""
   local status=0
+  local line=""
+  local normalized_line=""
 
   output_file="$(make_temp_file)"
   if compose run --rm --no-deps -T api /bin/bash "/app/backend/scripts/${task}" "$@" >"${output_file}" 2>&1; then
@@ -200,13 +224,11 @@ compose_api_task_quiet_success() {
 
   if [[ "${status}" != "0" ]] || install_debug_enabled; then
     while IFS= read -r line || [[ -n "${line}" ]]; do
-      if [[ "${line}" =~ ^[[:space:]]*\[\+\][[:space:]].*$ ]]; then
+      normalized_line="$(normalize_compose_output_line "${line}")"
+      if compose_output_line_is_noise "${normalized_line}"; then
         continue
       fi
-      if [[ "${line}" =~ ^[[:space:]]*([[:graph:]]+[[:space:]]+)?(Container|Network|Volume)[[:space:]]+[^[:space:]]+[[:space:]]+(Creating|Created|Starting|Started|Running|Waiting|Recreated|Removed)$ ]]; then
-        continue
-      fi
-      printf '%s\n' "${line}"
+      printf '%s\n' "${normalized_line}"
     done < "${output_file}"
   fi
 
@@ -762,6 +784,10 @@ compose_up_release() {
   enable_serino_service || return $?
 }
 
+curl_self_check() {
+  curl --noproxy '*' --fail --silent --show-error --connect-timeout 5 --max-time 10 "$@"
+}
+
 run_release_migrations() {
   log_info "🧱 正在执行数据库迁移..."
   compose_api_task "migrate.sh"
@@ -794,6 +820,14 @@ schedule_release_background_data_migrations() {
   compose_api_task_background "${logfile}" "data-migrate.sh" apply --mode background
 }
 
+verify_install_summary_endpoints() {
+  local site_url="$1"
+  local admin_url="$2"
+
+  curl_self_check "${site_url}" >/dev/null 2>&1 || return 1
+  curl_self_check "${admin_url}" >/dev/null 2>&1 || return 1
+}
+
 wait_for_url() {
   local url="$1"
   local timeout_seconds="${2:-180}"
@@ -801,7 +835,7 @@ wait_for_url() {
 
   started_at="$(date +%s)"
   while true; do
-    if curl --fail --silent --show-error "${url}" >/dev/null 2>&1; then
+    if curl_self_check "${url}" >/dev/null 2>&1; then
       return 0
     fi
 
@@ -827,7 +861,7 @@ wait_for_domain_url() {
 
   started_at="$(date +%s)"
   while true; do
-    if curl --fail --silent --show-error --insecure \
+    if curl_self_check --insecure \
       --resolve "${host}:443:127.0.0.1" \
       "https://${host}${path}" >/dev/null 2>&1; then
       return 0
@@ -957,7 +991,7 @@ print_domain_https_failure_details() {
     firewall_reasons+=("本机 443 端口没有监听，HTTPS 服务没有成功接管。")
   fi
 
-  if ! curl --fail --silent --show-error --insecure --resolve "${host}:443:127.0.0.1" "https://${host}${path}" >/dev/null 2>&1; then
+  if ! curl_self_check --insecure --resolve "${host}:443:127.0.0.1" "https://${host}${path}" >/dev/null 2>&1; then
     cert_reasons+=("本机通过 HTTPS 访问 ${label} 仍未就绪，说明证书签发或 Caddy HTTPS 站点仍有异常。")
   fi
 
@@ -1157,7 +1191,7 @@ verify_default_admin_login() {
   [[ -n "${username}" && -n "${password}" ]] || return 1
 
   payload="$(printf '{"username":"%s","password":"%s"}' "$(json_escape "${username}")" "$(json_escape "${password}")")"
-  curl --fail --silent --show-error \
+  curl_self_check \
     -H 'content-type: application/json' \
     -d "${payload}" \
     "http://127.0.0.1:${AERISUN_PORT:-8000}/api/v1/admin/auth/login" >/dev/null

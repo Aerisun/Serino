@@ -203,6 +203,7 @@ wait_for_release_ready() { record wait_for_release_ready; }
 verify_default_admin_login() { record verify_default_admin_login; }
 schedule_release_background_data_migrations() { record schedule_release_background_data_migrations; }
 unset_env_value() { record "unset_env_value:$2"; }
+verify_install_summary_endpoints() { record "verify_install_summary_endpoints:$1|$2"; }
 print_install_summary() { record "print_install_summary:$1"; }
 
 main
@@ -238,6 +239,7 @@ main
         "schedule_release_background_data_migrations",
         "unset_env_value:AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64",
         "unset_env_value:AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64",
+        "verify_install_summary_endpoints:http://127.0.0.1/|http://127.0.0.1/admin/",
         "print_install_summary:http://127.0.0.1/",
     ]
 
@@ -294,6 +296,7 @@ wait_for_release_ready() { :; }
 verify_default_admin_login() { :; }
 schedule_release_background_data_migrations() { :; }
 unset_env_value() { :; }
+verify_install_summary_endpoints() { :; }
 print_install_summary() { :; }
 
 main
@@ -373,6 +376,93 @@ main
         "die:阻塞式数据迁移失败，安装已中止。可根据上面的报错信息修复后重试。",
     ]
     assert lines[6:] in ([], ["cleanup_failed_installation"])
+
+
+def test_install_main_cleans_up_when_final_summary_endpoint_verification_fails() -> None:
+    completed = run_project_bash(
+        """
+source installer/install.sh
+
+record() {
+  printf '%s\\n' "$1"
+}
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+prepare_install_target() { :; }
+ensure_port_available() { :; }
+resolve_release_tag() { printf 'v1.2.3'; }
+make_temp_file() { printf '/tmp/manifest'; }
+load_release_manifest() {
+  AERISUN_IMAGE_REGISTRY='registry.example.com/serino'
+  AERISUN_IMAGE_TAG='v1.2.3'
+}
+prompt_access_mode() { AERISUN_INSTALL_ACCESS_MODE='ip'; }
+prompt_install_host() { AERISUN_INSTALL_HOST='127.0.0.1'; }
+prompt_bootstrap_admin_credentials() {
+  AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE='admin'
+  AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE='pass'
+}
+confirm_install_settings() { :; }
+ensure_docker_installed() { :; }
+configure_local_firewall() { :; }
+ensure_service_user() { :; }
+resolve_active_registry() { printf '%s' "$1"; }
+build_runtime_configuration() {
+  AERISUN_DOMAIN_VALUE='http://127.0.0.1'
+  AERISUN_SITE_URL_VALUE='http://127.0.0.1'
+  AERISUN_WALINE_SERVER_URL_VALUE='http://127.0.0.1/waline'
+}
+install_release_payload() { :; }
+write_production_env() { :; }
+normalize_production_env_file() { :; }
+daemon_reload() { :; }
+validate_release_compose_configuration() { :; }
+compose() { :; }
+run_release_migrations() { record run_release_migrations; }
+run_release_baseline() { record run_release_baseline; }
+run_release_data_migrations() { record "run_release_data_migrations:$1"; }
+run_release_admin_bootstrap() { record run_release_admin_bootstrap; }
+enable_serino_service() { record enable_serino_service; }
+wait_for_release_ready() { record wait_for_release_ready; }
+verify_default_admin_login() { record verify_default_admin_login; }
+schedule_release_background_data_migrations() { record schedule_release_background_data_migrations; }
+unset_env_value() { record "unset_env_value:$2"; }
+verify_install_summary_endpoints() {
+  record "verify_install_summary_endpoints:$1|$2"
+  return 1
+}
+print_service_start_failure_diagnostics() { record print_service_start_failure_diagnostics; }
+cleanup_failed_installation() { record cleanup_failed_installation; }
+die() {
+  record "die:$*"
+  exit 1
+}
+
+main
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    lines = completed.stdout.strip().splitlines()
+    assert lines[:14] == [
+        "run_release_migrations",
+        "run_release_baseline",
+        "run_release_data_migrations:blocking",
+        "run_release_admin_bootstrap",
+        "enable_serino_service",
+        "wait_for_release_ready",
+        "verify_default_admin_login",
+        "schedule_release_background_data_migrations",
+        "unset_env_value:AERISUN_BOOTSTRAP_ADMIN_USERNAME_B64",
+        "unset_env_value:AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64",
+        "verify_install_summary_endpoints:http://127.0.0.1/|http://127.0.0.1/admin/",
+        "print_service_start_failure_diagnostics",
+        "cleanup_failed_installation",
+        "die:安装完成前的最终访问校验失败：当前填写的 IPv4 绑定有误，常见原因是把代理出口地址填成了服务器 IP。请改填这台服务器真实 IPv4（可用内网地址或公网地址）后重新安装。",
+    ]
+    assert lines[14:] in ([], ["cleanup_failed_installation"])
 
 
 def test_upgrade_check_only_runs_preflight_without_mutation() -> None:
