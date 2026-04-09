@@ -76,6 +76,80 @@ def test_install_script_supports_stdin_bootstrap_execution(tmp_path: Path) -> No
     assert completed.stdout.strip() == "bundled-ok"
 
 
+def test_normalize_release_registry_strategy_forces_direct_docker_hub_for_dev_channel() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+AERISUN_INSTALL_CHANNEL='dev'
+AERISUN_DOCKER_REGISTRY_MIRRORS='https://mirror.example.com'
+normalize_release_registry_strategy
+printf '<%s>\\n' "${AERISUN_DOCKER_REGISTRY_MIRRORS}"
+"""
+    )
+
+    assert completed.stdout.strip() == "<>"
+
+
+def test_normalize_release_registry_strategy_keeps_production_mirror_settings_unchanged() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+AERISUN_INSTALL_CHANNEL='stable'
+AERISUN_DOCKER_REGISTRY_MIRRORS='https://mirror.example.com'
+normalize_release_registry_strategy
+printf '<%s>\\n' "${AERISUN_DOCKER_REGISTRY_MIRRORS}"
+"""
+    )
+
+    assert completed.stdout.strip() == "<https://mirror.example.com>"
+
+
+def test_configure_docker_registry_mirrors_removes_existing_daemon_mirror_for_dev_channel(tmp_path: Path) -> None:
+    daemon_file = tmp_path / "daemon.json"
+    daemon_file.write_text(
+        '{\n  "registry-mirrors": ["https://mirror.example.com"],\n  "features": {"buildkit": true}\n}\n',
+        encoding="utf-8",
+    )
+
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+SERINO_DOCKER_DAEMON_FILE='{daemon_file}'
+AERISUN_INSTALL_CHANNEL='dev'
+AERISUN_DOCKER_REGISTRY_MIRRORS='https://ignored.example.com'
+
+make_temp_file() {{ mktemp '{tmp_path}/tmp.XXXXXX'; }}
+run_as_root() {{
+  if [[ "$1" == install ]]; then
+    shift
+    if [[ " $* " == *" -d "* ]]; then
+      mkdir -p "${{@: -1}}"
+    else
+      cp "${{@: -2:1}}" "${{@: -1}}"
+    fi
+    return 0
+  fi
+  "$@"
+}}
+
+state="$(configure_docker_registry_mirrors)"
+printf 'state=%s\\n' "$state"
+cat '{daemon_file}'
+"""
+    )
+
+    assert "state=changed" in completed.stdout
+    assert '"registry-mirrors"' not in completed.stdout
+    assert '"features": {' in completed.stdout
+    assert '"buildkit": true' in completed.stdout
+
+
 def test_install_main_runs_schema_baseline_and_background_pipeline_in_order() -> None:
     completed = run_project_bash(
         """
@@ -166,6 +240,67 @@ main
         "unset_env_value:AERISUN_BOOTSTRAP_ADMIN_PASSWORD_B64",
         "print_install_summary:http://127.0.0.1/",
     ]
+
+
+def test_install_main_clears_registry_mirrors_before_ensuring_docker_for_dev_channel() -> None:
+    completed = run_project_bash(
+        """
+source installer/install.sh
+
+record() {
+  printf '%s\\n' "$1"
+}
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+prepare_install_target() { :; }
+ensure_port_available() { :; }
+resolve_release_tag() { printf 'v1.2.3'; }
+make_temp_file() { printf '/tmp/manifest'; }
+load_release_manifest() {
+  AERISUN_INSTALL_CHANNEL='dev'
+  AERISUN_IMAGE_REGISTRY='docker.io/aerisun'
+  AERISUN_IMAGE_TAG='v1.2.3'
+  AERISUN_DOCKER_REGISTRY_MIRRORS='https://mirror.example.com'
+}
+prompt_access_mode() { AERISUN_INSTALL_ACCESS_MODE='ip'; }
+prompt_install_host() { AERISUN_INSTALL_HOST='127.0.0.1'; }
+prompt_bootstrap_admin_credentials() {
+  AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE='admin'
+  AERISUN_BOOTSTRAP_ADMIN_PASSWORD_VALUE='pass'
+}
+confirm_install_settings() { :; }
+ensure_docker_installed() { record "ensure_docker_installed:${AERISUN_DOCKER_REGISTRY_MIRRORS}"; }
+configure_local_firewall() { :; }
+ensure_service_user() { :; }
+resolve_active_registry() { printf '%s' "$1"; }
+build_runtime_configuration() {
+  AERISUN_DOMAIN_VALUE='http://127.0.0.1'
+  AERISUN_SITE_URL_VALUE='http://127.0.0.1'
+  AERISUN_WALINE_SERVER_URL_VALUE='http://127.0.0.1/waline'
+}
+install_release_payload() { :; }
+write_production_env() { :; }
+normalize_production_env_file() { :; }
+daemon_reload() { :; }
+validate_release_compose_configuration() { :; }
+compose() { :; }
+run_release_migrations() { :; }
+run_release_baseline() { :; }
+run_release_data_migrations() { :; }
+run_release_admin_bootstrap() { :; }
+enable_serino_service() { :; }
+wait_for_release_ready() { :; }
+verify_default_admin_login() { :; }
+schedule_release_background_data_migrations() { :; }
+unset_env_value() { :; }
+print_install_summary() { :; }
+
+main
+"""
+    )
+
+    assert completed.stdout.strip() == "ensure_docker_installed:"
 
 
 def test_install_main_cleans_up_when_blocking_data_migration_fails() -> None:
@@ -355,6 +490,7 @@ main v2.0.0
         "install_release_payload",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
+        "set_env_value:AERISUN_DOCKER_REGISTRY_MIRRORS=",
         "normalize_production_env_file",
         "validate_release_compose_configuration",
         "compose:pull",
@@ -437,6 +573,7 @@ main v2.0.0
         "install_release_payload",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
+        "set_env_value:AERISUN_DOCKER_REGISTRY_MIRRORS=",
         "normalize_production_env_file",
         "https://example.test|https://example.test/waline",
         "validate_release_compose_configuration",
@@ -447,6 +584,54 @@ main v2.0.0
         "wait_for_release_ready",
         "schedule_release_background_data_migrations",
     ]
+
+
+def test_upgrade_main_clears_registry_mirrors_in_env_for_dev_channel() -> None:
+    completed = run_project_bash(
+        """
+source installer/upgrade.sh
+
+record() {
+  printf '%s\\n' "$1"
+}
+
+require_supported_linux() { :; }
+require_root_or_sudo() { :; }
+ensure_supported_existing_installation() { :; }
+ensure_service_user() { :; }
+load_env_file() { :; }
+run_upgrade_preflight() { :; }
+resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
+make_temp_file() { printf '/tmp/manifest'; }
+make_temp_dir() { printf '/tmp/bundle'; }
+load_release_manifest() {
+  AERISUN_INSTALL_CHANNEL='dev'
+  AERISUN_IMAGE_REGISTRY='docker.io/aerisun'
+  AERISUN_IMAGE_TAG='v2.0.0'
+  AERISUN_DOCKER_REGISTRY_MIRRORS='https://mirror.example.com'
+}
+download_release_asset() { record "download_release_asset:$1"; }
+tar() { record "tar:$*"; }
+date() { printf '20260408112233'; }
+stop_serino_service() { :; }
+backup_current_installation() { :; }
+resolve_active_registry() { printf '%s' "$1"; }
+install_release_payload() { :; }
+set_env_value() { record "set_env_value:$2=$3"; }
+normalize_production_env_file() { :; }
+validate_release_compose_configuration() { :; }
+compose() { :; }
+run_release_migrations() { :; }
+run_release_data_migrations() { :; }
+enable_serino_service() { :; }
+wait_for_release_ready() { :; }
+schedule_release_background_data_migrations() { :; }
+
+main v2.0.0
+"""
+    )
+
+    assert "set_env_value:AERISUN_DOCKER_REGISTRY_MIRRORS=" in completed.stdout
 
 
 def test_release_smoke_gate_runs_shell_backend_and_docker_steps_in_order() -> None:

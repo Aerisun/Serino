@@ -240,6 +240,7 @@ main() {
   prompt_bootstrap_admin_credentials
   confirm_install_settings
 
+  normalize_release_registry_strategy
   ensure_docker_installed
   configure_local_firewall
   ensure_service_user

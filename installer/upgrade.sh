@@ -107,6 +107,7 @@ main() {
   version="$(resolve_release_tag)"
   manifest_file="$(make_temp_file)"
   load_release_manifest "${version}" "${manifest_file}"
+  normalize_release_registry_strategy
   target_registry="${AERISUN_IMAGE_REGISTRY}"
   target_image_tag="${AERISUN_IMAGE_TAG}"
 
@@ -133,6 +134,7 @@ main() {
   install_release_payload "${bundle_dir}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
+  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_DOCKER_REGISTRY_MIRRORS" "${AERISUN_DOCKER_REGISTRY_MIRRORS}"
   normalize_production_env_file "${AERISUN_ENV_FILE}"
   validate_release_compose_configuration
 

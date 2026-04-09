@@ -582,22 +582,34 @@ install_docker_from_convenience_script() {
   rm -f "${script_file}" "${logfile}"
 }
 
+normalize_release_registry_strategy() {
+  if [[ "${AERISUN_INSTALL_CHANNEL:-stable}" == "dev" ]]; then
+    AERISUN_DOCKER_REGISTRY_MIRRORS=""
+  fi
+}
+
 configure_docker_registry_mirrors() {
   local mirrors="${AERISUN_DOCKER_REGISTRY_MIRRORS:-}"
-  local daemon_file="/etc/docker/daemon.json"
+  local channel="${AERISUN_INSTALL_CHANNEL:-stable}"
+  local daemon_file="${SERINO_DOCKER_DAEMON_FILE}"
   local tmp_file=""
+  local change_state=""
 
-  [[ -n "${mirrors}" ]] || return 0
+  if [[ -z "${mirrors}" && "${channel}" != "dev" ]]; then
+    return 0
+  fi
 
   tmp_file="$(make_temp_file)"
-  python3 - "${mirrors}" "${tmp_file}" <<'PY'
+  change_state="$(
+    python3 - "${channel}" "${mirrors}" "${daemon_file}" "${tmp_file}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-mirrors_raw = sys.argv[1]
-output_path = Path(sys.argv[2])
-daemon_path = Path("/etc/docker/daemon.json")
+channel = sys.argv[1]
+mirrors_raw = sys.argv[2]
+daemon_path = Path(sys.argv[3])
+output_path = Path(sys.argv[4])
 mirrors = [item.strip() for item in mirrors_raw.split(",") if item.strip()]
 
 data = {}
@@ -607,16 +619,33 @@ if daemon_path.exists():
     except Exception:
         data = {}
 
-data["registry-mirrors"] = mirrors
+changed = False
+if channel == "dev":
+    if "registry-mirrors" in data:
+        data.pop("registry-mirrors", None)
+        changed = True
+elif data.get("registry-mirrors") != mirrors:
+    data["registry-mirrors"] = mirrors
+    changed = True
+
 output_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+print("changed" if changed else "unchanged")
 PY
-  run_as_root install -d -o root -g root -m 0755 /etc/docker
+  )"
+  if [[ "${change_state}" != "changed" ]]; then
+    rm -f "${tmp_file}"
+    return 0
+  fi
+
+  run_as_root install -d -o root -g root -m 0755 "$(dirname "${daemon_file}")"
   run_as_root install -o root -g root -m 0644 "${tmp_file}" "${daemon_file}"
   rm -f "${tmp_file}"
+  printf 'changed'
 }
 
 ensure_docker_installed() {
   local docker_ready=1
+  local registry_mirror_state=""
 
   if ! command_exists docker || ! (run_as_root docker compose version >/dev/null 2>&1 || command_exists docker-compose); then
     docker_ready=0
@@ -629,9 +658,9 @@ ensure_docker_installed() {
     fi
   fi
 
-  configure_docker_registry_mirrors
+  registry_mirror_state="$(configure_docker_registry_mirrors || true)"
   run_as_root systemctl enable --now docker >/dev/null 2>&1
-  if [[ -n "${AERISUN_DOCKER_REGISTRY_MIRRORS:-}" ]]; then
+  if [[ "${registry_mirror_state}" == "changed" ]]; then
     run_as_root systemctl restart docker >/dev/null 2>&1
   fi
 
