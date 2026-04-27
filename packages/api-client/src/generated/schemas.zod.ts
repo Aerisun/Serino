@@ -2572,7 +2572,8 @@ export const DeleteContentSubscriberApiV1AdminSubscriptionsSubscribersEmailDelet
  */
 export const GetProxyConfigApiV1AdminProxyConfigGetResponse = zod.object({
   "proxy_port": zod.unknown().optional(),
-  "webhook_enabled": zod.unknown().optional()
+  "webhook_enabled": zod.unknown().optional(),
+  "oauth_enabled": zod.unknown().optional()
 })
 
 
@@ -2585,12 +2586,14 @@ export const putProxyConfigApiV1AdminProxyConfigPutBodyProxyPortOneMax = 65535;
 
 export const PutProxyConfigApiV1AdminProxyConfigPutBody = zod.object({
   "proxy_port": zod.union([zod.number().min(1).max(putProxyConfigApiV1AdminProxyConfigPutBodyProxyPortOneMax),zod.null()]).optional(),
-  "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional()
+  "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "oauth_enabled": zod.union([zod.boolean(),zod.null()]).optional()
 })
 
 export const PutProxyConfigApiV1AdminProxyConfigPutResponse = zod.object({
   "proxy_port": zod.unknown().optional(),
-  "webhook_enabled": zod.unknown().optional()
+  "webhook_enabled": zod.unknown().optional(),
+  "oauth_enabled": zod.unknown().optional()
 })
 
 
@@ -2603,7 +2606,8 @@ export const postProxyConfigTestApiV1AdminProxyConfigTestPostBodyProxyPortOneMax
 
 export const PostProxyConfigTestApiV1AdminProxyConfigTestPostBody = zod.object({
   "proxy_port": zod.union([zod.number().min(1).max(postProxyConfigTestApiV1AdminProxyConfigTestPostBodyProxyPortOneMax),zod.null()]).optional(),
-  "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional()
+  "webhook_enabled": zod.union([zod.boolean(),zod.null()]).optional(),
+  "oauth_enabled": zod.union([zod.boolean(),zod.null()]).optional()
 })
 
 export const PostProxyConfigTestApiV1AdminProxyConfigTestPostResponse = zod.object({
@@ -5937,7 +5941,10 @@ export const ListTagsApiV1AdminContentTagsGetResponse = zod.array(ListTagsApiV1A
  * @summary 获取内容默认标题
  */
 export const GetDefaultContentTitleQueryParams = zod.object({
-  "content_type": zod.enum(['thoughts', 'excerpts']).describe('内容类型')
+  "content_type": zod.enum(['diary', 'thoughts', 'excerpts']).describe('内容类型'),
+  "category": zod.union([zod.string(),zod.null()]).optional().describe('内容分类'),
+  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('内容状态'),
+  "item_id": zod.union([zod.string(),zod.null()]).optional().describe('当前内容 ID')
 })
 
 export const GetDefaultContentTitleResponse = zod.object({

@@ -9,6 +9,7 @@ export type GetDefaultContentTitleContentType = typeof GetDefaultContentTitleCon
 
 
 export const GetDefaultContentTitleContentType = {
+  diary: 'diary',
   thoughts: 'thoughts',
   excerpts: 'excerpts',
 } as const;

@@ -12375,6 +12375,7 @@
             "required": true,
             "schema": {
               "enum": [
+                "diary",
                 "thoughts",
                 "excerpts"
               ],
@@ -12383,6 +12384,65 @@
               "title": "Content Type"
             },
             "description": "内容类型"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "内容分类",
+              "title": "Category"
+            },
+            "description": "内容分类"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "draft",
+                    "published",
+                    "archived"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "内容状态",
+              "title": "Status"
+            },
+            "description": "内容状态"
+          },
+          {
+            "name": "item_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "当前内容 ID",
+              "title": "Item Id"
+            },
+            "description": "当前内容 ID"
           }
         ],
         "responses": {
@@ -21977,6 +22037,9 @@
           },
           "webhook_enabled": {
             "title": "Webhook Enabled"
+          },
+          "oauth_enabled": {
+            "title": "Oauth Enabled"
           }
         },
         "type": "object",
@@ -22007,6 +22070,17 @@
               }
             ],
             "title": "Webhook Enabled"
+          },
+          "oauth_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Enabled"
           }
         },
         "type": "object",

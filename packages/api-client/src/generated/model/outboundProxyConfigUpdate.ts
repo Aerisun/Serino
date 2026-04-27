@@ -8,4 +8,5 @@
 export interface OutboundProxyConfigUpdate {
   proxy_port?: number | null;
   webhook_enabled?: boolean | null;
+  oauth_enabled?: boolean | null;
 }

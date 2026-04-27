@@ -8,4 +8,5 @@
 export interface OutboundProxyConfigRead {
   proxy_port?: unknown;
   webhook_enabled?: unknown;
+  oauth_enabled?: unknown;
 }

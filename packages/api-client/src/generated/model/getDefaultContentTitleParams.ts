@@ -11,4 +11,16 @@ export type GetDefaultContentTitleParams = {
  * 内容类型
  */
 content_type: GetDefaultContentTitleContentType;
+/**
+ * 内容分类
+ */
+category?: string | null;
+/**
+ * 内容状态
+ */
+status?: 'draft' | 'published' | 'archived' | null;
+/**
+ * 当前内容 ID
+ */
+item_id?: string | null;
 };
