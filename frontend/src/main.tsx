@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./shell.css";
-import { initSentry } from "@serino/utils";
+import { initSentry } from "@serino/utils/sentry";
 import { initPublicClient } from "@serino/api-client";
 import { getInitialRuntimeConfigSnapshot } from "@/lib/runtime-config";
 

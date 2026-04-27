@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { Search, X, FileText, BookOpen, MessageSquare, Quote } from "lucide-react"
 import { searchContentApiV1SiteSearchGet } from "@serino/api-client/site"
+import { formatDateInBeijing } from "@/lib/time"
 import { useFrontendI18n } from "@/i18n"
 
 interface SearchResult {
@@ -25,8 +26,25 @@ interface SearchModalProps {
   onClose: () => void
 }
 
+const formatDiaryResultTitle = (value: string | null, lang: "zh" | "en", fallback: string) => {
+  if (!value) {
+    return fallback
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback
+  }
+
+  return formatDateInBeijing(parsed, lang === "zh" ? "zh-CN" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 const SearchModal = ({ open, onClose }: SearchModalProps) => {
-  const { t } = useFrontendI18n()
+  const { t, lang } = useFrontendI18n()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -146,6 +164,10 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
                   {results.map((item) => {
                     const cfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.posts
                     const Icon = cfg.icon
+                    const primaryText =
+                      item.type === "diary"
+                        ? formatDiaryResultTitle(item.published_at, lang, t(cfg.typeKey))
+                        : item.title
                     return (
                       <button
                         key={`${item.type}-${item.slug}`}
@@ -156,7 +178,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
                         <Icon className="h-4 w-4 mt-0.5 shrink-0" style={{ color: cfg.color }} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-body text-foreground/70 truncate">{item.title}</span>
+                            <span className="text-sm font-body text-foreground/70 truncate">{primaryText}</span>
                             <span
                               className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-body"
                               style={{ color: cfg.color, background: `${cfg.color.replace(/[\d.]+\)$/, "0.1)")}` }}

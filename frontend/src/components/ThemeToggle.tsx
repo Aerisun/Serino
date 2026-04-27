@@ -19,7 +19,8 @@ const ThemeToggle = ({ glassVariant = "default" }: ThemeToggleProps) => {
   };
 
   const Icon = icons[theme];
-  const glassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
+  const glassClass =
+    glassVariant === "hero" ? "liquid-glass-nav-hero" : "liquid-glass-nav";
   const toneClass =
     glassVariant === "hero"
       ? "text-white/72 hover:text-white"

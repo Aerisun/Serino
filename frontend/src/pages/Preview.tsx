@@ -1,11 +1,30 @@
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { Clock, Eye, MessageCircle, Tag } from "lucide-react";
+import {
+  Clock,
+  Eye,
+  MessageCircle,
+  Tag,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudHail,
+  CloudLightning,
+  CloudRain,
+  CloudRainWind,
+  CloudSnow,
+  CloudSunRain,
+  Haze,
+  Snowflake,
+  Sun,
+  Wind,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
 import BackToTop from "@/components/BackToTop";
+import DecorativeVineLine from "@/components/DecorativeVineLine";
 import PageShell from "@/components/PageShell";
 import TableOfContents from "@/components/TableOfContents";
 import { useFeatureFlags, usePageConfig } from "@/contexts/runtime-config";
@@ -21,21 +40,52 @@ const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/Artic
 const estimateReadTime = (value: string, lang: FrontendLang, minuteLabel: string) =>
   `${Math.max(1, Math.ceil(value.length / 180)).toLocaleString(lang === "zh" ? "zh-CN" : "en-US")} ${minuteLabel}`;
 
-const weatherIcons: Record<string, string> = {
-  sunny: "☀️",
-  cloudy: "☁️",
-  fog: "🌫️",
-  haze: "🌫️",
-  light_rain: "🌦️",
-  shower: "🌧️🌨️",
-  rainy: "🌧️",
-  heavy_rain: "🌧️🌧️",
-  light_snow: "🌨️",
-  snowy: "❄️",
-  heavy_snow: "❄️❄️",
-  sleet: "🌧️❄️",
-  stormy: "⛈️",
-  windy: "💨",
+const weatherIcons: Record<string, typeof Sun> = {
+  sunny: Sun,
+  cloudy: Cloud,
+  fog: CloudFog,
+  haze: Haze,
+  light_rain: CloudDrizzle,
+  shower: CloudSunRain,
+  rainy: CloudRain,
+  heavy_rain: CloudRainWind,
+  light_snow: CloudSnow,
+  snowy: CloudSnow,
+  heavy_snow: Snowflake,
+  sleet: CloudHail,
+  stormy: CloudLightning,
+  windy: Wind,
+};
+
+const weatherLabelKeys: Record<string, string> = {
+  sunny: "diary.weather.sunny",
+  cloudy: "diary.weather.cloudy",
+  fog: "diary.weather.fog",
+  haze: "diary.weather.haze",
+  light_rain: "diary.weather.lightRain",
+  shower: "diary.weather.shower",
+  rainy: "diary.weather.rainy",
+  heavy_rain: "diary.weather.heavyRain",
+  light_snow: "diary.weather.lightSnow",
+  snowy: "diary.weather.snowy",
+  heavy_snow: "diary.weather.heavySnow",
+  sleet: "diary.weather.sleet",
+  stormy: "diary.weather.stormy",
+  windy: "diary.weather.windy",
+};
+
+const formatEnglishHeaderDate = (
+  value: string | null | undefined,
+  t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
+) => {
+  return value
+    ? formatDateInBeijing(value, "en-US", {
+        weekday: "short",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : t("common.draft");
 };
 
 function PostPreview({ data }: { data: ContentPreviewData }) {
@@ -143,21 +193,15 @@ function PostPreview({ data }: { data: ContentPreviewData }) {
 }
 
 function DiaryPreview({ data }: { data: ContentPreviewData }) {
-  const { t, lang } = useFrontendI18n();
+  const { t } = useFrontendI18n();
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLElement>(null);
-  const dateStr = data.published_at
-    ? formatDateInBeijing(data.published_at, lang === "zh" ? "zh-CN" : "en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      })
-    : t("common.draft");
-  const weekday = data.published_at
-    ? formatDateInBeijing(data.published_at, lang === "zh" ? "zh-CN" : "en-US", {
-        weekday: "long",
-      })
-    : "";
+  const headerDateLabel = formatEnglishHeaderDate(data.published_at, t);
+  const WeatherIcon = data.weather ? weatherIcons[data.weather] : null;
+  const weatherLabel =
+    data.weather && weatherLabelKeys[data.weather]
+      ? t(weatherLabelKeys[data.weather])
+      : data.weather || "";
 
   useEffect(() => {
     void ArticleMarkdownRenderer.preload();
@@ -170,23 +214,36 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="liquid-glass rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.14)] p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-body text-foreground/25">
-                {dateStr} {weekday}
-              </p>
-              <h1 className="mt-2 text-2xl sm:text-3xl font-heading italic tracking-tight text-foreground leading-tight">
-                {data.title || t("common.untitled")}
-              </h1>
+        <div className="mx-auto mb-8 w-[92%] px-2 py-2 sm:w-[90%] sm:px-4 sm:py-3">
+          <div className="grid min-h-[3.5rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[3.75rem] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+            <div className="col-start-1 min-w-0 sm:col-start-2">
+              <div className="flex flex-col items-start gap-2 sm:items-center">
+                <div className="flex flex-wrap items-center justify-start gap-2 text-left text-[13px] text-foreground/36 sm:justify-center sm:text-center">
+                  <span className="inline-flex flex-col items-start gap-2 sm:items-center">
+                  <span
+                    className="text-[1.72rem] leading-[0.96] text-[rgb(var(--shiro-accent-rgb)/0.68)] sm:text-[1.92rem]"
+                    style={{ fontFamily: "'Pinyon Script', cursive" }}
+                  >
+                    {headerDateLabel}
+                  </span>
+                    <DecorativeVineLine />
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-lg">
-              {data.mood && <span title={t("preview.mood")}>{data.mood}</span>}
-              {data.weather && (
-                <span title={t("preview.weather")}>
-                  {weatherIcons[data.weather] || data.weather}
+
+            <div className="col-start-2 flex shrink-0 items-center justify-self-end self-end gap-1.5 sm:col-start-3 sm:gap-2">
+              {data.mood ? (
+                <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] px-1.5 text-[0.98rem] leading-none text-foreground/78 sm:h-8 sm:min-w-8 sm:px-1.5 sm:text-[1.05rem]">
+                  {data.mood}
                 </span>
-              )}
+              ) : null}
+              {WeatherIcon ? (
+                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] px-2.5 text-[12px] font-body text-foreground/62 sm:h-8 sm:px-3 sm:text-[13px]">
+                  <WeatherIcon className="h-[13px] w-[13px] text-[rgb(var(--shiro-accent-rgb)/0.68)] sm:h-[14px] sm:w-[14px]" />
+                  {weatherLabel}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -194,7 +251,7 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
 
       <motion.article
         ref={articleRef}
-        className="mt-6"
+        className="mx-auto mt-6 w-full max-w-[46rem]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}

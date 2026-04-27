@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   PREVIEW_REQUEST_MESSAGE,
   isPreviewDataMessage,
-} from "@serino/utils";
+} from "@serino/utils/preview";
 
 export interface ContentPreviewData {
   type: "posts" | "diary" | "thoughts" | "excerpts" | "resume";

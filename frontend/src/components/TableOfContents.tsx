@@ -227,14 +227,6 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
           <span className="text-[rgb(var(--shiro-accent-rgb)/0.72)]">
             <List className="h-4 w-4" />
           </span>
-          <span className="min-w-0">
-            <span className="block text-[10px] uppercase tracking-[0.24em] text-foreground/22">
-              {t("toc.label")}
-            </span>
-            <span className="mt-0.5 block text-sm text-foreground/60">
-              {t("toc.count", { count: headings.length })}
-            </span>
-          </span>
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-foreground/30 transition-transform duration-200 ${

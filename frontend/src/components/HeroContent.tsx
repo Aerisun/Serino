@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
+import type { Transition } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
@@ -13,6 +14,52 @@ import { warmInternalHref } from "@/lib/route-preload";
 const EMPTY_POEMS = [""];
 const POEM_PREVIEW_ENDPOINT = `${API_BASE_PATH}/v1/site/poem-preview`;
 const POEM_ROTATION_INTERVAL_MS = 8_000;
+
+const heroPopTransition = (
+  delay: number,
+  reducedMotion: boolean,
+): Transition =>
+  reducedMotion
+    ? { duration: 0, delay: 0 }
+    : {
+        type: "spring",
+        stiffness: 560,
+        damping: 24,
+        mass: 1.8,
+        delay,
+      };
+
+const heroPopInitial = (reducedMotion: boolean) => ({
+  opacity: 0,
+  y: reducedMotion ? 0 : 18,
+  scale: reducedMotion ? 1 : 0.96,
+});
+
+const heroPopAnimate = {
+  opacity: 1,
+  y: 0,
+  scale: 1,
+};
+
+const heroTextCharacterInitial = (reducedMotion: boolean) => ({
+  opacity: 0,
+  y: reducedMotion ? 0 : 10,
+  scale: reducedMotion ? 1 : 0.98,
+});
+
+const heroTextCharacterTransition = (
+  index: number,
+  reducedMotion: boolean,
+): Transition =>
+  reducedMotion
+    ? { duration: 0, delay: 0 }
+    : {
+        type: "spring",
+        stiffness: 520,
+        damping: 26,
+        mass: 1.4,
+        delay: 0.12 + index * 0.028,
+      };
 
 type PoemPreviewPayload = {
   mode: "custom" | "hitokoto";
@@ -60,12 +107,19 @@ const HeroContent = () => {
     (link) => link.placement === "hero" || link.placement === "both",
   );
   const fallbackPoems = site.poems.length > 0 ? site.poems : EMPTY_POEMS;
-  const remotePoemActivation = useDeferredActivation(site.poemSource === "hitokoto", [
-    site.poemSource,
-    fallbackPoems[0],
-  ]);
+  const remotePoemActivation = useDeferredActivation(
+    site.poemSource === "hitokoto",
+    [site.poemSource, fallbackPoems[0]],
+  );
   const [poem, setPoem] = useState(() => fallbackPoems[0]);
   const [flipped, setFlipped] = useState(false);
+  const bioCharacters = Array.from(site.bio);
+  const socialRevealDelay = prefersReducedMotion
+    ? 0
+    : 0.12 + bioCharacters.length * 0.028 + 0.12;
+  const actionRevealDelay = prefersReducedMotion
+    ? 0
+    : socialRevealDelay + heroSocialLinks.length * 0.07 + 0.08;
   const warmHref = useCallback(
     (href: string) => {
       void warmInternalHref({ href, queryClient, pages });
@@ -136,7 +190,12 @@ const HeroContent = () => {
     }, POEM_ROTATION_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [fallbackPoems, prefersReducedMotion, remotePoemActivation, site.poemSource]);
+  }, [
+    fallbackPoems,
+    prefersReducedMotion,
+    remotePoemActivation,
+    site.poemSource,
+  ]);
 
   return (
     <section className="flex-1 flex flex-col px-6 lg:px-16">
@@ -210,13 +269,7 @@ const HeroContent = () => {
 
         <motion.p
           className="mx-auto max-w-[34rem] text-center text-[1.02rem] leading-6 text-[rgb(14_22_40/0.98)] [text-shadow:0_1px_0_rgba(255,255,255,0.42),0_2px_10px_rgba(255,255,255,0.18),0_8px_20px_rgba(15,23,42,0.16)] [-webkit-text-stroke:0.4px_rgba(255,255,255,0.34)] dark:text-[rgb(255_255_255/0.92)] dark:[text-shadow:0_1px_0_rgba(0,0,0,0.24),0_8px_18px_rgba(0,0,0,0.3)] dark:[-webkit-text-stroke:0.35px_rgba(9,14,24,0.28)] sm:text-[1.1rem] sm:leading-7"
-          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={transition({
-            duration: 0.55,
-            delay: prefersReducedMotion ? 0 : 0.1,
-            reducedMotion: prefersReducedMotion,
-          })}
+          aria-label={site.bio}
           style={{
             fontFamily:
               "'PingFang SC', 'SF Pro SC', 'SF Pro Display', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
@@ -226,47 +279,74 @@ const HeroContent = () => {
             MozOsxFontSmoothing: "grayscale",
           }}
         >
-          {site.bio}
+          <span aria-hidden="true">
+            {bioCharacters.map((character, index) => (
+              <motion.span
+                key={`${character}-${index}`}
+                className="inline-block whitespace-pre"
+                initial={heroTextCharacterInitial(prefersReducedMotion)}
+                animate={heroPopAnimate}
+                transition={heroTextCharacterTransition(
+                  index,
+                  prefersReducedMotion,
+                )}
+              >
+                {character === " " ? "\u00A0" : character}
+              </motion.span>
+            ))}
+          </span>
         </motion.p>
 
-        <motion.div
-          className="mt-3 flex flex-wrap justify-center gap-4 sm:mt-4"
-          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={transition({
-            duration: 0.55,
-            delay: prefersReducedMotion ? 0 : 0.18,
-            reducedMotion: prefersReducedMotion,
-          })}
-        >
-          {heroSocialLinks.map((link) => (
-            <a
+        <div className="mt-3 flex flex-wrap justify-center gap-4 sm:mt-4">
+          {heroSocialLinks.map((link, index) => (
+            <motion.a
               key={`${link.name}-${link.href}`}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
               title={link.name}
+              whileHover={
+                prefersReducedMotion
+                  ? undefined
+                  : {
+                      y: -2.5,
+                      scale: 1.03,
+                      transition: {
+                        duration: 0.24,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
+                    }
+              }
+              whileTap={
+                prefersReducedMotion
+                  ? undefined
+                  : {
+                      y: -1,
+                      scale: 0.985,
+                      transition: {
+                        duration: 0.18,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
+                    }
+              }
+              initial={heroPopInitial(prefersReducedMotion)}
+              animate={heroPopAnimate}
+              transition={heroPopTransition(
+                socialRevealDelay + index * 0.07,
+                prefersReducedMotion,
+              )}
               className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-colors duration-200 hover:text-white focus-visible:text-white active:scale-95"
             >
               <SocialIcon
                 iconKey={link.iconKey}
                 className="h-[18px] w-[18px]"
               />
-            </a>
+            </motion.a>
           ))}
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="mt-1.5 flex w-full justify-center gap-3 sm:mt-3"
-          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={transition({
-            duration: 0.55,
-            delay: prefersReducedMotion ? 0 : 0.24,
-            reducedMotion: prefersReducedMotion,
-          })}
-        >
-          {site.heroActions.map((cta) => (
+        <div className="mt-1.5 flex w-full justify-center gap-3 sm:mt-3">
+          {site.heroActions.map((cta, index) =>
             (() => {
               const internalHref = resolveInternalHref(cta.href);
               const className =
@@ -287,35 +367,47 @@ const HeroContent = () => {
 
               if (internalHref) {
                 return (
-                  <button
+                  <motion.button
                     key={cta.label}
                     type="button"
                     onMouseEnter={() => warmHref(internalHref)}
                     onFocus={() => warmHref(internalHref)}
                     onTouchStart={() => warmHref(internalHref)}
                     onClick={() => navigate(internalHref)}
+                    initial={heroPopInitial(prefersReducedMotion)}
+                    animate={heroPopAnimate}
+                    transition={heroPopTransition(
+                      actionRevealDelay + index * 0.07,
+                      prefersReducedMotion,
+                    )}
                     className={className}
                   >
                     {content}
-                  </button>
+                  </motion.button>
                 );
               }
 
               return (
-                <a
+                <motion.a
                   key={cta.label}
                   href={cta.href}
                   onMouseEnter={() => warmHref(cta.href)}
                   onFocus={() => warmHref(cta.href)}
                   onTouchStart={() => warmHref(cta.href)}
+                  initial={heroPopInitial(prefersReducedMotion)}
+                  animate={heroPopAnimate}
+                  transition={heroPopTransition(
+                    actionRevealDelay + index * 0.07,
+                    prefersReducedMotion,
+                  )}
                   className={className}
                 >
                   {content}
-                </a>
+                </motion.a>
               );
-            })()
-          ))}
-        </motion.div>
+            })(),
+          )}
+        </div>
       </div>
 
       <motion.div

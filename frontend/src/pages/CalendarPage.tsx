@@ -456,9 +456,11 @@ const CalendarPage = () => {
                         {item.label}
                       </span>
                     </div>
-                    <p className="text-sm font-body leading-snug text-foreground/70 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]">
-                      {event.title}
-                    </p>
+                    {event.type !== "diary" ? (
+                      <p className="text-sm font-body leading-snug text-foreground/70 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.88)]">
+                        {event.title}
+                      </p>
+                    ) : null}
                   </motion.button>
                 );
               })}

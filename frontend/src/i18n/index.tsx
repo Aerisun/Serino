@@ -1,4 +1,4 @@
-import { createI18nRuntime } from "@serino/utils";
+import { createI18nRuntime } from "@serino/utils/i18n";
 import { frontendTranslations, type FrontendLang } from "./translations";
 
 export const FRONTEND_LANGUAGE_STORAGE_KEY = "aerisun-frontend-lang";

@@ -1,21 +1,27 @@
 import { useEffect, useRef } from "react";
 
-const WHEEL_LINE_HEIGHT_PX = 18;
+const SCROLL_EDGE_EPSILON = 1;
 
-const normalizeWheelDelta = (
-  delta: number,
-  deltaMode: number,
+const canScrollInDirection = (
+  scrollOffset: number,
   viewportSize: number,
+  scrollSize: number,
+  delta: number,
 ) => {
-  if (deltaMode === 1) {
-    return delta * WHEEL_LINE_HEIGHT_PX;
+  if (Math.abs(delta) <= 0) {
+    return false;
   }
 
-  if (deltaMode === 2) {
-    return delta * viewportSize;
+  const maxScrollOffset = scrollSize - viewportSize;
+  if (maxScrollOffset <= SCROLL_EDGE_EPSILON) {
+    return false;
   }
 
-  return delta;
+  if (delta < 0) {
+    return scrollOffset > SCROLL_EDGE_EPSILON;
+  }
+
+  return scrollOffset < maxScrollOffset - SCROLL_EDGE_EPSILON;
 };
 
 export const useContainedWheelScroll = <T extends HTMLElement>() => {
@@ -38,43 +44,25 @@ export const useContainedWheelScroll = <T extends HTMLElement>() => {
         return;
       }
 
-      const maxScrollTop = viewport.scrollHeight - viewport.clientHeight;
-      const maxScrollLeft = viewport.scrollWidth - viewport.clientWidth;
-      if (maxScrollTop <= 0 && maxScrollLeft <= 0) {
-        return;
-      }
-
-      const nextScrollTop = Math.max(
-        0,
-        Math.min(
-          viewport.scrollTop +
-            normalizeWheelDelta(event.deltaY, event.deltaMode, viewport.clientHeight),
-          maxScrollTop,
-        ),
+      const canScrollVertically = canScrollInDirection(
+        viewport.scrollTop,
+        viewport.clientHeight,
+        viewport.scrollHeight,
+        event.deltaY,
       );
-      const nextScrollLeft = Math.max(
-        0,
-        Math.min(
-          viewport.scrollLeft +
-            normalizeWheelDelta(event.deltaX, event.deltaMode, viewport.clientWidth),
-          maxScrollLeft,
-        ),
+      const canScrollHorizontally = canScrollInDirection(
+        viewport.scrollLeft,
+        viewport.clientWidth,
+        viewport.scrollWidth,
+        event.deltaX,
       );
 
-      const scrollChanged =
-        Math.abs(nextScrollTop - viewport.scrollTop) > 0.5 ||
-        Math.abs(nextScrollLeft - viewport.scrollLeft) > 0.5;
-
-      viewport.scrollTop = nextScrollTop;
-      viewport.scrollLeft = nextScrollLeft;
-
-      if (scrollChanged) {
-        event.preventDefault();
+      if (canScrollVertically || canScrollHorizontally) {
         event.stopPropagation();
       }
     };
 
-    region.addEventListener("wheel", handleWheel, { passive: false });
+    region.addEventListener("wheel", handleWheel, { passive: true });
     return () => region.removeEventListener("wheel", handleWheel);
   }, []);
 

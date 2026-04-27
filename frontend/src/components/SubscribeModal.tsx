@@ -277,15 +277,15 @@ const SubscribeModal = ({ open, onClose, enabled }: SubscribeModalProps) => {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               className="relative z-10 mx-auto flex max-h-[calc(100dvh-7.25rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[26px] border border-[rgb(var(--shiro-border-rgb)/0.24)] liquid-glass shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:max-h-[calc(100dvh-4.5rem)] sm:rounded-[30px]"
             >
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-4 top-4 hidden h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/44 text-foreground/54 transition hover:text-foreground/84 dark:bg-black/10 sm:inline-flex"
-              aria-label={t("subscribe.closeAria")}
-            >
-              <X className="h-4 w-4" />
-            </button>
             <div className="relative flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-white/54 text-foreground/54 transition hover:text-foreground/84 dark:bg-black/18 sm:right-4 sm:top-4 sm:bg-white/44 sm:dark:bg-black/10"
+                  aria-label={t("subscribe.closeAria")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute -left-12 top-6 h-28 w-28 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.12)] blur-3xl"

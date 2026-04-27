@@ -71,7 +71,8 @@ const NavDropdown = ({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const menuGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
+  const menuGlassClass =
+    glassVariant === "hero" ? "liquid-glass-nav-hero-strong" : "liquid-glass-nav-strong";
   const itemTextClass =
     glassVariant === "hero"
       ? "text-white/82 hover:text-white"
@@ -295,10 +296,12 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
     typeof window !== "undefined"
       ? buildAdminConsoleEntryHref()
       : `${adminBaseUrl || ""}${adminBasePath}login?site_admin=1`;
-  const navGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
+  const navGlassClass =
+    glassVariant === "hero" ? "liquid-glass-nav-hero" : "liquid-glass-nav";
   const navStrongGlassClass =
-    glassVariant === "hero" ? "liquid-glass-hero-strong" : "liquid-glass-strong";
-  const iconButtonGlassClass = glassVariant === "hero" ? "liquid-glass-hero" : "liquid-glass";
+    glassVariant === "hero" ? "liquid-glass-nav-hero-strong" : "liquid-glass-nav-strong";
+  const iconButtonGlassClass =
+    glassVariant === "hero" ? "liquid-glass-nav-hero" : "liquid-glass-nav";
   const iconButtonToneClass =
     glassVariant === "hero"
       ? "text-white/72 hover:text-white"
@@ -533,7 +536,7 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
       initial={{ y: 0, opacity: 1 }}
       animate={{
         y: visible ? 0 : -80,
-        opacity: visible ? 1 : 0,
+        opacity: 1,
       }}
       transition={transition({ duration: 0.35, reducedMotion: prefersReducedMotion })}
     >
@@ -627,8 +630,8 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
                 className={[
                   "group relative inline-flex h-9 items-center gap-2 overflow-hidden rounded-full px-3.5 text-sm font-medium transition-all active:scale-[0.98]",
                   glassVariant === "hero"
-                    ? "liquid-glass-hero text-white"
-                    : "liquid-glass text-[rgb(var(--shiro-accent-rgb)/0.92)]",
+                    ? "liquid-glass-nav-hero text-white"
+                    : "liquid-glass-nav text-[rgb(var(--shiro-accent-rgb)/0.92)]",
                 ].join(" ")}
               >
                 <span className="absolute inset-0 rounded-full border border-white/10 bg-[linear-gradient(135deg,rgb(66_133_244/0.22),rgb(234_67_53/0.12),rgb(251_188_5/0.12),rgb(52_168_83/0.22))] opacity-80" />

@@ -22,7 +22,7 @@ import {
   readCachedGuestbookPage,
 } from "@/lib/community-cache";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { prepareImageUploadFile } from "@serino/utils";
+import { prepareImageUploadFile } from "@serino/utils/image-upload";
 import WalineCommentForm from "./WalineCommentForm";
 import WalineCommentList from "./WalineCommentList";
 import {

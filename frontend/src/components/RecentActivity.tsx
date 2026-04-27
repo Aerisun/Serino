@@ -123,7 +123,7 @@ const normalizeActivity = (value: RecentActivityItemRead, t: TranslateFn, lang: 
   return {
     type,
     user: normalizeActorName(value.actor_name ?? "", t),
-    target: humanizeTarget(value.target_title ?? ""),
+    target: type === "publish_diary" ? "" : humanizeTarget(value.target_title ?? ""),
     detail: isPublishType(type) ? value.excerpt?.trim() || undefined : undefined,
     date: formatRelativeDate(value.created_at, t, lang),
     href: value.href ?? (type === "guestbook" ? GUESTBOOK_ROUTE : undefined),

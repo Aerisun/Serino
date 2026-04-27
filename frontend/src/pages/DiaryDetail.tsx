@@ -18,6 +18,7 @@ import {
   Wind,
 } from "lucide-react";
 import ArchiveBadge from "@/components/ArchiveBadge";
+import DecorativeVineLine from "@/components/DecorativeVineLine";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FallingPetals from "@/components/FallingPetals";
@@ -94,6 +95,7 @@ interface DiaryData {
   slug: string;
   date: string;
   weekday: string;
+  headerDate: string;
   isArchived: boolean;
   weather?: Weather;
   mood?: string;
@@ -118,10 +120,29 @@ const formatWeekday = (value: string | null, lang: FrontendLang) => {
     : "";
 };
 
-const buildRemoteDiaryEntry = (entry: ContentEntryRead, lang: FrontendLang): DiaryData => ({
+const formatEnglishHeaderDate = (
+  value: string | null | undefined,
+  t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
+) => {
+  return value
+    ? formatDateInBeijing(value, "en-US", {
+        weekday: "short",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : t("common.draft");
+};
+
+const buildRemoteDiaryEntry = (
+  entry: ContentEntryRead,
+  lang: FrontendLang,
+  t: (key: string, values?: Record<string, string | number>, fallback?: string) => string,
+): DiaryData => ({
   slug: entry.slug,
   date: formatPublishedDate(entry.published_at) || "",
   weekday: formatWeekday(entry.published_at, lang),
+  headerDate: formatEnglishHeaderDate(entry.published_at, t),
   isArchived: entry.status === "archived",
   weather: entry.weather as Weather | undefined,
   mood: entry.mood ?? undefined,
@@ -140,6 +161,7 @@ const buildPreviewDiaryEntry = (
   slug: preview.slug || "",
   date: formatPublishedDate(preview.published_at) || t("common.draft"),
   weekday: formatWeekday(preview.published_at ?? null, lang),
+  headerDate: formatEnglishHeaderDate(preview.published_at, t),
   isArchived: false,
   weather: preview.weather as Weather | undefined,
   mood: preview.mood ?? undefined,
@@ -149,6 +171,13 @@ const buildPreviewDiaryEntry = (
   likes: 0,
   comments: 0,
 });
+
+const buildDiaryPublicLabel = (entry: DiaryData | null, fallback: string) => {
+  if (!entry) {
+    return fallback;
+  }
+  return entry.weekday ? `${entry.weekday} · ${entry.date}` : entry.date || fallback;
+};
 
 const DiaryDetail = () => {
   const { t, lang } = useFrontendI18n();
@@ -189,7 +218,7 @@ const DiaryDetail = () => {
     previewData?.type === "diary" ? buildPreviewDiaryEntry(previewData, lang, t) : null;
   const entry =
     previewEntry ??
-    (response?.data ? buildRemoteDiaryEntry(response.data, lang) : null);
+    (response?.data ? buildRemoteDiaryEntry(response.data, lang, t) : null);
   const is404 =
     isError &&
     error != null &&
@@ -229,13 +258,13 @@ const DiaryDetail = () => {
 
   const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
   const weatherLabel = entry?.weather ? t(weatherLabelKeys[entry.weather]) : "";
+  const publicDiaryLabel = buildDiaryPublicLabel(entry, t("nav.diary"));
+  const headerDateLabel = entry?.headerDate || "";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
-        title={
-          entry?.title ?? (status === "error" ? errorTitle : detailMissingTitle)
-        }
+        title={entry ? publicDiaryLabel : (status === "error" ? errorTitle : detailMissingTitle)}
         description={
           entry?.body.slice(0, 150) ??
           (errorMessage || detailMissingDescription)
@@ -243,7 +272,7 @@ const DiaryDetail = () => {
       />
       {entry && (
         <JsonLd
-          title={entry.title}
+          title={publicDiaryLabel}
           description={entry.body.slice(0, 200) || ""}
           slug={entry.slug}
           type="diary"
@@ -269,19 +298,25 @@ const DiaryDetail = () => {
         {pageStatus === "loading" ? (
           <>
             <motion.div
-              className="mb-8 rounded-2xl liquid-glass border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
+              className="mb-8 overflow-hidden rounded-[2rem] liquid-glass border border-[rgb(var(--shiro-border-rgb)/0.16)] px-6 py-6 sm:px-8 sm:py-8"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="mb-4 flex items-start justify-between">
-                <div className="w-full">
-                  <div className="h-3 w-36 rounded-full bg-foreground/[0.04]" />
-                  <div className="mt-3 h-8 w-[58%] rounded-full bg-foreground/[0.045]" />
+              <div className="relative flex min-h-[180px] flex-col justify-between gap-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-3">
+                    <div className="h-8 w-48 rounded-full bg-foreground/[0.04]" />
+                    <div className="h-3 w-28 rounded-full bg-foreground/[0.04]" />
+                  </div>
+                  <div className="flex items-center gap-3 self-start">
+                    <div className="h-12 w-12 rounded-[1rem] bg-foreground/[0.04]" />
+                    <div className="h-14 w-32 rounded-[1.2rem] bg-foreground/[0.04]" />
+                  </div>
                 </div>
-                <div className="ml-4 flex shrink-0 items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-foreground/[0.04]" />
-                  <div className="h-7 w-14 rounded-lg bg-foreground/[0.04]" />
+                <div>
+                  <div className="h-3 w-32 rounded-full bg-foreground/[0.04]" />
+                  <div className="mt-4 h-24 w-44 rounded-[1.8rem] bg-foreground/[0.045]" />
                 </div>
               </div>
             </motion.div>
@@ -306,35 +341,40 @@ const DiaryDetail = () => {
         ) : entry ? (
           <>
             <motion.div
-              className="liquid-glass mb-8 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] p-6 sm:p-8"
+              className="mx-auto mb-8 w-[92%] px-2 py-2 sm:w-[90%] sm:px-4 sm:py-3"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="mb-4 flex items-start justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-body uppercase tracking-wider text-[rgb(var(--shiro-accent-rgb)/0.54)]">
-                    {entry.isArchived ? <ArchiveBadge /> : null}
-                    <span>
-                      {entry.weekday ? `${entry.weekday} · ` : ""}
-                      {entry.date}
-                    </span>
-                  </div>
-                  <h1 className="mt-2 text-xl sm:text-2xl font-heading italic tracking-tight text-foreground/90">
-                    {entry.title}
-                  </h1>
-                </div>
-                <div className="ml-4 flex shrink-0 items-center gap-2">
-                  {entry.mood ? (
-                    <span className="text-2xl">{entry.mood}</span>
-                  ) : null}
-                  {WeatherIcon ? (
-                    <div className="flex items-center gap-1 rounded-lg border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.24)] px-2.5 py-1">
-                      <WeatherIcon className="h-3.5 w-3.5 text-[rgb(var(--shiro-accent-rgb)/0.7)]" />
-                      <span className="text-[11px] font-body text-[rgb(var(--shiro-accent-rgb)/0.68)]">
-                        {weatherLabel}
+              <div className="grid min-h-[3.5rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[3.75rem] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                <div className="col-start-1 min-w-0 sm:col-start-2">
+                  <div className="flex flex-col items-start gap-2 sm:items-center">
+                    <div className="flex flex-wrap items-center justify-start gap-2 text-left text-[13px] text-foreground/36 sm:justify-center sm:text-center">
+                      {entry.isArchived ? <ArchiveBadge /> : null}
+                      <span className="inline-flex flex-col items-start gap-2 sm:items-center">
+                        <span
+                          className="text-[1.72rem] leading-[0.96] text-[rgb(var(--shiro-accent-rgb)/0.68)] sm:text-[1.92rem]"
+                          style={{ fontFamily: "'Pinyon Script', cursive" }}
+                        >
+                          {headerDateLabel}
+                        </span>
+                        <DecorativeVineLine />
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                <div className="col-start-2 flex shrink-0 items-center justify-self-end self-end gap-1.5 sm:col-start-3 sm:gap-2">
+                  {entry.mood ? (
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] px-1.5 text-[0.98rem] leading-none text-foreground/78 sm:h-8 sm:min-w-8 sm:px-1.5 sm:text-[1.05rem]">
+                      {entry.mood}
+                    </span>
+                  ) : null}
+                  {WeatherIcon ? (
+                    <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] px-2.5 text-[12px] font-body text-foreground/62 sm:h-8 sm:px-3 sm:text-[13px]">
+                      <WeatherIcon className="h-[13px] w-[13px] text-[rgb(var(--shiro-accent-rgb)/0.68)] sm:h-[14px] sm:w-[14px]" />
+                      {weatherLabel}
+                    </span>
                   ) : null}
                 </div>
               </div>
@@ -342,6 +382,7 @@ const DiaryDetail = () => {
 
             <motion.div
               ref={articleRef}
+              className="mx-auto w-full max-w-[46rem]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
