@@ -119,6 +119,9 @@ cd backend && uv sync --dev
 make dev        # 启动方式 1：灌入开发用假数据 (Dev Seed)
 make dev-pseed  # 启动方式 2：灌入生产初始化数据，用于调整生产种子 (Prod Seed)
 # 密码改废进不了后台? 试试 cd backend & uv run aerisun-create-admin
+# 布置：sudo tailscale serve --bg --http 8080 http://127.0.0.1:8080 或 3001 http://127.0.0.1:3001 ；清空：sudo tailscale serve reset
+
+
 
 make dev-stop   # 停止整套本地开发环境
 

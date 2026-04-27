@@ -304,13 +304,14 @@ sequenceDiagram
 ```mermaid
 flowchart TB
     Dev["开发启动\nmake dev"] --> DevBootstrap["backend/scripts/bootstrap.sh"]
-    FirstBoot["生产首装\ninstaller/install.sh"] --> ProdBootstrap["backend/scripts/bootstrap.sh"]
-    Upgrade["生产升级\ninstaller/upgrade.sh"] --> ProdBootstrap
+    FirstBoot["生产首装\ninstaller/install.sh"] --> ProdInstall["installer/lib/docker.sh"]
+    Upgrade["生产升级\ninstaller/upgrade.sh"] --> ProdInstall
 
     DevBootstrap --> DevPreflight["DB preflight + seed fingerprint"]
     DevPreflight --> DevSeed["dev_seed 或 seed"]
+    DevSeed --> DevDataMigrate["blocking data migrations"]
 
-    ProdBootstrap --> Migrate["alembic upgrade head"]
+    ProdInstall --> Migrate["schema migration\nmigrate.sh"]
     Migrate --> Baseline["production baseline"]
     Baseline --> Blocking["blocking data migrations"]
     Blocking --> FirstAdmin["创建首次管理员"]
@@ -331,13 +332,17 @@ flowchart TB
 
 | 场景 | 真实路径                                                                                 | 作用                                             |
 | ---- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 开发 | `Makefile` -> `scripts/dev-start.sh` -> `backend/scripts/bootstrap.sh`                   | 预检数据库、按 seed profile 灌开发或生产风格数据 |
-| 首装 | `installer/install.sh` -> `docker-compose.release.yml` -> `backend/scripts/bootstrap.sh` | schema migration + production baseline + blocking data migrations + 首次管理员 |
-| 升级 | `installer/upgrade.sh` -> `backend/scripts/bootstrap.sh`                                 | schema migration + blocking/background data migrations，不重复覆盖已有业务数据 |
+| 开发 | `Makefile` -> `scripts/dev-start.sh` -> `backend/scripts/bootstrap.sh` | 预检数据库、按 seed profile 灌开发或生产风格数据，并执行 blocking data migrations |
+| 首装 | `installer/install.sh` -> `migrate.sh` / `baseline-prod.sh` / `data-migrate.sh` / `first-admin-prod.sh` | schema migration + production baseline + blocking data migrations + 首次管理员 |
+| 升级 | `installer/upgrade.sh` -> `migrate.sh` / `data-migrate.sh` | schema migration + blocking/background data migrations，不重复覆盖已有业务数据 |
 
 关键文件：
 
 - `backend/scripts/bootstrap.sh`
+- `backend/scripts/migrate.sh`
+- `backend/scripts/baseline-prod.sh`
+- `backend/scripts/data-migrate.sh`
+- `backend/scripts/first-admin-prod.sh`
 - `backend/src/aerisun/core/production_baseline.py`
 - `backend/src/aerisun/core/dev_seed.py`
 - `backend/src/aerisun/core/data_migrations/runner.py`

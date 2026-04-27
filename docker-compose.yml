@@ -28,6 +28,8 @@ services:
       WALINE_JWT_TOKEN: ${WALINE_JWT_TOKEN}
     volumes:
       - ${AERISUN_STORE_DIR:-/srv/aerisun/store}:/srv/aerisun/store
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${AERISUN_PORT:-8000}:${AERISUN_PORT:-8000}"
     healthcheck:

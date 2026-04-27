@@ -400,6 +400,8 @@ jobs:
           version="${release_tag#v}"
           IFS='.' read -r major minor patch <<<"${version}"
 
+          echo "dockerhub_image=docker.io/${DOCKERHUB_USERNAME}/${{ matrix.dev_image_name }}" >> "${GITHUB_OUTPUT}"
+          echo "aliyun_image=${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/${{ matrix.dev_image_name }}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "major_minor=${major}.${minor}" >> "${GITHUB_OUTPUT}"
           echo "major=${major}" >> "${GITHUB_OUTPUT}"
@@ -411,11 +413,20 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Login to Aliyun ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ALIYUN_ACR_REGISTRY }}
+          username: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: docker.io/${{ env.DOCKERHUB_USERNAME }}/${{ matrix.dev_image_name }}
+          images: |
+            ${{ steps.prep.outputs.dockerhub_image }}
+            ${{ steps.prep.outputs.aliyun_image }}
           tags: |
             type=raw,value=${{ steps.prep.outputs.version }}
             type=raw,value=${{ steps.prep.outputs.major_minor }}
@@ -472,7 +483,7 @@ jobs:
           AERISUN_RELEASE_TAG: ${{ steps.prep.outputs.release_tag }}
           AERISUN_RELEASE_VERSION: ${{ steps.prep.outputs.version }}
           AERISUN_INSTALL_BASE_URL: ${{ steps.prep.outputs.dev_base_url }}
-          AERISUN_INSTALL_DOCKERHUB_NAMESPACE: ${{ env.DOCKERHUB_USERNAME }}
+          AERISUN_IMAGE_REGISTRY: ${{ env.DEFAULT_IMAGE_REGISTRY }}
         run: bash ./scripts/package-installer.sh
 
       - name: Upload dev installer assets to Bitiful OSS

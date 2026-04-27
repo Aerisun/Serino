@@ -608,30 +608,29 @@ normalize_release_registry_strategy() {
   if [[ "${AERISUN_INSTALL_CHANNEL:-stable}" == "dev" ]]; then
     AERISUN_DOCKER_REGISTRY_MIRRORS=""
   fi
+  return 0
 }
 
 configure_docker_registry_mirrors() {
   local mirrors="${AERISUN_DOCKER_REGISTRY_MIRRORS:-}"
-  local channel="${AERISUN_INSTALL_CHANNEL:-stable}"
   local daemon_file="${SERINO_DOCKER_DAEMON_FILE}"
   local tmp_file=""
   local change_state=""
 
-  if [[ -z "${mirrors}" && "${channel}" != "dev" ]]; then
-    return 0
+  if [[ "${AERISUN_INSTALL_CHANNEL:-stable}" == "dev" ]]; then
+    mirrors=""
   fi
 
   tmp_file="$(make_temp_file)"
   change_state="$(
-    python3 - "${channel}" "${mirrors}" "${daemon_file}" "${tmp_file}" <<'PY'
+    python3 - "${mirrors}" "${daemon_file}" "${tmp_file}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-channel = sys.argv[1]
-mirrors_raw = sys.argv[2]
-daemon_path = Path(sys.argv[3])
-output_path = Path(sys.argv[4])
+mirrors_raw = sys.argv[1]
+daemon_path = Path(sys.argv[2])
+output_path = Path(sys.argv[3])
 mirrors = [item.strip() for item in mirrors_raw.split(",") if item.strip()]
 
 data = {}
@@ -642,12 +641,12 @@ if daemon_path.exists():
         data = {}
 
 changed = False
-if channel == "dev":
-    if "registry-mirrors" in data:
-        data.pop("registry-mirrors", None)
+if mirrors:
+    if data.get("registry-mirrors") != mirrors:
+        data["registry-mirrors"] = mirrors
         changed = True
-elif data.get("registry-mirrors") != mirrors:
-    data["registry-mirrors"] = mirrors
+elif "registry-mirrors" in data:
+    del data["registry-mirrors"]
     changed = True
 
 output_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
@@ -909,20 +908,157 @@ list_local_ip_candidates() {
 detect_public_ip_candidates() {
   local url=""
   local candidate=""
+  local candidates=""
 
-  for url in https://api.ipify.org https://api6.ipify.org https://api64.ipify.org; do
-    candidate="$(curl --noproxy '*' --silent --show-error --max-time 5 "${url}" 2>/dev/null || true)"
-    [[ -n "${candidate}" ]] && printf '%s\n' "${candidate}"
+  for url in \
+    https://api.ipify.org \
+    https://ipv4.icanhazip.com \
+    https://ifconfig.me/ip \
+    https://api.ip.sb/ip \
+    https://4.ipw.cn
+  do
+    candidate="$(curl_direct_public_ipv4_probe "${url}" || true)"
+    if [[ -n "${candidate}" ]]; then
+      candidates+="${candidate}"$'\n'
+    fi
   done
 
-  for url in https://api.ipify.org https://api6.ipify.org https://api64.ipify.org; do
-    candidate="$(curl --silent --show-error --max-time 5 "${url}" 2>/dev/null || true)"
-    [[ -n "${candidate}" ]] && printf '%s\n' "${candidate}"
+  printf '%s' "${candidates}" | pick_public_ip_probe_candidates
+
+  install_proxy_ip_check_enabled || return 0
+
+  for url in https://api.ipify.org https://ipv4.icanhazip.com; do
+    candidate="$(curl_proxy_public_ipv4_probe "${url}" || true)"
+    if [[ -n "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+    fi
   done
 }
 
 detect_public_ip_candidate() {
   detect_public_ip_candidates | awk 'NF' | sort -u | head -n 1
+}
+
+curl_direct_public_ipv4_probe() {
+  local url="$1"
+  local candidate=""
+
+  candidate="$(
+    http_proxy= https_proxy= all_proxy= HTTP_PROXY= HTTPS_PROXY= ALL_PROXY= \
+      curl --fail --location --proxy "" --noproxy "*" --silent --show-error \
+      --connect-timeout 3 --max-time 8 -4 "${url}" 2>/dev/null || true
+  )"
+  sanitize_public_ipv4_probe_result "${candidate}"
+}
+
+curl_proxy_public_ipv4_probe() {
+  local url="$1"
+  local candidate=""
+
+  candidate="$(
+    curl --fail --location --silent --show-error \
+      --connect-timeout 3 --max-time 8 -4 "${url}" 2>/dev/null || true
+  )"
+  sanitize_public_ipv4_probe_result "${candidate}"
+}
+
+sanitize_public_ipv4_probe_result() {
+  local value="$1"
+
+  value="$(printf '%s' "${value}" | tr -d '\r' | awk 'NR == 1 { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); print }')"
+  if [[ -n "${value}" ]] && is_public_ipv4_literal_for_probe "${value}"; then
+    printf '%s' "${value}"
+    return 0
+  fi
+
+  return 1
+}
+
+pick_public_ip_probe_candidates() {
+  awk '
+    NF && !seen[$0]++ {
+      order[++n] = $0
+    }
+    NF {
+      count[$0]++
+    }
+    END {
+      if (n == 0) {
+        exit 0
+      }
+      best = order[1]
+      for (i = 2; i <= n; i++) {
+        if (count[order[i]] > count[best]) {
+          best = order[i]
+        }
+      }
+      print best
+    }
+  '
+}
+
+install_proxy_ip_check_enabled() {
+  case "${AERISUN_INSTALL_ALLOW_PROXY_IP_CHECK:-false}" in
+    1|true|yes|y|on)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_ip_address_literal() {
+  local value="$1"
+  [[ -n "${value}" ]] || return 1
+
+  if command_exists python3; then
+    python3 - "${value}" <<'PY' >/dev/null 2>&1
+from ipaddress import ip_address
+import sys
+
+try:
+    ip_address(sys.argv[1])
+except ValueError:
+    raise SystemExit(1)
+PY
+    return $?
+  fi
+
+  [[ "${value}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ || "${value}" == *:* ]]
+}
+
+is_public_ipv4_literal_for_probe() {
+  local value="$1"
+  [[ -n "${value}" ]] || return 1
+
+  if command_exists python3; then
+    python3 - "${value}" <<'PY' >/dev/null 2>&1
+from ipaddress import ip_address
+import sys
+
+try:
+    addr = ip_address(sys.argv[1])
+except ValueError:
+    raise SystemExit(1)
+
+raise SystemExit(0 if addr.version == 4 and addr.is_global else 1)
+PY
+    return $?
+  fi
+
+  [[ "${value}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+  [[ "${value}" =~ ^0\. ]] && return 1
+  [[ "${value}" =~ ^10\. ]] && return 1
+  [[ "${value}" =~ ^127\. ]] && return 1
+  [[ "${value}" =~ ^192\.168\. ]] && return 1
+  [[ "${value}" =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. ]] && return 1
+  [[ "${value}" =~ ^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\. ]] && return 1
+  [[ "${value}" =~ ^169\.254\. ]] && return 1
+  [[ "${value}" =~ ^192\.0\.2\. ]] && return 1
+  [[ "${value}" =~ ^198\.51\.100\. ]] && return 1
+  [[ "${value}" =~ ^203\.0\.113\. ]] && return 1
+  return 0
 }
 
 join_lines() {
@@ -979,7 +1115,7 @@ print_domain_https_failure_details() {
   else
     if [[ -n "${public_ips}" ]] && ! domain_points_to_any_candidate_ip "${resolved_ips}" "${public_ips}"; then
       dns_reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP 候选 ${public_ip_summary}。")
-    elif [[ -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
+    elif [[ -z "${public_ips}" && -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
       dns_reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机已知地址 ${local_ip_summary:-未知}。")
     fi
   fi
@@ -1099,7 +1235,7 @@ preflight_domain_installation() {
     reasons+=("域名 ${host} 当前无法解析，请确认 A/AAAA 记录已经生效。")
   elif [[ -n "${public_ips}" ]] && ! domain_points_to_any_candidate_ip "${resolved_ips}" "${public_ips}"; then
     reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机公网 IP 候选 ${public_ip_summary}。")
-  elif [[ -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
+  elif [[ -z "${public_ips}" && -n "${local_ips}" ]] && ! grep -Fxf <(printf '%s\n' "${resolved_ips}") <(printf '%s\n' "${local_ips}") >/dev/null 2>&1; then
     reasons+=("域名 ${host} 当前解析到 ${resolved_summary}，没有命中本机已知地址 ${local_ip_summary:-未知}。")
   fi
 

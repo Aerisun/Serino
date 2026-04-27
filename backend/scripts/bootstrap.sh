@@ -96,6 +96,9 @@ if settings.seed_reference_data:
 else:
     log("已跳过种子数据初始化，因为未启用 AERISUN_SEED_REFERENCE_DATA。")
 PY
+
+  echo "==> 正在执行阻塞式版本化数据迁移..."
+  bash "${SCRIPT_DIR}/data-migrate.sh" apply --mode blocking --progress
 else
   run_backend_python -u - <<'PY'
 from aerisun.core.settings import get_settings

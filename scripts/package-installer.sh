@@ -7,7 +7,6 @@ DIST_DIR="${PROJECT_DIR}/dist/installer"
 RELEASE_TAG="${AERISUN_RELEASE_TAG:?AERISUN_RELEASE_TAG is required}"
 VERSION="${AERISUN_RELEASE_VERSION:?AERISUN_RELEASE_VERSION is required}"
 INSTALL_CHANNEL="${AERISUN_INSTALL_CHANNEL:-stable}"
-DOCKERHUB_NAMESPACE="${AERISUN_INSTALL_DOCKERHUB_NAMESPACE:-aerisun}"
 IMAGE_REGISTRY="${AERISUN_IMAGE_REGISTRY:-}"
 API_IMAGE_NAME="serino-api"
 WEB_IMAGE_NAME="serino-web"
@@ -46,9 +45,7 @@ case "${INSTALL_CHANNEL}" in
     fi
     ;;
   dev)
-    if [[ -z "${IMAGE_REGISTRY}" ]]; then
-      IMAGE_REGISTRY="docker.io/${DOCKERHUB_NAMESPACE}"
-    fi
+    IMAGE_REGISTRY="${IMAGE_REGISTRY:?AERISUN_IMAGE_REGISTRY is required for dev channel}"
     API_IMAGE_NAME="serino-dev-api"
     WEB_IMAGE_NAME="serino-dev-web"
     WALINE_IMAGE_NAME="serino-dev-waline"

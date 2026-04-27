@@ -47,16 +47,25 @@ PY
 
 list_local_ip_candidates_by_family() {
   local family="$1"
+  local candidates=""
 
   if command_exists ip; then
     if [[ "${family}" == "4" ]]; then
-      ip -o -4 addr show scope global up 2>/dev/null \
+      candidates="$(
+        ip -o -4 addr show scope global up 2>/dev/null \
         | awk '$2 !~ /^(lo|docker|br-|veth|virbr|cni|flannel|tailscale|zt)/ {print $4}' \
         | cut -d/ -f1
+      )"
     else
-      ip -o -6 addr show scope global up 2>/dev/null \
+      candidates="$(
+        ip -o -6 addr show scope global up 2>/dev/null \
         | awk '$2 !~ /^(lo|docker|br-|veth|virbr|cni|flannel|tailscale|zt)/ {print $4}' \
         | cut -d/ -f1
+      )"
+    fi
+    if [[ -n "${candidates}" ]]; then
+      printf '%s\n' "${candidates}"
+      return 0
     fi
   fi
 
@@ -102,6 +111,22 @@ pick_first_public_ipv4() {
   return 1
 }
 
+pick_first_private_ipv4() {
+  local candidate=""
+
+  while IFS= read -r candidate; do
+    candidate="$(trim_input "${candidate}")"
+    [[ -n "${candidate}" ]] || continue
+    candidate="$(normalize_host_input "${candidate}")"
+    if is_ipv4_literal "${candidate}" && ! is_public_ipv4_literal "${candidate}"; then
+      printf '%s' "${candidate}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 list_local_ipv4_candidates() {
   list_local_ip_candidates_by_family 4 | while IFS= read -r candidate; do
     candidate="$(trim_input "${candidate}")"
@@ -112,9 +137,45 @@ list_local_ipv4_candidates() {
   done | awk 'NF && !seen[$0]++'
 }
 
+sanitize_public_ipv4_probe_result() {
+  local value="$1"
+
+  value="$(printf '%s' "${value}" | tr -d '\r' | awk 'NR == 1 { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); print }')"
+  if [[ -n "${value}" ]] && is_public_ipv4_literal "${value}"; then
+    printf '%s' "${value}"
+    return 0
+  fi
+
+  return 1
+}
+
+pick_best_public_ipv4_probe_candidate() {
+  awk '
+    NF && !seen[$0]++ {
+      order[++n] = $0
+    }
+    NF {
+      count[$0]++
+    }
+    END {
+      if (n == 0) {
+        exit 1
+      }
+      best = order[1]
+      for (i = 2; i <= n; i++) {
+        if (count[order[i]] > count[best]) {
+          best = order[i]
+        }
+      }
+      print best
+    }
+  '
+}
+
 detect_public_ipv4_without_proxy() {
   local candidate=""
   local endpoint=""
+  local candidates=""
 
   for endpoint in \
     "https://api.ipify.org" \
@@ -123,22 +184,28 @@ detect_public_ipv4_without_proxy() {
     "https://api.ip.sb/ip" \
     "https://4.ipw.cn"
   do
-    candidate="$(curl --noproxy '*' --silent --show-error --max-time 5 -4 "${endpoint}" 2>/dev/null || true)"
-    candidate="$(trim_input "${candidate}")"
-    if [[ -n "${candidate}" ]] && is_public_ipv4_literal "${candidate}"; then
-      printf '%s' "${candidate}"
-      return 0
+    candidate="$(
+      curl --fail --location --noproxy '*' --silent --show-error \
+        --connect-timeout 3 --max-time 8 -4 "${endpoint}" 2>/dev/null || true
+    )"
+    candidate="$(sanitize_public_ipv4_probe_result "${candidate}" || true)"
+    if [[ -n "${candidate}" ]]; then
+      candidates+="${candidate}"$'\n'
     fi
   done
 
-  return 1
+  printf '%s' "${candidates}" | pick_best_public_ipv4_probe_candidate
 }
 
 detect_public_ipv4_with_proxy() {
   local candidate=""
 
-  candidate="$(curl --silent --show-error --max-time 5 -4 https://api.ipify.org 2>/dev/null || true)"
-  if [[ -n "${candidate}" ]] && is_public_ipv4_literal "${candidate}"; then
+  candidate="$(
+    curl --fail --location --silent --show-error \
+      --connect-timeout 3 --max-time 8 -4 https://api.ipify.org 2>/dev/null || true
+  )"
+  candidate="$(sanitize_public_ipv4_probe_result "${candidate}" || true)"
+  if [[ -n "${candidate}" ]]; then
     printf '%s' "${candidate}"
     return 0
   fi
@@ -148,6 +215,15 @@ detect_public_ipv4_with_proxy() {
 
 guess_host_for_ip_mode() {
   local host=""
+
+  if [[ "${AERISUN_INSTALL_IP_MODE:-}" == "private" ]]; then
+    guess_private_host_for_ip_mode
+    return
+  fi
+  if [[ "${AERISUN_INSTALL_IP_MODE:-}" == "public" ]]; then
+    guess_public_host_for_ip_mode
+    return
+  fi
 
   host="$(list_local_ipv4_candidates | pick_first_public_ipv4 || true)"
   if [[ -z "${host}" ]]; then
@@ -159,10 +235,25 @@ guess_host_for_ip_mode() {
   printf '%s' "${host}"
 }
 
+guess_public_host_for_ip_mode() {
+  local host=""
+
+  host="$(list_local_ipv4_candidates | pick_first_public_ipv4 || true)"
+  if [[ -z "${host}" ]]; then
+    host="$(detect_public_ipv4_without_proxy || true)"
+  fi
+  printf '%s' "${host}"
+}
+
+guess_private_host_for_ip_mode() {
+  list_local_ipv4_candidates | pick_first_private_ipv4 || true
+}
+
 AERISUN_INSTALL_HOST_VALIDATION_ERROR=""
 
 validate_ip_mode_host() {
   local value="$1"
+  local mode="${AERISUN_INSTALL_IP_MODE:-}"
   local local_ipv4s=""
   local detected_public_ipv4=""
   local proxy_public_ipv4=""
@@ -181,6 +272,47 @@ validate_ip_mode_host() {
   fi
 
   local_ipv4s="$(list_local_ipv4_candidates)"
+  if [[ "${mode}" == "private" ]]; then
+    if [[ -n "${local_ipv4s}" ]] && grep -Fxq "${value}" <<<"${local_ipv4s}"; then
+      if is_public_ipv4_literal "${value}"; then
+        AERISUN_INSTALL_HOST_VALIDATION_ERROR="你选择了内网 IPv4，但填写的是公网 IPv4。请填写本机网卡上的内网 IPv4，例如校园网或 clab 环境里的 10.x/172.16-31.x/192.168.x 地址。"
+        return 1
+      fi
+      printf '%s' "${value}"
+      return 0
+    fi
+
+    AERISUN_INSTALL_HOST_VALIDATION_ERROR="内网 IPv4 模式要求填写本机网卡上的内网 IPv4。请使用 hostname -I 看到的内网地址，不要填写 NAT 出口、公网 EIP、域名或其他机器地址。"
+    return 1
+  fi
+
+  if [[ "${mode}" == "public" ]]; then
+    if [[ -n "${local_ipv4s}" ]] && grep -Fxq "${value}" <<<"${local_ipv4s}"; then
+      if ! is_public_ipv4_literal "${value}"; then
+        AERISUN_INSTALL_HOST_VALIDATION_ERROR="你选择了公网 IPv4，但填写的是本机内网 IPv4。腾讯云、阿里云等云服务器请填写绑定到该机器的公网 IPv4 / EIP；如果只是校园网内网访问，请返回选择内网 IPv4。"
+        return 1
+      fi
+      printf '%s' "${value}"
+      return 0
+    fi
+
+    detected_public_ipv4="$(detect_public_ipv4_without_proxy || true)"
+    if [[ -n "${detected_public_ipv4}" && "${value}" == "${detected_public_ipv4}" ]]; then
+      printf '%s' "${value}"
+      return 0
+    fi
+
+    proxy_public_ipv4="$(detect_public_ipv4_with_proxy || true)"
+    if [[ -n "${proxy_public_ipv4}" && "${value}" == "${proxy_public_ipv4}" && "${value}" != "${detected_public_ipv4}" ]]; then
+      AERISUN_INSTALL_HOST_VALIDATION_ERROR="当前填写的 IPv4 看起来是代理出口地址，不是这台服务器的公网 IPv4 / EIP。请关闭代理后重试，或确认云厂商控制台里绑定到本机的公网 IPv4。"
+      return 1
+    fi
+
+    AERISUN_INSTALL_HOST_VALIDATION_ERROR="公网 IPv4 模式要求填写绑定到这台服务器的公网 IPv4 / EIP。适合腾讯云、阿里云等云服务器；如果是校园网、clab 或仅内网访问，请返回选择内网 IPv4。"
+    return 1
+  fi
+
+  # Backward-compatible validation for scripts/tests that set only AERISUN_INSTALL_ACCESS_MODE=ip.
   if [[ -n "${local_ipv4s}" ]] && grep -Fxq "${value}" <<<"${local_ipv4s}"; then
     printf '%s' "${value}"
     return 0
@@ -213,6 +345,67 @@ prompt_validation_error() {
   fi
 
   printf '[WARN] %s\n' "${message}" >&2
+}
+
+ip_mode_label() {
+  case "${1:-}" in
+    public)
+      printf '公网访问'
+      ;;
+    private)
+      printf '内网访问'
+      ;;
+    *)
+      printf '未选择'
+      ;;
+  esac
+}
+
+public_ip_requires_mapping_confirmation() {
+  local value="$1"
+  local local_ipv4s=""
+
+  [[ "${AERISUN_INSTALL_ACCESS_MODE:-}" == "ip" ]] || return 1
+  [[ "${AERISUN_INSTALL_IP_MODE:-}" == "public" ]] || return 1
+  is_public_ipv4_literal "${value}" || return 1
+
+  local_ipv4s="$(list_local_ipv4_candidates)"
+  if [[ -n "${local_ipv4s}" ]] && grep -Fxq "${value}" <<<"${local_ipv4s}"; then
+    return 1
+  fi
+
+  return 0
+}
+
+confirm_public_ip_mapping() {
+  local value="$1"
+  local message=""
+
+  public_ip_requires_mapping_confirmation "${value}" || return 0
+
+  message="$(cat <<EOF
+你填写的公网 IPv4 ${value} 没有出现在本机网卡地址里。
+
+如果这是腾讯云、阿里云等云服务器控制台里绑定到本机的公网 IP，这通常是正常的。
+
+如果这是校园网、实验室、办公室网络里自动检测出来的出口 IP，它通常不能从外面访问到这台机器。此时请取消，返回选择内网访问。
+
+只有确认外部用户能通过 ${value} 访问这台服务器时，才继续。
+EOF
+)"
+
+  if command_exists whiptail; then
+    local width=""
+    local height=""
+    width="$(dialog_width 76 58)"
+    height="$(dialog_height 17 13)"
+    whiptail --title "确认公网访问地址" --yesno "${message}" "${height}" "${width}" </dev/tty
+    return $?
+  fi
+
+  printf '%s\n' "${message}" >&2
+  read -r -p "确认外部用户能通过这个 IP 访问本机？[y/N]: " answer </dev/tty
+  [[ "${answer}" =~ ^[Yy]$ ]]
 }
 
 trim_input() {
@@ -289,7 +482,7 @@ prompt_access_mode() {
     AERISUN_INSTALL_ACCESS_MODE="$(
         whiptail --title "Aerisun 安装" --menu "选择接入方式" "${height}" "${width}" 2 \
         domain "域名模式（正式 HTTPS）" \
-        ip "IPv4 模式（优先公网 IPv4，没有公网再用内网）" \
+        ip "IPv4 模式（下一步选择公网或内网）" \
         3>&1 1>&2 2>&3 </dev/tty
     )" || die "安装已取消。"
     return 0
@@ -298,13 +491,44 @@ prompt_access_mode() {
   cat >&2 <<'EOF'
 请选择接入方式：
   1) 域名模式（正式 HTTPS）
-  2) IPv4 模式（优先公网 IPv4，没有公网再用内网）
+  2) IPv4 模式（下一步选择公网或内网）
 EOF
   read -r -p "输入 1 或 2: " selection </dev/tty
   case "${selection}" in
     1) AERISUN_INSTALL_ACCESS_MODE="domain" ;;
     2) AERISUN_INSTALL_ACCESS_MODE="ip" ;;
     *) die "无效的接入方式。" ;;
+  esac
+}
+
+prompt_ip_mode() {
+  [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "ip" ]] || return 0
+  [[ -z "${AERISUN_INSTALL_IP_MODE:-}" ]] || return 0
+
+  if command_exists whiptail; then
+    local width=""
+    local height=""
+    width="$(dialog_width 78 58)"
+    height="$(dialog_height 14 12)"
+    AERISUN_INSTALL_IP_MODE="$(
+        whiptail --title "Aerisun 安装" --menu "选择 IPv4 类型" "${height}" "${width}" 2 \
+        public "公网 IPv4（腾讯云、阿里云等云服务器厂商）" \
+        private "内网 IPv4（例如校园网中的 clab）" \
+        3>&1 1>&2 2>&3 </dev/tty
+    )" || die "安装已取消。"
+    return 0
+  fi
+
+cat >&2 <<'EOF'
+选择 IPv4 类型：
+  1) 公网 IPv4（腾讯云、阿里云等云服务器厂商）
+  2) 内网 IPv4（例如校园网中的 clab）
+EOF
+  read -r -p "输入 1 或 2: " selection </dev/tty
+  case "${selection}" in
+    1) AERISUN_INSTALL_IP_MODE="public" ;;
+    2) AERISUN_INSTALL_IP_MODE="private" ;;
+    *) die "无效的 IPv4 类型。" ;;
   esac
 }
 
@@ -316,8 +540,13 @@ prompt_install_host() {
   if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "domain" ]]; then
     prompt="请输入已经解析到本机公网 IP 的域名"
   else
+    prompt_ip_mode
     default_value="$(guess_host_for_ip_mode)"
-    prompt="请输入这台服务器真实 IPv4（优先公网 IPv4，没有公网再用内网；不要填域名、其他机器地址或代理出口地址）"
+    if [[ "${AERISUN_INSTALL_IP_MODE:-}" == "public" ]]; then
+      prompt="请输入外部用户访问这台服务器用的公网 IPv4（云服务器控制台里的公网 IP）"
+    else
+      prompt="请输入内网里访问这台服务器用的 IPv4（通常是 hostname -I 里看到的 10.x/172.x/192.168.x）"
+    fi
   fi
 
   while true; do
@@ -342,6 +571,10 @@ prompt_install_host() {
     if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "ip" ]]; then
       if ! value="$(validate_ip_mode_host "${value}")"; then
         prompt_validation_error "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
+        continue
+      fi
+      if ! confirm_public_ip_mapping "${value}"; then
+        prompt_validation_error "已取消使用该公网 IPv4。请重新输入；如果只是校园网、实验室或 clab 访问，请重新运行安装并选择内网访问。"
         continue
       fi
     elif [[ -z "${value}" ]]; then
@@ -413,6 +646,7 @@ confirm_install_settings() {
 安装目录：${AERISUN_APP_ROOT}
 数据目录：${AERISUN_DATA_DIR}
 接入方式：${AERISUN_INSTALL_ACCESS_MODE}
+$(if [[ "${AERISUN_INSTALL_ACCESS_MODE}" == "ip" ]]; then printf '访问范围：%s\n' "$(ip_mode_label "${AERISUN_INSTALL_IP_MODE:-}")"; fi)
 站点地址：${AERISUN_INSTALL_HOST}
 网站管理台登录名：${AERISUN_BOOTSTRAP_ADMIN_USERNAME_VALUE}
 提示：请确认你已经记录好网站管理台登录密码
