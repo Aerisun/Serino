@@ -500,7 +500,7 @@ jobs:
           BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
         shell: bash
         run: |
-          aws --version
+          python3 -m pip install --user "boto3==1.42.82"
 
           prefix="${BINFEN_OSS_PREFIX#/}"
           prefix="${prefix%/}"
@@ -512,39 +512,55 @@ jobs:
             version_prefix="dev/${{ steps.prep.outputs.release_tag }}/"
           fi
 
-          if [[ "${BINFEN_OSS_FORCE_PATH_STYLE}" == "true" ]]; then
-            aws configure set default.s3.addressing_style path
-          else
-            aws configure set default.s3.addressing_style virtual
-          fi
+          export ROOT_PREFIX="${root_prefix}"
+          export VERSION_PREFIX="${version_prefix}"
 
-          put_oss_object() {
-            local source="$1"
-            local key="$2"
-            local content_type="$3"
-            local cache_control="${4:-}"
-            local args=(
-              --endpoint-url "${BINFEN_OSS_ENDPOINT}"
-              s3api put-object
-              --bucket "${BINFEN_OSS_BUCKET}"
-              --key "${key}"
-              --body "${source}"
-              --content-type "${content_type}"
-            )
-            if [[ -n "${cache_control}" ]]; then
-              args+=(--cache-control "${cache_control}")
-            fi
-            aws "${args[@]}" >/dev/null
-            echo "uploaded s3://${BINFEN_OSS_BUCKET}/${key}"
+          python3 <<'PY'
+          import os
+          from pathlib import Path
+
+          import boto3
+          import botocore
+          from botocore.config import Config
+
+          bucket = os.environ["BINFEN_OSS_BUCKET"]
+          addressing_style = "path" if os.environ.get("BINFEN_OSS_FORCE_PATH_STYLE") == "true" else "virtual"
+          credentials = {
+              "aws_access_key_id": os.environ["AWS_ACCESS_KEY_ID"],
+              "aws_secret_" + "access_key": os.environ["AWS_SECRET_ACCESS_KEY"],
           }
+          client = boto3.client(
+              "s3",
+              endpoint_url=os.environ["BINFEN_OSS_ENDPOINT"],
+              region_name=os.environ.get("AWS_DEFAULT_REGION") or "cn-east-1",
+              config=Config(
+                  signature_version="s3v4",
+                  s3={"addressing_style": addressing_style},
+                  request_checksum_calculation="when_required",
+                  response_checksum_validation="when_required",
+              ),
+              **credentials,
+          )
+          print(f"boto3 {boto3.__version__} / botocore {botocore.__version__}")
 
-          put_oss_object dist/installer/install.latest.sh "${root_prefix}install.sh" "application/x-sh" "no-cache, no-store, must-revalidate"
-          put_oss_object dist/installer/latest.env "${root_prefix}latest.env" "text/plain; charset=utf-8" "no-cache, no-store, must-revalidate"
-          put_oss_object dist/installer/install.sh "${version_prefix}install.sh" "application/x-sh"
-          put_oss_object dist/installer/aerisun-installer-bundle.tar.gz "${version_prefix}aerisun-installer-bundle.tar.gz" "application/gzip"
-          put_oss_object dist/installer/aerisun-installer-manifest.env "${version_prefix}aerisun-installer-manifest.env" "text/plain; charset=utf-8"
-          put_oss_object dist/installer/docker-compose.release.yml "${version_prefix}docker-compose.release.yml" "text/yaml; charset=utf-8"
-          put_oss_object dist/installer/.env.production.local.example "${version_prefix}.env.production.local.example" "text/plain; charset=utf-8"
+          root_prefix = os.environ["ROOT_PREFIX"]
+          version_prefix = os.environ["VERSION_PREFIX"]
+          uploads = [
+              ("dist/installer/install.latest.sh", f"{root_prefix}install.sh", "application/x-sh", "no-cache, no-store, must-revalidate"),
+              ("dist/installer/latest.env", f"{root_prefix}latest.env", "text/plain; charset=utf-8", "no-cache, no-store, must-revalidate"),
+              ("dist/installer/install.sh", f"{version_prefix}install.sh", "application/x-sh", None),
+              ("dist/installer/aerisun-installer-bundle.tar.gz", f"{version_prefix}aerisun-installer-bundle.tar.gz", "application/gzip", None),
+              ("dist/installer/aerisun-installer-manifest.env", f"{version_prefix}aerisun-installer-manifest.env", "text/plain; charset=utf-8", None),
+              ("dist/installer/docker-compose.release.yml", f"{version_prefix}docker-compose.release.yml", "text/yaml; charset=utf-8", None),
+              ("dist/installer/.env.production.local.example", f"{version_prefix}.env.production.local.example", "text/plain; charset=utf-8", None),
+          ]
+          for source, key, content_type, cache_control in uploads:
+              extra = {"ContentType": content_type}
+              if cache_control:
+                  extra["CacheControl"] = cache_control
+              client.put_object(Bucket=bucket, Key=key, Body=Path(source).read_bytes(), **extra)
+              print(f"uploaded s3://{bucket}/{key}")
+          PY
 
       - name: Refresh dev installer CDN cache
         env:
@@ -797,7 +813,7 @@ jobs:
           BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
         shell: bash
         run: |
-          aws --version
+          python3 -m pip install --user "boto3==1.42.82"
 
           prefix="${BINFEN_OSS_PREFIX#/}"
           prefix="${prefix%/}"
@@ -809,39 +825,55 @@ jobs:
             version_prefix="${{ steps.prep.outputs.release_tag }}/"
           fi
 
-          if [[ "${BINFEN_OSS_FORCE_PATH_STYLE}" == "true" ]]; then
-            aws configure set default.s3.addressing_style path
-          else
-            aws configure set default.s3.addressing_style virtual
-          fi
+          export ROOT_PREFIX="${root_prefix}"
+          export VERSION_PREFIX="${version_prefix}"
 
-          put_oss_object() {
-            local source="$1"
-            local key="$2"
-            local content_type="$3"
-            local cache_control="${4:-}"
-            local args=(
-              --endpoint-url "${BINFEN_OSS_ENDPOINT}"
-              s3api put-object
-              --bucket "${BINFEN_OSS_BUCKET}"
-              --key "${key}"
-              --body "${source}"
-              --content-type "${content_type}"
-            )
-            if [[ -n "${cache_control}" ]]; then
-              args+=(--cache-control "${cache_control}")
-            fi
-            aws "${args[@]}" >/dev/null
-            echo "uploaded s3://${BINFEN_OSS_BUCKET}/${key}"
+          python3 <<'PY'
+          import os
+          from pathlib import Path
+
+          import boto3
+          import botocore
+          from botocore.config import Config
+
+          bucket = os.environ["BINFEN_OSS_BUCKET"]
+          addressing_style = "path" if os.environ.get("BINFEN_OSS_FORCE_PATH_STYLE") == "true" else "virtual"
+          credentials = {
+              "aws_access_key_id": os.environ["AWS_ACCESS_KEY_ID"],
+              "aws_secret_" + "access_key": os.environ["AWS_SECRET_ACCESS_KEY"],
           }
+          client = boto3.client(
+              "s3",
+              endpoint_url=os.environ["BINFEN_OSS_ENDPOINT"],
+              region_name=os.environ.get("AWS_DEFAULT_REGION") or "cn-east-1",
+              config=Config(
+                  signature_version="s3v4",
+                  s3={"addressing_style": addressing_style},
+                  request_checksum_calculation="when_required",
+                  response_checksum_validation="when_required",
+              ),
+              **credentials,
+          )
+          print(f"boto3 {boto3.__version__} / botocore {botocore.__version__}")
 
-          put_oss_object dist/installer/install.latest.sh "${root_prefix}install.sh" "application/x-sh" "no-cache, no-store, must-revalidate"
-          put_oss_object dist/installer/latest.env "${root_prefix}latest.env" "text/plain; charset=utf-8" "no-cache, no-store, must-revalidate"
-          put_oss_object dist/installer/install.sh "${version_prefix}install.sh" "application/x-sh"
-          put_oss_object dist/installer/aerisun-installer-bundle.tar.gz "${version_prefix}aerisun-installer-bundle.tar.gz" "application/gzip"
-          put_oss_object dist/installer/aerisun-installer-manifest.env "${version_prefix}aerisun-installer-manifest.env" "text/plain; charset=utf-8"
-          put_oss_object dist/installer/docker-compose.release.yml "${version_prefix}docker-compose.release.yml" "text/yaml; charset=utf-8"
-          put_oss_object dist/installer/.env.production.local.example "${version_prefix}.env.production.local.example" "text/plain; charset=utf-8"
+          root_prefix = os.environ["ROOT_PREFIX"]
+          version_prefix = os.environ["VERSION_PREFIX"]
+          uploads = [
+              ("dist/installer/install.latest.sh", f"{root_prefix}install.sh", "application/x-sh", "no-cache, no-store, must-revalidate"),
+              ("dist/installer/latest.env", f"{root_prefix}latest.env", "text/plain; charset=utf-8", "no-cache, no-store, must-revalidate"),
+              ("dist/installer/install.sh", f"{version_prefix}install.sh", "application/x-sh", None),
+              ("dist/installer/aerisun-installer-bundle.tar.gz", f"{version_prefix}aerisun-installer-bundle.tar.gz", "application/gzip", None),
+              ("dist/installer/aerisun-installer-manifest.env", f"{version_prefix}aerisun-installer-manifest.env", "text/plain; charset=utf-8", None),
+              ("dist/installer/docker-compose.release.yml", f"{version_prefix}docker-compose.release.yml", "text/yaml; charset=utf-8", None),
+              ("dist/installer/.env.production.local.example", f"{version_prefix}.env.production.local.example", "text/plain; charset=utf-8", None),
+          ]
+          for source, key, content_type, cache_control in uploads:
+              extra = {"ContentType": content_type}
+              if cache_control:
+                  extra["CacheControl"] = cache_control
+              client.put_object(Bucket=bucket, Key=key, Body=Path(source).read_bytes(), **extra)
+              print(f"uploaded s3://{bucket}/{key}")
+          PY
 
       - name: Refresh installer CDN cache
         env:
