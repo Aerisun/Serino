@@ -36,8 +36,45 @@ import { FriendsPageContentSection } from "./FriendsPageContentSection";
 import { FriendsMoreConfigSection } from "./FriendsMoreConfigSection";
 
 const EMPTY_FRIENDS: FriendAdminRead[] = [];
+const FRIEND_FORM_KEYS = ["name", "url", "avatar_url", "description"] as const;
+const EMPTY_FRIEND_FORM = {
+  name: "",
+  url: "",
+  avatar_url: "",
+  description: "",
+};
+const EMPTY_FEED_DRAFT = { feed_url: "" };
 
 type FriendsSection = "friends" | "page-content" | "more-config";
+type FriendFormKey = (typeof FRIEND_FORM_KEYS)[number];
+type FriendFormState = Record<FriendFormKey, string>;
+type FriendFeedDraft = typeof EMPTY_FEED_DRAFT;
+
+interface FriendFormFieldsProps {
+  fieldLabels: Record<FriendFormKey, string>;
+  form: FriendFormState;
+  onFieldChange: (key: FriendFormKey, value: string) => void;
+}
+
+function FriendFormFields({
+  fieldLabels,
+  form,
+  onFieldChange,
+}: FriendFormFieldsProps) {
+  return (
+    <div className="mx-auto w-full max-w-xl space-y-3">
+      {FRIEND_FORM_KEYS.map((key) => (
+        <div key={key} className="space-y-1">
+          <Label>{fieldLabels[key]}</Label>
+          <Input
+            value={form[key]}
+            onChange={(event) => onFieldChange(key, event.target.value)}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function FriendsPage() {
   const { t } = useI18n();
@@ -49,15 +86,10 @@ export default function FriendsPage() {
     null,
   );
   const queryClient = useQueryClient();
-  const emptyForm = {
-    name: "",
-    url: "",
-    avatar_url: "",
-    description: "",
-  };
-  const emptyFeedDraft = { feed_url: "" };
-  const [form, setForm] = useState(emptyForm);
-  const [createFeedDrafts, setCreateFeedDrafts] = useState([emptyFeedDraft]);
+  const [form, setForm] = useState<FriendFormState>(EMPTY_FRIEND_FORM);
+  const [createFeedDrafts, setCreateFeedDrafts] = useState<FriendFeedDraft[]>([
+    EMPTY_FEED_DRAFT,
+  ]);
 
   const { data: raw, isLoading } = useListFriends({ page });
   const data = raw?.data;
@@ -122,12 +154,16 @@ export default function FriendsPage() {
   }
 
   function resetCreateDialog() {
-    setForm(emptyForm);
-    setCreateFeedDrafts([emptyFeedDraft]);
+    setForm(EMPTY_FRIEND_FORM);
+    setCreateFeedDrafts([EMPTY_FEED_DRAFT]);
   }
 
   function addCreateFeedDraft() {
-    setCreateFeedDrafts((prev) => [...prev, emptyFeedDraft]);
+    setCreateFeedDrafts((prev) => [...prev, EMPTY_FEED_DRAFT]);
+  }
+
+  function updateFriendFormField(key: FriendFormKey, value: string) {
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function updateCreateFeedDraft(
@@ -247,22 +283,6 @@ export default function FriendsPage() {
     description: t("friends.description2"),
   };
 
-  function FriendFormFields() {
-    return (
-      <div className="mx-auto w-full max-w-xl space-y-3">
-        {(["name", "url", "avatar_url", "description"] as const).map((k) => (
-          <div key={k} className="space-y-1">
-            <Label>{fieldLabels[k]}</Label>
-            <Input
-              value={(form as any)[k]}
-              onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div>
       <PageHeader 
@@ -338,7 +358,11 @@ export default function FriendsPage() {
                       />
                     </div>
                   </DialogHeader>
-                  <FriendFormFields />
+                  <FriendFormFields
+                    fieldLabels={fieldLabels}
+                    form={form}
+                    onFieldChange={updateFriendFormField}
+                  />
                   <div className="border-t pt-4 space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -486,7 +510,11 @@ export default function FriendsPage() {
                 />
               </div>
             </DialogHeader>
-            <FriendFormFields />
+            <FriendFormFields
+              fieldLabels={fieldLabels}
+              form={form}
+              onFieldChange={updateFriendFormField}
+            />
 
             {editingFriend && <FeedSourcesSection friendId={editingFriend.id} />}
           </div>
