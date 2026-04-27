@@ -150,6 +150,62 @@ cat '{daemon_file}'
     assert '"buildkit": true' in completed.stdout
 
 
+def test_runtime_environment_value_follows_install_channel() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+
+AERISUN_INSTALL_CHANNEL='stable'
+resolve_runtime_environment_value
+printf '\\n'
+AERISUN_INSTALL_CHANNEL='dev'
+resolve_runtime_environment_value
+printf '\\n'
+unset AERISUN_INSTALL_CHANNEL
+resolve_runtime_environment_value
+printf '\\n'
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "production",
+        "development",
+        "production",
+    ]
+
+
+def test_normalize_production_env_file_sets_environment_from_channel(tmp_path: Path) -> None:
+    env_file = tmp_path / "serino.env"
+    env_file.write_text(
+        "\n".join(
+            [
+                "AERISUN_INSTALL_CHANNEL=dev",
+                "AERISUN_ENVIRONMENT=production",
+                "AERISUN_SITE_URL=https://example.test",
+                "AERISUN_IMAGE_TAG=0.1.36",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/env.sh
+
+make_temp_file() {{ mktemp '{tmp_path}/env.XXXXXX'; }}
+install_managed_env_file() {{ cp "$1" "$2"; }}
+
+normalize_production_env_file '{env_file}'
+grep '^AERISUN_ENVIRONMENT=' '{env_file}'
+"""
+    )
+
+    assert completed.stdout.strip() == "AERISUN_ENVIRONMENT=development"
+
+
 def test_install_main_runs_schema_baseline_and_background_pipeline_in_order() -> None:
     completed = run_project_bash(
         """

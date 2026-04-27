@@ -90,6 +90,15 @@ resolve_release_version_value() {
   printf '%s' "${release_version}"
 }
 
+resolve_runtime_environment_value() {
+  if [[ "${AERISUN_INSTALL_CHANNEL:-stable}" == "dev" ]]; then
+    printf '%s' "development"
+    return 0
+  fi
+
+  printf '%s' "production"
+}
+
 load_env_file() {
   local file="$1"
   local tmp_file=""
@@ -210,10 +219,12 @@ build_runtime_configuration() {
 write_production_env() {
   local output_file="$1"
   local tmp_file
+  local runtime_environment
 
+  runtime_environment="$(resolve_runtime_environment_value)"
   tmp_file="$(make_temp_file)"
   cat > "${tmp_file}" <<EOF
-AERISUN_ENVIRONMENT=production
+AERISUN_ENVIRONMENT=${runtime_environment}
 AERISUN_INSTALL_CHANNEL=${AERISUN_INSTALL_CHANNEL}
 AERISUN_INSTALL_BASE_URL=${AERISUN_INSTALL_BASE_URL}
 AERISUN_APT_MIRROR_URL=${AERISUN_APT_MIRROR_URL}
@@ -332,6 +343,7 @@ normalize_production_env_file() {
   fi
   set_env_value "${file}" "AERISUN_WALINE_SERVER_URL" "${waline_server_url}"
   set_env_value "${file}" "AERISUN_CORS_ORIGINS" "$(quote_env_literal "${normalized_cors}")"
+  set_env_value "${file}" "AERISUN_ENVIRONMENT" "$(resolve_runtime_environment_value)"
 
   release_version="${AERISUN_RELEASE_VERSION:-${AERISUN_IMAGE_TAG:-}}"
   if [[ -n "${release_version}" ]]; then

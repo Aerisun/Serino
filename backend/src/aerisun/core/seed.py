@@ -211,6 +211,7 @@ DEFAULT_PAGE_COPIES = [
                 "站长昵称：:copy[uName]\n\n"
                 "站长头像：:copy[资源里面上传存放公开的资源链接]\n\n"
                 "站点描述：:copy[your bio]\n\n"
+                "RSS 链接（可选）：:copy[https://your_site.com/rss]\n\n"
                 "申请时还请按照上述模板留言，同时注意：\n\n"
                 "- 申请友链前请务必确保贵站有我站的友链\n\n"
                 "- 确保您的网站合法合规，不侵犯读者权益\n\n"
