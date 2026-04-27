@@ -49,7 +49,7 @@ const COPY = {
     proxyPort: "代理端口",
     proxyPortTitle: "本机 HTTP/HTTPS 代理监听端口",
     proxyPortHint:
-      "这里只需要填写端口号。运行时会优先尝试 127.0.0.1，也会自动尝试 Docker 宿主机网关地址，例如 host.docker.internal。",
+      "可以填写端口号，也可以粘贴 127.0.0.1:7890 或 http://127.0.0.1:7890。运行时会优先尝试 127.0.0.1，也会自动尝试 Docker 宿主机网关地址，例如 host.docker.internal。",
     proxyPortPlaceholder: "7890",
     proxyPortInvalid: "请输入 1 到 65535 之间的端口号，或者清空以关闭代理。",
     webhookToggle: "Webhook 走代理",
@@ -88,7 +88,7 @@ const COPY = {
     proxyPort: "Proxy Port",
     proxyPortTitle: "Local HTTP/HTTPS proxy listening port",
     proxyPortHint:
-      "Only the port is required here. Runtime will try 127.0.0.1 first and also common Docker host gateway addresses such as host.docker.internal.",
+      "Enter a port, host:port, or a full URL such as http://127.0.0.1:7890. Runtime will try 127.0.0.1 first and also common Docker host gateway addresses such as host.docker.internal.",
     proxyPortPlaceholder: "7890",
     proxyPortInvalid: "Enter a port between 1 and 65535, or clear it to disable the proxy.",
     webhookToggle: "Use Proxy For Webhook",
@@ -131,7 +131,19 @@ function normalizePort(value: string): number | null {
   if (!trimmed) {
     return null;
   }
-  const parsed = Number(trimmed);
+  let rawPort = trimmed;
+  if (!/^\d+$/.test(trimmed)) {
+    const candidate = trimmed.includes("://") ? trimmed : `http://${trimmed}`;
+    try {
+      rawPort = new URL(candidate).port;
+    } catch {
+      rawPort = "";
+    }
+  }
+  if (!rawPort) {
+    return null;
+  }
+  const parsed = Number(rawPort);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
     return null;
   }
@@ -264,7 +276,7 @@ export function ProxyConfigSection() {
           : copy.pending;
 
   const setPortValue = (value: string) => {
-    const nextValue = value.replace(/[^\d]/g, "").slice(0, 5);
+    const nextValue = value.trim().slice(0, 128);
     setForm((current) => ({
       proxy_port: nextValue,
       webhook_enabled: nextValue.trim() ? current.webhook_enabled : false,

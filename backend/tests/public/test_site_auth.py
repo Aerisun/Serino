@@ -7,6 +7,40 @@ import httpx
 import respx
 
 
+def test_oauth_state_cookie_is_signed(client) -> None:
+    from aerisun.domain.site_auth.oauth import build_oauth_state_cookie, parse_oauth_state_cookie
+
+    cookie = build_oauth_state_cookie("google", "state-token", "/posts/a")
+    payload = parse_oauth_state_cookie(cookie)
+    assert payload is not None
+    assert payload.provider == "google"
+    assert payload.state == "state-token"
+    assert payload.return_to == "/posts/a"
+
+    version, encoded_payload, signature = cookie.split(".", 2)
+    replacement = "A" if encoded_payload[0] != "A" else "B"
+    tampered = f"{version}.{replacement}{encoded_payload[1:]}.{signature}"
+    assert parse_oauth_state_cookie(tampered) is None
+
+
+def test_oauth_state_cookie_expires(client, monkeypatch) -> None:
+    from aerisun.domain.site_auth import oauth
+
+    monkeypatch.setattr(oauth.time, "time", lambda: 1000)
+    cookie = oauth.build_oauth_state_cookie("google", "state-token", "/")
+
+    monkeypatch.setattr(oauth.time, "time", lambda: 1000 + oauth.OAUTH_STATE_TTL_SECONDS + 1)
+    assert oauth.parse_oauth_state_cookie(cookie) is None
+
+
+def test_oauth_return_to_stays_on_site() -> None:
+    from aerisun.domain.site_auth.shared import normalize_return_to
+
+    assert normalize_return_to("/admin/login?admin_auth_provider=google") == "/admin/login?admin_auth_provider=google"
+    assert normalize_return_to("https://evil.example/callback") == "/"
+    assert normalize_return_to("//evil.example/callback") == "/"
+
+
 def _seed_google_visitor_oauth() -> None:
     from aerisun.core.db import get_session_factory
     from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
@@ -271,6 +305,47 @@ def test_google_oauth_start_uses_forwarded_https_callback_url(client) -> None:
     auth_url = response.json()["authorization_url"]
     redirect_uri = parse_qs(urlparse(auth_url).query)["redirect_uri"][0]
     assert redirect_uri == "https://aerisun.top/api/v1/site-auth/oauth/google/callback"
+
+
+def test_google_oauth_start_uses_configured_site_url_for_internal_request_host(client, monkeypatch) -> None:
+    from aerisun.core.settings import get_settings
+
+    monkeypatch.setenv("AERISUN_SITE_URL", "https://aerisun.top/blog")
+    get_settings.cache_clear()
+    _seed_google_visitor_oauth()
+
+    response = client.get(
+        "/api/v1/site-auth/oauth/google/start",
+        params={"return_to": "/"},
+    )
+    assert response.status_code == 200
+
+    auth_url = response.json()["authorization_url"]
+    redirect_uri = parse_qs(urlparse(auth_url).query)["redirect_uri"][0]
+    assert redirect_uri == "https://aerisun.top/api/v1/site-auth/oauth/google/callback"
+    assert "Secure" in response.headers["set-cookie"]
+
+
+def test_google_oauth_start_preserves_distinct_public_request_host(client, monkeypatch) -> None:
+    from aerisun.core.settings import get_settings
+
+    monkeypatch.setenv("AERISUN_SITE_URL", "https://aerisun.top")
+    get_settings.cache_clear()
+    _seed_google_visitor_oauth()
+
+    response = client.get(
+        "/api/v1/site-auth/oauth/google/start",
+        params={"return_to": "/"},
+        headers={
+            "x-forwarded-proto": "https",
+            "x-forwarded-host": "admin.aerisun.top",
+        },
+    )
+    assert response.status_code == 200
+
+    auth_url = response.json()["authorization_url"]
+    redirect_uri = parse_qs(urlparse(auth_url).query)["redirect_uri"][0]
+    assert redirect_uri == "https://admin.aerisun.top/api/v1/site-auth/oauth/google/callback"
 
 
 def test_google_oauth_start_requires_enabled_oauth_proxy(client) -> None:

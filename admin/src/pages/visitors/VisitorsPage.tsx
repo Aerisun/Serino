@@ -17,6 +17,7 @@ import type {
   BindCurrentAdminIdentityApiV1AdminVisitorsAdminIdentitiesBindCurrentPostProvider,
   SiteAdminIdentityAdminRead,
   SiteAuthConfigAdminRead,
+  SiteAuthConfigAdminUpdate,
 } from "@serino/api-client/models";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +32,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { cn, formatDate } from "@/lib/utils";
+import { extractApiErrorMessage } from "@/lib/api-error";
 import { VisitorsSectionSwitch } from "@/pages/visitors/VisitorsSectionSwitch";
 import {
   Copy,
@@ -140,6 +142,9 @@ const accentIconBadgeClass =
 const adminPanelCardClass =
   "admin-glass rounded-[var(--admin-radius-lg)] px-4 py-4 shadow-[var(--admin-shadow-sm)]";
 
+const getVisitorConfigErrorMessage = (error: unknown) =>
+  extractApiErrorMessage(error, "保存失败");
+
 function adminMethodCardClass(active: boolean) {
   return cn(
     "admin-transition-fast flex items-center gap-3 rounded-[var(--admin-radius-lg)] border px-4 py-3 text-left transition-[background-color,border-color,color,box-shadow,transform]",
@@ -206,6 +211,32 @@ function normalizeOrigin(value: string | undefined, fallback: string) {
   } catch {
     return fallback;
   }
+}
+
+function isInternalOAuthCallbackOrigin(origin: string) {
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return [
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0",
+      "::1",
+      "host.docker.internal",
+      "gateway.docker.internal",
+    ].includes(hostname);
+  } catch {
+    return false;
+  }
+}
+
+function resolveAdminOAuthCallbackOrigin(
+  siteOrigin: string,
+  adminOrigin: string,
+) {
+  return !isInternalOAuthCallbackOrigin(siteOrigin) &&
+    isInternalOAuthCallbackOrigin(adminOrigin)
+    ? siteOrigin
+    : adminOrigin;
 }
 
 function buildOAuthCallbackUrl(origin: string, provider: VisitorOAuthProvider) {
@@ -360,6 +391,10 @@ export default function VisitorsPage() {
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
   const adminOrigin = window.location.origin;
   const frontendOrigin = normalizeOrigin(systemInfo?.site_url, adminOrigin);
+  const adminCallbackOrigin = resolveAdminOAuthCallbackOrigin(
+    frontendOrigin,
+    adminOrigin,
+  );
 
   useEffect(() => {
     if (config && !savedForm) {
@@ -488,14 +523,12 @@ export default function VisitorsPage() {
 
   const buildOAuthProviderSavePayload = (
     provider: VisitorOAuthProvider,
-  ): VisitorAuthFormState => {
-    const base = getBaseSavedForm();
+  ): SiteAuthConfigAdminUpdate => {
     const { idField, secretField } = getOAuthCredentialFields(provider);
     const enabled = form.visitor_oauth_providers.includes(provider);
     return {
-      ...base,
       visitor_oauth_providers: toggleListValue(
-        base.visitor_oauth_providers,
+        getBaseSavedForm().visitor_oauth_providers,
         provider,
         enabled,
       ),
@@ -507,8 +540,7 @@ export default function VisitorsPage() {
   const buildOAuthProviderTogglePayload = (
     provider: VisitorOAuthProvider,
     checked: boolean,
-  ): VisitorAuthFormState => ({
-    ...getBaseSavedForm(),
+  ): SiteAuthConfigAdminUpdate => ({
     visitor_oauth_providers: toggleListValue(
       getBaseSavedForm().visitor_oauth_providers,
       provider,
@@ -522,17 +554,10 @@ export default function VisitorsPage() {
       "admin_auth_methods" | "admin_email_enabled"
     >,
     adminEmailPasswordValue?: string,
-  ) => {
-    const base = getBaseSavedForm();
+  ): SiteAuthConfigAdminUpdate => {
     return {
-      email_login_enabled: base.email_login_enabled,
-      visitor_oauth_providers: base.visitor_oauth_providers,
       admin_auth_methods: nextAdmin.admin_auth_methods,
       admin_email_enabled: nextAdmin.admin_email_enabled,
-      google_client_id: base.google_client_id,
-      google_client_secret: base.google_client_secret,
-      github_client_id: base.github_client_id,
-      github_client_secret: base.github_client_secret,
       ...(adminEmailPasswordValue
         ? { admin_email_password: adminEmailPasswordValue }
         : {}),
@@ -569,7 +594,7 @@ export default function VisitorsPage() {
       }
       return true;
     } catch (error) {
-      setVisitorSaveError(error instanceof Error ? error.message : "保存失败");
+      setVisitorSaveError(getVisitorConfigErrorMessage(error));
       return false;
     } finally {
       setSavingProvider((current) => (current === provider ? null : current));
@@ -604,7 +629,7 @@ export default function VisitorsPage() {
         ...current,
         visitor_oauth_providers: previousProviders,
       }));
-      setVisitorSaveError(error instanceof Error ? error.message : "保存失败");
+      setVisitorSaveError(getVisitorConfigErrorMessage(error));
     } finally {
       setSavingProvider((current) => (current === provider ? null : current));
     }
@@ -631,7 +656,7 @@ export default function VisitorsPage() {
       return true;
     } catch (error) {
       onErrorRestore?.();
-      setBindingError(error instanceof Error ? error.message : "保存失败");
+      setBindingError(getVisitorConfigErrorMessage(error));
       return false;
     } finally {
       setSavingAdminConfig(false);
@@ -646,7 +671,6 @@ export default function VisitorsPage() {
     try {
       const response = await saveVisitorEmailConfig.mutateAsync({
         data: {
-          ...getBaseSavedForm(),
           email_login_enabled: checked,
         },
       });
@@ -657,7 +681,7 @@ export default function VisitorsPage() {
       toast.success("保存成功");
     } catch (error) {
       updateField("email_login_enabled", previous);
-      setVisitorSaveError(error instanceof Error ? error.message : "保存失败");
+      setVisitorSaveError(getVisitorConfigErrorMessage(error));
     } finally {
       setSavingEmailLogin(false);
     }
@@ -1001,7 +1025,7 @@ export default function VisitorsPage() {
                 provider.key,
               );
               const adminCallbackUrl = buildOAuthCallbackUrl(
-                adminOrigin,
+                adminCallbackOrigin,
                 provider.key,
               );
               const sharedCallbackUrl =

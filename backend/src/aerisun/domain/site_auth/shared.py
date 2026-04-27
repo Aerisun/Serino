@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 ALLOWED_OAUTH_PROVIDERS = {"google", "github"}
 ALLOWED_ADMIN_AUTH_METHODS = {"email", "google", "github"}
 
@@ -14,7 +16,8 @@ def normalize_display_name(value: str | None) -> str:
 
 def normalize_return_to(value: str | None) -> str:
     candidate = (value or "/").strip() or "/"
-    if not candidate.startswith("/"):
+    parts = urlsplit(candidate)
+    if parts.scheme or parts.netloc or not parts.path.startswith("/"):
         return "/"
     return candidate
 

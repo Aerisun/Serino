@@ -88,6 +88,7 @@ class Settings(BaseSettings):
     oauth_google_client_secret: str = ""
     oauth_github_client_id: str = ""
     oauth_github_client_secret: str = ""
+    oauth_state_secret: str = ""
 
     # IP geolocation
     ip_geo_enabled: bool = True

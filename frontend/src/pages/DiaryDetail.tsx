@@ -346,14 +346,14 @@ const DiaryDetail = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="grid min-h-[3.5rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[3.75rem] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-                <div className="col-start-1 min-w-0 sm:col-start-2">
-                  <div className="flex flex-col items-start gap-2 sm:items-center">
-                    <div className="flex flex-wrap items-center justify-start gap-2 text-left text-[13px] text-foreground/36 sm:justify-center sm:text-center">
+              <div className="flex min-h-[3.5rem] flex-col items-center justify-center gap-3 text-center sm:grid sm:min-h-[3.75rem] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                <div className="min-w-0 sm:col-start-2">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex max-w-full flex-wrap items-center justify-center gap-2 text-center text-[13px] text-foreground/36">
                       {entry.isArchived ? <ArchiveBadge /> : null}
-                      <span className="inline-flex flex-col items-start gap-2 sm:items-center">
+                      <span className="inline-flex max-w-full flex-col items-center gap-2">
                         <span
-                          className="text-[1.72rem] leading-[0.96] text-[rgb(var(--shiro-accent-rgb)/0.68)] sm:text-[1.92rem]"
+                          className="max-w-full text-[1.58rem] leading-[1.02] text-[rgb(var(--shiro-accent-rgb)/0.68)] sm:text-[1.92rem] sm:leading-[0.96]"
                           style={{ fontFamily: "'Pinyon Script', cursive" }}
                         >
                           {headerDateLabel}
@@ -364,7 +364,7 @@ const DiaryDetail = () => {
                   </div>
                 </div>
 
-                <div className="col-start-2 flex shrink-0 items-center justify-self-end self-end gap-1.5 sm:col-start-3 sm:gap-2">
+                <div className="flex w-full shrink-0 items-center justify-end gap-1.5 sm:col-start-3 sm:w-auto sm:justify-self-end sm:self-end sm:gap-2">
                   {entry.mood ? (
                     <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-[rgb(var(--shiro-panel-rgb)/0.2)] px-1.5 text-[0.98rem] leading-none text-foreground/78 sm:h-8 sm:min-w-8 sm:px-1.5 sm:text-[1.05rem]">
                       {entry.mood}

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import logging
 import secrets
+import time
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
@@ -22,6 +25,8 @@ from .sessions import create_site_session
 from .shared import ALLOWED_OAUTH_PROVIDERS, normalize_display_name, normalize_email, normalize_return_to
 
 logger = logging.getLogger(__name__)
+OAUTH_STATE_TTL_SECONDS = 600
+_OAUTH_STATE_SECRET_FILE_NAME = "oauth-state-secret"
 
 
 @dataclass(slots=True)
@@ -32,15 +37,26 @@ class OAuthStatePayload:
 
 
 def build_oauth_state_cookie(provider: str, state: str, return_to: str) -> str:
-    payload = {"provider": provider, "state": state, "return_to": normalize_return_to(return_to)}
-    return base64.urlsafe_b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
+    payload = {
+        "provider": provider,
+        "state": state,
+        "return_to": normalize_return_to(return_to),
+        "iat": int(time.time()),
+    }
+    encoded_payload = _base64url_encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    signature = hmac.new(
+        _oauth_state_secret(),
+        encoded_payload.encode("ascii"),
+        hashlib.sha256,
+    ).digest()
+    return f"v1.{encoded_payload}.{_base64url_encode(signature)}"
 
 
 def parse_oauth_state_cookie(raw: str | None) -> OAuthStatePayload | None:
     if not raw:
         return None
     try:
-        payload = json.loads(base64.urlsafe_b64decode(raw.encode("ascii")).decode("utf-8"))
+        payload = _decode_oauth_state_cookie(raw)
     except Exception:
         logger.warning("Failed to parse OAuth state cookie", exc_info=True)
         return None
@@ -50,6 +66,64 @@ def parse_oauth_state_cookie(raw: str | None) -> OAuthStatePayload | None:
     if provider not in ALLOWED_OAUTH_PROVIDERS or not state:
         return None
     return OAuthStatePayload(provider=provider, state=state, return_to=return_to)
+
+
+def _base64url_encode(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def _base64url_decode(value: str) -> bytes:
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(f"{value}{padding}".encode("ascii"))
+
+
+def _oauth_state_secret() -> bytes:
+    from aerisun.core.settings import get_settings
+
+    settings = get_settings()
+    configured = str(getattr(settings, "oauth_state_secret", "") or "").strip()
+    if configured:
+        return configured.encode("utf-8")
+
+    secret_path = settings.secrets_dir / _OAUTH_STATE_SECRET_FILE_NAME
+    try:
+        existing = secret_path.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        existing = ""
+    if existing:
+        return existing.encode("utf-8")
+
+    secret_path.parent.mkdir(parents=True, exist_ok=True)
+    generated = secrets.token_urlsafe(48)
+    try:
+        fd = secret_path.open("x", encoding="utf-8")
+    except FileExistsError:
+        return secret_path.read_text(encoding="utf-8").strip().encode("utf-8")
+    with fd:
+        fd.write(generated)
+    secret_path.chmod(0o600)
+    return generated.encode("utf-8")
+
+
+def _decode_oauth_state_cookie(raw: str) -> dict[str, object]:
+    version, encoded_payload, encoded_signature = raw.split(".", 2)
+    if version != "v1" or not encoded_payload or not encoded_signature:
+        raise ValueError("Unsupported OAuth state cookie")
+    expected_signature = hmac.new(
+        _oauth_state_secret(),
+        encoded_payload.encode("ascii"),
+        hashlib.sha256,
+    ).digest()
+    provided_signature = _base64url_decode(encoded_signature)
+    if not hmac.compare_digest(expected_signature, provided_signature):
+        raise ValueError("Invalid OAuth state signature")
+    payload = json.loads(_base64url_decode(encoded_payload).decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Invalid OAuth state payload")
+    issued_at = int(payload.get("iat") or 0)
+    if issued_at <= 0 or int(time.time()) - issued_at > OAUTH_STATE_TTL_SECONDS:
+        raise ValueError("Expired OAuth state cookie")
+    return payload
 
 
 def _provider_label(provider: str) -> str:

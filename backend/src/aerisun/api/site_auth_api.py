@@ -37,18 +37,22 @@ from aerisun.domain.site_auth.service import (
 base_router = APIRouter()
 router = APIRouter(prefix="/api/v1/site-auth", tags=["site-auth"])
 
+_INTERNAL_CALLBACK_HOSTS = {
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "::1",
+    "testserver",
+    "api",
+    "host.docker.internal",
+    "gateway.docker.internal",
+}
+
 
 def _cookie_name() -> str:
     from aerisun.core.settings import get_settings
 
     return get_settings().public_session_cookie_name
-
-
-def _request_is_secure(request: Request) -> bool:
-    forwarded_proto = request.headers.get("x-forwarded-proto", "")
-    if forwarded_proto:
-        return forwarded_proto.split(",", 1)[0].strip().lower() == "https"
-    return request.url.scheme == "https"
 
 
 def _first_forwarded_header_value(request: Request, name: str) -> str:
@@ -58,21 +62,75 @@ def _first_forwarded_header_value(request: Request, name: str) -> str:
     return raw.split(",", 1)[0].strip()
 
 
+def _normalize_origin(value: str) -> str:
+    candidate = value.strip()
+    if not candidate:
+        return ""
+    parsed = urlsplit(candidate if "://" in candidate else f"https://{candidate}")
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"} or not parsed.netloc:
+        return ""
+    return urlunsplit((scheme, parsed.netloc, "", "", "")).rstrip("/")
+
+
+def _is_internal_callback_host(host: str | None) -> bool:
+    normalized = (host or "").strip().strip("[]").lower()
+    return normalized in _INTERNAL_CALLBACK_HOSTS
+
+
+def _configured_site_origin() -> str:
+    from aerisun.core.settings import get_settings
+
+    origin = _normalize_origin(get_settings().site_url)
+    if not origin:
+        return ""
+    if _is_internal_callback_host(urlsplit(origin).hostname):
+        return ""
+    return origin
+
+
 def _request_external_scheme(request: Request) -> str:
-    return _first_forwarded_header_value(request, "x-forwarded-proto") or request.url.scheme
+    scheme = (_first_forwarded_header_value(request, "x-forwarded-proto") or request.url.scheme).lower()
+    return scheme if scheme in {"http", "https"} else request.url.scheme
 
 
 def _request_external_host(request: Request) -> str:
-    return (
+    host = (
         _first_forwarded_header_value(request, "x-forwarded-host")
         or _first_forwarded_header_value(request, "host")
         or request.url.netloc
     )
+    if "://" in host:
+        return urlsplit(host).netloc
+    return host.split("/", 1)[0].strip()
+
+
+def _request_external_origin(request: Request) -> str:
+    return _normalize_origin(f"{_request_external_scheme(request)}://{_request_external_host(request)}") or str(
+        request.base_url
+    ).rstrip("/")
+
+
+def _oauth_callback_origin(request: Request) -> str:
+    request_origin = _request_external_origin(request)
+    site_origin = _configured_site_origin()
+    if not site_origin:
+        return request_origin
+
+    request_host = urlsplit(request_origin).hostname
+    site_host = urlsplit(site_origin).hostname
+    if _is_internal_callback_host(request_host) or request_host == site_host:
+        return site_origin
+    return request_origin
+
+
+def _request_is_secure(request: Request) -> bool:
+    return urlsplit(_oauth_callback_origin(request)).scheme == "https"
 
 
 def _build_oauth_callback_url(request: Request, provider: str) -> str:
     callback_path = str(request.app.url_path_for("oauth_callback", provider=provider))
-    return f"{_request_external_scheme(request)}://{_request_external_host(request)}{callback_path}"
+    return f"{_oauth_callback_origin(request)}{callback_path}"
 
 
 def _merge_redirect_query(target: str, **params: str | None) -> str:

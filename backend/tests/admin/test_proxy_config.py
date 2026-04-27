@@ -39,6 +39,21 @@ def test_admin_outbound_proxy_config_roundtrip(client, admin_headers) -> None:
     assert reload_response.json()["oauth_enabled"] is True
 
 
+def test_admin_outbound_proxy_config_accepts_proxy_url_port(client, admin_headers) -> None:
+    response = client.put(
+        "/api/v1/admin/proxy-config",
+        headers=admin_headers,
+        json={
+            "proxy_port": "http://127.0.0.1:7890",
+            "oauth_enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["proxy_port"] == 7890
+    assert response.json()["oauth_enabled"] is True
+
+
 def test_admin_outbound_proxy_config_rejects_enabling_webhook_without_port(client, admin_headers) -> None:
     response = client.put(
         "/api/v1/admin/proxy-config",
@@ -61,7 +76,7 @@ def test_admin_outbound_proxy_config_rejects_enabling_oauth_without_port(client,
     assert response.json()["detail"] == "开启 OAuth 代理前，请先设置代理端口"
 
 
-def test_enabling_google_login_requires_oauth_proxy_scope(client, admin_headers) -> None:
+def test_enabling_google_login_does_not_require_oauth_proxy_scope(client, admin_headers) -> None:
     response = client.put(
         "/api/v1/admin/visitors/config",
         headers=admin_headers,
@@ -70,8 +85,8 @@ def test_enabling_google_login_requires_oauth_proxy_scope(client, admin_headers)
         },
     )
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "请先在管理台的代理设置里开启OAuth代理，再继续当前操作。"
+    assert response.status_code == 200
+    assert response.json()["visitor_oauth_providers"] == ["google"]
 
 
 def test_admin_outbound_proxy_healthcheck_uses_local_proxy_port(client, admin_headers, monkeypatch) -> None:
