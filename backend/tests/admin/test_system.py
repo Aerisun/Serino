@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+import time
 from datetime import datetime, timedelta
 
 import aerisun.domain.ops.service as ops_service
@@ -280,6 +281,17 @@ class TestSystemInfo:
         assert "environment" in data
         assert isinstance(data["uptime_seconds"], (int, float))
         assert data["uptime_seconds"] >= 0
+
+    def test_system_info_uses_persistent_uptime_origin(self, client, admin_headers):
+        settings = get_settings()
+        marker = settings.data_dir / ops_service._UPTIME_STARTED_AT_FILENAME
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(f"{time.time() - 7200:.6f}\n", encoding="utf-8")
+
+        resp = client.get(f"{BASE}/info", headers=admin_headers)
+
+        assert resp.status_code == 200
+        assert resp.json()["uptime_seconds"] >= 7190
 
     def test_system_info_without_token(self, client):
         resp = client.get(f"{BASE}/info")

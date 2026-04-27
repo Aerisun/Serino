@@ -11,6 +11,8 @@ source "${SCRIPT_DIR}/lib/env.sh"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib/docker.sh"
 
+UPTIME_STARTED_AT_FILENAME=".serino-uptime-started-at"
+
 backup_current_installation() {
   local backup_dir="$1"
   run_as_root mkdir -p "${backup_dir}"
@@ -55,6 +57,71 @@ restore_current_installation() {
 
 run_upgrade_preflight() {
   bash "${SCRIPT_DIR}/doctor.sh"
+}
+
+current_api_started_at_epoch() {
+  local container_id=""
+  local started_at=""
+
+  container_id="$(compose ps -q api 2>/dev/null | sed -n '1p' || true)"
+  [[ -n "${container_id}" ]] || return 1
+
+  started_at="$(run_as_root docker inspect --format '{{.State.StartedAt}}' "${container_id}" 2>/dev/null || true)"
+  [[ -n "${started_at}" && "${started_at}" != "<no value>" ]] || return 1
+
+  python3 - "${started_at}" <<'PY'
+from __future__ import annotations
+
+import sys
+from datetime import datetime
+
+raw = sys.argv[1].strip()
+if raw.endswith("Z"):
+    raw = f"{raw[:-1]}+00:00"
+started_at = datetime.fromisoformat(raw).timestamp()
+if started_at <= 0:
+    raise SystemExit(1)
+print(f"{started_at:.6f}")
+PY
+}
+
+seed_persistent_uptime_marker() {
+  local marker_path="${AERISUN_DATA_DIR}/${UPTIME_STARTED_AT_FILENAME}"
+  local started_at_epoch=""
+
+  if run_as_root test -s "${marker_path}"; then
+    return 0
+  fi
+
+  started_at_epoch="$(current_api_started_at_epoch || true)"
+  if [[ -z "${started_at_epoch}" ]]; then
+    started_at_epoch="$(python3 - <<'PY'
+from __future__ import annotations
+
+import time
+
+print(f"{time.time():.6f}")
+PY
+)"
+  fi
+
+  run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR}"
+  run_as_root bash -lc '
+    set -euo pipefail
+    marker_path="$1"
+    started_at_epoch="$2"
+    service_user="$3"
+    service_group="$4"
+
+    if [[ -s "${marker_path}" ]]; then
+      exit 0
+    fi
+
+    umask 027
+    printf "%s\n" "${started_at_epoch}" > "${marker_path}"
+    chown "${service_user}:${service_group}" "${marker_path}"
+    chmod 0640 "${marker_path}"
+  ' bash "${marker_path}" "${started_at_epoch}" "${SERINO_SERVICE_USER}" "${SERINO_SERVICE_GROUP}"
 }
 
 main() {
@@ -122,6 +189,7 @@ main() {
   tar -xzf "${bundle_file}" -C "${bundle_dir}"
 
   backup_dir="${AERISUN_BACKUP_ROOT}/upgrade-$(date +%Y%m%d%H%M%S)"
+  seed_persistent_uptime_marker || true
   stop_serino_service
   backup_current_installation "${backup_dir}"
 
@@ -134,6 +202,7 @@ main() {
   install_release_payload "${bundle_dir}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
+  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_RELEASE_VERSION" "${target_image_tag}"
   set_env_value "${AERISUN_ENV_FILE}" "AERISUN_DOCKER_REGISTRY_MIRRORS" "${AERISUN_DOCKER_REGISTRY_MIRRORS}"
   normalize_production_env_file "${AERISUN_ENV_FILE}"
   validate_release_compose_configuration

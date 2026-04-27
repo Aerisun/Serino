@@ -50,6 +50,7 @@ from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records, list_counter_history_by_date, list_counter_stats
 
 _STARTUP_TIME = time.time()
+_UPTIME_STARTED_AT_FILENAME = ".serino-uptime-started-at"
 _TRAFFIC_HISTORY_DAYS = 14
 _TOP_PAGES_LIMIT = 10
 _DISTRIBUTION_LIMIT = 5
@@ -65,6 +66,50 @@ _CONTENT_PATH_TO_TYPE: dict[str, str] = {
 
 logger = structlog.get_logger("aerisun.ops")
 _visit_logger = structlog.stdlib.get_logger("aerisun.ops.visit")
+
+
+def _parse_uptime_started_at(raw: str, now: float) -> float | None:
+    try:
+        started_at = float(raw.strip())
+    except ValueError:
+        return None
+    if started_at <= 0:
+        return None
+    return min(started_at, now)
+
+
+def _write_uptime_started_at(marker_path: Path, now: float) -> float:
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with marker_path.open("x", encoding="utf-8") as marker:
+            marker.write(f"{now:.6f}\n")
+        return now
+    except FileExistsError:
+        raw = marker_path.read_text(encoding="utf-8")
+        existing = _parse_uptime_started_at(raw, now)
+        if existing is not None:
+            return existing
+        marker_path.write_text(f"{now:.6f}\n", encoding="utf-8")
+        return now
+
+
+def _get_persistent_uptime_started_at(data_dir: Path, now: float) -> float:
+    marker_path = data_dir / _UPTIME_STARTED_AT_FILENAME
+    try:
+        raw = marker_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return _STARTUP_TIME
+    else:
+        started_at = _parse_uptime_started_at(raw, now)
+        if started_at is not None:
+            return started_at
+
+    try:
+        return _write_uptime_started_at(marker_path, now)
+    except OSError:
+        return _STARTUP_TIME
 
 
 @dataclass(slots=True)
@@ -668,6 +713,8 @@ def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
 def get_system_info() -> SystemInfo:
     """Gather system runtime information."""
     settings = get_settings()
+    now = time.time()
+    uptime_started_at = _get_persistent_uptime_started_at(Path(settings.data_dir), now)
 
     db_size = 0
     db_path = Path(settings.db_path)
@@ -686,7 +733,7 @@ def get_system_info() -> SystemInfo:
         python_version=sys.version.split()[0],
         db_size_bytes=db_size,
         media_dir_size_bytes=media_size,
-        uptime_seconds=time.time() - _STARTUP_TIME,
+        uptime_seconds=max(0.0, now - uptime_started_at),
         environment=settings.environment,
         site_url=settings.site_url,
     )

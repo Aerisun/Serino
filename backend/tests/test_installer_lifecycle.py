@@ -508,6 +508,71 @@ main --check v2.0.0
     ]
 
 
+def test_upgrade_current_api_started_at_epoch_parses_docker_timestamp() -> None:
+    completed = run_project_bash(
+        """
+source installer/upgrade.sh
+
+compose() {
+  if [[ "$*" == "ps -q api" ]]; then
+    printf 'api-container\\n'
+  fi
+}
+
+run_as_root() {
+  if [[ "$1" == docker && "$2" == inspect ]]; then
+    printf '1970-01-01T00:00:42.500000000Z\\n'
+    return 0
+  fi
+  "$@"
+}
+
+current_api_started_at_epoch
+"""
+    )
+
+    assert completed.stdout.strip() == "42.500000"
+
+
+def test_upgrade_seed_persistent_uptime_marker_writes_current_api_start(tmp_path: Path) -> None:
+    completed = run_project_bash(
+        f"""
+source installer/upgrade.sh
+
+AERISUN_DATA_DIR='{tmp_path}/data'
+SERINO_SERVICE_USER='serino'
+SERINO_SERVICE_GROUP='serino'
+
+current_api_started_at_epoch() {{
+  printf '123456.500000\\n'
+}}
+
+run_as_root() {{
+  if [[ "$1" == test ]]; then
+    "$@"
+    return $?
+  fi
+  if [[ "$1" == install ]]; then
+    mkdir -p "${{@: -1}}"
+    return 0
+  fi
+  if [[ "$1" == bash && "$2" == "-lc" ]]; then
+    marker_path="$5"
+    started_at_epoch="$6"
+    printf '%s\\n' "${{started_at_epoch}}" > "${{marker_path}}"
+    return 0
+  fi
+  "$@"
+}}
+
+seed_persistent_uptime_marker
+cat "${{AERISUN_DATA_DIR}}/.serino-uptime-started-at"
+"""
+    )
+
+    assert completed.stdout.strip() == "123456.500000"
+
+
 def test_upgrade_main_rolls_back_and_restarts_previous_release_on_failure() -> None:
     completed = run_project_bash(
         """
@@ -537,6 +602,7 @@ load_release_manifest() {
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
 date() { printf '20260408112233'; }
+seed_persistent_uptime_marker() { :; }
     stop_serino_service() { record stop_serino_service; }
     backup_current_installation() { record "backup_current_installation:$1"; }
     resolve_active_registry() {
@@ -580,6 +646,7 @@ main v2.0.0
         "install_release_payload",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
+        "set_env_value:AERISUN_RELEASE_VERSION=v2.0.0",
         "set_env_value:AERISUN_DOCKER_REGISTRY_MIRRORS=",
         "normalize_production_env_file",
         "validate_release_compose_configuration",
@@ -628,6 +695,7 @@ load_release_manifest() {
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
 date() { printf '20260408112233'; }
+seed_persistent_uptime_marker() { :; }
 stop_serino_service() { record stop_serino_service; }
 backup_current_installation() { record "backup_current_installation:$1"; }
 resolve_active_registry() {
@@ -663,6 +731,7 @@ main v2.0.0
         "install_release_payload",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
+        "set_env_value:AERISUN_RELEASE_VERSION=v2.0.0",
         "set_env_value:AERISUN_DOCKER_REGISTRY_MIRRORS=",
         "normalize_production_env_file",
         "https://example.test|https://example.test/waline",
@@ -703,6 +772,7 @@ load_release_manifest() {
 download_release_asset() { record "download_release_asset:$1"; }
 tar() { record "tar:$*"; }
 date() { printf '20260408112233'; }
+seed_persistent_uptime_marker() { :; }
 stop_serino_service() { :; }
 backup_current_installation() { :; }
 resolve_active_registry() { printf '%s' "$1"; }
