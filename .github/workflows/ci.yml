@@ -492,6 +492,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.BINFEN_OSS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ vars.BINFEN_OSS_REGION }}
           AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
           BINFEN_OSS_ENDPOINT: ${{ vars.BINFEN_OSS_ENDPOINT }}
           BINFEN_OSS_BUCKET: ${{ vars.BINFEN_OSS_BUCKET }}
           BINFEN_OSS_PREFIX: ${{ vars.BINFEN_OSS_PREFIX }}
@@ -788,6 +790,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.BINFEN_OSS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ vars.BINFEN_OSS_REGION }}
           AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
           BINFEN_OSS_ENDPOINT: ${{ vars.BINFEN_OSS_ENDPOINT }}
           BINFEN_OSS_BUCKET: ${{ vars.BINFEN_OSS_BUCKET }}
           BINFEN_OSS_PREFIX: ${{ vars.BINFEN_OSS_PREFIX }}
