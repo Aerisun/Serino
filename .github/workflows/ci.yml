@@ -498,7 +498,11 @@ jobs:
           BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
         shell: bash
         run: |
-          aws --version
+          python3 -m venv "${RUNNER_TEMP}/bitiful-upload"
+          "${RUNNER_TEMP}/bitiful-upload/bin/python" -m pip install --disable-pip-version-check \
+            "boto3==1.42.82" \
+            "botocore==1.42.82" \
+            "s3transfer==0.16.0"
 
           prefix="${BINFEN_OSS_PREFIX#/}"
           prefix="${prefix%/}"
@@ -510,40 +514,9 @@ jobs:
             version_prefix="dev/${{ steps.prep.outputs.release_tag }}/"
           fi
 
-          if [[ "${BINFEN_OSS_FORCE_PATH_STYLE}" == "true" ]]; then
-            aws configure set default.s3.addressing_style path
-          else
-            aws configure set default.s3.addressing_style virtual
-          fi
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.latest.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}install.sh" \
-            --content-type "application/x-sh" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/latest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}latest.env" \
-            --content-type "text/plain; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}install.sh" \
-            --content-type "application/x-sh"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-bundle.tar.gz \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-bundle.tar.gz"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-manifest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-manifest.env" \
-            --content-type "text/plain; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/docker-compose.release.yml \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}docker-compose.release.yml" \
-            --content-type "text/yaml; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
-            --content-type "text/plain; charset=utf-8"
+          export BINFEN_OSS_ROOT_PREFIX="${root_prefix}"
+          export BINFEN_OSS_VERSION_PREFIX="${version_prefix}"
+          "${RUNNER_TEMP}/bitiful-upload/bin/python" ./scripts/upload-bitiful-installer-assets.py
 
       - name: Refresh dev installer CDN cache
         env:
@@ -794,7 +767,11 @@ jobs:
           BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
         shell: bash
         run: |
-          aws --version
+          python3 -m venv "${RUNNER_TEMP}/bitiful-upload"
+          "${RUNNER_TEMP}/bitiful-upload/bin/python" -m pip install --disable-pip-version-check \
+            "boto3==1.42.82" \
+            "botocore==1.42.82" \
+            "s3transfer==0.16.0"
 
           prefix="${BINFEN_OSS_PREFIX#/}"
           prefix="${prefix%/}"
@@ -806,40 +783,9 @@ jobs:
             version_prefix="${{ steps.prep.outputs.release_tag }}/"
           fi
 
-          if [[ "${BINFEN_OSS_FORCE_PATH_STYLE}" == "true" ]]; then
-            aws configure set default.s3.addressing_style path
-          else
-            aws configure set default.s3.addressing_style virtual
-          fi
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.latest.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}install.sh" \
-            --content-type "application/x-sh" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/latest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}latest.env" \
-            --content-type "text/plain; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}install.sh" \
-            --content-type "application/x-sh"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-bundle.tar.gz \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-bundle.tar.gz"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-manifest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-manifest.env" \
-            --content-type "text/plain; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/docker-compose.release.yml \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}docker-compose.release.yml" \
-            --content-type "text/yaml; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
-            --content-type "text/plain; charset=utf-8"
+          export BINFEN_OSS_ROOT_PREFIX="${root_prefix}"
+          export BINFEN_OSS_VERSION_PREFIX="${version_prefix}"
+          "${RUNNER_TEMP}/bitiful-upload/bin/python" ./scripts/upload-bitiful-installer-assets.py
 
       - name: Refresh installer CDN cache
         env:
