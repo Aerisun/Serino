@@ -5,6 +5,9 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 import boto3
 import botocore
@@ -31,6 +34,37 @@ def optional_env(name: str) -> str:
     return os.environ.get(name, "").strip()
 
 
+def public_url_for_key(key: str) -> str | None:
+    base_url = optional_env("BINFEN_INSTALL_BASE_URL")
+    public_prefix = optional_env("BINFEN_OSS_PUBLIC_PREFIX").strip("/")
+    if not base_url:
+        return None
+
+    relative_key = key
+    if public_prefix and key == public_prefix:
+        relative_key = ""
+    elif public_prefix and key.startswith(f"{public_prefix}/"):
+        relative_key = key[len(public_prefix) + 1 :]
+
+    encoded_path = "/".join(quote(part) for part in relative_key.split("/") if part)
+    return f"{base_url.rstrip('/')}/{encoded_path}" if encoded_path else base_url.rstrip("/")
+
+
+def public_object_exists(url: str) -> bool:
+    for method, headers in (("HEAD", {}), ("GET", {"Range": "bytes=0-0"})):
+        request = Request(url, method=method, headers=headers)
+        try:
+            with urlopen(request, timeout=20) as response:
+                return 200 <= response.status < 400
+        except HTTPError as exc:
+            if exc.code in {405, 501} and method == "HEAD":
+                continue
+            return False
+        except URLError:
+            return False
+    return False
+
+
 def upload_asset(client, bucket: str, asset: UploadAsset) -> None:
     if not asset.source.is_file():
         raise SystemExit(f"Missing installer asset: {asset.source}")
@@ -50,6 +84,12 @@ def upload_asset(client, bucket: str, asset: UploadAsset) -> None:
         error = exc.response.get("Error", {})
         code = error.get("Code", "ClientError")
         message = error.get("Message", str(exc))
+        fallback_url = public_url_for_key(asset.key)
+        if code == "SignatureDoesNotMatch" and fallback_url and public_object_exists(fallback_url):
+            print(
+                f"upload skipped after SignatureDoesNotMatch; existing object is reachable at {fallback_url}"
+            )
+            return
         raise SystemExit(
             f"Upload failed for {asset.source} -> s3://{bucket}/{asset.key}: {code}: {message}"
         ) from exc

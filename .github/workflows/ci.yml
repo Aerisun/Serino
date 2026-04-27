@@ -496,6 +496,7 @@ jobs:
           BINFEN_OSS_BUCKET: ${{ vars.BINFEN_OSS_BUCKET }}
           BINFEN_OSS_PREFIX: ${{ vars.BINFEN_OSS_PREFIX }}
           BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
+          BINFEN_INSTALL_BASE_URL: ${{ steps.prep.outputs.dev_base_url }}
         shell: bash
         run: |
           python3 -m venv "${RUNNER_TEMP}/bitiful-upload"
@@ -516,6 +517,7 @@ jobs:
 
           export BINFEN_OSS_ROOT_PREFIX="${root_prefix}"
           export BINFEN_OSS_VERSION_PREFIX="${version_prefix}"
+          export BINFEN_OSS_PUBLIC_PREFIX="${root_prefix%/}"
           "${RUNNER_TEMP}/bitiful-upload/bin/python" ./scripts/upload-bitiful-installer-assets.py
 
       - name: Refresh dev installer CDN cache
@@ -765,6 +767,7 @@ jobs:
           BINFEN_OSS_BUCKET: ${{ vars.BINFEN_OSS_BUCKET }}
           BINFEN_OSS_PREFIX: ${{ vars.BINFEN_OSS_PREFIX }}
           BINFEN_OSS_FORCE_PATH_STYLE: ${{ vars.BINFEN_OSS_FORCE_PATH_STYLE != '' && vars.BINFEN_OSS_FORCE_PATH_STYLE || 'false' }}
+          BINFEN_INSTALL_BASE_URL: ${{ vars.BINFEN_INSTALL_BASE_URL }}
         shell: bash
         run: |
           python3 -m venv "${RUNNER_TEMP}/bitiful-upload"
@@ -785,6 +788,7 @@ jobs:
 
           export BINFEN_OSS_ROOT_PREFIX="${root_prefix}"
           export BINFEN_OSS_VERSION_PREFIX="${version_prefix}"
+          export BINFEN_OSS_PUBLIC_PREFIX="${root_prefix%/}"
           "${RUNNER_TEMP}/bitiful-upload/bin/python" ./scripts/upload-bitiful-installer-assets.py
 
       - name: Refresh installer CDN cache
