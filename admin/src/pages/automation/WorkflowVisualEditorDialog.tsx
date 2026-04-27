@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -32,18 +32,99 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { SurfaceAssistantDialog } from "./SurfaceAssistantDialog";
 import { WorkflowCanvas } from "./WorkflowCanvas";
-import { WorkflowInspector } from "./WorkflowInspector";
 import { WorkflowPalette } from "./WorkflowPalette";
 import { useWorkflowEditorState } from "./useWorkflowEditorState";
 import {
   type WorkflowVisualEditorDialogProps,
   COPY,
+} from "./workflow-editor-core";
+import {
   WORKFLOWS_QUERY_KEY,
   WORKFLOW_CATALOG_QUERY_KEY,
   latestDeliveriesBySubscription,
-} from "./workflow-editor-types";
+} from "./workflow-shared";
+
+const WorkflowInspector = lazy(() =>
+  import("./WorkflowInspector").then((module) => ({
+    default: module.WorkflowInspector,
+  })),
+);
+const SurfaceAssistantDialog = lazy(() =>
+  import("./SurfaceAssistantDialog").then((module) => ({
+    default: module.SurfaceAssistantDialog,
+  })),
+);
+
+function WorkflowInspectorFallback({
+  show,
+  copy,
+  workflowName,
+  workflowKey,
+  selectedNodeLabel,
+  selectedEdgeId,
+  onClose,
+}: {
+  show: boolean;
+  copy: { inspector: string; selectedNode: string; selectedEdge: string; workflowSettings: string };
+  workflowName: string;
+  workflowKey: string;
+  selectedNodeLabel: string | null;
+  selectedEdgeId: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className={
+        show
+          ? "absolute bottom-4 right-4 top-[108px] z-40 flex w-[420px] flex-col overflow-hidden rounded-[28px] border border-border/60 bg-background/88 p-4 shadow-[var(--admin-shadow-lg)] backdrop-blur-xl"
+          : "hidden"
+      }
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {selectedNodeLabel ? copy.selectedNode : selectedEdgeId ? copy.selectedEdge : copy.workflowSettings}
+          </div>
+          <div className="mt-1 text-base font-semibold text-foreground">
+            {selectedNodeLabel || selectedEdgeId || workflowName || workflowKey}
+          </div>
+        </div>
+        <Button type="button" variant="ghost" size="icon" onClick={onClose}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="mt-4 flex min-h-0 flex-1 items-center justify-center rounded-[22px] border border-border/60 bg-background/70 p-4 text-sm text-muted-foreground">
+        {copy.inspector}
+      </div>
+    </div>
+  );
+}
+
+function SurfaceAssistantDialogFallback({
+  open,
+  title,
+  description,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Dialog open={open}>
+      <DialogContent className="max-w-[min(92vw,1120px)]">
+        <DialogTitle className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-sky-500" />
+          {title}
+        </DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+        <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function WorkflowVisualEditorDialog(
   props: WorkflowVisualEditorDialogProps,
@@ -76,23 +157,6 @@ function WorkflowVisualEditorDialogInner({
     enabled: open,
   });
   const catalogReady = Boolean(catalog);
-
-  const { data: deliveriesRaw } =
-    useGetDeliveriesApiV1AdminAutomationDeliveriesGet({
-      query: { enabled: open },
-    });
-  const { data: webhooksRaw } = useGetWebhooksApiV1AdminAutomationWebhooksGet({
-    query: { enabled: open },
-  });
-
-  const webhooks = (webhooksRaw?.data ?? []) as WebhookSubscriptionRead[];
-  const latestDeliveryMap = useMemo(
-    () =>
-      latestDeliveriesBySubscription(
-        (deliveriesRaw?.data ?? []) as WebhookDeliveryRead[],
-      ),
-    [deliveriesRaw?.data],
-  );
   const triggerEventOptions = useMemo(
     () => catalog?.trigger_events || [],
     [catalog?.trigger_events],
@@ -176,6 +240,23 @@ function WorkflowVisualEditorDialogInner({
     copy,
     catalog,
   });
+
+  const { data: deliveriesRaw } =
+    useGetDeliveriesApiV1AdminAutomationDeliveriesGet({
+      query: { enabled: open && showInspector },
+    });
+  const { data: webhooksRaw } = useGetWebhooksApiV1AdminAutomationWebhooksGet({
+    query: { enabled: open && showInspector },
+  });
+
+  const webhooks = (webhooksRaw?.data ?? []) as WebhookSubscriptionRead[];
+  const latestDeliveryMap = useMemo(
+    () =>
+      latestDeliveriesBySubscription(
+        (deliveriesRaw?.data ?? []) as WebhookDeliveryRead[],
+      ),
+    [deliveriesRaw?.data],
+  );
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -365,83 +446,111 @@ function WorkflowVisualEditorDialogInner({
             onAddNode={addNode}
           />
 
-          <WorkflowInspector
-            mode={mode}
-            show={showInspector}
-            onClose={() => setShowInspector(false)}
-            copy={copy}
-            lang={lang}
-            catalog={catalog}
-            workflow={workflow}
-            workflowName={workflowName}
-            workflowDescription={workflowDescription}
-            workflowEnabled={workflowEnabled}
-            runtimePolicy={runtimePolicy}
-            onWorkflowNameChange={setWorkflowName}
-            onWorkflowDescriptionChange={setWorkflowDescription}
-            onWorkflowEnabledChange={setWorkflowEnabled}
-            onRuntimePolicyChange={setRuntimePolicy}
-            selectedNode={selectedNode}
-            selectedEdge={selectedEdge}
-            selectedNodeDefinition={selectedNodeDefinition}
-            selectedOperation={selectedOperation}
-            selectedOperationExamples={selectedOperationExamples}
-            selectedSourceNodeDefinition={selectedSourceNodeDefinition}
-            setNodeLabel={setNodeLabel}
-            setNodeConfig={setNodeConfig}
-            updateSelectedNode={updateSelectedNode}
-            deleteSelectedNode={deleteSelectedNode}
-            setEdges={setEdges}
-            deleteSelectedEdge={deleteSelectedEdge}
-            jsonDrafts={jsonDrafts}
-            jsonErrors={jsonErrors}
-            setJsonDrafts={setJsonDrafts}
-            setJsonErrors={setJsonErrors}
-            operationCatalog={operationCatalog}
-            triggerEventOptions={triggerEventOptions}
-            webhooks={webhooks}
-            latestDeliveryMap={latestDeliveryMap}
-            upstreamNodes={upstreamNodes}
-            mountedToolNodes={mountedToolNodes}
-            updateInputField={updateInputField}
-            updateInputFieldSelector={updateInputFieldSelector}
-            removeInputField={removeInputField}
-            addInputField={addInputField}
-            outputSchemaFields={outputSchemaFields}
-            renameOutputField={renameOutputField}
-            updateOutputFieldType={updateOutputFieldType}
-            removeOutputField={removeOutputField}
-            addOutputField={addOutputField}
-            setRouteField={setRouteField}
-            setRouteEnumFromEdges={setRouteEnumFromEdges}
-            setRouteEnum={setRouteEnum}
-            updateInputMapping={updateInputMapping}
-            addInputMapping={addInputMapping}
-            removeInputMapping={removeInputMapping}
-            derivedSchema={derivedSchema}
-            derivingSchema={derivingSchema}
-            nodes={nodes}
-            edges={edges}
-            onOpenSurfaceAssistant={() => setShowSurfaceAssistant(true)}
-          />
+          {showInspector ? (
+            <Suspense
+              fallback={(
+                <WorkflowInspectorFallback
+                  show={showInspector}
+                  copy={copy}
+                  workflowName={workflowName}
+                  workflowKey={workflow.key}
+                  selectedNodeLabel={selectedNode?.data.label ?? null}
+                  selectedEdgeId={selectedEdge?.id ?? null}
+                  onClose={() => setShowInspector(false)}
+                />
+              )}
+            >
+              <WorkflowInspector
+                mode={mode}
+                show={showInspector}
+                onClose={() => setShowInspector(false)}
+                copy={copy}
+                lang={lang}
+                catalog={catalog}
+                workflow={workflow}
+                workflowName={workflowName}
+                workflowDescription={workflowDescription}
+                workflowEnabled={workflowEnabled}
+                runtimePolicy={runtimePolicy}
+                onWorkflowNameChange={setWorkflowName}
+                onWorkflowDescriptionChange={setWorkflowDescription}
+                onWorkflowEnabledChange={setWorkflowEnabled}
+                onRuntimePolicyChange={setRuntimePolicy}
+                selectedNode={selectedNode}
+                selectedEdge={selectedEdge}
+                selectedNodeDefinition={selectedNodeDefinition}
+                selectedOperation={selectedOperation}
+                selectedOperationExamples={selectedOperationExamples}
+                selectedSourceNodeDefinition={selectedSourceNodeDefinition}
+                setNodeLabel={setNodeLabel}
+                setNodeConfig={setNodeConfig}
+                updateSelectedNode={updateSelectedNode}
+                deleteSelectedNode={deleteSelectedNode}
+                setEdges={setEdges}
+                deleteSelectedEdge={deleteSelectedEdge}
+                jsonDrafts={jsonDrafts}
+                jsonErrors={jsonErrors}
+                setJsonDrafts={setJsonDrafts}
+                setJsonErrors={setJsonErrors}
+                operationCatalog={operationCatalog}
+                triggerEventOptions={triggerEventOptions}
+                webhooks={webhooks}
+                latestDeliveryMap={latestDeliveryMap}
+                upstreamNodes={upstreamNodes}
+                mountedToolNodes={mountedToolNodes}
+                updateInputField={updateInputField}
+                updateInputFieldSelector={updateInputFieldSelector}
+                removeInputField={removeInputField}
+                addInputField={addInputField}
+                outputSchemaFields={outputSchemaFields}
+                renameOutputField={renameOutputField}
+                updateOutputFieldType={updateOutputFieldType}
+                removeOutputField={removeOutputField}
+                addOutputField={addOutputField}
+                setRouteField={setRouteField}
+                setRouteEnumFromEdges={setRouteEnumFromEdges}
+                setRouteEnum={setRouteEnum}
+                updateInputMapping={updateInputMapping}
+                addInputMapping={addInputMapping}
+                removeInputMapping={removeInputMapping}
+                derivedSchema={derivedSchema}
+                derivingSchema={derivingSchema}
+                nodes={nodes}
+                edges={edges}
+                onOpenSurfaceAssistant={() => setShowSurfaceAssistant(true)}
+              />
+            </Suspense>
+          ) : null}
 
-          {!isSketchMode ? (
-            <SurfaceAssistantDialog
-              open={showSurfaceAssistant}
-              onOpenChange={setShowSurfaceAssistant}
-              workflow={workflow}
-              catalog={catalog}
-              lang={lang}
-              onApplied={async (result) => {
-                applyWorkflowState(result.workflow);
-                await queryClient.invalidateQueries({
-                  queryKey: WORKFLOWS_QUERY_KEY,
-                });
-                await queryClient.invalidateQueries({
-                  queryKey: [...WORKFLOW_CATALOG_QUERY_KEY, mode, workflow.key],
-                });
-              }}
-            />
+          {!isSketchMode && showSurfaceAssistant ? (
+            <Suspense
+              fallback={(
+                <SurfaceAssistantDialogFallback
+                  open={showSurfaceAssistant}
+                  title={lang === "zh" ? "AI 管理 Surface" : "AI Surface Assistant"}
+                  description={lang === "zh"
+                    ? "只针对当前工作流本地 surface 提出新增、修改、删除请求，AI 先给计划，再由你确认应用。"
+                    : "Work only on workflow-local surfaces for this workflow. The AI prepares a plan first, and you apply it explicitly."}
+                />
+              )}
+            >
+              <SurfaceAssistantDialog
+                open={showSurfaceAssistant}
+                onOpenChange={setShowSurfaceAssistant}
+                workflow={workflow}
+                catalog={catalog}
+                lang={lang}
+                onApplied={async (result) => {
+                  applyWorkflowState(result.workflow);
+                  await queryClient.invalidateQueries({
+                    queryKey: WORKFLOWS_QUERY_KEY,
+                  });
+                  await queryClient.invalidateQueries({
+                    queryKey: [...WORKFLOW_CATALOG_QUERY_KEY, mode, workflow.key],
+                  });
+                }}
+              />
+            </Suspense>
           ) : null}
         </div>
       </DialogContent>

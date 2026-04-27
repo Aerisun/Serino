@@ -7,7 +7,7 @@ import {
   type CopyShape,
   iconForName,
   friendlyCategoryLabel,
-} from "./workflow-editor-types";
+} from "./workflow-editor-core";
 
 // ---------------------------------------------------------------------------
 // Props

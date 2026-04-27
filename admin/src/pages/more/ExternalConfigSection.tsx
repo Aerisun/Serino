@@ -21,13 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 
@@ -710,23 +704,19 @@ export function ExternalConfigSection() {
                 usageTitle={activeHelp.connection_mode.usageTitle}
                 usageItems={activeHelp.connection_mode.usageItems}
               />
-              <Select
+              <NativeSelect
+                id="connection_mode"
                 value={connectionMode}
-                onValueChange={handleConnectionModeChange}
+                onChange={(event) => handleConnectionModeChange(event.target.value)}
               >
-                <SelectTrigger id="connection_mode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="starttls">STARTTLS (587)</SelectItem>
-                  <SelectItem value="ssl">SSL/TLS (465)</SelectItem>
-                  <SelectItem value="none">
-                    {lang === "zh"
-                      ? "不加密 / 按服务商自定义"
-                      : "No Encryption / Custom"}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="starttls">STARTTLS (587)</option>
+                <option value="ssl">SSL/TLS (465)</option>
+                <option value="none">
+                  {lang === "zh"
+                    ? "不加密 / 按服务商自定义"
+                    : "No Encryption / Custom"}
+                </option>
+              </NativeSelect>
             </div>
           </div>
         </CollapsibleSection>

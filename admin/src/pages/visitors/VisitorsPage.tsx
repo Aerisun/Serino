@@ -354,7 +354,8 @@ export default function VisitorsPage() {
       ? "completed"
       : "incomplete";
   const completedAdminIdentities = adminIdentities.filter(
-    (identity) => identity.provider !== "email" || emailAdminBindingStatus === "completed",
+    (identity) =>
+      identity.provider !== "email" || emailAdminBindingStatus === "completed",
   );
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
   const adminOrigin = window.location.origin;
@@ -811,6 +812,8 @@ export default function VisitorsPage() {
     const next = new URLSearchParams(searchParams);
     next.delete("admin_bind_provider");
     next.delete("auth");
+    next.delete("auth_provider");
+    next.delete("auth_message");
     setSearchParams(next, { replace: true });
     bindCurrent.mutate({ params: { provider } });
   }, [bindCurrent, searchParams, setSearchParams]);
@@ -826,11 +829,45 @@ export default function VisitorsPage() {
     const next = new URLSearchParams(searchParams);
     next.delete("oauth_test_provider");
     next.delete("auth");
+    next.delete("auth_provider");
+    next.delete("auth_message");
     setSearchParams(next, { replace: true });
     setTestingProvider(null);
     toast.success(
       `${provider === "google" ? "Google" : "GitHub"} 认证测试成功`,
     );
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("auth") !== "error") {
+      return;
+    }
+    const message =
+      searchParams.get("auth_message") || "认证失败，请检查 OAuth 配置后重试";
+    const testProvider = searchParams.get(
+      "oauth_test_provider",
+    ) as VisitorOAuthProvider | null;
+    const bindProvider = searchParams.get(
+      "admin_bind_provider",
+    ) as BindableAdminProvider | null;
+    if (!testProvider && !bindProvider) {
+      return;
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("oauth_test_provider");
+    next.delete("admin_bind_provider");
+    next.delete("auth");
+    next.delete("auth_provider");
+    next.delete("auth_message");
+    setSearchParams(next, { replace: true });
+    setTestingProvider(null);
+
+    if (testProvider) {
+      toast.error(message);
+      return;
+    }
+    setBindingError(message);
   }, [searchParams, setSearchParams]);
 
   const copyText = async (value: string, label: string) => {
@@ -967,6 +1004,36 @@ export default function VisitorsPage() {
                 adminOrigin,
                 provider.key,
               );
+              const sharedCallbackUrl =
+                publicCallbackUrl === adminCallbackUrl
+                  ? publicCallbackUrl
+                  : null;
+              const callbackItems = sharedCallbackUrl
+                ? [
+                    {
+                      key: "shared",
+                      label: "回调地址",
+                      description: "",
+                      value: sharedCallbackUrl,
+                      icon: Globe,
+                    },
+                  ]
+                : [
+                    {
+                      key: "public",
+                      label: "前台回调地址",
+                      description: "访客在前台登录后会回到这里。",
+                      value: publicCallbackUrl,
+                      icon: Globe,
+                    },
+                    {
+                      key: "admin",
+                      label: "后台绑定回调地址",
+                      description: "管理员在后台绑定身份时会回到这里。",
+                      value: adminCallbackUrl,
+                      icon: ShieldCheck,
+                    },
+                  ];
               const isTesting = testingProvider === provider.key;
               const isSaving = savingProvider === provider.key;
               const expanded = expandedProviders[provider.key];
@@ -1103,12 +1170,23 @@ export default function VisitorsPage() {
                                 hideLabel
                                 label="回调地址与测试"
                                 title="回调地址怎么用"
-                                description="把下面两条地址复制到 OAuth 平台配置中，保存后即可直接测试登录。"
+                                description={
+                                  sharedCallbackUrl
+                                    ? "当前部署下前台登录和后台绑定共用同一个 callback URL，复制这一条到 OAuth 平台即可。"
+                                    : "当前前台和后台入口域名不同，需要把下面对应地址分别登记到 OAuth 平台。"
+                                }
                                 usageTitle={HELP_USAGE_TITLE}
-                                usageItems={[
-                                  "前台回调地址：访客在前台登录后会跳回这里。",
-                                  "后台绑定回调地址：管理员在后台绑定身份时会跳回这里。",
-                                ]}
+                                usageItems={
+                                  sharedCallbackUrl
+                                    ? [
+                                        "统一回调地址：前台登录和后台绑定都使用这一条。",
+                                        "保存 OAuth 配置后，可以直接点右侧“测试认证”。",
+                                      ]
+                                    : [
+                                        "前台回调地址：访客在前台登录后会跳回这里。",
+                                        "后台绑定回调地址：管理员在后台绑定身份时会跳回这里。",
+                                      ]
+                                }
                               />
                             </div>
                           </div>
@@ -1130,63 +1208,42 @@ export default function VisitorsPage() {
                         </div>
 
                         <div className="mt-4 grid gap-3">
-                          <div className="rounded-2xl border border-border/60 bg-background/55 px-4 py-3">
-                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-                                  <Globe className="h-3.5 w-3.5" />
-                                  前台回调地址
-                                </div>
-                                <div className="mt-2 break-all font-mono text-xs text-foreground">
-                                  {publicCallbackUrl}
+                          {callbackItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <div
+                                key={item.key}
+                                className="rounded-2xl border border-border/60 bg-background/55 px-4 py-3"
+                              >
+                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                                      <Icon className="h-3.5 w-3.5" />
+                                      {item.label}
+                                    </div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      {item.description}
+                                    </div>
+                                    <div className="mt-2 break-all font-mono text-xs text-foreground">
+                                      {item.value}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      void copyText(item.value, item.label)
+                                    }
+                                    className="shrink-0 gap-2"
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                    复制
+                                  </Button>
                                 </div>
                               </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  void copyText(
-                                    publicCallbackUrl,
-                                    "前台回调地址",
-                                  )
-                                }
-                                className="shrink-0 gap-2"
-                              >
-                                <Copy className="h-4 w-4" />
-                                复制
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-border/60 bg-background/55 px-4 py-3">
-                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-                                  <ShieldCheck className="h-3.5 w-3.5" />
-                                  后台绑定回调地址
-                                </div>
-                                <div className="mt-2 break-all font-mono text-xs text-foreground">
-                                  {adminCallbackUrl}
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  void copyText(
-                                    adminCallbackUrl,
-                                    "后台绑定回调地址",
-                                  )
-                                }
-                                className="shrink-0 gap-2"
-                              >
-                                <Copy className="h-4 w-4" />
-                                复制
-                              </Button>
-                            </div>
-                          </div>
+                            );
+                          })}
                         </div>
 
                         {githubNeedsSeparateLocalApp ? (
@@ -1544,7 +1601,9 @@ export default function VisitorsPage() {
                     />
                   </div>
                 </div>
-                <Badge variant="outline">{completedAdminIdentities.length} 个</Badge>
+                <Badge variant="outline">
+                  {completedAdminIdentities.length} 个
+                </Badge>
               </div>
 
               <div className="space-y-3">

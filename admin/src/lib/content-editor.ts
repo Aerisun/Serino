@@ -3,10 +3,10 @@ import type { QueryClient } from "@tanstack/react-query";
 export { extractApiErrorMessage as getMutationErrorMessage } from "./api-error";
 import { getCurrentBeijingIsoString } from "./time";
 
-export type ContentEditorSaveMode = "draft" | "confirm";
 export type EditorContentType = "posts" | "diary" | "thoughts" | "excerpts";
 
 const MANUAL_PUBLISHED_AT_PREF_KEY = "aerisun-admin-published-at-manual-v1";
+const TITLE_AUTO_PREF_KEY = "aerisun-admin-title-auto-v1";
 const EDITOR_DRAFT_STORAGE_PREFIX = "aerisun-admin-editor-draft-v1";
 const PUBLIC_CONTENT_REFRESH_KEY = "aerisun:content-updated:v1";
 
@@ -14,11 +14,6 @@ type SaveableContentForm = {
   status?: string | null;
   visibility?: string | null;
   published_at?: string | null;
-};
-
-type PersistedEditorDraft<T> = {
-  form: T;
-  isPublishedAtManual: boolean;
 };
 
 export function resolvePublishedAtState(
@@ -35,12 +30,12 @@ export function resolvePublishedAtState(
   };
 }
 
-function readManualPrefMap(): Record<string, boolean> {
+function readBooleanPrefMap(storageKey: string): Record<string, boolean> {
   if (typeof window === "undefined") {
     return {};
   }
   try {
-    const raw = window.localStorage.getItem(MANUAL_PUBLISHED_AT_PREF_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) {
       return {};
     }
@@ -60,12 +55,12 @@ function readManualPrefMap(): Record<string, boolean> {
   }
 }
 
-function writeManualPrefMap(value: Record<string, boolean>) {
+function writeBooleanPrefMap(storageKey: string, value: Record<string, boolean>) {
   if (typeof window === "undefined") {
     return;
   }
   try {
-    window.localStorage.setItem(MANUAL_PUBLISHED_AT_PREF_KEY, JSON.stringify(value));
+    window.localStorage.setItem(storageKey, JSON.stringify(value));
   } catch {
     // Ignore localStorage errors (private mode / quota).
   }
@@ -76,15 +71,27 @@ function manualPrefKey(contentType: EditorContentType, itemId: string) {
 }
 
 export function readSavedPublishedAtManualState(contentType: EditorContentType, itemId: string): boolean | null {
-  const map = readManualPrefMap();
+  const map = readBooleanPrefMap(MANUAL_PUBLISHED_AT_PREF_KEY);
   const key = manualPrefKey(contentType, itemId);
   return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
 }
 
 export function savePublishedAtManualState(contentType: EditorContentType, itemId: string, value: boolean) {
-  const map = readManualPrefMap();
+  const map = readBooleanPrefMap(MANUAL_PUBLISHED_AT_PREF_KEY);
   map[manualPrefKey(contentType, itemId)] = value;
-  writeManualPrefMap(map);
+  writeBooleanPrefMap(MANUAL_PUBLISHED_AT_PREF_KEY, map);
+}
+
+export function readSavedTitleAutoState(contentType: EditorContentType, itemId: string): boolean | null {
+  const map = readBooleanPrefMap(TITLE_AUTO_PREF_KEY);
+  const key = manualPrefKey(contentType, itemId);
+  return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
+}
+
+export function saveTitleAutoState(contentType: EditorContentType, itemId: string, value: boolean) {
+  const map = readBooleanPrefMap(TITLE_AUTO_PREF_KEY);
+  map[manualPrefKey(contentType, itemId)] = value;
+  writeBooleanPrefMap(TITLE_AUTO_PREF_KEY, map);
 }
 
 export function isManualPublishedAtValid(
@@ -99,17 +106,13 @@ export function isManualPublishedAtValid(
 
 export function buildNextContentSaveForm<T extends SaveableContentForm>(
   form: T,
-  mode: ContentEditorSaveMode,
   isPublishedAtManual: boolean,
 ) {
-  const nextStatus =
-    mode === "draft" ? "draft" : form.visibility === "public" ? "published" : "archived";
+  const nextStatus = form.visibility === "public" ? "published" : "archived";
   const nextPublishedAt =
-    mode === "draft"
-      ? (form.published_at ?? null)
-      : (isPublishedAtManual && form.published_at
-          ? form.published_at
-          : (form.published_at ?? getCurrentBeijingIsoString()));
+    isPublishedAtManual && form.published_at
+      ? form.published_at
+      : (form.published_at ?? getCurrentBeijingIsoString());
 
   return {
     ...form,
@@ -157,43 +160,6 @@ function editorDraftKey(contentType: EditorContentType, draftId: string) {
   return `${EDITOR_DRAFT_STORAGE_PREFIX}:${contentType}:${draftId}`;
 }
 
-export function readEditorDraftSnapshot<T>(
-  contentType: EditorContentType,
-  draftId: string,
-): PersistedEditorDraft<T> | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(editorDraftKey(contentType, draftId));
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw) as PersistedEditorDraft<T> | null;
-    if (!parsed || typeof parsed !== "object" || !("form" in parsed)) {
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-export function saveEditorDraftSnapshot<T>(
-  contentType: EditorContentType,
-  draftId: string,
-  value: PersistedEditorDraft<T>,
-) {
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    window.localStorage.setItem(editorDraftKey(contentType, draftId), JSON.stringify(value));
-  } catch {
-    // Ignore localStorage errors.
-  }
-}
-
 export function clearEditorDraftSnapshot(contentType: EditorContentType, draftId: string) {
   if (typeof window === "undefined") {
     return;
@@ -203,18 +169,6 @@ export function clearEditorDraftSnapshot(contentType: EditorContentType, draftId
   } catch {
     // Ignore localStorage errors.
   }
-}
-
-export function moveEditorDraftSnapshot(contentType: EditorContentType, fromDraftId: string, toDraftId: string) {
-  if (fromDraftId === toDraftId) {
-    return;
-  }
-  const existing = readEditorDraftSnapshot(contentType, fromDraftId);
-  if (!existing) {
-    return;
-  }
-  saveEditorDraftSnapshot(contentType, toDraftId, existing);
-  clearEditorDraftSnapshot(contentType, fromDraftId);
 }
 
 export function hasMeaningfulEditorContent(value: Record<string, unknown>) {

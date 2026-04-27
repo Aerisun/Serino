@@ -1,4 +1,4 @@
-export { cn } from "@serino/utils";
+export { cn } from "@serino/utils/cn";
 import { formatDateInBeijing } from "./time";
 
 export function formatDate(date: string | Date | null | undefined): string {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -50,7 +50,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import {
   Check,
   History,
@@ -63,6 +63,7 @@ import {
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
+import { MODERATION_PENDING_COUNT_QUERY_KEY } from "./moderationQueries";
 
 import { PAGE_KEY_LABELS, optionLabel } from "@/pages/site-config/constants";
 
@@ -121,58 +122,146 @@ const contentListFns: Record<
   excerpts: (p) => listExcerpts(p) as Promise<{ data?: { items?: ContentAdminRead[] } }>,
 };
 
+const CONTENT_TITLE_QUERY_KEY = ["moderation", "content-title"] as const;
+const CONTENT_TITLE_STALE_TIME = 5 * 60_000;
+const CONTENT_TITLE_LOOKUP_CONCURRENCY = 4;
+
+async function lookupContentTitle(
+  contentType: ContentPathType,
+  slug: string,
+): Promise<string | null> {
+  const listFn = contentListFns[contentType];
+  const searchTerms = getModerationSlugSearchTerms(slug);
+
+  for (const term of searchTerms) {
+    try {
+      const response = await listFn({ search: term, page_size: 10 });
+      const entries = response.data?.items ?? [];
+      const match = entries.find(
+        (entry) => getTitleCacheKey(contentType, entry.slug) === getTitleCacheKey(contentType, slug),
+      );
+      if (match?.title) {
+        return match.title;
+      }
+    } catch {
+      // ignore lookup errors and fall back to slug-derived labels
+    }
+  }
+
+  return null;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<R>,
+) {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  const runWorker = async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await worker(items[currentIndex]);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()),
+  );
+
+  return results;
+}
+
 /** Fetch titles for all unique (type, slug) pairs in the current page of items. */
 function useContentTitles(items: ModerationRecord[]): TitleMap {
+  const queryClient = useQueryClient();
   const [titles, setTitles] = useState<TitleMap>(new Map());
-  const cacheRef = useRef<TitleMap>(new Map());
 
   useEffect(() => {
-    const targetsByType = new Map<ContentPathType, Map<string, string>>();
+    const targets = new Map<string, { contentType: ContentPathType; slug: string }>();
+    const hydratedTitles = new Map<string, string>();
 
     for (const item of items) {
       const target = getModerationContentTarget(item);
       if (!target) continue;
 
       const cacheKey = getTitleCacheKey(target.contentType, target.slug);
-      if (cacheRef.current.has(cacheKey)) continue;
-
-      const bucket = targetsByType.get(target.contentType) ?? new Map<string, string>();
-      bucket.set(cacheKey, target.slug);
-      targetsByType.set(target.contentType, bucket);
+      const cachedTitle = queryClient.getQueryData<string | null>([
+        ...CONTENT_TITLE_QUERY_KEY,
+        cacheKey,
+      ]);
+      if (typeof cachedTitle === "string" && cachedTitle.trim()) {
+        hydratedTitles.set(cacheKey, cachedTitle);
+        continue;
+      }
+      if (cachedTitle === null) {
+        continue;
+      }
+      targets.set(cacheKey, target);
     }
 
-    if (targetsByType.size === 0) return;
+    if (hydratedTitles.size > 0) {
+      setTitles((current) => {
+        let changed = false;
+        const next = new Map(current);
+        hydratedTitles.forEach((title, cacheKey) => {
+          if (next.get(cacheKey) !== title) {
+            next.set(cacheKey, title);
+            changed = true;
+          }
+        });
+        return changed ? next : current;
+      });
+    }
+
+    if (targets.size === 0) return;
 
     let cancelled = false;
     (async () => {
-      for (const [type, targets] of targetsByType) {
-        const listFn = contentListFns[type];
-        for (const [cacheKey, slug] of targets) {
-          const searchTerms = getModerationSlugSearchTerms(slug);
+      const resolvedTitles = await mapWithConcurrency(
+        Array.from(targets.entries()),
+        CONTENT_TITLE_LOOKUP_CONCURRENCY,
+        async ([cacheKey, target]) => {
+          const title = await queryClient.fetchQuery({
+            queryKey: [...CONTENT_TITLE_QUERY_KEY, cacheKey],
+            queryFn: () => lookupContentTitle(target.contentType, target.slug),
+            staleTime: CONTENT_TITLE_STALE_TIME,
+          });
+          return title ? ([cacheKey, title] as const) : null;
+        },
+      );
 
-          for (const term of searchTerms) {
-            try {
-              const response = await listFn({ search: term, page_size: 10 });
-              const entries = response.data?.items ?? [];
-              const match = entries.find(
-                (entry) => getTitleCacheKey(type, entry.slug) === cacheKey,
-              );
-              if (match?.title) {
-                cacheRef.current.set(cacheKey, match.title);
-                break;
-              }
-            } catch {
-              /* ignore */
-            }
+      if (cancelled) {
+        return;
+      }
+
+      setTitles((current) => {
+        let changed = false;
+        const next = new Map(current);
+        for (const entry of resolvedTitles) {
+          if (!entry) {
+            continue;
+          }
+          const [cacheKey, title] = entry;
+          if (next.get(cacheKey) !== title) {
+            next.set(cacheKey, title);
+            changed = true;
           }
         }
-      }
-      if (!cancelled) setTitles(new Map(cacheRef.current));
+        return changed ? next : current;
+      });
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [items]);
+  }, [items, queryClient]);
 
   return titles;
 }
@@ -669,19 +758,18 @@ function FiltersBar({
   ) => (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      <Select value={value || "__all"} onValueChange={(nextValue) => onChange(nextValue === "__all" ? "" : nextValue)}>
-        <SelectTrigger className="h-10 rounded-xl border-border/45 bg-background/70 px-3 text-sm">
-          <SelectValue placeholder={t("common.all")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__all">{t("common.all")}</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <NativeSelect
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 rounded-xl border-border/45 bg-background/70 px-3 text-sm"
+      >
+        <option value="">{t("common.all")}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </NativeSelect>
     </div>
   );
 
@@ -925,6 +1013,7 @@ function ModerationQueue({
     }) => moderateItem(id, { action, reason: reason || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeyFn() });
+      queryClient.invalidateQueries({ queryKey: MODERATION_PENDING_COUNT_QUERY_KEY });
       setDeleteTargetId(null);
       toast.success(t("common.operationSuccess"));
     },
@@ -990,6 +1079,7 @@ function ModerationQueue({
         await moderateItem(id, { action, reason: null });
       }
       await queryClient.invalidateQueries({ queryKey: queryKeyFn() });
+      await queryClient.invalidateQueries({ queryKey: MODERATION_PENDING_COUNT_QUERY_KEY });
       setSelectedIds([]);
     } finally {
       setBulkPending(false);

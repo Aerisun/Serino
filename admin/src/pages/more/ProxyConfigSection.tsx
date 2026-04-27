@@ -44,18 +44,24 @@ const COPY = {
     unconfigured: "未设置代理端口",
     webhookProxyOn: "Webhook 走代理",
     webhookProxyOff: "Webhook 不走代理",
+    oauthProxyOn: "OAuth 走代理",
+    oauthProxyOff: "OAuth 不走代理",
     proxyPort: "代理端口",
     proxyPortTitle: "本机 HTTP/HTTPS 代理监听端口",
     proxyPortHint:
-      "这里只需要填写端口号，地址默认固定为 127.0.0.1。当前实现按本机 HTTP 代理端口处理，例如 7890。",
+      "这里只需要填写端口号。运行时会优先尝试 127.0.0.1，也会自动尝试 Docker 宿主机网关地址，例如 host.docker.internal。",
     proxyPortPlaceholder: "7890",
     proxyPortInvalid: "请输入 1 到 65535 之间的端口号，或者清空以关闭代理。",
     webhookToggle: "Webhook 走代理",
     webhookToggleHint:
       "开启后，Webhook 测试、实际投递，以及 Telegram 连接这类 webhook 相关出站请求都会优先走本机代理。",
     webhookToggleDisabled: "请先填写可用的代理端口，再决定是否让 Webhook 走代理。",
+    oauthToggle: "OAuth 走代理",
+    oauthToggleHint:
+      "开启后，Google / GitHub 的授权换 token、读取用户资料等出站请求都会优先走这份代理配置。",
+    oauthToggleDisabled: "请先填写可用的代理端口，再决定是否让 Google / GitHub 认证走代理。",
     scopeNote:
-      "后面如果你还要让大模型 API 也走代理，可以继续在这份配置上加新的作用域开关，不需要重做整套结构。",
+      "现在这份配置已经支持 Webhook 和 OAuth 两个作用域，后面如果还要让大模型 API 走代理，也可以继续沿用这套结构。",
     test: "端口健康测试",
     testing: "测试中...",
     saveSuccess: "代理设置已保存",
@@ -77,18 +83,24 @@ const COPY = {
     unconfigured: "No proxy port configured",
     webhookProxyOn: "Webhook uses proxy",
     webhookProxyOff: "Webhook bypasses proxy",
+    oauthProxyOn: "OAuth uses proxy",
+    oauthProxyOff: "OAuth bypasses proxy",
     proxyPort: "Proxy Port",
     proxyPortTitle: "Local HTTP/HTTPS proxy listening port",
     proxyPortHint:
-      "Only the port is required here. The host stays fixed at 127.0.0.1. The current implementation expects a local HTTP proxy port such as 7890.",
+      "Only the port is required here. Runtime will try 127.0.0.1 first and also common Docker host gateway addresses such as host.docker.internal.",
     proxyPortPlaceholder: "7890",
     proxyPortInvalid: "Enter a port between 1 and 65535, or clear it to disable the proxy.",
     webhookToggle: "Use Proxy For Webhook",
     webhookToggleHint:
       "When enabled, webhook tests, actual deliveries, and Telegram webhook connect requests will prefer the local proxy.",
     webhookToggleDisabled: "Configure a valid proxy port first, then decide whether webhook traffic should use it.",
+    oauthToggle: "Use Proxy For OAuth",
+    oauthToggleHint:
+      "When enabled, Google / GitHub token exchange and user profile requests will prefer this proxy configuration.",
+    oauthToggleDisabled: "Configure a valid proxy port first, then decide whether Google / GitHub auth traffic should use it.",
     scopeNote:
-      "If you later want model API traffic to use the proxy too, we can extend this same config with more scope toggles instead of rebuilding it.",
+      "This config now covers webhook and OAuth traffic. If model APIs need the proxy later, we can extend the same scope-based structure.",
     test: "Health Check",
     testing: "Testing...",
     saveSuccess: "Proxy settings saved",
@@ -103,12 +115,14 @@ const COPY = {
 const EMPTY_FORM = {
   proxy_port: "",
   webhook_enabled: false,
+  oauth_enabled: false,
 };
 
 function toForm(config: OutboundProxyConfig) {
   return {
     proxy_port: config.proxy_port ? String(config.proxy_port) : "",
     webhook_enabled: Boolean(config.webhook_enabled),
+    oauth_enabled: Boolean(config.oauth_enabled),
   };
 }
 
@@ -129,6 +143,7 @@ function buildPayload(form: typeof EMPTY_FORM): OutboundProxyConfigUpdate {
   return {
     proxy_port: proxyPort,
     webhook_enabled: proxyPort ? form.webhook_enabled : false,
+    oauth_enabled: proxyPort ? form.oauth_enabled : false,
   };
 }
 
@@ -143,6 +158,7 @@ export function ProxyConfigSection() {
       return {
         proxy_port: data.proxy_port ?? null,
         webhook_enabled: data.webhook_enabled ?? false,
+        oauth_enabled: data.oauth_enabled ?? false,
       };
     },
     refetchOnWindowFocus: false,
@@ -175,6 +191,7 @@ export function ProxyConfigSection() {
       return {
         proxy_port: data.proxy_port ?? null,
         webhook_enabled: data.webhook_enabled ?? false,
+        oauth_enabled: data.oauth_enabled ?? false,
       };
     },
     onSuccess: async () => {
@@ -218,13 +235,16 @@ export function ProxyConfigSection() {
   const hasChanges = useMemo(
     () =>
       form.proxy_port !== savedForm.proxy_port ||
-      form.webhook_enabled !== savedForm.webhook_enabled,
+      form.webhook_enabled !== savedForm.webhook_enabled ||
+      form.oauth_enabled !== savedForm.oauth_enabled,
     [form, savedForm],
   );
   const normalizedPort = useMemo(() => normalizePort(form.proxy_port), [form.proxy_port]);
   const isPortBlank = form.proxy_port.trim() === "";
   const isPortValid = normalizedPort !== null || isPortBlank;
-  const canSave = isPortValid && (normalizedPort !== null || !form.webhook_enabled);
+  const canSave =
+    isPortValid &&
+    (normalizedPort !== null || (!form.webhook_enabled && !form.oauth_enabled));
   const canTest = normalizedPort !== null && !save.isPending;
   const payload = buildPayload(form);
   const statusTone = test.isPending
@@ -248,6 +268,7 @@ export function ProxyConfigSection() {
     setForm((current) => ({
       proxy_port: nextValue,
       webhook_enabled: nextValue.trim() ? current.webhook_enabled : false,
+      oauth_enabled: nextValue.trim() ? current.oauth_enabled : false,
     }));
     setHealthResult(null);
     setLastCheckOk(null);
@@ -341,6 +362,22 @@ export function ProxyConfigSection() {
             leading={<Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />}
             label={copy.webhookToggle}
             description={normalizedPort ? copy.webhookToggleHint : copy.webhookToggleDisabled}
+            disabled={!normalizedPort || save.isPending || test.isPending}
+          />
+
+          <AppleSwitch
+            checked={form.oauth_enabled}
+            onCheckedChange={(checked) => {
+              if (!normalizedPort) {
+                return;
+              }
+              setForm((current) => ({ ...current, oauth_enabled: checked }));
+              setHealthResult(null);
+              setLastCheckOk(null);
+            }}
+            leading={<Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />}
+            label={copy.oauthToggle}
+            description={normalizedPort ? copy.oauthToggleHint : copy.oauthToggleDisabled}
             disabled={!normalizedPort || save.isPending || test.isPending}
           />
 

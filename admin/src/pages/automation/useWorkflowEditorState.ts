@@ -30,22 +30,24 @@ import {
   type WorkflowCanvasEdge,
   type WorkflowCanvasNode,
   type CopyShape,
-  WORKFLOWS_QUERY_KEY,
   CATEGORY_ORDER_FALLBACK,
   cloneJson,
   workflowGraphToCanvas,
   canvasToGraph,
   deriveTriggerBindings,
-  deriveWorkflowSummary,
   nextNodeId,
   nextNodePosition,
   friendlyNodeTypeLabel,
-  runtimePolicyDefaults,
   isDataEdge,
   isToolEdge,
   getInputContract,
   getOutputContract,
-} from "./workflow-editor-types";
+} from "./workflow-editor-core";
+import {
+  deriveWorkflowSummary,
+  runtimePolicyDefaults,
+  WORKFLOWS_QUERY_KEY,
+} from "./workflow-shared";
 
 const SKETCH_NODE_TYPES = new Set([
   "trigger.event",
@@ -112,7 +114,7 @@ export function useWorkflowEditorState({
   const [selected, setSelected] = useState<SelectedEntity>(null);
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 });
   const [showPalette, setShowPalette] = useState(false);
-  const [showInspector, setShowInspector] = useState(true);
+  const [showInspector, setShowInspector] = useState(() => mode === "sketch");
   const [showSurfaceAssistant, setShowSurfaceAssistant] = useState(false);
 
   const [workflowName, setWorkflowName] = useState("");
@@ -286,11 +288,11 @@ export function useWorkflowEditorState({
     setRuntimePolicy(runtimePolicyDefaults(nextWorkflow.runtime_policy));
     setSelected(null);
     setShowPalette(false);
-    setShowInspector(true);
+    setShowInspector(mode === "sketch");
     setJsonDrafts({});
     setJsonErrors({});
     previousWorkflowKeyRef.current = nextWorkflow.key;
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (!workflow || !open) return;
@@ -304,6 +306,12 @@ export function useWorkflowEditorState({
       previousWorkflowKeyRef.current = null;
     }
   }, [open]);
+
+  useEffect(() => {
+    if (selected) {
+      setShowInspector(true);
+    }
+  }, [selected]);
 
   const onNodesChange: OnNodesChange<WorkflowCanvasNode> = useCallback(
     (changes: NodeChange<WorkflowCanvasNode>[]) => {

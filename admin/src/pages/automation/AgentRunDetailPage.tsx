@@ -1,18 +1,61 @@
-import { useGetApprovalsApiV1AdminAutomationApprovalsGet, useGetRunApiV1AdminAutomationRunsRunIdGet, useGetRunStepsApiV1AdminAutomationRunsRunIdStepsGet } from "@serino/api-client/admin";
+import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getGetRunsApiV1AdminAutomationRunsGetQueryKey,
+  useGetApprovalsApiV1AdminAutomationApprovalsGet,
+  useGetRunApiV1AdminAutomationRunsRunIdGet,
+  useGetRunStepsApiV1AdminAutomationRunsRunIdStepsGet,
+} from "@serino/api-client/admin";
 import { PageHeader } from "@/components/PageHeader";
 import { AdminSurface } from "@/components/AdminSurface";
 import { Badge } from "@/components/ui/Badge";
 import { useParams } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import type { AgentRunRead } from "@serino/api-client/models";
 import { AgentSectionSwitch } from "./AgentSectionSwitch";
+import { AUTOMATION_RUN_DETAIL_POLL_INTERVAL, isAutomationRunLiveStatus } from "./automation-query-shared";
 
 export default function AgentRunDetailPage() {
   const { t } = useI18n();
   const { runId = "" } = useParams();
-  const { data: runRaw, isLoading: runLoading } = useGetRunApiV1AdminAutomationRunsRunIdGet(runId, { query: { enabled: !!runId, refetchInterval: 5000 } });
-  const { data: stepsRaw, isLoading: stepsLoading } = useGetRunStepsApiV1AdminAutomationRunsRunIdStepsGet(runId, { query: { enabled: !!runId, refetchInterval: 5000 } });
-  const { data: approvalsRaw } = useGetApprovalsApiV1AdminAutomationApprovalsGet({ query: { refetchInterval: 5000 } });
+  const queryClient = useQueryClient();
+  const cachedRun = useMemo(() => {
+    const runsResponse = queryClient.getQueryData<{ data?: AgentRunRead[] }>(
+      getGetRunsApiV1AdminAutomationRunsGetQueryKey(),
+    );
+    return (runsResponse?.data ?? []).find((item) => item.id === runId);
+  }, [queryClient, runId]);
+  const { data: runRaw, isLoading: runLoading } = useGetRunApiV1AdminAutomationRunsRunIdGet(runId, {
+    query: {
+      enabled: !!runId,
+      placeholderData: cachedRun
+        ? {
+            data: cachedRun,
+            status: 200,
+            headers: new Headers(),
+          }
+        : undefined,
+      refetchInterval: (query) =>
+        isAutomationRunLiveStatus(query.state.data?.data?.status)
+          ? AUTOMATION_RUN_DETAIL_POLL_INTERVAL
+          : false,
+      refetchOnWindowFocus: true,
+    },
+  });
   const run = runRaw?.data;
+  const shouldPollRunDetails = isAutomationRunLiveStatus(run?.status);
+  const { data: stepsRaw, isLoading: stepsLoading } = useGetRunStepsApiV1AdminAutomationRunsRunIdStepsGet(runId, {
+    query: {
+      enabled: !!runId,
+      refetchInterval: shouldPollRunDetails
+        ? AUTOMATION_RUN_DETAIL_POLL_INTERVAL
+        : false,
+      refetchOnWindowFocus: true,
+    },
+  });
+  const { data: approvalsRaw } = useGetApprovalsApiV1AdminAutomationApprovalsGet({
+    query: { refetchOnWindowFocus: true },
+  });
   const steps = stepsRaw?.data ?? [];
   const approvals = (approvalsRaw?.data ?? []).filter((item) => item.run_id === runId);
 

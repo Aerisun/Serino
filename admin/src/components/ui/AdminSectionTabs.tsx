@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -117,6 +117,7 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
   } = props;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isValueTabs = "onValueChange" in props;
+  const location = useLocation();
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -134,15 +135,34 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const activeItem = node.querySelector<HTMLElement>(
+        "[aria-pressed='true'], [aria-current='page']",
+      );
+
+      activeItem?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [items, location.pathname, location.search, isValueTabs ? props.value : undefined]);
+
   return (
     <div className={cn("relative w-fit max-w-full", className)}>
       <div
         ref={scrollRef}
-        className="admin-glass overflow-x-auto overflow-y-hidden rounded-[var(--admin-radius-xl)] p-2 shadow-[var(--admin-shadow-sm)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="admin-glass admin-glass-scroll-x rounded-[var(--admin-radius-xl)] p-2 shadow-[var(--admin-shadow-sm)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div
           className={cn(
-            "flex min-w-max flex-nowrap gap-2",
+            "flex min-w-max snap-x snap-proximity flex-nowrap gap-2",
             variant === "segmented" && "items-stretch",
           )}
         >
@@ -160,7 +180,7 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
                     active: isActive,
                     disabled: tab.disabled,
                     size,
-                  })}
+                  }) + " snap-start"}
                 >
                   <SectionTabContent item={tab} active={isActive} size={size} />
                 </button>
@@ -179,7 +199,7 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
                     active: isActive,
                     disabled: linkTab.disabled,
                     size,
-                  })
+                  }) + " snap-start"
                 }
               >
                 {({ isActive }) => (

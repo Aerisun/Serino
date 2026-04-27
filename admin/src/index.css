@@ -596,6 +596,14 @@ body {
   pointer-events: none;
 }
 
+.admin-glass-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+}
+
 /* Strong glass – for dialogs and prominent surfaces */
 .admin-glass-strong {
   background: rgb(var(--admin-surface-strong) / var(--admin-surface-alpha-strong));
@@ -626,6 +634,11 @@ body {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+
+.dark .admin-glass::before,
+.dark .admin-glass-strong::before {
+  display: none;
 }
 
 /* Sidebar glass */

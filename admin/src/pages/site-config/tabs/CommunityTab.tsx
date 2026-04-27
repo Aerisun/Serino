@@ -10,17 +10,11 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Label } from "@/components/ui/Label";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Card, CardContent } from "@/components/ui/Card";
 import { HintBanner } from "@/components/ui/HintBanner";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { AppleSwitch } from "@/components/ui/AppleSwitch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
 import { toast } from "sonner";
 import {
   createCommunityForm,
@@ -154,44 +148,30 @@ export function CommunityTab() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>{t("siteConfig.commentDefaultSorting")}</Label>
-            <Select
+            <NativeSelect
               value={form.default_sorting}
-              onValueChange={(value) => updateField("default_sorting", value)}
+              onChange={(event) => updateField("default_sorting", event.target.value)}
             >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={t("siteConfig.commentDefaultSorting")}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {DEFAULT_SORTING_OPTIONS.map((v) => (
-                  <SelectItem key={v} value={v}>
-                    {optionLabel(DEFAULT_SORTING_LABELS, v, lang)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {DEFAULT_SORTING_OPTIONS.map((v) => (
+                <option key={v} value={v}>
+                  {optionLabel(DEFAULT_SORTING_LABELS, v, lang)}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
 
           <div className="space-y-1">
             <Label>{t("siteConfig.commentModerationMode")}</Label>
-            <Select
+            <NativeSelect
               value={form.moderation_mode}
-              onValueChange={(value) => updateField("moderation_mode", value)}
+              onChange={(event) => updateField("moderation_mode", event.target.value)}
             >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={t("siteConfig.commentModerationMode")}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {MODERATION_MODE_OPTIONS.map((v) => (
-                  <SelectItem key={v} value={v}>
-                    {optionLabel(MODERATION_MODE_LABELS, v, lang)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {MODERATION_MODE_OPTIONS.map((v) => (
+                <option key={v} value={v}>
+                  {optionLabel(MODERATION_MODE_LABELS, v, lang)}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
 
           <div className="space-y-1">

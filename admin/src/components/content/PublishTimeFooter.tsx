@@ -163,10 +163,10 @@ export function PublishTimeFooter({
             type="button"
             onClick={handleToggleCustom}
             className={cn(
-              "relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0",
+              "relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full border transition-colors",
               isCustom
-                ? "bg-primary"
-                : "bg-muted"
+                ? "border-primary/55 bg-primary"
+                : "border-border/70 bg-muted"
             )}
             aria-label="Toggle custom publish time"
           >

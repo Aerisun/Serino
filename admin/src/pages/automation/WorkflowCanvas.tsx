@@ -31,7 +31,7 @@ import {
   portStyle,
   friendlyNodeTypeLabel,
   summaryForNode,
-} from "./workflow-editor-types";
+} from "./workflow-editor-core";
 
 // ---------------------------------------------------------------------------
 // Custom node card

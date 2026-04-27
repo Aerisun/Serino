@@ -3,6 +3,7 @@ import { Archive, LogOut, Send } from "lucide-react";
 import { StatusVisibilityPills } from "@/components/StatusVisibilityPills";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/i18n";
+import { cn } from "@/lib/utils";
 
 type ContentVisibility = "public" | "private";
 
@@ -42,18 +43,39 @@ export function ContentEditorHeaderActions({
       ? "存档"
       : "Archive";
   const ConfirmIcon = isPublic ? Send : Archive;
+  const hasExtraActions = extraActions != null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <StatusVisibilityPills
-        visibility={visibility}
-        onToggleVisibility={onToggleVisibility}
-      />
-      {extraActions}
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-2",
+        hasExtraActions &&
+          "grid w-full grid-cols-[auto_auto] justify-start items-center sm:flex sm:w-auto sm:flex-wrap sm:items-center",
+      )}
+    >
+      <div
+        className={cn(
+          hasExtraActions &&
+            "order-3 sm:order-1",
+        )}
+      >
+        <StatusVisibilityPills
+          visibility={visibility}
+          onToggleVisibility={onToggleVisibility}
+        />
+      </div>
+      {extraActions ? (
+        <div className="order-1 sm:order-2">
+          {extraActions}
+        </div>
+      ) : null}
       <Button
         type="button"
         variant="secondary"
-        className={draftButtonClassName}
+        className={cn(
+          draftButtonClassName,
+          hasExtraActions && "order-2 sm:order-3",
+        )}
         onClick={onExit}
         disabled={isSaving}
       >
@@ -63,7 +85,10 @@ export function ContentEditorHeaderActions({
       <Button
         type="button"
         variant="secondary"
-        className={isPublic ? publishButtonClassName : archiveButtonClassName}
+        className={cn(
+          isPublic ? publishButtonClassName : archiveButtonClassName,
+          hasExtraActions && "order-4",
+        )}
         onClick={onConfirm}
         disabled={isSaving}
       >

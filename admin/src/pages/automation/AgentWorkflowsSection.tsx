@@ -16,7 +16,7 @@ import {
   deriveWorkflowSummary,
   runtimePolicyDefaults,
   WORKFLOWS_QUERY_KEY,
-} from "./workflow-editor-types";
+} from "./workflow-shared";
 
 const loadWorkflowVisualEditorDialog = () =>
   import("./WorkflowVisualEditorDialog").then((module) => ({

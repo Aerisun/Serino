@@ -9,13 +9,7 @@ import type { ContentCategoryCreate } from "@serino/api-client/models";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import {
   Dialog,
   DialogContent,
@@ -125,27 +119,21 @@ export function ContentCategoryField({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Select
+      <NativeSelect
         value={normalizedValue}
-        onValueChange={handleSelectChange}
+        onChange={(event) => handleSelectChange(event.target.value)}
+        className="h-11 rounded-xl border-border/50 bg-background/70"
       >
-        <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background/70">
-          <SelectValue
-            placeholder={
-              isLoading ? t("common.loading") : placeholder || t("contentCategories.selectPlaceholder")
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={EMPTY_VALUE}>{t("contentCategories.none")}</SelectItem>
-          {effectiveOptions.map((option) => (
-            <SelectItem key={option.id} value={option.name}>
-              {option.name}
-            </SelectItem>
-          ))}
-          <SelectItem value={CREATE_VALUE}>{t("contentCategories.createOption")}</SelectItem>
-        </SelectContent>
-      </Select>
+        <option value={EMPTY_VALUE}>
+          {isLoading ? t("common.loading") : placeholder || t("contentCategories.none")}
+        </option>
+        {effectiveOptions.map((option) => (
+          <option key={option.id} value={option.name}>
+            {option.name}
+          </option>
+        ))}
+        <option value={CREATE_VALUE}>{t("contentCategories.createOption")}</option>
+      </NativeSelect>
 
       <Dialog
         open={createOpen}

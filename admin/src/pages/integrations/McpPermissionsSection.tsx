@@ -10,13 +10,7 @@ import { AdminSurface } from "@/components/AdminSurface";
 import { Badge } from "@/components/ui/Badge";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -537,18 +531,21 @@ export function McpPermissionsSection() {
         title={t("integrations.configureApiPermissions")}
         actions={
           <div className="w-full sm:w-[18rem]">
-            <Select value={selectedApiKeyId} onValueChange={setSelectedApiKeyId}>
-              <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background/70">
-                <SelectValue placeholder={t("integrations.selectApiKey")} />
-              </SelectTrigger>
-              <SelectContent>
-                {apiKeys.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.key_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <NativeSelect
+              value={selectedApiKeyId}
+              onChange={(event) => setSelectedApiKeyId(event.target.value)}
+              className="h-11 rounded-xl border-border/50 bg-background/70"
+              aria-label={t("integrations.selectApiKey")}
+            >
+              <option value="" disabled>
+                {t("integrations.selectApiKey")}
+              </option>
+              {apiKeys.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.key_name}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
         }
       >

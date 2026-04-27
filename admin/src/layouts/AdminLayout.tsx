@@ -1,12 +1,8 @@
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/useAuth";
 import { useI18n } from "@/i18n";
-import {
-  listCommentsApiV1AdminModerationCommentsGet,
-  listGuestbookApiV1AdminModerationGuestbookGet,
-} from "@serino/api-client/admin";
 import { Button } from "@/components/ui/Button";
 import {
   LayoutDashboard,
@@ -35,6 +31,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "@serino/theme";
 import { cn } from "@/lib/utils";
+import { warmAdminRoute } from "@/lib/adminRouteWarmup";
+import {
+  pendingModerationCountQueryOptions,
+} from "@/pages/moderation/moderationQueries";
 
 const navGroups = [
   {
@@ -93,37 +93,103 @@ const navGroups = [
   },
 ];
 
+const TOPBAR_SCROLL_DELTA = 10;
+const TOPBAR_SHOW_SCROLL_TOP = 24;
+
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const { t, lang, setLang } = useI18n();
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [topbarVisible, setTopbarVisible] = useState(true);
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastScrollTopRef = useRef(0);
 
-  const { data: pendingComments } = useQuery({
-    queryKey: ["comments", "pending-count"],
-    queryFn: () =>
-      listCommentsApiV1AdminModerationCommentsGet({
-        page: 1,
-        page_size: 1,
-        status: "pending",
-      }),
-    refetchInterval: 30000,
+  const { data: moderationPending } = useQuery({
+    ...pendingModerationCountQueryOptions(),
+    refetchOnWindowFocus: true,
   });
-  const { data: pendingGuestbook } = useQuery({
-    queryKey: ["guestbook", "pending-count"],
-    queryFn: () =>
-      listGuestbookApiV1AdminModerationGuestbookGet({
-        page: 1,
-        page_size: 1,
-        status: "pending",
-      }),
-    refetchInterval: 30000,
-  });
-  const pendingCount =
-    (pendingComments?.total ?? 0) + (pendingGuestbook?.total ?? 0);
+  const pendingCount = moderationPending?.total ?? 0;
 
   const toggleLang = () => setLang(lang === "zh" ? "en" : "zh");
+
+  useEffect(() => {
+    const isDesktopViewport = () => window.matchMedia("(min-width: 768px)").matches;
+
+    const getActiveScrollTop = () => {
+      if (isDesktopViewport()) {
+        return contentScrollRef.current?.scrollTop ?? 0;
+      }
+
+      return window.scrollY || document.documentElement.scrollTop || 0;
+    };
+
+    const syncTopbarVisibility = () => {
+      const nextScrollTop = Math.max(getActiveScrollTop(), 0);
+      const previousScrollTop = lastScrollTopRef.current;
+      const delta = nextScrollTop - previousScrollTop;
+
+      lastScrollTopRef.current = nextScrollTop;
+
+      if (sidebarOpen) {
+        setTopbarVisible(true);
+        return;
+      }
+
+      if (nextScrollTop <= TOPBAR_SHOW_SCROLL_TOP) {
+        setTopbarVisible(true);
+        return;
+      }
+
+      if (Math.abs(delta) < TOPBAR_SCROLL_DELTA) {
+        return;
+      }
+
+      setTopbarVisible(delta < 0);
+    };
+
+    const handleWindowScroll = () => {
+      if (!isDesktopViewport()) {
+        syncTopbarVisibility();
+      }
+    };
+
+    const handleContentScroll = () => {
+      if (isDesktopViewport()) {
+        syncTopbarVisibility();
+      }
+    };
+
+    const handleResize = () => {
+      lastScrollTopRef.current = Math.max(getActiveScrollTop(), 0);
+      setTopbarVisible(true);
+    };
+
+    lastScrollTopRef.current = Math.max(getActiveScrollTop(), 0);
+
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+    const contentNode = contentScrollRef.current;
+    contentNode?.addEventListener("scroll", handleContentScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleWindowScroll);
+      window.removeEventListener("resize", handleResize);
+      contentNode?.removeEventListener("scroll", handleContentScroll);
+    };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    const currentScrollTop = window.matchMedia("(min-width: 768px)").matches
+      ? contentScrollRef.current?.scrollTop ?? 0
+      : window.scrollY || document.documentElement.scrollTop || 0;
+
+    lastScrollTopRef.current = Math.max(currentScrollTop, 0);
+    setTopbarVisible(true);
+  }, [location.pathname, location.search]);
 
   const sidebarContent = (
     <>
@@ -141,6 +207,12 @@ export default function AdminLayout() {
                 to={item.to}
                 end={item.to === "/"}
                 onClick={() => setSidebarOpen(false)}
+                onMouseEnter={() => {
+                  void warmAdminRoute(item.to, queryClient);
+                }}
+                onFocus={() => {
+                  void warmAdminRoute(item.to, queryClient);
+                }}
                 className={({ isActive }) =>
                   cn(
                     "admin-transition-fast flex items-center gap-3 px-4 py-2 text-sm transition-[background-color,color,box-shadow] hover:bg-[rgb(var(--admin-surface-1)/0.6)] dark:hover:bg-white/[0.05]",
@@ -191,7 +263,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="admin-scrollbars flex h-dvh min-h-screen overflow-hidden bg-gradient-to-br from-background via-background/95 to-muted/35">
+    <div className="admin-scrollbars flex min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/35 md:h-dvh md:overflow-hidden">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -203,7 +275,7 @@ export default function AdminLayout() {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col admin-glass-sidebar transition-transform duration-200 md:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-max min-w-[10rem] max-w-[calc(100vw-1.5rem)] flex-col admin-glass-sidebar transition-transform duration-200 md:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -247,8 +319,15 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-gradient-to-br from-background via-background/90 to-muted/30">
-        <div className="h-14 shrink-0 admin-glass-topbar flex items-center justify-between px-6">
+      <main className="flex min-w-0 flex-1 flex-col bg-gradient-to-br from-background via-background/90 to-muted/30 md:min-h-0">
+        <div
+          className={cn(
+            "sticky top-0 z-10 h-14 shrink-0 admin-glass-topbar flex items-center justify-between px-4 sm:px-6 transition-[transform,margin-bottom,opacity] duration-300",
+            topbarVisible
+              ? "translate-y-0 opacity-100"
+              : "-translate-y-full -mb-14 opacity-0 pointer-events-none",
+          )}
+        >
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -286,8 +365,11 @@ export default function AdminLayout() {
             </Button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="min-w-0 p-4 md:p-6">
+        <div
+          ref={contentScrollRef}
+          className="flex-1 overscroll-contain md:min-h-0 md:overflow-y-auto"
+        >
+          <div className="min-w-0 p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
             <Outlet />
           </div>
         </div>

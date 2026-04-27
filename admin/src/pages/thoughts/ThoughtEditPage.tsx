@@ -9,8 +9,8 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHeaderActions";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { AutoTitleField } from "@/components/content/AutoTitleField";
 import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
 import { Label } from "@/components/ui/Label";
@@ -56,7 +56,17 @@ const editorConfig = {
 
 export default function ThoughtEditPage() {
   const editor = useContentEditor(editorConfig);
-  const { form, setField, isSaving, isPublishedAtManual, setIsPublishedAtManual, isNew, t } = editor;
+  const {
+    form,
+    setField,
+    isSaving,
+    isPublishedAtManual,
+    setIsPublishedAtManual,
+    isAutoTitleEnabled,
+    setIsAutoTitleEnabled,
+    isNew,
+    t,
+  } = editor;
 
   return (
     <div>
@@ -70,7 +80,7 @@ export default function ThoughtEditPage() {
               setField("visibility", form.visibility === "public" ? "private" : "public")
             }
             onExit={() => void editor.exitEditor()}
-            onConfirm={() => void editor.save("confirm")}
+            onConfirm={() => void editor.save()}
             extraActions={
               <Button type="button" variant="outline" className="preview-glow-button" onClick={editor.openPreview} disabled={!form.body}>
                 <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}
@@ -85,28 +95,39 @@ export default function ThoughtEditPage() {
           <ContentCategoryField contentType="thoughts" label={t("contentCategories.fieldLabel")} value={form.category || ""} placeholder={t("contentCategories.thoughtPlaceholder")} onChange={(nextValue) => setField("category", nextValue)} />
           <div className="space-y-2">
             <Label>{t("thoughts.mood")}</Label>
-            <Select value={form.mood || undefined} onValueChange={(value) => setField("mood", value === "__empty" ? "" : value)}>
-              <SelectTrigger className="h-auto min-h-12 rounded-lg border-input bg-background px-3 py-2">
-                <SelectValue placeholder="" />
+            <Select
+              value={form.mood || "__empty"}
+              onValueChange={(value) =>
+                setField("mood", value === "__empty" ? "" : value)
+              }
+            >
+              <SelectTrigger className="min-h-12 rounded-lg px-3 py-2">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__empty">{t("common.empty")}</SelectItem>
                 {MOOD_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className="text-lg leading-none">{option.value}</span>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="text-lg leading-none"
+                  >
+                    {option.value}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>{t("common.title")}</Label>
-          <Input
-            value={form.title}
-            onChange={(event) => setField("title", event.target.value)}
-          />
-        </div>
+        <AutoTitleField
+          value={form.title}
+          onChange={(value) => setField("title", value)}
+          isAuto={isAutoTitleEnabled}
+          onAutoChange={setIsAutoTitleEnabled}
+          switchLabel={t("common.autoTitle")}
+          inputLabel={t("common.title")}
+          required
+        />
 
         <div className="pt-6 border-t border-border">
           <PublishTimeFooter

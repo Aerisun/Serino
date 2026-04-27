@@ -9,13 +9,7 @@ import { BulkActionBar } from "@/components/BulkActionBar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -185,75 +179,75 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <Button
-            variant={filterMode === "" ? "default" : "outline"}
-            onClick={() => handleStatusChange("")}
-          >
-            {t("common.all")}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0"
-            aria-label={filterActionsExpanded ? "收起筛选选项" : "展开筛选选项"}
-            aria-expanded={filterActionsExpanded}
-            onClick={() => setFilterActionsExpanded((open) => !open)}
-          >
-            {filterActionsExpanded ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
-          <div
-            className={cn(
-              "flex items-center gap-2 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out",
-              filterActionsExpanded
-                ? "max-w-[520px] opacity-100 translate-x-0"
-                : "max-w-0 opacity-0 -translate-x-2 pointer-events-none",
-            )}
-          >
-            {statusTabs.map((tab) => (
-              <Button
-                key={tab}
-                type="button"
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                onClick={() => handleStatusChange(tab)}
-              >
-                {tab === "public_publish"
-                  ? t("posts.published")
-                  : tab === "private_archive"
-                    ? t("posts.archived")
-                    : t(`posts.${tab}`)}
-              </Button>
-            ))}
+      <div className="mb-4 flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <Button
+              variant={filterMode === "" ? "default" : "outline"}
+              onClick={() => handleStatusChange("")}
+            >
+              {t("common.all")}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              aria-label={filterActionsExpanded ? "收起筛选选项" : "展开筛选选项"}
+              aria-expanded={filterActionsExpanded}
+              onClick={() => setFilterActionsExpanded((open) => !open)}
+            >
+              {filterActionsExpanded ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+            <div
+              className={cn(
+                "flex items-center gap-2 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out",
+                filterActionsExpanded
+                  ? "max-w-[520px] opacity-100 translate-x-0"
+                  : "max-w-0 opacity-0 -translate-x-2 pointer-events-none",
+              )}
+            >
+              {statusTabs.map((tab) => (
+                <Button
+                  key={tab}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => handleStatusChange(tab)}
+                >
+                  {tab === "public_publish"
+                    ? t("posts.published")
+                    : tab === "private_archive"
+                      ? t("posts.archived")
+                      : t(`posts.${tab}`)}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
-        <Select
-          value={sort}
-          onValueChange={(value) => {
-            setSort(value);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="h-9 w-[220px] shrink-0 rounded-md px-3 text-sm">
-            <SelectValue placeholder={t("common.sortBy")} />
-          </SelectTrigger>
-          <SelectContent>
+          <NativeSelect
+            value={sort}
+            onChange={(event) => {
+              setSort(event.target.value);
+              setPage(1);
+            }}
+            aria-label={t("common.sortBy")}
+            containerClassName="w-[clamp(8.5rem,38vw,13.75rem)] min-w-0 shrink-0"
+            className="h-9 min-w-0 rounded-md px-3 text-sm"
+          >
             {sortOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
+              <option key={opt.value} value={opt.value}>
                 {t(opt.labelKey)}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
+          </NativeSelect>
+        </div>
         <Input
           placeholder={t("common.searchPlaceholder")}
-          className="max-w-xs flex-1 min-w-[220px]"
+          className="min-w-0 flex-1 lg:max-w-xs"
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
         />
@@ -285,21 +279,19 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         ]}
       />
 
-      <div className="rounded-lg admin-glass overflow-hidden">
-        <DataTable<ContentAdminRead>
-          columns={config.columns}
-          data={items}
-          total={total}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          isLoading={isLoading}
-          onRowClick={(row) => navigate(config.editPath(row.id))}
-          selectable
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-        />
-      </div>
+      <DataTable<ContentAdminRead>
+        columns={config.columns}
+        data={items}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        isLoading={isLoading}
+        onRowClick={(row) => navigate(config.editPath(row.id))}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+      />
 
       <ConfirmDialog
         open={bulkDeleteOpen}

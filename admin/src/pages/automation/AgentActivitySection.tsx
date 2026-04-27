@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { AgentRunsPanel } from "./AgentRunsPage";
 import { ApprovalsPanel } from "./ApprovalsPage";
+import { isAutomationRunLiveStatus } from "./automation-query-shared";
 
 type ActivityView = "runs" | "approvals";
 
@@ -31,11 +32,11 @@ export function AgentActivitySection() {
   const { lang } = useI18n();
   const [view, setView] = useState<ActivityView>("runs");
   const copy = COPY[lang];
-  const { data: approvalsRaw } = useGetApprovalsApiV1AdminAutomationApprovalsGet({ query: { refetchInterval: 5000 } });
+  const { data: approvalsRaw } = useGetApprovalsApiV1AdminAutomationApprovalsGet();
   const { data: runsRaw } = useGetRunsApiV1AdminAutomationRunsGet();
   const approvals = approvalsRaw?.data ?? [];
   const runs = runsRaw?.data ?? [];
-  const activeRuns = runs.filter((item) => ["queued", "running", "awaiting_approval"].includes(item.status)).length;
+  const activeRuns = runs.filter((item) => isAutomationRunLiveStatus(item.status)).length;
   const failedRuns = runs.filter((item) => item.status === "failed").length;
 
   const metrics = [

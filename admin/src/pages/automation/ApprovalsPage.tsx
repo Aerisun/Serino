@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetApprovalsApiV1AdminAutomationApprovalsGetQueryKey,
+  getGetRunsApiV1AdminAutomationRunsGetQueryKey,
   useGetApprovalsApiV1AdminAutomationApprovalsGet,
   usePostApprovalDecisionApiV1AdminAutomationApprovalsApprovalIdDecisionPost,
   useGetRunsApiV1AdminAutomationRunsGet,
@@ -83,7 +84,7 @@ export function ApprovalsPanel({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const { data: raw, isLoading } = useGetApprovalsApiV1AdminAutomationApprovalsGet({ query: { refetchInterval: 5000 } });
+  const { data: raw, isLoading } = useGetApprovalsApiV1AdminAutomationApprovalsGet();
   const { data: runsRaw } = useGetRunsApiV1AdminAutomationRunsGet();
   const items = (raw?.data ?? []) as AgentRunApprovalRead[];
   const runs = (runsRaw?.data ?? []) as AgentRunRead[];
@@ -97,6 +98,7 @@ export function ApprovalsPanel({
     mutation: {
       onSuccess: (_res, vars) => {
         queryClient.invalidateQueries({ queryKey: getGetApprovalsApiV1AdminAutomationApprovalsGetQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetRunsApiV1AdminAutomationRunsGetQueryKey() });
         toast.success(t("common.operationSuccess"));
         setBusyId(null);
         const row = items.find((item) => item.id === vars.approvalId);

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import {
   Dialog,
   DialogContent,
@@ -27,13 +28,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
 import { useI18n } from "@/i18n";
 import { cn, formatDate } from "@/lib/utils";
 import { extractApiErrorMessage } from "@/lib/api-error";
@@ -384,22 +378,23 @@ export function McpApiKeysSection({ disabled = false }: McpApiKeysSectionProps) 
 
                 <div className="space-y-2">
                   <Label>{t("integrations.mcpKeyLevel")}</Label>
-                  <Select
+                  <NativeSelect
                     value={form.preset}
-                    onValueChange={(value) => setForm((current) => ({ ...current, preset: value as McpKeyPreset }))}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        preset: event.target.value as McpKeyPreset,
+                      }))
+                    }
+                    className="h-11 rounded-xl border-border/50 bg-background/70"
                   >
-                    <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background/70">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="readonly">{t("integrations.mcpKeyReadonly")}</SelectItem>
-                      <SelectItem value="basic_management">{t("integrations.mcpKeyBasic")}</SelectItem>
-                      <SelectItem value="full_management">{t("integrations.mcpKeyFull")}</SelectItem>
-                      {editing && form.preset === "custom" ? (
-                        <SelectItem value="custom">{customPresetOptionLabel}</SelectItem>
-                      ) : null}
-                    </SelectContent>
-                  </Select>
+                    <option value="readonly">{t("integrations.mcpKeyReadonly")}</option>
+                    <option value="basic_management">{t("integrations.mcpKeyBasic")}</option>
+                    <option value="full_management">{t("integrations.mcpKeyFull")}</option>
+                    {editing && form.preset === "custom" ? (
+                      <option value="custom">{customPresetOptionLabel}</option>
+                    ) : null}
+                  </NativeSelect>
                 </div>
 
                 <div className="rounded-[var(--admin-radius-lg)] border border-border/60 bg-background/55 px-4 py-4">

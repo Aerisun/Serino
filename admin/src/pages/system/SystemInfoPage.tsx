@@ -29,6 +29,9 @@ import { formatDateTimeInBeijing } from "@/lib/time";
 
 type AdminConsoleMethod = "email" | "google" | "github";
 
+const SYSTEM_INFO_STALE_TIME = 5 * 60_000;
+const SYSTEM_INFO_UPTIME_REFRESH_MS = 10_000;
+
 function toAdminConsoleMethods(methods: string[] | undefined): AdminConsoleMethod[] {
   return (methods ?? []).filter(
     (method): method is AdminConsoleMethod =>
@@ -61,6 +64,7 @@ export default function SystemInfoPage() {
   const { t } = useI18n();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [uptimeNow, setUptimeNow] = useState(() => Date.now());
 
   const [username, setUsername] = useState(user?.username || "");
   const [savedUsername, setSavedUsername] = useState(user?.username || "");
@@ -76,8 +80,11 @@ export default function SystemInfoPage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
 
-  const { data: raw, isLoading } = useSystemInfoApiV1AdminSystemInfoGet({
-    query: { refetchInterval: 30000 },
+  const { data: raw, isLoading, dataUpdatedAt } = useSystemInfoApiV1AdminSystemInfoGet({
+    query: {
+      staleTime: SYSTEM_INFO_STALE_TIME,
+      refetchOnWindowFocus: true,
+    },
   });
   const { data: visitorAuthConfigRaw } =
     useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet();
@@ -87,6 +94,8 @@ export default function SystemInfoPage() {
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["admin-sessions"],
     queryFn: () => listSessionsEndpointApiV1AdminAuthSessionsGet().then((r) => r.data),
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const saveAdminConfig = useUpdateVisitorAuthConfigApiV1AdminVisitorsConfigPut();
@@ -142,12 +151,23 @@ export default function SystemInfoPage() {
     );
   }, [visitorAuthConfig]);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setUptimeNow(Date.now());
+    }, SYSTEM_INFO_UPTIME_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const uptimeSeconds = data
+    ? data.uptime_seconds + Math.max(0, Math.floor((uptimeNow - dataUpdatedAt) / 1000))
+    : 0;
+
   const items = data ? [
     { label: t("systemInfo.version"), value: data.version, icon: Code },
     { label: t("systemInfo.python"), value: data.python_version, icon: Server },
     { label: t("systemInfo.dbSize"), value: formatBytes(data.db_size_bytes), icon: Database },
     { label: t("systemInfo.mediaSize"), value: formatBytes(data.media_dir_size_bytes), icon: HardDrive },
-    { label: t("systemInfo.uptime"), value: formatUptime(data.uptime_seconds), icon: Clock },
+    { label: t("systemInfo.uptime"), value: formatUptime(uptimeSeconds), icon: Clock },
     { label: t("systemInfo.environment"), value: data.environment, icon: Server },
   ] : [];
   const hasProfileChanges = username.trim() !== savedUsername.trim();

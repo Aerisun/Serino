@@ -14,15 +14,9 @@ import {
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Textarea } from "@/components/ui/Textarea";
-import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
+import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
@@ -212,20 +206,15 @@ export function ResourceUploadField({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>上传模式</Label>
-                <Select
+                <NativeSelect
                   value={uploadMode}
-                  onValueChange={(nextValue) =>
-                    setUploadMode(nextValue as "compress" | "original")
+                  onChange={(event) =>
+                    setUploadMode(event.target.value as "compress" | "original")
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择上传模式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compress">压缩后上传</SelectItem>
-                    <SelectItem value="original">原样上传</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="compress">压缩后上传</option>
+                  <option value="original">原样上传</option>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-2">

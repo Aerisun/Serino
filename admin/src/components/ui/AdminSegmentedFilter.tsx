@@ -47,11 +47,28 @@ export function AdminSegmentedFilter({
     };
   }, []);
 
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const activeItem = node.querySelector<HTMLElement>("[aria-selected='true']");
+
+      activeItem?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [items, value]);
+
   return (
     <div
       ref={scrollRef}
       className={cn(
-        "admin-glass overflow-x-auto overflow-y-hidden rounded-[var(--admin-radius-lg)] p-1 shadow-[var(--admin-shadow-xs)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "admin-glass admin-glass-scroll-x rounded-[var(--admin-radius-lg)] p-1 shadow-[var(--admin-shadow-xs)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         placement === "below-header" && "-mt-2",
         width === "content" ? "max-w-fit" : "w-full",
         className,
@@ -59,7 +76,7 @@ export function AdminSegmentedFilter({
       role="tablist"
       aria-label="filters"
     >
-      <div className="flex min-w-max flex-nowrap items-center gap-1">
+      <div className="flex min-w-max snap-x snap-proximity flex-nowrap items-center gap-1">
         {items.map((item) => {
           const active = item.value === value;
           return (
@@ -71,7 +88,7 @@ export function AdminSegmentedFilter({
               disabled={item.disabled}
               onClick={() => onValueChange(item.value)}
               className={cn(
-                "admin-transition-fast inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform,opacity] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "admin-transition-fast inline-flex shrink-0 snap-start items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform,opacity] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 size === "sm" ? "h-9" : "h-10",
                 item.disabled && "opacity-50",
                 active

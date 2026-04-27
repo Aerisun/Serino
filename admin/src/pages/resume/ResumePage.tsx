@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { PREVIEW_DATA_MESSAGE, isPreviewRequestMessage } from "@serino/utils";
+import { PREVIEW_DATA_MESSAGE, isPreviewRequestMessage } from "@serino/utils/preview";
 import {
   createBasics as createBasicsRecord,
   getListBasicsQueryKey,

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   PREVIEW_DATA_MESSAGE,
   isPreviewRequestMessage,
-} from "@serino/utils";
+} from "@serino/utils/preview";
 import { useSystemInfoApiV1AdminSystemInfoGet } from "@serino/api-client/admin";
 import { resolveFrontendUrl } from "@/lib/frontend-url";
 

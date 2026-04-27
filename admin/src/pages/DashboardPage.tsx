@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   BookOpen,
@@ -11,7 +12,6 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useDashboardStatsApiV1AdminSystemDashboardStatsGet } from "@serino/api-client/admin";
 import type { EnhancedDashboardStats, RecentContentItem } from "@serino/api-client/models";
 import { AdminSurface } from "@/components/AdminSurface";
 import { DataTable } from "@/components/DataTable";
@@ -32,6 +32,7 @@ import {
   getContentTargetFromPath,
 } from "@/lib/contentPathLabel";
 import { formatDateTimeInBeijing } from "@/lib/time";
+import { dashboardStatsQueryOptions } from "@/pages/dashboard/dashboardQueries";
 
 const CONTENT_TYPE_ROUTES: Record<string, string> = {
   post: "/posts",
@@ -241,9 +242,8 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<DashboardSection>("metrics");
   const [hoveredVisitorIndex, setHoveredVisitorIndex] = useState<number | null>(null);
 
-  const { data: raw, isLoading } =
-    useDashboardStatsApiV1AdminSystemDashboardStatsGet();
-  const stats = raw?.data as EnhancedDashboardStats | undefined;
+  const { data: dashboardStats, isLoading } = useQuery(dashboardStatsQueryOptions());
+  const stats = dashboardStats as EnhancedDashboardStats | undefined;
 
   const distribution = useMemo(() => stats?.traffic?.distribution ?? [], [stats]);
   const topPages = useMemo(() => stats?.traffic?.top_pages ?? [], [stats]);

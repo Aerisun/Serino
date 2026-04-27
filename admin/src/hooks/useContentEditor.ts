@@ -1,8 +1,13 @@
-import { useState, useMemo, useEffect, useRef, type FormEvent } from "react";
+import { useState, useMemo, useEffect, useRef, type FormEvent, type SetStateAction } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetDefaultContentTitle } from "@serino/api-client/admin";
-import type { ContentCreate, ContentUpdate, GetDefaultContentTitleContentType } from "@serino/api-client/models";
+import { getDefaultContentTitle, useGetDefaultContentTitle } from "@serino/api-client/admin";
+import type {
+  ContentCreate,
+  ContentUpdate,
+  GetDefaultContentTitleContentType,
+  GetDefaultContentTitleParams,
+} from "@serino/api-client/models";
 import { useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { useContentPreview } from "@/lib/useContentPreview";
@@ -14,13 +19,11 @@ import {
   hasMeaningfulEditorContent,
   invalidateContentEditorQueries,
   isManualPublishedAtValid,
-  moveEditorDraftSnapshot,
-  readEditorDraftSnapshot,
   readSavedPublishedAtManualState,
+  readSavedTitleAutoState,
   resolvePublishedAtState,
-  saveEditorDraftSnapshot,
   savePublishedAtManualState,
-  type ContentEditorSaveMode,
+  saveTitleAutoState,
 } from "@/lib/content-editor";
 
 // ---------------------------------------------------------------------------
@@ -57,6 +60,49 @@ export interface ContentEditorConfig {
   buildPreviewPath?: (slug: string, storageKey: string) => string;
 }
 
+type AutoTitleStatus = "draft" | "published" | "archived";
+
+const AUTO_TITLE_PATTERNS: Partial<Record<ContentType, RegExp>> = {
+  diary: /^\d{1,2}年\d{1,2}月\d{1,2}日记$/,
+  thoughts: /^碎碎念[零一二三四五六七八九十百\d]+则 \(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)(?:-(草稿|归档))?$/,
+  excerpts: /^文摘[零一二三四五六七八九十百\d]+则 \(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)(?:-(草稿|归档))?$/,
+};
+
+function normalizeAutoTitleCategory(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return normalized || undefined;
+}
+
+function resolveAutoTitleStatus(
+  value: Pick<ContentCreate, "status" | "visibility">,
+): AutoTitleStatus {
+  if (value.status === "draft") {
+    return "draft";
+  }
+  return value.visibility === "public" ? "published" : "archived";
+}
+
+function buildAutoTitleValue(
+  contentType: ContentType,
+  suggestion: { title: string },
+  _status: AutoTitleStatus,
+) {
+  return contentType === "diary" || contentType === "thoughts" || contentType === "excerpts"
+    ? suggestion.title
+    : "";
+}
+
+function isLikelyAutoTitle(contentType: ContentType, title: string | null | undefined) {
+  if (!title) {
+    return false;
+  }
+  const pattern = AUTO_TITLE_PATTERNS[contentType];
+  return pattern ? pattern.test(title.trim()) : false;
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -65,48 +111,96 @@ export function useContentEditor(config: ContentEditorConfig) {
   const { id } = useParams();
   const isNew = id === "new";
   const isDefaultTitleContentType =
-    config.contentType === "thoughts" || config.contentType === "excerpts";
+    config.contentType === "diary" ||
+    config.contentType === "thoughts" ||
+    config.contentType === "excerpts";
   const defaultTitleContentType = (
     isDefaultTitleContentType ? config.contentType : "thoughts"
   ) as GetDefaultContentTitleContentType;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useI18n();
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoSaveInFlightRef = useRef(false);
-  const pendingAutoSaveRef = useRef(false);
   const currentRouteIdRef = useRef<string | undefined>(id);
   const formRef = useRef<ContentCreate>(config.defaultForm);
   const manualPublishedAtRef = useRef(false);
+  const autoTitleEnabledRef = useRef(isDefaultTitleContentType && isNew);
   const hydratedRef = useRef(false);
   const baselineSnapshotRef = useRef("");
-  const forceAutoSaveRef = useRef(false);
   const suggestedTitleRef = useRef("");
-  const appliedSuggestedTitleRef = useRef(false);
-  const titleEditedRef = useRef(false);
+  const defaultTitleParamsKeyRef = useRef("");
 
   // ---- Fetch ----
   const { data: itemData } = config.hooks.useGet(id!, {
     query: { enabled: !isNew && !!id },
   });
   const item = itemData?.data;
+  const [form, setFormState] = useState<ContentCreate>(config.defaultForm);
+  const [isPublishedAtManual, setIsPublishedAtManualState] = useState(false);
+  const [isAutoTitleEnabled, setIsAutoTitleEnabledState] = useState(isDefaultTitleContentType && isNew);
+  const autoTitleStatus = useMemo(() => resolveAutoTitleStatus(form), [form.status, form.visibility]);
+  const defaultTitleParams = useMemo<GetDefaultContentTitleParams>(() => ({
+    content_type: defaultTitleContentType,
+    status: autoTitleStatus,
+    category:
+      defaultTitleContentType === "thoughts" || defaultTitleContentType === "excerpts"
+        ? normalizeAutoTitleCategory(form.category)
+        : undefined,
+    item_id: !isNew && id ? id : undefined,
+  }), [autoTitleStatus, defaultTitleContentType, form.category, id, isNew]);
+  const defaultTitleParamsKey = JSON.stringify(defaultTitleParams);
   const { data: defaultTitleSuggestion } = useGetDefaultContentTitle(
-    { content_type: defaultTitleContentType },
+    defaultTitleParams,
     {
       query: {
-        enabled: isNew && isDefaultTitleContentType,
+        enabled: isDefaultTitleContentType && (isNew || Boolean(item)),
         staleTime: 60_000,
         refetchOnWindowFocus: false,
       },
     },
   );
 
-  // ---- Form state ----
-  const [form, setForm] = useState<ContentCreate>(config.defaultForm);
-  const [isPublishedAtManual, setIsPublishedAtManual] = useState(false);
+  const setForm = (value: SetStateAction<ContentCreate>) => {
+    setFormState((previous) => {
+      const next =
+        typeof value === "function"
+          ? (value as (prev: ContentCreate) => ContentCreate)(previous)
+          : value;
+      formRef.current = next;
+      return next;
+    });
+  };
 
-  const buildDraftSignature = (nextForm: ContentCreate, manualState: boolean) =>
-    JSON.stringify({ form: nextForm, isPublishedAtManual: manualState });
+  const setIsPublishedAtManual = (value: SetStateAction<boolean>) => {
+    setIsPublishedAtManualState((previous) => {
+      const next =
+        typeof value === "function"
+          ? (value as (prev: boolean) => boolean)(previous)
+          : value;
+      manualPublishedAtRef.current = next;
+      return next;
+    });
+  };
+
+  const setIsAutoTitleEnabled = (value: SetStateAction<boolean>) => {
+    setIsAutoTitleEnabledState((previous) => {
+      const next =
+        typeof value === "function"
+          ? (value as (prev: boolean) => boolean)(previous)
+          : value;
+      autoTitleEnabledRef.current = next;
+      return next;
+    });
+  };
+
+  const buildDraftSignature = (
+    nextForm: ContentCreate,
+    manualState: boolean,
+    autoTitleEnabled: boolean,
+  ) => JSON.stringify({
+    form: nextForm,
+    isPublishedAtManual: manualState,
+    isAutoTitleEnabled: autoTitleEnabled,
+  });
 
   useEffect(() => {
     currentRouteIdRef.current = id;
@@ -121,40 +215,29 @@ export function useContentEditor(config: ContentEditorConfig) {
   }, [isPublishedAtManual]);
 
   useEffect(() => {
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-      autosaveTimerRef.current = null;
-    }
-    autoSaveInFlightRef.current = false;
-    pendingAutoSaveRef.current = false;
+    autoTitleEnabledRef.current = isAutoTitleEnabled;
+  }, [isAutoTitleEnabled]);
+
+  useEffect(() => {
     hydratedRef.current = false;
     suggestedTitleRef.current = "";
-    appliedSuggestedTitleRef.current = false;
-    titleEditedRef.current = false;
+    defaultTitleParamsKeyRef.current = "";
 
     const draftId = id ?? "new";
-    const savedDraft = readEditorDraftSnapshot<ContentCreate>(config.contentType, draftId);
-    if (savedDraft) {
-      const nextForm = {
-        ...config.defaultForm,
-        ...savedDraft.form,
-      };
-      setForm(nextForm);
-      setIsPublishedAtManual(savedDraft.isPublishedAtManual);
-      baselineSnapshotRef.current = "";
-      forceAutoSaveRef.current = true;
-      hydratedRef.current = true;
-      return;
-    }
+    clearEditorDraftSnapshot(config.contentType, draftId);
 
     setForm(config.defaultForm);
     setIsPublishedAtManual(false);
-    baselineSnapshotRef.current = buildDraftSignature(config.defaultForm, false);
-    forceAutoSaveRef.current = false;
+    setIsAutoTitleEnabled(isDefaultTitleContentType && isNew);
+    baselineSnapshotRef.current = buildDraftSignature(
+      config.defaultForm,
+      false,
+      isDefaultTitleContentType && isNew,
+    );
     if (isNew) {
       hydratedRef.current = true;
     }
-  }, [config.contentType, config.defaultForm, id, isNew]);
+  }, [config.contentType, config.defaultForm, id, isDefaultTitleContentType, isNew]);
 
   useEffect(() => {
     if (!item) {
@@ -162,48 +245,47 @@ export function useContentEditor(config: ContentEditorConfig) {
     }
     const result = config.serverToForm(item);
     const savedManualState = readSavedPublishedAtManualState(config.contentType, item.id);
-    const savedDraft = readEditorDraftSnapshot<ContentCreate>(config.contentType, item.id);
-    const nextForm = savedDraft?.form ?? result.form;
-    const nextManualState = savedDraft?.isPublishedAtManual ?? savedManualState ?? result.isPublishedAtManual;
+    const savedAutoTitleState = readSavedTitleAutoState(config.contentType, item.id);
+    clearEditorDraftSnapshot(config.contentType, item.id);
+    const nextForm = result.form;
+    const nextManualState = savedManualState ?? result.isPublishedAtManual;
+    const nextAutoTitleEnabled = isDefaultTitleContentType
+      ? (savedAutoTitleState ?? isLikelyAutoTitle(config.contentType, result.form.title))
+      : false;
     setForm(nextForm);
     setIsPublishedAtManual(nextManualState);
-    baselineSnapshotRef.current = savedDraft ? "" : buildDraftSignature(nextForm, nextManualState);
-    forceAutoSaveRef.current = Boolean(savedDraft);
+    setIsAutoTitleEnabled(nextAutoTitleEnabled);
+    baselineSnapshotRef.current = buildDraftSignature(nextForm, nextManualState, nextAutoTitleEnabled);
     hydratedRef.current = true;
-  }, [item]);
+  }, [config.contentType, config.serverToForm, isDefaultTitleContentType, item]);
 
   useEffect(() => {
-    const suggestedTitle = defaultTitleSuggestion?.data?.title;
-    if (!suggestedTitle) {
+    const suggestion = defaultTitleSuggestion?.data;
+    if (!suggestion) {
       return;
     }
+    const suggestedTitle = buildAutoTitleValue(config.contentType, suggestion, autoTitleStatus);
     suggestedTitleRef.current = suggestedTitle;
-    if (
-      !isNew ||
-      !isDefaultTitleContentType ||
-      !hydratedRef.current ||
-      appliedSuggestedTitleRef.current ||
-      titleEditedRef.current
-    ) {
+    defaultTitleParamsKeyRef.current = defaultTitleParamsKey;
+    if (!isDefaultTitleContentType || !hydratedRef.current || !isAutoTitleEnabled) {
       return;
     }
-    if (form.title.trim()) {
-      appliedSuggestedTitleRef.current = true;
-      return;
-    }
-    appliedSuggestedTitleRef.current = true;
     setForm((prev) => {
-      if (prev.title.trim()) {
+      if (prev.title === suggestedTitle) {
         return prev;
       }
       return { ...prev, title: suggestedTitle };
     });
-  }, [defaultTitleSuggestion?.data?.title, form.title, isDefaultTitleContentType, isNew]);
+  }, [
+    autoTitleStatus,
+    config.contentType,
+    defaultTitleParamsKey,
+    defaultTitleSuggestion?.data,
+    isAutoTitleEnabled,
+    isDefaultTitleContentType,
+  ]);
 
   const setField = (key: string, value: any) => {
-    if (key === "title") {
-      titleEditedRef.current = true;
-    }
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -235,31 +317,22 @@ export function useContentEditor(config: ContentEditorConfig) {
   // ---- Save ----
   const [isSaving, setIsSaving] = useState(false);
   const isPublishedAtValid = isManualPublishedAtValid(isPublishedAtManual, form.published_at);
-  const isDraftDirty = buildDraftSignature(form, isPublishedAtManual) !== baselineSnapshotRef.current;
+  const isDraftDirty =
+    buildDraftSignature(form, isPublishedAtManual, isAutoTitleEnabled) !== baselineSnapshotRef.current;
   const hasMeaningfulContent = useMemo(() => {
     const nextForm = { ...form };
     if (
       isNew &&
       isDefaultTitleContentType &&
-      !titleEditedRef.current &&
+      isAutoTitleEnabled &&
       suggestedTitleRef.current &&
       nextForm.title.trim() === suggestedTitleRef.current
     ) {
       nextForm.title = "";
     }
     return hasMeaningfulEditorContent(nextForm as Record<string, unknown>);
-  }, [form, isDefaultTitleContentType, isNew]);
-
-  const persistDraftSnapshot = (draftId: string, nextForm: ContentCreate, manualState: boolean) => {
-    if (!hasMeaningfulContent) {
-      clearEditorDraftSnapshot(config.contentType, draftId);
-      return;
-    }
-    saveEditorDraftSnapshot(config.contentType, draftId, {
-      form: nextForm,
-      isPublishedAtManual: manualState,
-    });
-  };
+  }, [form, isAutoTitleEnabled, isDefaultTitleContentType, isNew]);
+  const hasUnsavedChanges = isDraftDirty && (!isNew || hasMeaningfulContent);
 
   type PersistOptions = {
     navigateToList?: boolean;
@@ -270,7 +343,50 @@ export function useContentEditor(config: ContentEditorConfig) {
     skipIfEmptyForNew?: boolean;
   };
 
-  const persist = async (mode: ContentEditorSaveMode, options: PersistOptions = {}) => {
+  const buildDefaultTitleRequestParams = (
+    currentForm: ContentCreate,
+    status: AutoTitleStatus,
+    itemId?: string,
+  ): GetDefaultContentTitleParams => ({
+    content_type: defaultTitleContentType,
+    status,
+    category:
+      defaultTitleContentType === "thoughts" || defaultTitleContentType === "excerpts"
+        ? normalizeAutoTitleCategory(currentForm.category)
+        : undefined,
+    item_id: itemId,
+  });
+
+  const resolveAutoTitleForSave = async (
+    currentForm: ContentCreate,
+    nextForm: ContentCreate,
+    draftId: string,
+    currentIsNew: boolean,
+  ) => {
+    if (!isDefaultTitleContentType || !autoTitleEnabledRef.current) {
+      return nextForm.title;
+    }
+
+    const targetStatus = resolveAutoTitleStatus(nextForm);
+    const params = buildDefaultTitleRequestParams(
+      currentForm,
+      targetStatus,
+      currentIsNew ? undefined : draftId,
+    );
+    const paramsKey = JSON.stringify(params);
+    const currentSuggestion = defaultTitleSuggestion?.data;
+
+    if (currentSuggestion && defaultTitleParamsKeyRef.current === paramsKey) {
+      return buildAutoTitleValue(config.contentType, currentSuggestion, targetStatus);
+    }
+
+    const response = await getDefaultContentTitle(params);
+    const fetchedSuggestion = response.data;
+    defaultTitleParamsKeyRef.current = paramsKey;
+    return buildAutoTitleValue(config.contentType, fetchedSuggestion, targetStatus);
+  };
+
+  const persist = async (options: PersistOptions = {}) => {
     const {
       navigateToList = false,
       silent = false,
@@ -281,6 +397,7 @@ export function useContentEditor(config: ContentEditorConfig) {
     } = options;
     const currentForm = formRef.current;
     const currentManualState = manualPublishedAtRef.current;
+    const currentAutoTitleEnabled = autoTitleEnabledRef.current;
     const draftId = currentRouteIdRef.current ?? "new";
     const currentIsNew = draftId === "new";
 
@@ -299,11 +416,19 @@ export function useContentEditor(config: ContentEditorConfig) {
       return { saved: false as const };
     }
 
-    const nextForm = buildNextContentSaveForm(currentForm, mode, currentManualState);
     if (!silent) {
       setIsSaving(true);
     }
     try {
+      const nextForm = buildNextContentSaveForm(currentForm, currentManualState);
+      if (currentAutoTitleEnabled) {
+        nextForm.title = await resolveAutoTitleForSave(
+          currentForm,
+          nextForm,
+          draftId,
+          currentIsNew,
+        );
+      }
       let savedId = draftId;
       if (currentIsNew) {
         const created = await createItem({ data: nextForm });
@@ -312,7 +437,7 @@ export function useContentEditor(config: ContentEditorConfig) {
           throw new Error("Missing created item id");
         }
         savePublishedAtManualState(config.contentType, createdId, currentManualState);
-        moveEditorDraftSnapshot(config.contentType, "new", createdId);
+        saveTitleAutoState(config.contentType, createdId, currentAutoTitleEnabled);
         savedId = createdId;
         if (replaceRouteOnCreate) {
           navigate(`/${config.contentType}/${createdId}`, { replace: true });
@@ -320,13 +445,15 @@ export function useContentEditor(config: ContentEditorConfig) {
       } else {
         await updateItem({ itemId: draftId, data: nextForm as ContentUpdate });
         savePublishedAtManualState(config.contentType, draftId, currentManualState);
+        saveTitleAutoState(config.contentType, draftId, currentAutoTitleEnabled);
       }
       await invalidateQueries();
-      baselineSnapshotRef.current = buildDraftSignature(nextForm, currentManualState);
-      forceAutoSaveRef.current = false;
-      if (!navigateToList) {
-        setForm(nextForm);
-      }
+      baselineSnapshotRef.current = buildDraftSignature(
+        nextForm,
+        currentManualState,
+        currentAutoTitleEnabled,
+      );
+      setForm(nextForm);
       if (clearDraftOnSuccess) {
         clearEditorDraftSnapshot(config.contentType, "new");
         clearEditorDraftSnapshot(config.contentType, savedId);
@@ -334,9 +461,7 @@ export function useContentEditor(config: ContentEditorConfig) {
       if (showSuccessToast) {
         toast.success(t("common.operationSuccess"));
       }
-      if (mode === "confirm") {
-        announcePublicContentChange(config.contentType);
-      }
+      announcePublicContentChange(config.contentType);
       if (navigateToList) {
         navigate(config.listRoute);
       }
@@ -353,101 +478,27 @@ export function useContentEditor(config: ContentEditorConfig) {
     }
   };
 
-  const runAutoSave = async () => {
-    if (autoSaveInFlightRef.current) {
-      pendingAutoSaveRef.current = true;
-      return;
-    }
-    autoSaveInFlightRef.current = true;
-    try {
-      await persist("draft", {
-        silent: true,
-        showSuccessToast: false,
-        replaceRouteOnCreate: true,
-        skipIfEmptyForNew: true,
-      });
-    } finally {
-      autoSaveInFlightRef.current = false;
-      if (pendingAutoSaveRef.current) {
-        pendingAutoSaveRef.current = false;
-        void runAutoSave();
-      }
-    }
-  };
-
-  const waitForAutoSave = async () => {
-    while (autoSaveInFlightRef.current) {
-      await new Promise((resolve) => window.setTimeout(resolve, 50));
-    }
-  };
-
-  const save = async (mode: ContentEditorSaveMode) => {
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-      autosaveTimerRef.current = null;
-    }
-    await waitForAutoSave();
-    return persist(mode, {
-      navigateToList: mode === "confirm",
+  const save = async () => {
+    return persist({
+      navigateToList: true,
       showSuccessToast: true,
       clearDraftOnSuccess: true,
     });
   };
 
-  const exitEditor = async () => {
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-      autosaveTimerRef.current = null;
+  const exitEditor = () => {
+    if (hasUnsavedChanges && !window.confirm(t("common.discardChangesConfirm"))) {
+      return;
     }
-    await waitForAutoSave();
-    await persist("draft", {
-      navigateToList: true,
-      silent: false,
-      showSuccessToast: false,
-      clearDraftOnSuccess: true,
-      skipIfEmptyForNew: true,
-    });
+    clearEditorDraftSnapshot(config.contentType, "new");
+    clearEditorDraftSnapshot(config.contentType, currentRouteIdRef.current ?? "new");
+    navigate(config.listRoute);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await save("confirm");
+    await save();
   };
-
-  useEffect(() => {
-    if (!hydratedRef.current) {
-      return;
-    }
-    if (!forceAutoSaveRef.current && !isDraftDirty) {
-      clearEditorDraftSnapshot(config.contentType, id ?? "new");
-      return;
-    }
-    persistDraftSnapshot(id ?? "new", form, isPublishedAtManual);
-  }, [config.contentType, form, id, isDraftDirty, isPublishedAtManual]);
-
-  useEffect(() => {
-    if (
-      !hydratedRef.current ||
-      (!forceAutoSaveRef.current && !isDraftDirty) ||
-      !hasMeaningfulContent
-    ) {
-      return;
-    }
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
-    autosaveTimerRef.current = window.setTimeout(() => {
-      autosaveTimerRef.current = null;
-      void runAutoSave();
-    }, 800);
-
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-        autosaveTimerRef.current = null;
-      }
-    };
-  }, [form, hasMeaningfulContent, isDraftDirty, isPublishedAtManual]);
 
   // ---- Preview ----
   const storageKey = `aerisun-preview-${config.contentType}-${id ?? "new"}`;
@@ -489,6 +540,8 @@ export function useContentEditor(config: ContentEditorConfig) {
     isSaving,
     isPublishedAtManual,
     setIsPublishedAtManual,
+    isAutoTitleEnabled,
+    setIsAutoTitleEnabled,
     isPublishedAtValid,
     save,
     exitEditor,
@@ -522,6 +575,7 @@ export function buildServerToForm(
         status: item.status,
         visibility: item.visibility,
         published_at: effectivePublishedAt,
+        category: item.category || "",
         ...extraFields(item),
       } as ContentCreate,
       isPublishedAtManual: hasManualPublishedAt,

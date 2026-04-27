@@ -11,6 +11,7 @@ import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHe
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { AutoTitleField } from "@/components/content/AutoTitleField";
 import { ContentCategoryField } from "@/components/content/ContentCategoryField";
 import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
 import { Label } from "@/components/ui/Label";
@@ -49,7 +50,17 @@ const editorConfig = {
 
 export default function ExcerptEditPage() {
   const editor = useContentEditor(editorConfig);
-  const { form, setField, isSaving, isPublishedAtManual, setIsPublishedAtManual, isNew, t } = editor;
+  const {
+    form,
+    setField,
+    isSaving,
+    isPublishedAtManual,
+    setIsPublishedAtManual,
+    isAutoTitleEnabled,
+    setIsAutoTitleEnabled,
+    isNew,
+    t,
+  } = editor;
 
   return (
     <div>
@@ -63,7 +74,7 @@ export default function ExcerptEditPage() {
               setField("visibility", form.visibility === "public" ? "private" : "public")
             }
             onExit={() => void editor.exitEditor()}
-            onConfirm={() => void editor.save("confirm")}
+            onConfirm={() => void editor.save()}
             extraActions={
               <Button type="button" variant="outline" className="preview-glow-button" onClick={editor.openPreview} disabled={!form.body}>
                 <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}
@@ -79,13 +90,15 @@ export default function ExcerptEditPage() {
           <div className="space-y-2"><Label>{t("excerpts.authorName")}</Label><Input value={form.author_name || ""} onChange={(e) => setField("author_name", e.target.value)} placeholder={t("excerpts.authorPlaceholder")} /></div>
           <div className="space-y-2"><Label>{t("excerpts.source")}</Label><Input value={form.source || ""} onChange={(e) => setField("source", e.target.value)} placeholder={t("excerpts.sourcePlaceholder")} /></div>
         </div>
-        <div className="space-y-2">
-          <Label>{t("common.title")}</Label>
-          <Input
-            value={form.title}
-            onChange={(event) => setField("title", event.target.value)}
-          />
-        </div>
+        <AutoTitleField
+          value={form.title}
+          onChange={(value) => setField("title", value)}
+          isAuto={isAutoTitleEnabled}
+          onAutoChange={setIsAutoTitleEnabled}
+          switchLabel={t("common.autoTitle")}
+          inputLabel={t("common.title")}
+          required
+        />
 
         <div className="pt-6 border-t border-border">
           <PublishTimeFooter

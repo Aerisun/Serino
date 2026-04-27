@@ -96,7 +96,7 @@ export function DataTable<T extends { id: string }>({
   const colSpan = columns.length + (selectable ? 1 : 0) + (hasExpandedRow ? 1 : 0);
 
   return (
-    <div className="overflow-x-auto rounded-[var(--admin-radius-xl)] admin-glass-strong">
+    <div className="overflow-x-auto rounded-lg admin-glass-strong">
       <Table>
         <TableHeader>
           <TableRow>

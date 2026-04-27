@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { ContentEditorHeaderActions } from "@/components/content/ContentEditorHeaderActions";
+import { AutoTitleField } from "@/components/content/AutoTitleField";
 import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
 import { AiActionCluster } from "@/components/ui/AiActionCluster";
 import { Label } from "@/components/ui/Label";
@@ -73,6 +74,8 @@ export default function DiaryEditPage() {
     isNew,
     isPublishedAtManual,
     setIsPublishedAtManual,
+    isAutoTitleEnabled,
+    setIsAutoTitleEnabled,
     t,
   } = editor;
   const [isGeneratingPoem, setIsGeneratingPoem] = useState(false);
@@ -119,7 +122,7 @@ export default function DiaryEditPage() {
               setField("visibility", form.visibility === "public" ? "private" : "public")
             }
             onExit={() => void editor.exitEditor()}
-            onConfirm={() => void editor.save("confirm")}
+            onConfirm={() => void editor.save()}
             extraActions={
               <Button type="button" variant="outline" className="preview-glow-button" onClick={editor.openPreview} disabled={!form.body}>
                 <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}
@@ -129,10 +132,6 @@ export default function DiaryEditPage() {
         }
       />
       <form onSubmit={editor.handleSubmit} className="space-y-6 max-w-3xl mx-auto">
-        <div className="space-y-2">
-          <Label>{t("posts.postTitle")}</Label>
-          <Input value={form.title} onChange={(e) => setField("title", e.target.value)} required />
-        </div>
         <div className="space-y-2">
           <Label>{t("posts.summary")}</Label>
           <Textarea value={form.summary || ""} onChange={(e) => setField("summary", e.target.value)} rows={2} />
@@ -144,15 +143,24 @@ export default function DiaryEditPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>{t("diary.mood")}</Label>
-            <Select value={form.mood || undefined} onValueChange={(value) => setField("mood", value === "__empty" ? "" : value)}>
-              <SelectTrigger className="h-auto min-h-12 rounded-lg border-input bg-background px-3 py-2">
+            <Select
+              value={form.mood || "__empty"}
+              onValueChange={(value) =>
+                setField("mood", value === "__empty" ? "" : value)
+              }
+            >
+              <SelectTrigger className="min-h-12 rounded-lg px-3 py-2">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="max-w-[320px]">
+              <SelectContent>
                 <SelectItem value="__empty">{t("common.empty")}</SelectItem>
                 {MOOD_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className="text-lg leading-none">{option.value}</span>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="text-lg leading-none"
+                  >
+                    {option.value}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -160,9 +168,14 @@ export default function DiaryEditPage() {
           </div>
           <div className="space-y-2">
             <Label>{t("diary.weather")}</Label>
-            <Select value={form.weather || undefined} onValueChange={(value) => setField("weather", value === "__empty" ? "" : value)}>
-              <SelectTrigger className="h-auto min-h-10 rounded-md border-input bg-background px-3 py-2 text-sm">
-                <SelectValue placeholder="" />
+            <Select
+              value={form.weather || "__empty"}
+              onValueChange={(value) =>
+                setField("weather", value === "__empty" ? "" : value)
+              }
+            >
+              <SelectTrigger className="min-h-10 rounded-md px-3 py-2 text-sm">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__empty">{t("common.empty")}</SelectItem>
@@ -206,7 +219,18 @@ export default function DiaryEditPage() {
             />
           </div>
         </div>
-        <div className="pt-6 border-t border-border">
+        <div className="border-t border-border pt-6">
+          <AutoTitleField
+            value={form.title}
+            onChange={(value) => setField("title", value)}
+            isAuto={isAutoTitleEnabled}
+            onAutoChange={setIsAutoTitleEnabled}
+            switchLabel={t("common.autoTitle")}
+            inputLabel={t("common.title")}
+            required
+          />
+        </div>
+        <div className="pt-6">
           <PublishTimeFooter
             value={form.published_at}
             onChange={(value) => setField("published_at", value)}

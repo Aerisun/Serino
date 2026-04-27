@@ -60,7 +60,7 @@ export default function PostEditPage() {
               setField("visibility", form.visibility === "public" ? "private" : "public")
             }
             onExit={() => void editor.exitEditor()}
-            onConfirm={() => void editor.save("confirm")}
+            onConfirm={() => void editor.save()}
             extraActions={
               <Button type="button" variant="outline" className="preview-glow-button" onClick={editor.openPreview} disabled={!form.body}>
                 <Eye className="h-4 w-4 mr-2" /> {t("common.preview")}

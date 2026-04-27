@@ -20,15 +20,9 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Upload, Trash2, Copy, ExternalLink, Link as LinkIcon, Pencil, Zap } from "lucide-react";
-import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
+import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
 import { formatDate, formatBytes } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { extractApiErrorMessage } from "@/lib/api-error";
@@ -254,16 +248,16 @@ export default function AssetsPage() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full">
           <div className="w-[180px]">
-            <Select value={viewMode} onValueChange={(value) => handleViewModeChange(value as "user" | "system" | "oss_sync")}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("assets.scope")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">{t("assets.scopeUser")}</SelectItem>
-                <SelectItem value="system">{t("assets.scopeSystem")}</SelectItem>
-                <SelectItem value="oss_sync">{t("assets.scopeOssSync")}</SelectItem>
-              </SelectContent>
-            </Select>
+            <NativeSelect
+              value={viewMode}
+              onChange={(event) =>
+                handleViewModeChange(event.target.value as "user" | "system" | "oss_sync")
+              }
+            >
+              <option value="user">{t("assets.scopeUser")}</option>
+              <option value="system">{t("assets.scopeSystem")}</option>
+              <option value="oss_sync">{t("assets.scopeOssSync")}</option>
+            </NativeSelect>
           </div>
           <div className="w-full max-w-md">
             <Input
@@ -285,47 +279,39 @@ export default function AssetsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>{t("assets.visibility")}</Label>
-                <Select
+                <NativeSelect
                   value={visibility}
-                  onValueChange={(value) => setVisibility(value as "internal" | "public")}
+                  onChange={(event) =>
+                    setVisibility(event.target.value as "internal" | "public")
+                  }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("assets.visibility")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="internal">{t("assets.visibilityInternal")}</SelectItem>
-                    <SelectItem value="public">{t("assets.visibilityPublic")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="internal">{t("assets.visibilityInternal")}</option>
+                  <option value="public">{t("assets.visibilityPublic")}</option>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-2">
                 <Label>{t("assets.scope")}</Label>
-                <Select value={scope} onValueChange={(value) => setScope(value as "user" | "system")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("assets.scope")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">{t("assets.scopeUser")}</SelectItem>
-                    <SelectItem value="system">{t("assets.scopeSystem")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <NativeSelect
+                  value={scope}
+                  onChange={(event) => setScope(event.target.value as "user" | "system")}
+                >
+                  <option value="user">{t("assets.scopeUser")}</option>
+                  <option value="system">{t("assets.scopeSystem")}</option>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-2 sm:col-span-2">
                 <Label>是否压缩</Label>
-                <Select
+                <NativeSelect
                   value={uploadMode}
-                  onValueChange={(value) => setUploadMode(value as "compress" | "original")}
+                  onChange={(event) =>
+                    setUploadMode(event.target.value as "compress" | "original")
+                  }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="是否压缩" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compress">{t("assets.uploadModeCompress")}</SelectItem>
-                    <SelectItem value="original">{t("assets.uploadModeOriginal")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="compress">{t("assets.uploadModeCompress")}</option>
+                  <option value="original">{t("assets.uploadModeOriginal")}</option>
+                </NativeSelect>
               </div>
             </div>
 
@@ -406,34 +392,26 @@ export default function AssetsPage() {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label>{t("assets.visibility")}</Label>
-              <Select
+              <NativeSelect
                 value={editVisibility}
-                onValueChange={(value) => setEditVisibility(value as "internal" | "public")}
+                onChange={(event) =>
+                  setEditVisibility(event.target.value as "internal" | "public")
+                }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("assets.visibility")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="internal">{t("assets.visibilityInternal")}</SelectItem>
-                  <SelectItem value="public">{t("assets.visibilityPublic")}</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="internal">{t("assets.visibilityInternal")}</option>
+                <option value="public">{t("assets.visibilityPublic")}</option>
+              </NativeSelect>
             </div>
 
             <div className="grid gap-2">
               <Label>{t("assets.scope")}</Label>
-              <Select
+              <NativeSelect
                 value={editScope}
-                onValueChange={(value) => setEditScope(value as "user" | "system")}
+                onChange={(event) => setEditScope(event.target.value as "user" | "system")}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("assets.scope")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">{t("assets.scopeUser")}</SelectItem>
-                  <SelectItem value="system">{t("assets.scopeSystem")}</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="user">{t("assets.scopeUser")}</option>
+                <option value="system">{t("assets.scopeSystem")}</option>
+              </NativeSelect>
             </div>
 
             <div className="grid gap-2">

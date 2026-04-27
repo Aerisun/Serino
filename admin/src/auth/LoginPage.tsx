@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAdminLoginOptions } from "./adminAuthApi";
 import { useAuth } from "./useAuth";
 import {
   ArrowRight,
@@ -9,6 +11,7 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
+import { warmAdminRoute } from "@/lib/adminRouteWarmup";
 
 const adminBasePath =
   typeof __AERISUN_ADMIN_BASE_PATH__ === "string"
@@ -49,6 +52,8 @@ async function getPublicOAuthAuthorizationUrl(
 function clearAdminAuthSearchParams() {
   const url = new URL(window.location.href);
   url.searchParams.delete("auth");
+  url.searchParams.delete("auth_provider");
+  url.searchParams.delete("auth_message");
   url.searchParams.delete("admin_auth_provider");
   url.searchParams.delete("site_admin");
   window.history.replaceState(
@@ -67,8 +72,12 @@ function providerLabel(provider: string) {
 }
 
 export default function LoginPage() {
-  const { login, loginOptions, loginWithAdminEmail, exchangeSiteUserLogin } =
-    useAuth();
+  const { login, loginWithAdminEmail, exchangeSiteUserLogin } = useAuth();
+  const queryClient = useQueryClient();
+  const [loginOptions, setLoginOptions] = useState<{
+    oauth_providers: string[];
+    email_enabled: boolean;
+  } | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -88,9 +97,33 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    void getAdminLoginOptions(controller.signal)
+      .then((options) => {
+        if (!cancelled) {
+          setLoginOptions(options);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoginOptions(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const authResult = searchParams.get("auth");
-    const provider = searchParams.get("admin_auth_provider");
+    const provider =
+      searchParams.get("admin_auth_provider") ??
+      searchParams.get("auth_provider");
     const siteAdmin = searchParams.get("site_admin");
     if (siteAdmin !== "1" && (authResult !== "success" || !provider)) {
       return;
@@ -99,11 +132,31 @@ export default function LoginPage() {
     setAdminLoading(true);
     setAdminError("");
     void exchangeSiteUserLogin()
+      .then(() => {
+        void warmAdminRoute("/", queryClient);
+      })
       .catch((err) => {
         setAdminError(err instanceof Error ? err.message : "管理员登录失败");
       })
       .finally(() => setAdminLoading(false));
   }, [exchangeSiteUserLogin]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("auth") !== "error") {
+      return;
+    }
+    const provider =
+      searchParams.get("admin_auth_provider") ??
+      searchParams.get("auth_provider");
+    const message = searchParams.get("auth_message");
+    clearAdminAuthSearchParams();
+    setAdminLoading(false);
+    setAdminError(
+      message ||
+        `${provider ? providerLabel(provider) : "第三方"}认证失败，请检查 OAuth 配置后重试`,
+    );
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -111,6 +164,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
+      void warmAdminRoute("/", queryClient);
     } catch {
       setError("Invalid username or password");
     } finally {
@@ -124,6 +178,7 @@ export default function LoginPage() {
     setAdminLoading(true);
     try {
       await loginWithAdminEmail(adminEmail, adminEmailPassword);
+      void warmAdminRoute("/", queryClient);
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : "管理员邮箱登录失败");
     } finally {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { lazy, Suspense, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   Bold,
   Italic,
@@ -25,13 +25,14 @@ import {
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Textarea } from "@/components/ui/Textarea";
-import { canCompressImage, prepareImageUploadFile } from "@serino/utils";
+import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { extractApiErrorMessage } from "@/lib/api-error";
-import MarkdownPreview from "@/components/MarkdownPreview";
 import { toast } from "sonner";
+
+const MarkdownPreview = lazy(() => import("@/components/MarkdownPreview"));
 
 interface MarkdownEditorProps {
   value: string;
@@ -268,18 +269,15 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>上传模式</Label>
-                <Select
+                <NativeSelect
                   value={imageUploadMode}
-                  onValueChange={(nextValue) => setImageUploadMode(nextValue as "compress" | "original")}
+                  onChange={(event) =>
+                    setImageUploadMode(event.target.value as "compress" | "original")
+                  }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择上传模式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compress">{t("assets.uploadModeCompress")}</SelectItem>
-                    <SelectItem value="original">{t("assets.uploadModeOriginal")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="compress">{t("assets.uploadModeCompress")}</option>
+                  <option value="original">{t("assets.uploadModeOriginal")}</option>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-2">
@@ -345,7 +343,9 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
           className={`p-4 ${autoExpand ? "overflow-visible" : "overflow-auto"}`}
           style={autoExpand ? { minHeight } : { minHeight, maxHeight: minHeight }}
         >
-          <MarkdownPreview content={value} />
+          <Suspense fallback={<div className="text-sm text-muted-foreground">{t("common.loading")}</div>}>
+            <MarkdownPreview content={value} />
+          </Suspense>
         </div>
       ) : (
         <textarea
