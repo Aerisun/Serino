@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import timedelta
 from pathlib import Path
 
@@ -50,9 +51,10 @@ def test_upload_public_asset_returns_public_url(client, admin_headers):
     payload = response.json()
     assert payload["visibility"] == "public"
     assert payload["scope"] == "user"
-    assert payload["resource_key"].startswith("public/assets/site/")
+    assert payload["resource_key"].startswith("internal/assets/site/")
     assert payload["internal_url"] == f"/media/{payload['resource_key']}"
-    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{payload['resource_key']}"
+    public_key = payload["resource_key"].replace("internal/", "public/", 1)
+    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{public_key}"
 
 
 def test_update_asset_visibility_returns_absolute_public_url(client, admin_headers):
@@ -74,12 +76,14 @@ def test_update_asset_visibility_returns_absolute_public_url(client, admin_heade
     assert response.status_code == 200
     payload = response.json()
     assert payload["visibility"] == "public"
-    assert payload["resource_key"].startswith("public/assets/comment/")
+    assert payload["resource_key"] == asset["resource_key"]
+    assert payload["resource_key"].startswith("internal/assets/comment/")
     assert payload["internal_url"] == f"/media/{payload['resource_key']}"
-    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{payload['resource_key']}"
+    public_key = payload["resource_key"].replace("internal/", "public/", 1)
+    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{public_key}"
 
 
-def test_update_remote_only_asset_visibility_copies_remote_object(client, admin_headers, monkeypatch):
+def test_update_remote_only_asset_visibility_keeps_internal_resource(client, admin_headers, monkeypatch):
     from aerisun.domain.media import service as media_service
 
     copied: list[tuple[str, str, str | None]] = []
@@ -129,15 +133,19 @@ def test_update_remote_only_asset_visibility_copies_remote_object(client, admin_
     assert response.status_code == 200
     payload = response.json()
     assert payload["visibility"] == "public"
-    assert payload["resource_key"].startswith("public/assets/comment/")
+    assert payload["resource_key"] == asset["resource_key"]
+    assert payload["resource_key"].startswith("internal/assets/comment/")
+    assert payload["internal_url"] == f"/media/{payload['resource_key']}"
+    public_key = payload["resource_key"].replace("internal/", "public/", 1)
+    assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{public_key}"
 
     with get_session_factory()() as session:
         stored = session.query(Asset).filter_by(id=asset["id"]).one()
         assert stored.remote_object_key == payload["resource_key"]
         assert stored.remote_status == "available"
 
-    assert copied == [(asset["resource_key"], payload["resource_key"], "image/png")]
-    assert deleted == [asset["resource_key"]]
+    assert copied == []
+    assert deleted == []
 
 
 def test_list_assets_returns_resource_urls(client, admin_headers):
@@ -177,6 +185,41 @@ def test_init_upload_returns_local_mode_when_oss_disabled(client, admin_headers)
     assert payload["mode"] == "local"
     assert payload["upload_url"] is None
     assert payload["asset"] is None
+
+
+def test_init_upload_existing_public_request_keeps_internal_resource(client, admin_headers):
+    content = b"existing-bytes"
+    created = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("existing.png", content, "image/png")},
+        data={"visibility": "internal", "category": "avatar"},
+    )
+    assert created.status_code == 201
+    asset = created.json()
+
+    response = client.post(
+        f"{BASE}/init-upload",
+        headers=admin_headers,
+        json={
+            "file_name": "existing.png",
+            "byte_size": len(content),
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "mime_type": "image/png",
+            "visibility": "public",
+            "scope": "user",
+            "category": "avatar",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "existing"
+    assert payload["asset"]["resource_key"] == asset["resource_key"]
+    assert payload["asset"]["internal_url"] == asset["internal_url"]
+    assert payload["asset"]["visibility"] == "public"
+    public_key = asset["resource_key"].replace("internal/", "public/", 1)
+    assert payload["asset"]["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{public_key}"
 
 
 def test_upload_asset_with_oss_queues_async_mirror_without_writing_local_file(client, admin_headers, monkeypatch):

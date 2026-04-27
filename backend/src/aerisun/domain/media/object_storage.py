@@ -899,6 +899,20 @@ def build_asset_storage_path(resource_key: str) -> Path:
     return media_dir / resource_key
 
 
+def internal_resource_key_for(resource_key: str) -> str:
+    key = str(resource_key or "").strip().lstrip("/")
+    if key.startswith("public/"):
+        return f"internal/{key[len('public/') :]}"
+    return key
+
+
+def public_resource_key_for(resource_key: str) -> str:
+    key = str(resource_key or "").strip().lstrip("/")
+    if key.startswith("internal/"):
+        return f"public/{key[len('internal/') :]}"
+    return key
+
+
 def guess_extension(file_name: str, mime_type: str | None) -> str:
     suffix = Path(file_name).suffix.lower().lstrip(".")
     if suffix:
@@ -941,8 +955,9 @@ def build_resource_key_for_plan(plan: AssetUploadPlanWrite, *, category: str, vi
 
 def asset_admin_read_from_model(asset: Asset) -> AssetAdminRead:
     site_url = (get_settings().site_url or "").rstrip("/")
-    internal_url = f"/media/{asset.resource_key}"
-    public_url = f"{site_url}{internal_url}" if site_url else internal_url
+    internal_url = f"/media/{internal_resource_key_for(asset.resource_key)}"
+    public_path = f"/media/{public_resource_key_for(asset.resource_key)}"
+    public_url = f"{site_url}{public_path}" if site_url else public_path
     if asset.visibility != "public":
         public_url = None
     return AssetAdminRead(

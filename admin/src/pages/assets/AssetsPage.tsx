@@ -115,7 +115,7 @@ export default function AssetsPage() {
   };
 
   const openPreview = (asset: AssetAdminRead) => {
-    window.open(asset.public_url ?? asset.internal_url, "_blank", "noopener,noreferrer");
+    window.open(asset.internal_url, "_blank", "noopener,noreferrer");
   };
 
   const handleFileChange = () => {

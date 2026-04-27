@@ -9,8 +9,7 @@ from sqlalchemy.orm import Session
 from aerisun.core.db import get_session
 from aerisun.core.settings import get_settings
 from aerisun.domain.exceptions import ResourceNotFound
-from aerisun.domain.media import repository as media_repo
-from aerisun.domain.media.service import resolve_media_redirect
+from aerisun.domain.media.service import resolve_media_asset, resolve_media_redirect
 
 router = APIRouter()
 
@@ -35,7 +34,7 @@ def _resolve_local_path(resource_key: str) -> Path:
 
 
 def _serve_local_path(resource_key: str, *, session: Session) -> Response:
-    asset = media_repo.find_asset_by_resource_key(session, resource_key)
+    asset = resolve_media_asset(session, resource_key)
     if asset is not None:
         local_path = _normalize_media_local_path(Path(asset.storage_path))
     else:

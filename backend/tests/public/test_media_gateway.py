@@ -31,6 +31,96 @@ def test_media_gateway_does_not_force_local_public_media_download(client) -> Non
     assert "content-disposition" not in response.headers
 
 
+def test_media_gateway_serves_public_alias_for_registered_internal_asset(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "internal/assets/test/public-alias.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("alias", encoding="utf-8")
+
+    factory = get_session_factory()
+    with factory() as session:
+        session.add(
+            Asset(
+                file_name="public-alias.txt",
+                resource_key="internal/assets/test/public-alias.txt",
+                visibility="public",
+                scope="user",
+                category="test",
+                storage_path=str(local_path),
+                mime_type="text/plain",
+                storage_provider="local",
+                remote_status="none",
+                mirror_status="completed",
+            )
+        )
+        session.commit()
+
+    response = client.get("/media/public/assets/test/public-alias.txt")
+
+    assert response.status_code == 200
+    assert response.text == "alias"
+    assert "content-disposition" not in response.headers
+
+
+def test_media_gateway_rejects_public_alias_for_internal_asset(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "internal/assets/test/private-alias.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("private", encoding="utf-8")
+
+    factory = get_session_factory()
+    with factory() as session:
+        session.add(
+            Asset(
+                file_name="private-alias.txt",
+                resource_key="internal/assets/test/private-alias.txt",
+                visibility="internal",
+                scope="user",
+                category="test",
+                storage_path=str(local_path),
+                mime_type="text/plain",
+                storage_provider="local",
+                remote_status="none",
+                mirror_status="completed",
+            )
+        )
+        session.commit()
+
+    response = client.get("/media/public/assets/test/private-alias.txt")
+
+    assert response.status_code == 404
+
+
+def test_media_gateway_serves_internal_alias_for_legacy_public_asset(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "public/assets/test/legacy-public.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("legacy", encoding="utf-8")
+
+    factory = get_session_factory()
+    with factory() as session:
+        session.add(
+            Asset(
+                file_name="legacy-public.txt",
+                resource_key="public/assets/test/legacy-public.txt",
+                visibility="public",
+                scope="user",
+                category="test",
+                storage_path=str(local_path),
+                mime_type="text/plain",
+                storage_provider="local",
+                remote_status="none",
+                mirror_status="completed",
+            )
+        )
+        session.commit()
+
+    response = client.get("/media/internal/assets/test/legacy-public.txt")
+
+    assert response.status_code == 200
+    assert response.text == "legacy"
+
+
 def test_media_gateway_rejects_unregistered_internal_media_file(client) -> None:
     media_root = get_settings().media_dir.expanduser().resolve()
     local_path = media_root / "internal/assets/test/unregistered.txt"

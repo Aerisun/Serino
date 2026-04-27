@@ -22,6 +22,8 @@ from aerisun.domain.media.object_storage import (
     build_resource_key_for_plan,
     build_resource_key_from_digest,
     get_or_create_object_storage_config,
+    internal_resource_key_for,
+    public_resource_key_for,
     queue_asset_mirror,
     queue_remote_asset_delete,
     record_completed_remote_asset_delete,
@@ -193,7 +195,7 @@ def upload_asset(
         content=content,
         mime_type=mime_type,
         category=normalized_category,
-        visibility=normalized_visibility,
+        visibility="internal",
         resource_key_digest=resource_key_digest,
         resource_key_digest_prefix_length=resource_key_digest_prefix_length,
     )
@@ -212,6 +214,10 @@ def upload_asset(
                 session.refresh(existing)
             else:
                 _write_local_file(storage_path, content)
+        if normalized_visibility == "public" and existing.visibility != "public":
+            existing.visibility = "public"
+            session.commit()
+            session.refresh(existing)
         return asset_admin_read_from_model(existing)
 
     storage_path = build_asset_storage_path(resource_key)
@@ -274,10 +280,14 @@ def prepare_asset_upload(session: Session, payload: AssetUploadPlanWrite) -> Ass
     resource_key = build_resource_key_for_plan(
         payload,
         category=normalized_category,
-        visibility=normalized_visibility,
+        visibility="internal",
     )
     existing = _existing_asset_or_none(session, resource_key)
     if existing is not None:
+        if normalized_visibility == "public" and existing.visibility != "public":
+            existing.visibility = "public"
+            session.commit()
+            session.refresh(existing)
         return AssetUploadPlanRead(mode="existing", asset=asset_admin_read_from_model(existing))
 
     provider = build_object_storage_provider(session)
@@ -389,7 +399,7 @@ def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> 
             digest=digest,
             mime_type=asset.mime_type,
             category=next_category,
-            visibility=next_visibility,
+            visibility="internal",
         )
     else:
         next_resource_key = asset.resource_key
@@ -613,7 +623,23 @@ def save_comment_image(
 
 
 def resolve_media_redirect(session: Session, resource_key: str) -> str | None:
-    asset = repo.find_asset_by_resource_key(session, resource_key)
+    asset = resolve_media_asset(session, resource_key)
     if asset is None:
         return None
     return sign_asset_download_url(session, asset)
+
+
+def resolve_media_asset(session: Session, resource_key: str) -> Asset | None:
+    key = str(resource_key or "").strip().lstrip("/")
+    asset = repo.find_asset_by_resource_key(session, key)
+    if asset is not None:
+        if key.startswith("public/") and asset.visibility != "public":
+            return None
+        return asset
+    if key.startswith("public/"):
+        asset = repo.find_asset_by_resource_key(session, internal_resource_key_for(key))
+        if asset is not None and asset.visibility == "public":
+            return asset
+    if key.startswith("internal/"):
+        return repo.find_asset_by_resource_key(session, public_resource_key_for(key))
+    return None
