@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0002_public_title_identity"
+CURRENT_SCHEMA_HEAD = "0003_comment_image_rate_limit"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,7 +51,11 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
     active_versions = sorted(path.name for path in (BACKEND_ROOT / "alembic" / "versions").glob("*.py"))
 
     assert tuple(script.get_heads()) == (CURRENT_SCHEMA_HEAD,)
-    assert active_versions == ["0001_production_baseline.py", "0002_public_title_identity.py"]
+    assert active_versions == [
+        "0001_production_baseline.py",
+        "0002_public_title_identity.py",
+        "0003_comment_image_rate_limit.py",
+    ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
 

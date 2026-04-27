@@ -32,6 +32,10 @@ export interface CommunityConfigAdminRead {
   page_size: unknown;
   /** Max upload image size in bytes */
   image_max_bytes?: unknown;
+  /** Allowed comment image uploads per rate limit window */
+  comment_image_rate_limit_count: unknown;
+  /** Comment image upload rate limit window in minutes */
+  comment_image_rate_limit_window_minutes: unknown;
   /** Avatar helper text */
   avatar_helper_copy: unknown;
   /** Waline migration state */

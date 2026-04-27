@@ -134,7 +134,6 @@ export default defineConfig(({ mode }) => {
   const adminBaseUrl =
     explicitAdminBaseUrl || (mode !== "production" ? `http://127.0.0.1:${adminPort}` : "");
   const walineBasePath = stripTrailingSlash(env.AERISUN_WALINE_BASE_PATH ?? "/waline");
-  const apiBasePathPattern = new RegExp(`${escapeRegExp(apiBasePath)}/`);
   const apiBasePathPrefixPattern = buildBasePathPrefixPattern(apiBasePath);
   const adminBasePathPattern = buildBasePathPrefixPattern(adminBasePath);
   const walineBasePathPattern = buildBasePathPrefixPattern(walineBasePath);

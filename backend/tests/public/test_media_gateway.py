@@ -9,14 +9,37 @@ from aerisun.domain.media.models import Asset
 
 def test_media_gateway_serves_local_media_file(client) -> None:
     media_root = get_settings().media_dir.expanduser().resolve()
-    local_path = media_root / "internal/assets/test/media-gateway.txt"
+    local_path = media_root / "public/assets/test/media-gateway.txt"
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path.write_text("ok", encoding="utf-8")
 
-    response = client.get("/media/internal/assets/test/media-gateway.txt")
+    response = client.get("/media/public/assets/test/media-gateway.txt")
 
     assert response.status_code == 200
     assert response.text == "ok"
+
+
+def test_media_gateway_does_not_force_local_public_media_download(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "public/assets/test/inline.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("inline", encoding="utf-8")
+
+    response = client.get("/media/public/assets/test/inline.txt")
+
+    assert response.status_code == 200
+    assert "content-disposition" not in response.headers
+
+
+def test_media_gateway_rejects_unregistered_internal_media_file(client) -> None:
+    media_root = get_settings().media_dir.expanduser().resolve()
+    local_path = media_root / "internal/assets/test/unregistered.txt"
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    local_path.write_text("do-not-read", encoding="utf-8")
+
+    response = client.get("/media/internal/assets/test/unregistered.txt")
+
+    assert response.status_code == 404
 
 
 def test_media_gateway_blocks_path_traversal(client, tmp_path) -> None:

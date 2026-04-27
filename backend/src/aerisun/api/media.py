@@ -39,12 +39,13 @@ def _serve_local_path(resource_key: str, *, session: Session) -> Response:
     if asset is not None:
         local_path = _normalize_media_local_path(Path(asset.storage_path))
     else:
+        if not resource_key.startswith("public/"):
+            raise ResourceNotFound("Media resource not found")
         local_path = _resolve_local_path(resource_key)
     if not local_path.exists() or not local_path.is_file():
         raise ResourceNotFound("Media resource not found")
     media_type = asset.mime_type if asset is not None else None
-    filename = asset.file_name if asset is not None else local_path.name
-    return FileResponse(local_path, media_type=media_type, filename=filename)
+    return FileResponse(local_path, media_type=media_type)
 
 
 @router.get("/media/{resource_key:path}", summary="托管资源访问网关")

@@ -518,7 +518,7 @@ export default function AssetsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    title={t("assets.open")}
+                    title={t("assets.openPreview")}
                     onClick={(e) => {
                       e.stopPropagation();
                       openPreview(row);

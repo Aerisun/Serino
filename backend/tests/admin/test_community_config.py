@@ -59,6 +59,8 @@ def test_admin_community_config_round_trip(client) -> None:
     assert current["moderation_mode"] == "all_pending"
     assert current["default_sorting"] == "latest"
     assert current["page_size"] == 20
+    assert current["comment_image_rate_limit_count"] == 18
+    assert current["comment_image_rate_limit_window_minutes"] == 30
     assert current["avatar_helper_copy"] == "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。"
 
     payload = {
@@ -73,6 +75,8 @@ def test_admin_community_config_round_trip(client) -> None:
         "moderation_mode": "no_review",
         "default_sorting": "oldest",
         "page_size": 30,
+        "comment_image_rate_limit_count": 7,
+        "comment_image_rate_limit_window_minutes": 12,
         "avatar_helper_copy": "测试留言头像库",
         "migration_state": "configured",
     }
@@ -91,6 +95,8 @@ def test_admin_community_config_round_trip(client) -> None:
     assert refreshed["moderation_mode"] == "no_review"
     assert refreshed["default_sorting"] == "oldest"
     assert refreshed["page_size"] == 30
+    assert refreshed["comment_image_rate_limit_count"] == 7
+    assert refreshed["comment_image_rate_limit_window_minutes"] == 12
     assert refreshed["avatar_helper_copy"] == "测试留言头像库"
 
 

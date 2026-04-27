@@ -369,6 +369,18 @@ class CommunityConfigUpdate(BaseModel):
     default_sorting: str | None = Field(default=None, description="Default comment sort order")
     page_size: int | None = Field(default=None, description="Initial comments loaded per batch")
     image_max_bytes: int | None = Field(default=None, description="Max upload image size in bytes")
+    comment_image_rate_limit_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=60,
+        description="Allowed comment image uploads per rate limit window",
+    )
+    comment_image_rate_limit_window_minutes: int | None = Field(
+        default=None,
+        ge=1,
+        le=1440,
+        description="Comment image upload rate limit window in minutes",
+    )
     avatar_helper_copy: str | None = Field(default=None, description="Avatar selection helper text")
     migration_state: str | None = Field(default=None, description="Waline migration state")
 
@@ -394,6 +406,10 @@ class CommunityConfigAdminRead(ModelBase):
     default_sorting: str = Field(description="Default sort order")
     page_size: int = Field(description="Initial comments loaded per batch")
     image_max_bytes: int | None = Field(default=524288, description="Max upload image size in bytes")
+    comment_image_rate_limit_count: int = Field(description="Allowed comment image uploads per rate limit window")
+    comment_image_rate_limit_window_minutes: int = Field(
+        description="Comment image upload rate limit window in minutes"
+    )
     avatar_helper_copy: str = Field(description="Avatar helper text")
     migration_state: str = Field(description="Waline migration state")
     created_at: datetime = Field(description="Creation timestamp")

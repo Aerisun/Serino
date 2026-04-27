@@ -111,6 +111,8 @@ class CommunityConfig(Base, TimestampMixin):
     default_sorting: Mapped[str] = mapped_column(String(40), nullable=False, default="latest")
     page_size: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
     image_max_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True, default=524288)
+    comment_image_rate_limit_count: Mapped[int] = mapped_column(Integer, nullable=False, default=18)
+    comment_image_rate_limit_window_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     avatar_helper_copy: Mapped[str] = mapped_column(Text, nullable=False, default="")
     migration_state: Mapped[str] = mapped_column(String(40), nullable=False, default="not_started")
 

@@ -79,6 +79,67 @@ def test_update_asset_visibility_returns_absolute_public_url(client, admin_heade
     assert payload["public_url"] == f"{get_settings().site_url.rstrip('/')}/media/{payload['resource_key']}"
 
 
+def test_update_remote_only_asset_visibility_copies_remote_object(client, admin_headers, monkeypatch):
+    from aerisun.domain.media import service as media_service
+
+    copied: list[tuple[str, str, str | None]] = []
+    deleted: list[str] = []
+
+    class _Provider:
+        def upload_bytes(self, *, object_key: str, data: bytes, content_type: str | None):
+            return media_object_storage.ObjectHead(
+                content_length=len(data),
+                content_type=content_type,
+                etag="etag-upload",
+                last_modified=utcnow(),
+            )
+
+        def copy_object(self, *, source_key: str, object_key: str, content_type: str | None = None):
+            copied.append((source_key, object_key, content_type))
+            return media_object_storage.ObjectHead(
+                content_length=12,
+                content_type=content_type,
+                etag="etag-copy",
+                last_modified=utcnow(),
+            )
+
+        def delete_object(self, *, object_key: str) -> None:
+            deleted.append(object_key)
+
+    monkeypatch.setattr(media_service, "build_object_storage_provider", lambda session: _Provider())
+    monkeypatch.setattr(media_service, "build_object_storage_maintenance_provider", lambda session: _Provider())
+    monkeypatch.setattr(media_object_storage, "build_object_storage_provider", lambda session: _Provider())
+
+    created = client.post(
+        f"{BASE}/",
+        headers=admin_headers,
+        files={"file": ("remote-only.png", b"remote-bytes", "image/png")},
+        data={"visibility": "internal", "category": "comment"},
+    )
+    assert created.status_code == 201
+    asset = created.json()
+    assert not Path(asset["storage_path"]).exists()
+
+    response = client.patch(
+        f"{BASE}/{asset['id']}",
+        headers=admin_headers,
+        json={"visibility": "public"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["visibility"] == "public"
+    assert payload["resource_key"].startswith("public/assets/comment/")
+
+    with get_session_factory()() as session:
+        stored = session.query(Asset).filter_by(id=asset["id"]).one()
+        assert stored.remote_object_key == payload["resource_key"]
+        assert stored.remote_status == "available"
+
+    assert copied == [(asset["resource_key"], payload["resource_key"], "image/png")]
+    assert deleted == [asset["resource_key"]]
+
+
 def test_list_assets_returns_resource_urls(client, admin_headers):
     client.post(
         f"{BASE}/",

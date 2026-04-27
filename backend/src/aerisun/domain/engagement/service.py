@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from hashlib import sha256
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, unquote, urljoin
 
 import httpx
 from sqlalchemy.orm import Session
@@ -62,6 +63,9 @@ DEFAULT_COMMENT_AVATAR_PRESETS = [
 AVATAR_PICKER_COUNT = 16
 AVATAR_POOL_SIZE = 1000
 DICEBEAR_NOTIONISTS_BASE_URL = "https://api.dicebear.com/9.x/notionists/svg"
+MAX_COMMENT_IMAGES_PER_ENTRY = 9
+_MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*]\([^)]+\)")
+_COMMENT_MEDIA_RESOURCE_RE = re.compile(r"/media/([^)\s\"']+)")
 
 
 @dataclass(slots=True)
@@ -419,6 +423,13 @@ def _raise_login_required(surface: str) -> None:
     raise DomainValidationError("当前站点要求登录后才能发表评论。")
 
 
+def _ensure_comment_image_count_allowed(body: str, *, surface: str) -> None:
+    if len(_MARKDOWN_IMAGE_RE.findall(body)) <= MAX_COMMENT_IMAGES_PER_ENTRY:
+        return
+    label = "留言" if surface == "guestbook" else "评论"
+    raise DomainValidationError(f"一条{label}最多可以附加 {MAX_COMMENT_IMAGES_PER_ENTRY} 张图片。")
+
+
 def _email_login_enabled_for_comments(session: Session) -> bool:
     config = site_config_repo.find_community_config(session)
     if config is None:
@@ -591,8 +602,10 @@ def create_public_guestbook_entry(
     current_user: SiteUser | None = None,
     current_site_session: SiteUserSession | None = None,
 ) -> GuestbookCreateResponse:
-    if not payload.body.strip():
+    body = payload.body.strip()
+    if not body:
         raise DomainValidationError("留言内容不能为空。")
+    _ensure_comment_image_count_allowed(body, surface="guestbook")
 
     auth_profile = None
     if current_user is not None:
@@ -631,7 +644,7 @@ def create_public_guestbook_entry(
 
     entry_status = _resolve_comment_creation_status(session)
     entry = create_waline_record(
-        comment=payload.body.strip(),
+        comment=body,
         nick=author_name,
         mail=author_email,
         link=website,
@@ -745,8 +758,10 @@ def create_public_comment(
 ) -> CommentCreateResponse:
     if not repo.content_exists(session, content_type, content_slug):
         raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
-    if not payload.body.strip():
+    body = payload.body.strip()
+    if not body:
         raise DomainValidationError("评论内容不能为空。")
+    _ensure_comment_image_count_allowed(body, surface="comment")
 
     auth_profile = None
     if current_user is not None:
@@ -795,7 +810,7 @@ def create_public_comment(
 
     item_status = _resolve_comment_creation_status(session)
     item = create_waline_record(
-        comment=payload.body.strip(),
+        comment=body,
         nick=author_name,
         mail=author_email,
         link=None,
@@ -1135,15 +1150,42 @@ def list_admin_guestbook(
     }
 
 
+def _extract_comment_media_resource_keys(records) -> set[str]:
+    resource_keys: set[str] = set()
+    for record in records:
+        body = str(getattr(record, "comment", "") or "")
+        for match in _COMMENT_MEDIA_RESOURCE_RE.finditer(body):
+            raw_key = match.group(1).split("?", 1)[0].split("#", 1)[0]
+            key = unquote(raw_key).strip().lstrip("/")
+            if key:
+                resource_keys.add(key)
+    return resource_keys
+
+
+def _cleanup_deleted_comment_images(session: Session, records) -> None:
+    from aerisun.domain.media import repository as media_repo
+    from aerisun.domain.media.service import delete_asset
+    from aerisun.domain.waline.service import waline_comment_body_references
+
+    for resource_key in _extract_comment_media_resource_keys(records):
+        if waline_comment_body_references(resource_key):
+            continue
+        asset = media_repo.find_asset_by_resource_key(session, resource_key)
+        if asset is None or asset.category != "comment" or asset.scope != "user":
+            continue
+        delete_asset(session, asset.id)
+
+
 def moderate_comment(session: Session, comment_id: int, action: str, reason: str | None = None):
     """Moderate a comment. Returns CommentAdminRead or None for delete. Raises LookupError/ValueError."""
     from aerisun.domain.automation.events import emit_comment_moderated
     from aerisun.domain.ops.models import ModerationRecord
-    from aerisun.domain.waline.service import moderate_waline_record
+    from aerisun.domain.waline.service import list_waline_record_tree, moderate_waline_record
 
     if action not in {"approve", "reject", "delete"}:
         raise DomainValidationError("Invalid action")
 
+    deleted_records = list_waline_record_tree(comment_id) if action == "delete" else []
     result = moderate_waline_record(record_id=comment_id, action=action)
 
     if result is None:
@@ -1160,6 +1202,7 @@ def moderate_comment(session: Session, comment_id: int, action: str, reason: str
     emit_comment_moderated(session, comment_id=str(comment_id), action=action, reason=reason)
 
     if action == "delete":
+        _cleanup_deleted_comment_images(session, deleted_records)
         return None
     return _comment_admin_read_from_waline(session, result)
 
@@ -1168,11 +1211,12 @@ def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reaso
     """Moderate a guestbook entry. Returns GuestbookAdminRead or None for delete. Raises LookupError/ValueError."""
     from aerisun.domain.automation.events import emit_guestbook_moderated
     from aerisun.domain.ops.models import ModerationRecord
-    from aerisun.domain.waline.service import moderate_waline_record
+    from aerisun.domain.waline.service import list_waline_record_tree, moderate_waline_record
 
     if action not in {"approve", "reject", "delete"}:
         raise DomainValidationError("Invalid action")
 
+    deleted_records = list_waline_record_tree(entry_id) if action == "delete" else []
     result = moderate_waline_record(record_id=entry_id, action=action)
 
     if result is None:
@@ -1189,5 +1233,6 @@ def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reaso
     emit_guestbook_moderated(session, entry_id=str(entry_id), action=action, reason=reason)
 
     if action == "delete":
+        _cleanup_deleted_comment_images(session, deleted_records)
         return None
     return _guestbook_admin_read_from_waline(session, result)

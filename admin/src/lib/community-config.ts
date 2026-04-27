@@ -17,6 +17,8 @@ export interface CommunityConfigFormState {
   default_sorting: string;
   page_size: string;
   image_max_bytes: string;
+  comment_image_rate_limit_count: string;
+  comment_image_rate_limit_window_minutes: string;
 }
 
 const DEFAULT_COMMUNITY_SURFACES: CommunitySurfaceUpdate[] = [
@@ -91,6 +93,8 @@ export const createCommunityForm = (config?: CommunityConfigAdminRead | null): C
   default_sorting: config?.default_sorting ?? DEFAULT_DEFAULT_SORTING,
   page_size: String(config?.page_size ?? 20),
   image_max_bytes: String(config?.image_max_bytes ?? 524288),
+  comment_image_rate_limit_count: String(config?.comment_image_rate_limit_count ?? 18),
+  comment_image_rate_limit_window_minutes: String(config?.comment_image_rate_limit_window_minutes ?? 30),
 });
 
 export const communityFormToUpdate = (form: CommunityConfigFormState): CommunityConfigUpdate => ({
@@ -107,5 +111,13 @@ export const communityFormToUpdate = (form: CommunityConfigFormState): Community
   default_sorting: form.default_sorting.trim() || DEFAULT_DEFAULT_SORTING,
   page_size: Math.max(1, Number.parseInt(form.page_size, 10) || 20),
   image_max_bytes: Math.max(0, Number.parseInt(form.image_max_bytes, 10) || 524288),
+  comment_image_rate_limit_count: Math.min(
+    60,
+    Math.max(1, Number.parseInt(form.comment_image_rate_limit_count, 10) || 18),
+  ),
+  comment_image_rate_limit_window_minutes: Math.min(
+    1440,
+    Math.max(1, Number.parseInt(form.comment_image_rate_limit_window_minutes, 10) || 30),
+  ),
   avatar_helper_copy: form.helper_copy.trim() || null,
 });

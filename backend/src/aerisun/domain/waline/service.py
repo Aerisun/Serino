@@ -814,6 +814,34 @@ def _collect_descendant_ids(connection: sqlite3.Connection, root_id: int) -> lis
     return collected
 
 
+def list_waline_record_tree(record_id: int, db_path: Path | None = None) -> list[WalineCommentRecord]:
+    with connect_waline_db(db_path) as connection:
+        root = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        if root is None:
+            return []
+        ids = _collect_descendant_ids(connection, record_id)
+        if not ids:
+            return []
+        placeholders = ",".join("?" for _ in ids)
+        rows = connection.execute(
+            f"SELECT * FROM wl_comment WHERE id IN ({placeholders}) ORDER BY id ASC",
+            ids,
+        ).fetchall()
+        return [_row_to_record(row) for row in rows]
+
+
+def waline_comment_body_references(text: str, db_path: Path | None = None) -> bool:
+    needle = str(text or "").strip()
+    if not needle:
+        return False
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute(
+            "SELECT 1 FROM wl_comment WHERE instr(comment, ?) > 0 LIMIT 1",
+            (needle,),
+        ).fetchone()
+        return row is not None
+
+
 def moderate_waline_record(
     *,
     record_id: int,

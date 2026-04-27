@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import mimetypes
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -120,6 +121,18 @@ class BitifulObjectStorageProvider:
         if content_type:
             params["ContentType"] = content_type
         self._client.put_object(**params)
+        return self.head_object(object_key=object_key)
+
+    def copy_object(self, *, source_key: str, object_key: str, content_type: str | None = None) -> ObjectHead:
+        params: dict[str, Any] = {
+            "Bucket": self._bucket,
+            "Key": object_key,
+            "CopySource": {"Bucket": self._bucket, "Key": source_key},
+        }
+        if content_type:
+            params["ContentType"] = content_type
+            params["MetadataDirective"] = "REPLACE"
+        self._client.copy_object(**params)
         return self.head_object(object_key=object_key)
 
     def delete_object(self, *, object_key: str) -> None:
@@ -903,9 +916,14 @@ def build_resource_key_from_digest(
     mime_type: str | None,
     category: str,
     visibility: str,
+    digest_prefix_length: int = 12,
 ) -> str:
     ext = guess_extension(file_name, mime_type)
-    return f"{visibility}/assets/{category}/{digest[:12]}.{ext}"
+    key = re.sub(r"[^a-z0-9_-]+", "", str(digest or "").strip().lower())
+    if not key:
+        key = uuid_str().replace("-", "")
+    prefix_length = max(12, min(int(digest_prefix_length), len(key)))
+    return f"{visibility}/assets/{category}/{key[:prefix_length]}.{ext}"
 
 
 def build_resource_key_for_plan(plan: AssetUploadPlanWrite, *, category: str, visibility: str) -> str:

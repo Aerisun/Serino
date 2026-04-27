@@ -54,4 +54,6 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
     assert payload["moderation_mode"] == "all_pending"
     assert payload["default_sorting"] == "latest"
     assert payload["page_size"] == 20
+    assert "comment_image_rate_limit_count" not in payload
+    assert "comment_image_rate_limit_window_minutes" not in payload
     assert payload["avatar_helper_copy"] == "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。"

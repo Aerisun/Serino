@@ -9,6 +9,7 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.settings import get_settings
 from aerisun.core.time import shanghai_now
 from aerisun.domain.iam.models import AdminSession, AdminUser
+from aerisun.domain.media.models import Asset
 from aerisun.domain.waline.service import connect_waline_db
 
 
@@ -172,3 +173,55 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
     with connect_waline_db(waline_db) as connection:
         rows = connection.execute("SELECT id FROM wl_comment WHERE url = '/guestbook'").fetchall()
         assert rows == []
+
+
+def test_deleting_comment_removes_bound_comment_images(client) -> None:
+    token = _create_admin_token("waline-image-cleanup-admin")
+    settings = get_settings()
+    resource_key = "internal/assets/comment/delete-bound.png"
+    storage_path = settings.media_dir.expanduser().resolve() / resource_key
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+    storage_path.write_bytes(b"\x89PNG\r\n\x1a\nimage")
+
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        session.add(
+            Asset(
+                file_name="delete-bound.png",
+                resource_key=resource_key,
+                visibility="internal",
+                scope="user",
+                category="comment",
+                storage_path=str(storage_path),
+                mime_type="image/png",
+                byte_size=13,
+                sha256="image-sha",
+                storage_provider="local",
+                remote_status="none",
+                mirror_status="completed",
+            )
+        )
+        session.commit()
+
+    with connect_waline_db(settings.waline_db_path) as connection:
+        connection.execute("DELETE FROM wl_comment")
+        comment_id = _seed_waline_comment(
+            connection,
+            url="/posts/from-zero-design-system",
+            nick="Reader",
+            comment=f"![uploaded](/media/{resource_key})",
+            status="approved",
+            created_at="2026-03-21 12:00:00",
+        )
+        connection.commit()
+
+    response = client.post(
+        f"/api/v1/admin/moderation/comments/{comment_id}/moderate",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"action": "delete", "reason": "cleanup image"},
+    )
+
+    assert response.status_code == 204
+    assert not storage_path.exists()
+    with session_factory() as session:
+        assert session.query(Asset).filter_by(resource_key=resource_key).first() is None

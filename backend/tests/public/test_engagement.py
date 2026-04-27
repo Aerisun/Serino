@@ -17,6 +17,7 @@ AVATAR_PRESET_KEYS = [
     "plum",
     "linen",
 ]
+PNG_BYTES = b"\x89PNG\r\n\x1a\nimage-bytes"
 
 
 def _hash_avatar_seed(value: str) -> int:
@@ -497,35 +498,62 @@ def test_create_guestbook_rejects_email_login_when_disabled_for_comments(client)
 
 
 def test_comment_image_upload_rejects_when_disabled(client) -> None:
+    _login_site_user(client, email="image-disabled@example.com", display_name="Image Disabled")
     _update_community_config(image_uploader=False)
 
     response = client.post(
         "/api/v1/site-interactions/comment-image",
-        files={"file": ("image.png", b"image-bytes", "image/png")},
+        files={"file": ("image.png", PNG_BYTES, "image/png")},
     )
 
     assert response.status_code == 422
     assert "评论图片上传" in response.json()["detail"]
 
 
+def test_comment_image_upload_requires_site_login(client) -> None:
+    _update_community_config(image_uploader=True)
+
+    response = client.post(
+        "/api/v1/site-interactions/comment-image",
+        files={"file": ("image.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 401
+
+
 def test_comment_image_upload_rejects_when_exceeding_configured_size_limit(client) -> None:
+    _login_site_user(client, email="image-too-large@example.com", display_name="Image Too Large")
     _update_community_config(image_uploader=True, image_max_bytes=1024)
 
     response = client.post(
         "/api/v1/site-interactions/comment-image",
-        files={"file": ("image.png", b"x" * 2048, "image/png")},
+        files={"file": ("image.png", b"\x89PNG\r\n\x1a\n" + b"x" * 2048, "image/png")},
     )
 
     assert response.status_code == 413
     assert "图片过大" in response.json()["detail"]
 
 
-def test_comment_image_upload_uses_user_asset_upload(client) -> None:
+def test_comment_image_upload_rejects_spoofed_content_type(client) -> None:
+    _login_site_user(client, email="image-spoof@example.com", display_name="Image Spoof")
     _update_community_config(image_uploader=True)
 
     response = client.post(
         "/api/v1/site-interactions/comment-image",
-        files={"file": ("image.png", b"image-bytes", "image/png")},
+        files={"file": ("image.png", b"not-an-image", "image/png")},
+    )
+
+    assert response.status_code == 422
+    assert "图片格式" in response.json()["detail"]
+
+
+def test_comment_image_upload_uses_user_asset_upload(client) -> None:
+    _login_site_user(client, email="image-upload@example.com", display_name="Image Upload")
+    _update_community_config(image_uploader=True)
+
+    response = client.post(
+        "/api/v1/site-interactions/comment-image",
+        files={"file": ("image.png", PNG_BYTES, "image/png")},
     )
 
     assert response.status_code == 200
@@ -551,6 +579,7 @@ def test_comment_image_upload_uses_user_asset_upload(client) -> None:
 
 
 def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) -> None:
+    _login_site_user(client, email="image-oss@example.com", display_name="Image OSS")
     _update_community_config(image_uploader=True)
 
     from pathlib import Path
@@ -575,7 +604,7 @@ def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) 
 
     response = client.post(
         "/api/v1/site-interactions/comment-image",
-        files={"file": ("image.png", b"image-bytes", "image/png")},
+        files={"file": ("image.png", PNG_BYTES, "image/png")},
     )
 
     assert response.status_code == 200
@@ -596,6 +625,23 @@ def test_comment_image_upload_with_oss_queues_async_mirror(monkeypatch, client) 
     assert mirrors[0].status == "queued"
     assert mirrors[0].object_key == resource_key
     assert not Path(asset.storage_path).exists()
+
+
+def test_create_comment_rejects_more_than_nine_images(client) -> None:
+    _login_site_user(client, email="too-many-images@example.com", display_name="Too Many Images")
+
+    body = "\n".join(f"![image {index}](/media/internal/assets/comment/{index}.png)" for index in range(10))
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": body,
+        },
+    )
+
+    assert response.status_code == 422
+    assert "最多可以附加 9 张图片" in response.json()["detail"]
 
 
 def test_create_reaction_returns_total(client) -> None:

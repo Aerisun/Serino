@@ -145,7 +145,7 @@ export function CommunityTab() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-1">
             <Label>{t("siteConfig.commentDefaultSorting")}</Label>
             <NativeSelect
@@ -183,6 +183,38 @@ export function CommunityTab() {
               onChange={(e) => updateField("page_size", e.target.value)}
               placeholder="20"
             />
+          </div>
+
+          <div className="space-y-1">
+            <LabelWithHelp
+              label={t("siteConfig.commentImageRateLimit")}
+              title={t("siteConfig.commentImageRateLimit")}
+              description={t("siteConfig.commentImageRateLimitDesc")}
+            />
+            <div className="grid grid-cols-[minmax(5.5rem,1fr)_auto_minmax(5.5rem,1fr)_auto] items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                inputMode="numeric"
+                value={form.comment_image_rate_limit_count}
+                onChange={(e) => updateField("comment_image_rate_limit_count", e.target.value)}
+                placeholder="18"
+                className="text-center tabular-nums"
+              />
+              <span className="text-sm text-muted-foreground">/</span>
+              <Input
+                type="number"
+                min={1}
+                max={1440}
+                inputMode="numeric"
+                value={form.comment_image_rate_limit_window_minutes}
+                onChange={(e) => updateField("comment_image_rate_limit_window_minutes", e.target.value)}
+                placeholder="30"
+                className="text-center tabular-nums"
+              />
+              <span className="text-sm text-muted-foreground">minute</span>
+            </div>
           </div>
         </div>
 

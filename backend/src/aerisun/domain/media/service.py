@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
+import secrets
 from datetime import timedelta
 from pathlib import Path
 
@@ -38,9 +39,17 @@ from aerisun.domain.media.schemas import (
 from aerisun.domain.site_config import repository as site_config_repo
 
 logger = logging.getLogger(__name__)
-_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"}
-_MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+_DEFAULT_COMMENT_IMAGE_UPLOAD_BYTES = 512 * 1024
+_MAX_COMMENT_IMAGE_UPLOAD_BYTES = 2 * 1024 * 1024
+_COMMENT_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+_COMMENT_IMAGE_EXTENSIONS = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+}
 _SAFE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
+_SAFE_FILE_STEM_RE = re.compile(r"[^a-zA-Z0-9._-]+")
 
 
 def _normalize_visibility(value: str | None) -> str:
@@ -91,14 +100,17 @@ def _build_resource_key(
     mime_type: str | None,
     category: str,
     visibility: str,
+    resource_key_digest: str | None = None,
+    resource_key_digest_prefix_length: int = 12,
 ) -> tuple[str, str]:
     digest = hashlib.sha256(content).hexdigest()
     resource_key = build_resource_key_from_digest(
         file_name=file_name,
-        digest=digest,
+        digest=resource_key_digest or digest,
         mime_type=mime_type,
         category=category,
         visibility=visibility,
+        digest_prefix_length=resource_key_digest_prefix_length,
     )
     return resource_key, digest
 
@@ -167,6 +179,8 @@ def upload_asset(
     scope: str = "user",
     category: str = "general",
     note: str | None = None,
+    resource_key_digest: str | None = None,
+    resource_key_digest_prefix_length: int = 12,
 ) -> AssetAdminRead:
     from aerisun.domain.automation.events import emit_asset_uploaded
 
@@ -180,6 +194,8 @@ def upload_asset(
         mime_type=mime_type,
         category=normalized_category,
         visibility=normalized_visibility,
+        resource_key_digest=resource_key_digest,
+        resource_key_digest_prefix_length=resource_key_digest_prefix_length,
     )
     existing = _existing_asset_or_none(session, resource_key)
     if existing is not None:
@@ -416,6 +432,27 @@ def update_asset(session: Session, asset_id: str, payload: AssetAdminUpdate) -> 
                     asset.remote_uploaded_at = shanghai_now()
                 except Exception:
                     logger.exception("Failed to move remote asset object; keeping previous remote key")
+            elif provider is not None:
+                try:
+                    provider.copy_object(
+                        source_key=previous_remote_object_key,
+                        object_key=next_resource_key,
+                        content_type=asset.mime_type,
+                    )
+                    if previous_remote_object_key != next_resource_key:
+                        try:
+                            provider.delete_object(object_key=previous_remote_object_key)
+                        except Exception as exc:
+                            queue_remote_asset_delete(
+                                session,
+                                object_key=previous_remote_object_key,
+                                error=f"远端旧对象删除失败：{exc}",
+                            )
+                    asset.remote_object_key = next_resource_key
+                    asset.remote_status = "available"
+                    asset.remote_uploaded_at = shanghai_now()
+                except Exception:
+                    logger.exception("Failed to copy remote asset object; keeping previous remote key")
 
     asset.visibility = next_visibility
     asset.scope = next_scope
@@ -498,27 +535,73 @@ def bulk_delete_assets(session: Session, ids: list[str]) -> int:
     return affected
 
 
-def save_comment_image(session: Session, content: bytes, filename: str, mime_type: str | None) -> str:
+def _normalize_image_mime_type(value: str | None) -> str:
+    normalized = str(value or "").split(";", 1)[0].strip().lower()
+    if normalized == "image/jpg":
+        return "image/jpeg"
+    return normalized
+
+
+def _detect_comment_image_mime_type(content: bytes) -> str | None:
+    if content.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if content.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def _safe_comment_image_filename(filename: str, mime_type: str) -> str:
+    raw_name = Path(filename or "image").name
+    stem = Path(raw_name).stem.strip() or "image"
+    stem = _SAFE_FILE_STEM_RE.sub("-", stem).strip(".-") or "image"
+    return f"{stem[:80]}.{_COMMENT_IMAGE_EXTENSIONS[mime_type]}"
+
+
+def get_comment_image_upload_limit(session: Session) -> int:
+    community_config = site_config_repo.find_community_config(session)
+    if community_config is not None and not community_config.image_uploader:
+        raise DomainValidationError("当前站点已关闭评论图片上传。")
+    configured_limit = int(community_config.image_max_bytes or 0) if community_config is not None else 0
+    effective_limit = configured_limit if configured_limit > 0 else _DEFAULT_COMMENT_IMAGE_UPLOAD_BYTES
+    return min(effective_limit, _MAX_COMMENT_IMAGE_UPLOAD_BYTES)
+
+
+def save_comment_image(
+    session: Session,
+    content: bytes,
+    filename: str,
+    mime_type: str | None,
+    *,
+    uploader_id: str | None = None,
+) -> str:
     from aerisun.domain.automation.events import emit_comment_image_saved
 
-    if mime_type not in _ALLOWED_IMAGE_TYPES:
+    normalized_mime_type = _normalize_image_mime_type(mime_type)
+    detected_mime_type = _detect_comment_image_mime_type(content)
+    if normalized_mime_type not in _COMMENT_IMAGE_TYPES or detected_mime_type is None:
         raise DomainValidationError("不支持的图片格式")
-    community_config = site_config_repo.find_community_config(session)
-    configured_limit = int(community_config.image_max_bytes or 0) if community_config is not None else 0
-    effective_limit = configured_limit if configured_limit > 0 else _MAX_UPLOAD_BYTES
+    if detected_mime_type != normalized_mime_type:
+        raise DomainValidationError("图片格式与文件内容不一致")
+
+    effective_limit = get_comment_image_upload_limit(session)
     if len(content) > effective_limit:
-        raise PayloadTooLarge("图片过大，请压缩后重试")
-    if len(content) > _MAX_UPLOAD_BYTES:
         raise PayloadTooLarge("图片过大，请压缩后重试")
 
     asset = upload_asset(
         session,
-        filename or "img",
+        _safe_comment_image_filename(filename, detected_mime_type),
         content,
-        mime_type,
+        detected_mime_type,
         visibility="internal",
         scope="user",
         category="comment",
+        note=f"site-user:{uploader_id}" if uploader_id else None,
+        resource_key_digest=secrets.token_hex(16),
+        resource_key_digest_prefix_length=32,
     )
     emit_comment_image_saved(
         session,

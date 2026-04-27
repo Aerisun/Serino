@@ -1883,15 +1883,33 @@
         ],
         "summary": "评论图片上传",
         "operationId": "upload_comment_image_api_v1_site_interactions_comment_image_post",
+        "parameters": [
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_upload_comment_image_api_v1_site_interactions_comment_image_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -17990,6 +18008,14 @@
             "title": "Image Max Bytes",
             "description": "Max upload image size in bytes"
           },
+          "comment_image_rate_limit_count": {
+            "title": "Comment Image Rate Limit Count",
+            "description": "Allowed comment image uploads per rate limit window"
+          },
+          "comment_image_rate_limit_window_minutes": {
+            "title": "Comment Image Rate Limit Window Minutes",
+            "description": "Comment image upload rate limit window in minutes"
+          },
           "avatar_helper_copy": {
             "title": "Avatar Helper Copy",
             "description": "Avatar helper text"
@@ -18021,6 +18047,8 @@
           "moderation_mode",
           "default_sorting",
           "page_size",
+          "comment_image_rate_limit_count",
+          "comment_image_rate_limit_window_minutes",
           "avatar_helper_copy",
           "migration_state",
           "created_at",
@@ -18262,6 +18290,34 @@
             ],
             "title": "Image Max Bytes",
             "description": "Max upload image size in bytes"
+          },
+          "comment_image_rate_limit_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 60.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Image Rate Limit Count",
+            "description": "Allowed comment image uploads per rate limit window"
+          },
+          "comment_image_rate_limit_window_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Image Rate Limit Window Minutes",
+            "description": "Comment image upload rate limit window in minutes"
           },
           "avatar_helper_copy": {
             "anyOf": [

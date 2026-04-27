@@ -331,6 +331,9 @@ export const zhTranslations: TranslationDict = {
     "siteConfig.commentAvatarStrategy": "默认头像样式",
     "siteConfig.commentImageUploader": "允许图片上传",
     "siteConfig.commentImageUploaderDesc": "允许评论内容附加图片",
+    "siteConfig.commentImageRateLimit": "图片上传限流",
+    "siteConfig.commentImageRateLimitDesc":
+      "同一访客在指定分钟窗口内允许上传的评论图片数量，格式为 X / X minute。",
     "siteConfig.commentOauthUrl": "第三方登录地址",
     "siteConfig.commentReadOnly": "只读",
     "siteConfig.commentSurfacesHint":
@@ -498,7 +501,9 @@ export const zhTranslations: TranslationDict = {
     "assets.links": "链接",
     "assets.copyInternal": "复制内部链接",
     "assets.copyPublic": "复制外部链接",
-    "assets.open": "打开外部链接",
+    "assets.open": "查看",
+    "assets.openPublic": "查看",
+    "assets.openPreview": "查看",
     "assets.internalOnly": "仅内部",
     "assets.copyInternalSuccess": "已复制内部链接",
     "assets.copyPublicSuccess": "已复制公开链接",

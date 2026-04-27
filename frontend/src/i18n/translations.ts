@@ -281,6 +281,10 @@ export const frontendTranslations: Record<
     "waline.surface.loginMethodEmail": "邮箱",
     "waline.surface.missingPath": "当前内容缺少评论路径，暂时无法加载评论。",
     "waline.surface.imageUploadDisabled": "当前站点已关闭评论图片上传。",
+    "waline.surface.guestbookImageLimitExceeded":
+      "一条留言最多可以附加 {count} 张图片。",
+    "waline.surface.commentImageLimitExceeded":
+      "一条评论最多可以附加 {count} 张图片。",
     "waline.surface.imageUploadMissingUrl":
       "图片上传成功，但没有返回可用地址。",
     "waline.surface.loginRequiredGuestbook": "当前站点要求登录后才能留言。",
@@ -649,6 +653,10 @@ export const frontendTranslations: Record<
     "waline.surface.missingPath": "Missing comment path for current content.",
     "waline.surface.imageUploadDisabled":
       "Comment image upload is disabled on this site.",
+    "waline.surface.guestbookImageLimitExceeded":
+      "A guestbook note can include at most {count} images.",
+    "waline.surface.commentImageLimitExceeded":
+      "A comment can include at most {count} images.",
     "waline.surface.imageUploadMissingUrl":
       "Image upload succeeded but no usable URL was returned.",
     "waline.surface.loginRequiredGuestbook":

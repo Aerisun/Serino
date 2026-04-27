@@ -1,6 +1,14 @@
 {$AERISUN_DOMAIN:localhost} {
     encode zstd gzip
 
+    @commentImageUpload path /api/v1/site-interactions/comment-image
+    handle @commentImageUpload {
+        request_body {
+            max_size 3MB
+        }
+        reverse_proxy api:{$AERISUN_PORT:8000}
+    }
+
     # API 后端
     handle {$AERISUN_API_BASE_PATH:/api}/* {
         reverse_proxy api:{$AERISUN_PORT:8000}

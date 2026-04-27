@@ -449,6 +449,8 @@ def _community_capture(session: Session) -> dict[str, Any]:
             "default_sorting": config.default_sorting,
             "page_size": config.page_size,
             "image_max_bytes": config.image_max_bytes,
+            "comment_image_rate_limit_count": config.comment_image_rate_limit_count,
+            "comment_image_rate_limit_window_minutes": config.comment_image_rate_limit_window_minutes,
             "avatar_helper_copy": config.avatar_helper_copy,
             "migration_state": config.migration_state,
         }

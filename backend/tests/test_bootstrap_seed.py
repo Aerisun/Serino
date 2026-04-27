@@ -48,10 +48,14 @@ def test_apply_production_baseline_only_initializes_safe_scaffold(tmp_path, monk
 
         session_factory = get_session_factory()
         with session_factory() as session:
+            community = session.query(CommunityConfig).one()
             assert session.query(PageCopy).count() > 0
             assert session.query(PostEntry).count() == 0
             assert session.query(Friend).count() == 0
             assert session.query(TrafficDailySnapshot).count() == 0
+            assert community.image_uploader is False
+            assert community.comment_image_rate_limit_count == 18
+            assert community.comment_image_rate_limit_window_minutes == 30
             page_widths = {
                 page.page_key: page.max_width
                 for page in session.query(PageCopy)

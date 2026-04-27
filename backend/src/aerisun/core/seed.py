@@ -383,12 +383,14 @@ def build_default_community_config() -> dict[str, object]:
         "meta": ["nick", "mail"],
         "required_meta": ["nick"],
         "emoji_presets": ["weibo", "qq", "tieba", "bilibili", "twemoji", "alus", "bmoji"],
-        "image_uploader": True,
+        "image_uploader": False,
         "anonymous_enabled": True,
         "moderation_mode": "no_review",
         "default_sorting": "latest",
         "page_size": 20,
         "image_max_bytes": 524288,
+        "comment_image_rate_limit_count": 18,
+        "comment_image_rate_limit_window_minutes": 30,
         "avatar_helper_copy": "登录后评论会绑定到当前邮箱或第三方身份，邮箱不会公开显示。",
         "migration_state": "not_started",
     }
@@ -479,6 +481,10 @@ def backfill_community_config_defaults(session: Session) -> None:
     default_server_url = str(default_config["server_url"]).strip()
     config.server_url = _normalize_community_server_url(config.server_url, default_server_url)
     config.surfaces = _merge_community_surfaces(config.surfaces, list(default_config["surfaces"]))
+    if not getattr(config, "comment_image_rate_limit_count", None):
+        config.comment_image_rate_limit_count = int(default_config["comment_image_rate_limit_count"])
+    if not getattr(config, "comment_image_rate_limit_window_minutes", None):
+        config.comment_image_rate_limit_window_minutes = int(default_config["comment_image_rate_limit_window_minutes"])
 
 
 def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:

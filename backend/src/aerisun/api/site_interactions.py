@@ -5,11 +5,12 @@ from sqlalchemy.orm import Session
 
 from aerisun.api.deps.site_auth import (
     get_current_site_session_optional,
+    get_current_site_user,
     get_current_site_user_optional,
 )
 from aerisun.api.public_schemas import CommentImageUploadResponse
 from aerisun.core.db import get_session
-from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, limiter
+from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, comment_image_upload_rate_limit, limiter
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -23,7 +24,6 @@ from aerisun.domain.engagement.schemas import (
 from aerisun.domain.engagement.service import (
     create_public_comment,
     create_public_guestbook_entry,
-    ensure_comment_image_upload_allowed,
     list_public_comments,
     list_public_guestbook_entries,
     read_public_reaction,
@@ -143,17 +143,27 @@ def delete_reaction(
 
 
 @base_router.post("/comment-image", response_model=CommentImageUploadResponse, summary="评论图片上传")
-@limiter.limit(RATE_WRITE_ENGAGEMENT)
+@limiter.limit(comment_image_upload_rate_limit)
 def upload_comment_image(
     request: Request,
     file: UploadFile,
     session: Session = Depends(get_session),
+    current_user: SiteUser = Depends(get_current_site_user),
 ) -> dict:
-    ensure_comment_image_upload_allowed(session)
-    from aerisun.domain.media.service import save_comment_image
+    from aerisun.domain.exceptions import PayloadTooLarge
+    from aerisun.domain.media.service import get_comment_image_upload_limit, save_comment_image
 
-    content = file.file.read()
-    url = save_comment_image(session, content, file.filename or "img", file.content_type)
+    upload_limit = get_comment_image_upload_limit(session)
+    content = file.file.read(upload_limit + 1)
+    if len(content) > upload_limit:
+        raise PayloadTooLarge("图片过大，请压缩后重试")
+    url = save_comment_image(
+        session,
+        content,
+        file.filename or "img",
+        file.content_type,
+        uploader_id=current_user.id,
+    )
     return {"errno": 0, "data": {"url": url}}
 
 

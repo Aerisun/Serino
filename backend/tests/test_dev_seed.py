@@ -47,6 +47,8 @@ def test_seed_development_data_uses_updated_defaults(tmp_path, monkeypatch) -> N
             community = session.query(CommunityConfig).one()
 
         assert community.image_uploader is True
+        assert community.comment_image_rate_limit_count == 18
+        assert community.comment_image_rate_limit_window_minutes == 30
     finally:
         teardown_runtime_state()
 

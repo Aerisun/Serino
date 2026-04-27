@@ -339,6 +339,9 @@ export const enTranslations: TranslationDict = {
     "siteConfig.commentAvatarStrategy": "Avatar Strategy",
     "siteConfig.commentImageUploader": "Allow Image Upload",
     "siteConfig.commentImageUploaderDesc": "Allow images inside comments",
+    "siteConfig.commentImageRateLimit": "Image Upload Rate Limit",
+    "siteConfig.commentImageRateLimitDesc":
+      "Allowed comment image uploads for one visitor within the configured minute window, formatted as X / X minute.",
     "siteConfig.commentOauthUrl": "OAuth URL",
     "siteConfig.commentReadOnly": "Read only",
     "siteConfig.commentSurfacesHint":
@@ -514,7 +517,9 @@ export const enTranslations: TranslationDict = {
     "assets.links": "Links",
     "assets.copyInternal": "Copy internal link",
     "assets.copyPublic": "Copy public link",
-    "assets.open": "Open public link",
+    "assets.open": "View",
+    "assets.openPublic": "View",
+    "assets.openPreview": "View",
     "assets.internalOnly": "Internal only",
     "assets.copyInternalSuccess": "Copied internal link",
     "assets.copyPublicSuccess": "Copied public link",

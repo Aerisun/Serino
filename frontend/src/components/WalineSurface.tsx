@@ -53,6 +53,27 @@ interface CommunityPageSnapshot<T> {
   page: number;
 }
 
+interface PendingCommentImage {
+  marker: string;
+  previewUrl: string;
+  file: File;
+  alt: string;
+}
+
+const MAX_IMAGES_PER_COMMENT = 9;
+const COMMENT_MARKDOWN_IMAGE_RE = /!\[[^\]]*]\([^)]+\)/g;
+
+const createPendingImageMarker = () => {
+  const cryptoId = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : "";
+  const fallbackId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return cryptoId || fallbackId;
+};
+
+const sanitizeMarkdownImageAlt = (value: string) =>
+  value.replace(/[\r\n[\]]+/g, " ").replace(/\s+/g, " ").trim() || "image";
+
+const countCommentImages = (body: string) => body.match(COMMENT_MARKDOWN_IMAGE_RE)?.length ?? 0;
+
 export interface WalineSurfaceProps {
   surface: CommunitySurface;
   slug?: string;
@@ -79,6 +100,9 @@ const WalineSurface = ({
   const guestbookLoadingLabel = String(guestbookPageConfig.loadingLabel ?? t("waline.surface.guestbookLoading"));
   const guestbookRetryLabel = String(guestbookPageConfig.retryLabel ?? t("waline.surface.guestbookRetry"));
   const guestbookEmptyMessage = String(guestbookPageConfig.emptyMessage ?? t("waline.surface.guestbookEmpty"));
+  const imageLimitMessageKey = isGuestbook
+    ? "waline.surface.guestbookImageLimitExceeded"
+    : "waline.surface.commentImageLimitExceeded";
   const storageKey = `${PROFILE_STORAGE_PREFIX}${surface}:${slug ?? "guestbook"}`;
   const {
     user: siteUser,
@@ -120,11 +144,23 @@ const WalineSurface = ({
   const [editorMode, setEditorMode] = useState<EditorMode>("write");
   const [composerOpen, setComposerOpen] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [pendingCommentImages, setPendingCommentImages] = useState<PendingCommentImage[]>([]);
   const avatarPickerRef = useRef<HTMLDivElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const pendingCommentImagesRef = useRef<PendingCommentImage[]>([]);
   const deferredBody = useDeferredValue(draft.body);
+
+  useEffect(() => {
+    pendingCommentImagesRef.current = pendingCommentImages;
+  }, [pendingCommentImages]);
+
+  useEffect(() => () => {
+    for (const item of pendingCommentImagesRef.current) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
+  }, []);
 
   useEffect(() => {
     if (communityConfig) {
@@ -475,9 +511,26 @@ const WalineSurface = ({
     setEmojiPickerOpen(false);
   }, [insertIntoBody]);
 
-  const handleImageUpload = useCallback(async (file: File) => {
+  const handleImageUpload = useCallback(async (files: File[]) => {
     if (!imageUploadsEnabled) {
       setSubmitError(t("waline.surface.imageUploadDisabled"));
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
+      return;
+    }
+    if (requiresAuthentication && !authSession) {
+      setSubmitError(isGuestbook ? t("waline.surface.loginRequiredGuestbook") : t("waline.surface.loginRequiredComment"));
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
+      return;
+    }
+    const totalImageCount = countCommentImages(draft.body) + pendingCommentImages.length + files.length;
+    if (totalImageCount > MAX_IMAGES_PER_COMMENT) {
+      setSubmitError(t(imageLimitMessageKey, {
+        count: MAX_IMAGES_PER_COMMENT,
+      }));
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
@@ -489,20 +542,22 @@ const WalineSurface = ({
     setSubmitNotice(null);
 
     try {
-      const compressedFile = await prepareImageUploadFile(file, {
-        mode: "compress",
-        maxDimension: 1920,
-        quality: 0.82,
-        targetMaxBytes: config?.image_max_bytes ?? 512 * 1024,
-      });
-      const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost({ file: compressedFile } as never);
-      const imageUrl = response.data.data?.url;
-      if (!imageUrl) {
-        throw new Error(t("waline.surface.imageUploadMissingUrl"));
+      const preparedImages: PendingCommentImage[] = [];
+      for (const file of files) {
+        const compressedFile = await prepareImageUploadFile(file, {
+          mode: "compress",
+          maxDimension: 1920,
+          quality: 0.82,
+          targetMaxBytes: config?.image_max_bytes ?? 512 * 1024,
+        });
+        preparedImages.push({
+          marker: createPendingImageMarker(),
+          previewUrl: URL.createObjectURL(compressedFile),
+          file: compressedFile,
+          alt: sanitizeMarkdownImageAlt(file.name.replace(/\.[^.]+$/, "")),
+        });
       }
-      const alt = file.name.replace(/\.[^.]+$/, "").trim() || "image";
-      const prefix = draft.body.trim() ? "\n" : "";
-      insertIntoBody(`${prefix}![${alt}](${imageUrl})\n`);
+      setPendingCommentImages((current) => [...current, ...preparedImages]);
     } catch (error) {
       setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
     } finally {
@@ -511,7 +566,19 @@ const WalineSurface = ({
         imageInputRef.current.value = "";
       }
     }
-  }, [config?.image_max_bytes, draft.body, imageUploadsEnabled, insertIntoBody, t]);
+  }, [authSession, config?.image_max_bytes, draft.body, imageLimitMessageKey, imageUploadsEnabled, isGuestbook, pendingCommentImages.length, requiresAuthentication, t]);
+
+  const handleRemovePendingCommentImage = useCallback((marker: string) => {
+    setPendingCommentImages((current) => {
+      const removed = current.find((item) => item.marker === marker);
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return current.filter((item) => item.marker !== marker);
+    });
+    setSubmitError(null);
+    setSubmitNotice(null);
+  }, []);
 
   const handleLogout = useCallback(() => {
     setAuthError(null);
@@ -537,8 +604,15 @@ const WalineSurface = ({
       setSubmitError(t("waline.surface.emailRequired"));
       return;
     }
-    if (!draft.body.trim()) {
+    const draftBody = draft.body.trim();
+    if (!draftBody && pendingCommentImages.length === 0) {
       setSubmitError(isGuestbook ? t("waline.surface.guestbookBodyRequired") : t("waline.surface.commentBodyRequired"));
+      return;
+    }
+    if (countCommentImages(draftBody) + pendingCommentImages.length > MAX_IMAGES_PER_COMMENT) {
+      setSubmitError(t(imageLimitMessageKey, {
+        count: MAX_IMAGES_PER_COMMENT,
+      }));
       return;
     }
     if (!authSession && !avatarKey) {
@@ -551,12 +625,43 @@ const WalineSurface = ({
     setSubmitNotice(null);
 
     try {
+      let bodyForSubmit = draftBody;
+      if (pendingCommentImages.length > 0) {
+        setImageUploading(true);
+        const uploadedImages: string[] = [];
+        try {
+          for (const item of pendingCommentImages) {
+            const response = await uploadCommentImageApiV1SiteInteractionsCommentImagePost({ file: item.file } as never);
+            const imageUrl = response.data.data?.url;
+            if (!imageUrl) {
+              throw new Error(t("waline.surface.imageUploadMissingUrl"));
+            }
+            uploadedImages.push(`![${item.alt}](${imageUrl})`);
+          }
+        } finally {
+          setImageUploading(false);
+        }
+
+        bodyForSubmit = [
+          uploadedImages.join("\n"),
+          draftBody,
+        ].filter(Boolean).join("\n\n");
+
+        setDraft((current) => ({ ...current, body: bodyForSubmit }));
+        setPendingCommentImages((current) => {
+          for (const item of current) {
+            URL.revokeObjectURL(item.previewUrl);
+          }
+          return [];
+        });
+      }
+
       if (isGuestbook) {
         const payload = {
           name: authorName,
           email: authorEmail,
           website: authorWebsite || null,
-          body: draft.body.trim(),
+          body: bodyForSubmit,
           avatar_key: avatarKey,
         };
         const response = await createGuestbookApiV1SiteInteractionsGuestbookPost(payload as never);
@@ -566,7 +671,7 @@ const WalineSurface = ({
         const payload = {
           author_name: authorName,
           author_email: authorEmail,
-          body: draft.body.trim(),
+          body: bodyForSubmit,
           parent_id: replyTarget?.id ?? null,
           avatar_key: avatarKey,
         };
@@ -591,7 +696,7 @@ const WalineSurface = ({
     } finally {
       setSubmitting(false);
     }
-  }, [authSession, draft, isGuestbook, loadEntries, loadedPageCount, requiresAuthentication, replyTarget, slug, surface, t]);
+  }, [authSession, draft, imageLimitMessageKey, isGuestbook, loadEntries, loadedPageCount, pendingCommentImages, requiresAuthentication, replyTarget, slug, surface, t]);
 
   const selectedPreset = avatarPresets.find((preset) => preset.key === draft.avatarKey) ?? avatarPresets[0] ?? null;
   const toggleAvatarPicker = useCallback(() => {
@@ -653,10 +758,12 @@ const WalineSurface = ({
             emojiChoices={EMOJI_CHOICES}
             onEmojiInsert={handleEmojiInsert}
             emojiPickerRef={emojiPickerRef}
-            imageUploadsEnabled={imageUploadsEnabled}
+            imageUploadsEnabled={imageUploadsEnabled && (!requiresAuthentication || Boolean(authSession))}
             imageUploading={imageUploading}
             imageInputRef={imageInputRef}
-            onImageUpload={(file) => void handleImageUpload(file)}
+            onImageUpload={(files) => void handleImageUpload(files)}
+            pendingImages={pendingCommentImages}
+            onRemovePendingImage={handleRemovePendingCommentImage}
             avatarPickerOpen={avatarPickerOpen}
             avatarPickerRef={avatarPickerRef}
             onToggleAvatarPicker={toggleAvatarPicker}

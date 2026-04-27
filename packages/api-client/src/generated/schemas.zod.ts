@@ -1759,6 +1759,8 @@ export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = 
   "default_sorting": zod.unknown().describe('Default sort order'),
   "page_size": zod.unknown().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.unknown().optional().describe('Max upload image size in bytes'),
+  "comment_image_rate_limit_count": zod.unknown().describe('Allowed comment image uploads per rate limit window'),
+  "comment_image_rate_limit_window_minutes": zod.unknown().describe('Comment image upload rate limit window in minutes'),
   "avatar_helper_copy": zod.unknown().describe('Avatar helper text'),
   "migration_state": zod.unknown().describe('Waline migration state'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1769,6 +1771,12 @@ export const GetCommunityConfigApiV1AdminSiteConfigCommunityConfigGetResponse = 
 /**
  * @summary 更新社区评论配置
  */
+export const updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBodyCommentImageRateLimitCountOneMax = 60;
+
+export const updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBodyCommentImageRateLimitWindowMinutesOneMax = 1440;
+
+
+
 export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = zod.object({
   "provider": zod.union([zod.string(),zod.null()]).optional().describe('Comment system provider name'),
   "server_url": zod.union([zod.string(),zod.null()]).optional().describe('Comment server URL'),
@@ -1787,6 +1795,8 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBody = z
   "default_sorting": zod.union([zod.string(),zod.null()]).optional().describe('Default comment sort order'),
   "page_size": zod.union([zod.number(),zod.null()]).optional().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.union([zod.number(),zod.null()]).optional().describe('Max upload image size in bytes'),
+  "comment_image_rate_limit_count": zod.union([zod.number().min(1).max(updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBodyCommentImageRateLimitCountOneMax),zod.null()]).optional().describe('Allowed comment image uploads per rate limit window'),
+  "comment_image_rate_limit_window_minutes": zod.union([zod.number().min(1).max(updateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutBodyCommentImageRateLimitWindowMinutesOneMax),zod.null()]).optional().describe('Comment image upload rate limit window in minutes'),
   "avatar_helper_copy": zod.union([zod.string(),zod.null()]).optional().describe('Avatar selection helper text'),
   "migration_state": zod.union([zod.string(),zod.null()]).optional().describe('Waline migration state')
 })
@@ -1805,6 +1815,8 @@ export const UpdateCommunityConfigApiV1AdminSiteConfigCommunityConfigPutResponse
   "default_sorting": zod.unknown().describe('Default sort order'),
   "page_size": zod.unknown().describe('Initial comments loaded per batch'),
   "image_max_bytes": zod.unknown().optional().describe('Max upload image size in bytes'),
+  "comment_image_rate_limit_count": zod.unknown().describe('Allowed comment image uploads per rate limit window'),
+  "comment_image_rate_limit_window_minutes": zod.unknown().describe('Comment image upload rate limit window in minutes'),
   "avatar_helper_copy": zod.unknown().describe('Avatar helper text'),
   "migration_state": zod.unknown().describe('Waline migration state'),
   "created_at": zod.unknown().describe('Creation timestamp'),

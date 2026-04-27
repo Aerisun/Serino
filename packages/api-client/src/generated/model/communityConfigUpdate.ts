@@ -31,6 +31,10 @@ export interface CommunityConfigUpdate {
   page_size?: number | null;
   /** Max upload image size in bytes */
   image_max_bytes?: number | null;
+  /** Allowed comment image uploads per rate limit window */
+  comment_image_rate_limit_count?: number | null;
+  /** Comment image upload rate limit window in minutes */
+  comment_image_rate_limit_window_minutes?: number | null;
   /** Avatar selection helper text */
   avatar_helper_copy?: string | null;
   /** Waline migration state */

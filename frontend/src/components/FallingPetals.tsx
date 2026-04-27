@@ -17,18 +17,18 @@ interface Petal {
 }
 
 const PETAL_COUNT = {
-  light: 22,
-  dark: 26,
+  light: 14,
+  dark: 8,
 } as const;
 
 const PETAL_COLORS = {
   light: [
-    "rgb(246, 191, 205)",
-    "rgb(248, 214, 198)",
-    "rgb(230, 206, 241)",
-    "rgb(201, 223, 238)",
-    "rgb(246, 231, 191)",
-    "rgb(205, 229, 210)",
+    "rgb(235, 125, 156)",
+    "rgb(237, 154, 118)",
+    "rgb(202, 139, 228)",
+    "rgb(111, 178, 214)",
+    "rgb(219, 179, 88)",
+    "rgb(116, 185, 137)",
   ],
   dark: [
     "rgb(255, 191, 205)",
@@ -38,6 +38,23 @@ const PETAL_COLORS = {
     "rgb(255, 241, 189)",
     "rgb(192, 235, 208)",
   ],
+} as const;
+
+const PETAL_VISUALS = {
+  light: {
+    edgeColor: "rgba(120, 56, 86, 0.22)",
+    highlightColor: "rgba(255, 255, 255, 0.5)",
+    shadowColor: "rgba(126, 64, 92, 0.1)",
+    shadowBlur: 2,
+    strokeWidth: 0.42,
+  },
+  dark: {
+    edgeColor: "rgba(255, 255, 255, 0.18)",
+    highlightColor: "rgba(255, 255, 255, 0.48)",
+    shadowColor: "rgba(255, 180, 205, 0.1)",
+    shadowBlur: 1.4,
+    strokeWidth: 0.35,
+  },
 } as const;
 
 const FallingPetals = () => {
@@ -59,16 +76,25 @@ const FallingPetals = () => {
     const theme = resolvedTheme;
     const petalColors = PETAL_COLORS[theme];
     const petalCount = PETAL_COUNT[theme];
+    const petalVisuals = PETAL_VISUALS[theme];
+    let viewportWidth = window.innerWidth;
+    let viewportHeight = window.innerHeight;
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      viewportWidth = window.innerWidth;
+      viewportHeight = window.innerHeight;
+      canvas.width = Math.floor(viewportWidth * dpr);
+      canvas.height = Math.floor(viewportHeight * dpr);
+      canvas.style.width = `${viewportWidth}px`;
+      canvas.style.height = `${viewportHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener("resize", resize);
 
     petalsRef.current = Array.from({ length: petalCount }, () =>
-      createPetal(canvas.width, canvas.height, theme, petalColors, true),
+      createPetal(viewportWidth, viewportHeight, theme, petalColors, true),
     );
 
     const drawPetal = (petal: Petal) => {
@@ -96,13 +122,29 @@ const FallingPetals = () => {
         0,
       );
 
-      ctx.fillStyle = petal.color;
+      const fill = ctx.createLinearGradient(
+        0,
+        -petal.size * 0.34,
+        petal.size,
+        petal.size * 0.28,
+      );
+      fill.addColorStop(0, petalVisuals.highlightColor);
+      fill.addColorStop(0.26, petal.color);
+      fill.addColorStop(1, petal.color);
+
+      ctx.shadowColor = petalVisuals.shadowColor;
+      ctx.shadowBlur = petalVisuals.shadowBlur;
+      ctx.fillStyle = fill;
       ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = petalVisuals.strokeWidth;
+      ctx.strokeStyle = petalVisuals.edgeColor;
+      ctx.stroke();
       ctx.restore();
     };
 
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, viewportWidth, viewportHeight);
 
       petalsRef.current.forEach((petal, index) => {
         petal.wobble += petal.wobbleSpeed;
@@ -110,10 +152,14 @@ const FallingPetals = () => {
         petal.y += petal.speedY;
         petal.rotation += petal.rotationSpeed;
 
-        if (petal.y > canvas.height + 20 || petal.x < -20 || petal.x > canvas.width + 20) {
+        if (
+          petal.y > viewportHeight + 20 ||
+          petal.x < -20 ||
+          petal.x > viewportWidth + 20
+        ) {
           petalsRef.current[index] = createPetal(
-            canvas.width,
-            canvas.height,
+            viewportWidth,
+            viewportHeight,
             theme,
             petalColors,
             false,
@@ -141,7 +187,7 @@ const FallingPetals = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[1]"
+      className="fixed inset-0 pointer-events-none z-0"
       aria-hidden="true"
     />
   );
@@ -159,14 +205,18 @@ function createPetal(
   return {
     x: Math.random() * width,
     y: initial ? Math.random() * height : -8 - Math.random() * 28,
-    size: isLight ? 3.8 + Math.random() * 4 : 4.2 + Math.random() * 4.4,
+    size: isLight ? 4.6 + Math.random() * 4.2 : 4.2 + Math.random() * 4.4,
     rotation: Math.random() * 360,
     rotationSpeed: (Math.random() - 0.5) * (isLight ? 1 : 1.2),
-    speedX: (Math.random() - 0.5) * (isLight ? 0.34 : 0.42),
-    speedY: isLight ? 0.24 + Math.random() * 0.34 : 0.28 + Math.random() * 0.4,
-    opacity: isLight ? 0.2 + Math.random() * 0.16 : 0.24 + Math.random() * 0.18,
+    speedX: (Math.random() - 0.5) * (isLight ? 0.4 : 0.42),
+    speedY: isLight ? 0.26 + Math.random() * 0.38 : 0.28 + Math.random() * 0.4,
+    opacity: isLight
+      ? 0.28 + Math.random() * 0.12
+      : 0.24 + Math.random() * 0.18,
     wobble: Math.random() * Math.PI * 2,
-    wobbleSpeed: isLight ? 0.016 + Math.random() * 0.016 : 0.018 + Math.random() * 0.018,
+    wobbleSpeed: isLight
+      ? 0.018 + Math.random() * 0.018
+      : 0.018 + Math.random() * 0.018,
     color: petalColors[Math.floor(Math.random() * petalColors.length)],
   };
 }
