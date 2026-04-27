@@ -202,7 +202,7 @@ class TestDashboardStats:
             session.add_all(
                 [
                     VisitRecord(
-                        visited_at=datetime(2026, 3, 31, 16, 30, tzinfo=BEIJING_TZ),
+                        visited_at=datetime(2026, 4, 1, 0, 30, tzinfo=BEIJING_TZ),
                         path="/posts/beijing-midnight",
                         ip_address="203.0.113.31",
                         user_agent="Mozilla/5.0",

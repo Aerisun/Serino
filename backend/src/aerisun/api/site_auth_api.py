@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -10,7 +12,9 @@ from aerisun.api.deps.site_auth import (
     get_current_site_user_optional,
 )
 from aerisun.core.db import get_session
+from aerisun.domain.exceptions import DomainError
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.oauth import parse_oauth_state_cookie
 from aerisun.domain.site_auth.schemas import (
     EmailLoginRequest,
     EmailLoginResponse,
@@ -45,6 +49,41 @@ def _request_is_secure(request: Request) -> bool:
     if forwarded_proto:
         return forwarded_proto.split(",", 1)[0].strip().lower() == "https"
     return request.url.scheme == "https"
+
+
+def _first_forwarded_header_value(request: Request, name: str) -> str:
+    raw = request.headers.get(name, "")
+    if not raw:
+        return ""
+    return raw.split(",", 1)[0].strip()
+
+
+def _request_external_scheme(request: Request) -> str:
+    return _first_forwarded_header_value(request, "x-forwarded-proto") or request.url.scheme
+
+
+def _request_external_host(request: Request) -> str:
+    return (
+        _first_forwarded_header_value(request, "x-forwarded-host")
+        or _first_forwarded_header_value(request, "host")
+        or request.url.netloc
+    )
+
+
+def _build_oauth_callback_url(request: Request, provider: str) -> str:
+    callback_path = str(request.app.url_path_for("oauth_callback", provider=provider))
+    return f"{_request_external_scheme(request)}://{_request_external_host(request)}{callback_path}"
+
+
+def _merge_redirect_query(target: str, **params: str | None) -> str:
+    parts = urlsplit(target)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    for key, value in params.items():
+        if value is None:
+            query.pop(key, None)
+            continue
+        query[key] = value
+    return urlunsplit(("", "", parts.path or "/", urlencode(query), parts.fragment))
 
 
 def _set_session_cookie(response: Response, token: str, *, secure: bool) -> None:
@@ -134,7 +173,7 @@ def oauth_start(
     return_to: str = Query(default="/"),
     session: Session = Depends(get_session),
 ) -> OAuthStartResponse:
-    callback_url = str(request.url_for("oauth_callback", provider=provider))
+    callback_url = _build_oauth_callback_url(request, provider)
     authorization_url, state_cookie = build_oauth_authorization_url(
         session,
         provider,
@@ -162,16 +201,34 @@ def oauth_callback(
     oauth_state: str | None = Cookie(default=None, alias="aerisun_site_oauth_state"),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
-    callback_url = str(request.url_for("oauth_callback", provider=provider))
-    token, return_to = complete_oauth_login(
-        session,
-        provider,
-        code,
-        state,
-        oauth_state,
-        callback_url=callback_url,
+    callback_url = _build_oauth_callback_url(request, provider)
+    payload = parse_oauth_state_cookie(oauth_state)
+    try:
+        token, return_to = complete_oauth_login(
+            session,
+            provider,
+            code,
+            state,
+            oauth_state,
+            callback_url=callback_url,
+        )
+    except DomainError as exc:
+        redirect_to = _merge_redirect_query(
+            payload.return_to if payload else "/",
+            auth="error",
+            auth_provider=provider,
+            auth_message=exc.detail,
+        )
+        response = RedirectResponse(url=redirect_to, status_code=302)
+        response.delete_cookie("aerisun_site_oauth_state", path="/")
+        return response
+
+    redirect_to = _merge_redirect_query(
+        return_to,
+        auth="success",
+        auth_provider=provider,
+        auth_message=None,
     )
-    redirect_to = return_to if "?" in return_to else f"{return_to}?auth=success"
     response = RedirectResponse(url=redirect_to, status_code=302)
     response.delete_cookie("aerisun_site_oauth_state", path="/")
     _set_session_cookie(response, token, secure=_request_is_secure(request))

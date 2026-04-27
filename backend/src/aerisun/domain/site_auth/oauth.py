@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.time import shanghai_now
 from aerisun.domain.exceptions import AuthenticationFailed, ValidationError
+from aerisun.domain.outbound_proxy.service import require_outbound_proxy_scope, send_outbound_request
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.schemas import OAuthProviderCallbackResult
 
@@ -51,6 +52,44 @@ def parse_oauth_state_cookie(raw: str | None) -> OAuthStatePayload | None:
     return OAuthStatePayload(provider=provider, state=state, return_to=return_to)
 
 
+def _provider_label(provider: str) -> str:
+    return "GitHub" if provider == "github" else "Google"
+
+
+def _safe_json_object(response: httpx.Response) -> dict[str, object]:
+    try:
+        payload = response.json()
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _extract_provider_error(payload: dict[str, object]) -> str:
+    for key in ("error_description", "error", "message"):
+        value = str(payload.get(key) or "").strip()
+        if value:
+            return " ".join(value.split())
+    return ""
+
+
+def _oauth_failure(
+    provider: str,
+    message: str,
+    *,
+    payload: dict[str, object] | None = None,
+    exc: Exception | None = None,
+) -> AuthenticationFailed:
+    upstream_error = _extract_provider_error(payload or {})
+    detail = f"{_provider_label(provider)} 登录失败，{message}"
+    if upstream_error:
+        detail = f"{detail}（{upstream_error[:160]}）"
+    if exc is not None:
+        logger.warning("%s OAuth request failed", provider, exc_info=exc)
+    elif payload:
+        logger.warning("%s OAuth response rejected: %s", provider, payload)
+    return AuthenticationFailed(detail)
+
+
 def build_oauth_authorization_url(
     session: Session,
     provider: str,
@@ -63,6 +102,7 @@ def build_oauth_authorization_url(
 
     if normalized not in enabled_oauth_providers(session):
         raise ValidationError("当前站点未启用该登录方式。")
+    require_outbound_proxy_scope(session, scope="oauth")
 
     if normalized == "github":
         client_id, _ = oauth_credentials(session, "github")
@@ -102,37 +142,66 @@ def build_oauth_authorization_url(
 
 def exchange_github_code(session: Session, code: str, *, callback_url: str) -> OAuthProviderCallbackResult:
     client_id, client_secret = oauth_credentials(session, "github")
-    token_response = httpx.post(
-        "https://github.com/login/oauth/access_token",
-        headers={"Accept": "application/json"},
-        data={
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "code": code,
-            "redirect_uri": callback_url,
-        },
-        timeout=8.0,
-    )
-    token_response.raise_for_status()
-    access_token = token_response.json().get("access_token")
+    try:
+        token_response = send_outbound_request(
+            session,
+            scope="oauth",
+            method="POST",
+            url="https://github.com/login/oauth/access_token",
+            headers={"Accept": "application/json"},
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "redirect_uri": callback_url,
+            },
+            timeout=8.0,
+        )
+    except httpx.HTTPError as exc:
+        raise _oauth_failure("github", "暂时无法连接 GitHub 认证服务，请稍后再试。", exc=exc) from exc
+    token_payload = _safe_json_object(token_response)
+    if token_response.is_error:
+        raise _oauth_failure(
+            "github",
+            "请检查回调地址、Client ID 和 Client Secret 是否与 GitHub OAuth App 配置一致。",
+            payload=token_payload,
+        )
+    access_token = str(token_payload.get("access_token") or "").strip()
     if not access_token:
-        raise AuthenticationFailed("GitHub 登录失败。")
+        raise AuthenticationFailed("GitHub 登录失败，GitHub 没有返回可用的 access token。")
 
-    user_response = httpx.get(
-        "https://api.github.com/user",
-        headers={"Authorization": f"Bearer {access_token}", "Accept": "application/vnd.github+json"},
-        timeout=8.0,
-    )
-    user_response.raise_for_status()
-    user_payload = user_response.json()
+    try:
+        user_response = send_outbound_request(
+            session,
+            scope="oauth",
+            method="GET",
+            url="https://api.github.com/user",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/vnd.github+json"},
+            timeout=8.0,
+        )
+    except httpx.HTTPError as exc:
+        raise _oauth_failure("github", "读取 GitHub 账号资料失败，请稍后再试。", exc=exc) from exc
+    user_payload = _safe_json_object(user_response)
+    if user_response.is_error:
+        raise _oauth_failure("github", "读取 GitHub 账号资料失败，请稍后再试。", payload=user_payload)
 
-    email_response = httpx.get(
-        "https://api.github.com/user/emails",
-        headers={"Authorization": f"Bearer {access_token}", "Accept": "application/vnd.github+json"},
-        timeout=8.0,
-    )
-    email_response.raise_for_status()
-    email_payload = email_response.json()
+    try:
+        email_response = send_outbound_request(
+            session,
+            scope="oauth",
+            method="GET",
+            url="https://api.github.com/user/emails",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/vnd.github+json"},
+            timeout=8.0,
+        )
+    except httpx.HTTPError as exc:
+        raise _oauth_failure("github", "读取 GitHub 账号邮箱失败，请稍后再试。", exc=exc) from exc
+    if email_response.is_error:
+        raise _oauth_failure("github", "读取 GitHub 账号邮箱失败，请稍后再试。")
+    try:
+        email_payload = email_response.json()
+    except ValueError:
+        email_payload = []
     primary_email = ""
     if isinstance(email_payload, list):
         primary = next((item for item in email_payload if item.get("primary")), None)
@@ -154,29 +223,48 @@ def exchange_github_code(session: Session, code: str, *, callback_url: str) -> O
 
 def exchange_google_code(session: Session, code: str, *, callback_url: str) -> OAuthProviderCallbackResult:
     client_id, client_secret = oauth_credentials(session, "google")
-    token_response = httpx.post(
-        "https://oauth2.googleapis.com/token",
-        data={
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "code": code,
-            "grant_type": "authorization_code",
-            "redirect_uri": callback_url,
-        },
-        timeout=8.0,
-    )
-    token_response.raise_for_status()
-    access_token = token_response.json().get("access_token")
+    try:
+        token_response = send_outbound_request(
+            session,
+            scope="oauth",
+            method="POST",
+            url="https://oauth2.googleapis.com/token",
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": callback_url,
+            },
+            timeout=8.0,
+        )
+    except httpx.HTTPError as exc:
+        raise _oauth_failure("google", "暂时无法连接 Google 认证服务，请稍后再试。", exc=exc) from exc
+    token_payload = _safe_json_object(token_response)
+    if token_response.is_error:
+        raise _oauth_failure(
+            "google",
+            "请检查回调地址、Client ID 和 Client Secret 是否与 Google Cloud Console 配置一致。",
+            payload=token_payload,
+        )
+    access_token = str(token_payload.get("access_token") or "").strip()
     if not access_token:
-        raise AuthenticationFailed("Google 登录失败。")
+        raise AuthenticationFailed("Google 登录失败，Google 没有返回可用的 access token。")
 
-    user_response = httpx.get(
-        "https://openidconnect.googleapis.com/v1/userinfo",
-        headers={"Authorization": f"Bearer {access_token}"},
-        timeout=8.0,
-    )
-    user_response.raise_for_status()
-    user_payload = user_response.json()
+    try:
+        user_response = send_outbound_request(
+            session,
+            scope="oauth",
+            method="GET",
+            url="https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=8.0,
+        )
+    except httpx.HTTPError as exc:
+        raise _oauth_failure("google", "读取 Google 账号资料失败，请稍后再试。", exc=exc) from exc
+    user_payload = _safe_json_object(user_response)
+    if user_response.is_error:
+        raise _oauth_failure("google", "读取 Google 账号资料失败，请稍后再试。", payload=user_payload)
 
     return OAuthProviderCallbackResult(
         provider="google",

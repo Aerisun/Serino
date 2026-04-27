@@ -7,6 +7,25 @@ import httpx
 import respx
 
 
+def _seed_google_visitor_oauth() -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
+    from aerisun.domain.outbound_proxy.service import update_outbound_proxy_config
+    from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
+
+    factory = get_session_factory()
+    with factory() as session:
+        update_outbound_proxy_config(
+            session,
+            OutboundProxyConfigUpdate(proxy_port=7890, oauth_enabled=True),
+        )
+        config = get_site_auth_config_orm(session)
+        config.visitor_oauth_providers = ["google"]
+        config.google_client_id = "google-client-id"
+        config.google_client_secret = "google-client-secret"
+        session.commit()
+
+
 def _seed_bound_admin_email(
     *,
     email: str,
@@ -55,12 +74,18 @@ def _seed_bound_google_admin(
     from aerisun.core.db import get_session_factory
     from aerisun.core.time import shanghai_now
     from aerisun.domain.iam.models import AdminUser
+    from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
+    from aerisun.domain.outbound_proxy.service import update_outbound_proxy_config
     from aerisun.domain.site_auth.admin_binding import upsert_admin_identity
     from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
     from aerisun.domain.site_auth.models import SiteUser, SiteUserOAuthAccount
 
     factory = get_session_factory()
     with factory() as session:
+        update_outbound_proxy_config(
+            session,
+            OutboundProxyConfigUpdate(proxy_port=7890, oauth_enabled=True),
+        )
         admin_user = session.query(AdminUser).filter(AdminUser.username == "oauth-site-admin").first()
         if admin_user is None:
             admin_user = AdminUser(
@@ -228,6 +253,103 @@ def test_exchange_site_user_requires_admin_elevated_session(client) -> None:
     exchanged = client.post("/api/v1/admin/auth/exchange-site-user")
     assert exchanged.status_code == 200
     assert exchanged.json()["token"]
+
+
+def test_google_oauth_start_uses_forwarded_https_callback_url(client) -> None:
+    _seed_google_visitor_oauth()
+
+    response = client.get(
+        "/api/v1/site-auth/oauth/google/start",
+        params={"return_to": "/"},
+        headers={
+            "x-forwarded-proto": "https",
+            "x-forwarded-host": "aerisun.top",
+        },
+    )
+    assert response.status_code == 200
+
+    auth_url = response.json()["authorization_url"]
+    redirect_uri = parse_qs(urlparse(auth_url).query)["redirect_uri"][0]
+    assert redirect_uri == "https://aerisun.top/api/v1/site-auth/oauth/google/callback"
+
+
+def test_google_oauth_start_requires_enabled_oauth_proxy(client) -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
+
+    factory = get_session_factory()
+    with factory() as session:
+        config = get_site_auth_config_orm(session)
+        config.visitor_oauth_providers = ["google"]
+        config.google_client_id = "google-client-id"
+        config.google_client_secret = "google-client-secret"
+        session.commit()
+
+    response = client.get(
+        "/api/v1/site-auth/oauth/google/start",
+        params={"return_to": "/"},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "请先在管理台的代理设置里开启OAuth代理，再继续当前操作。"
+
+
+def test_github_oauth_start_requires_enabled_oauth_proxy(client) -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
+
+    factory = get_session_factory()
+    with factory() as session:
+        config = get_site_auth_config_orm(session)
+        config.visitor_oauth_providers = ["github"]
+        config.github_client_id = "github-client-id"
+        config.github_client_secret = "github-client-secret"
+        session.commit()
+
+    response = client.get(
+        "/api/v1/site-auth/oauth/github/start",
+        params={"return_to": "/"},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "请先在管理台的代理设置里开启OAuth代理，再继续当前操作。"
+
+
+@respx.mock
+def test_google_oauth_callback_redirects_back_with_error_on_provider_failure(client) -> None:
+    _seed_google_visitor_oauth()
+
+    start_response = client.get(
+        "/api/v1/site-auth/oauth/google/start",
+        params={"return_to": "/admin/login?admin_auth_provider=google"},
+    )
+    assert start_response.status_code == 200
+    auth_url = start_response.json()["authorization_url"]
+    state = parse_qs(urlparse(auth_url).query)["state"][0]
+
+    respx.post("https://oauth2.googleapis.com/token").mock(
+        return_value=httpx.Response(
+            400,
+            json={
+                "error": "redirect_uri_mismatch",
+                "error_description": "Bad Request",
+            },
+        )
+    )
+
+    callback_response = client.get(
+        "/api/v1/site-auth/oauth/google/callback",
+        params={"code": "oauth-code", "state": state},
+        follow_redirects=False,
+    )
+    assert callback_response.status_code == 302
+
+    location = callback_response.headers["location"]
+    parsed = urlparse(location)
+    payload = parse_qs(parsed.query)
+    assert parsed.path == "/admin/login"
+    assert payload["admin_auth_provider"] == ["google"]
+    assert payload["auth"] == ["error"]
+    assert payload["auth_provider"] == ["google"]
+    assert "Google 登录失败" in payload["auth_message"][0]
 
 
 @respx.mock

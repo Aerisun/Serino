@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.settings import get_settings
 from aerisun.domain.exceptions import AuthenticationFailed, ValidationError
+from aerisun.domain.outbound_proxy.service import require_outbound_proxy_scope
 from aerisun.domain.site_auth import repository as repo
 from aerisun.domain.site_auth.models import SiteAuthConfig
 from aerisun.domain.site_auth.schemas import SiteAuthConfigAdminRead, SiteAuthConfigAdminUpdate
@@ -82,6 +83,12 @@ def update_site_auth_admin_config(session: Session, payload: SiteAuthConfigAdmin
             updates["admin_console_auth_methods"],
             ALLOWED_ADMIN_AUTH_METHODS,
         )
+    requires_oauth_proxy = ("visitor_oauth_providers" in updates and bool(updates["visitor_oauth_providers"])) or (
+        "admin_auth_methods" in updates
+        and any(item in ALLOWED_OAUTH_PROVIDERS for item in updates["admin_auth_methods"])
+    )
+    if requires_oauth_proxy:
+        require_outbound_proxy_scope(session, scope="oauth")
     next_admin_email_password = updates.pop("admin_email_password", None) if "admin_email_password" in updates else None
     for key, value in updates.items():
         setattr(config, key, value)
