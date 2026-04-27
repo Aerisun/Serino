@@ -237,7 +237,7 @@ const ActivityHeatmap = ({ enabled = true }: ActivityHeatmapProps) => {
           onTouchStart={() => {
             void warmInternalHref({ href: "/calendar", queryClient, pages });
           }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1.5 text-xs font-body font-medium text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)] transition hover:border-[rgb(var(--shiro-accent-rgb)/0.22)] hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.9)] dark:bg-card/[0.82]"
+          className="inline-flex items-center gap-1.5 px-1 py-1.5 text-xs font-body font-medium text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.72)] transition hover:text-[rgb(var(--shiro-accent-rgb,60_100_200)/0.9)]"
           aria-label={t("heatmap.calendarAria")}
         >
           <CalendarDays className="h-3.5 w-3.5" />
