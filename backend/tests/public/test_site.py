@@ -68,7 +68,7 @@ def test_read_site_bootstrap_returns_aggregated_payload(client) -> None:
     response = client.get("/api/v1/site/bootstrap")
 
     assert response.status_code == 200
-    assert response.headers["cache-control"] == "public, max-age=60, stale-while-revalidate=300"
+    assert response.headers["cache-control"] == "public, max-age=0, must-revalidate"
     assert response.headers["etag"]
     assert response.headers["last-modified"]
 
@@ -84,7 +84,7 @@ def test_read_site_bootstrap_script_assigns_window_payload(client) -> None:
     response = client.get("/bootstrap.js")
 
     assert response.status_code == 200
-    assert response.headers["cache-control"] == "public, max-age=60, stale-while-revalidate=300"
+    assert response.headers["cache-control"] == "public, max-age=0, must-revalidate"
     assert response.headers["content-type"].startswith("application/javascript")
     assert response.headers["etag"]
     assert response.headers["last-modified"]

@@ -65,7 +65,7 @@ base_router = APIRouter()
 public_router = APIRouter(tags=["site"])
 router = APIRouter(prefix="/api/v1/site", tags=["site"])
 
-BOOTSTRAP_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
+BOOTSTRAP_CACHE_CONTROL = "public, max-age=0, must-revalidate"
 PUBLIC_REVALIDATE_CACHE_CONTROL = "public, max-age=0, must-revalidate"
 _LAST_MODIFIED_BY_ETAG: dict[str, datetime] = {}
 

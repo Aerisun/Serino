@@ -50,11 +50,13 @@
     handle_path {$AERISUN_ADMIN_BASE_PATH:/admin/}* {
         root * {$AERISUN_ADMIN_DIST_DIR:/srv/aerisun/admin}
 
-        @hashed path *.js *.css *.woff2 *.woff
+        @hashed path /assets/*
         header @hashed Cache-Control "public, max-age=31536000, immutable"
 
-        @html path *.html /
-        header @html Cache-Control "no-cache"
+        @unhashed {
+            not path /assets/*
+        }
+        header @unhashed Cache-Control "no-cache, max-age=0, must-revalidate"
 
         try_files {path} /index.html
         file_server
@@ -64,11 +66,13 @@
     handle {
         root * {$AERISUN_FRONTEND_DIST_DIR:/srv/aerisun/frontend}
 
-        @hashed path *.js *.css *.woff2 *.woff
+        @hashed path /assets/*
         header @hashed Cache-Control "public, max-age=31536000, immutable"
 
-        @html path *.html /
-        header @html Cache-Control "no-cache"
+        @unhashed {
+            not path /assets/*
+        }
+        header @unhashed Cache-Control "no-cache, max-age=0, must-revalidate"
 
         try_files {path} /index.html
         file_server

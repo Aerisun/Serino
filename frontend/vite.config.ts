@@ -205,12 +205,11 @@ export default defineConfig(({ mode }) => {
         manifest: false,
         workbox: {
           globPatterns: [
-            "index.html",
-            "registerSW.js",
             "assets/index-*.js",
             "assets/index-*.css",
             "fonts/barlow-400-latin.woff2",
           ],
+          navigateFallback: null,
           maximumFileSizeToCacheInBytes: 384 * 1024,
           navigateFallbackDenylist: [
             adminBasePathPattern,
@@ -220,45 +219,6 @@ export default defineConfig(({ mode }) => {
             seoDocumentPattern,
           ],
           runtimeCaching: [
-            {
-              urlPattern: apiBasePathPattern,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "api-cache",
-                networkTimeoutSeconds: 3,
-                cacheableResponse: { statuses: [0, 200] },
-                expiration: { maxEntries: 60, maxAgeSeconds: 60 },
-              },
-            },
-            {
-              urlPattern: /\/bootstrap\.js$/,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "bootstrap-cache",
-                networkTimeoutSeconds: 2,
-                cacheableResponse: { statuses: [0, 200] },
-                expiration: { maxEntries: 2, maxAgeSeconds: 120 },
-              },
-            },
-            {
-              urlPattern: /\.(woff2?|ttf|otf)$/,
-              handler: "CacheFirst",
-              options: { cacheName: "font-cache", expiration: { maxEntries: 40, maxAgeSeconds: 86400 * 90 } },
-            },
-            {
-              urlPattern: /\/(assets\/.*)?(markdown|katex|mermaid|waline|comment|highlight)[^/]*\.(js|css)$/,
-              handler: "CacheFirst",
-              options: { cacheName: "rich-content", expiration: { maxEntries: 60, maxAgeSeconds: 86400 * 30 } },
-            },
-            {
-              urlPattern: /\/media\/.+\.(png|jpe?g|svg|gif|webp|avif|mp4|webm)$/i,
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "media-cache",
-                cacheableResponse: { statuses: [0, 200] },
-                expiration: { maxEntries: 160, maxAgeSeconds: 86400 * 7 },
-              },
-            },
             {
               urlPattern: /\/assets\/.+\.(js|css|png|jpe?g|svg|gif|webp|avif|woff2?)$/i,
               handler: "CacheFirst",

@@ -70,7 +70,7 @@ wait_for_url() {
   started_at=$(date +%s)
 
   while true; do
-    if curl -fsS "${url}" >/dev/null 2>&1; then
+    if curl --noproxy '*' -fsS "${url}" >/dev/null 2>&1; then
       echo "${label} is ready: ${url}"
       return 0
     fi
@@ -88,7 +88,7 @@ assert_spa_response() {
   local body_file
   body_file="$(mktemp)"
 
-  curl -fsS "${url}" -o "${body_file}"
+  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
   if ! grep -qi '<!doctype html' "${body_file}"; then
     echo "ERROR: ${label} did not return an SPA document: ${url}" >&2
     cat "${body_file}" >&2
@@ -106,7 +106,7 @@ assert_not_404() {
 
   response_file="$(mktemp)"
 
-  status="$(curl -sS -o "${response_file}" -w '%{http_code}' "${url}")"
+  status="$(curl --noproxy '*' -sS -o "${response_file}" -w '%{http_code}' "${url}")"
   if [[ "${status}" == "404" ]]; then
     echo "ERROR: ${label} returned 404: ${url}" >&2
     cat "${response_file}" >&2
@@ -114,6 +114,39 @@ assert_not_404() {
     return 1
   fi
   rm -f "${response_file}"
+}
+
+assert_cache_control() {
+  local url="$1"
+  local label="$2"
+  local expected="$3"
+  local headers_file
+
+  headers_file="$(mktemp)"
+  curl --noproxy '*' -fsS -D "${headers_file}" -o /dev/null "${url}"
+  if ! grep -Eiq "^cache-control:[[:space:]]*${expected}" "${headers_file}"; then
+    echo "ERROR: ${label} did not return expected Cache-Control (${expected}): ${url}" >&2
+    cat "${headers_file}" >&2
+    rm -f "${headers_file}"
+    return 1
+  fi
+  rm -f "${headers_file}"
+}
+
+assert_body_not_contains() {
+  local url="$1"
+  local label="$2"
+  local pattern="$3"
+  local body_file
+
+  body_file="$(mktemp)"
+  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  if grep -Eiq "${pattern}" "${body_file}"; then
+    echo "ERROR: ${label} matched forbidden pattern (${pattern}): ${url}" >&2
+    rm -f "${body_file}"
+    return 1
+  fi
+  rm -f "${body_file}"
 }
 
 build_local_images() {
@@ -192,5 +225,9 @@ assert_not_404 "${SITE_URL}${WALINE_BASE_PATH}/api/comment?type=recent&pageSize=
 
 assert_spa_response "${SITE_URL}/posts" "frontend deep link"
 assert_spa_response "${SITE_URL}${ADMIN_BASE_PATH}posts" "admin deep link"
+assert_cache_control "${SITE_URL}/posts" "frontend SPA fallback" "no-cache"
+assert_cache_control "${SITE_URL}/sw.js" "frontend service worker" "no-cache"
+assert_cache_control "${SITE_URL}/registerSW.js" "frontend service worker registration" "no-cache"
+assert_body_not_contains "${SITE_URL}/sw.js" "service worker runtime cache policy" "api-cache|bootstrap-cache|media-cache|createHandlerBoundToURL"
 
 echo "Docker smoke test passed for ${SITE_URL}"
