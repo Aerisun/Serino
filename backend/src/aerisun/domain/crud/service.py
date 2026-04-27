@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.content.service import resolve_content_bulk_state
+from aerisun.domain.content.service import normalize_content_update_state, resolve_content_bulk_state
 from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
@@ -28,17 +28,25 @@ def _is_published_public(obj: Any) -> bool:
     return getattr(obj, "status", None) == "published" and getattr(obj, "visibility", None) == "public"
 
 
+def _snapshot_is_published_public(snapshot: dict[str, Any]) -> bool:
+    return snapshot["status"] == "published" and snapshot["visibility"] == "public"
+
+
+def _became_published_public(previous: dict[str, Any], current: dict[str, Any]) -> bool:
+    return not _snapshot_is_published_public(previous) and _snapshot_is_published_public(current)
+
+
 def _dispatch_content_subscriptions_if_needed(
-    model: type[Base], *, obj: Any | None = None, status: str | None = None, visibility: str | None = None
+    model: type[Base],
+    *,
+    obj: Any | None = None,
+    should_dispatch: bool | None = None,
 ) -> None:
     if model not in CONTENT_PUBLICATION_MODELS:
         return
 
-    should_dispatch = False
-    if obj is not None:
+    if should_dispatch is None and obj is not None:
         should_dispatch = _is_published_public(obj)
-    elif status is not None:
-        should_dispatch = status == "published" and visibility == "public"
 
     if not should_dispatch:
         return
@@ -143,7 +151,7 @@ def create_item(
             slug=snapshot["slug"],
             title=snapshot["title"],
         )
-    _dispatch_content_subscriptions_if_needed(model, obj=obj)
+        _dispatch_content_subscriptions_if_needed(model, obj=obj)
     return read_schema.model_validate(obj)
 
 
@@ -189,11 +197,8 @@ def update_item(
         visibility=current["visibility"],
         changed_fields=changed_fields,
     )
-    if (
-        previous["status"] != current["status"]
-        and current["status"] == "published"
-        and current["visibility"] == "public"
-    ):
+    became_public = _became_published_public(previous, current)
+    if became_public:
         emit_content_published(
             session,
             content_type=content_type,
@@ -218,7 +223,8 @@ def update_item(
             title=current["title"],
             visibility=current["visibility"],
         )
-    _dispatch_content_subscriptions_if_needed(model, obj=obj)
+    if became_public:
+        _dispatch_content_subscriptions_if_needed(model, should_dispatch=True)
     return read_schema.model_validate(obj)
 
 
@@ -280,19 +286,37 @@ def bulk_update_status_items(
     normalized_status = status
     if hasattr(model, "visibility"):
         normalized_status, visibility = resolve_content_bulk_state(status)
-    affected = repo.bulk_update_status(
-        session,
-        model,
-        ids,
-        normalized_status,
-        visibility=visibility,
-        base_query_factory=base_query_factory,
-    )
-    _dispatch_content_subscriptions_if_needed(
-        model,
-        status=normalized_status,
-        visibility=visibility or "public",
-    )
+    should_dispatch_subscriptions = False
+    if model in CONTENT_PUBLICATION_MODELS:
+        patch = {"status": normalized_status}
+        if visibility is not None:
+            patch["visibility"] = visibility
+        query = session.query(model) if base_query_factory is None else base_query_factory(session)
+        objects = query.filter(model.id.in_(ids)).all()
+        for obj in objects:
+            previous = _content_snapshot(obj)
+            normalized = normalize_content_update_state(session, obj, patch)
+            for key, value in normalized.items():
+                if hasattr(type(obj), key):
+                    setattr(obj, key, value)
+            session.add(obj)
+            should_dispatch_subscriptions = should_dispatch_subscriptions or _became_published_public(
+                previous,
+                _content_snapshot(obj),
+            )
+        session.commit()
+        affected = len(objects)
+    else:
+        affected = repo.bulk_update_status(
+            session,
+            model,
+            ids,
+            normalized_status,
+            visibility=visibility,
+            base_query_factory=base_query_factory,
+        )
+    if should_dispatch_subscriptions:
+        _dispatch_content_subscriptions_if_needed(model, should_dispatch=True)
     emit_content_status_changed(
         session,
         content_type=_content_type_for_model(model),

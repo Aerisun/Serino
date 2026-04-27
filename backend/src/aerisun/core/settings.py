@@ -78,7 +78,6 @@ class Settings(BaseSettings):
     backup_sync_chunk_size_bytes: int = 8 * 1024 * 1024
     sqlite_busy_timeout_ms: int = 5000
     seed_reference_data: bool = True
-    data_backfill_enabled: bool = True
     seed_dev_data: bool = False
     seed_profile: str = "seed"
     cors_origins: list[str] = Field(default_factory=lambda: DEFAULT_CORS_ORIGINS.copy())

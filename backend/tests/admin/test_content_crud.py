@@ -184,6 +184,32 @@ class TestContentCRUDLifecycle:
         assert resp.status_code == 200
         assert calls[-1:] == [True]
 
+    def test_update_existing_public_content_does_not_dispatch_subscription(
+        self, client, admin_headers, content_type, monkeypatch
+    ):
+        calls: list[bool] = []
+        monkeypatch.setattr(
+            crud_service,
+            "_dispatch_content_subscriptions_if_needed",
+            lambda *args, **kwargs: calls.append(True),
+        )
+
+        payload = _make_payload(content_type, "-public-edit")
+        payload["status"] = "published"
+        payload["visibility"] = "public"
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+        item_id = create_resp.json()["id"]
+        calls.clear()
+
+        resp = client.put(
+            f"{BASE}/{content_type}/{item_id}",
+            json={"title": "Edited public title"},
+            headers=admin_headers,
+        )
+
+        assert resp.status_code == 200
+        assert calls == []
+
     def test_update_archived_private_to_public_becomes_draft(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-restore")
         payload["status"] = "published"
@@ -338,6 +364,36 @@ class TestContentBulkOperations:
 
         assert resp.status_code == 200
         assert calls[-1:] == [True]
+
+    def test_bulk_status_public_to_public_does_not_dispatch_subscription(
+        self, client, admin_headers, content_type, monkeypatch
+    ):
+        calls: list[bool] = []
+        monkeypatch.setattr(
+            crud_service,
+            "_dispatch_content_subscriptions_if_needed",
+            lambda *args, **kwargs: calls.append(True),
+        )
+
+        payload = _make_payload(content_type, "-bs-public-redo")
+        payload["status"] = "published"
+        payload["visibility"] = "public"
+        resp = client.post(
+            f"{BASE}/{content_type}/",
+            json=payload,
+            headers=admin_headers,
+        )
+        item_id = resp.json()["id"]
+        calls.clear()
+
+        resp = client.post(
+            f"{BASE}/{content_type}/bulk-status",
+            json={"ids": [item_id], "status": "published"},
+            headers=admin_headers,
+        )
+
+        assert resp.status_code == 200
+        assert calls == []
 
     def test_bulk_archive_sets_private_visibility(self, client, admin_headers, content_type):
         resp = client.post(

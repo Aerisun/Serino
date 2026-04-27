@@ -7,8 +7,9 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 
 from aerisun.core.db import dispose_engine, run_database_migrations
-from aerisun.core.production_baseline import PRODUCTION_BASELINE_SCHEMA_REVISION
 from aerisun.core.settings import get_settings
+
+CURRENT_SCHEMA_HEAD = "0002_public_title_identity"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,8 +50,8 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
 
     active_versions = sorted(path.name for path in (BACKEND_ROOT / "alembic" / "versions").glob("*.py"))
 
-    assert tuple(script.get_heads()) == (PRODUCTION_BASELINE_SCHEMA_REVISION,)
-    assert active_versions == ["0001_production_baseline.py"]
+    assert tuple(script.get_heads()) == (CURRENT_SCHEMA_HEAD,)
+    assert active_versions == ["0001_production_baseline.py", "0002_public_title_identity.py"]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
 
@@ -67,4 +68,4 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "config_revisions" in tables
     assert "_aerisun_data_migrations" in tables
     assert "page_display_options" not in tables
-    assert _get_alembic_revision(db_path) == PRODUCTION_BASELINE_SCHEMA_REVISION
+    assert _get_alembic_revision(db_path) == CURRENT_SCHEMA_HEAD

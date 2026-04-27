@@ -51,7 +51,7 @@ def test_collect_migration_status_reports_baseline_and_pending_modes(tmp_path, m
 
         payload = collect_migration_status()
 
-        assert payload["current_revision"] == PRODUCTION_BASELINE_SCHEMA_REVISION
+        assert payload["current_revision"] == payload["head_revisions"][0]
         assert payload["baseline"]["migration_key"]
         assert payload["blocking"]["pending"] == ["0001_fill_blocking_defaults"]
         assert payload["background"]["pending"] == ["0001_rehash_background_assets"]

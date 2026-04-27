@@ -10,6 +10,9 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
 from aerisun.core.seed_profile import normalize_seed_profile
 
 logger = logging.getLogger("aerisun.db_preflight")
@@ -87,6 +90,13 @@ def get_known_revisions(alembic_versions_dir: Path) -> set[str]:
     return revisions
 
 
+def get_head_revisions(alembic_dir: Path) -> tuple[str, ...]:
+    """Return active Alembic heads for the current checkout."""
+    config = Config(str(alembic_dir.parent / "alembic.ini"))
+    config.set_main_option("script_location", str(alembic_dir))
+    return tuple(ScriptDirectory.from_config(config).get_heads())
+
+
 def get_db_revision(db_path: Path) -> str | None:
     """读取现有 SQLite 数据库的当前 Alembic 版本。"""
     if not db_path.exists():
@@ -100,6 +110,64 @@ def get_db_revision(db_path: Path) -> str | None:
         return row[0] if row else None
     finally:
         conn.close()
+
+
+def _unlink_sqlite_database(db_path: Path) -> None:
+    if db_path.exists():
+        db_path.unlink()
+    for suffix in ("-wal", "-shm"):
+        sidecar = Path(str(db_path) + suffix)
+        if sidecar.exists():
+            sidecar.unlink()
+
+
+def _load_model_metadata() -> dict[str, set[str]]:
+    # Keep this list aligned with alembic/env.py. Importing the model modules
+    # registers their tables on Base.metadata for structural sanity checks.
+    import aerisun.domain.automation.models
+    import aerisun.domain.content.models
+    import aerisun.domain.engagement.models
+    import aerisun.domain.iam.models
+    import aerisun.domain.media.models
+    import aerisun.domain.ops.models
+    import aerisun.domain.site_auth.models
+    import aerisun.domain.site_config.models
+    import aerisun.domain.social.models
+    import aerisun.domain.subscription.models  # noqa: F401
+    from aerisun.core.base import Base
+
+    return {table.name: {column.name for column in table.columns} for table in Base.metadata.sorted_tables}
+
+
+def schema_matches_current_models(db_path: Path) -> bool:
+    """Check whether a DB stamped at the current head still has model columns.
+
+    Development databases can be left in a half-migrated state when a migration
+    file changes while the local alembic_version row already points at head.
+    Alembic will not rerun that revision, so bootstrap must treat the DB as
+    disposable and rebuild it before data migrations run.
+    """
+    if not db_path.exists():
+        return True
+
+    expected = _load_model_metadata()
+    conn = sqlite3.connect(str(db_path))
+    try:
+        existing_tables = {
+            str(row[0]) for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        }
+        for table_name, expected_columns in expected.items():
+            if table_name not in existing_tables:
+                logger.info("数据库结构缺少表 %s。", table_name)
+                return False
+            actual_columns = {str(row[1]) for row in conn.execute(f'PRAGMA table_info("{table_name}")').fetchall()}
+            missing_columns = expected_columns - actual_columns
+            if missing_columns:
+                logger.info("数据库结构表 %s 缺少列：%s。", table_name, sorted(missing_columns))
+                return False
+    finally:
+        conn.close()
+    return True
 
 
 def compute_seed_fingerprint(seed_py_path: Path, *, seed_profile: str = "default") -> str:
@@ -171,6 +239,7 @@ def run_preflight(
         reason：原因说明
     """
     known = get_known_revisions(alembic_dir / "versions")
+    heads = get_head_revisions(alembic_dir)
     current_rev = get_db_revision(db_path)
     normalized_profile = normalize_seed_profile(seed_profile)
     seed_fp = compute_seed_fingerprint(seed_path, seed_profile=normalized_profile)
@@ -183,6 +252,10 @@ def run_preflight(
 
     # 情况 2：数据库版本和当前分支兼容。
     if current_rev in known:
+        if current_rev in heads and not schema_matches_current_models(db_path):
+            logger.warning("数据库 revision 已到 head，但实际结构与当前模型不一致，准备删除并重建。")
+            _unlink_sqlite_database(db_path)
+            return {"action": "recreate", "reseed": True, "reason": "数据库结构与当前模型不一致，已重建"}
         if normalized_profile == "seed" and stored_fp == seed_fp and _has_legacy_dev_seed_residue(db_path):
             logger.info("检测到旧的开发测试种子残留，将重新灌种子。")
             return {"action": "ok", "reseed": True, "reason": "数据库版本兼容，但检测到旧的开发测试种子残留"}
@@ -198,10 +271,6 @@ def run_preflight(
         current_rev,
         sorted(known),
     )
-    db_path.unlink()
-    for suffix in ("-wal", "-shm"):
-        wal = Path(str(db_path) + suffix)
-        if wal.exists():
-            wal.unlink()
+    _unlink_sqlite_database(db_path)
 
     return {"action": "recreate", "reseed": True, "reason": "数据库版本不兼容，已重建"}

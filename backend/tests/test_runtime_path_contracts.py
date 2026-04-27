@@ -157,14 +157,197 @@ printf '%s\\n' "$(guess_host_for_ip_mode)"
     assert output == "8.8.4.4"
 
 
-def test_ip_mode_prompt_prefers_public_ipv4_before_private_ipv4():
+def test_public_ipv4_probe_sanitizes_dirty_outputs_and_prefers_majority():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+curl() {
+  case "$*" in
+    *"https://api.ipify.org"*)
+      printf 'not an ip\\n'
+      return 0
+      ;;
+    *"https://ipv4.icanhazip.com"*)
+      printf '101.42.135.92\\r\\n'
+      return 0
+      ;;
+    *"https://ifconfig.me/ip"*)
+      printf '8.8.8.8\\n'
+      return 0
+      ;;
+    *"https://api.ip.sb/ip"*)
+      printf '101.42.135.92'
+      return 0
+      ;;
+    *"https://4.ipw.cn"*)
+      printf '<html>bad gateway</html>'
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+printf '%s\\n' "$(detect_public_ipv4_without_proxy)"
+"""
+    ).strip()
+
+    assert output == "101.42.135.92"
+
+
+def test_public_ipv4_probe_returns_empty_when_only_proxy_or_invalid_results_exist():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    printf '10.2.4.17\\n'
+    return 0
+  fi
+  printf '101.42.135.92\\n'
+  return 0
+}
+
+printf '<%s>\\n' "$(detect_public_ipv4_without_proxy)"
+"""
+    ).strip()
+
+    assert output == "<>"
+
+
+def test_private_ip_mode_prefers_local_ipv4_over_nat_exit_ipv4():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+AERISUN_INSTALL_IP_MODE='private'
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    printf '115.27.214.28'
+    return 0
+  fi
+  return 1
+}
+
+list_local_ipv4_candidates() {
+  printf '10.129.241.9\\n'
+}
+
+printf '%s\\n' "$(guess_host_for_ip_mode)"
+"""
+    ).strip()
+
+    assert output == "10.129.241.9"
+
+
+def test_private_ip_mode_does_not_default_to_local_public_ipv4():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+AERISUN_INSTALL_IP_MODE='private'
+
+list_local_ipv4_candidates() {
+  printf '8.8.8.8\\n10.129.241.9\\n'
+}
+
+printf '<%s>\\n' "$(guess_host_for_ip_mode)"
+"""
+    ).strip()
+
+    assert output == "<10.129.241.9>"
+
+
+def test_local_ip_candidates_ignore_hostname_fallback_when_ip_command_finds_primary_nic():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+ip() {
+  if [[ "${1:-}" == "-o" && "${2:-}" == "-4" ]]; then
+    cat <<'EOF'
+2: eth0    inet 10.2.4.17/22 metric 100 brd 10.2.7.255 scope global eth0
+4: br-915aa694f86a    inet 172.18.0.1/16 brd 172.18.255.255 scope global br-915aa694f86a
+5: docker0    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+6: tailscale0    inet 100.102.9.79/32 scope global tailscale0
+EOF
+    return 0
+  fi
+  return 1
+}
+
+hostname() {
+  if [[ "${1:-}" == "-I" ]]; then
+    printf '10.2.4.17 172.18.0.1 172.17.0.1 100.102.9.79'
+    return 0
+  fi
+  return 1
+}
+
+list_local_ipv4_candidates
+"""
+    ).strip()
+
+    assert output == "10.2.4.17"
+
+
+def test_public_ip_mode_prefers_public_probe_for_cloud_eip_style_hosts():
+    output = run_installer_bash(
+        """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+AERISUN_INSTALL_IP_MODE='public'
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    printf '115.27.214.28'
+    return 0
+  fi
+  return 1
+}
+
+list_local_ipv4_candidates() {
+  printf '10.129.241.9\\n'
+}
+
+printf '%s\\n' "$(guess_host_for_ip_mode)"
+"""
+    ).strip()
+
+    assert output == "115.27.214.28"
+
+
+def test_ip_mode_prompt_asks_for_public_or_private_ipv4_type():
     tui = read_project_file("installer/lib/tui.sh")
 
-    assert "IPv4 模式（优先公网 IPv4，没有公网再用内网）" in tui
-    assert "请输入这台服务器真实 IPv4（优先公网 IPv4，没有公网再用内网；不要填域名、其他机器地址或代理出口地址）" in tui
+    assert "IPv4 模式（下一步选择公网或内网）" in tui
+    assert "选择 IPv4 类型" in tui
+    assert "公网 IPv4（腾讯云、阿里云等云服务器厂商）" in tui
+    assert "内网 IPv4（例如校园网中的 clab）" in tui
+    assert "请输入外部用户访问这台服务器用的公网 IPv4（云服务器控制台里的公网 IP）" in tui
+    assert "请输入内网里访问这台服务器用的 IPv4（通常是 hostname -I 里看到的 10.x/172.x/192.168.x）" in tui
+    assert "没有出现在本机网卡地址里" in tui
+    assert "请取消，返回选择内网访问" in tui
+    assert "访问范围：%s" in tui
 
 
-def test_validate_ip_mode_host_accepts_local_private_ipv4_and_rejects_proxy_exit_ipv4():
+def test_validate_ip_mode_host_respects_public_and_private_ipv4_type():
     output = (
         run_installer_bash(
             """
@@ -190,8 +373,16 @@ else
   printf '%s\\n' "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
 fi
 
+AERISUN_INSTALL_IP_MODE='private'
 if validate_ip_mode_host '10.0.0.8' >/dev/null; then
-  printf 'local-ok\\n'
+  printf 'private-local-ok\\n'
+else
+  printf '%s\\n' "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
+fi
+
+AERISUN_INSTALL_IP_MODE='public'
+if validate_ip_mode_host '10.0.0.8' >/dev/null; then
+  printf 'unexpected-private-as-public-ok\\n'
 else
   printf '%s\\n' "${AERISUN_INSTALL_HOST_VALIDATION_ERROR}"
 fi
@@ -214,11 +405,178 @@ printf '%s\\n' "${public_status}"
 
     assert output == [
         "IP 模式仅支持这台服务器的真实 IPv4 地址，请不要填写域名、IPv6 或主机名。",
-        "local-ok",
-        "当前填写的 IPv4 看起来是代理出口地址，不是这台服务器的真实 IP。请优先填写本机公网 IPv4；如果没有公网 IPv4，再填写本机内网 IPv4。",
+        "private-local-ok",
+        "你选择了公网 IPv4，但填写的是本机内网 IPv4。腾讯云、阿里云等云服务器请填写绑定到该机器的公网 IPv4 / EIP；如果只是校园网内网访问，请返回选择内网 IPv4。",
+        "当前填写的 IPv4 看起来是代理出口地址，不是这台服务器的公网 IPv4 / EIP。请关闭代理后重试，或确认云厂商控制台里绑定到本机的公网 IPv4。",
         "8.8.8.8",
         "0",
     ]
+
+
+def test_public_ip_mapping_confirmation_only_needed_for_public_ip_not_on_local_nic():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/env.sh
+source installer/lib/tui.sh
+
+AERISUN_INSTALL_ACCESS_MODE='ip'
+AERISUN_INSTALL_IP_MODE='public'
+
+list_local_ipv4_candidates() {
+  printf '8.8.8.8\\n10.0.0.8\\n'
+}
+
+if public_ip_requires_mapping_confirmation '8.8.8.8'; then
+  printf 'unexpected-local-public-confirm\\n'
+else
+  printf 'local-public-no-confirm\\n'
+fi
+
+if public_ip_requires_mapping_confirmation '1.1.1.1'; then
+  printf 'remote-public-confirm\\n'
+else
+  printf 'unexpected-remote-public-no-confirm\\n'
+fi
+
+printf '%s\\n' "$(ip_mode_label public)"
+printf '%s\\n' "$(ip_mode_label private)"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "local-public-no-confirm",
+        "remote-public-confirm",
+        "公网访问",
+        "内网访问",
+    ]
+
+
+def test_domain_preflight_ignores_proxy_public_ip_candidates_by_default():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+resolve_host_ips() {
+  printf '203.0.113.10\\n'
+}
+
+list_local_ip_candidates() {
+  printf '10.0.0.8\\n'
+}
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    return 1
+  fi
+  printf '203.0.113.10\\n'
+  return 0
+}
+
+port_in_use() {
+  return 1
+}
+
+preflight_domain_installation 'example.com'
+printf 'status=%s\\n' "$?"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == ["status=1"]
+
+
+def test_domain_preflight_public_ip_probe_uses_direct_ipv4_and_ignores_proxy_by_default():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    case "$*" in
+      *"https://api.ipify.org"*)
+        printf 'not an ip\\n'
+        return 0
+        ;;
+      *"https://ipv4.icanhazip.com"*)
+        printf '101.42.135.92\\r\\n'
+        return 0
+        ;;
+      *"https://ifconfig.me/ip"*)
+        printf '8.8.8.8\\n'
+        return 0
+        ;;
+      *"https://api.ip.sb/ip"*)
+        printf '101.42.135.92'
+        return 0
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+  fi
+  printf '1.1.1.1\\n'
+  return 0
+}
+
+detect_public_ip_candidates
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == ["101.42.135.92"]
+
+
+def test_domain_preflight_can_include_proxy_public_ip_candidates_when_explicitly_enabled():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+source installer/lib/docker.sh
+
+AERISUN_INSTALL_ALLOW_PROXY_IP_CHECK=true
+
+resolve_host_ips() {
+  printf '1.1.1.1\\n'
+}
+
+list_local_ip_candidates() {
+  printf '10.0.0.8\\n'
+}
+
+curl() {
+  if [[ " $* " == *" --noproxy "* ]]; then
+    return 1
+  fi
+  printf '1.1.1.1\\n'
+  return 0
+}
+
+port_in_use() {
+  return 1
+}
+
+preflight_domain_installation 'example.com'
+printf 'status=%s\\n' "$?"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == ["status=0"]
 
 
 def test_settings_normalize_runtime_paths_under_store_dir():
@@ -905,8 +1263,6 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     backend_baseline_prod_text = read_project_file("backend/scripts/baseline-prod.sh")
     backend_first_admin_prod_text = read_project_file("backend/scripts/first-admin-prod.sh")
     backend_data_migrate_text = read_project_file("backend/scripts/data-migrate.sh")
-    backend_bootstrap_prod_text = read_project_file("backend/scripts/bootstrap-prod.sh")
-    backend_backfill_text = read_project_file("backend/scripts/backfill.sh")
     backend_site_api_text = read_project_file("backend/src/aerisun/api/site.py")
     backend_bootstrap_core_text = read_project_file("backend/src/aerisun/core/bootstrap.py")
     backend_task_manager_text = read_project_file("backend/src/aerisun/core/task_manager.py")
@@ -1111,6 +1467,7 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "run_backend_uvicorn()" in runtime_lib_text
     assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_bootstrap_text
     assert "run_backend_alembic upgrade head" in backend_bootstrap_text
+    assert 'bash "${SCRIPT_DIR}/data-migrate.sh" apply --mode blocking --progress' in backend_bootstrap_text
     assert "生产运行时不会在应用启动阶段自动执行 baseline 或数据迁移。" in backend_bootstrap_text
     assert 'source "${SCRIPT_DIR}/runtime-lib.sh"' in backend_serve_text
     assert 'run_backend_uvicorn "${UVICORN_ARGS[@]}"' in backend_serve_text
@@ -1120,8 +1477,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "ensure_first_boot_default_admin(is_first_boot=True)" in backend_first_admin_prod_text
     assert "apply_pending_data_migrations" in backend_data_migrate_text
     assert "schedule_pending_background_data_migrations" in backend_data_migrate_text
-    assert 'exec /bin/bash "${SCRIPT_DIR}/baseline-prod.sh" "$@"' in backend_bootstrap_prod_text
-    assert 'exec /bin/bash "${SCRIPT_DIR}/data-migrate.sh" apply --mode blocking "$@"' in backend_backfill_text
+    assert not (PROJECT_ROOT / "backend/scripts/bootstrap-prod.sh").exists()
+    assert not (PROJECT_ROOT / "backend/scripts/backfill.sh").exists()
     assert '@base_router.get("/livez"' in backend_site_api_text
     assert '@base_router.get("/readyz"' in backend_site_api_text
     assert '@base_router.get("/healthz"' in backend_site_api_text

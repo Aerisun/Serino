@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aerisun.core.db import get_session_factory
-from aerisun.core.db_preflight import compute_seed_fingerprint, run_preflight, store_seed_metadata
+from aerisun.core.db_preflight import compute_seed_fingerprint, get_head_revisions, run_preflight, store_seed_metadata
 from aerisun.core.dev_seed import seed_development_data
 from aerisun.core.seed_profile import resolve_seed_path
 from aerisun.core.settings import get_settings
@@ -295,5 +295,51 @@ def test_seed_preflight_detects_legacy_dev_seed_residue_for_seed_profile(tmp_pat
 
         assert result["reseed"] is True
         assert result["reason"] == "数据库版本兼容，但检测到旧的开发测试种子残留"
+    finally:
+        teardown_runtime_state()
+
+
+def test_seed_preflight_recreates_head_database_when_model_columns_are_missing(tmp_path, monkeypatch) -> None:
+    import sqlite3
+    from pathlib import Path
+
+    from tests.support.runtime import configure_runtime_environment, reset_runtime_state, teardown_runtime_state
+
+    configure_runtime_environment(tmp_path, monkeypatch)
+    reset_runtime_state()
+    try:
+        settings = get_settings()
+        settings.ensure_directories()
+        core_dir = Path("src/aerisun/core")
+        seed_path = resolve_seed_path(core_dir, seed_profile="dev-seed")
+        head_revision = get_head_revisions(Path("alembic"))[0]
+
+        with sqlite3.connect(settings.db_path) as connection:
+            connection.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)")
+            connection.execute("INSERT INTO alembic_version (version_num) VALUES (?)", (head_revision,))
+            connection.execute(
+                """
+                CREATE TABLE posts (
+                    id VARCHAR(36) PRIMARY KEY NOT NULL,
+                    slug VARCHAR(160) NOT NULL,
+                    title VARCHAR(240) NOT NULL
+                )
+                """
+            )
+            connection.commit()
+        store_seed_metadata(
+            settings.db_path,
+            fingerprint=compute_seed_fingerprint(seed_path, seed_profile="dev-seed"),
+        )
+
+        result = run_preflight(
+            db_path=settings.db_path,
+            alembic_dir=Path("alembic"),
+            seed_path=seed_path,
+            seed_profile="dev-seed",
+        )
+
+        assert result == {"action": "recreate", "reseed": True, "reason": "数据库结构与当前模型不一致，已重建"}
+        assert not settings.db_path.exists()
     finally:
         teardown_runtime_state()

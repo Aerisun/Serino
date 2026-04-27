@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import TypeVar
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from aerisun.core.base import uuid_str
-from aerisun.core.time import BEIJING_TZ, beijing_day_bounds, beijing_today, to_beijing_datetime
+from aerisun.core.time import BEIJING_TZ, beijing_day_bounds, beijing_today, shanghai_now, to_beijing_datetime
 from aerisun.domain.content import repository as repo
 from aerisun.domain.content.models import (
     ContentCategory,
@@ -41,11 +42,14 @@ MANAGED_MODEL_CONTENT_TYPES = {
 }
 
 DEFAULT_TITLE_PREFIXES = {
+    "diary": "日记",
     "thoughts": "碎碎念",
     "excerpts": "文摘",
 }
-DEFAULT_TITLE_COUNTED_STATUSES = ("published", "archived")
 CHINESE_NUMERAL_DIGITS = "零一二三四五六七八九"
+PUBLIC_TO_ARCHIVED_SUFFIX = "-公开转归档"
+PUBLIC_TO_DRAFT_SUFFIX = "-公开转草稿"
+PUBLIC_TRANSITION_SUFFIXES = (PUBLIC_TO_ARCHIVED_SUFFIX, PUBLIC_TO_DRAFT_SUFFIX)
 
 
 def _normalize_optional_text(
@@ -102,8 +106,148 @@ def _to_chinese_numeral(value: int) -> str:
     return str(value)
 
 
+def _from_chinese_numeral(value: str) -> int | None:
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if normalized.isdigit():
+        parsed = int(normalized)
+        return parsed if parsed > 0 else None
+    if normalized in CHINESE_NUMERAL_DIGITS:
+        parsed = CHINESE_NUMERAL_DIGITS.index(normalized)
+        return parsed if parsed > 0 else None
+    if "百" in normalized:
+        hundreds_text, _, remainder_text = normalized.partition("百")
+        hundreds = CHINESE_NUMERAL_DIGITS.find(hundreds_text)
+        if hundreds <= 0:
+            return None
+        if not remainder_text:
+            return hundreds * 100
+        if remainder_text.startswith("零"):
+            ones = CHINESE_NUMERAL_DIGITS.find(remainder_text[1:])
+            return hundreds * 100 + ones if ones > 0 else None
+        remainder = _from_chinese_numeral(remainder_text)
+        return hundreds * 100 + remainder if remainder is not None else None
+    if normalized.startswith("十"):
+        suffix = normalized[1:]
+        if not suffix:
+            return 10
+        ones = CHINESE_NUMERAL_DIGITS.find(suffix)
+        return 10 + ones if ones > 0 else None
+    if "十" in normalized:
+        tens_text, _, ones_text = normalized.partition("十")
+        tens = CHINESE_NUMERAL_DIGITS.find(tens_text)
+        if tens <= 0:
+            return None
+        if not ones_text:
+            return tens * 10
+        ones = CHINESE_NUMERAL_DIGITS.find(ones_text)
+        return tens * 10 + ones if ones > 0 else None
+    return None
+
+
 def _format_default_title_date_label(target_day: date) -> str:
     return f"{target_day.year % 100}.{target_day.month}.{target_day.day}."
+
+
+def _format_diary_default_title_date_label(target_day: date) -> str:
+    return f"{target_day.year % 100}年{target_day.month}月{target_day.day}日"
+
+
+def _normalize_default_title_category(value: str | None) -> str | None:
+    normalized = _normalize_optional_text(value, field_label="分类")
+    return normalized or None
+
+
+def _strip_public_transition_suffix(title: str) -> str:
+    normalized = title.strip()
+    for suffix in PUBLIC_TRANSITION_SUFFIXES:
+        if normalized.endswith(suffix):
+            return normalized[: -len(suffix)]
+    return normalized
+
+
+def _append_public_transition_suffix(title: str, status: str) -> str:
+    base = _strip_public_transition_suffix(title)
+    if status == "draft":
+        return f"{base}{PUBLIC_TO_DRAFT_SUFFIX}"
+    if status == "archived":
+        return f"{base}{PUBLIC_TO_ARCHIVED_SUFFIX}"
+    return base
+
+
+def _title_sequence_for(content_type: str, title: str | None, target_day: date) -> int | None:
+    if content_type not in {"thoughts", "excerpts"} or not title:
+        return None
+    prefix = DEFAULT_TITLE_PREFIXES[content_type]
+    date_label = re.escape(_format_default_title_date_label(target_day))
+    pattern = re.compile(
+        rf"^{re.escape(prefix)}(?P<sequence>[零一二三四五六七八九十百\d]+)则 "
+        rf"\({date_label}\)(?:-(?:草稿|归档|公开转归档|公开转草稿))?$"
+    )
+    match = pattern.match(title.strip())
+    if match is None:
+        return None
+    return _from_chinese_numeral(match.group("sequence"))
+
+
+def _is_likely_auto_title(content_type: str, title: str | None) -> bool:
+    if not title:
+        return False
+    normalized = title.strip()
+    if content_type == "diary":
+        return re.match(r"^\d{1,2}年\d{1,2}月\d{1,2}日记(?:-公开转归档|-公开转草稿)?$", normalized) is not None
+    if content_type in {"thoughts", "excerpts"}:
+        prefix = re.escape(DEFAULT_TITLE_PREFIXES[content_type])
+        return (
+            re.match(
+                rf"^{prefix}[零一二三四五六七八九十百\d]+则 "
+                r"\(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)(?:-(?:草稿|归档|公开转归档|公开转草稿))?$",
+                normalized,
+            )
+            is not None
+        )
+    return False
+
+
+def _public_reference_day(value: datetime | None) -> date:
+    return to_beijing_datetime(value or shanghai_now()).date()
+
+
+def _resolve_first_transition_time(
+    *,
+    existing_time: datetime | None,
+    current_time: datetime | None,
+    previous_time: datetime | None,
+) -> datetime:
+    if existing_time is not None:
+        return existing_time
+    if current_time is not None and current_time != previous_time:
+        return current_time
+    return shanghai_now()
+
+
+def _resolve_default_title_reference_day(
+    session: Session,
+    *,
+    content_type: str,
+    item_id: str | None,
+) -> date:
+    if not item_id:
+        return beijing_today()
+
+    model = repo.CONTENT_MODELS.get(content_type)
+    if model is None:
+        raise ValidationError("不支持的内容类型")
+
+    existing = session.query(model).filter(model.id == item_id).first()
+    if existing is None:
+        raise ValidationError("内容不存在")
+
+    reference_time = getattr(existing, "published_at", None) or getattr(existing, "created_at", None)
+    if reference_time is None:
+        return beijing_today()
+    return to_beijing_datetime(reference_time).date()
 
 
 def _count_daily_title_candidates(
@@ -111,42 +255,188 @@ def _count_daily_title_candidates(
     *,
     content_type: str,
     target_day: date,
+    category: str | None = None,
+    exclude_id: str | None = None,
 ) -> int:
     model = repo.CONTENT_MODELS.get(content_type)
     if model is None:
         raise ValidationError("不支持的内容类型")
     day_start, day_end = beijing_day_bounds(target_day)
     reference_time = func.coalesce(model.published_at, model.created_at)
-    return (
-        session.query(func.count(model.id))
-        .filter(model.status.in_(DEFAULT_TITLE_COUNTED_STATUSES))
-        .filter(reference_time >= day_start, reference_time < day_end)
-        .scalar()
-        or 0
+    query = session.query(func.count(model.id)).filter(reference_time >= day_start, reference_time < day_end)
+    if exclude_id:
+        query = query.filter(model.id != exclude_id)
+    if content_type in {"thoughts", "excerpts"}:
+        normalized_category = _normalize_default_title_category(category)
+        if normalized_category:
+            query = query.filter(model.category == normalized_category)
+        else:
+            query = query.filter((model.category.is_(None)) | (model.category == ""))
+    return query.scalar() or 0
+
+
+def _max_public_title_sequence(
+    session: Session,
+    *,
+    content_type: str,
+    target_day: date,
+    exclude_id: str | None = None,
+) -> int:
+    model = repo.CONTENT_MODELS.get(content_type)
+    if model is None:
+        raise ValidationError("不支持的内容类型")
+    if content_type not in {"thoughts", "excerpts"}:
+        return 0
+
+    day_start, day_end = beijing_day_bounds(target_day)
+    reference_time = func.coalesce(model.first_published_at, model.published_at, model.created_at)
+    query = session.query(model).filter(reference_time >= day_start, reference_time < day_end)
+    query = query.filter(
+        or_(
+            model.public_title.isnot(None),
+            (model.status == "published") & (model.visibility == "public"),
+        )
     )
+    if exclude_id:
+        query = query.filter(model.id != exclude_id)
+
+    max_sequence = 0
+    for item in query.all():
+        sequence = _title_sequence_for(content_type, item.public_title or item.title, target_day)
+        if sequence is not None:
+            max_sequence = max(max_sequence, sequence)
+    return max_sequence
+
+
+def _max_nonpublic_title_sequence(
+    session: Session,
+    *,
+    content_type: str,
+    target_day: date,
+    status: str,
+    category: str | None = None,
+    exclude_id: str | None = None,
+) -> int:
+    model = repo.CONTENT_MODELS.get(content_type)
+    if model is None:
+        raise ValidationError("不支持的内容类型")
+    if content_type not in {"thoughts", "excerpts"}:
+        return 0
+
+    day_start, day_end = beijing_day_bounds(target_day)
+    reference_time = func.coalesce(model.published_at, model.created_at)
+    query = session.query(model).filter(reference_time >= day_start, reference_time < day_end)
+    query = query.filter(model.status == status)
+    if exclude_id:
+        query = query.filter(model.id != exclude_id)
+    normalized_category = _normalize_default_title_category(category)
+    if normalized_category:
+        query = query.filter(model.category == normalized_category)
+    else:
+        query = query.filter((model.category.is_(None)) | (model.category == ""))
+
+    max_sequence = 0
+    for item in query.all():
+        sequence = _title_sequence_for(content_type, item.title, target_day)
+        if sequence is not None:
+            max_sequence = max(max_sequence, sequence)
+    return max_sequence
+
+
+def _format_default_title_status_suffix(status: str | None) -> str:
+    normalized_status = status if status in CONTENT_STATUS_VALUES else "published"
+    if normalized_status == "draft":
+        return "-草稿"
+    if normalized_status == "archived":
+        return "-归档"
+    return ""
 
 
 def suggest_content_default_title(
     session: Session,
     *,
     content_type: str,
+    category: str | None = None,
+    status: str | None = None,
+    item_id: str | None = None,
 ) -> ContentTitleSuggestionRead:
     prefix = DEFAULT_TITLE_PREFIXES.get(content_type)
     if prefix is None:
-        raise ValidationError("仅支持为碎碎念和文摘生成默认标题")
+        raise ValidationError("仅支持为日记、碎碎念和文摘生成默认标题")
 
-    target_day = beijing_today()
-    sequence = (
-        _count_daily_title_candidates(
-            session,
-            content_type=content_type,
-            target_day=target_day,
-        )
-        + 1
+    existing = None
+    if item_id:
+        model = repo.CONTENT_MODELS.get(content_type)
+        if model is None:
+            raise ValidationError("不支持的内容类型")
+        existing = session.query(model).filter(model.id == item_id).first()
+        if existing is None:
+            raise ValidationError("内容不存在")
+
+    normalized_status = status if status in CONTENT_STATUS_VALUES else "published"
+    if existing is not None and getattr(existing, "public_title", None):
+        public_title = str(existing.public_title)
+        if normalized_status == "published":
+            sequence = (
+                _title_sequence_for(content_type, public_title, _public_reference_day(existing.first_published_at)) or 1
+            )
+            return ContentTitleSuggestionRead(
+                title=public_title,
+                sequence=sequence,
+                date_label=(
+                    _format_diary_default_title_date_label(_public_reference_day(existing.first_published_at))
+                    if content_type == "diary"
+                    else _format_default_title_date_label(_public_reference_day(existing.first_published_at))
+                ),
+            )
+        if normalized_status in {"draft", "archived"}:
+            reference_day = _public_reference_day(existing.first_published_at)
+            sequence = _title_sequence_for(content_type, public_title, reference_day) or 1
+            return ContentTitleSuggestionRead(
+                title=_append_public_transition_suffix(public_title, normalized_status),
+                sequence=sequence,
+                date_label=(
+                    _format_diary_default_title_date_label(reference_day)
+                    if content_type == "diary"
+                    else _format_default_title_date_label(reference_day)
+                ),
+            )
+
+    target_day = _resolve_default_title_reference_day(
+        session,
+        content_type=content_type,
+        item_id=item_id,
     )
-    date_label = _format_default_title_date_label(target_day)
+    if normalized_status == "published":
+        sequence = (
+            _max_public_title_sequence(
+                session,
+                content_type=content_type,
+                target_day=target_day,
+                exclude_id=item_id,
+            )
+            + 1
+        )
+    else:
+        sequence = (
+            _max_nonpublic_title_sequence(
+                session,
+                content_type=content_type,
+                target_day=target_day,
+                status=normalized_status,
+                category=category,
+                exclude_id=item_id,
+            )
+            + 1
+        )
+    if content_type == "diary":
+        date_label = _format_diary_default_title_date_label(target_day)
+        title = f"{date_label}记"
+    else:
+        date_label = _format_default_title_date_label(target_day)
+        title = f"{prefix}{_to_chinese_numeral(sequence)}则 ({date_label}){_format_default_title_status_suffix(status)}"
     return ContentTitleSuggestionRead(
-        title=f"{prefix}{_to_chinese_numeral(sequence)}则 ({date_label})",
+        title=title,
         sequence=sequence,
         date_label=date_label,
     )
@@ -288,6 +578,52 @@ def resolve_content_bulk_state(status: str) -> tuple[str, str | None]:
     return normalized_status, normalized_visibility
 
 
+def _build_auto_public_title(
+    session: Session,
+    *,
+    content_type: str,
+    target_time: datetime,
+    exclude_id: str | None = None,
+) -> str:
+    target_day = _public_reference_day(target_time)
+    if content_type == "diary":
+        return f"{_format_diary_default_title_date_label(target_day)}记"
+    if content_type not in {"thoughts", "excerpts"}:
+        raise ValidationError("不支持的自动标题类型")
+    sequence = (
+        _max_public_title_sequence(
+            session,
+            content_type=content_type,
+            target_day=target_day,
+            exclude_id=exclude_id,
+        )
+        + 1
+    )
+    return f"{DEFAULT_TITLE_PREFIXES[content_type]}{_to_chinese_numeral(sequence)}则 ({_format_default_title_date_label(target_day)})"
+
+
+def _resolve_public_title_for_first_publish(
+    session: Session,
+    *,
+    content_type: str,
+    title: str,
+    published_at: datetime,
+    exclude_id: str | None = None,
+) -> str:
+    if content_type in DEFAULT_TITLE_PREFIXES and _is_likely_auto_title(content_type, title):
+        return _build_auto_public_title(
+            session,
+            content_type=content_type,
+            target_time=published_at,
+            exclude_id=exclude_id,
+        )
+    return _strip_public_transition_suffix(title)
+
+
+def _is_public_state(status: str | None, visibility: str | None) -> bool:
+    return status == "published" and visibility == "public"
+
+
 def normalize_content_create_state(session: Session, data: dict) -> dict:
     normalized = dict(data)
     content_type = normalized.pop("_content_type", None)
@@ -301,6 +637,22 @@ def normalize_content_create_state(session: Session, data: dict) -> dict:
     )
     normalized["status"] = resolved_status
     normalized["visibility"] = resolved_visibility
+    if _is_public_state(resolved_status, resolved_visibility):
+        published_at = normalized.get("published_at") or shanghai_now()
+        normalized["published_at"] = published_at
+        public_title = _resolve_public_title_for_first_publish(
+            session,
+            content_type=content_type,
+            title=normalized["title"],
+            published_at=published_at,
+        )
+        normalized["title"] = public_title
+        normalized["public_title"] = public_title
+        normalized["first_published_at"] = published_at
+    elif resolved_status == "archived":
+        archived_at = normalized.get("published_at") or shanghai_now()
+        normalized["published_at"] = archived_at
+        normalized["first_archived_at"] = archived_at
     return normalized
 
 
@@ -323,6 +675,95 @@ def normalize_content_update_state(session: Session, existing: ContentModel, pat
     )
     normalized["status"] = resolved_status
     normalized["visibility"] = resolved_visibility
+
+    previous_status = getattr(existing, "status", "draft") or "draft"
+    previous_visibility = getattr(existing, "visibility", "public") or "public"
+    was_public = _is_public_state(previous_status, previous_visibility)
+    will_be_public = _is_public_state(resolved_status, resolved_visibility)
+    existing_public_title = getattr(existing, "public_title", None)
+    existing_first_published_at = getattr(existing, "first_published_at", None)
+    existing_first_archived_at = getattr(existing, "first_archived_at", None)
+    current_title = str(normalized.get("title") or getattr(existing, "title", "") or "").strip()
+    current_published_at = (
+        normalized.get("published_at") if "published_at" in normalized else getattr(existing, "published_at", None)
+    )
+    previous_published_at = getattr(existing, "published_at", None)
+
+    if was_public and not will_be_public:
+        public_title = existing_public_title or _strip_public_transition_suffix(getattr(existing, "title", ""))
+        first_published_at = existing_first_published_at or getattr(existing, "published_at", None) or shanghai_now()
+        normalized["public_title"] = public_title
+        normalized["first_published_at"] = first_published_at
+        if resolved_status == "archived":
+            archived_at = _resolve_first_transition_time(
+                existing_time=existing_first_archived_at,
+                current_time=current_published_at,
+                previous_time=previous_published_at,
+            )
+            normalized["first_archived_at"] = archived_at
+            normalized["published_at"] = archived_at
+        else:
+            normalized["published_at"] = current_published_at or first_published_at
+        normalized["title"] = _append_public_transition_suffix(public_title, resolved_status)
+        return normalized
+
+    if not was_public and will_be_public and existing_public_title:
+        normalized["title"] = existing_public_title
+        normalized["public_title"] = existing_public_title
+        if existing_first_published_at is not None:
+            normalized["first_published_at"] = existing_first_published_at
+        if current_published_at is None or current_published_at == getattr(existing, "published_at", None):
+            normalized["published_at"] = existing_first_published_at or getattr(existing, "published_at", None)
+        return normalized
+
+    if not was_public and will_be_public:
+        published_at = current_published_at or shanghai_now()
+        public_title = _resolve_public_title_for_first_publish(
+            session,
+            content_type=content_type,
+            title=current_title,
+            published_at=published_at,
+            exclude_id=getattr(existing, "id", None),
+        )
+        normalized["title"] = public_title
+        normalized["public_title"] = public_title
+        normalized["first_published_at"] = published_at
+        normalized["published_at"] = published_at
+        return normalized
+
+    if will_be_public:
+        first_published_at = existing_first_published_at or current_published_at or shanghai_now()
+        public_title = current_title or existing_public_title or getattr(existing, "title", "")
+        normalized["public_title"] = public_title
+        normalized["first_published_at"] = first_published_at
+        if current_published_at is None:
+            normalized["published_at"] = first_published_at
+        return normalized
+
+    if existing_public_title and resolved_status in {"draft", "archived"}:
+        normalized["public_title"] = existing_public_title
+        if existing_first_published_at is not None:
+            normalized["first_published_at"] = existing_first_published_at
+        if "status" in patch or "visibility" in patch:
+            normalized["title"] = _append_public_transition_suffix(existing_public_title, resolved_status)
+        if resolved_status == "archived":
+            archived_at = _resolve_first_transition_time(
+                existing_time=existing_first_archived_at,
+                current_time=current_published_at,
+                previous_time=previous_published_at,
+            )
+            normalized["first_archived_at"] = archived_at
+            normalized["published_at"] = archived_at
+        return normalized
+
+    if resolved_status == "archived":
+        archived_at = _resolve_first_transition_time(
+            existing_time=existing_first_archived_at,
+            current_time=current_published_at,
+            previous_time=previous_published_at,
+        )
+        normalized["first_archived_at"] = archived_at
+        normalized["published_at"] = archived_at
     return normalized
 
 
