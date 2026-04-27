@@ -518,34 +518,33 @@ jobs:
             aws configure set default.s3.addressing_style virtual
           fi
 
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.latest.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}install.sh" \
-            --content-type "application/x-sh" \
-            --cache-control "no-cache, no-store, must-revalidate"
+          put_oss_object() {
+            local source="$1"
+            local key="$2"
+            local content_type="$3"
+            local cache_control="${4:-}"
+            local args=(
+              --endpoint-url "${BINFEN_OSS_ENDPOINT}"
+              s3api put-object
+              --bucket "${BINFEN_OSS_BUCKET}"
+              --key "${key}"
+              --body "${source}"
+              --content-type "${content_type}"
+            )
+            if [[ -n "${cache_control}" ]]; then
+              args+=(--cache-control "${cache_control}")
+            fi
+            aws "${args[@]}" >/dev/null
+            echo "uploaded s3://${BINFEN_OSS_BUCKET}/${key}"
+          }
 
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/latest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}latest.env" \
-            --content-type "text/plain; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}install.sh" \
-            --content-type "application/x-sh"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-bundle.tar.gz \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-bundle.tar.gz"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-manifest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-manifest.env" \
-            --content-type "text/plain; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/docker-compose.release.yml \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}docker-compose.release.yml" \
-            --content-type "text/yaml; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
-            --content-type "text/plain; charset=utf-8"
+          put_oss_object dist/installer/install.latest.sh "${root_prefix}install.sh" "application/x-sh" "no-cache, no-store, must-revalidate"
+          put_oss_object dist/installer/latest.env "${root_prefix}latest.env" "text/plain; charset=utf-8" "no-cache, no-store, must-revalidate"
+          put_oss_object dist/installer/install.sh "${version_prefix}install.sh" "application/x-sh"
+          put_oss_object dist/installer/aerisun-installer-bundle.tar.gz "${version_prefix}aerisun-installer-bundle.tar.gz" "application/gzip"
+          put_oss_object dist/installer/aerisun-installer-manifest.env "${version_prefix}aerisun-installer-manifest.env" "text/plain; charset=utf-8"
+          put_oss_object dist/installer/docker-compose.release.yml "${version_prefix}docker-compose.release.yml" "text/yaml; charset=utf-8"
+          put_oss_object dist/installer/.env.production.local.example "${version_prefix}.env.production.local.example" "text/plain; charset=utf-8"
 
       - name: Refresh dev installer CDN cache
         env:
@@ -816,34 +815,33 @@ jobs:
             aws configure set default.s3.addressing_style virtual
           fi
 
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.latest.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}install.sh" \
-            --content-type "application/x-sh" \
-            --cache-control "no-cache, no-store, must-revalidate"
+          put_oss_object() {
+            local source="$1"
+            local key="$2"
+            local content_type="$3"
+            local cache_control="${4:-}"
+            local args=(
+              --endpoint-url "${BINFEN_OSS_ENDPOINT}"
+              s3api put-object
+              --bucket "${BINFEN_OSS_BUCKET}"
+              --key "${key}"
+              --body "${source}"
+              --content-type "${content_type}"
+            )
+            if [[ -n "${cache_control}" ]]; then
+              args+=(--cache-control "${cache_control}")
+            fi
+            aws "${args[@]}" >/dev/null
+            echo "uploaded s3://${BINFEN_OSS_BUCKET}/${key}"
+          }
 
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/latest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${root_prefix}latest.env" \
-            --content-type "text/plain; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/install.sh \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}install.sh" \
-            --content-type "application/x-sh"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-bundle.tar.gz \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-bundle.tar.gz"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/aerisun-installer-manifest.env \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}aerisun-installer-manifest.env" \
-            --content-type "text/plain; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/docker-compose.release.yml \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}docker-compose.release.yml" \
-            --content-type "text/yaml; charset=utf-8"
-
-          aws --endpoint-url "${BINFEN_OSS_ENDPOINT}" s3 cp dist/installer/.env.production.local.example \
-            "s3://${BINFEN_OSS_BUCKET}/${version_prefix}.env.production.local.example" \
-            --content-type "text/plain; charset=utf-8"
+          put_oss_object dist/installer/install.latest.sh "${root_prefix}install.sh" "application/x-sh" "no-cache, no-store, must-revalidate"
+          put_oss_object dist/installer/latest.env "${root_prefix}latest.env" "text/plain; charset=utf-8" "no-cache, no-store, must-revalidate"
+          put_oss_object dist/installer/install.sh "${version_prefix}install.sh" "application/x-sh"
+          put_oss_object dist/installer/aerisun-installer-bundle.tar.gz "${version_prefix}aerisun-installer-bundle.tar.gz" "application/gzip"
+          put_oss_object dist/installer/aerisun-installer-manifest.env "${version_prefix}aerisun-installer-manifest.env" "text/plain; charset=utf-8"
+          put_oss_object dist/installer/docker-compose.release.yml "${version_prefix}docker-compose.release.yml" "text/yaml; charset=utf-8"
+          put_oss_object dist/installer/.env.production.local.example "${version_prefix}.env.production.local.example" "text/plain; charset=utf-8"
 
       - name: Refresh installer CDN cache
         env:
