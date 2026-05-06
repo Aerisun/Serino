@@ -165,6 +165,45 @@ assert_body_contains() {
   rm -f "${body_file}"
 }
 
+assert_runtime_css_contains() {
+  local label="$1"
+  local pattern="$2"
+  local index_file
+  local entry_file
+  local css_file
+  local entry_path
+  local css_path
+
+  index_file="$(mktemp)"
+  entry_file="$(mktemp)"
+  css_file="$(mktemp)"
+
+  curl --noproxy '*' -fsS "${SITE_URL}/" -o "${index_file}"
+  entry_path="$(grep -Eo 'src="/assets/index-[^"]+\.js"' "${index_file}" | head -n 1 | sed -E 's/^src="([^"]+)"/\1/' || true)"
+  if [[ -z "${entry_path}" ]]; then
+    echo "ERROR: frontend index entry script was not found" >&2
+    rm -f "${index_file}" "${entry_file}" "${css_file}"
+    return 1
+  fi
+
+  curl --noproxy '*' -fsS "${SITE_URL}${entry_path}" -o "${entry_file}"
+  css_path="$(grep -Eo 'assets/AppRuntime-[A-Za-z0-9_-]+\.css' "${entry_file}" | head -n 1 || true)"
+  if [[ -z "${css_path}" ]]; then
+    echo "ERROR: frontend runtime CSS asset was not found" >&2
+    rm -f "${index_file}" "${entry_file}" "${css_file}"
+    return 1
+  fi
+
+  curl --noproxy '*' -fsS "${SITE_URL}/${css_path}" -o "${css_file}"
+  if ! grep -Eiq "${pattern}" "${css_file}"; then
+    echo "ERROR: ${label} did not match required pattern (${pattern}): ${SITE_URL}/${css_path}" >&2
+    rm -f "${index_file}" "${entry_file}" "${css_file}"
+    return 1
+  fi
+
+  rm -f "${index_file}" "${entry_file}" "${css_file}"
+}
+
 build_local_images() {
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" ./backend
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" -f Dockerfile.caddy .
@@ -247,5 +286,7 @@ assert_cache_control "${SITE_URL}/registerSW.js" "frontend service worker regist
 assert_body_not_contains "${SITE_URL}/sw.js" "service worker cache policy" "api-cache|bootstrap-cache|media-cache|asset-cache|precacheAndRoute|CacheFirst|createHandlerBoundToURL|workbox"
 assert_body_contains "${SITE_URL}/sw.js" "service worker retirement" "registration\\.unregister\\("
 assert_body_not_contains "${SITE_URL}/registerSW.js" "service worker registration shim" "serviceWorker\\.register|navigator\\.serviceWorker"
+assert_runtime_css_contains "hero nav backdrop-filter" "\\.liquid-glass-nav-hero\\{[^}]*[;{]backdrop-filter:blur\\(24px\\)saturate\\(146%\\)"
+assert_runtime_css_contains "hero nav prefixed backdrop-filter" "\\.liquid-glass-nav-hero\\{[^}]*-webkit-backdrop-filter:blur\\(24px\\)saturate\\(146%\\)"
 
 echo "Docker smoke test passed for ${SITE_URL}"

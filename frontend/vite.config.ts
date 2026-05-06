@@ -25,6 +25,19 @@ const FRONTEND_ENTRY_JS_GZIP_BUDGET_BYTES = 60 * 1024;
 const FRONTEND_ENTRY_CSS_GZIP_BUDGET_BYTES = 12 * 1024;
 const PRECACHE_BUDGET_BYTES = 2 * 1024 * 1024;
 
+const appendUnprefixedBackdropFilter = (css: string) =>
+  css.replace(/-webkit-backdrop-filter:([^;{}]+);/g, (match, value, offset) => {
+    const ruleStart = css.lastIndexOf("{", offset);
+    const ruleEnd = css.indexOf("}", offset);
+    const ruleBody = css.slice(ruleStart + 1, ruleEnd === -1 ? css.length : ruleEnd);
+
+    if (/(^|;)backdrop-filter:/.test(ruleBody)) {
+      return match;
+    }
+
+    return `${match}backdrop-filter:${value};`;
+  });
+
 const encodeBuildLiteral = (value: string, quote: '"' | "'" | "`") =>
   Array.from(value)
     .map((char) => {
@@ -70,6 +83,20 @@ const footerBuildObfuscationPlugin = () => ({
   },
 });
 
+const preserveBackdropFilterPlugin = () => ({
+  name: "aerisun-preserve-backdrop-filter",
+  apply: "build" as const,
+  enforce: "post" as const,
+  generateBundle(_: unknown, bundle: Record<string, { type: string; fileName?: string; source?: string | Uint8Array }>) {
+    for (const output of Object.values(bundle)) {
+      if (output.type !== "asset" || typeof output.source !== "string" || !output.fileName?.endsWith(".css")) {
+        continue;
+      }
+      output.source = appendUnprefixedBackdropFilter(output.source);
+    }
+  },
+});
+
 const performanceBudgetPlugin = () => ({
   name: "aerisun-performance-budgets",
   apply: "build" as const,
@@ -98,6 +125,31 @@ const performanceBudgetPlugin = () => ({
 
     requiredFileSize(entryScriptMatch?.[1], FRONTEND_ENTRY_JS_GZIP_BUDGET_BYTES, "entry JS");
     requiredFileSize(entryStyleMatch?.[1], FRONTEND_ENTRY_CSS_GZIP_BUDGET_BYTES, "entry CSS");
+
+    const assetsDir = path.join(distDir, "assets");
+    const builtCss = fs.existsSync(assetsDir)
+      ? fs
+          .readdirSync(assetsDir)
+          .filter((fileName) => fileName.endsWith(".css"))
+          .map((fileName) => fs.readFileSync(path.join(assetsDir, fileName), "utf-8"))
+          .join("\n")
+      : "";
+    const assertBackdropFilterPair = (selector: string, value: string) => {
+      const normalizedValue = value.replace(/\s+/g, "");
+      const ruleBodies = Array.from(builtCss.matchAll(new RegExp(`${escapeRegExp(selector)}\\{([^}]*)\\}`, "g"))).map(
+        (match) => match[1].replace(/\s+/g, ""),
+      );
+      const standardPattern = new RegExp(`(?:^|;)backdrop-filter:${escapeRegExp(normalizedValue)};`);
+      const prefixedPattern = new RegExp(`(?:^|;)-webkit-backdrop-filter:${escapeRegExp(normalizedValue)};`);
+      const hasPair = ruleBodies.some((body) => standardPattern.test(body) && prefixedPattern.test(body));
+
+      if (!hasPair) {
+        throw new Error(`${selector} must keep both backdrop-filter declarations in built CSS`);
+      }
+    };
+
+    assertBackdropFilterPair(".liquid-glass-nav-hero", "blur(24px) saturate(146%)");
+    assertBackdropFilterPair(".liquid-glass-nav-hero-strong", "blur(28px) saturate(152%)");
 
     if (/createLucideIcon-[\w-]+\.js/.test(indexHtml)) {
       throw new Error("Homepage should not modulepreload lucide-react startup chunks");
@@ -198,6 +250,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       footerBuildObfuscationPlugin(),
+      preserveBackdropFilterPlugin(),
       performanceBudgetPlugin(),
       VitePWA({
         // Retire previously shipped service workers that could keep serving stale
