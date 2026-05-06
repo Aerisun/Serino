@@ -22,6 +22,7 @@ import {
 import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { resetAuthSensitiveQueryCache } from "@/lib/query-cache";
 import {
   getOAuthAuthorizationUrl,
   loginWithEmail,
@@ -129,13 +130,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  const invalidateSiteContentQueries = useCallback(async () => {
-    await queryClient.invalidateQueries({
-      predicate: (query) => {
-        const [firstKey] = query.queryKey;
-        return firstKey === "site" || (typeof firstKey === "string" && firstKey.startsWith("/api/v1/site/"));
-      },
-    });
+  const resetSiteContentQueriesForAuthChange = useCallback(async () => {
+    await resetAuthSensitiveQueryCache(queryClient);
   }, [queryClient]);
 
   const resetForm = useCallback(() => {
@@ -420,13 +416,13 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      await resetSiteContentQueriesForAuthChange();
       setAuthState((current) => ({
         authenticated: true,
         email_login_enabled: current?.email_login_enabled ?? true,
         oauth_providers: current?.oauth_providers ?? [],
         user: result.user,
       }));
-      await invalidateSiteContentQueries();
       closeLogin();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("siteAuth.loginFailed"));
@@ -439,8 +435,8 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     closeLogin,
     displayName,
     email,
-    invalidateSiteContentQueries,
     needsProfile,
+    resetSiteContentQueriesForAuthChange,
     requiresAdminPassword,
     selectedAvatar,
     t,
@@ -523,14 +519,14 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await logoutSiteAuth();
+    await resetSiteContentQueriesForAuthChange();
     setAuthState((current) => ({
       authenticated: false,
       email_login_enabled: current?.email_login_enabled ?? true,
       oauth_providers: current?.oauth_providers ?? [],
       user: null,
     }));
-    await invalidateSiteContentQueries();
-  }, [invalidateSiteContentQueries]);
+  }, [resetSiteContentQueriesForAuthChange]);
 
   const dialogEmailLoginEnabled =
     Boolean(authState?.email_login_enabled) && allowEmailLoginInDialog;

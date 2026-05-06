@@ -4,8 +4,8 @@ import {
   QueryClient,
   QueryClientProvider,
   dehydrate,
-  hydrate,
   useQueryClient,
+  hydrate,
 } from "@tanstack/react-query";
 import { ThemeProvider } from "@serino/theme";
 import "./index.css";
@@ -24,6 +24,12 @@ import {
   preloadInternalHref,
   prefetchHomeActivityData,
 } from "@/lib/route-preload";
+import {
+  clearPersistedQueryState,
+  isFreshnessSensitiveQueryKey,
+  readPersistedQueryState,
+  shouldPersistQueryKey,
+} from "@/lib/query-cache";
 
 const Index = lazy(() => import("./pages/Index"));
 const Posts = lazy(() => import("./pages/Posts"));
@@ -40,89 +46,11 @@ const Preview = lazy(() => import("./pages/Preview"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const SearchModal = lazyWithPreload(() => import("@/components/SearchModal"));
 const SubscribeModal = lazyWithPreload(() => import("@/components/SubscribeModal"));
-const QUERY_CACHE_STORAGE_KEY = "aerisun:query-cache:v2";
-const QUERY_CACHE_TTL_MS = 10 * 60_000;
 const CONTENT_FRESHNESS_STORAGE_KEY = "aerisun:content-updated:v1";
 const CONTENT_REFRESH_INTERVAL_MS = 60_000;
 const CONTENT_REFRESH_COOLDOWN_MS = 15_000;
 const BACKGROUND_ROUTE_PRELOAD_DELAY_MS = 3_200;
 const BACKGROUND_ROUTE_PRELOAD_GAP_MS = 320;
-
-const shouldPersistQueryKey = (queryKey: readonly unknown[]) => {
-  const [first] = queryKey;
-  return typeof first === "string" && first.startsWith("/api/v1/site-interactions/");
-};
-
-const isFreshnessSensitiveQueryKey = (queryKey: readonly unknown[]) => {
-  const [first] = queryKey;
-
-  if (first === "site") {
-    return true;
-  }
-
-  if (typeof first !== "string") {
-    return false;
-  }
-
-  return (
-    first === "/api/v1/site/posts" ||
-    first.startsWith("/api/v1/site/posts/") ||
-    first === "/api/v1/site/diary" ||
-    first.startsWith("/api/v1/site/diary/") ||
-    first === "/api/v1/site/thoughts" ||
-    first === "/api/v1/site/excerpts" ||
-    first === "/api/v1/site/friends" ||
-    first === "/api/v1/site/friend-feed" ||
-    first === "/api/v1/site/recent-activity" ||
-    first === "/api/v1/site/activity-heatmap" ||
-    first === "/api/v1/site/calendar"
-  );
-};
-
-const clearPersistedQueryState = () => {
-  if (typeof sessionStorage === "undefined") {
-    return;
-  }
-
-  try {
-    sessionStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
-  } catch {
-    // Ignore storage failures.
-  }
-};
-
-const readPersistedQueryState = () => {
-  if (typeof sessionStorage === "undefined") {
-    return null;
-  }
-
-  try {
-    const raw = sessionStorage.getItem(QUERY_CACHE_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as { persistedAt?: number; state?: Parameters<typeof hydrate>[1] };
-    if (!parsed || typeof parsed.persistedAt !== "number" || !parsed.state) {
-      sessionStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
-      return null;
-    }
-
-    if (Date.now() - parsed.persistedAt > QUERY_CACHE_TTL_MS) {
-      sessionStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
-      return null;
-    }
-
-    return parsed.state;
-  } catch {
-    try {
-      sessionStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
-    } catch {
-      // Ignore storage failures.
-    }
-    return null;
-  }
-};
 
 const createQueryClient = () => {
   const client = new QueryClient({
