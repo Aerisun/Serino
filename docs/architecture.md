@@ -330,11 +330,11 @@ flowchart TB
 
 ### 三条链路解释
 
-| 场景 | 真实路径                                                                                 | 作用                                             |
-| ---- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 开发 | `Makefile` -> `scripts/dev-start.sh` -> `backend/scripts/bootstrap.sh` | 预检数据库、按 seed profile 灌开发或生产风格数据，并执行 blocking data migrations |
-| 首装 | `installer/install.sh` -> `migrate.sh` / `baseline-prod.sh` / `data-migrate.sh` / `first-admin-prod.sh` | schema migration + production baseline + blocking data migrations + 首次管理员 |
-| 升级 | `installer/upgrade.sh` -> `migrate.sh` / `data-migrate.sh` | schema migration + blocking/background data migrations，不重复覆盖已有业务数据 |
+| 场景 | 真实路径                                                                                                | 作用                                                                              |
+| ---- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 开发 | `Makefile` -> `scripts/dev-start.sh` -> `backend/scripts/bootstrap.sh`                                  | 预检数据库、按 seed profile 灌开发或生产风格数据，并执行 blocking data migrations |
+| 首装 | `installer/install.sh` -> `migrate.sh` / `baseline-prod.sh` / `data-migrate.sh` / `first-admin-prod.sh` | schema migration + production baseline + blocking data migrations + 首次管理员    |
+| 升级 | `installer/upgrade.sh` -> `migrate.sh` / `data-migrate.sh`                                              | schema migration + blocking/background data migrations，不重复覆盖已有业务数据    |
 
 关键文件：
 
@@ -470,6 +470,18 @@ flowchart LR
 - 避免手写接口层和类型漂移
 - 避免前后台各自猜 API
 - 把契约偏差变成 CI 失败，而不是线上事故
+
+---
+
+## 技术架构
+
+基于现代化的全栈体系构建，看重性能优化与极致分离：
+
+- **Frontend / Admin**：React 18 + Vite (SPA)、TailwindCSS + shadcn/ui、TanStack Query 与 Zod 运行时校验。
+- **Backend / API**：Python 3.13 + FastAPI、SQLAlchemy 2.0 异步驱动。
+- **Database**：SQLite 3 (WAL 模式并发优化)，业务、评论 (Waline)、工作流 (LangGraph) 实现三库独立切割。
+- **AI & Workflow**：LangGraph 1.0+ 状态机、内置 MCP Server。
+- **Contract-First**：基于 OpenAPI + Orval 自动生成类型安全的前端通讯层。
 
 ---
 

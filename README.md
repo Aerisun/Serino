@@ -58,15 +58,29 @@ curl -fsSL https://install.aerisun.top/serino/install.sh | bash
 
 ---
 
-## ⚙️ 技术架构
+## 🧭 项目开发状态
 
-基于现代化的全栈体系构建，看重性能优化与极致分离：
+项目主体功能已经可以在生产环境下运行，部分高阶能力仍在持续完善，后续的开发都可以通过 `sercli upgrade` 命令无缝升级到最新版本。
 
-- **Frontend / Admin**：React 18 + Vite (SPA)、TailwindCSS + shadcn/ui、TanStack Query 与 Zod 运行时校验。
-- **Backend / API**：Python 3.13 + FastAPI、SQLAlchemy 2.0 异步驱动。
-- **Database**：SQLite 3 (WAL 模式并发优化)，业务、评论 (Waline)、工作流 (LangGraph) 实现三库独立切割。
-- **AI & Workflow**：LangGraph 1.0+ 状态机、内置 MCP Server。
-- **Contract-First**：基于 OpenAPI + Orval 自动生成类型安全的前端通讯层。
+**已测试通过**
+
+- [x] 安装器一键部署流程（国内网络已测试）
+- [x] 站点前端展示侧的全部页面、功能和内容展示
+- [x] 后端管理台中，文章、随想、摘录、日记、分类这些主体内容的编辑与管理（移动端做过优化，纵享丝滑）
+- [x] 基本实现了开发环境和生产运维的自动化链路流程
+- [x] 站点各类配置管理、友链管理、评论管理、访客管理、OSS 加速、静态资源管理、订阅邮箱、MCP 服务、审计日志追踪等后台高级能力
+
+**有待努力**
+
+- [ ] 访客追踪系统的 debug
+- [ ] 备份服务的测试
+- [ ] Agent 系统的通用性和编排体验
+- [ ] 优化后端管理台的概览页面信息密度与实用性
+- [ ] 在 `sercli` 实现命令式本地备份恢复数据包
+- [ ] 手动升级链路已可用，生产环境自动更新仍待完善
+- [ ] 管理台中，站点配置管理、集成系统等高级功能的移动端适配效果
+- [ ] 更完整的 `sercli` 运维命令集
+- [ ] 更深入的安全约束与权限隔离策略
 
 ---
 
@@ -121,10 +135,9 @@ make dev-ts     # 同 make dev 但是开启 Tailscale Serve 转发，方便手�
 make dev-pseed  # 启动方式 2：灌入生产初始化数据，用于调整生产种子 (Prod Seed)
 # 密码改废进不了后台? 试试 cd backend & uv run aerisun-create-admin
 
-
-
 make dev-stop   # 停止整套本地开发环境，并释放 dev-ts 开启的 Tailscale 转发
 
+# 4. 生产环境部署测试
 curl -fsSL https://install.aerisun.top/serino/dev/vX.Y.Z/install.sh | bash # 测试安装（除了使用最新的 dev 渠道和镜像来源，别的与正式安装器完全一致）
 # 单台机器一次只应选择一个渠道，切换先行 `sercli uninstall --force` 再重装；因为 CDN 缓存的关系，所以使用版本号避免错误
 # 网络不稳定失败可以调节 max-concurrent-downloads
