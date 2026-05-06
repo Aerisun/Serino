@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -363,6 +363,13 @@ export default function VisitorsPage() {
   const [bindingError, setBindingError] = useState("");
   const [testingProvider, setTestingProvider] =
     useState<VisitorOAuthProvider | null>(null);
+  const testingProviderRef = useRef<VisitorOAuthProvider | null>(null);
+  const [bindingProvider, setBindingProvider] =
+    useState<BindableAdminProvider | null>(null);
+  const bindingProviderRef = useRef<BindableAdminProvider | null>(null);
+  const handledAdminBindRedirectRef = useRef<string | null>(null);
+  const handledOAuthTestRedirectRef = useRef<string | null>(null);
+  const handledAuthErrorRedirectRef = useRef<string | null>(null);
   const [savingProvider, setSavingProvider] =
     useState<VisitorOAuthProvider | null>(null);
   const [savingEmailLogin, setSavingEmailLogin] = useState(false);
@@ -833,6 +840,11 @@ export default function VisitorsPage() {
     if (!provider || authResult !== "success") {
       return;
     }
+    const redirectKey = searchParams.toString();
+    if (handledAdminBindRedirectRef.current === redirectKey) {
+      return;
+    }
+    handledAdminBindRedirectRef.current = redirectKey;
     const next = new URLSearchParams(searchParams);
     next.delete("admin_bind_provider");
     next.delete("auth");
@@ -850,12 +862,18 @@ export default function VisitorsPage() {
     if (!provider || authResult !== "success") {
       return;
     }
+    const redirectKey = searchParams.toString();
+    if (handledOAuthTestRedirectRef.current === redirectKey) {
+      return;
+    }
+    handledOAuthTestRedirectRef.current = redirectKey;
     const next = new URLSearchParams(searchParams);
     next.delete("oauth_test_provider");
     next.delete("auth");
     next.delete("auth_provider");
     next.delete("auth_message");
     setSearchParams(next, { replace: true });
+    testingProviderRef.current = null;
     setTestingProvider(null);
     toast.success(
       `${provider === "google" ? "Google" : "GitHub"} 认证测试成功`,
@@ -877,6 +895,11 @@ export default function VisitorsPage() {
     if (!testProvider && !bindProvider) {
       return;
     }
+    const redirectKey = searchParams.toString();
+    if (handledAuthErrorRedirectRef.current === redirectKey) {
+      return;
+    }
+    handledAuthErrorRedirectRef.current = redirectKey;
 
     const next = new URLSearchParams(searchParams);
     next.delete("oauth_test_provider");
@@ -885,7 +908,10 @@ export default function VisitorsPage() {
     next.delete("auth_provider");
     next.delete("auth_message");
     setSearchParams(next, { replace: true });
+    testingProviderRef.current = null;
+    bindingProviderRef.current = null;
     setTestingProvider(null);
+    setBindingProvider(null);
 
     if (testProvider) {
       toast.error(message);
@@ -904,8 +930,14 @@ export default function VisitorsPage() {
   };
 
   const startAdminOAuthBinding = async (provider: "google" | "github") => {
+    if (bindingProviderRef.current) {
+      return;
+    }
+    bindingProviderRef.current = provider;
+    setBindingProvider(provider);
     setBindingError("");
     const returnTo = buildAdminPath(`visitors?admin_bind_provider=${provider}`);
+    let releasePending = true;
     try {
       const saved = await persistAdminConfig({
         admin_auth_methods: form.admin_auth_methods,
@@ -922,12 +954,21 @@ export default function VisitorsPage() {
         throw new Error("没有拿到可用的认证地址");
       }
       window.location.assign(authorizationUrl);
+      releasePending = false;
     } catch (error) {
       setBindingError(error instanceof Error ? error.message : "认证发起失败");
+    } finally {
+      if (releasePending) {
+        bindingProviderRef.current = null;
+        setBindingProvider(null);
+      }
     }
   };
 
   const startOAuthTest = async (provider: VisitorOAuthProvider) => {
+    if (testingProviderRef.current) {
+      return;
+    }
     const idField =
       provider === "google" ? "google_client_id" : "github_client_id";
     const secretField =
@@ -940,11 +981,12 @@ export default function VisitorsPage() {
       toast.error("先把 Client ID 和 Client Secret 填完整");
       return;
     }
+    testingProviderRef.current = provider;
     setTestingProvider(provider);
+    let releasePending = true;
     try {
       const saved = await saveOAuthProvider(provider, { silent: true });
       if (!saved) {
-        setTestingProvider(null);
         return;
       }
       const authorizationUrl = await getPublicOAuthAuthorizationUrl(
@@ -955,9 +997,14 @@ export default function VisitorsPage() {
         throw new Error("没有拿到可用的认证地址");
       }
       window.location.assign(authorizationUrl);
+      releasePending = false;
     } catch (error) {
-      setTestingProvider(null);
       toast.error(error instanceof Error ? error.message : "测试认证发起失败");
+    } finally {
+      if (releasePending) {
+        testingProviderRef.current = null;
+        setTestingProvider((current) => (current === provider ? null : current));
+      }
     }
   };
 
@@ -1430,7 +1477,14 @@ export default function VisitorsPage() {
                     : boundAdminProviders.has(item.key)
                       ? "completed"
                       : "incomplete";
-                  const pending = bindCurrent.isPending || savingAdminConfig;
+                  const pending =
+                    bindCurrent.isPending ||
+                    savingAdminConfig ||
+                    bindingProvider !== null;
+                  const providerPending =
+                    bindCurrent.isPending ||
+                    savingAdminConfig ||
+                    bindingProvider === item.key;
                   return (
                     <div key={item.key} className={adminPanelCardClass}>
                       <div className="flex items-center justify-between gap-3">
@@ -1470,7 +1524,7 @@ export default function VisitorsPage() {
                             }
                             className="gap-2"
                           >
-                            {pending ? (
+                            {providerPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : null}
                             认证并绑定

@@ -34,13 +34,15 @@ class OAuthStatePayload:
     provider: str
     state: str
     return_to: str
+    code_verifier: str = ""
 
 
-def build_oauth_state_cookie(provider: str, state: str, return_to: str) -> str:
+def build_oauth_state_cookie(provider: str, state: str, return_to: str, *, code_verifier: str = "") -> str:
     payload = {
         "provider": provider,
         "state": state,
         "return_to": normalize_return_to(return_to),
+        "code_verifier": code_verifier,
         "iat": int(time.time()),
     }
     encoded_payload = _base64url_encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
@@ -63,9 +65,10 @@ def parse_oauth_state_cookie(raw: str | None) -> OAuthStatePayload | None:
     provider = str(payload.get("provider") or "").strip().lower()
     state = str(payload.get("state") or "").strip()
     return_to = normalize_return_to(str(payload.get("return_to") or "/"))
+    code_verifier = str(payload.get("code_verifier") or "").strip()
     if provider not in ALLOWED_OAUTH_PROVIDERS or not state:
         return None
-    return OAuthStatePayload(provider=provider, state=state, return_to=return_to)
+    return OAuthStatePayload(provider=provider, state=state, return_to=return_to, code_verifier=code_verifier)
 
 
 def _base64url_encode(value: bytes) -> str:
@@ -130,6 +133,12 @@ def _provider_label(provider: str) -> str:
     return "GitHub" if provider == "github" else "Google"
 
 
+def _build_pkce_pair() -> tuple[str, str]:
+    code_verifier = secrets.token_urlsafe(64)[:96]
+    challenge = hashlib.sha256(code_verifier.encode("ascii")).digest()
+    return code_verifier, _base64url_encode(challenge)
+
+
 def _safe_json_object(response: httpx.Response) -> dict[str, object]:
     try:
         payload = response.json()
@@ -173,6 +182,7 @@ def build_oauth_authorization_url(
 ) -> tuple[str, str]:
     normalized = provider.strip().lower()
     state = secrets.token_urlsafe(24)
+    code_verifier, code_challenge = _build_pkce_pair()
 
     if normalized not in enabled_oauth_providers(session):
         raise ValidationError("当前站点未启用该登录方式。")
@@ -188,10 +198,12 @@ def build_oauth_authorization_url(
                 "redirect_uri": callback_url,
                 "scope": "read:user user:email",
                 "state": state,
+                "code_challenge": code_challenge,
+                "code_challenge_method": "S256",
             }
         )
         auth_url = f"https://github.com/login/oauth/authorize?{params}"
-        return auth_url, build_oauth_state_cookie("github", state, return_to)
+        return auth_url, build_oauth_state_cookie("github", state, return_to, code_verifier=code_verifier)
 
     if normalized == "google":
         client_id, _ = oauth_credentials(session, "google")
@@ -206,16 +218,32 @@ def build_oauth_authorization_url(
                 "access_type": "online",
                 "prompt": "select_account",
                 "state": state,
+                "code_challenge": code_challenge,
+                "code_challenge_method": "S256",
             }
         )
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{params}"
-        return auth_url, build_oauth_state_cookie("google", state, return_to)
+        return auth_url, build_oauth_state_cookie("google", state, return_to, code_verifier=code_verifier)
 
     raise ValidationError("不支持的登录方式。")
 
 
-def exchange_github_code(session: Session, code: str, *, callback_url: str) -> OAuthProviderCallbackResult:
+def exchange_github_code(
+    session: Session,
+    code: str,
+    *,
+    callback_url: str,
+    code_verifier: str = "",
+) -> OAuthProviderCallbackResult:
     client_id, client_secret = oauth_credentials(session, "github")
+    token_data = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code,
+        "redirect_uri": callback_url,
+    }
+    if code_verifier:
+        token_data["code_verifier"] = code_verifier
     try:
         token_response = send_outbound_request(
             session,
@@ -223,12 +251,7 @@ def exchange_github_code(session: Session, code: str, *, callback_url: str) -> O
             method="POST",
             url="https://github.com/login/oauth/access_token",
             headers={"Accept": "application/json"},
-            data={
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "code": code,
-                "redirect_uri": callback_url,
-            },
+            data=token_data,
             timeout=8.0,
         )
     except httpx.HTTPError as exc:
@@ -278,9 +301,14 @@ def exchange_github_code(session: Session, code: str, *, callback_url: str) -> O
         email_payload = []
     primary_email = ""
     if isinstance(email_payload, list):
-        primary = next((item for item in email_payload if item.get("primary")), None)
-        if primary is None and email_payload:
-            primary = email_payload[0]
+        verified_items = [
+            item
+            for item in email_payload
+            if isinstance(item, dict) and item.get("verified") is True and str(item.get("email") or "").strip()
+        ]
+        primary = next((item for item in verified_items if item.get("primary") is True), None)
+        if primary is None and verified_items:
+            primary = verified_items[0]
         if primary:
             primary_email = str(primary.get("email") or "")
 
@@ -295,21 +323,30 @@ def exchange_github_code(session: Session, code: str, *, callback_url: str) -> O
     )
 
 
-def exchange_google_code(session: Session, code: str, *, callback_url: str) -> OAuthProviderCallbackResult:
+def exchange_google_code(
+    session: Session,
+    code: str,
+    *,
+    callback_url: str,
+    code_verifier: str = "",
+) -> OAuthProviderCallbackResult:
     client_id, client_secret = oauth_credentials(session, "google")
+    token_data = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": callback_url,
+    }
+    if code_verifier:
+        token_data["code_verifier"] = code_verifier
     try:
         token_response = send_outbound_request(
             session,
             scope="oauth",
             method="POST",
             url="https://oauth2.googleapis.com/token",
-            data={
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": callback_url,
-            },
+            data=token_data,
             timeout=8.0,
         )
     except httpx.HTTPError as exc:
@@ -339,6 +376,8 @@ def exchange_google_code(session: Session, code: str, *, callback_url: str) -> O
     user_payload = _safe_json_object(user_response)
     if user_response.is_error:
         raise _oauth_failure("google", "读取 Google 账号资料失败，请稍后再试。", payload=user_payload)
+    if user_payload.get("email_verified") is not True:
+        raise AuthenticationFailed("Google 登录失败，Google 账号邮箱尚未完成验证。")
 
     return OAuthProviderCallbackResult(
         provider="google",
@@ -363,14 +402,16 @@ def complete_oauth_login(
         raise AuthenticationFailed("登录状态已失效，请重新开始。")
 
     if provider == "github":
-        profile = exchange_github_code(session, code, callback_url=callback_url)
+        profile = exchange_github_code(session, code, callback_url=callback_url, code_verifier=payload.code_verifier)
     elif provider == "google":
-        profile = exchange_google_code(session, code, callback_url=callback_url)
+        profile = exchange_google_code(session, code, callback_url=callback_url, code_verifier=payload.code_verifier)
     else:
         raise ValidationError("不支持的登录方式。")
 
+    if not profile.provider_subject:
+        raise AuthenticationFailed(f"{_provider_label(provider)} 登录失败，认证服务没有返回可用用户标识。")
     if not profile.email:
-        raise ValidationError("当前登录方式没有返回可用邮箱，无法建立站点身份。")
+        raise ValidationError("当前登录方式没有返回可用且已验证的邮箱，无法建立站点身份。")
 
     oauth_account = repo.find_oauth_account(session, provider=provider, provider_subject=profile.provider_subject)
     user = repo.find_user_by_email(session, profile.email)

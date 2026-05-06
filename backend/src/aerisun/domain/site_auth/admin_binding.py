@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from aerisun.domain.exceptions import AuthenticationFailed, ValidationError
 from aerisun.domain.site_auth import repository as repo
-from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
+from aerisun.domain.site_auth.models import SiteAdminIdentity, SiteUser, SiteUserSession
 from aerisun.domain.site_auth.schemas import SiteAdminEmailIdentityBindRequest, SiteAdminIdentityAdminRead
 
 from .config_service import (
@@ -47,6 +48,48 @@ def list_site_admin_identities_admin(session: Session) -> list[SiteAdminIdentity
     return items
 
 
+def _apply_admin_identity_values(
+    identity: SiteAdminIdentity,
+    *,
+    site_user: SiteUser,
+    admin_user_id: str,
+    identifier: str,
+    email: str,
+    provider_display_name: str | None,
+) -> bool:
+    updates = {
+        "site_user_id": site_user.id,
+        "admin_user_id": admin_user_id,
+        "identifier": identifier,
+        "email": email,
+        "provider_display_name": provider_display_name,
+    }
+    changed = False
+    for key, value in updates.items():
+        if getattr(identity, key) != value:
+            setattr(identity, key, value)
+            changed = True
+    return changed
+
+
+def _read_admin_identity(session: Session, identity: SiteAdminIdentity) -> SiteAdminIdentityAdminRead:
+    user = repo.find_user_by_id(session, identity.site_user_id)
+    if user is None:
+        raise ValidationError("管理员绑定的站点用户不存在。")
+    return SiteAdminIdentityAdminRead(
+        id=identity.id,
+        site_user_id=identity.site_user_id,
+        provider=identity.provider,
+        identifier=identity.identifier,
+        email=identity.email,
+        site_user_display_name=user.display_name,
+        site_user_avatar_url=user.avatar_url,
+        provider_display_name=identity.provider_display_name,
+        created_at=identity.created_at,
+        updated_at=identity.updated_at,
+    )
+
+
 def upsert_admin_identity(
     session: Session,
     *,
@@ -81,6 +124,7 @@ def upsert_admin_identity(
             provider=normalized_provider,
         )
     created = identity is None
+    should_commit = True
     if identity is None:
         identity = repo.create_admin_identity(
             session,
@@ -92,14 +136,39 @@ def upsert_admin_identity(
             provider_display_name=provider_display_name,
         )
     else:
-        identity.site_user_id = site_user.id
-        identity.admin_user_id = admin_user_id
-        identity.identifier = normalized_identifier
-        identity.email = normalized_email
-        identity.provider_display_name = provider_display_name
+        should_commit = _apply_admin_identity_values(
+            identity,
+            site_user=site_user,
+            admin_user_id=admin_user_id,
+            identifier=normalized_identifier,
+            email=normalized_email,
+            provider_display_name=provider_display_name,
+        )
 
-    session.commit()
-    session.refresh(identity)
+    if should_commit:
+        try:
+            session.commit()
+            session.refresh(identity)
+        except IntegrityError:
+            session.rollback()
+            identity = repo.find_admin_identity_by_provider_identifier(
+                session,
+                provider=normalized_provider,
+                identifier=normalized_identifier,
+            )
+            if identity is None:
+                raise
+            created = False
+            if _apply_admin_identity_values(
+                identity,
+                site_user=site_user,
+                admin_user_id=admin_user_id,
+                identifier=normalized_identifier,
+                email=normalized_email,
+                provider_display_name=provider_display_name,
+            ):
+                session.commit()
+                session.refresh(identity)
     if created:
         emit_site_admin_identity_created(
             session,
@@ -108,21 +177,7 @@ def upsert_admin_identity(
             provider=identity.provider,
             email=identity.email,
         )
-    user = repo.find_user_by_id(session, identity.site_user_id)
-    if user is None:
-        raise ValidationError("管理员绑定的站点用户不存在。")
-    return SiteAdminIdentityAdminRead(
-        id=identity.id,
-        site_user_id=identity.site_user_id,
-        provider=identity.provider,
-        identifier=identity.identifier,
-        email=identity.email,
-        site_user_display_name=user.display_name,
-        site_user_avatar_url=user.avatar_url,
-        provider_display_name=identity.provider_display_name,
-        created_at=identity.created_at,
-        updated_at=identity.updated_at,
-    )
+    return _read_admin_identity(session, identity)
 
 
 def bind_site_admin_identity_by_email(

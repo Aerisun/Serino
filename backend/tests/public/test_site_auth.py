@@ -60,6 +60,25 @@ def _seed_google_visitor_oauth() -> None:
         session.commit()
 
 
+def _seed_github_visitor_oauth() -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
+    from aerisun.domain.outbound_proxy.service import update_outbound_proxy_config
+    from aerisun.domain.site_auth.config_service import get_site_auth_config_orm
+
+    factory = get_session_factory()
+    with factory() as session:
+        update_outbound_proxy_config(
+            session,
+            OutboundProxyConfigUpdate(proxy_port=7890, oauth_enabled=True),
+        )
+        config = get_site_auth_config_orm(session)
+        config.visitor_oauth_providers = ["github"]
+        config.github_client_id = "github-client-id"
+        config.github_client_secret = "github-client-secret"
+        session.commit()
+
+
 def _seed_bound_admin_email(
     *,
     email: str,
@@ -303,8 +322,97 @@ def test_google_oauth_start_uses_forwarded_https_callback_url(client) -> None:
     assert response.status_code == 200
 
     auth_url = response.json()["authorization_url"]
-    redirect_uri = parse_qs(urlparse(auth_url).query)["redirect_uri"][0]
+    auth_params = parse_qs(urlparse(auth_url).query)
+    redirect_uri = auth_params["redirect_uri"][0]
     assert redirect_uri == "https://aerisun.top/api/v1/site-auth/oauth/google/callback"
+    assert auth_params["code_challenge_method"] == ["S256"]
+    assert auth_params["code_challenge"][0]
+
+
+def test_github_oauth_start_uses_pkce(client) -> None:
+    _seed_github_visitor_oauth()
+
+    response = client.get(
+        "/api/v1/site-auth/oauth/github/start",
+        params={"return_to": "/"},
+        headers={
+            "x-forwarded-proto": "https",
+            "x-forwarded-host": "aerisun.top",
+        },
+    )
+    assert response.status_code == 200
+
+    auth_url = response.json()["authorization_url"]
+    auth_params = parse_qs(urlparse(auth_url).query)
+    assert auth_params["redirect_uri"][0] == "https://aerisun.top/api/v1/site-auth/oauth/github/callback"
+    assert auth_params["code_challenge_method"] == ["S256"]
+    assert auth_params["code_challenge"][0]
+
+
+@respx.mock
+def test_github_oauth_callback_uses_pkce_and_verified_email(client) -> None:
+    _seed_github_visitor_oauth()
+
+    start_response = client.get(
+        "/api/v1/site-auth/oauth/github/start",
+        params={"return_to": "/"},
+    )
+    assert start_response.status_code == 200
+    auth_url = start_response.json()["authorization_url"]
+    state = parse_qs(urlparse(auth_url).query)["state"][0]
+    captured_token_form: dict[str, list[str]] = {}
+
+    def token_handler(request: httpx.Request) -> httpx.Response:
+        captured_token_form.update(parse_qs(request.content.decode()))
+        return httpx.Response(200, json={"access_token": "github-access-token"})
+
+    respx.post("https://github.com/login/oauth/access_token").mock(side_effect=token_handler)
+    respx.get("https://api.github.com/user").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": 123456,
+                "login": "octocat",
+                "name": "Octo Cat",
+                "avatar_url": "https://avatars.githubusercontent.com/u/123456",
+            },
+        )
+    )
+    respx.get("https://api.github.com/user/emails").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "email": "unverified@example.com",
+                    "primary": True,
+                    "verified": False,
+                    "visibility": "public",
+                },
+                {
+                    "email": "verified@example.com",
+                    "primary": False,
+                    "verified": True,
+                    "visibility": None,
+                },
+            ],
+        )
+    )
+
+    callback_response = client.get(
+        "/api/v1/site-auth/oauth/github/callback",
+        params={"code": "oauth-code", "state": state},
+        follow_redirects=False,
+    )
+    assert callback_response.status_code == 302
+    assert "auth=success" in callback_response.headers["location"]
+
+    me_response = client.get("/api/v1/site-auth/me")
+    assert me_response.status_code == 200
+    me_payload = me_response.json()
+    assert me_payload["authenticated"] is True
+    assert me_payload["user"]["email"] == "verified@example.com"
+    assert me_payload["user"]["display_name"] == "Octo Cat"
+    assert captured_token_form["code_verifier"][0]
 
 
 def test_google_oauth_start_uses_configured_site_url_for_internal_request_host(client, monkeypatch) -> None:
@@ -399,16 +507,19 @@ def test_google_oauth_callback_redirects_back_with_error_on_provider_failure(cli
     assert start_response.status_code == 200
     auth_url = start_response.json()["authorization_url"]
     state = parse_qs(urlparse(auth_url).query)["state"][0]
+    captured_token_form: dict[str, list[str]] = {}
 
-    respx.post("https://oauth2.googleapis.com/token").mock(
-        return_value=httpx.Response(
+    def token_handler(request: httpx.Request) -> httpx.Response:
+        captured_token_form.update(parse_qs(request.content.decode()))
+        return httpx.Response(
             400,
             json={
                 "error": "redirect_uri_mismatch",
                 "error_description": "Bad Request",
             },
         )
-    )
+
+    respx.post("https://oauth2.googleapis.com/token").mock(side_effect=token_handler)
 
     callback_response = client.get(
         "/api/v1/site-auth/oauth/google/callback",
@@ -425,6 +536,7 @@ def test_google_oauth_callback_redirects_back_with_error_on_provider_failure(cli
     assert payload["auth"] == ["error"]
     assert payload["auth_provider"] == ["google"]
     assert "Google 登录失败" in payload["auth_message"][0]
+    assert captured_token_form["code_verifier"][0]
 
 
 @respx.mock
@@ -444,10 +556,13 @@ def test_google_admin_binding_elevates_site_session_after_oauth_login(client) ->
     assert start_response.status_code == 200
     auth_url = start_response.json()["authorization_url"]
     state = parse_qs(urlparse(auth_url).query)["state"][0]
+    captured_token_form: dict[str, list[str]] = {}
 
-    respx.post("https://oauth2.googleapis.com/token").mock(
-        return_value=httpx.Response(200, json={"access_token": "oauth-access-token"})
-    )
+    def token_handler(request: httpx.Request) -> httpx.Response:
+        captured_token_form.update(parse_qs(request.content.decode()))
+        return httpx.Response(200, json={"access_token": "oauth-access-token"})
+
+    respx.post("https://oauth2.googleapis.com/token").mock(side_effect=token_handler)
     respx.get("https://openidconnect.googleapis.com/v1/userinfo").mock(
         return_value=httpx.Response(
             200,
@@ -456,6 +571,7 @@ def test_google_admin_binding_elevates_site_session_after_oauth_login(client) ->
                 "name": "Google Admin",
                 "picture": "https://example.com/google-admin.png",
                 "sub": provider_subject,
+                "email_verified": True,
             },
         )
     )
@@ -473,3 +589,4 @@ def test_google_admin_binding_elevates_site_session_after_oauth_login(client) ->
     assert me_payload["authenticated"] is True
     assert me_payload["user"]["is_admin"] is True
     assert me_payload["user"]["can_access_admin_console"] is True
+    assert captured_token_form["code_verifier"][0]
