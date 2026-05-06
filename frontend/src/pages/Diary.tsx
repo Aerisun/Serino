@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  ArrowRight,
   ChevronDown,
   Cloud,
   CloudDrizzle,
@@ -210,10 +211,10 @@ const Diary = () => {
 
     return (
       <>
-        <span className={`hidden sm:inline ${toneClass}`}>{poem}</span>
-        <span className={`flex max-w-full flex-wrap items-baseline gap-x-1.5 gap-y-1 sm:hidden ${toneClass}`}>
-          <span className="min-w-0 break-words">{parts.text}</span>
-          {parts.author ? <span className="ml-auto shrink-0 text-right">{parts.author}</span> : null}
+        <span className={`hidden min-w-0 truncate sm:inline ${toneClass}`}>{poem}</span>
+        <span className={`flex w-full min-w-0 items-baseline gap-3 whitespace-nowrap sm:hidden ${toneClass}`}>
+          <span className="min-w-0 truncate">{parts.text}</span>
+          {parts.author ? <span className="shrink-0">{parts.author}</span> : null}
         </span>
       </>
     );
@@ -364,7 +365,7 @@ const Diary = () => {
                           <p className="mt-4 text-[0.935rem] font-body leading-7 text-foreground/60 transition-colors group-hover:text-[rgb(var(--shiro-accent-rgb)/0.8)]">
                             {entry.content}
                           </p>
-                          <div className="mt-4 flex items-center justify-between border-t border-foreground/[0.05] pt-3 transition-colors group-hover:border-[rgb(var(--shiro-divider-rgb)/0.28)]">
+                          <div className="mt-4 flex min-w-0 flex-col items-stretch gap-2 border-t border-foreground/[0.05] pt-3 transition-colors group-hover:border-[rgb(var(--shiro-divider-rgb)/0.28)] sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                             {renderPoem(entry.poem)}
                             <button
                               type="button"
@@ -373,9 +374,10 @@ const Diary = () => {
                                 warmDetail(entry.slug);
                                 navigate(`/diary/${entry.slug}`);
                               }}
-                              className="ml-auto text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)]"
+                              className="inline-flex shrink-0 items-center gap-1 self-end text-[11px] font-body text-foreground/30 transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.76)] sm:ml-auto sm:self-auto"
                             >
-                              {detailCtaLabel} →
+                              <span>{detailCtaLabel}</span>
+                              <ArrowRight className="h-3 w-3" />
                             </button>
                           </div>
                         </motion.div>
