@@ -100,9 +100,7 @@ def test_install_script_rejects_stdin_bootstrap_bundle_with_mismatched_sha256(tm
     bootstrap_root = tmp_path / "bootstrap"
     write_minimal_bootstrap_bundle(bootstrap_root)
     (bootstrap_root / "latest.env").write_text(
-        "AERISUN_INSTALL_VERSION=v9.9.9\nAERISUN_INSTALL_BUNDLE_SHA256="
-        + ("0" * 64)
-        + "\n",
+        "AERISUN_INSTALL_VERSION=v9.9.9\nAERISUN_INSTALL_BUNDLE_SHA256=" + ("0" * 64) + "\n",
         encoding="utf-8",
     )
 
@@ -202,8 +200,7 @@ def test_load_release_manifest_rejects_untrusted_shell_content(tmp_path: Path) -
     marker = tmp_path / "manifest-was-sourced"
     manifest = tmp_path / "manifest.env"
     manifest.write_text(
-        f"AERISUN_IMAGE_TAG=$(touch '{marker}')\n"
-        "AERISUN_IMAGE_REGISTRY=registry.example.com/serino\n",
+        f"AERISUN_IMAGE_TAG=$(touch '{marker}')\nAERISUN_IMAGE_REGISTRY=registry.example.com/serino\n",
         encoding="utf-8",
     )
     destination = tmp_path / "downloaded.env"

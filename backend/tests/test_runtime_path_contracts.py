@@ -1402,7 +1402,10 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"' in common_text
     assert "make_temp_file() {" in common_text
     assert "make_root_temp_file_in_dir() {" in common_text
-    assert 'SERINO_MAINTENANCE_LOCK_FILE="${SERINO_MAINTENANCE_LOCK_FILE:-/run/lock/serino-maintenance.lock}"' in common_text
+    assert (
+        'SERINO_MAINTENANCE_LOCK_FILE="${SERINO_MAINTENANCE_LOCK_FILE:-/run/lock/serino-maintenance.lock}"'
+        in common_text
+    )
     assert "run_with_maintenance_lock() {" in common_text
     assert (
         'SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf \'%s\' \'/usr/local/bin/sercli\' || printf \'%s\' "${AERISUN_BIN_ROOT}/sercli")}"'
