@@ -12,6 +12,8 @@ source "${SCRIPT_DIR}/lib/env.sh"
 source "${SCRIPT_DIR}/lib/docker.sh"
 
 UPTIME_STARTED_AT_FILENAME=".serino-uptime-started-at"
+UPGRADE_ROLLBACK_STAGE=""
+UPGRADE_ROLLBACK_BACKUP_DIR=""
 
 backup_current_installation() {
   local backup_dir="$1"
@@ -27,6 +29,7 @@ backup_current_installation() {
 
 restore_current_installation() {
   local backup_dir="$1"
+  local data_parent=""
 
   if [[ -f "${backup_dir}/serino.env" ]]; then
     run_as_root cp -a "${backup_dir}/serino.env" "${AERISUN_ENV_FILE}"
@@ -47,12 +50,36 @@ restore_current_installation() {
     install_systemd_units "${backup_dir}"
   fi
   if [[ -f "${backup_dir}/data.tar.gz" ]]; then
-    run_as_root rm -rf "${AERISUN_DATA_DIR}"
-    run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR%/*}"
-    run_as_root tar -xzf "${backup_dir}/data.tar.gz" -C "${AERISUN_DATA_DIR%/*}"
+    data_parent="${AERISUN_DATA_DIR%/*}"
+    require_safe_removal_path "数据目录" "${AERISUN_DATA_DIR}" >/dev/null
+    run_as_root rm -rf -- "${AERISUN_DATA_DIR}"
+    if ! path_is_dir "${data_parent}"; then
+      run_as_root install -d -o root -g root -m 0755 "${data_parent}"
+    fi
+    run_as_root tar -xzf "${backup_dir}/data.tar.gz" -C "${data_parent}"
     run_as_root chown -R "${SERINO_SERVICE_USER}:${SERINO_SERVICE_GROUP}" "${AERISUN_DATA_DIR}"
+    run_as_root chmod 0750 "${AERISUN_DATA_DIR}"
   fi
   daemon_reload
+}
+
+rollback_failed_upgrade() {
+  local backup_dir="${UPGRADE_ROLLBACK_BACKUP_DIR}"
+
+  log_warn "升级失败，正在回滚。"
+  print_service_start_failure_diagnostics
+  stop_serino_service
+
+  if [[ -n "${backup_dir}" ]]; then
+    restore_current_installation "${backup_dir}"
+  else
+    log_warn "未找到可用备份目录，将尝试直接恢复旧服务。"
+    daemon_reload || true
+  fi
+
+  compose pull || true
+  enable_serino_service || true
+  wait_for_release_ready || true
 }
 
 run_upgrade_preflight() {
@@ -188,36 +215,38 @@ main() {
   download_release_asset "${version}" "${AERISUN_INSTALL_BUNDLE_NAME}" "${bundle_file}"
   tar -xzf "${bundle_file}" -C "${bundle_dir}"
 
-  backup_dir="${AERISUN_BACKUP_ROOT}/upgrade-$(date +%Y%m%d%H%M%S)"
+  backup_dir="$(make_root_temp_dir_in_dir "${AERISUN_BACKUP_ROOT}" "upgrade-$(date +%Y%m%d%H%M%S).XXXXXX")"
+  UPGRADE_ROLLBACK_BACKUP_DIR="${backup_dir}"
   seed_persistent_uptime_marker || true
   stop_serino_service
-  backup_current_installation "${backup_dir}"
+  UPGRADE_ROLLBACK_STAGE="stopped"
 
-  active_registry="$(
-    resolve_active_registry \
-      "${target_registry}" \
-      "${target_image_tag}"
-  )"
-
-  install_release_payload "${bundle_dir}"
-  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}"
-  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}"
-  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_RELEASE_VERSION" "${target_image_tag}"
-  set_env_value "${AERISUN_ENV_FILE}" "AERISUN_DOCKER_REGISTRY_MIRRORS" "${AERISUN_DOCKER_REGISTRY_MIRRORS}"
-  normalize_production_env_file "${AERISUN_ENV_FILE}"
-  validate_release_compose_configuration
-
-  if ! compose pull || ! run_release_migrations || ! run_release_data_migrations blocking || ! enable_serino_service || ! wait_for_release_ready; then
-    log_warn "升级失败，正在回滚。"
-    print_service_start_failure_diagnostics
-    stop_serino_service
-    restore_current_installation "${backup_dir}"
-    compose pull || true
-    enable_serino_service || true
-    wait_for_release_ready || true
+  if ! (
+    set -uo pipefail
+    backup_current_installation "${backup_dir}" &&
+    active_registry="$(
+      resolve_active_registry \
+        "${target_registry}" \
+        "${target_image_tag}"
+    )" &&
+    install_release_payload "${bundle_dir}" &&
+    set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}" &&
+    set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}" &&
+    set_env_value "${AERISUN_ENV_FILE}" "AERISUN_RELEASE_VERSION" "${target_image_tag}" &&
+    set_env_value "${AERISUN_ENV_FILE}" "AERISUN_DOCKER_REGISTRY_MIRRORS" "${AERISUN_DOCKER_REGISTRY_MIRRORS}" &&
+    normalize_production_env_file "${AERISUN_ENV_FILE}" &&
+    validate_release_compose_configuration &&
+    compose pull &&
+    run_release_migrations &&
+    run_release_data_migrations blocking &&
+    enable_serino_service &&
+    wait_for_release_ready
+  ); then
+    rollback_failed_upgrade
     die "升级失败，已回滚到旧版本。可执行 sercli doctor 与 sercli logs api waline caddy 查看诊断信息。"
   fi
 
+  UPGRADE_ROLLBACK_STAGE=""
   schedule_release_background_data_migrations || true
 
   log_info "升级完成：${version}"

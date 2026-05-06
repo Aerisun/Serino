@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import os
+import shutil
 import subprocess
 import tarfile
 from pathlib import Path
@@ -16,6 +18,40 @@ def run_project_bash(script: str, *, check: bool = True) -> subprocess.Completed
         capture_output=True,
         text=True,
     )
+
+
+def write_minimal_bootstrap_bundle(bootstrap_root: Path) -> Path:
+    installer_root = bootstrap_root / "bundle" / "installer"
+    installer_root.mkdir(parents=True)
+
+    (bootstrap_root / "v9.9.9").mkdir(parents=True)
+    bundled_install = installer_root / "install.sh"
+    bundled_install.write_text(
+        "#!/usr/bin/env bash\n"
+        "set -Eeuo pipefail\n"
+        'if [[ "${1:-}" == "--bundled" ]]; then\n'
+        "  shift\n"
+        "fi\n"
+        "printf 'bundled-ok\\n'\n",
+        encoding="utf-8",
+    )
+    bundled_install.chmod(0o755)
+
+    bundle_file = bootstrap_root / "v9.9.9" / "aerisun-installer-bundle.tar.gz"
+    with tarfile.open(bundle_file, "w:gz") as archive:
+        archive.add(installer_root, arcname="installer")
+
+    return bundle_file
+
+
+def parse_env_file(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line or line.startswith("#"):
+            continue
+        key, value = line.split("=", 1)
+        values[key] = value
+    return values
 
 
 def test_installer_scripts_are_source_safe() -> None:
@@ -34,28 +70,12 @@ printf 'ok\\n'
 
 def test_install_script_supports_stdin_bootstrap_execution(tmp_path: Path) -> None:
     bootstrap_root = tmp_path / "bootstrap"
-    installer_root = tmp_path / "bundle" / "installer"
-    installer_root.mkdir(parents=True)
-
-    (bootstrap_root / "v9.9.9").mkdir(parents=True)
+    bundle_file = write_minimal_bootstrap_bundle(bootstrap_root)
+    bundle_sha256 = hashlib.sha256(bundle_file.read_bytes()).hexdigest()
     (bootstrap_root / "latest.env").write_text(
-        "AERISUN_INSTALL_VERSION=v9.9.9\n",
+        f"AERISUN_INSTALL_VERSION=v9.9.9\nAERISUN_INSTALL_BUNDLE_SHA256={bundle_sha256}\n",
         encoding="utf-8",
     )
-    bundled_install = installer_root / "install.sh"
-    bundled_install.write_text(
-        "#!/usr/bin/env bash\n"
-        "set -Eeuo pipefail\n"
-        'if [[ "${1:-}" == "--bundled" ]]; then\n'
-        "  shift\n"
-        "fi\n"
-        "printf 'bundled-ok\\n'\n",
-        encoding="utf-8",
-    )
-    bundled_install.chmod(0o755)
-
-    with tarfile.open(bootstrap_root / "v9.9.9" / "aerisun-installer-bundle.tar.gz", "w:gz") as archive:
-        archive.add(installer_root, arcname="installer")
 
     env = os.environ.copy()
     env["AERISUN_INSTALL_BASE_URL"] = f"file://{bootstrap_root}"
@@ -74,6 +94,134 @@ def test_install_script_supports_stdin_bootstrap_execution(tmp_path: Path) -> No
     )
 
     assert completed.stdout.strip() == "bundled-ok"
+
+
+def test_install_script_rejects_stdin_bootstrap_bundle_with_mismatched_sha256(tmp_path: Path) -> None:
+    bootstrap_root = tmp_path / "bootstrap"
+    write_minimal_bootstrap_bundle(bootstrap_root)
+    (bootstrap_root / "latest.env").write_text(
+        "AERISUN_INSTALL_VERSION=v9.9.9\nAERISUN_INSTALL_BUNDLE_SHA256="
+        + ("0" * 64)
+        + "\n",
+        encoding="utf-8",
+    )
+
+    env = os.environ.copy()
+    env["AERISUN_INSTALL_BASE_URL"] = f"file://{bootstrap_root}"
+    env["AERISUN_INSTALL_CHANNEL"] = "stable"
+    env["AERISUN_INSTALL_BUNDLE_NAME"] = "aerisun-installer-bundle.tar.gz"
+
+    install_script = (PROJECT_ROOT / "installer" / "install.sh").read_text(encoding="utf-8")
+    completed = subprocess.run(
+        ["bash"],
+        cwd=PROJECT_ROOT,
+        input=install_script,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode != 0
+    assert completed.stdout.strip() == ""
+    assert "sha256 校验失败" in completed.stderr
+
+
+def test_package_installer_writes_bundle_sha256_to_manifest_and_latest(tmp_path: Path) -> None:
+    dist_dir = tmp_path / "installer-dist"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AERISUN_INSTALL_DIST_DIR": str(dist_dir),
+            "AERISUN_RELEASE_TAG": "v9.9.9",
+            "AERISUN_RELEASE_VERSION": "9.9.9",
+            "AERISUN_INSTALL_CHANNEL": "stable",
+            "AERISUN_IMAGE_REGISTRY": "registry.example.com/serino",
+            "AERISUN_INSTALL_BASE_URL": "https://install.example.com/serino",
+        }
+    )
+
+    subprocess.run(
+        ["bash", "scripts/package-installer.sh"],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    bundle_sha256 = hashlib.sha256((dist_dir / "aerisun-installer-bundle.tar.gz").read_bytes()).hexdigest()
+    latest_values = parse_env_file(dist_dir / "latest.env")
+    manifest_values = parse_env_file(dist_dir / "aerisun-installer-manifest.env")
+
+    assert latest_values["AERISUN_INSTALL_BUNDLE_SHA256"] == bundle_sha256
+    assert manifest_values["AERISUN_INSTALL_BUNDLE_SHA256"] == bundle_sha256
+
+
+def test_load_release_manifest_safely_parses_whitelisted_values_and_sha256(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.env"
+    manifest.write_text(
+        "\n".join(
+            [
+                "AERISUN_INSTALL_CHANNEL=dev",
+                "AERISUN_INSTALL_VERSION=v1.2.3",
+                "AERISUN_IMAGE_TAG=1.2.3",
+                "AERISUN_IMAGE_REGISTRY=registry.example.com:5000/serino",
+                "AERISUN_API_IMAGE_NAME=serino-dev-api",
+                "AERISUN_WEB_IMAGE_NAME=serino-dev-web",
+                "AERISUN_WALINE_IMAGE_NAME=serino-dev-waline",
+                "AERISUN_INSTALL_BUNDLE_SHA256=" + ("a" * 64),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    destination = tmp_path / "downloaded.env"
+
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/download.sh
+
+download_release_asset() {{ cp '{manifest}' "$3"; }}
+load_release_manifest v1.2.3 '{destination}'
+printf '%s\\n' "${{AERISUN_INSTALL_CHANNEL}}"
+printf '%s\\n' "${{AERISUN_IMAGE_REGISTRY}}"
+printf '%s\\n' "${{AERISUN_INSTALL_BUNDLE_SHA256}}"
+"""
+    )
+
+    assert completed.stdout.strip().splitlines() == [
+        "dev",
+        "registry.example.com:5000/serino",
+        "a" * 64,
+    ]
+
+
+def test_load_release_manifest_rejects_untrusted_shell_content(tmp_path: Path) -> None:
+    marker = tmp_path / "manifest-was-sourced"
+    manifest = tmp_path / "manifest.env"
+    manifest.write_text(
+        f"AERISUN_IMAGE_TAG=$(touch '{marker}')\n"
+        "AERISUN_IMAGE_REGISTRY=registry.example.com/serino\n",
+        encoding="utf-8",
+    )
+    destination = tmp_path / "downloaded.env"
+
+    completed = run_project_bash(
+        f"""
+source installer/lib/common.sh
+source installer/lib/download.sh
+
+download_release_asset() {{ cp '{manifest}' "$3"; }}
+load_release_manifest v1.2.3 '{destination}'
+""",
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert not marker.exists()
+    assert "发布清单" in completed.stderr
 
 
 def test_normalize_release_registry_strategy_forces_direct_docker_hub_for_dev_channel() -> None:
@@ -650,6 +798,7 @@ run_upgrade_preflight() { record run_upgrade_preflight; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
 make_temp_dir() { printf '/tmp/bundle'; }
+make_root_temp_dir_in_dir() { printf '/var/backups/serino/upgrade-20260408112233'; }
 load_release_manifest() {
   record "load_release_manifest:$1"
   AERISUN_IMAGE_REGISTRY='registry.example.com/next'
@@ -743,6 +892,7 @@ run_upgrade_preflight() { record run_upgrade_preflight; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
 make_temp_dir() { printf '/tmp/bundle'; }
+make_root_temp_dir_in_dir() { printf '/var/backups/serino/upgrade-20260408112233'; }
 load_release_manifest() {
   record "load_release_manifest:$1"
   AERISUN_IMAGE_REGISTRY='registry.example.com/next'
@@ -819,6 +969,7 @@ run_upgrade_preflight() { :; }
 resolve_release_tag() { printf '%s' "${AERISUN_INSTALL_VERSION:-v2.0.0}"; }
 make_temp_file() { printf '/tmp/manifest'; }
 make_temp_dir() { printf '/tmp/bundle'; }
+make_root_temp_dir_in_dir() { printf '/var/backups/serino/upgrade-20260408112233'; }
 load_release_manifest() {
   AERISUN_INSTALL_CHANNEL='dev'
   AERISUN_IMAGE_REGISTRY='docker.io/aerisun'
@@ -848,6 +999,146 @@ main v2.0.0
     )
 
     assert "set_env_value:AERISUN_DOCKER_REGISTRY_MIRRORS=" in completed.stdout
+
+
+def test_upgrade_rollback_does_not_mutate_var_lib_parent_ownership(tmp_path: Path) -> None:
+    backup_dir = tmp_path / "backup"
+    backup_dir.mkdir()
+    (backup_dir / "data.tar.gz").write_bytes(b"not-a-real-archive")
+
+    completed = run_project_bash(
+        f"""
+source installer/upgrade.sh
+
+AERISUN_DATA_DIR='/var/lib/serino'
+SERINO_SERVICE_USER='serino'
+SERINO_SERVICE_GROUP='serino'
+
+run_as_root() {{
+  printf 'run_as_root'
+  printf ' <%s>' "$@"
+  printf '\\n'
+  return 0
+}}
+tar() {{
+  printf 'tar'
+  printf ' <%s>' "$@"
+  printf '\\n'
+}}
+daemon_reload() {{
+  printf 'daemon_reload\\n'
+}}
+
+restore_current_installation '{backup_dir}'
+"""
+    )
+
+    lines = completed.stdout.strip().splitlines()
+    assert not any(line.startswith("run_as_root <install>") and line.endswith(" </var/lib>") for line in lines)
+    assert not any(line.startswith("run_as_root <chown>") and line.endswith(" </var/lib>") for line in lines)
+    assert any(line.startswith(("tar ", "run_as_root <tar>")) for line in lines)
+
+
+def test_purge_installation_paths_rejects_dangerous_roots_before_rm() -> None:
+    completed = run_project_bash(
+        """
+source installer/lib/common.sh
+
+AERISUN_APP_ROOT='/'
+SERINO_CONFIG_ROOT='/etc'
+AERISUN_DATA_DIR='/var/lib'
+SERINO_LOG_ROOT='/var/log'
+AERISUN_BACKUP_ROOT='/var/backups'
+SERINO_BIN_LINK='/usr/local/bin'
+
+run_as_root() {
+  printf 'run_as_root'
+  printf ' <%s>' "$@"
+  printf '\\n'
+  return 0
+}
+die() {
+  printf 'die:%s\\n' "$*"
+  exit 64
+}
+
+set -e
+purge_installation_paths
+""",
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "unexpected-ok" not in completed.stdout
+    assert "run_as_root" not in completed.stdout
+
+
+def test_package_installer_outputs_verifiable_manifest_and_bundle(tmp_path: Path) -> None:
+    package_root = tmp_path / "package-root"
+    (package_root / "scripts").mkdir(parents=True)
+    shutil.copy2(PROJECT_ROOT / "scripts" / "package-installer.sh", package_root / "scripts" / "package-installer.sh")
+    shutil.copytree(PROJECT_ROOT / "installer", package_root / "installer")
+    shutil.copy2(PROJECT_ROOT / "docker-compose.release.yml", package_root / "docker-compose.release.yml")
+    shutil.copy2(PROJECT_ROOT / ".env.production.local.example", package_root / ".env.production.local.example")
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "AERISUN_RELEASE_TAG": "v9.8.7",
+            "AERISUN_RELEASE_VERSION": "9.8.7",
+            "AERISUN_INSTALL_CHANNEL": "dev",
+            "AERISUN_IMAGE_REGISTRY": "registry.example.com/aerisun",
+            "AERISUN_INSTALL_BASE_URL": "https://install.example.test/dev",
+        }
+    )
+
+    subprocess.run(
+        ["bash", "scripts/package-installer.sh"],
+        cwd=package_root,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    completed = subprocess.run(
+        [
+            "bash",
+            "-lc",
+            """
+set -euo pipefail
+dist='dist/installer'
+source "${dist}/aerisun-installer-manifest.env"
+test "${AERISUN_INSTALL_CHANNEL}" = 'dev'
+test "${AERISUN_INSTALL_VERSION}" = 'v9.8.7'
+test "${AERISUN_IMAGE_TAG}" = '9.8.7'
+test "${AERISUN_IMAGE_REGISTRY}" = 'registry.example.com/aerisun'
+test "${AERISUN_API_IMAGE_NAME}" = 'serino-dev-api'
+test "${AERISUN_WEB_IMAGE_NAME}" = 'serino-dev-web'
+test "${AERISUN_WALINE_IMAGE_NAME}" = 'serino-dev-waline'
+actual_sha="$(sha256sum "${dist}/aerisun-installer-bundle.tar.gz" | awk '{print $1}')"
+test "${AERISUN_INSTALL_BUNDLE_SHA256}" = "${actual_sha}"
+grep -qx 'AERISUN_INSTALL_VERSION=v9.8.7' "${dist}/latest.env"
+grep -qx "AERISUN_INSTALL_BUNDLE_SHA256=${actual_sha}" "${dist}/latest.env"
+grep -q 'AERISUN_INSTALL_VERSION="${AERISUN_INSTALL_VERSION:-v9.8.7}"' "${dist}/install.sh"
+! grep -q 'AERISUN_INSTALL_VERSION="${AERISUN_INSTALL_VERSION:-v9.8.7}"' "${dist}/install.latest.sh"
+bash -n "${dist}/install.sh" "${dist}/install.latest.sh"
+tar -tzf "${dist}/aerisun-installer-bundle.tar.gz" | sort > "${dist}/bundle.files"
+grep -qx 'docker-compose.release.yml' "${dist}/bundle.files"
+grep -qx '.env.production.local.example' "${dist}/bundle.files"
+grep -qx 'installer/install.sh' "${dist}/bundle.files"
+grep -qx 'installer/upgrade.sh' "${dist}/bundle.files"
+grep -qx 'installer/bin/sercli' "${dist}/bundle.files"
+printf 'ok\\n'
+""",
+        ],
+        cwd=package_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.stdout.strip() == "ok"
 
 
 def test_release_smoke_gate_runs_shell_backend_and_docker_steps_in_order() -> None:

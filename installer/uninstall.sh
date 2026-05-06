@@ -60,8 +60,8 @@ main() {
   stop_and_remove_serino_units
   teardown_release_stack
   remove_serino_local_images
-  purge_installation_paths
   purge_service_account
+  purge_installation_paths
   log_info "Serino 已从当前机器彻底卸载。"
 }
 

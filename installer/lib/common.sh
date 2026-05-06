@@ -17,12 +17,16 @@ SERINO_SYSTEMD_UNIT="${SERINO_SYSTEMD_UNIT:-serino.service}"
 SERINO_SYSTEMD_UPGRADE_SERVICE="${SERINO_SYSTEMD_UPGRADE_SERVICE:-serino-upgrade.service}"
 SERINO_SYSTEMD_UPGRADE_TIMER="${SERINO_SYSTEMD_UPGRADE_TIMER:-serino-upgrade.timer}"
 SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf '%s' '/usr/local/bin/sercli' || printf '%s' "${AERISUN_BIN_ROOT}/sercli")}"
+SERINO_MAINTENANCE_LOCK_FILE="${SERINO_MAINTENANCE_LOCK_FILE:-/run/lock/serino-maintenance.lock}"
 SERINO_RUNTIME_UID=""
 SERINO_RUNTIME_GID=""
+SERINO_SERVICE_USER_CREATED_BY_INSTALLER=0
+SERINO_SERVICE_GROUP_CREATED_BY_INSTALLER=0
 AERISUN_ENV_FILE="${AERISUN_ENV_FILE:-${SERINO_CONFIG_ROOT}/serino.env}"
 AERISUN_ENV_EXAMPLE_FILE="${AERISUN_ENV_EXAMPLE_FILE:-${AERISUN_APP_ROOT}/.env.production.local.example}"
 AERISUN_INSTALLER_DEST="${AERISUN_INSTALLER_DEST:-${AERISUN_APP_ROOT}/installer}"
 AERISUN_BACKUP_ROOT="${AERISUN_BACKUP_ROOT:-/var/backups/serino}"
+SERINO_SERVICE_ACCOUNT_MARKER="${SERINO_SERVICE_ACCOUNT_MARKER:-${SERINO_CONFIG_ROOT}/.serino-service-account}"
 AERISUN_INSTALL_BASE_URL="${AERISUN_INSTALL_BASE_URL:-}"
 AERISUN_INSTALL_GITHUB_REPO="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
 AERISUN_INSTALL_CHANNEL="${AERISUN_INSTALL_CHANNEL:-stable}"
@@ -100,6 +104,43 @@ run_as_root() {
   sudo "$@"
 }
 
+run_with_maintenance_lock() {
+  local action="$1"
+  shift
+  local lock_dir=""
+  local fallback_lock_dir=""
+  local lock_fd=""
+  local status=0
+
+  [[ "$#" -gt 0 ]] || die "缺少维护锁要执行的命令。"
+
+  lock_dir="$(dirname "${SERINO_MAINTENANCE_LOCK_FILE}")"
+  run_as_root install -d -o root -g root -m 0755 "${lock_dir}"
+  run_as_root touch "${SERINO_MAINTENANCE_LOCK_FILE}"
+  run_as_root chmod 0644 "${SERINO_MAINTENANCE_LOCK_FILE}"
+
+  if command_exists flock; then
+    exec {lock_fd}<"${SERINO_MAINTENANCE_LOCK_FILE}" || die "无法打开维护锁：${SERINO_MAINTENANCE_LOCK_FILE}"
+    if ! flock -n "${lock_fd}"; then
+      die "已有安装、升级或卸载任务正在执行，${action} 已取消。请稍后重试。"
+    fi
+
+    "$@" || status=$?
+    flock -u "${lock_fd}" >/dev/null 2>&1 || true
+    eval "exec ${lock_fd}>&-"
+    return "${status}"
+  fi
+
+  fallback_lock_dir="${SERINO_MAINTENANCE_LOCK_FILE}.d"
+  if ! run_as_root mkdir "${fallback_lock_dir}" >/dev/null 2>&1; then
+    die "已有安装、升级或卸载任务正在执行，${action} 已取消。请稍后重试。"
+  fi
+
+  "$@" || status=$?
+  run_as_root rmdir "${fallback_lock_dir}" >/dev/null 2>&1 || true
+  return "${status}"
+}
+
 path_exists() {
   local path="$1"
   [[ -e "${path}" ]] && return 0
@@ -132,6 +173,14 @@ make_root_temp_file_in_dir() {
 
   run_as_root install -d -o root -g root -m 0755 "${dir}"
   run_as_root mktemp "${dir%/}/${pattern}"
+}
+
+make_root_temp_dir_in_dir() {
+  local dir="$1"
+  local pattern="$2"
+
+  run_as_root install -d -o root -g root -m 0700 "${dir}"
+  run_as_root mktemp -d "${dir%/}/${pattern}"
 }
 
 cleanup_temp_dir() {
@@ -263,6 +312,7 @@ ensure_service_user() {
 
   if ! getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
     run_as_root groupadd --system "${SERINO_SERVICE_GROUP}"
+    SERINO_SERVICE_GROUP_CREATED_BY_INSTALLER=1
   fi
 
   if ! id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
@@ -274,10 +324,27 @@ ensure_service_user() {
       --create-home \
       --shell "${shell_path}" \
       "${SERINO_SERVICE_USER}"
+    SERINO_SERVICE_USER_CREATED_BY_INSTALLER=1
   fi
 
   SERINO_RUNTIME_UID="$(id -u "${SERINO_SERVICE_USER}")"
   SERINO_RUNTIME_GID="$(id -g "${SERINO_SERVICE_USER}")"
+}
+
+write_service_account_marker() {
+  local tmp_file=""
+
+  [[ "${SERINO_SERVICE_USER_CREATED_BY_INSTALLER}" == "1" || "${SERINO_SERVICE_GROUP_CREATED_BY_INSTALLER}" == "1" ]] || return 0
+
+  tmp_file="$(make_temp_file)"
+  cat > "${tmp_file}" <<EOF
+SERINO_SERVICE_USER=${SERINO_SERVICE_USER}
+SERINO_SERVICE_GROUP=${SERINO_SERVICE_GROUP}
+SERINO_SERVICE_USER_CREATED=${SERINO_SERVICE_USER_CREATED_BY_INSTALLER}
+SERINO_SERVICE_GROUP_CREATED=${SERINO_SERVICE_GROUP_CREATED_BY_INSTALLER}
+EOF
+  run_as_root install -o root -g root -m 0644 "${tmp_file}" "${SERINO_SERVICE_ACCOUNT_MARKER}"
+  rm -f "${tmp_file}"
 }
 
 legacy_installation_paths() {
@@ -337,27 +404,111 @@ EOF
 )"
 }
 
+canonicalize_path_for_safety() {
+  local path="$1"
+
+  [[ -n "${path}" ]] || return 1
+  [[ "${path}" == /* ]] || return 1
+
+  if command_exists realpath; then
+    realpath -m -- "${path}"
+    return
+  fi
+
+  if command_exists python3; then
+    python3 - "${path}" <<'PY'
+import os
+import sys
+
+print(os.path.normpath(sys.argv[1]))
+PY
+    return
+  fi
+
+  case "${path}" in
+    *$'\n'*|*"/../"*|*/..|*/.|*"/./"*)
+      return 1
+      ;;
+  esac
+  printf '%s' "${path%/}"
+}
+
+path_is_dangerous_for_removal() {
+  local path="$1"
+
+  case "${path}" in
+    ""|"/"|"/bin"|"/boot"|"/dev"|"/etc"|"/home"|"/lib"|"/lib64"|"/media"|"/mnt"|"/opt"|"/proc"|"/root"|"/run"|"/sbin"|"/srv"|"/sys"|"/tmp"|"/usr"|"/usr/local"|"/usr/local/bin"|"/var"|"/var/backups"|"/var/lib"|"/var/log"|"/var/tmp"|"/var/lib/docker"|"/var/lib/containerd")
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+require_safe_removal_path() {
+  local label="$1"
+  local path="$2"
+  local normalized=""
+
+  normalized="$(canonicalize_path_for_safety "${path}")" || die "${label} 路径不安全或不是绝对路径：${path:-<empty>}"
+  if path_is_dangerous_for_removal "${normalized}"; then
+    die "${label} 指向系统关键路径，拒绝删除：${normalized}"
+  fi
+
+  printf '%s' "${normalized}"
+}
+
+remove_tree_safely() {
+  local label="$1"
+  local path="$2"
+  local normalized=""
+
+  normalized="$(require_safe_removal_path "${label}" "${path}")"
+  run_as_root rm -rf -- "${normalized}"
+}
+
+remove_file_safely() {
+  local label="$1"
+  local path="$2"
+  local normalized=""
+
+  normalized="$(require_safe_removal_path "${label}" "${path}")"
+  run_as_root rm -f -- "${normalized}"
+}
+
 purge_installation_paths() {
   cd /
-  run_as_root rm -rf \
-    "${AERISUN_APP_ROOT}" \
-    "${SERINO_CONFIG_ROOT}" \
-    "${AERISUN_DATA_DIR}" \
-    "${SERINO_LOG_ROOT}" \
-    "${AERISUN_BACKUP_ROOT}" \
-    /opt/aerisun \
-    /var/lib/aerisun \
-    /var/backups/aerisun
-  run_as_root rm -f "${SERINO_BIN_LINK}"
-  run_as_root rm -f /usr/local/bin/aerisunctl
+  remove_tree_safely "安装目录" "${AERISUN_APP_ROOT}"
+  remove_tree_safely "配置目录" "${SERINO_CONFIG_ROOT}"
+  remove_tree_safely "数据目录" "${AERISUN_DATA_DIR}"
+  remove_tree_safely "日志目录" "${SERINO_LOG_ROOT}"
+  remove_tree_safely "备份目录" "${AERISUN_BACKUP_ROOT}"
+  remove_tree_safely "旧安装目录" /opt/aerisun
+  remove_tree_safely "旧数据目录" /var/lib/aerisun
+  remove_tree_safely "旧备份目录" /var/backups/aerisun
+  remove_file_safely "命令入口" "${SERINO_BIN_LINK}"
+  remove_file_safely "旧命令入口" /usr/local/bin/aerisunctl
 }
 
 purge_service_account() {
-  if id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
-    run_as_root userdel "${SERINO_SERVICE_USER}" >/dev/null 2>&1 || true
+  local marker_file="${SERINO_SERVICE_ACCOUNT_MARKER}"
+  local marker_user_created="${SERINO_SERVICE_USER_CREATED_BY_INSTALLER}"
+  local marker_group_created="${SERINO_SERVICE_GROUP_CREATED_BY_INSTALLER}"
+
+  if [[ -f "${marker_file}" ]]; then
+    marker_user_created="$(sed -n 's/^SERINO_SERVICE_USER_CREATED=//p' "${marker_file}" | tail -n 1)"
+    marker_group_created="$(sed -n 's/^SERINO_SERVICE_GROUP_CREATED=//p' "${marker_file}" | tail -n 1)"
   fi
-  if getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
+
+  if [[ "${marker_user_created}" == "1" ]] && id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
+    run_as_root userdel "${SERINO_SERVICE_USER}" >/dev/null 2>&1 || true
+  elif id -u "${SERINO_SERVICE_USER}" >/dev/null 2>&1; then
+    log_warn "服务用户 ${SERINO_SERVICE_USER} 不是本次安装器明确创建的账号，已保留。"
+  fi
+  if [[ "${marker_group_created}" == "1" ]] && getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
     run_as_root groupdel "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1 || true
+  elif getent group "${SERINO_SERVICE_GROUP}" >/dev/null 2>&1; then
+    log_warn "服务用户组 ${SERINO_SERVICE_GROUP} 不是本次安装器明确创建的用户组，已保留。"
   fi
 }
 
@@ -376,6 +527,7 @@ ensure_system_layout() {
   run_as_root install -d -o "${SERINO_SERVICE_USER}" -g "${SERINO_SERVICE_GROUP}" -m 0750 "${AERISUN_DATA_DIR}"
   run_as_root install -d -o root -g root -m 0755 "${SERINO_LOG_ROOT}"
   run_as_root install -d -o root -g root -m 0700 "${AERISUN_BACKUP_ROOT}"
+  write_service_account_marker
 }
 
 install_systemd_units() {

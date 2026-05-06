@@ -249,6 +249,44 @@ check_directories() {
   check_path_contract "${AERISUN_BACKUP_ROOT}" "root" "root" "700" "path.backup_root" "sudo install -d -o root -g root -m 0700 ${AERISUN_BACKUP_ROOT}"
 }
 
+check_primary_service_unit_content() {
+  local unit_file="$1"
+  local fix="重新安装当前版本的 ${SERINO_SYSTEMD_UNIT} 后执行 sudo systemctl daemon-reload"
+
+  if grep -Fq "COMPOSE_PROJECT_NAME=${AERISUN_COMPOSE_PROJECT_NAME}" "${unit_file}" \
+    && grep -Fq "docker compose -f ${AERISUN_RENDERED_COMPOSE_FILE} up -d --remove-orphans" "${unit_file}" \
+    && grep -Fq "docker compose -f ${AERISUN_RENDERED_COMPOSE_FILE} down" "${unit_file}"; then
+    record_check "ok" "systemd.${SERINO_SYSTEMD_UNIT}.content" "${SERINO_SYSTEMD_UNIT} ExecStart/ExecStop 指向当前 compose 运行路径。" ""
+  else
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UNIT}.content" "${SERINO_SYSTEMD_UNIT} 已安装，但 ExecStart/ExecStop 与当前路径期望不完全一致。" "${fix}"
+  fi
+}
+
+check_upgrade_service_unit_content() {
+  local unit_file="$1"
+  local fix="重新安装当前版本的 ${SERINO_SYSTEMD_UPGRADE_SERVICE}，确保 ExecStart 使用 upgrade --check，然后执行 sudo systemctl daemon-reload"
+
+  if grep -Fq "${SERINO_BIN_LINK}" "${unit_file}" \
+    && grep -Eq '^ExecStart=.*[[:space:]]upgrade[[:space:]]+--check([[:space:]]|$)' "${unit_file}"; then
+    record_check "ok" "systemd.${SERINO_SYSTEMD_UPGRADE_SERVICE}.content" "${SERINO_SYSTEMD_UPGRADE_SERVICE} 仅执行升级检查，不会由 timer 触发破坏性升级。" ""
+  elif grep -Eq '^ExecStart=.*[[:space:]]upgrade([[:space:]]|$)' "${unit_file}"; then
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UPGRADE_SERVICE}.content" "${SERINO_SYSTEMD_UPGRADE_SERVICE} 当前会执行 upgrade，建议改为 upgrade --check。" "${fix}"
+  else
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UPGRADE_SERVICE}.content" "${SERINO_SYSTEMD_UPGRADE_SERVICE} 已安装，但 ExecStart 不是预期的升级检查命令。" "${fix}"
+  fi
+}
+
+check_upgrade_timer_unit_content() {
+  local unit_file="$1"
+  local fix="重新安装当前版本的 ${SERINO_SYSTEMD_UPGRADE_TIMER} 后执行 sudo systemctl daemon-reload"
+
+  if grep -Fq "OnCalendar=daily" "${unit_file}" && grep -Fq "Persistent=true" "${unit_file}"; then
+    record_check "ok" "systemd.${SERINO_SYSTEMD_UPGRADE_TIMER}.content" "${SERINO_SYSTEMD_UPGRADE_TIMER} timer 调度内容符合预期。" ""
+  else
+    record_check "warn" "systemd.${SERINO_SYSTEMD_UPGRADE_TIMER}.content" "${SERINO_SYSTEMD_UPGRADE_TIMER} 已安装，但 timer 调度内容与当前模板不完全一致。" "${fix}"
+  fi
+}
+
 check_symlink_and_units() {
   if [[ "$(readlink -f "${SERINO_BIN_LINK}" 2>/dev/null || true)" == "${AERISUN_INSTALLER_DEST}/bin/sercli" ]]; then
     record_check "ok" "sercli.link" "sercli 命令入口已指向当前安装目录。" ""
@@ -258,13 +296,26 @@ check_symlink_and_units() {
 
   local unit=""
   local source_name=""
+  local unit_file=""
   for unit in \
     "${SERINO_SYSTEMD_UNIT}" \
     "${SERINO_SYSTEMD_UPGRADE_SERVICE}" \
     "${SERINO_SYSTEMD_UPGRADE_TIMER}"; do
     source_name="${unit}"
-    if [[ -f "/etc/systemd/system/${unit}" ]]; then
+    unit_file="/etc/systemd/system/${unit}"
+    if [[ -f "${unit_file}" ]]; then
       record_check "ok" "systemd.${unit}" "${unit} 已安装。" ""
+      case "${unit}" in
+        "${SERINO_SYSTEMD_UNIT}")
+          check_primary_service_unit_content "${unit_file}"
+          ;;
+        "${SERINO_SYSTEMD_UPGRADE_SERVICE}")
+          check_upgrade_service_unit_content "${unit_file}"
+          ;;
+        "${SERINO_SYSTEMD_UPGRADE_TIMER}")
+          check_upgrade_timer_unit_content "${unit_file}"
+          ;;
+      esac
     else
       record_check "fail" "systemd.${unit}" "缺少 systemd unit：${unit}" "sudo install -m 0644 ${AERISUN_INSTALLER_DEST}/systemd/${source_name} /etc/systemd/system/${unit} && sudo systemctl daemon-reload"
     fi

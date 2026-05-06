@@ -21,6 +21,77 @@ bootstrap_asset_curl() {
     --connect-timeout 10 --max-time 180 "$@"
 }
 
+bootstrap_sha256_file() {
+  local file="$1"
+
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "${file}" | awk '{print $1}'
+    return 0
+  fi
+
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "${file}" | awk '{print $1}'
+    return 0
+  fi
+
+  return 1
+}
+
+bootstrap_extract_bundle_sha256_from_env_payload() {
+  sed -n "s/^[[:space:]]*AERISUN_INSTALL_BUNDLE_SHA256[[:space:]]*=[[:space:]]*['\"]\\{0,1\\}\\([A-Fa-f0-9]\\{64\\}\\)['\"]\\{0,1\\}[[:space:]]*$/\\1/p" \
+    | head -n 1
+}
+
+bootstrap_payload_declares_bundle_sha256() {
+  grep -Eq "^[[:space:]]*AERISUN_INSTALL_BUNDLE_SHA256[[:space:]]*="
+}
+
+bootstrap_bundle_sha256_from_payload() {
+  local payload="$1"
+  local source_name="$2"
+  local bundle_sha256=""
+
+  if ! printf '%s\n' "${payload}" | bootstrap_payload_declares_bundle_sha256; then
+    return 1
+  fi
+
+  bundle_sha256="$(printf '%s\n' "${payload}" | bootstrap_extract_bundle_sha256_from_env_payload)"
+  if [[ -z "${bundle_sha256}" ]]; then
+    echo "${source_name} 中的 AERISUN_INSTALL_BUNDLE_SHA256 不是有效的 sha256。" >&2
+    return 2
+  fi
+
+  printf '%s' "${bundle_sha256}"
+}
+
+bootstrap_fetch_bundle_sha256() {
+  local manifest_url="$1"
+  local manifest_payload=""
+
+  manifest_payload="$(
+    bootstrap_metadata_curl "${manifest_url}" 2>/dev/null || true
+  )"
+  [[ -n "${manifest_payload}" ]] || return 1
+
+  bootstrap_bundle_sha256_from_payload "${manifest_payload}" "${manifest_url}"
+}
+
+bootstrap_verify_bundle_sha256() {
+  local file="$1"
+  local expected_sha256="$2"
+  local actual_sha256=""
+
+  if ! actual_sha256="$(bootstrap_sha256_file "${file}")"; then
+    echo "无法计算安装包 sha256：缺少 sha256sum/shasum。" >&2
+    return 1
+  fi
+
+  if [[ "${actual_sha256,,}" != "${expected_sha256,,}" ]]; then
+    echo "安装包 sha256 校验失败：expected=${expected_sha256} actual=${actual_sha256}" >&2
+    return 1
+  fi
+}
+
 bootstrap_from_release() {
   local version="${AERISUN_INSTALL_VERSION:-}"
   local repo="${AERISUN_INSTALL_GITHUB_REPO:-Aerisun/Serino}"
@@ -28,6 +99,7 @@ bootstrap_from_release() {
   local default_base_url="${AERISUN_INSTALL_DEFAULT_BASE_URL:-https://install.aerisun.top/serino}"
   local default_dev_base_url="${AERISUN_INSTALL_DEFAULT_DEV_BASE_URL:-https://install.aerisun.top/serino/dev}"
   local base_url="${AERISUN_INSTALL_BASE_URL:-}"
+  local manifest_name="${AERISUN_INSTALL_MANIFEST_NAME:-aerisun-installer-manifest.env}"
   local bundle_name="${AERISUN_INSTALL_BUNDLE_NAME:-aerisun-installer-bundle.tar.gz}"
   local tmp_dir=""
   local bundle_file=""
@@ -35,6 +107,7 @@ bootstrap_from_release() {
   local api_url=""
   local latest_url=""
   local latest_payload=""
+  local expected_bundle_sha256=""
 
   extract_release_tag_from_env_payload() {
     sed -n "s/^[[:space:]]*AERISUN_INSTALL_VERSION[[:space:]]*=[[:space:]]*['\"]\\{0,1\\}\\(v[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\)['\"]\\{0,1\\}[[:space:]]*$/\\1/p" \
@@ -58,6 +131,18 @@ bootstrap_from_release() {
       )"
       if [[ -n "${latest_payload}" ]]; then
         version="$(printf '%s\n' "${latest_payload}" | extract_release_tag_from_env_payload)"
+        if expected_bundle_sha256="$(bootstrap_bundle_sha256_from_payload "${latest_payload}" "${latest_url}")"; then
+          :
+        else
+          case "$?" in
+            1)
+              expected_bundle_sha256=""
+              ;;
+            *)
+              exit 1
+              ;;
+          esac
+        fi
       else
         bootstrap_log_warn "未能从 ${latest_url} 读取版本信息，正在准备回退。"
       fi
@@ -78,6 +163,36 @@ bootstrap_from_release() {
     echo "安装器无法解析目标版本（channel=${channel}）。" >&2
     exit 1
   }
+
+  if [[ -z "${expected_bundle_sha256}" && -n "${base_url}" ]]; then
+    if expected_bundle_sha256="$(bootstrap_fetch_bundle_sha256 "${base_url%/}/${version}/${manifest_name}")"; then
+      :
+    else
+      case "$?" in
+        1)
+          expected_bundle_sha256=""
+          ;;
+        *)
+          exit 1
+          ;;
+      esac
+    fi
+  fi
+
+  if [[ -z "${expected_bundle_sha256}" && "${channel}" == "stable" ]]; then
+    if expected_bundle_sha256="$(bootstrap_fetch_bundle_sha256 "https://github.com/${repo}/releases/download/${version}/${manifest_name}")"; then
+      :
+    else
+      case "$?" in
+        1)
+          expected_bundle_sha256=""
+          ;;
+        *)
+          exit 1
+          ;;
+      esac
+    fi
+  fi
 
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/aerisun-bootstrap.XXXXXX")"
   bundle_file="${tmp_dir}/${bundle_name}"
@@ -104,6 +219,13 @@ bootstrap_from_release() {
       echo "无法从 GitHub Release 下载安装包：${release_url}" >&2
       exit 1
     fi
+  fi
+
+  if [[ -n "${expected_bundle_sha256}" ]]; then
+    bootstrap_log_info "正在校验安装包 sha256。"
+    bootstrap_verify_bundle_sha256 "${bundle_file}" "${expected_bundle_sha256}"
+  else
+    bootstrap_log_warn "当前发布清单未提供安装包 sha256，已跳过安装包完整性校验。"
   fi
 
   bootstrap_log_info "👏 正在解压安装包并启动安装器。"
@@ -159,8 +281,8 @@ cleanup_failed_installation() {
   teardown_release_stack
   stop_and_remove_serino_units
   remove_serino_local_images
-  purge_installation_paths
   purge_service_account
+  purge_installation_paths
   log_warn "残留已清理。请根据上面的错误信息修复后重新执行安装。"
 }
 
@@ -185,8 +307,8 @@ prepare_install_target() {
   teardown_release_stack
   stop_and_remove_serino_units
   remove_serino_local_images
-  purge_installation_paths
   purge_service_account
+  purge_installation_paths
 }
 
 main() {

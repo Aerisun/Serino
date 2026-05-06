@@ -10,6 +10,36 @@ release_asset_curl() {
     --connect-timeout 10 --max-time 180 "$@"
 }
 
+sha256_file() {
+  local file="$1"
+
+  if command_exists sha256sum; then
+    sha256sum "${file}" | awk '{print $1}'
+    return 0
+  fi
+
+  if command_exists shasum; then
+    shasum -a 256 "${file}" | awk '{print $1}'
+    return 0
+  fi
+
+  return 1
+}
+
+verify_file_sha256() {
+  local file="$1"
+  local expected_sha256="$2"
+  local actual_sha256=""
+
+  [[ "${expected_sha256}" =~ ^[A-Fa-f0-9]{64}$ ]] || die "发布清单中的 sha256 格式无效。"
+  if ! actual_sha256="$(sha256_file "${file}")"; then
+    die "无法计算 ${file} 的 sha256：缺少 sha256sum/shasum。"
+  fi
+
+  [[ "${actual_sha256,,}" == "${expected_sha256,,}" ]] || \
+    die "${file} sha256 校验失败：expected=${expected_sha256} actual=${actual_sha256}"
+}
+
 validate_release_tag() {
   [[ "$1" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "版本号必须是 v1.2.3 这种格式。"
 }
@@ -52,6 +82,7 @@ download_release_asset() {
   local url=""
   local base_urls=()
   local idx=0
+  local actual_sha256=""
 
   while IFS= read -r base_url; do
     base_urls+=("${base_url}")
@@ -60,6 +91,25 @@ download_release_asset() {
   for idx in "${!base_urls[@]}"; do
     url="${base_urls[${idx}]%/}/${asset_name}"
     if release_asset_curl "${url}" -o "${destination}"; then
+      if [[ "${asset_name}" == "${AERISUN_INSTALL_BUNDLE_NAME}" ]]; then
+        if [[ -n "${AERISUN_INSTALL_BUNDLE_SHA256:-}" ]]; then
+          log_info "正在校验 ${asset_name} sha256。"
+          [[ "${AERISUN_INSTALL_BUNDLE_SHA256}" =~ ^[A-Fa-f0-9]{64}$ ]] || die "发布清单中的 sha256 格式无效。"
+          if ! actual_sha256="$(sha256_file "${destination}")"; then
+            die "无法计算 ${destination} 的 sha256：缺少 sha256sum/shasum。"
+          fi
+          if [[ "${actual_sha256,,}" != "${AERISUN_INSTALL_BUNDLE_SHA256,,}" ]]; then
+            if (( idx + 1 < ${#base_urls[@]} )); then
+              log_warn "${asset_name} sha256 校验失败：${url}"
+              log_warn "正在回退到下一个分发源：${base_urls[$((idx + 1))]%/}/${asset_name}"
+              continue
+            fi
+            die "${destination} sha256 校验失败：expected=${AERISUN_INSTALL_BUNDLE_SHA256} actual=${actual_sha256}"
+          fi
+        else
+          log_warn "发布清单未提供 ${asset_name} sha256，已跳过安装包完整性校验。"
+        fi
+      fi
       return 0
     fi
 
@@ -119,13 +169,96 @@ resolve_release_tag() {
   fetch_latest_release_tag
 }
 
+release_manifest_key_allowed() {
+  case "$1" in
+    AERISUN_INSTALL_CHANNEL|\
+    AERISUN_INSTALL_VERSION|\
+    AERISUN_IMAGE_TAG|\
+    AERISUN_IMAGE_REGISTRY|\
+    AERISUN_API_IMAGE_NAME|\
+    AERISUN_WEB_IMAGE_NAME|\
+    AERISUN_WALINE_IMAGE_NAME|\
+    AERISUN_INSTALL_BUNDLE_SHA256)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+release_manifest_value_allowed() {
+  local key="$1"
+  local value="$2"
+
+  case "${key}" in
+    AERISUN_INSTALL_CHANNEL)
+      [[ "${value}" =~ ^(stable|dev)$ ]]
+      ;;
+    AERISUN_INSTALL_VERSION)
+      [[ "${value}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      ;;
+    AERISUN_INSTALL_BUNDLE_SHA256)
+      [[ "${value}" =~ ^[A-Fa-f0-9]{64}$ ]]
+      ;;
+    AERISUN_IMAGE_TAG|AERISUN_IMAGE_REGISTRY|AERISUN_API_IMAGE_NAME|AERISUN_WEB_IMAGE_NAME|AERISUN_WALINE_IMAGE_NAME)
+      [[ "${value}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$ ]]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+strip_manifest_quotes() {
+  local value="$1"
+
+  if [[ "${value}" == \"*\" && "${value}" == *\" ]]; then
+    value="${value:1:${#value}-2}"
+  elif [[ "${value}" == \'*\' && "${value}" == *\' ]]; then
+    value="${value:1:${#value}-2}"
+  fi
+
+  printf '%s' "${value}"
+}
+
+parse_release_manifest() {
+  local manifest_file="$1"
+  local line=""
+  local key=""
+  local value=""
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    [[ "${line}" =~ ^[[:space:]]*$ ]] && continue
+    [[ "${line}" =~ ^[[:space:]]*# ]] && continue
+
+    if ! [[ "${line}" =~ ^[[:space:]]*(export[[:space:]]+)?([A-Z0-9_]+)[[:space:]]*=[[:space:]]*([^[:space:]]+)[[:space:]]*$ ]]; then
+      die "发布清单包含不支持的行：${line}"
+    fi
+
+    key="${BASH_REMATCH[2]}"
+    value="$(strip_manifest_quotes "${BASH_REMATCH[3]}")"
+
+    if ! release_manifest_key_allowed "${key}"; then
+      [[ "${value}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@+,-]*$ ]] || die "发布清单变量 ${key} 的值无效。"
+      log_warn "发布清单包含当前安装器未识别的变量，已忽略：${key}"
+      continue
+    fi
+
+    release_manifest_value_allowed "${key}" "${value}" || die "发布清单变量 ${key} 的值无效。"
+    printf -v "${key}" '%s' "${value}"
+  done < "${manifest_file}"
+}
+
 load_release_manifest() {
   local version="$1"
   local manifest_file="$2"
 
   download_release_asset "${version}" "${AERISUN_INSTALL_MANIFEST_NAME}" "${manifest_file}"
-  # shellcheck disable=SC1090
-  source "${manifest_file}"
+  AERISUN_IMAGE_TAG=""
+  AERISUN_IMAGE_REGISTRY=""
+  AERISUN_INSTALL_BUNDLE_SHA256=""
+  parse_release_manifest "${manifest_file}"
 
   [[ -n "${AERISUN_IMAGE_TAG:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_TAG。"
   [[ -n "${AERISUN_IMAGE_REGISTRY:-}" ]] || die "安装清单缺少 AERISUN_IMAGE_REGISTRY。"

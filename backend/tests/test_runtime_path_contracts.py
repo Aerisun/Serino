@@ -825,6 +825,45 @@ cmd_logs --follow --since 15m
     assert output == "logs --tail 120 --follow --since 15m api waline caddy"
 
 
+def test_sercli_maintenance_lock_only_wraps_destructive_commands():
+    output = (
+        run_installer_bash(
+            """
+source installer/bin/sercli
+
+ensure_supported_existing_installation() {
+  :
+}
+
+sercli_known_runtime_services() {
+  printf 'api\\nwaline\\ncaddy\\n'
+}
+
+run_with_maintenance_lock() {
+  local action="$1"
+  local command_path="$2"
+  shift 2
+  printf 'lock:%s:%s:%s\\n' "${action}" "$(basename "${command_path}")" "$*"
+}
+
+cmd_logs --list-services
+cmd_upgrade --check
+cmd_uninstall --force
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "api",
+        "waline",
+        "caddy",
+        "lock:upgrade:upgrade.sh:--check",
+        "lock:uninstall:uninstall.sh:--force",
+    ]
+
+
 def test_sercli_help_surfaces_common_ops_before_help_footer():
     output = run_installer_bash(
         """
@@ -838,6 +877,36 @@ cmd_help
     assert output.index("sercli doctor [--json]") < output.index("sercli help")
     assert output.index("sercli upgrade [--check] [--ready-timeout SEC] [vX.Y.Z]") < output.index("sercli help")
     assert output.index("sercli uninstall [--force]") < output.index("sercli help")
+
+
+def test_maintenance_lock_rejects_concurrent_destructive_tasks():
+    output = (
+        run_installer_bash(
+            """
+source installer/lib/common.sh
+
+lock_dir="$(mktemp -d)"
+SERINO_MAINTENANCE_LOCK_FILE="${lock_dir}/maintenance.lock"
+
+run_as_root() {
+  "$@"
+}
+
+run_with_maintenance_lock first bash -c 'printf "first\\n"'
+
+exec 9>"${SERINO_MAINTENANCE_LOCK_FILE}"
+flock -n 9
+( run_with_maintenance_lock second bash -c 'printf "unexpected\\n"' ) || printf 'blocked\\n'
+flock -u 9
+exec 9>&-
+rm -rf "${lock_dir}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == ["first", "blocked"]
 
 
 def test_compose_api_task_hides_ephemeral_compose_progress_noise():
@@ -1134,6 +1203,52 @@ emit_text_report
     ]
 
 
+def test_doctor_checks_systemd_unit_content_without_hard_failing_legacy_units():
+    output = (
+        run_installer_bash(
+            """
+source installer/doctor.sh
+: > "${DOCTOR_TMP}"
+
+unit_dir="$(mktemp -d)"
+primary_unit="${unit_dir}/serino.service"
+upgrade_unit="${unit_dir}/serino-upgrade.service"
+legacy_upgrade_unit="${unit_dir}/legacy-upgrade.service"
+
+cat > "${primary_unit}" <<EOF
+[Service]
+ExecStart=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=${AERISUN_COMPOSE_PROJECT_NAME}; exec docker compose -f ${AERISUN_RENDERED_COMPOSE_FILE} up -d --remove-orphans'
+ExecStop=/bin/bash -lc 'export COMPOSE_PROJECT_NAME=${AERISUN_COMPOSE_PROJECT_NAME}; exec docker compose -f ${AERISUN_RENDERED_COMPOSE_FILE} down'
+EOF
+
+cat > "${upgrade_unit}" <<EOF
+[Service]
+ExecStart=${SERINO_BIN_LINK} upgrade --check
+EOF
+
+cat > "${legacy_upgrade_unit}" <<EOF
+[Service]
+ExecStart=${SERINO_BIN_LINK} upgrade
+EOF
+
+check_primary_service_unit_content "${primary_unit}"
+check_upgrade_service_unit_content "${upgrade_unit}"
+check_upgrade_service_unit_content "${legacy_upgrade_unit}"
+cut -f1-2 "${DOCTOR_TMP}"
+rm -rf "${unit_dir}"
+"""
+        )
+        .strip()
+        .splitlines()
+    )
+
+    assert output == [
+        "ok\tsystemd.serino.service.content",
+        "ok\tsystemd.serino-upgrade.service.content",
+        "warn\tsystemd.serino-upgrade.service.content",
+    ]
+
+
 def test_production_settings_default_runtime_paths_point_to_srv_store():
     from aerisun.core.settings import Settings
 
@@ -1287,6 +1402,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert 'AERISUN_HTTPS_PORT="${AERISUN_HTTPS_PORT:-443}"' in common_text
     assert "make_temp_file() {" in common_text
     assert "make_root_temp_file_in_dir() {" in common_text
+    assert 'SERINO_MAINTENANCE_LOCK_FILE="${SERINO_MAINTENANCE_LOCK_FILE:-/run/lock/serino-maintenance.lock}"' in common_text
+    assert "run_with_maintenance_lock() {" in common_text
     assert (
         'SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf \'%s\' \'/usr/local/bin/sercli\' || printf \'%s\' "${AERISUN_BIN_ROOT}/sercli")}"'
         in common_text
@@ -1348,6 +1465,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "sercli start [--no-wait]" in sercli_text
     assert "sercli stop" in sercli_text
     assert 'exec bash "${INSTALLER_ROOT}/doctor.sh" "$@"' in sercli_text
+    assert 'run_with_maintenance_lock "upgrade" "${INSTALLER_ROOT}/upgrade.sh" "$@"' in sercli_text
+    assert 'run_with_maintenance_lock "uninstall" "${INSTALLER_ROOT}/uninstall.sh" "$@"' in sercli_text
     assert 'main "${SERCLI_MAIN_ARGS[@]}"' in sercli_text
     assert "cmd_migrate() {" in sercli_text
     assert "cmd_ps() {" in sercli_text
@@ -1457,6 +1576,8 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "__AERISUN_RENDERED_COMPOSE_FILE__" in service_text
     assert "__SERINO_SYSTEMD_UNIT__" in upgrade_service_text
     assert "__SERINO_BIN_LINK__" in upgrade_service_text
+    assert "ExecStart=__SERINO_BIN_LINK__ upgrade --check" in upgrade_service_text
+    assert "ExecStart=__SERINO_BIN_LINK__ upgrade\n" not in upgrade_service_text
     assert 'cat > "${DIST_DIR}/latest.env" <<EOF' in package_text
     assert "AERISUN_INSTALL_CHANNEL=${INSTALL_CHANNEL}" in package_text
     assert 'render_bootstrap_script "${DIST_DIR}/install.latest.sh"' in package_text
@@ -1518,6 +1639,43 @@ def test_installer_runtime_paths_follow_serino_system_layout():
 
 def test_dev_channel_does_not_require_a_second_installer_entrypoint():
     assert not (PROJECT_ROOT / "installer/install-dev.sh").exists()
+
+
+def test_systemd_upgrade_job_renders_check_only_upgrade_command(tmp_path: Path):
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+
+    completed = run_installer_bash(
+        f"""
+source installer/lib/common.sh
+
+SERINO_BIN_LINK='{tmp_path}/bin/sercli'
+SERINO_SYSTEMD_UNIT='serino.service'
+SERINO_SYSTEMD_UPGRADE_SERVICE='serino-upgrade.service'
+SERINO_SYSTEMD_UPGRADE_TIMER='serino-upgrade.timer'
+
+make_temp_file() {{
+  mktemp '{tmp_path}/unit.XXXXXX'
+}}
+
+run_as_root() {{
+  if [[ "$1" == install && "$2" == "-m" && "$3" == "0644" ]]; then
+    cp "$4" '{systemd_dir}'/"$(basename "$5")"
+    return 0
+  fi
+  if [[ "$1" == systemctl && "$2" == "daemon-reload" ]]; then
+    return 0
+  fi
+  "$@"
+}}
+
+install_systemd_units '{PROJECT_ROOT}'
+cat '{systemd_dir}/serino-upgrade.service'
+"""
+    )
+
+    assert f"ExecStart={tmp_path}/bin/sercli upgrade --check" in completed
+    assert f"ExecStart={tmp_path}/bin/sercli upgrade\n" not in completed
 
 
 def test_release_workflow_refreshes_bitiful_installer_cache():

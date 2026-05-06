@@ -522,11 +522,11 @@ cmd_wait() {
 }
 
 cmd_upgrade() {
-  exec "${INSTALLER_ROOT}/upgrade.sh" "$@"
+  run_with_maintenance_lock "upgrade" "${INSTALLER_ROOT}/upgrade.sh" "$@"
 }
 
 cmd_uninstall() {
-  exec "${INSTALLER_ROOT}/uninstall.sh" "$@"
+  run_with_maintenance_lock "uninstall" "${INSTALLER_ROOT}/uninstall.sh" "$@"
 }
 
 cmd_doctor() {
