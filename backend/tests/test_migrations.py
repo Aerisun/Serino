@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0003_comment_image_rate_limit"
+CURRENT_SCHEMA_HEAD = "0004_drop_admin_email_password_hash"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,6 +30,15 @@ def _get_tables(path: Path) -> set[str]:
     try:
         rows = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         return {str(row[0]) for row in rows}
+    finally:
+        connection.close()
+
+
+def _get_columns(path: Path, table: str) -> set[str]:
+    connection = sqlite3.connect(path)
+    try:
+        rows = connection.execute(f"PRAGMA table_info({table})").fetchall()
+        return {str(row[1]) for row in rows}
     finally:
         connection.close()
 
@@ -55,6 +64,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0001_production_baseline.py",
         "0002_public_title_identity.py",
         "0003_comment_image_rate_limit.py",
+        "0004_drop_admin_email_password_hash.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -72,4 +82,5 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "config_revisions" in tables
     assert "_aerisun_data_migrations" in tables
     assert "page_display_options" not in tables
+    assert "admin_email_password_hash" not in _get_columns(db_path, "site_auth_config")
     assert _get_alembic_revision(db_path) == CURRENT_SCHEMA_HEAD

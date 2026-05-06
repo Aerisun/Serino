@@ -17,7 +17,6 @@ class SiteAuthConfig(Base, TimestampMixin):
     admin_auth_methods: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     admin_console_auth_methods: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     admin_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    admin_email_password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_client_id: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     google_client_secret: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     github_client_id: Mapped[str] = mapped_column(String(255), nullable=False, default="")

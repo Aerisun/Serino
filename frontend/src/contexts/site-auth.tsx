@@ -186,6 +186,14 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !error || typeof window === "undefined") {
+      return;
+    }
+    const timer = window.setTimeout(() => setError(null), 3600);
+    return () => window.clearTimeout(timer);
+  }, [error, open]);
+
   const closeLogin = useCallback(() => {
     setOpen(false);
     resetForm();
@@ -570,21 +578,16 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
   const profileEditor = showProfileForm ? (
     <div className={`${mode === "profile" ? "mt-5" : "mt-2"} rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4`}>
       {mode === "profile" ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <UserRoundPen className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
               {authState?.user?.is_admin ? t("siteAuth.editBaseProfile") : t("siteAuth.loginIdentity")}
             </div>
-            <div className="mt-1 text-xs text-foreground/46">
-              {t("siteAuth.currentLoginMethod", { provider: currentProviderLabel })}
-            </div>
           </div>
-          <span className="rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.84] px-3 py-1 text-[0.72rem] text-foreground/50">
-            {authState?.user?.is_admin
-              ? t("siteAuth.adminCommentIdentity")
-              : t("siteAuth.emailBackendOnly")}
-          </span>
+          <div className="ml-auto max-w-[60%] pt-0.5 text-right text-xs font-semibold leading-snug text-foreground/52">
+            {t("siteAuth.currentLoginMethod", { provider: currentProviderLabel })}
+          </div>
         </div>
       ) : null}
 
@@ -948,15 +951,44 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                         </div>
                       ) : null}
 
-                      {error ? (
-                        <div className="mt-4 rounded-2xl border border-rose-500/16 bg-rose-500/8 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
-                          {error}
-                        </div>
-                      ) : null}
                     </div>
                   </div>
                 </motion.div>
               </div>
+            ) : null}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+  const errorToast =
+    typeof document !== "undefined"
+      ? createPortal(
+          <AnimatePresence>
+            {open && error ? (
+              <motion.div
+                initial={{ opacity: 0, y: -12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.96 }}
+                transition={transition({
+                  duration: 0.2,
+                  reducedMotion: prefersReducedMotion,
+                })}
+                className="pointer-events-none fixed right-4 top-4 z-[1400] flex w-[min(356px,calc(100vw-32px))] items-center gap-1.5 rounded-[8px] border border-[hsl(359_100%_94%)] bg-[hsl(359_100%_97%)] p-4 text-[13px] font-medium leading-5 text-[hsl(360_100%_45%)] shadow-[0_4px_12px_rgb(0_0_0/0.1)] dark:border-[hsl(357_89%_16%)] dark:bg-[hsl(358_76%_10%)] dark:text-[hsl(358_100%_81%)] sm:right-8 sm:top-8"
+                role="alert"
+                aria-live="assertive"
+              >
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    className="h-4 w-4"
+                  >
+                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.7" />
+                    <path d="M7.6 7.6l4.8 4.8M12.4 7.6l-4.8 4.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span>{error}</span>
+              </motion.div>
             ) : null}
           </AnimatePresence>,
           document.body,
@@ -967,6 +999,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
     <SiteAuthContext.Provider value={value}>
       {children}
       {modal}
+      {errorToast}
     </SiteAuthContext.Provider>
   );
 }

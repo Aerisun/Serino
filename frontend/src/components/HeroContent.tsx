@@ -299,49 +299,29 @@ const HeroContent = () => {
 
         <div className="mt-3 flex flex-wrap justify-center gap-4 sm:mt-4">
           {heroSocialLinks.map((link, index) => (
-            <motion.a
+            <motion.span
               key={`${link.name}-${link.href}`}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={link.name}
-              whileHover={
-                prefersReducedMotion
-                  ? undefined
-                  : {
-                      y: -2.5,
-                      scale: 1.03,
-                      transition: {
-                        duration: 0.24,
-                        ease: [0.22, 1, 0.36, 1],
-                      },
-                    }
-              }
-              whileTap={
-                prefersReducedMotion
-                  ? undefined
-                  : {
-                      y: -1,
-                      scale: 0.985,
-                      transition: {
-                        duration: 0.18,
-                        ease: [0.22, 1, 0.36, 1],
-                      },
-                    }
-              }
               initial={heroPopInitial(prefersReducedMotion)}
               animate={heroPopAnimate}
               transition={heroPopTransition(
                 socialRevealDelay + index * 0.07,
                 prefersReducedMotion,
               )}
-              className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-colors duration-200 hover:text-white focus-visible:text-white active:scale-95"
+              className="inline-flex"
             >
-              <SocialIcon
-                iconKey={link.iconKey}
-                className="h-[18px] w-[18px]"
-              />
-            </motion.a>
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={link.name}
+                className="flex h-10 w-10 items-center justify-center rounded-full liquid-glass-hero text-white/68 transition-[color,transform,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:scale-[1.03] hover:text-white focus-visible:-translate-y-1 focus-visible:scale-[1.03] focus-visible:text-white active:translate-y-0 active:scale-[0.98]"
+              >
+                <SocialIcon
+                  iconKey={link.iconKey}
+                  className="h-[18px] w-[18px]"
+                />
+              </a>
+            </motion.span>
           ))}
         </div>
 

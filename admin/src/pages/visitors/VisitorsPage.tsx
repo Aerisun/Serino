@@ -354,10 +354,6 @@ export default function VisitorsPage() {
   const [savedForm, setSavedForm] = useState<VisitorAuthFormState | null>(null);
   const [visitorSaveError, setVisitorSaveError] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
-  const [adminEmailPassword, setAdminEmailPassword] = useState("");
-  const [adminEmailPasswordConfirm, setAdminEmailPasswordConfirm] =
-    useState("");
-  const [adminEmailPasswordSet, setAdminEmailPasswordSet] = useState(false);
   const [adminEmailConfigExpanded, setAdminEmailConfigExpanded] =
     useState(false);
   const [bindingError, setBindingError] = useState("");
@@ -388,7 +384,7 @@ export default function VisitorsPage() {
   );
   const emailAdminBindingStatus: AdminBindingStatus = !form.admin_email_enabled
     ? "disabled"
-    : boundAdminProviders.has("email") && adminEmailPasswordSet
+    : boundAdminProviders.has("email")
       ? "completed"
       : "incomplete";
   const completedAdminIdentities = adminIdentities.filter(
@@ -408,7 +404,6 @@ export default function VisitorsPage() {
       const nextForm = createForm(config);
       setForm(nextForm);
       setSavedForm(nextForm);
-      setAdminEmailPasswordSet(Boolean(config.admin_email_password_set));
       setVisitorSaveError("");
     }
   }, [config, savedForm]);
@@ -456,7 +451,6 @@ export default function VisitorsPage() {
 
   const syncSavedAdminConfig = (nextConfig: SiteAuthConfigAdminRead) => {
     const nextForm = createForm(nextConfig);
-    setAdminEmailPasswordSet(Boolean(nextConfig.admin_email_password_set));
     setSavedForm((current) => ({
       ...(current ?? nextForm),
       admin_auth_methods: nextForm.admin_auth_methods,
@@ -560,14 +554,10 @@ export default function VisitorsPage() {
       VisitorAuthFormState,
       "admin_auth_methods" | "admin_email_enabled"
     >,
-    adminEmailPasswordValue?: string,
   ): SiteAuthConfigAdminUpdate => {
     return {
       admin_auth_methods: nextAdmin.admin_auth_methods,
       admin_email_enabled: nextAdmin.admin_email_enabled,
-      ...(adminEmailPasswordValue
-        ? { admin_email_password: adminEmailPasswordValue }
-        : {}),
     };
   };
 
@@ -648,13 +638,12 @@ export default function VisitorsPage() {
       "admin_auth_methods" | "admin_email_enabled"
     >,
     onErrorRestore?: () => void,
-    options?: { adminEmailPassword?: string },
   ) => {
     setBindingError("");
     setSavingAdminConfig(true);
     try {
       const response = await saveAdminConfig.mutateAsync({
-        data: buildAdminSavePayload(nextAdmin, options?.adminEmailPassword),
+        data: buildAdminSavePayload(nextAdmin),
       });
       if (response.data) {
         syncSavedAdminConfig(response.data);
@@ -750,40 +739,23 @@ export default function VisitorsPage() {
     });
 
   const handleBindAdminEmail = async () => {
-    const saved = await persistAdminConfig({
-      admin_auth_methods: form.admin_auth_methods,
-      admin_email_enabled: form.admin_email_enabled,
-    });
-    if (!saved) {
-      return;
-    }
-    bindEmail.mutate({ data: { email: adminEmail } });
-  };
-
-  const handleSaveAdminEmailPassword = async () => {
-    const normalizedPassword = adminEmailPassword.trim();
-    if (normalizedPassword.length < 8) {
-      setBindingError("管理员邮箱密码至少需要 8 个字符");
-      return;
-    }
-    if (normalizedPassword !== adminEmailPasswordConfirm.trim()) {
-      setBindingError("两次输入的管理员邮箱密码不一致");
-      return;
-    }
     const saved = await persistAdminConfig(
       {
         admin_auth_methods: form.admin_auth_methods,
-        admin_email_enabled: form.admin_email_enabled,
+        admin_email_enabled: true,
       },
-      undefined,
-      { adminEmailPassword: normalizedPassword },
+      !form.admin_email_enabled
+        ? () =>
+            setForm((current) => ({
+              ...current,
+              admin_email_enabled: false,
+            }))
+        : undefined,
     );
     if (!saved) {
       return;
     }
-    setAdminEmailPassword("");
-    setAdminEmailPasswordConfirm("");
-    toast.success("管理员邮箱密码已更新");
+    bindEmail.mutate({ data: { email: adminEmail } });
   };
 
   const bindCurrent =
@@ -1374,7 +1346,7 @@ export default function VisitorsPage() {
                     usageTitle={HELP_USAGE_TITLE}
                     usageItems={[
                       "Google / GitHub：需要先完成 OAuth 配置。",
-                      "邮箱：前台登录遇到已绑定管理员邮箱时，会额外要求输入统一管理员密码。",
+                      "邮箱：后台只绑定邮箱；前台登录遇到已绑定管理员邮箱时，会额外要求输入管理台密码。",
                     ]}
                   />
                 </div>
@@ -1458,12 +1430,12 @@ export default function VisitorsPage() {
                     hideLabel
                     label="绑定管理员身份"
                     title="绑定会发生什么"
-                    description="点击“认证并绑定”后会跳转到 OAuth 登录页，完成后自动返回本页并写入管理员身份。邮箱方式需要单独设置统一管理员密码。"
+                    description="点击“认证并绑定”后会跳转到 OAuth 登录页，完成后自动返回本页并写入管理员身份。邮箱方式直接输入邮箱绑定。"
                     usageTitle={HELP_USAGE_TITLE}
                     usageItems={[
                       "只有在第 1 步已开启的方式才可以绑定。",
                       "同一个方式可以重新绑定为最新登录身份。",
-                      "邮箱绑定成功后，前台和后台邮箱直登都还要再输入管理员密码才会进入管理员态。",
+                      "邮箱绑定成功后，前台和后台邮箱直登都需要输入管理台密码才会进入管理员态。",
                     ]}
                   />
                 </div>
@@ -1541,10 +1513,16 @@ export default function VisitorsPage() {
                       <span className={accentIconBadgeClass}>
                         <Mail className="h-4 w-4" />
                       </span>
-                      <div>
+                      <div className="inline-flex items-center gap-1.5">
                         <div className="text-sm font-medium text-foreground">
                           邮箱管理员身份
                         </div>
+                        <LabelWithHelp
+                          hideLabel
+                          label="邮箱管理员身份"
+                          title="邮箱管理员身份"
+                          description="这里只绑定邮箱标识，不需要单独设置密码；前台登录会要求输入当前管理台密码。"
+                        />
                       </div>
                     </div>
 
@@ -1581,16 +1559,15 @@ export default function VisitorsPage() {
                   </div>
 
                   {adminEmailConfigExpanded ? (
-                    <div className="mt-4 space-y-4 border-t border-border/60 pt-4">
+                    <div className="mt-4 space-y-3 border-t border-border/60 pt-4">
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <Input
                           value={adminEmail}
                           onChange={(event) =>
                             setAdminEmail(event.target.value)
                           }
-                          placeholder="输入管理员邮箱标识"
+                          placeholder="输入管理员邮箱"
                           disabled={
-                            !form.admin_email_enabled ||
                             bindEmail.isPending ||
                             savingAdminConfig
                           }
@@ -1599,7 +1576,6 @@ export default function VisitorsPage() {
                           type="button"
                           onClick={() => void handleBindAdminEmail()}
                           disabled={
-                            !form.admin_email_enabled ||
                             bindEmail.isPending ||
                             savingAdminConfig ||
                             !adminEmail.trim()
@@ -1611,50 +1587,7 @@ export default function VisitorsPage() {
                           ) : (
                             <Mail className="h-4 w-4" />
                           )}
-                          绑定邮箱
-                        </Button>
-                      </div>
-
-                      <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
-                        <Input
-                          type="password"
-                          value={adminEmailPassword}
-                          onChange={(event) =>
-                            setAdminEmailPassword(event.target.value)
-                          }
-                          placeholder="设置统一管理员密码"
-                          disabled={
-                            !form.admin_email_enabled || savingAdminConfig
-                          }
-                        />
-                        <Input
-                          type="password"
-                          value={adminEmailPasswordConfirm}
-                          onChange={(event) =>
-                            setAdminEmailPasswordConfirm(event.target.value)
-                          }
-                          placeholder="再次输入管理员密码"
-                          disabled={
-                            !form.admin_email_enabled || savingAdminConfig
-                          }
-                        />
-                        <Button
-                          type="button"
-                          onClick={() => void handleSaveAdminEmailPassword()}
-                          disabled={
-                            !form.admin_email_enabled ||
-                            savingAdminConfig ||
-                            !adminEmailPassword.trim() ||
-                            !adminEmailPasswordConfirm.trim()
-                          }
-                          className="gap-2"
-                        >
-                          {savingAdminConfig ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <KeyRound className="h-4 w-4" />
-                          )}
-                          {adminEmailPasswordSet ? "重置密码" : "保存密码"}
+                          {form.admin_email_enabled ? "绑定邮箱" : "启用并绑定"}
                         </Button>
                       </div>
                     </div>

@@ -26,13 +26,13 @@ from aerisun.domain.iam.service import (
     list_admin_sessions,
     revoke_admin_session,
     update_admin_profile,
+    validate_admin_password_for_user_id,
 )
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 from aerisun.domain.site_auth.service import (
     get_admin_login_options,
     resolve_admin_user_id_for_email,
     resolve_admin_user_id_for_site_session,
-    validate_admin_email_password,
 )
 
 from .deps import get_current_admin
@@ -66,8 +66,13 @@ def login_with_bound_email(
     payload: AdminEmailLoginRequest,
     session: Session = Depends(get_session),
 ) -> LoginResponse:
-    validate_admin_email_password(session, payload.password)
     admin_user_id = resolve_admin_user_id_for_email(session, payload.email)
+    validate_admin_password_for_user_id(
+        session,
+        admin_user_id,
+        payload.password,
+        invalid_message="管理台密码错误。",
+    )
     return create_admin_session(session, admin_user_id)
 
 

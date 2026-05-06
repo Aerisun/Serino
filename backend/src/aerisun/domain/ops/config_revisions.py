@@ -631,7 +631,6 @@ def _capture_visitors_auth(session: Session) -> dict[str, Any]:
             "admin_auth_methods": list(config.admin_auth_methods or []),
             "admin_console_auth_methods": list(config.admin_console_auth_methods or []),
             "admin_email_enabled": config.admin_email_enabled,
-            "admin_email_password_hash": config.admin_email_password_hash,
             "google_client_id": config.google_client_id,
             "google_client_secret": config.google_client_secret,
             "github_client_id": config.github_client_id,
@@ -642,8 +641,20 @@ def _capture_visitors_auth(session: Session) -> dict[str, Any]:
 
 def _restore_visitors_auth(session: Session, snapshot: dict[str, Any]) -> None:
     config = get_site_auth_config_orm(session)
+    allowed_fields = {
+        "email_login_enabled",
+        "visitor_oauth_providers",
+        "admin_auth_methods",
+        "admin_console_auth_methods",
+        "admin_email_enabled",
+        "google_client_id",
+        "google_client_secret",
+        "github_client_id",
+        "github_client_secret",
+    }
     for key, value in snapshot.items():
-        setattr(config, key, value)
+        if key in allowed_fields:
+            setattr(config, key, value)
     session.flush()
 
 

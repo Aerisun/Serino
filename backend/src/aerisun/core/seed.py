@@ -500,7 +500,6 @@ def _seed_site_auth_config(session: Session, *, force: bool = False) -> None:
         config.admin_auth_methods = list(default_config["admin_auth_methods"])
         config.admin_console_auth_methods = list(default_config["admin_console_auth_methods"])
         config.admin_email_enabled = bool(default_config["admin_email_enabled"])
-        config.admin_email_password_hash = default_config["admin_email_password_hash"]
         config.google_client_id = str(default_config["google_client_id"])
         config.google_client_secret = str(default_config["google_client_secret"])
         config.github_client_id = str(default_config["github_client_id"])
@@ -523,8 +522,6 @@ def backfill_site_auth_config_defaults(session: Session) -> None:
         config.admin_console_auth_methods = list(default_config["admin_console_auth_methods"])
     if getattr(config, "admin_email_enabled", None) is None:
         config.admin_email_enabled = bool(default_config["admin_email_enabled"])
-    if getattr(config, "admin_email_password_hash", None) is None:
-        config.admin_email_password_hash = default_config["admin_email_password_hash"]
     if not config.google_client_id:
         config.google_client_id = str(default_config["google_client_id"])
     if not config.google_client_secret:

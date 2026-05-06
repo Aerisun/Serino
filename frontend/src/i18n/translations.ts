@@ -222,8 +222,8 @@ export const frontendTranslations: Record<
     "siteAuth.continueWithEmail": "继续使用邮箱",
     "siteAuth.verifyPasswordAndLogin": "验证密码并登录",
     "siteAuth.adminPasswordHint":
-      "这个邮箱已绑定管理员身份。请输入后台配置的管理员邮箱密码，验证通过后才会进入管理员态。",
-    "siteAuth.adminPasswordPlaceholder": "输入管理员邮箱密码",
+      "此邮箱已绑定管理员身份，请输入管理台密码进入管理员态。",
+    "siteAuth.adminPasswordPlaceholder": "输入管理台密码",
     "siteAuth.profileTag": "资料",
     "siteAuth.signInTag": "登录",
     "waline.avatar.openLibrary": "打开头像库",
@@ -585,8 +585,8 @@ export const frontendTranslations: Record<
     "siteAuth.continueWithEmail": "Continue with email",
     "siteAuth.verifyPasswordAndLogin": "Verify password and sign in",
     "siteAuth.adminPasswordHint":
-      "This email is bound to an admin identity. Enter the configured admin email password to continue as admin.",
-    "siteAuth.adminPasswordPlaceholder": "Enter admin email password",
+      "This email is bound to an admin identity. Enter the admin console password to continue as admin.",
+    "siteAuth.adminPasswordPlaceholder": "Enter admin console password",
     "siteAuth.profileTag": "Profile",
     "siteAuth.signInTag": "Sign in",
     "waline.avatar.openLibrary": "Open avatar library",

@@ -113,11 +113,11 @@ export const enTranslations: TranslationDict = {
     "settings.oauthLoginConfigLabel": "Not configured? Bind in Visitors",
     "settings.oauthLoginConfigTitle": "Bind admin identity first",
     "settings.oauthLoginConfigDesc":
-      "These buttons control whether an elevated site admin identity can enter the admin console directly. Bind the matching identity first in Visitors; email also requires the shared admin email password to be configured.",
+      "These buttons control whether an elevated site admin identity can enter the admin console directly. Bind the matching identity first in Visitors; email only needs a bound address and uses the admin console password at login.",
     "settings.oauthLoginConfigStep1":
       "Go to Visitors -> Admin Authentication -> Step 2 Bind Admin Identity.",
     "settings.oauthLoginConfigStep2":
-      "For email, also save the shared admin email password on that page first.",
+      "For email, bind the admin email address on that page.",
     "settings.profile": "Profile",
     "settings.password": "Password",
     "settings.sessions": "Sessions",

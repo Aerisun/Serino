@@ -18,7 +18,6 @@ from .config_service import (  # noqa: F401
     build_default_site_auth_config,
     get_site_auth_admin_config,
     update_site_auth_admin_config,
-    validate_admin_email_password,
 )
 from .oauth import build_oauth_authorization_url, complete_oauth_login  # noqa: F401
 from .profile import (  # noqa: F401

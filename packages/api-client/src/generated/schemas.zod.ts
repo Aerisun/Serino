@@ -482,7 +482,7 @@ export const EmailLoginApiV1SiteAuthEmailPostBody = zod.object({
   "email": zod.string().describe('Email identifier'),
   "display_name": zod.union([zod.string(),zod.null()]).optional().describe('Optional display name for first login'),
   "avatar_url": zod.union([zod.string(),zod.null()]).optional().describe('Optional avatar URL for first login'),
-  "admin_password": zod.union([zod.string(),zod.null()]).optional().describe('Shared admin email password when elevation is needed')
+  "admin_password": zod.union([zod.string(),zod.null()]).optional().describe('Admin console password when elevation is needed')
 })
 
 export const emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault = false;
@@ -493,7 +493,7 @@ export const emailLoginApiV1SiteAuthEmailPostResponseAvatarTotalBatchesDefault =
 export const EmailLoginApiV1SiteAuthEmailPostResponse = zod.object({
   "authenticated": zod.boolean().describe('Whether a login session was created'),
   "requires_profile": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresProfileDefault).describe('Whether first-login profile setup is required'),
-  "requires_admin_password": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresAdminPasswordDefault).describe('Whether admin email login requires the shared admin password before creating a session'),
+  "requires_admin_password": zod.boolean().default(emailLoginApiV1SiteAuthEmailPostResponseRequiresAdminPasswordDefault).describe('Whether admin email login requires the admin console password before creating a session'),
   "user": zod.union([zod.object({
   "id": zod.unknown().describe('Public site user id'),
   "email": zod.unknown().describe('Login identifier email'),
@@ -6079,7 +6079,6 @@ export const GetVisitorAuthConfigApiV1AdminVisitorsConfigGetResponse = zod.objec
   "admin_auth_methods": zod.unknown().optional().describe('Auth methods reserved for admin-side usage'),
   "admin_console_auth_methods": zod.unknown().optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
   "admin_email_enabled": zod.unknown().describe('Whether email can be used as an admin identity'),
-  "admin_email_password_set": zod.unknown().describe('Whether the shared admin email password has been configured'),
   "google_client_id": zod.unknown().describe('Google OAuth client id'),
   "google_client_secret": zod.unknown().describe('Google OAuth client secret'),
   "github_client_id": zod.unknown().describe('GitHub OAuth client id'),
@@ -6098,7 +6097,6 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutBody = zod.object
   "admin_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Auth methods reserved for admin-side usage'),
   "admin_console_auth_methods": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
   "admin_email_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether email can be used as admin login'),
-  "admin_email_password": zod.union([zod.string(),zod.null()]).optional().describe('Shared admin email password used by all bound admin email identities'),
   "google_client_id": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client id'),
   "google_client_secret": zod.union([zod.string(),zod.null()]).optional().describe('Google OAuth client secret'),
   "github_client_id": zod.union([zod.string(),zod.null()]).optional().describe('GitHub OAuth client id'),
@@ -6112,7 +6110,6 @@ export const UpdateVisitorAuthConfigApiV1AdminVisitorsConfigPutResponse = zod.ob
   "admin_auth_methods": zod.unknown().optional().describe('Auth methods reserved for admin-side usage'),
   "admin_console_auth_methods": zod.unknown().optional().describe('Admin-elevated auth methods that are allowed to enter the admin console'),
   "admin_email_enabled": zod.unknown().describe('Whether email can be used as an admin identity'),
-  "admin_email_password_set": zod.unknown().describe('Whether the shared admin email password has been configured'),
   "google_client_id": zod.unknown().describe('Google OAuth client id'),
   "google_client_secret": zod.unknown().describe('Google OAuth client secret'),
   "github_client_id": zod.unknown().describe('GitHub OAuth client id'),

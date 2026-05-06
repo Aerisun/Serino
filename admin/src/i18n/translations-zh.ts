@@ -114,11 +114,11 @@ export const zhTranslations: TranslationDict = {
     "settings.oauthLoginConfigLabel": "未配置？去访客里绑定",
     "settings.oauthLoginConfigTitle": "先完成管理员身份绑定",
     "settings.oauthLoginConfigDesc":
-      "这些按钮控制前台管理员身份是否允许直接进入管理台。要先在“访客 -> 管理员认证”完成对应绑定；邮箱方式还需要先设置统一管理员密码。",
+      "这些按钮控制前台管理员身份是否允许直接进入管理台。要先在“访客 -> 管理员认证”完成对应绑定；邮箱方式只需要绑定邮箱，登录时输入管理台密码。",
     "settings.oauthLoginConfigStep1":
       "前往 访客 -> 管理员认证 -> 第 2 步“绑定管理员身份”。",
     "settings.oauthLoginConfigStep2":
-      "如需开启邮箱，还要在同页先保存统一管理员邮箱密码。",
+      "如需开启邮箱，在同页绑定管理员邮箱即可。",
     "settings.profile": "个人资料",
     "settings.password": "密码",
     "settings.sessions": "活跃会话",

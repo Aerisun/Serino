@@ -12,7 +12,7 @@ export interface EmailLoginResponse {
   authenticated: boolean;
   /** Whether first-login profile setup is required */
   requires_profile?: boolean;
-  /** Whether admin email login requires the shared admin password before creating a session */
+  /** Whether admin email login requires the admin console password before creating a session */
   requires_admin_password?: boolean;
   /** Current site user when authenticated */
   user?: SiteAuthUserRead | null;

@@ -82,7 +82,7 @@ def _seed_github_visitor_oauth() -> None:
 def _seed_bound_admin_email(
     *,
     email: str,
-    shared_password: str = "shared-admin-password",
+    admin_password: str = "route-password",
     console_methods: list[str] | None = None,
 ) -> None:
     from aerisun.core.db import get_session_factory
@@ -97,7 +97,7 @@ def _seed_bound_admin_email(
         if admin_user is None:
             admin_user = AdminUser(
                 username="site-auth-admin",
-                password_hash=bcrypt.hashpw(b"route-password", bcrypt.gensalt()).decode(),
+                password_hash=bcrypt.hashpw(admin_password.encode(), bcrypt.gensalt()).decode(),
             )
             session.add(admin_user)
             session.flush()
@@ -105,10 +105,6 @@ def _seed_bound_admin_email(
         config = get_site_auth_config_orm(session)
         config.admin_email_enabled = True
         config.admin_console_auth_methods = list(console_methods or [])
-        config.admin_email_password_hash = bcrypt.hashpw(
-            shared_password.encode(),
-            bcrypt.gensalt(),
-        ).decode()
         session.commit()
 
         bind_site_admin_identity_by_email(
@@ -218,7 +214,7 @@ def _login_site_user(
     return client.post("/api/v1/site-auth/email", json=payload)
 
 
-def test_bound_admin_email_requires_shared_password_before_site_login(client) -> None:
+def test_bound_admin_email_requires_admin_console_password_before_site_login(client) -> None:
     email = "bound-admin@example.com"
     _seed_bound_admin_email(email=email)
 
@@ -238,12 +234,12 @@ def test_bound_admin_email_requires_shared_password_before_site_login(client) ->
         admin_password="wrong-password",
     )
     assert wrong_password_response.status_code == 401
-    assert wrong_password_response.json()["detail"] == "管理员邮箱密码错误。"
+    assert wrong_password_response.json()["detail"] == "管理台密码错误。"
 
     success_response = _login_site_user(
         client,
         email=email,
-        admin_password="shared-admin-password",
+        admin_password="route-password",
     )
     assert success_response.status_code == 200
     success_payload = success_response.json()
@@ -281,7 +277,7 @@ def test_exchange_site_user_requires_admin_elevated_session(client) -> None:
     elevated_login = _login_site_user(
         client,
         email=email,
-        admin_password="shared-admin-password",
+        admin_password="route-password",
     )
     assert elevated_login.status_code == 200
     assert elevated_login.json()["user"]["is_admin"] is True
@@ -297,7 +293,7 @@ def test_exchange_site_user_requires_admin_elevated_session(client) -> None:
     elevated_login = _login_site_user(
         client,
         email=email,
-        admin_password="shared-admin-password",
+        admin_password="route-password",
     )
     assert elevated_login.status_code == 200
     assert elevated_login.json()["user"]["is_admin"] is True

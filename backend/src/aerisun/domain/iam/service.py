@@ -85,6 +85,21 @@ def authenticate_admin(session: Session, username: str, password: str) -> AdminU
     return user
 
 
+def validate_admin_password_for_user_id(
+    session: Session,
+    admin_user_id: str,
+    password: str,
+    *,
+    invalid_message: str = "Invalid username or password",
+) -> AdminUser:
+    user = session.get(AdminUser, admin_user_id)
+    if user is None or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
+        raise AuthenticationFailed(invalid_message)
+    if not user.is_active:
+        raise PermissionDenied("Account is disabled")
+    return user
+
+
 def create_admin_session(session: Session, admin_user_id: str, ttl_hours: int | None = None) -> LoginResponse:
     """Create a new session token for the given admin user."""
     settings = get_settings()

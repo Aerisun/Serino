@@ -16,10 +16,10 @@ DETAIL_CASES = [
 ]
 
 ADMIN_EMAIL = "archive-owner@example.com"
-ADMIN_PASSWORD = "shared-admin-password"
+ADMIN_PASSWORD = "route-password"
 
 
-def _seed_bound_admin_email(*, email: str = ADMIN_EMAIL, shared_password: str = ADMIN_PASSWORD) -> None:
+def _seed_bound_admin_email(*, email: str = ADMIN_EMAIL, admin_password: str = ADMIN_PASSWORD) -> None:
     from aerisun.core.db import get_session_factory
     from aerisun.domain.iam.models import AdminUser
     from aerisun.domain.site_auth.admin_binding import bind_site_admin_identity_by_email
@@ -32,14 +32,13 @@ def _seed_bound_admin_email(*, email: str = ADMIN_EMAIL, shared_password: str = 
         if admin_user is None:
             admin_user = AdminUser(
                 username="archive-visibility-admin",
-                password_hash=bcrypt.hashpw(b"route-password", bcrypt.gensalt()).decode(),
+                password_hash=bcrypt.hashpw(admin_password.encode(), bcrypt.gensalt()).decode(),
             )
             session.add(admin_user)
             session.flush()
 
         config = get_site_auth_config_orm(session)
         config.admin_email_enabled = True
-        config.admin_email_password_hash = bcrypt.hashpw(shared_password.encode(), bcrypt.gensalt()).decode()
         session.commit()
 
         bind_site_admin_identity_by_email(

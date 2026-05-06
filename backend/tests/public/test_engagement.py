@@ -143,10 +143,6 @@ def _bind_admin_identity_by_email(*, email: str) -> None:
         config = session.query(SiteAuthConfig).first()
         assert config is not None
         config.admin_email_enabled = True
-        config.admin_email_password_hash = bcrypt.hashpw(
-            b"comment-password",
-            bcrypt.gensalt(),
-        ).decode()
         session.commit()
 
         bind_site_admin_identity_by_email(

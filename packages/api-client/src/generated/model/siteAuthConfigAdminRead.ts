@@ -18,8 +18,6 @@ export interface SiteAuthConfigAdminRead {
   admin_console_auth_methods?: unknown;
   /** Whether email can be used as an admin identity */
   admin_email_enabled: unknown;
-  /** Whether the shared admin email password has been configured */
-  admin_email_password_set: unknown;
   /** Google OAuth client id */
   google_client_id: unknown;
   /** Google OAuth client secret */

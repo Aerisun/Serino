@@ -363,7 +363,7 @@ export default function LoginPage() {
                     <input
                       type="password"
                       autoComplete="current-password"
-                      placeholder="Shared admin email password"
+                      placeholder="管理台密码"
                       value={adminEmailPassword}
                       onChange={(event) =>
                         setAdminEmailPassword(event.target.value)
@@ -372,7 +372,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <p className="text-xs leading-6 text-white/48">
-                    使用“访客 / 管理员认证”里配置的统一管理员邮箱密码完成登录。
+                    使用这个邮箱绑定到的管理员账号密码完成登录。
                   </p>
                   <button
                     type="submit"

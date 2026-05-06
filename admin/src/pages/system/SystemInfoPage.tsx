@@ -127,13 +127,12 @@ export default function SystemInfoPage() {
       if (method === "email") {
         return Boolean(
           visitorAuthConfig?.admin_email_enabled &&
-            visitorAuthConfig?.admin_email_password_set &&
             methods.has("email"),
         );
       }
       return methods.has(method);
     });
-  }, [adminIdentities, visitorAuthConfig?.admin_email_enabled, visitorAuthConfig?.admin_email_password_set]);
+  }, [adminIdentities, visitorAuthConfig?.admin_email_enabled]);
   const consoleButtonProviders: AdminConsoleMethod[] = ["email", "google", "github"];
   const hasUnconfiguredAdminConsoleMethod = consoleButtonProviders.some(
     (provider) => !configuredAdminConsoleMethods.includes(provider),
