@@ -18,6 +18,8 @@ interface PageShellProps {
   headerAside?: ReactNode;
   width?: "narrow" | "content" | "wide";
   contentClassName?: string;
+  mainClassName?: string;
+  footerClassName?: string;
   compactHeader?: boolean;
 }
 
@@ -36,7 +38,9 @@ const PageShell = ({
   children,
   headerAside,
   width = "content",
-  contentClassName = "mt-10",
+  contentClassName = "mt-5 sm:mt-10",
+  mainClassName = "",
+  footerClassName = "",
   compactHeader = false,
 }: PageShellProps) => {
   const prefersReducedMotion = useReducedMotionPreference();
@@ -60,10 +64,10 @@ const PageShell = ({
           />
         </div>
 
-        <main className={`${widths[width]} relative mx-auto px-6 ${compactHeader ? "pt-24 pb-20" : "pt-28 pb-20"} lg:px-8`}>
+        <main className={`${widths[width]} relative mx-auto px-6 ${compactHeader ? "pt-20 pb-20 sm:pt-24" : "pt-24 pb-20 sm:pt-28"} lg:px-8 ${mainClassName}`.trim()}>
           {hasHeader ? (
             <motion.header
-              className={`relative ${compactHeader ? "pb-4" : "pb-8"}`}
+              className={`relative ${compactHeader ? "pb-3 sm:pb-4" : "pb-4 sm:pb-8"}`}
               {...entrance}
             >
               <div
@@ -115,7 +119,7 @@ const PageShell = ({
         </main>
 
         <BackToTop />
-        <Footer />
+        <Footer className={footerClassName} />
       </div>
     </>
   );

@@ -7,6 +7,8 @@ interface Heading {
   id: string;
   text: string;
   level: number;
+  element: HTMLHeadingElement;
+  key: string;
 }
 
 interface TableOfContentsProps {
@@ -14,30 +16,63 @@ interface TableOfContentsProps {
   content: unknown[];
 }
 
+const TARGET_FLASH_DURATION_MS = 2000;
 const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   const { t } = useFrontendI18n();
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState("");
   const [expanded, setExpanded] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const autoScrollingRef = useRef(false);
   const followResumeTimerRef = useRef<number | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
+  const clickActiveLockRef = useRef<string | null>(null);
+  const clickActiveLockTimerRef = useRef<number | null>(null);
+  const targetFlashTimerRef = useRef<number | null>(null);
+  const targetFlashElementRef = useRef<HTMLHeadingElement | null>(null);
+
+  const clearClickActiveLock = useCallback(() => {
+    if (clickActiveLockTimerRef.current !== null) {
+      window.clearTimeout(clickActiveLockTimerRef.current);
+      clickActiveLockTimerRef.current = null;
+    }
+    clickActiveLockRef.current = null;
+  }, []);
+
+  const clearTargetFlashTimer = useCallback(() => {
+    if (targetFlashTimerRef.current !== null) {
+      window.clearTimeout(targetFlashTimerRef.current);
+      targetFlashTimerRef.current = null;
+    }
+    targetFlashElementRef.current?.classList.remove("markdown-target-flash");
+    targetFlashElementRef.current = null;
+  }, []);
 
   useEffect(() => {
     const parseHeadings = () => {
       const container = containerRef.current;
-      const scoped = Array.from(container?.querySelectorAll("h2, h3") ?? []);
+      const scoped = Array.from(
+        container?.querySelectorAll<HTMLHeadingElement>("h2, h3, h4") ?? [],
+      );
       const fallback =
         scoped.length > 0
           ? scoped
-          : Array.from(document.querySelectorAll("article h2, article h3"));
+          : Array.from(
+              document.querySelectorAll<HTMLHeadingElement>(
+                "article h2, article h3, article h4",
+              ),
+            );
 
       const items: Heading[] = fallback.map((el, index) => {
         if (!el.id) el.id = `heading-${index}`;
+        const level = Number(el.tagName.slice(1));
         return {
           id: el.id,
           text: el.textContent || "",
-          level: el.tagName === "H2" ? 2 : 3,
+          level,
+          element: el,
+          key: `${el.id}-${index}`,
         };
       });
 
@@ -74,27 +109,79 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   useEffect(() => {
     if (headings.length === 0) return;
 
+    const getActiveHeadingId = () => {
+      const lockedId = clickActiveLockRef.current;
+      if (lockedId) {
+        const lockedHeading = headings.find((heading) => heading.id === lockedId);
+        if (lockedHeading) return lockedId;
+      }
+
+      const scrollLine = Math.min(180, Math.max(96, window.innerHeight * 0.22));
+      let current = headings[0];
+      let closestBelow = headings[0];
+      let closestBelowDistance = Number.POSITIVE_INFINITY;
+
+      for (const heading of headings) {
+        const rect = heading.element.getBoundingClientRect();
+        if (rect.top <= scrollLine) {
+          current = heading;
+          continue;
+        }
+
+        const distance = rect.top - scrollLine;
+        if (distance < closestBelowDistance) {
+          closestBelowDistance = distance;
+          closestBelow = heading;
+        }
+      }
+
+      const firstRect = headings[0]?.element.getBoundingClientRect();
+      if (firstRect && firstRect.top > scrollLine) return closestBelow.id;
+
+      return current.id;
+    };
+
+    const updateActive = () => {
+      scrollRafRef.current = null;
+      const next = getActiveHeadingId();
+      setActiveId((current) => (current === next ? current : next));
+    };
+
+    const requestActiveUpdate = () => {
+      if (scrollRafRef.current !== null) return;
+      scrollRafRef.current = window.requestAnimationFrame(updateActive);
+    };
+
     observerRef.current?.disconnect();
     const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-            break;
-          }
-        }
+      () => {
+        requestActiveUpdate();
       },
-      { rootMargin: "-80px 0px -70% 0px", threshold: 0 },
+      { rootMargin: "-100px 0px -55% 0px", threshold: [0, 1] },
     );
     observerRef.current = observer;
 
-    headings.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
+    const scrollRoot = containerRef.current;
+
+    headings.forEach(({ element }) => observer.observe(element));
+    requestActiveUpdate();
+    window.addEventListener("scroll", requestActiveUpdate, { passive: true });
+    window.addEventListener("resize", requestActiveUpdate);
+    scrollRoot?.addEventListener("scroll", requestActiveUpdate, {
+      passive: true,
     });
 
-    return () => observer.disconnect();
-  }, [headings]);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", requestActiveUpdate);
+      window.removeEventListener("resize", requestActiveUpdate);
+      scrollRoot?.removeEventListener("scroll", requestActiveUpdate);
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
+  }, [containerRef, headings]);
 
   const getVisibleViewport = useCallback(() => {
     if (typeof document === "undefined") return null;
@@ -159,11 +246,7 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
     if (autoScrollingRef.current) return;
 
     clearFollowResumeTimer();
-    followResumeTimerRef.current = window.setTimeout(() => {
-      followResumeTimerRef.current = null;
-      ensureActiveVisible("smooth");
-    }, 900);
-  }, [clearFollowResumeTimer, ensureActiveVisible]);
+  }, [clearFollowResumeTimer]);
 
   useEffect(() => {
     if (!expanded || !activeId) return;
@@ -172,45 +255,110 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
   }, [activeId, expanded, ensureActiveVisible]);
 
   useEffect(() => {
-    return () => clearFollowResumeTimer();
-  }, [clearFollowResumeTimer]);
+    if (!mobileOpen || !activeId) return;
 
-  const scrollTo = useCallback((id: string) => {
-    clearFollowResumeTimer();
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [clearFollowResumeTimer]);
+    const timer = window.setTimeout(() => {
+      ensureActiveVisible("auto");
+    }, 80);
 
-  const setTargetHover = useCallback((id: string, hovered: boolean) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.toggle("markdown-target-hover", hovered);
+    return () => window.clearTimeout(timer);
+  }, [activeId, ensureActiveVisible, mobileOpen]);
+
+  useEffect(() => {
+    return () => {
+      clearFollowResumeTimer();
+      clearClickActiveLock();
+      clearTargetFlashTimer();
+    };
+  }, [clearClickActiveLock, clearFollowResumeTimer, clearTargetFlashTimer]);
+
+  const scrollTo = useCallback(
+    (heading: Heading) => {
+      clearFollowResumeTimer();
+      clearClickActiveLock();
+      clearTargetFlashTimer();
+
+      const { element, id } = heading;
+      clickActiveLockRef.current = id;
+      setActiveId(id);
+      setMobileOpen(false);
+
+      element.classList.remove("markdown-target-flash");
+      element.classList.remove("markdown-target-hover");
+      void element.offsetWidth;
+      element.classList.add("markdown-target-flash");
+      targetFlashElementRef.current = element;
+      targetFlashTimerRef.current = window.setTimeout(() => {
+        element.classList.remove("markdown-target-flash");
+        targetFlashElementRef.current = null;
+        targetFlashTimerRef.current = null;
+      }, TARGET_FLASH_DURATION_MS);
+
+      const nextHash = `#${encodeURIComponent(id)}`;
+      if (window.location.hash !== nextHash) {
+        window.history.replaceState(window.history.state, "", nextHash);
+      }
+
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      clickActiveLockTimerRef.current = window.setTimeout(() => {
+        clearClickActiveLock();
+      }, 1100);
+    },
+    [clearClickActiveLock, clearFollowResumeTimer, clearTargetFlashTimer],
+  );
+
+  const setTargetHover = useCallback((heading: Heading, hovered: boolean) => {
+    heading.element.classList.toggle("markdown-target-hover", hovered);
   }, []);
 
   if (headings.length < 2) return null;
 
   const tocContent = (
     <nav className="space-y-0.5">
-      {headings.map((heading) => (
-        <button
-          key={heading.id}
-          type="button"
-          onClick={() => scrollTo(heading.id)}
-          onMouseEnter={() => setTargetHover(heading.id, true)}
-          onMouseLeave={() => setTargetHover(heading.id, false)}
-          className={[
-            "block w-full text-left text-[12px] font-body leading-5 transition-all",
-            heading.level === 3 ? "pl-5 pr-2 py-1.5" : "pl-2 pr-2 py-1.5",
-            activeId === heading.id
-              ? "translate-x-2 text-[rgb(var(--shiro-accent-rgb)/0.9)]"
-              : "text-foreground/38 hover:text-foreground/68",
-          ].join(" ")}
-          data-toc-item-id={heading.id}
-        >
-          <span className="block truncate">{heading.text}</span>
-        </button>
-      ))}
+      {headings.map((heading) => {
+        const isActive = activeId === heading.id;
+        const indentClass =
+          heading.level === 4
+            ? "pl-8"
+            : heading.level === 3
+              ? "pl-5"
+              : "pl-2";
+
+        return (
+          <div
+            key={heading.key}
+            className="relative"
+            data-toc-item-id={heading.id}
+            data-active={isActive ? "true" : undefined}
+          >
+            {isActive ? (
+              <motion.span
+                layoutId="toc-active-indicator"
+                className="absolute inset-y-[5px] left-0 w-[2px] rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.9)] shadow-[0_0_12px_rgb(var(--shiro-accent-rgb)/0.35)]"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              />
+            ) : null}
+            <button
+              type="button"
+              onClick={() => scrollTo(heading)}
+              onMouseEnter={() => setTargetHover(heading, true)}
+              onMouseLeave={() => setTargetHover(heading, false)}
+              className={[
+                "block w-full rounded-sm pr-2 py-1.5 text-left text-[12px] font-body leading-5 outline-none transition-all",
+                "focus-visible:bg-[rgb(var(--shiro-accent-rgb)/0.08)]",
+                indentClass,
+                isActive
+                  ? "translate-x-2 text-[rgb(var(--shiro-accent-rgb)/0.92)]"
+                  : "text-foreground/38 hover:text-foreground/68",
+              ].join(" ")}
+              title={heading.text}
+              aria-current={isActive ? "location" : undefined}
+            >
+              <span className="block truncate">{heading.text}</span>
+            </button>
+          </div>
+        );
+      })}
     </nav>
   );
 
@@ -246,7 +394,7 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
           >
             <div className="border-l border-[rgb(var(--shiro-divider-rgb)/0.16)] pl-2">
               <div
-                className="scrollbar-hide max-h-[42vh] overflow-y-auto pr-1 pt-2"
+                className="toc-scroll-mask scrollbar-hide max-h-[42vh] overflow-y-auto pr-1 pt-2"
                 data-toc-viewport="true"
                 onPointerDown={pauseAutoFollow}
                 onTouchStart={pauseAutoFollow}
@@ -264,8 +412,60 @@ const TableOfContents = ({ containerRef, content }: TableOfContentsProps) => {
 
   return (
     <>
-      <div className="mb-6 lg:hidden">{panel}</div>
-      <div className="fixed right-8 top-24 z-20 hidden w-56 lg:block">{panel}</div>
+      <AnimatePresence initial={false}>
+        {mobileOpen ? (
+          <motion.button
+            type="button"
+            aria-label={t("toc.toggle")}
+            className="fixed inset-0 z-30 cursor-default bg-background/10 backdrop-blur-[1px] min-[1600px]:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            onClick={() => setMobileOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <div className="pointer-events-none fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 min-[1600px]:hidden">
+        <AnimatePresence initial={false}>
+          {mobileOpen ? (
+            <motion.div
+              data-toc-mobile-panel="true"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="pointer-events-auto mb-3 rounded-[0.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.94] px-3 py-3 shadow-[0_18px_52px_rgb(0_0_0/0.16)] backdrop-blur-xl"
+            >
+              <div
+                className="toc-scroll-mask max-h-[min(58vh,31rem)] overflow-y-auto pr-1 pt-1 [will-change:scroll-position]"
+                data-toc-viewport="true"
+                onPointerDown={pauseAutoFollow}
+                onTouchStart={pauseAutoFollow}
+                onWheel={pauseAutoFollow}
+                onScroll={pauseAutoFollow}
+              >
+                {tocContent}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+        <button
+          data-toc-mobile-button="true"
+          type="button"
+          onClick={() => {
+            setExpanded(true);
+            setMobileOpen((current) => !current);
+          }}
+          className="pointer-events-auto ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.9] text-[rgb(var(--shiro-accent-rgb)/0.82)] shadow-[0_12px_34px_rgb(0_0_0/0.14)] backdrop-blur-xl transition hover:border-[rgb(var(--shiro-accent-rgb)/0.28)] hover:text-[rgb(var(--shiro-accent-rgb)/0.95)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--shiro-accent-rgb)/0.32)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label={t("toc.toggle")}
+          aria-expanded={mobileOpen}
+        >
+          <List className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="fixed right-8 top-24 z-20 hidden w-56 min-[1600px]:block">{panel}</div>
     </>
   );
 };

@@ -663,6 +663,54 @@
       0 0 0 4px rgb(var(--shiro-accent-rgb) / 0.12);
   }
 
+  .toc-scroll-mask {
+    --toc-mask-size: 1.35rem;
+
+    -ms-overflow-style: none;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--toc-mask-size),
+      #000 calc(100% - var(--toc-mask-size)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--toc-mask-size),
+      #000 calc(100% - var(--toc-mask-size)),
+      transparent 100%
+    );
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+
+  .toc-scroll-mask::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-toc-item-id] {
+    border-radius: 0.55rem;
+  }
+
+  [data-toc-item-id] > button:focus-visible {
+    outline: none;
+    background-color: rgb(var(--shiro-accent-rgb) / 0.08);
+  }
+
+  @media (forced-colors: active) {
+    .toc-scroll-mask {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

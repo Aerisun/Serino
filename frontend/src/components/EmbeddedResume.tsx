@@ -19,7 +19,7 @@ export default function EmbeddedResume({
 }: EmbeddedResumeProps) {
   const hasContacts = Boolean(contacts?.location || contacts?.email);
   const profileImage = profileImageUrl ? (
-    <div className="relative h-28 w-28 overflow-hidden rounded-[1.7rem] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-[rgb(var(--shiro-panel-rgb)/0.22)] p-1.5 shadow-[0_14px_32px_rgba(15,23,42,0.1)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.18)] sm:h-32 sm:w-32">
+    <div className="relative h-24 w-24 overflow-hidden rounded-[1.45rem] border border-[rgb(var(--shiro-border-rgb)/0.2)] bg-[rgb(var(--shiro-panel-rgb)/0.22)] p-1 shadow-[0_14px_32px_rgba(15,23,42,0.1)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.18)] sm:h-32 sm:w-32 sm:rounded-[1.7rem] sm:p-1.5">
       <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[linear-gradient(145deg,transparent,rgb(var(--shiro-sheen-rgb)/0.2))]" />
       <div className="absolute inset-1 rounded-[1.38rem] bg-[radial-gradient(circle_at_28%_28%,rgb(var(--shiro-glow-rgb)/0.28),transparent_58%)]" />
       <img
@@ -34,17 +34,17 @@ export default function EmbeddedResume({
   ) : null;
 
   return (
-    <section className="relative mx-auto max-w-[980px] px-2 py-4 md:py-6">
+    <section className="relative mx-auto max-w-[980px] px-0 py-2 sm:px-2 sm:py-4 md:py-6">
       <div className="pointer-events-none absolute inset-x-8 top-5 h-56 rounded-[3rem] bg-[radial-gradient(circle_at_top,rgb(var(--shiro-glow-rgb)/0.18),transparent_68%)] blur-3xl" />
       <div className="pointer-events-none absolute -right-10 top-10 h-28 w-28 rounded-full bg-[rgb(var(--shiro-accent-rgb)/0.14)] blur-3xl" />
       <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-[rgb(var(--shiro-panel-strong-rgb)/0.42)] blur-3xl" />
 
-      <div className="relative overflow-hidden rounded-[2rem] border border-[rgb(var(--shiro-border-rgb)/0.14)] bg-background/[0.72] shadow-[0_18px_52px_rgba(10,14,24,0.12)] backdrop-blur-xl dark:bg-card/[0.82] dark:shadow-[0_24px_72px_rgba(0,0,0,0.26)]">
+      <div className="relative overflow-hidden rounded-[1.45rem] border border-[rgb(var(--shiro-border-rgb)/0.14)] bg-background/[0.72] shadow-[0_18px_52px_rgba(10,14,24,0.12)] backdrop-blur-xl dark:bg-card/[0.82] dark:shadow-[0_24px_72px_rgba(0,0,0,0.26)] sm:rounded-[2rem]">
         <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--shiro-sheen-rgb)/0.96)] to-transparent" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgb(var(--shiro-glow-rgb)/0.12),transparent_38%),radial-gradient(circle_at_bottom_right,rgb(var(--shiro-accent-rgb)/0.08),transparent_36%)]" />
 
-        <div className="relative px-6 py-7 md:px-8 md:py-8 lg:px-10 lg:py-10">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative px-4 py-5 sm:px-6 sm:py-7 md:px-8 md:py-8 lg:px-10 lg:py-10">
+          <div className="flex flex-col gap-4 sm:gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0 flex-1">
               <h2
                 className="text-center text-[4.2rem] leading-[0.82] tracking-[-0.02em] text-foreground sm:pl-2 sm:text-left md:pl-3 md:text-[5.8rem]"
@@ -54,7 +54,7 @@ export default function EmbeddedResume({
               </h2>
 
               {profileImage || hasContacts ? (
-                <div className="mt-5 flex items-center gap-5 sm:hidden">
+                <div className="mt-4 flex items-center gap-4 sm:hidden">
                   {profileImage}
                   {hasContacts ? (
                     <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 pl-1 pr-1 text-[0.94rem] leading-tight tracking-[0.01em] text-foreground/58">
@@ -98,7 +98,7 @@ export default function EmbeddedResume({
             </aside>
           </div>
 
-          <div className="mt-6 border-t border-[rgb(var(--shiro-divider-rgb)/0.16)] pt-8">
+          <div className="mt-5 border-t border-[rgb(var(--shiro-divider-rgb)/0.16)] pt-5 sm:mt-6 sm:pt-8">
             <MarkdownRenderer
               content={content}
               className="resume-markdown single-resume-markdown"

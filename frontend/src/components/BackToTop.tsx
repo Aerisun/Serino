@@ -133,6 +133,10 @@ const BackToTop = () => {
     return null;
   }
 
+  const shouldAvoidTocButton = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-toc-mobile-button]"),
+  ).some((node) => node.offsetParent !== null);
+
   return createPortal(
     <AnimatePresence>
       {visible ? (
@@ -153,8 +157,12 @@ const BackToTop = () => {
           }}
           className="fixed z-[1200] flex h-10 w-10 items-center justify-center rounded-full border text-foreground/60 shadow-[0_12px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.82)] dark:text-white/72 dark:shadow-[0_16px_36px_rgba(0,0,0,0.28)]"
           style={{
-            right: "max(1.5rem, calc(env(safe-area-inset-right) + 1rem))",
-            bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 1rem))",
+            right: shouldAvoidTocButton
+              ? "max(4.25rem, calc(env(safe-area-inset-right) + 4.25rem))"
+              : "max(1.5rem, calc(env(safe-area-inset-right) + 1rem))",
+            bottom: shouldAvoidTocButton
+              ? "max(1rem, calc(env(safe-area-inset-bottom) + 1rem))"
+              : "max(1.5rem, calc(env(safe-area-inset-bottom) + 1rem))",
             backgroundColor: "rgb(var(--shiro-panel-rgb) / 0.26)",
             borderColor: "rgb(var(--shiro-border-rgb) / 0.22)",
           }}

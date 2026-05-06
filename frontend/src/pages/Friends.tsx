@@ -146,7 +146,7 @@ const Friends = () => {
     refetch: refetchFriends,
   } = useReadFriendsApiV1SiteFriendsGet(undefined, {
     query: {
-      staleTime: 15 * 60_000,
+      staleTime: 5 * 60_000,
       gcTime: 30 * 60_000,
     },
   });
@@ -164,7 +164,7 @@ const Friends = () => {
       query: {
         refetchInterval: autoRefreshMs,
         refetchOnWindowFocus: false,
-        staleTime: 2 * 60_000,
+        staleTime: 60_000,
         gcTime: 20 * 60_000,
       },
     },

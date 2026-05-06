@@ -44,9 +44,10 @@ const FooterRepoIcon = ({ className }: { className?: string }) => (
 
 interface FooterProps {
   enabled?: boolean;
+  className?: string;
 }
 
-const Footer = ({ enabled = true }: FooterProps) => {
+const Footer = ({ enabled = true, className = "" }: FooterProps) => {
   const site = useSiteConfig();
   const { t } = useFrontendI18n();
   const { theme, setTheme } = useTheme();
@@ -130,7 +131,7 @@ const Footer = ({ enabled = true }: FooterProps) => {
   }, [heatmapResponse?.data?.weeks]);
 
   return (
-    <footer className="mt-16 w-full">
+    <footer className={`mt-16 w-full ${className}`.trim()}>
       <div className="mx-auto max-w-6xl px-6 lg:px-16">
         <div className="border-t border-[rgb(var(--shiro-divider-rgb)/0.28)] py-5">
           <div className="flex max-w-6xl flex-col gap-2 text-[0.78rem] leading-5">

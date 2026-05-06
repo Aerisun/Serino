@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import type { Transition } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import { transition } from "@/config";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { usePageConfig, useSiteConfig } from "@/contexts/runtime-config";
+import { useSiteConfig } from "@/contexts/runtime-config";
 import { SocialIcon } from "@/components/icons/SocialIcon";
 import { API_BASE_PATH } from "@/lib/api";
 import { useDeferredActivation } from "@/hooks/useDeferredActivation";
-import { warmInternalHref } from "@/lib/route-preload";
+import { preloadInternalHref } from "@/lib/route-preload";
 
 const EMPTY_POEMS = [""];
 const POEM_PREVIEW_ENDPOINT = `${API_BASE_PATH}/v1/site/poem-preview`;
@@ -100,9 +99,7 @@ const resolveInternalHref = (href: string) => {
 const HeroContent = () => {
   const prefersReducedMotion = useReducedMotionPreference();
   const site = useSiteConfig();
-  const pages = usePageConfig();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const heroSocialLinks = site.socialLinks.filter(
     (link) => link.placement === "hero" || link.placement === "both",
   );
@@ -122,9 +119,9 @@ const HeroContent = () => {
     : socialRevealDelay + heroSocialLinks.length * 0.07 + 0.08;
   const warmHref = useCallback(
     (href: string) => {
-      void warmInternalHref({ href, queryClient, pages });
+      void preloadInternalHref({ href });
     },
-    [pages, queryClient],
+    [],
   );
 
   useEffect(() => {

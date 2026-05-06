@@ -15,14 +15,14 @@ import { FrontendLanguageProvider } from "@/i18n";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
-import { useFeatureFlags, usePageConfig, useSiteConfig } from "@/contexts/runtime-config";
+import { useFeatureFlags, useSiteConfig } from "@/contexts/runtime-config";
 import { lazyWithPreload } from "@/lib/lazy";
 import type { RuntimeConfigSnapshot } from "@/lib/runtime-config";
 import { useDeferredActivation } from "@/hooks/useDeferredActivation";
 import { scheduleIdleTask, shouldBackgroundPrefetch } from "@/lib/idle";
 import {
+  preloadInternalHref,
   prefetchHomeActivityData,
-  warmInternalHref,
 } from "@/lib/route-preload";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -45,6 +45,8 @@ const QUERY_CACHE_TTL_MS = 10 * 60_000;
 const CONTENT_FRESHNESS_STORAGE_KEY = "aerisun:content-updated:v1";
 const CONTENT_REFRESH_INTERVAL_MS = 60_000;
 const CONTENT_REFRESH_COOLDOWN_MS = 15_000;
+const BACKGROUND_ROUTE_PRELOAD_DELAY_MS = 3_200;
+const BACKGROUND_ROUTE_PRELOAD_GAP_MS = 320;
 
 const shouldPersistQueryKey = (queryKey: readonly unknown[]) => {
   const [first] = queryKey;
@@ -264,7 +266,6 @@ function ContentFreshnessManager() {
 function AppContent() {
   const featureFlags = useFeatureFlags();
   const site = useSiteConfig();
-  const pages = usePageConfig();
   const queryClient = useQueryClient();
   const readingProgressActive = useDeferredActivation(featureFlags.reading_progress, [
     featureFlags.reading_progress,
@@ -304,10 +305,16 @@ function AppContent() {
   }, [openSearch, openSubscribe]);
 
   useEffect(() => {
-    if (!shouldBackgroundPrefetch()) {
+    if (
+      !shouldBackgroundPrefetch() ||
+      typeof window === "undefined" ||
+      window.location.pathname !== "/"
+    ) {
       return;
     }
 
+    let cancelled = false;
+    const gapTimers = new Set<number>();
     const targets = Array.from(
       new Set(
         [
@@ -320,13 +327,42 @@ function AppContent() {
       ),
     );
 
-    return scheduleIdleTask(() => {
-      void Promise.allSettled([
-        ...targets.map((href) => warmInternalHref({ href, queryClient, pages })),
-        prefetchHomeActivityData(queryClient),
-      ]);
-    }, 1_800);
-  }, [pages, queryClient, site.heroActions, site.navigation]);
+    const isStillHome = () => !cancelled && window.location.pathname === "/";
+    const waitForGap = () =>
+      new Promise<void>((resolve) => {
+        const timer = window.setTimeout(() => {
+          gapTimers.delete(timer);
+          resolve();
+        }, BACKGROUND_ROUTE_PRELOAD_GAP_MS);
+        gapTimers.add(timer);
+      });
+
+    const preloadRoutes = async () => {
+      for (const href of targets) {
+        if (!isStillHome()) {
+          return;
+        }
+
+        await preloadInternalHref({ href });
+        await waitForGap();
+      }
+
+      if (isStillHome()) {
+        await prefetchHomeActivityData(queryClient);
+      }
+    };
+
+    const cancelIdleTask = scheduleIdleTask(() => {
+      void preloadRoutes();
+    }, BACKGROUND_ROUTE_PRELOAD_DELAY_MS);
+
+    return () => {
+      cancelled = true;
+      cancelIdleTask();
+      gapTimers.forEach((timer) => window.clearTimeout(timer));
+      gapTimers.clear();
+    };
+  }, [queryClient, site.heroActions, site.navigation]);
 
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

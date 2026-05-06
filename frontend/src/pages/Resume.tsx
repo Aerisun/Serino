@@ -28,6 +28,8 @@ const Resume = () => {
       metaDescription={config.metaDescription}
       width="wide"
       contentClassName="mt-0"
+      mainClassName="max-sm:!px-4 max-sm:!pb-8"
+      footerClassName="max-sm:!mt-6"
       compactHeader
     >
       <motion.div

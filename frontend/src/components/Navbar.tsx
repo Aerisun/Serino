@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -18,8 +17,8 @@ import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useSiteAuth } from "@/contexts/use-site-auth";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
-import { usePageConfig, useSiteConfig } from "@/contexts/runtime-config";
-import { warmInternalHref } from "@/lib/route-preload";
+import { useSiteConfig } from "@/contexts/runtime-config";
+import { preloadInternalHref } from "@/lib/route-preload";
 import type { NavItem } from "@/lib/runtime-config";
 
 type NavbarGlassVariant = "default" | "hero";
@@ -279,10 +278,8 @@ interface NavbarProps {
 const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
   const { t } = useFrontendI18n();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const location = useLocation();
   const site = useSiteConfig();
-  const pages = usePageConfig();
   const subscriptionAvailable = site.featureFlags.content_subscription;
   const [visible, setVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -401,9 +398,9 @@ const Navbar = ({ glassVariant = "default" }: NavbarProps) => {
       if (!href) {
         return;
       }
-      void warmInternalHref({ href, queryClient, pages });
+      void preloadInternalHref({ href });
     },
-    [pages, queryClient],
+    [],
   );
 
   const mobileMenu =

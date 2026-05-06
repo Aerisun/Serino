@@ -21,8 +21,8 @@ import { getBeijingNowParts } from "@/lib/time";
 
 type RuntimePages = RuntimeConfigSnapshot["pages"];
 
-const PREFETCH_STALE_TIME_MS = 5 * 60_000;
-const PREFETCH_GC_TIME_MS = 20 * 60_000;
+const PREFETCH_STALE_TIME_MS = 60_000;
+const PREFETCH_GC_TIME_MS = 10 * 60_000;
 const RECENT_ACTIVITY_LIMIT = 8;
 const FRIEND_FEED_HOME_LIMIT = 12;
 const FRIEND_FEED_PAGE_LIMIT = 200;
@@ -123,6 +123,61 @@ export const preloadFriendsPage = () => import("@/pages/Friends");
 export const preloadGuestbookPage = () => import("@/pages/Guestbook");
 export const preloadCalendarPage = () => import("@/pages/CalendarPage");
 export const preloadResumePage = () => import("@/pages/Resume");
+
+const modulePreloadInFlight = new Map<string, Promise<void>>();
+const routeWarmupInFlight = new Map<string, Promise<void>>();
+
+const onceInFlight = (
+  store: Map<string, Promise<void>>,
+  key: string,
+  task: () => Promise<unknown>,
+) => {
+  const existing = store.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = task()
+    .then(() => undefined)
+    .finally(() => {
+      store.delete(key);
+    });
+  store.set(key, promise);
+  return promise;
+};
+
+const getModulePreloadTask = (pathname: string) => {
+  if (pathname === "/posts") return preloadPostsPage;
+  if (pathname.startsWith("/posts/")) return preloadPostDetailPage;
+  if (pathname === "/diary") return preloadDiaryPage;
+  if (pathname.startsWith("/diary/")) return preloadDiaryDetailPage;
+  if (pathname === "/thoughts") return preloadThoughtsPage;
+  if (pathname === "/excerpts") return preloadExcerptsPage;
+  if (pathname === "/friends") return preloadFriendsPage;
+  if (pathname === "/guestbook") return preloadGuestbookPage;
+  if (pathname === "/calendar") return preloadCalendarPage;
+  if (pathname === "/resume") return preloadResumePage;
+  return null;
+};
+
+export const preloadInternalHref = async ({
+  href,
+}: {
+  href: string | null | undefined;
+}) => {
+  const internalPath = normalizeInternalPath(href);
+  if (!internalPath) {
+    return;
+  }
+
+  const [pathname] = internalPath.split(/[?#]/, 1);
+  const preloadTask = getModulePreloadTask(pathname);
+  if (!preloadTask) {
+    return;
+  }
+
+  await onceInFlight(modulePreloadInFlight, pathname, preloadTask).catch(() => undefined);
+};
 
 export const prefetchPostsData = (queryClient: QueryClient, pages?: RuntimePages) => {
   const pageSize = readPageSize(pages, "posts", 15);
@@ -341,60 +396,62 @@ export const warmInternalHref = async ({
 
   const [pathname] = internalPath.split(/[?#]/, 1);
 
-  if (pathname === "/posts") {
-    await Promise.allSettled([preloadPostsPage(), prefetchPostsData(queryClient, pages)]);
-    return;
-  }
-
-  if (pathname.startsWith("/posts/")) {
-    const slug = decodeURIComponent(pathname.slice("/posts/".length));
-    if (!slug) {
+  await onceInFlight(routeWarmupInFlight, pathname, async () => {
+    if (pathname === "/posts") {
+      await Promise.allSettled([preloadPostsPage(), prefetchPostsData(queryClient, pages)]);
       return;
     }
-    await Promise.allSettled([preloadPostDetailPage(), prefetchPostDetailData(queryClient, slug)]);
-    return;
-  }
 
-  if (pathname === "/diary") {
-    await Promise.allSettled([preloadDiaryPage(), prefetchDiaryData(queryClient, pages)]);
-    return;
-  }
-
-  if (pathname.startsWith("/diary/")) {
-    const slug = decodeURIComponent(pathname.slice("/diary/".length));
-    if (!slug) {
+    if (pathname.startsWith("/posts/")) {
+      const slug = decodeURIComponent(pathname.slice("/posts/".length));
+      if (!slug) {
+        return;
+      }
+      await Promise.allSettled([preloadPostDetailPage(), prefetchPostDetailData(queryClient, slug)]);
       return;
     }
-    await Promise.allSettled([preloadDiaryDetailPage(), prefetchDiaryDetailData(queryClient, slug)]);
-    return;
-  }
 
-  if (pathname === "/thoughts") {
-    await Promise.allSettled([preloadThoughtsPage(), prefetchThoughtsData(queryClient, pages)]);
-    return;
-  }
+    if (pathname === "/diary") {
+      await Promise.allSettled([preloadDiaryPage(), prefetchDiaryData(queryClient, pages)]);
+      return;
+    }
 
-  if (pathname === "/excerpts") {
-    await Promise.allSettled([preloadExcerptsPage(), prefetchExcerptsData(queryClient, pages)]);
-    return;
-  }
+    if (pathname.startsWith("/diary/")) {
+      const slug = decodeURIComponent(pathname.slice("/diary/".length));
+      if (!slug) {
+        return;
+      }
+      await Promise.allSettled([preloadDiaryDetailPage(), prefetchDiaryDetailData(queryClient, slug)]);
+      return;
+    }
 
-  if (pathname === "/friends") {
-    await Promise.allSettled([preloadFriendsPage(), prefetchFriendsData(queryClient)]);
-    return;
-  }
+    if (pathname === "/thoughts") {
+      await Promise.allSettled([preloadThoughtsPage(), prefetchThoughtsData(queryClient, pages)]);
+      return;
+    }
 
-  if (pathname === "/guestbook") {
-    await warmGuestbookPage();
-    return;
-  }
+    if (pathname === "/excerpts") {
+      await Promise.allSettled([preloadExcerptsPage(), prefetchExcerptsData(queryClient, pages)]);
+      return;
+    }
 
-  if (pathname === "/calendar") {
-    await warmCalendarPage(queryClient, { includeNeighbors: true });
-    return;
-  }
+    if (pathname === "/friends") {
+      await Promise.allSettled([preloadFriendsPage(), prefetchFriendsData(queryClient)]);
+      return;
+    }
 
-  if (pathname === "/resume") {
-    await preloadResumePage();
-  }
+    if (pathname === "/guestbook") {
+      await warmGuestbookPage();
+      return;
+    }
+
+    if (pathname === "/calendar") {
+      await warmCalendarPage(queryClient, { includeNeighbors: true });
+      return;
+    }
+
+    if (pathname === "/resume") {
+      await preloadResumePage();
+    }
+  }).catch(() => undefined);
 };

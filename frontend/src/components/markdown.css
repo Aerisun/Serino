@@ -312,29 +312,36 @@ code:not([class*="language-"]) {
 }
 
 .prose .markdown-target-flash {
-  animation: markdown-target-flash 1.4s ease;
+  animation: markdown-target-flash 2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .prose .markdown-target-hover {
-  background-color: rgb(var(--shiro-accent-rgb) / 0.05);
-  box-shadow: 0 0 0 1px rgb(var(--shiro-accent-rgb) / 0.08);
-  border-radius: 0.85rem;
+  border-left-color: rgb(var(--shiro-accent-rgb) / 0.72);
+  color: rgb(var(--shiro-accent-rgb) / 0.88);
+  transition:
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
 @keyframes markdown-target-flash {
   0% {
-    box-shadow: 0 0 0 0 rgb(var(--shiro-accent-rgb) / 0);
-    background-color: transparent;
+    border-left-color: rgb(var(--shiro-accent-rgb) / 0.34);
+    color: inherit;
   }
 
-  22% {
-    box-shadow: 0 0 0 8px rgb(var(--shiro-accent-rgb) / 0.09);
-    background-color: rgb(var(--shiro-accent-rgb) / 0.08);
+  24% {
+    border-left-color: rgb(var(--shiro-accent-rgb) / 0.92);
+    color: rgb(var(--shiro-accent-rgb) / 0.9);
+  }
+
+  58% {
+    border-left-color: rgb(var(--shiro-accent-rgb) / 0.66);
+    color: rgb(var(--shiro-accent-rgb) / 0.76);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgb(var(--shiro-accent-rgb) / 0);
-    background-color: transparent;
+    border-left-color: rgb(var(--shiro-accent-rgb) / 0.34);
+    color: inherit;
   }
 }
 
@@ -1416,6 +1423,38 @@ code:not([class*="language-"]) {
 
 .single-resume-markdown.prose strong {
   color: rgb(var(--shiro-foreground-rgb) / 0.92);
+}
+
+@media (max-width: 639px) {
+  .single-resume-markdown.prose {
+    font-size: 0.94rem;
+  }
+
+  .single-resume-markdown.prose h2 {
+    margin-top: 1.55rem;
+    margin-bottom: 0.7rem;
+    padding-top: 0.75rem;
+    letter-spacing: 0.18em;
+  }
+
+  .single-resume-markdown.prose h2:first-child {
+    margin-top: 0;
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .single-resume-markdown.prose h3 {
+    margin-top: 1rem;
+  }
+
+  .single-resume-markdown.prose p,
+  .single-resume-markdown.prose li {
+    line-height: 1.76;
+  }
+
+  .single-resume-markdown.prose > :last-child {
+    margin-bottom: 0;
+  }
 }
 
 .detail-markdown.prose {

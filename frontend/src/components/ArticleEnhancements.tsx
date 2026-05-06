@@ -1,4 +1,5 @@
 import TableOfContents from "@/components/TableOfContents";
+import { useMemo } from "react";
 
 interface ArticleEnhancementsProps {
   containerRef: React.RefObject<HTMLElement | null>;
@@ -11,7 +12,7 @@ export default function ArticleEnhancements({
   content,
   enableToc,
 }: ArticleEnhancementsProps) {
-  const contentKey = [content];
+  const contentKey = useMemo(() => [content], [content]);
 
   return (
     <>
