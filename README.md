@@ -117,13 +117,13 @@ cd backend && uv sync --dev
 
 # 3. 启动开发环境（支持多工作树）
 make dev        # 启动方式 1：灌入开发用假数据 (Dev Seed)
+make dev-ts     # 同 make dev 但是开启 Tailscale Serve 转发，方便手机/远程设备访问
 make dev-pseed  # 启动方式 2：灌入生产初始化数据，用于调整生产种子 (Prod Seed)
 # 密码改废进不了后台? 试试 cd backend & uv run aerisun-create-admin
-# 布置：sudo tailscale serve --bg --http 8080 http://127.0.0.1:8080 或 3001 http://127.0.0.1:3001 ；清空：sudo tailscale serve reset
 
 
 
-make dev-stop   # 停止整套本地开发环境
+make dev-stop   # 停止整套本地开发环境，并释放 dev-ts 开启的 Tailscale 转发
 
 curl -fsSL https://install.aerisun.top/serino/dev/vX.Y.Z/install.sh | bash # 测试安装（除了使用最新的 dev 渠道和镜像来源，别的与正式安装器完全一致）
 # 单台机器一次只应选择一个渠道，切换先行 `sercli uninstall --force` 再重装；因为 CDN 缓存的关系，所以使用版本号避免错误

@@ -1,13 +1,19 @@
-.PHONY: dev dev-pseed dev-smoke dev-stop check-secrets install-git-hooks docker-dev docker-prod docker-smoke setup-ports
+.PHONY: dev dev-ts dev-pseed dev-smoke dev-stop check-secrets install-git-hooks docker-dev docker-prod docker-smoke setup-ports
+
+DEV_TAILSCALE_SERVE ?= 0
 
 # ── 本地开发（不走 Docker）──────────────────────────────
 dev: 
+	@if [ "$(DEV_TAILSCALE_SERVE)" = "1" ]; then bash ./scripts/dev-tailscale.sh authorize ./.env.development.local; fi
 	@bash ./scripts/setup-ports.sh
-	@AERISUN_SEED_DEV_DATA=true AERISUN_SEED_PROFILE=dev-seed bash ./scripts/dev-start.sh
+	@AERISUN_DEV_TAILSCALE=$(DEV_TAILSCALE_SERVE) AERISUN_SEED_DEV_DATA=true AERISUN_SEED_PROFILE=dev-seed bash ./scripts/dev-start.sh
+
+dev-ts: DEV_TAILSCALE_SERVE=1
+dev-ts: dev
 
 dev-pseed:
 	@bash ./scripts/setup-ports.sh
-	@AERISUN_SEED_DEV_DATA=false AERISUN_SEED_PROFILE=seed bash ./scripts/dev-start.sh
+	@AERISUN_DEV_TAILSCALE=$(DEV_TAILSCALE_SERVE) AERISUN_SEED_DEV_DATA=false AERISUN_SEED_PROFILE=seed bash ./scripts/dev-start.sh
 
 dev-smoke:
 	@bash ./scripts/dev-smoke.sh

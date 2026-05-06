@@ -5,6 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DEV_DIR="${PROJECT_DIR}/.dev"
 PID_FILE="${DEV_STACK_PID_FILE:-${DEV_DIR}/dev.pid}"
+ENV_FILE="${PROJECT_DIR}/.env.development.local"
+
+# shellcheck source=./dev-tailscale.sh
+source "${SCRIPT_DIR}/dev-tailscale.sh"
+
+ENABLE_TAILSCALE_SERVE="${AERISUN_DEV_TAILSCALE:-0}"
 
 source_env_file() {
   if [[ -f "$1" ]]; then
@@ -46,7 +52,26 @@ wait_for_backend_ready() {
   done
 }
 
-if [[ ! -f "${PROJECT_DIR}/.env.development.local" ]]; then
+wait_for_tcp_port() {
+  local name="$1"
+  local port="$2"
+  local owner_pid="$3"
+
+  while true; do
+    if ss -tlnH "sport = :${port}" | grep -q .; then
+      return 0
+    fi
+
+    if ! kill -0 "${owner_pid}" >/dev/null 2>&1; then
+      echo "ERROR: ${name} process ${owner_pid} exited before port ${port} became ready." >&2
+      return 1
+    fi
+
+    sleep 1
+  done
+}
+
+if [[ ! -f "${ENV_FILE}" ]]; then
   echo "ERROR: .env.development.local is missing. Run 'make setup-ports' first." >&2
   exit 1
 fi
@@ -87,9 +112,14 @@ fi
 
 cleanup() {
   DEV_STOP_SKIP_LAUNCHER=1 bash "${SCRIPT_DIR}/dev-stop.sh" >/dev/null 2>&1 || true
+  dev_tailscale_stop_sudo_keepalive
 }
 
 trap cleanup EXIT INT TERM
+
+if dev_tailscale_is_truthy "${ENABLE_TAILSCALE_SERVE}"; then
+  dev_tailscale_start_sudo_keepalive
+fi
 
 
 if [[ ! -d "${PROJECT_DIR}/frontend/node_modules/@serino/theme" ]]; then
@@ -132,6 +162,9 @@ frontend_pid=$!
 ( cd "${PROJECT_DIR}/admin" && exec npx vite --mode development ) &
 admin_pid=$!
 
+tailscale_frontend_port="${AERISUN_FRONTEND_PORT:-8080}"
+tailscale_admin_port="${AERISUN_ADMIN_PORT:-3001}"
+
 cat >"${PID_FILE}" <<EOF
 launcher_pid=$$
 backend_pid=$backend_pid
@@ -139,6 +172,12 @@ frontend_pid=$frontend_pid
 admin_pid=$admin_pid
 project_dir=${PROJECT_DIR}
 EOF
+
+if dev_tailscale_is_truthy "${ENABLE_TAILSCALE_SERVE}"; then
+  wait_for_tcp_port "前台" "${tailscale_frontend_port}" "${frontend_pid}"
+  wait_for_tcp_port "管理后台" "${tailscale_admin_port}" "${admin_pid}"
+  dev_tailscale_enable "${ENV_FILE}" "${tailscale_frontend_port}" "${tailscale_admin_port}"
+fi
 
 echo "🎊 后端开发栈已启动。PID 已写入 ${PID_FILE}"
 
