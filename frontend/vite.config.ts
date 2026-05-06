@@ -200,6 +200,10 @@ export default defineConfig(({ mode }) => {
       footerBuildObfuscationPlugin(),
       performanceBudgetPlugin(),
       VitePWA({
+        // Retire previously shipped service workers that could keep serving stale
+        // HTML/CSS after Docker upgrades. New pages should not register it again.
+        selfDestroying: true,
+        injectRegister: false,
         registerType: "autoUpdate",
         manifest: false,
         workbox: {

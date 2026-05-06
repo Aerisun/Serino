@@ -149,6 +149,22 @@ assert_body_not_contains() {
   rm -f "${body_file}"
 }
 
+assert_body_contains() {
+  local url="$1"
+  local label="$2"
+  local pattern="$3"
+  local body_file
+
+  body_file="$(mktemp)"
+  curl --noproxy '*' -fsS "${url}" -o "${body_file}"
+  if ! grep -Eiq "${pattern}" "${body_file}"; then
+    echo "ERROR: ${label} did not match required pattern (${pattern}): ${url}" >&2
+    rm -f "${body_file}"
+    return 1
+  fi
+  rm -f "${body_file}"
+}
+
 build_local_images() {
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" ./backend
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" -f Dockerfile.caddy .
@@ -228,6 +244,8 @@ assert_spa_response "${SITE_URL}${ADMIN_BASE_PATH}posts" "admin deep link"
 assert_cache_control "${SITE_URL}/posts" "frontend SPA fallback" "no-cache"
 assert_cache_control "${SITE_URL}/sw.js" "frontend service worker" "no-cache"
 assert_cache_control "${SITE_URL}/registerSW.js" "frontend service worker registration" "no-cache"
-assert_body_not_contains "${SITE_URL}/sw.js" "service worker runtime cache policy" "api-cache|bootstrap-cache|media-cache|createHandlerBoundToURL"
+assert_body_not_contains "${SITE_URL}/sw.js" "service worker cache policy" "api-cache|bootstrap-cache|media-cache|asset-cache|precacheAndRoute|CacheFirst|createHandlerBoundToURL|workbox"
+assert_body_contains "${SITE_URL}/sw.js" "service worker retirement" "registration\\.unregister\\("
+assert_body_not_contains "${SITE_URL}/registerSW.js" "service worker registration shim" "serviceWorker\\.register|navigator\\.serviceWorker"
 
 echo "Docker smoke test passed for ${SITE_URL}"
