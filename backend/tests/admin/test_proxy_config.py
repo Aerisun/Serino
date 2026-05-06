@@ -171,6 +171,75 @@ def test_admin_outbound_proxy_healthcheck_tries_host_gateway_when_localhost_unav
     assert captured["proxy"] == "http://host.docker.internal:7890"
 
 
+def test_admin_outbound_proxy_healthcheck_explains_container_proxy_connectivity_failure(
+    client,
+    admin_headers,
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {"addresses": []}
+
+    def fake_create_connection(address, timeout):
+        captured["addresses"].append(address)
+        raise ConnectionRefusedError(111, "Connection refused")
+
+    monkeypatch.setattr("aerisun.domain.outbound_proxy.service.socket.create_connection", fake_create_connection)
+    monkeypatch.setattr(
+        "aerisun.domain.outbound_proxy.service._read_default_gateway_ip",
+        lambda: "172.17.0.1",
+    )
+
+    response = client.post(
+        "/api/v1/admin/proxy-config/test",
+        headers=admin_headers,
+        json={"proxy_port": 7890},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["proxy_url"] == "http://127.0.0.1:7890"
+    assert ("127.0.0.1", 7890) in captured["addresses"]
+    assert ("host.docker.internal", 7890) in captured["addresses"]
+    assert ("172.17.0.1", 7890) in captured["addresses"]
+    assert "代理端口 7890 暂时不可用" in payload["summary"]
+    assert "127.0.0.1:7890 连接被拒绝" in payload["summary"]
+    assert "host.docker.internal:7890 连接被拒绝" in payload["summary"]
+    assert "Docker 容器访问不到" in payload["summary"]
+    assert "监听 Docker 可达地址" in payload["summary"]
+
+
+def test_admin_outbound_proxy_healthcheck_explains_forwarding_failure(
+    client,
+    admin_headers,
+    monkeypatch,
+) -> None:
+    def fake_create_connection(_address, timeout):
+        return nullcontext()
+
+    def fake_get(_url, *, proxy=None, timeout=None, follow_redirects=False, trust_env=True):
+        raise httpx.ConnectError("proxy tunnel failed")
+
+    monkeypatch.setattr("aerisun.domain.outbound_proxy.service.socket.create_connection", fake_create_connection)
+    monkeypatch.setattr("aerisun.domain.outbound_proxy.service.httpx.get", fake_get)
+    monkeypatch.setattr(
+        "aerisun.domain.outbound_proxy.service._read_default_gateway_ip",
+        lambda: None,
+    )
+
+    response = client.post(
+        "/api/v1/admin/proxy-config/test",
+        headers=admin_headers,
+        json={"proxy_port": 7890},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is False
+    assert "端口已连通，但代理转发测试失败" in payload["summary"]
+    assert "确认填写的是 HTTP/HTTPS 代理端口" in payload["summary"]
+    assert "节点或出站网络是否可用" in payload["summary"]
+
+
 def test_send_outbound_request_prefers_reachable_host_gateway_proxy(seeded_session, monkeypatch) -> None:
     from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
     from aerisun.domain.outbound_proxy.service import send_outbound_request, update_outbound_proxy_config

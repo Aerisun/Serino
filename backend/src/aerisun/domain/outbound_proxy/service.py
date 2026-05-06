@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 import socket
 import threading
@@ -160,6 +161,50 @@ def _proxy_env_urls() -> list[str]:
     return values
 
 
+def _format_proxy_connection_error(host: str, port: int, exc: OSError) -> str:
+    raw = str(exc).strip()
+    raw_suffix = f"：{raw}" if raw else ""
+    exc_errno = getattr(exc, "errno", None)
+    raw_lower = raw.lower()
+
+    if exc_errno == errno.ECONNREFUSED or "connection refused" in raw_lower:
+        return f"{host}:{port} 连接被拒绝（这个地址上没有代理服务在监听）{raw_suffix}"
+    if exc_errno == errno.ETIMEDOUT or "timed out" in raw_lower or "timeout" in raw_lower:
+        return f"{host}:{port} 连接超时（容器到这个地址不可达，或被防火墙拦截）{raw_suffix}"
+    if exc_errno in {errno.EHOSTUNREACH, errno.ENETUNREACH} or "no route to host" in raw_lower:
+        return f"{host}:{port} 网络不可达（容器没有到这个地址的路由）{raw_suffix}"
+    return f"{host}:{port} 无法连接{raw_suffix}"
+
+
+def _format_proxy_forward_error(proxy_url: str, exc: httpx.HTTPError) -> str:
+    return f"{proxy_url} 端口已连通，但代理转发测试失败：{exc}"
+
+
+def _format_proxy_health_failure_summary(port: int, candidate_errors: list[tuple[str, str]]) -> str:
+    if not candidate_errors:
+        return "没有可用的代理候选地址。"
+
+    detail = "；".join(message for _kind, message in candidate_errors)
+    has_connection_error = any(kind == "connect" for kind, _message in candidate_errors)
+    has_forward_error = any(kind == "forward" for kind, _message in candidate_errors)
+    base = f"代理端口 {port} 暂时不可用。后端已从容器内尝试常见地址，但都没有成功：{detail}。"
+
+    if has_forward_error and not has_connection_error:
+        return (
+            f"{base}代理端口可以连上，但没有成功完成出站请求；请确认填写的是 HTTP/HTTPS 代理端口，"
+            "并检查 Mihomo/Clash 节点或出站网络是否可用。"
+        )
+    if has_forward_error:
+        return (
+            f"{base}部分地址无法连接，部分地址能连上但代理转发失败；请优先确认 Mihomo/Clash 的监听地址、"
+            "代理端口类型和节点网络。"
+        )
+    return (
+        f"{base}如果 Mihomo/Clash 只监听宿主机 127.0.0.1，Docker 容器访问不到它；"
+        "请让代理监听 Docker 可达地址（例如 0.0.0.0 或宿主机桥接地址），并用防火墙限制只允许 Docker 网段访问。"
+    )
+
+
 def _try_proxy_candidates(
     method: str,
     url: str,
@@ -281,7 +326,7 @@ def test_outbound_proxy_config(
 
     proxy_urls = _proxy_candidate_urls(config.proxy_port)
     started_at = time.perf_counter()
-    candidate_errors: list[str] = []
+    candidate_errors: list[tuple[str, str]] = []
 
     for proxy_url in proxy_urls:
         parts = urlsplit(proxy_url)
@@ -290,7 +335,7 @@ def test_outbound_proxy_config(
             with socket.create_connection((host, config.proxy_port), timeout=3.0):
                 pass
         except OSError as exc:
-            candidate_errors.append(f"{host}:{config.proxy_port} 无法连接：{exc}")
+            candidate_errors.append(("connect", _format_proxy_connection_error(host, config.proxy_port, exc)))
             continue
 
         try:
@@ -302,7 +347,7 @@ def test_outbound_proxy_config(
                 trust_env=False,
             )
         except httpx.HTTPError as exc:
-            candidate_errors.append(f"{proxy_url} 转发失败：{exc}")
+            candidate_errors.append(("forward", _format_proxy_forward_error(proxy_url, exc)))
             continue
 
         latency_ms = int((time.perf_counter() - started_at) * 1000)
@@ -321,10 +366,9 @@ def test_outbound_proxy_config(
         )
 
     latency_ms = int((time.perf_counter() - started_at) * 1000)
-    summary = "；".join(candidate_errors[:3]) if candidate_errors else "没有可用的代理候选地址"
     return OutboundProxyHealthRead(
         ok=False,
         proxy_url=proxy_urls[0] if proxy_urls else _build_proxy_url(config.proxy_port),
-        summary=summary,
+        summary=_format_proxy_health_failure_summary(config.proxy_port, candidate_errors),
         latency_ms=latency_ms,
     )
