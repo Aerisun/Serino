@@ -124,8 +124,7 @@ def build_avatar_candidate_batch(
     if not normalized_identity or "@" not in normalized_identity:
         raise ValidationError("请输入有效邮箱。")
 
-    indexes, normalized_batch, total_batches = _resolve_avatar_batch(
-        normalized_identity, batch, count)
+    indexes, normalized_batch, total_batches = _resolve_avatar_batch(normalized_identity, batch, count)
     candidates: list[SiteAuthAvatarCandidate] = []
     for pool_index in indexes:
         seed = avatar_seed(normalized_identity, pool_index)
@@ -146,8 +145,7 @@ def build_avatar_candidate_batch(
 
 def suggest_display_name(email: str) -> str:
     local_part = normalize_email(email).split("@", 1)[0]
-    base = local_part.replace(".", " ").replace(
-        "_", " ").replace("-", " ").strip()
+    base = local_part.replace(".", " ").replace("_", " ").replace("-", " ").strip()
     return normalize_display_name(base.title() or "Visitor") or "Visitor"
 
 
@@ -173,8 +171,7 @@ def resolve_admin_avatar_url(session: Session) -> str:
         if resolved:
             return resolved
 
-    asset = session.query(Asset).filter(
-        Asset.category == "hero-image").order_by(Asset.created_at.asc()).first()
+    asset = session.query(Asset).filter(Asset.category == "hero-image").order_by(Asset.created_at.asc()).first()
     if asset is not None:
         resource_key = str(asset.resource_key or "").strip()
         if resource_key:
@@ -245,8 +242,7 @@ def user_to_read(
         primary_auth_provider=user.primary_auth_provider,
         is_admin=admin_identity.is_admin,
         can_access_admin_console=bool(
-            admin_identity.is_admin and admin_console_auth_method_enabled(
-                session, verified_provider)
+            admin_identity.is_admin and admin_console_auth_method_enabled(session, verified_provider)
         ),
         last_login_at=user.last_login_at,
     )
@@ -289,8 +285,7 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
     if not normalized_email or "@" not in normalized_email:
         raise ValidationError("请输入有效邮箱。")
 
-    admin_identity = repo.find_admin_email_identity(
-        session, email=normalized_email)
+    admin_identity = repo.find_admin_email_identity(session, email=normalized_email)
     admin_verified_provider = None
     if admin_identity is not None and admin_identity.admin_user_id:
         provided_password = (payload.admin_password or "").strip()
@@ -312,7 +307,7 @@ def login_with_email(session: Session, payload: EmailLoginRequest) -> tuple[Emai
             session,
             admin_identity.admin_user_id,
             provided_password,
-            invalid_message=" 管理台密码错误",
+            invalid_message="管理台密码错误。",
         )
         admin_verified_provider = "email"
 
