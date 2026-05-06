@@ -689,6 +689,16 @@ body {
   box-shadow: var(--admin-focus-ring);
 }
 
+.markdown-image-upload-field.admin-glass-input,
+.markdown-image-upload-field.admin-glass-input:focus,
+.markdown-image-upload-field.admin-glass-input:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+}
+
 @media (max-width: 767px) {
   .resume-edit-surface {
     background: rgb(var(--admin-surface-1) / 0.96);

@@ -155,7 +155,8 @@ export function MarkdownEditor({
     const handleTouchMove = (event: TouchEvent) => {
       const root = mobileComposerRootRef.current;
       const target = event.target instanceof Element ? event.target : null;
-      if (!root || !target || !root.contains(target)) {
+      const isFloatingEditorDialog = Boolean(target.closest("[data-mobile-editor-floating]"));
+      if (!root || !target || (!root.contains(target) && !isFloatingEditorDialog)) {
         event.preventDefault();
         return;
       }
@@ -475,82 +476,117 @@ export function MarkdownEditor({
         }
       }}
     >
-      <DialogContent className="max-w-xl rounded-2xl" hideCloseButton={false}>
-        <DialogHeader className="text-left">
-          <DialogTitle>上传图片</DialogTitle>
-          <DialogDescription>上传后会自动写入用户资源。</DialogDescription>
+      <DialogContent
+        data-mobile-editor-floating="true"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        className="flex max-h-[82dvh] w-[calc(100vw-2rem)] max-w-[22rem] flex-col gap-3 overflow-hidden rounded-2xl p-4 sm:max-h-[min(calc(100dvh-3rem),44rem)] sm:w-full sm:max-w-xl sm:gap-4 sm:p-6"
+        hideCloseButton={false}
+      >
+        <DialogHeader className="pr-8 text-left">
+          <DialogTitle className="text-base sm:text-lg">上传图片</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">上传后会自动写入用户资源。</DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label>上传模式</Label>
-              <NativeSelect
-                value={imageUploadMode}
-                onChange={(event) =>
-                  setImageUploadMode(event.target.value as "compress" | "original")
-                }
-              >
-                <option value="compress">{t("assets.uploadModeCompress")}</option>
-                <option value="original">{t("assets.uploadModeOriginal")}</option>
-              </NativeSelect>
+        <div
+          data-mobile-editor-scroll="true"
+          className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain pr-1 [-webkit-overflow-scrolling:touch]"
+        >
+          <div className="grid gap-3 sm:gap-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>上传模式</Label>
+                <NativeSelect
+                  value={imageUploadMode}
+                  className="markdown-image-upload-field min-h-10 sm:min-h-[2.75rem]"
+                  onChange={(event) =>
+                    setImageUploadMode(event.target.value as "compress" | "original")
+                  }
+                >
+                  <option value="compress">{t("assets.uploadModeCompress")}</option>
+                  <option value="original">{t("assets.uploadModeOriginal")}</option>
+                </NativeSelect>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>选择文件</Label>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageFileChange}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 min-h-10 sm:h-10 sm:min-h-[2.75rem]"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  <span className="truncate">{selectedImageFile ? selectedImageFile.name : "选择文件"}</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label>{t("assets.visibility")}</Label>
+                <Input
+                  value={t("assets.visibilityInternal")}
+                  disabled
+                  className="min-h-10 bg-muted text-muted-foreground sm:min-h-[2.75rem]"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("assets.scope")}</Label>
+                <Input
+                  value={t("assets.scopeUser")}
+                  disabled
+                  className="min-h-10 bg-muted text-muted-foreground sm:min-h-[2.75rem]"
+                />
+              </div>
             </div>
 
             <div className="grid gap-2">
-              <Label>选择文件</Label>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageFileChange}
+              <Label>{t("assets.category")}</Label>
+              <Input
+                value={FIXED_IMAGE_CATEGORY}
+                disabled
+                className="min-h-10 bg-muted text-muted-foreground sm:min-h-[2.75rem]"
               />
-              <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
-                <Upload className="mr-2 h-4 w-4" />
-                {selectedImageFile ? selectedImageFile.name : "选择文件"}
-              </Button>
             </div>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label>{t("assets.visibility")}</Label>
-              <Input value={t("assets.visibilityInternal")} disabled className="bg-muted text-muted-foreground" />
+              <Label>{t("assets.note")}</Label>
+              <Textarea
+                value={imageNote}
+                onChange={(e) => setImageNote(e.target.value)}
+                rows={2}
+                className="markdown-image-upload-field min-h-20"
+                placeholder={t("assets.note")}
+              />
+              <p className="text-xs text-muted-foreground">{t("assets.noteHint")}</p>
             </div>
-            <div className="grid gap-2">
-              <Label>{t("assets.scope")}</Label>
-              <Input value={t("assets.scopeUser")} disabled className="bg-muted text-muted-foreground" />
-            </div>
           </div>
+        </div>
 
-          <div className="grid gap-2">
-            <Label>{t("assets.category")}</Label>
-            <Input value={FIXED_IMAGE_CATEGORY} disabled className="bg-muted text-muted-foreground" />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>{t("assets.note")}</Label>
-            <Textarea
-              value={imageNote}
-              onChange={(e) => setImageNote(e.target.value)}
-              rows={3}
-              placeholder={t("assets.note")}
-            />
-            <p className="text-xs text-muted-foreground">{t("assets.noteHint")}</p>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setImageUploadOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleImageUpload()}
-              disabled={imageUploading || !selectedImageFile}
-            >
-              {imageUploading ? t("assets.compressing") : t("common.confirm")}
-            </Button>
-          </div>
+        <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 pt-3 sm:border-t-0 sm:pt-0">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-10 min-h-10 px-3 sm:min-h-[2.75rem] sm:px-4"
+            onClick={() => setImageUploadOpen(false)}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="button"
+            className="h-10 min-h-10 px-3 sm:min-h-[2.75rem] sm:px-4"
+            onClick={() => void handleImageUpload()}
+            disabled={imageUploading || !selectedImageFile}
+          >
+            {imageUploading ? t("assets.compressing") : t("common.confirm")}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
