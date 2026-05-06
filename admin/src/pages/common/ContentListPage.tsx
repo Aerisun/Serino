@@ -356,74 +356,90 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         }
       />
 
-      <div className="mb-4 grid min-w-0 gap-3 md:flex md:items-center">
+      <div className="mb-4 grid min-w-0 gap-3">
         <Input
           placeholder={t("common.searchPlaceholder")}
-          className="order-1 min-w-0 md:order-2 md:flex-1 lg:max-w-xs"
+          className="min-w-0"
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
         />
-        <div className="order-2 flex min-w-0 flex-col gap-3 md:order-1 md:flex-row md:items-center">
-          <div className="flex min-w-0 shrink-0 items-center gap-2 overflow-x-auto pb-1 md:overflow-visible md:pb-0">
-            <Button
-              variant={visibilityFilter === "" ? "default" : "outline"}
-              className="shrink-0"
-              onClick={() => handleVisibilityChange("")}
-            >
-              {t("common.all")}
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0"
-              aria-label={filterActionsExpanded ? "收起筛选选项" : "展开筛选选项"}
-              aria-expanded={filterActionsExpanded}
-              onClick={() => setFilterActionsExpanded((open) => !open)}
-            >
-              {filterActionsExpanded ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-2",
+              filterActionsExpanded && "w-full",
+            )}
+          >
             <div
               className={cn(
-                "flex items-center gap-2 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out",
+                "flex min-w-0 items-center gap-2",
                 filterActionsExpanded
-                  ? "max-w-[520px] opacity-100 translate-x-0"
-                  : "max-w-0 opacity-0 -translate-x-2 pointer-events-none",
+                  ? "-mx-1 -mb-9 -mt-4 overflow-x-auto px-1 pb-9 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:overflow-visible"
+                  : "overflow-visible",
               )}
             >
-              {visibilityTabs.map((tab) => (
-                <Button
-                  key={tab}
-                  type="button"
-                  size="sm"
-                  variant={visibilityFilter === tab ? "default" : "outline"}
-                  className="shrink-0"
-                  onClick={() => handleVisibilityChange(tab)}
-                >
-                  {t(`status.${tab}`)}
-                </Button>
-              ))}
+              <Button
+                variant={visibilityFilter === "" ? "default" : "outline"}
+                className="shrink-0 !shadow-none"
+                onClick={() => handleVisibilityChange("")}
+              >
+                {t("common.all")}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 !shadow-none"
+                aria-label={filterActionsExpanded ? "收起筛选选项" : "展开筛选选项"}
+                aria-expanded={filterActionsExpanded}
+                onClick={() => setFilterActionsExpanded((open) => !open)}
+              >
+                {filterActionsExpanded ? (
+                  <ChevronLeft className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+              <div
+                className={cn(
+                  "flex items-center gap-2 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-200 ease-out",
+                  filterActionsExpanded
+                    ? "-mx-1 -mb-9 -mt-4 max-w-[520px] translate-x-0 px-1 pb-9 pt-4 opacity-100"
+                    : "max-w-0 opacity-0 -translate-x-2 pointer-events-none",
+                )}
+              >
+                {visibilityTabs.map((tab) => (
+                  <Button
+                    key={tab}
+                    type="button"
+                    size="sm"
+                    variant={visibilityFilter === tab ? "default" : "outline"}
+                    className="shrink-0 !shadow-none"
+                    onClick={() => handleVisibilityChange(tab)}
+                  >
+                    {t(`status.${tab}`)}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-          <NativeSelect
-            value={sort}
-            onChange={(event) => {
-              setSort(event.target.value);
-              setPage(1);
-            }}
-            aria-label={t("common.sortBy")}
-            containerClassName="w-full min-w-0 shrink-0 md:w-[clamp(8.5rem,38vw,13.75rem)]"
-            className="h-9 min-w-0 rounded-md px-3 text-sm"
-          >
-            {sortOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </option>
-            ))}
-          </NativeSelect>
+          {!filterActionsExpanded ? (
+            <NativeSelect
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value);
+                setPage(1);
+              }}
+              aria-label={t("common.sortBy")}
+              containerClassName="w-[clamp(9.25rem,48vw,13.75rem)] min-w-0 shrink-0"
+              className="h-9 min-w-0 rounded-md px-3 text-sm"
+            >
+              {sortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {t(opt.labelKey)}
+                </option>
+              ))}
+            </NativeSelect>
+          ) : null}
         </div>
       </div>
 
