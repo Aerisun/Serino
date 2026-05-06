@@ -61,7 +61,7 @@ class TestDashboardStats:
         ):
             assert key in data
             assert isinstance(data[key], int)
-        assert "posts_by_status" in data
+        assert "posts_by_visibility" in data
         assert "content_by_month" in data
         assert "recent_content" in data
         assert "traffic" in data

@@ -75,6 +75,7 @@ import type {
   BulkActionResponse,
   BulkDeleteRequest,
   BulkStatusRequest,
+  BulkVisibilityRequest,
   CommentAdminRead,
   CommunityConfigAdminRead,
   CommunityConfigUpdate,
@@ -1752,55 +1753,55 @@ export const useBulkDeletePosts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeletePostsMutationOptions(options), queryClient);
     }
     /**
- * @summary 批量更新admin-posts状态
+ * @summary 批量更新admin-posts可见性
  */
-export type bulkStatusPostsResponse200 = {
+export type bulkVisibilityPostsResponse200 = {
   data: BulkActionResponse
   status: 200
 }
 
-export type bulkStatusPostsResponse422 = {
+export type bulkVisibilityPostsResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type bulkStatusPostsResponseSuccess = (bulkStatusPostsResponse200) & {
+export type bulkVisibilityPostsResponseSuccess = (bulkVisibilityPostsResponse200) & {
   headers: Headers;
 };
-export type bulkStatusPostsResponseError = (bulkStatusPostsResponse422) & {
+export type bulkVisibilityPostsResponseError = (bulkVisibilityPostsResponse422) & {
   headers: Headers;
 };
 
-export type bulkStatusPostsResponse = (bulkStatusPostsResponseSuccess | bulkStatusPostsResponseError)
+export type bulkVisibilityPostsResponse = (bulkVisibilityPostsResponseSuccess | bulkVisibilityPostsResponseError)
 
-export const getBulkStatusPostsUrl = () => {
-
-
+export const getBulkVisibilityPostsUrl = () => {
 
 
-  return `/api/v1/admin/posts/bulk-status`
+
+
+  return `/api/v1/admin/posts/bulk-visibility`
 }
 
-export const bulkStatusPosts = async (bulkStatusRequest: BulkStatusRequest, options?: RequestInit): Promise<bulkStatusPostsResponse> => {
+export const bulkVisibilityPosts = async (bulkVisibilityRequest: BulkVisibilityRequest, options?: RequestInit): Promise<bulkVisibilityPostsResponse> => {
 
-  return customInstance<bulkStatusPostsResponse>(getBulkStatusPostsUrl(),
+  return customInstance<bulkVisibilityPostsResponse>(getBulkVisibilityPostsUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      bulkStatusRequest,)
+      bulkVisibilityRequest,)
   }
 );}
 
 
 
 
-export const getBulkStatusPostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
+export const getBulkVisibilityPostsMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityPosts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityPosts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext> => {
 
-const mutationKey = ['bulkStatusPosts'];
+const mutationKey = ['bulkVisibilityPosts'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1810,10 +1811,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusPosts>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkVisibilityPosts>>, {data: BodyType<BulkVisibilityRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusPosts(data,requestOptions)
+          return  bulkVisibilityPosts(data,requestOptions)
         }
 
 
@@ -1823,22 +1824,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type BulkStatusPostsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkStatusPosts>>>
-    export type BulkStatusPostsMutationBody = BodyType<BulkStatusRequest>
-    export type BulkStatusPostsMutationError = ErrorType<HTTPValidationError>
+    export type BulkVisibilityPostsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkVisibilityPosts>>>
+    export type BulkVisibilityPostsMutationBody = BodyType<BulkVisibilityRequest>
+    export type BulkVisibilityPostsMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 批量更新admin-posts状态
+ * @summary 批量更新admin-posts可见性
  */
-export const useBulkStatusPosts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusPosts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useBulkVisibilityPosts = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityPosts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof bulkStatusPosts>>,
+        Awaited<ReturnType<typeof bulkVisibilityPosts>>,
         TError,
-        {data: BodyType<BulkStatusRequest>},
+        {data: BodyType<BulkVisibilityRequest>},
         TContext
       > => {
-      return useMutation(getBulkStatusPostsMutationOptions(options), queryClient);
+      return useMutation(getBulkVisibilityPostsMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取admin-diary列表
@@ -2438,55 +2439,55 @@ export const useBulkDeleteDiary = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteDiaryMutationOptions(options), queryClient);
     }
     /**
- * @summary 批量更新admin-diary状态
+ * @summary 批量更新admin-diary可见性
  */
-export type bulkStatusDiaryResponse200 = {
+export type bulkVisibilityDiaryResponse200 = {
   data: BulkActionResponse
   status: 200
 }
 
-export type bulkStatusDiaryResponse422 = {
+export type bulkVisibilityDiaryResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type bulkStatusDiaryResponseSuccess = (bulkStatusDiaryResponse200) & {
+export type bulkVisibilityDiaryResponseSuccess = (bulkVisibilityDiaryResponse200) & {
   headers: Headers;
 };
-export type bulkStatusDiaryResponseError = (bulkStatusDiaryResponse422) & {
+export type bulkVisibilityDiaryResponseError = (bulkVisibilityDiaryResponse422) & {
   headers: Headers;
 };
 
-export type bulkStatusDiaryResponse = (bulkStatusDiaryResponseSuccess | bulkStatusDiaryResponseError)
+export type bulkVisibilityDiaryResponse = (bulkVisibilityDiaryResponseSuccess | bulkVisibilityDiaryResponseError)
 
-export const getBulkStatusDiaryUrl = () => {
-
-
+export const getBulkVisibilityDiaryUrl = () => {
 
 
-  return `/api/v1/admin/diary/bulk-status`
+
+
+  return `/api/v1/admin/diary/bulk-visibility`
 }
 
-export const bulkStatusDiary = async (bulkStatusRequest: BulkStatusRequest, options?: RequestInit): Promise<bulkStatusDiaryResponse> => {
+export const bulkVisibilityDiary = async (bulkVisibilityRequest: BulkVisibilityRequest, options?: RequestInit): Promise<bulkVisibilityDiaryResponse> => {
 
-  return customInstance<bulkStatusDiaryResponse>(getBulkStatusDiaryUrl(),
+  return customInstance<bulkVisibilityDiaryResponse>(getBulkVisibilityDiaryUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      bulkStatusRequest,)
+      bulkVisibilityRequest,)
   }
 );}
 
 
 
 
-export const getBulkStatusDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
+export const getBulkVisibilityDiaryMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityDiary>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityDiary>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext> => {
 
-const mutationKey = ['bulkStatusDiary'];
+const mutationKey = ['bulkVisibilityDiary'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2496,10 +2497,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusDiary>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkVisibilityDiary>>, {data: BodyType<BulkVisibilityRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusDiary(data,requestOptions)
+          return  bulkVisibilityDiary(data,requestOptions)
         }
 
 
@@ -2509,22 +2510,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type BulkStatusDiaryMutationResult = NonNullable<Awaited<ReturnType<typeof bulkStatusDiary>>>
-    export type BulkStatusDiaryMutationBody = BodyType<BulkStatusRequest>
-    export type BulkStatusDiaryMutationError = ErrorType<HTTPValidationError>
+    export type BulkVisibilityDiaryMutationResult = NonNullable<Awaited<ReturnType<typeof bulkVisibilityDiary>>>
+    export type BulkVisibilityDiaryMutationBody = BodyType<BulkVisibilityRequest>
+    export type BulkVisibilityDiaryMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 批量更新admin-diary状态
+ * @summary 批量更新admin-diary可见性
  */
-export const useBulkStatusDiary = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusDiary>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useBulkVisibilityDiary = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityDiary>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof bulkStatusDiary>>,
+        Awaited<ReturnType<typeof bulkVisibilityDiary>>,
         TError,
-        {data: BodyType<BulkStatusRequest>},
+        {data: BodyType<BulkVisibilityRequest>},
         TContext
       > => {
-      return useMutation(getBulkStatusDiaryMutationOptions(options), queryClient);
+      return useMutation(getBulkVisibilityDiaryMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取admin-thoughts列表
@@ -3124,55 +3125,55 @@ export const useBulkDeleteThoughts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteThoughtsMutationOptions(options), queryClient);
     }
     /**
- * @summary 批量更新admin-thoughts状态
+ * @summary 批量更新admin-thoughts可见性
  */
-export type bulkStatusThoughtsResponse200 = {
+export type bulkVisibilityThoughtsResponse200 = {
   data: BulkActionResponse
   status: 200
 }
 
-export type bulkStatusThoughtsResponse422 = {
+export type bulkVisibilityThoughtsResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type bulkStatusThoughtsResponseSuccess = (bulkStatusThoughtsResponse200) & {
+export type bulkVisibilityThoughtsResponseSuccess = (bulkVisibilityThoughtsResponse200) & {
   headers: Headers;
 };
-export type bulkStatusThoughtsResponseError = (bulkStatusThoughtsResponse422) & {
+export type bulkVisibilityThoughtsResponseError = (bulkVisibilityThoughtsResponse422) & {
   headers: Headers;
 };
 
-export type bulkStatusThoughtsResponse = (bulkStatusThoughtsResponseSuccess | bulkStatusThoughtsResponseError)
+export type bulkVisibilityThoughtsResponse = (bulkVisibilityThoughtsResponseSuccess | bulkVisibilityThoughtsResponseError)
 
-export const getBulkStatusThoughtsUrl = () => {
-
-
+export const getBulkVisibilityThoughtsUrl = () => {
 
 
-  return `/api/v1/admin/thoughts/bulk-status`
+
+
+  return `/api/v1/admin/thoughts/bulk-visibility`
 }
 
-export const bulkStatusThoughts = async (bulkStatusRequest: BulkStatusRequest, options?: RequestInit): Promise<bulkStatusThoughtsResponse> => {
+export const bulkVisibilityThoughts = async (bulkVisibilityRequest: BulkVisibilityRequest, options?: RequestInit): Promise<bulkVisibilityThoughtsResponse> => {
 
-  return customInstance<bulkStatusThoughtsResponse>(getBulkStatusThoughtsUrl(),
+  return customInstance<bulkVisibilityThoughtsResponse>(getBulkVisibilityThoughtsUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      bulkStatusRequest,)
+      bulkVisibilityRequest,)
   }
 );}
 
 
 
 
-export const getBulkStatusThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
+export const getBulkVisibilityThoughtsMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityThoughts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityThoughts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext> => {
 
-const mutationKey = ['bulkStatusThoughts'];
+const mutationKey = ['bulkVisibilityThoughts'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -3182,10 +3183,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusThoughts>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkVisibilityThoughts>>, {data: BodyType<BulkVisibilityRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusThoughts(data,requestOptions)
+          return  bulkVisibilityThoughts(data,requestOptions)
         }
 
 
@@ -3195,22 +3196,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type BulkStatusThoughtsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkStatusThoughts>>>
-    export type BulkStatusThoughtsMutationBody = BodyType<BulkStatusRequest>
-    export type BulkStatusThoughtsMutationError = ErrorType<HTTPValidationError>
+    export type BulkVisibilityThoughtsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkVisibilityThoughts>>>
+    export type BulkVisibilityThoughtsMutationBody = BodyType<BulkVisibilityRequest>
+    export type BulkVisibilityThoughtsMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 批量更新admin-thoughts状态
+ * @summary 批量更新admin-thoughts可见性
  */
-export const useBulkStatusThoughts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusThoughts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useBulkVisibilityThoughts = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityThoughts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof bulkStatusThoughts>>,
+        Awaited<ReturnType<typeof bulkVisibilityThoughts>>,
         TError,
-        {data: BodyType<BulkStatusRequest>},
+        {data: BodyType<BulkVisibilityRequest>},
         TContext
       > => {
-      return useMutation(getBulkStatusThoughtsMutationOptions(options), queryClient);
+      return useMutation(getBulkVisibilityThoughtsMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取admin-excerpts列表
@@ -3810,55 +3811,55 @@ export const useBulkDeleteExcerpts = <TError = ErrorType<HTTPValidationError>,
       return useMutation(getBulkDeleteExcerptsMutationOptions(options), queryClient);
     }
     /**
- * @summary 批量更新admin-excerpts状态
+ * @summary 批量更新admin-excerpts可见性
  */
-export type bulkStatusExcerptsResponse200 = {
+export type bulkVisibilityExcerptsResponse200 = {
   data: BulkActionResponse
   status: 200
 }
 
-export type bulkStatusExcerptsResponse422 = {
+export type bulkVisibilityExcerptsResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type bulkStatusExcerptsResponseSuccess = (bulkStatusExcerptsResponse200) & {
+export type bulkVisibilityExcerptsResponseSuccess = (bulkVisibilityExcerptsResponse200) & {
   headers: Headers;
 };
-export type bulkStatusExcerptsResponseError = (bulkStatusExcerptsResponse422) & {
+export type bulkVisibilityExcerptsResponseError = (bulkVisibilityExcerptsResponse422) & {
   headers: Headers;
 };
 
-export type bulkStatusExcerptsResponse = (bulkStatusExcerptsResponseSuccess | bulkStatusExcerptsResponseError)
+export type bulkVisibilityExcerptsResponse = (bulkVisibilityExcerptsResponseSuccess | bulkVisibilityExcerptsResponseError)
 
-export const getBulkStatusExcerptsUrl = () => {
-
-
+export const getBulkVisibilityExcerptsUrl = () => {
 
 
-  return `/api/v1/admin/excerpts/bulk-status`
+
+
+  return `/api/v1/admin/excerpts/bulk-visibility`
 }
 
-export const bulkStatusExcerpts = async (bulkStatusRequest: BulkStatusRequest, options?: RequestInit): Promise<bulkStatusExcerptsResponse> => {
+export const bulkVisibilityExcerpts = async (bulkVisibilityRequest: BulkVisibilityRequest, options?: RequestInit): Promise<bulkVisibilityExcerptsResponse> => {
 
-  return customInstance<bulkStatusExcerptsResponse>(getBulkStatusExcerptsUrl(),
+  return customInstance<bulkVisibilityExcerptsResponse>(getBulkVisibilityExcerptsUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      bulkStatusRequest,)
+      bulkVisibilityRequest,)
   }
 );}
 
 
 
 
-export const getBulkStatusExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext> => {
+export const getBulkVisibilityExcerptsMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityExcerpts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityExcerpts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext> => {
 
-const mutationKey = ['bulkStatusExcerpts'];
+const mutationKey = ['bulkVisibilityExcerpts'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -3868,10 +3869,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkStatusExcerpts>>, {data: BodyType<BulkStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkVisibilityExcerpts>>, {data: BodyType<BulkVisibilityRequest>}> = (props) => {
           const {data} = props ?? {};
 
-          return  bulkStatusExcerpts(data,requestOptions)
+          return  bulkVisibilityExcerpts(data,requestOptions)
         }
 
 
@@ -3881,22 +3882,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type BulkStatusExcerptsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkStatusExcerpts>>>
-    export type BulkStatusExcerptsMutationBody = BodyType<BulkStatusRequest>
-    export type BulkStatusExcerptsMutationError = ErrorType<HTTPValidationError>
+    export type BulkVisibilityExcerptsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkVisibilityExcerpts>>>
+    export type BulkVisibilityExcerptsMutationBody = BodyType<BulkVisibilityRequest>
+    export type BulkVisibilityExcerptsMutationError = ErrorType<HTTPValidationError>
 
     /**
- * @summary 批量更新admin-excerpts状态
+ * @summary 批量更新admin-excerpts可见性
  */
-export const useBulkStatusExcerpts = <TError = ErrorType<HTTPValidationError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkStatusExcerpts>>, TError,{data: BodyType<BulkStatusRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useBulkVisibilityExcerpts = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkVisibilityExcerpts>>, TError,{data: BodyType<BulkVisibilityRequest>}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof bulkStatusExcerpts>>,
+        Awaited<ReturnType<typeof bulkVisibilityExcerpts>>,
         TError,
-        {data: BodyType<BulkStatusRequest>},
+        {data: BodyType<BulkVisibilityRequest>},
         TContext
       > => {
-      return useMutation(getBulkStatusExcerptsMutationOptions(options), queryClient);
+      return useMutation(getBulkVisibilityExcerptsMutationOptions(options), queryClient);
     }
     /**
  * @summary 根据日记草稿生成诗句

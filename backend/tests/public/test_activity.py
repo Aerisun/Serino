@@ -36,7 +36,6 @@ def test_read_calendar_uses_beijing_date_boundary(client) -> None:
                 title="Beijing Boundary",
                 body="Boundary body",
                 summary="Boundary summary",
-                status="published",
                 visibility="public",
                 published_at=datetime(2026, 4, 1, 0, 30, tzinfo=BEIJING_TZ),
             )

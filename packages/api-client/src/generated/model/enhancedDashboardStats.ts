@@ -14,7 +14,7 @@ export interface EnhancedDashboardStats {
   guestbook_entries: unknown;
   friends: unknown;
   assets: unknown;
-  posts_by_status?: unknown;
+  posts_by_visibility?: unknown;
   content_by_month?: unknown;
   recent_content?: unknown;
   traffic?: unknown;

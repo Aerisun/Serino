@@ -169,7 +169,6 @@ export const ReadPostApiV1SitePostsSlugGetResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -226,7 +225,6 @@ export const ReadDiaryEntryApiV1SiteDiarySlugGetResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -970,7 +968,6 @@ export const listPostsQuerySortOrderDefault = `desc`;
 export const ListPostsQueryParams = zod.object({
   "page": zod.number().min(1).default(listPostsQueryPageDefault),
   "page_size": zod.number().min(1).max(listPostsQueryPageSizeMax).default(listPostsQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
   "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
@@ -989,8 +986,7 @@ export const ListPostsResponse = zod.object({
 /**
  * @summary 创建admin-posts
  */
-export const createPostsBodyStatusDefault = `draft`;
-export const createPostsBodyVisibilityDefault = `public`;
+export const createPostsBodyVisibilityDefault = `private`;
 export const createPostsBodyViewCountDefault = 0;
 export const createPostsBodyIsPinnedDefault = false;
 export const createPostsBodyPinOrderDefault = 0;
@@ -1001,7 +997,6 @@ export const CreatePostsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.enum(['draft', 'published', 'archived']).default(createPostsBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
   "visibility": zod.enum(['public', 'private']).default(createPostsBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1030,7 +1025,6 @@ export const GetPostsResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1060,7 +1054,6 @@ export const UpdatePostsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
   "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1081,7 +1074,6 @@ export const UpdatePostsResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1119,14 +1111,14 @@ export const BulkDeletePostsResponse = zod.object({
 
 
 /**
- * @summary 批量更新admin-posts状态
+ * @summary 批量更新admin-posts可见性
  */
-export const BulkStatusPostsBody = zod.object({
+export const BulkVisibilityPostsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "visibility": zod.string().describe('New visibility value to set')
 })
 
-export const BulkStatusPostsResponse = zod.object({
+export const BulkVisibilityPostsResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
 
@@ -1145,7 +1137,6 @@ export const listDiaryQuerySortOrderDefault = `desc`;
 export const ListDiaryQueryParams = zod.object({
   "page": zod.number().min(1).default(listDiaryQueryPageDefault),
   "page_size": zod.number().min(1).max(listDiaryQueryPageSizeMax).default(listDiaryQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
   "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
@@ -1164,8 +1155,7 @@ export const ListDiaryResponse = zod.object({
 /**
  * @summary 创建admin-diary
  */
-export const createDiaryBodyStatusDefault = `draft`;
-export const createDiaryBodyVisibilityDefault = `public`;
+export const createDiaryBodyVisibilityDefault = `private`;
 export const createDiaryBodyViewCountDefault = 0;
 export const createDiaryBodyIsPinnedDefault = false;
 export const createDiaryBodyPinOrderDefault = 0;
@@ -1176,7 +1166,6 @@ export const CreateDiaryBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.enum(['draft', 'published', 'archived']).default(createDiaryBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
   "visibility": zod.enum(['public', 'private']).default(createDiaryBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1205,7 +1194,6 @@ export const GetDiaryResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1235,7 +1223,6 @@ export const UpdateDiaryBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
   "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1256,7 +1243,6 @@ export const UpdateDiaryResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1294,14 +1280,14 @@ export const BulkDeleteDiaryResponse = zod.object({
 
 
 /**
- * @summary 批量更新admin-diary状态
+ * @summary 批量更新admin-diary可见性
  */
-export const BulkStatusDiaryBody = zod.object({
+export const BulkVisibilityDiaryBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "visibility": zod.string().describe('New visibility value to set')
 })
 
-export const BulkStatusDiaryResponse = zod.object({
+export const BulkVisibilityDiaryResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
 
@@ -1320,7 +1306,6 @@ export const listThoughtsQuerySortOrderDefault = `desc`;
 export const ListThoughtsQueryParams = zod.object({
   "page": zod.number().min(1).default(listThoughtsQueryPageDefault),
   "page_size": zod.number().min(1).max(listThoughtsQueryPageSizeMax).default(listThoughtsQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
   "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
@@ -1339,8 +1324,7 @@ export const ListThoughtsResponse = zod.object({
 /**
  * @summary 创建admin-thoughts
  */
-export const createThoughtsBodyStatusDefault = `draft`;
-export const createThoughtsBodyVisibilityDefault = `public`;
+export const createThoughtsBodyVisibilityDefault = `private`;
 export const createThoughtsBodyViewCountDefault = 0;
 export const createThoughtsBodyIsPinnedDefault = false;
 export const createThoughtsBodyPinOrderDefault = 0;
@@ -1351,7 +1335,6 @@ export const CreateThoughtsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.enum(['draft', 'published', 'archived']).default(createThoughtsBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
   "visibility": zod.enum(['public', 'private']).default(createThoughtsBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1380,7 +1363,6 @@ export const GetThoughtsResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1410,7 +1392,6 @@ export const UpdateThoughtsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
   "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1431,7 +1412,6 @@ export const UpdateThoughtsResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1469,14 +1449,14 @@ export const BulkDeleteThoughtsResponse = zod.object({
 
 
 /**
- * @summary 批量更新admin-thoughts状态
+ * @summary 批量更新admin-thoughts可见性
  */
-export const BulkStatusThoughtsBody = zod.object({
+export const BulkVisibilityThoughtsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "visibility": zod.string().describe('New visibility value to set')
 })
 
-export const BulkStatusThoughtsResponse = zod.object({
+export const BulkVisibilityThoughtsResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
 
@@ -1495,7 +1475,6 @@ export const listExcerptsQuerySortOrderDefault = `desc`;
 export const ListExcerptsQueryParams = zod.object({
   "page": zod.number().min(1).default(listExcerptsQueryPageDefault),
   "page_size": zod.number().min(1).max(listExcerptsQueryPageSizeMax).default(listExcerptsQueryPageSizeDefault),
-  "status": zod.union([zod.string(),zod.null()]).optional(),
   "visibility": zod.union([zod.string(),zod.null()]).optional(),
   "tag": zod.union([zod.string(),zod.null()]).optional(),
   "search": zod.union([zod.string(),zod.null()]).optional(),
@@ -1514,8 +1493,7 @@ export const ListExcerptsResponse = zod.object({
 /**
  * @summary 创建admin-excerpts
  */
-export const createExcerptsBodyStatusDefault = `draft`;
-export const createExcerptsBodyVisibilityDefault = `public`;
+export const createExcerptsBodyVisibilityDefault = `private`;
 export const createExcerptsBodyViewCountDefault = 0;
 export const createExcerptsBodyIsPinnedDefault = false;
 export const createExcerptsBodyPinOrderDefault = 0;
@@ -1526,7 +1504,6 @@ export const CreateExcerptsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.string().describe('Full content body in Markdown'),
   "tags": zod.array(zod.string()).optional().describe('List of tag names'),
-  "status": zod.enum(['draft', 'published', 'archived']).default(createExcerptsBodyStatusDefault).describe('Publication status: draft, public publish, or private archive'),
   "visibility": zod.enum(['public', 'private']).default(createExcerptsBodyVisibilityDefault).describe('Visibility level: public or private'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1555,7 +1532,6 @@ export const GetExcerptsResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1585,7 +1561,6 @@ export const UpdateExcerptsBody = zod.object({
   "summary": zod.union([zod.string(),zod.null()]).optional().describe('Brief summary or excerpt'),
   "body": zod.union([zod.string(),zod.null()]).optional().describe('Full content body in Markdown'),
   "tags": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('List of tag names'),
-  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('Publication status'),
   "visibility": zod.union([zod.enum(['public', 'private']),zod.null()]).optional().describe('Visibility level'),
   "published_at": zod.union([zod.string().datetime({}),zod.null()]).optional().describe('Publication timestamp'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('Content category name'),
@@ -1606,7 +1581,6 @@ export const UpdateExcerptsResponse = zod.object({
   "summary": zod.unknown().describe('Brief summary or excerpt'),
   "body": zod.unknown().describe('Full content body in Markdown'),
   "tags": zod.unknown().describe('List of tag names'),
-  "status": zod.unknown().describe('Publication status'),
   "visibility": zod.unknown().describe('Visibility level'),
   "published_at": zod.unknown().describe('Publication timestamp'),
   "created_at": zod.unknown().describe('Creation timestamp'),
@@ -1644,14 +1618,14 @@ export const BulkDeleteExcerptsResponse = zod.object({
 
 
 /**
- * @summary 批量更新admin-excerpts状态
+ * @summary 批量更新admin-excerpts可见性
  */
-export const BulkStatusExcerptsBody = zod.object({
+export const BulkVisibilityExcerptsBody = zod.object({
   "ids": zod.array(zod.string()).describe('List of item IDs to update'),
-  "status": zod.string().describe('New status value to set')
+  "visibility": zod.string().describe('New visibility value to set')
 })
 
-export const BulkStatusExcerptsResponse = zod.object({
+export const BulkVisibilityExcerptsResponse = zod.object({
   "affected": zod.number().describe('Number of items affected by the operation')
 })
 
@@ -4056,7 +4030,7 @@ export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.objec
   "guestbook_entries": zod.unknown(),
   "friends": zod.unknown(),
   "assets": zod.unknown(),
-  "posts_by_status": zod.unknown().optional(),
+  "posts_by_visibility": zod.unknown().optional(),
   "content_by_month": zod.unknown().optional(),
   "recent_content": zod.unknown().optional(),
   "traffic": zod.unknown().optional(),
@@ -5955,7 +5929,6 @@ export const ListTagsApiV1AdminContentTagsGetResponse = zod.array(ListTagsApiV1A
 export const GetDefaultContentTitleQueryParams = zod.object({
   "content_type": zod.enum(['diary', 'thoughts', 'excerpts']).describe('内容类型'),
   "category": zod.union([zod.string(),zod.null()]).optional().describe('内容分类'),
-  "status": zod.union([zod.enum(['draft', 'published', 'archived']),zod.null()]).optional().describe('内容状态'),
   "item_id": zod.union([zod.string(),zod.null()]).optional().describe('当前内容 ID')
 })
 

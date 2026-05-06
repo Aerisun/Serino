@@ -138,7 +138,7 @@ def _playbook_step(
 def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlaybookRead]:
     list_available = "list_admin_content" in tool_names
     delete_available = "delete_admin_content" in tool_names
-    archive_available = "update_admin_content" in tool_names
+    private_available = "update_admin_content" in tool_names
 
     return [
         AgentUsagePlaybookRead(
@@ -163,7 +163,7 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                             "sort_order": "desc",
                         },
                     },
-                    "Response includes items[].id/title/status",
+                    "Response includes items[].id/title/visibility",
                 ),
                 _playbook_step(
                     2,
@@ -179,8 +179,8 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                 ),
             ],
             verification=[
-                "At least one item has id/title/status fields.",
-                "Selected IDs are copied for delete/archive operations.",
+                "At least one item has id/title/visibility fields.",
+                "Selected IDs are copied for delete/private operations.",
             ],
         ),
         AgentUsagePlaybookRead(
@@ -220,26 +220,26 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
             ],
         ),
         AgentUsagePlaybookRead(
-            id="archive-content",
-            title="Archive one content item",
-            description="Set a selected content item status to archived.",
-            available=archive_available,
+            id="make-content-private",
+            title="Make one content item private",
+            description="Set a selected content item visibility to private.",
+            available=private_available,
             risk_level="medium",
             required_scopes=[AGENT_CONNECT, CONTENT_WRITE],
             steps=[
                 _playbook_step(
                     1,
-                    "MCP archive call",
+                    "MCP visibility call",
                     "mcp_call",
                     {
                         "tool": "update_admin_content",
                         "arguments": {
                             "content_type": "posts",
-                            "item_id": "<ARCHIVE_ID>",
-                            "payload": {"status": "archived"},
+                            "item_id": "<PRIVATE_ID>",
+                            "payload": {"visibility": "private"},
                         },
                     },
-                    "Returned item.status is archived",
+                    "Returned item.visibility is private",
                 ),
                 _playbook_step(
                     2,
@@ -248,16 +248,15 @@ def _build_playbooks(base_url: str, tool_names: set[str]) -> list[AgentUsagePlay
                     {
                         "command": (
                             'curl -sS -X PUT -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" '
-                            '-d \'{"status":"archived"}\' '
-                            f'"{_absolute_url(base_url, "/api/v1/admin/posts/")}<ARCHIVE_ID>"'
+                            '-d \'{"visibility":"private"}\' '
+                            f'"{_absolute_url(base_url, "/api/v1/admin/posts/")}<PRIVATE_ID>"'
                         )
                     },
-                    "HTTP 200 with status=archived",
+                    "HTTP 200 with visibility=private",
                 ),
             ],
             verification=[
-                "GET /api/v1/admin/posts/<ARCHIVE_ID> returns status=archived.",
-                "Visibility is private when archive policy applies.",
+                "GET /api/v1/admin/posts/<PRIVATE_ID> returns visibility=private.",
             ],
         ),
     ]
@@ -344,8 +343,8 @@ def _build_mcp_templates() -> list[AgentUsageMcpTemplateRead]:
             ],
         ),
         AgentUsageMcpTemplateRead(
-            id="list-delete-archive",
-            description="Content management sequence: list, delete, archive",
+            id="list-delete-private",
+            description="Content management sequence: list, delete, make private",
             sequence=[
                 {
                     "step": 1,
@@ -370,8 +369,8 @@ def _build_mcp_templates() -> list[AgentUsageMcpTemplateRead]:
                         "name": "update_admin_content",
                         "input": {
                             "content_type": "posts",
-                            "item_id": "<ARCHIVE_ID>",
-                            "payload": {"status": "archived"},
+                            "item_id": "<PRIVATE_ID>",
+                            "payload": {"visibility": "private"},
                         },
                     },
                 },
@@ -530,7 +529,7 @@ def build_agent_usage(
             usage_hints=[
                 "Call list_tools once after initialize and cache tool signatures for the session.",
                 "Use list_admin_content to collect IDs before destructive actions.",
-                "Prefer update_admin_content(status=archived) over delete for reversible workflows.",
+                "Prefer update_admin_content(visibility=private) over delete for reversible workflows.",
                 "Use export_content before import_content or other bulk content changes.",
                 "Use validate_agent_workflow before trigger_workflow_run or enabling a new workflow.",
             ],

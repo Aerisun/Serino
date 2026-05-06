@@ -1,7 +1,7 @@
 import {
   useListPosts,
   useBulkDeletePosts,
-  useBulkStatusPosts,
+  useBulkVisibilityPosts,
   getListPostsQueryKey,
 } from "@serino/api-client/admin";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -21,14 +21,9 @@ function usePostListConfig(): ContentListConfig {
     editPath: (id) => `/posts/${id}`,
     columns: [
       { header: t("posts.postTitle"), accessor: "title" },
-      { header: t("posts.slug"), accessor: "slug" },
-      {
-        header: t("posts.status"),
-        accessor: (row) => <StatusBadge status={row.status} />,
-      },
       {
         header: t("posts.visibility"),
-        accessor: (row) => <StatusBadge status={row.visibility} />,
+        accessor: (row) => <StatusBadge status={String(row.visibility || "")} />,
       },
       {
         header: t("posts.publishedAt"),
@@ -41,7 +36,7 @@ function usePostListConfig(): ContentListConfig {
     ],
     useList: useListPosts as ContentListConfig["useList"],
     useBulkDelete: useBulkDeletePosts as ContentListConfig["useBulkDelete"],
-    useBulkStatus: useBulkStatusPosts as ContentListConfig["useBulkStatus"],
+    useBulkVisibility: useBulkVisibilityPosts as ContentListConfig["useBulkVisibility"],
     getQueryKey: getListPostsQueryKey,
   };
 }

@@ -201,6 +201,12 @@ def count_by_status(session: Session, model: type) -> dict[str, int]:
     return {s: c for s, c in rows}
 
 
+def count_by_visibility(session: Session, model: type) -> dict[str, int]:
+    """Group by visibility field and count. Returns {visibility: count}."""
+    rows = session.query(model.visibility, func.count(model.id)).group_by(model.visibility).all()
+    return {s: c for s, c in rows}
+
+
 def count_by_month(
     session: Session,
     model: type,

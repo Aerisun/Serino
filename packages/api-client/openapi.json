@@ -2756,22 +2756,6 @@
             }
           },
           {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
             "name": "visibility",
             "in": "query",
             "required": false,
@@ -3099,19 +3083,19 @@
         ]
       }
     },
-    "/api/v1/admin/posts/bulk-status": {
+    "/api/v1/admin/posts/bulk-visibility": {
       "post": {
         "tags": [
           "admin",
           "admin-posts"
         ],
-        "summary": "批量更新admin-posts状态",
-        "operationId": "bulk_status_posts",
+        "summary": "批量更新admin-posts可见性",
+        "operationId": "bulk_visibility_posts",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
+                "$ref": "#/components/schemas/BulkVisibilityRequest"
               }
             }
           },
@@ -3181,22 +3165,6 @@
               "minimum": 1,
               "default": 20,
               "title": "Page Size"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
             }
           },
           {
@@ -3527,19 +3495,19 @@
         ]
       }
     },
-    "/api/v1/admin/diary/bulk-status": {
+    "/api/v1/admin/diary/bulk-visibility": {
       "post": {
         "tags": [
           "admin",
           "admin-diary"
         ],
-        "summary": "批量更新admin-diary状态",
-        "operationId": "bulk_status_diary",
+        "summary": "批量更新admin-diary可见性",
+        "operationId": "bulk_visibility_diary",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
+                "$ref": "#/components/schemas/BulkVisibilityRequest"
               }
             }
           },
@@ -3609,22 +3577,6 @@
               "minimum": 1,
               "default": 20,
               "title": "Page Size"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
             }
           },
           {
@@ -3955,19 +3907,19 @@
         ]
       }
     },
-    "/api/v1/admin/thoughts/bulk-status": {
+    "/api/v1/admin/thoughts/bulk-visibility": {
       "post": {
         "tags": [
           "admin",
           "admin-thoughts"
         ],
-        "summary": "批量更新admin-thoughts状态",
-        "operationId": "bulk_status_thoughts",
+        "summary": "批量更新admin-thoughts可见性",
+        "operationId": "bulk_visibility_thoughts",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
+                "$ref": "#/components/schemas/BulkVisibilityRequest"
               }
             }
           },
@@ -4037,22 +3989,6 @@
               "minimum": 1,
               "default": 20,
               "title": "Page Size"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
             }
           },
           {
@@ -4383,19 +4319,19 @@
         ]
       }
     },
-    "/api/v1/admin/excerpts/bulk-status": {
+    "/api/v1/admin/excerpts/bulk-visibility": {
       "post": {
         "tags": [
           "admin",
           "admin-excerpts"
         ],
-        "summary": "批量更新admin-excerpts状态",
-        "operationId": "bulk_status_excerpts",
+        "summary": "批量更新admin-excerpts可见性",
+        "operationId": "bulk_visibility_excerpts",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BulkStatusRequest"
+                "$ref": "#/components/schemas/BulkVisibilityRequest"
               }
             }
           },
@@ -12422,29 +12358,6 @@
             "description": "内容分类"
           },
           {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "draft",
-                    "published",
-                    "archived"
-                  ],
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "内容状态",
-              "title": "Status"
-            },
-            "description": "内容状态"
-          },
-          {
             "name": "item_id",
             "in": "query",
             "required": false,
@@ -17633,6 +17546,29 @@
         ],
         "title": "BulkStatusRequest"
       },
+      "BulkVisibilityRequest": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ids",
+            "description": "List of item IDs to update"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility",
+            "description": "New visibility value to set"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ids",
+          "visibility"
+        ],
+        "title": "BulkVisibilityRequest"
+      },
       "CalendarEventRead": {
         "properties": {
           "date": {
@@ -18622,10 +18558,6 @@
             "title": "Tags",
             "description": "List of tag names"
           },
-          "status": {
-            "title": "Status",
-            "description": "Publication status"
-          },
           "visibility": {
             "title": "Visibility",
             "description": "Visibility level"
@@ -18687,7 +18619,6 @@
           "summary",
           "body",
           "tags",
-          "status",
           "visibility",
           "published_at",
           "created_at",
@@ -18830,17 +18761,6 @@
             "title": "Tags",
             "description": "List of tag names"
           },
-          "status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "published",
-              "archived"
-            ],
-            "title": "Status",
-            "description": "Publication status: draft, public publish, or private archive",
-            "default": "draft"
-          },
           "visibility": {
             "type": "string",
             "enum": [
@@ -18849,7 +18769,7 @@
             ],
             "title": "Visibility",
             "description": "Visibility level: public or private",
-            "default": "public"
+            "default": "private"
           },
           "published_at": {
             "anyOf": [
@@ -18984,10 +18904,6 @@
             "title": "Tags",
             "description": "List of tag names"
           },
-          "status": {
-            "title": "Status",
-            "description": "Publication status"
-          },
           "visibility": {
             "title": "Visibility",
             "description": "Visibility level"
@@ -19064,7 +18980,6 @@
           "summary",
           "body",
           "tags",
-          "status",
           "visibility",
           "published_at",
           "created_at",
@@ -19788,23 +19703,6 @@
             "title": "Tags",
             "description": "List of tag names"
           },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "draft",
-                  "published",
-                  "archived"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status",
-            "description": "Publication status"
-          },
           "visibility": {
             "anyOf": [
               {
@@ -20281,8 +20179,8 @@
           "assets": {
             "title": "Assets"
           },
-          "posts_by_status": {
-            "title": "Posts By Status"
+          "posts_by_visibility": {
+            "title": "Posts By Visibility"
           },
           "content_by_month": {
             "title": "Content By Month"
@@ -23294,9 +23192,9 @@
             "type": "string",
             "title": "Content Type"
           },
-          "status": {
+          "visibility": {
             "type": "string",
-            "title": "Status"
+            "title": "Visibility"
           },
           "updated_at": {
             "type": "string",
@@ -23309,7 +23207,7 @@
           "id",
           "title",
           "content_type",
-          "status",
+          "visibility",
           "updated_at"
         ],
         "title": "RecentContentItem"

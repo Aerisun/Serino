@@ -404,7 +404,7 @@ export const zhOpLabels: Record<string, string> = {
   update_admin_content: "更新内容",
   delete_admin_content: "删除内容",
   bulk_delete_admin_content: "批量删除内容",
-  bulk_update_admin_content_status: "批量修改内容状态",
+  bulk_update_admin_content_visibility: "批量修改内容可见性",
   list_admin_tags: "读取内容标签",
   list_admin_content_categories: "读取内容分类",
   create_admin_content_category: "创建内容分类",

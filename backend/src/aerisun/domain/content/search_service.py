@@ -49,7 +49,6 @@ def search_public_content(session: Session, query: str, limit: int = 10) -> Sear
         rows = session.scalars(
             select(model)
             .where(
-                model.status == "published",
                 model.visibility == "public",
                 or_(
                     model.title.ilike(pattern),

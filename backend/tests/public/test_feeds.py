@@ -13,7 +13,6 @@ def _make_payload(content_type: str, suffix: str) -> dict:
         "title": f"RSS {content_type.title()}{suffix}",
         "body": f"RSS body for {content_type}{suffix}",
         "tags": ["rss"],
-        "status": "draft",
         "visibility": "public",
     }
 
@@ -59,22 +58,14 @@ def test_posts_feed_aliases_return_same_xml_as_posts_feed(client, alias_path: st
         ("excerpts", "/feeds/excerpts.xml"),
     ],
 )
-def test_feed_only_includes_published_public_content(client, admin_headers, content_type: str, feed_path: str) -> None:
+def test_feed_only_includes_public_content(client, admin_headers, content_type: str, feed_path: str) -> None:
     public_payload = _make_payload(content_type, "-public")
-    public_payload["status"] = "published"
-
-    draft_payload = _make_payload(content_type, "-draft")
-    draft_payload["status"] = "draft"
 
     private_payload = _make_payload(content_type, "-private")
-    private_payload["status"] = "published"
     private_payload["visibility"] = "private"
 
     public_resp = client.post(f"{ADMIN_BASE}/{content_type}/", json=public_payload, headers=admin_headers)
     assert public_resp.status_code == 201
-
-    draft_resp = client.post(f"{ADMIN_BASE}/{content_type}/", json=draft_payload, headers=admin_headers)
-    assert draft_resp.status_code == 201
 
     private_resp = client.post(f"{ADMIN_BASE}/{content_type}/", json=private_payload, headers=admin_headers)
     assert private_resp.status_code == 201
@@ -83,5 +74,4 @@ def test_feed_only_includes_published_public_content(client, admin_headers, cont
 
     assert response.status_code == 200
     assert public_payload["slug"] in response.text
-    assert draft_payload["slug"] not in response.text
     assert private_payload["slug"] not in response.text

@@ -31,7 +31,7 @@ const editorConfig = {
   listRoute: "/excerpts",
   defaultForm: {
     slug: "", title: "", summary: "", body: "", tags: [],
-    status: "draft", visibility: "private", published_at: null,
+    visibility: "private", published_at: null,
     category: "", author_name: "", source: "",
   },
   serverToForm: buildServerToForm((item) => ({
@@ -68,7 +68,7 @@ export default function ExcerptEditPage() {
         title={editor.pageTitle}
         actions={
           <ContentEditorHeaderActions
-            visibility={form.visibility}
+            visibility={form.visibility === "public" ? "public" : "private"}
             isSaving={isSaving}
             onToggleVisibility={() =>
               setField("visibility", form.visibility === "public" ? "private" : "public")
@@ -84,29 +84,38 @@ export default function ExcerptEditPage() {
         }
       />
       <form onSubmit={editor.handleSubmit} className="space-y-6 max-w-3xl mx-auto">
-        <div className="space-y-2"><Label>{t("posts.body")}</Label><MarkdownEditor value={form.body} onChange={(v) => setField("body", v)} minHeight="250px" /></div>
+        <div className="space-y-2">
+          <Label>{t("posts.body")}</Label>
+          <MarkdownEditor
+            value={form.body}
+            onChange={(v) => setField("body", v)}
+            minHeight="250px"
+            mobileFullscreen
+          />
+        </div>
         <ContentCategoryField contentType="excerpts" label={t("contentCategories.fieldLabel")} value={form.category || ""} placeholder={t("contentCategories.excerptPlaceholder")} onChange={(nextValue) => setField("category", nextValue)} />
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2"><Label>{t("excerpts.authorName")}</Label><Input value={form.author_name || ""} onChange={(e) => setField("author_name", e.target.value)} placeholder={t("excerpts.authorPlaceholder")} /></div>
           <div className="space-y-2"><Label>{t("excerpts.source")}</Label><Input value={form.source || ""} onChange={(e) => setField("source", e.target.value)} placeholder={t("excerpts.sourcePlaceholder")} /></div>
         </div>
-        <AutoTitleField
-          value={form.title}
-          onChange={(value) => setField("title", value)}
-          isAuto={isAutoTitleEnabled}
-          onAutoChange={setIsAutoTitleEnabled}
-          switchLabel={t("common.autoTitle")}
-          inputLabel={t("common.title")}
-          required
-        />
-
-        <div className="pt-6 border-t border-border">
+        <div className="space-y-3 border-t border-border pt-4 sm:pt-6 md:grid md:grid-cols-2 md:items-start md:gap-5 md:space-y-0">
+          <AutoTitleField
+            value={form.title}
+            onChange={(value) => setField("title", value)}
+            isAuto={isAutoTitleEnabled}
+            onAutoChange={setIsAutoTitleEnabled}
+            switchLabel={t("common.autoTitle")}
+            inputLabel={t("common.title")}
+            required
+            className="md:min-w-0"
+          />
           <PublishTimeFooter
             value={form.published_at}
             onChange={(value) => setField("published_at", value)}
             isCustom={isPublishedAtManual}
             onCustomChange={setIsPublishedAtManual}
             label={t("posts.publishedAt")}
+            className="md:min-w-0"
             deleteButton={
               !isNew && (
                 <Button variant="destructive" type="button" className="h-9 rounded-lg px-3 text-sm shadow-sm shadow-destructive/25" onClick={editor.confirmDelete}>

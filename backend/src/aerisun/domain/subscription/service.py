@@ -538,7 +538,7 @@ def _ensure_notification_records(session: Session, site_url: str) -> int:
 
     for content_type, model in CONTENT_MODELS.items():
         definition = get_feed_definition(content_type)
-        items = session.scalars(select(model).where(model.status == "published", model.visibility == "public")).all()
+        items = session.scalars(select(model).where(model.visibility == "public")).all()
         for item in items:
             key = (content_type, item.slug)
             if key in existing:

@@ -1025,6 +1025,15 @@ export const enTranslations: TranslationDict = {
     // editor
     "editor.preview": "Preview",
     "editor.edit": "Edit",
+    "editor.mobileTitle": "Body editor",
+    "editor.mobileOpen": "Full screen",
+    "editor.mobileEmpty": "No body yet",
+    "editor.mobileCharacterCount": "{count} chars",
+    "editor.mobilePlaceholder": "Start writing...",
+    "editor.mobilePreview": "Preview",
+    "editor.mobileEdit": "Write",
+    "editor.mobileToolbarOpen": "Show toolbar",
+    "editor.mobileToolbarClose": "Hide toolbar",
 
     // auditLog filters
     "auditLog.filterByAction": "Filter by action",

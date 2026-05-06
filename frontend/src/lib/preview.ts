@@ -11,7 +11,7 @@ export interface ContentPreviewData {
   summary?: string;
   body?: string;
   tags?: string[];
-  status?: string;
+  visibility?: string;
   category?: string;
   mood?: string;
   weather?: string;

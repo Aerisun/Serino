@@ -153,3 +153,20 @@ def bulk_update_status(
     )
     session.commit()
     return affected
+
+
+def bulk_update_visibility(
+    session: Session,
+    model: type[Base],
+    ids: list[str],
+    visibility: str,
+    *,
+    base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
+) -> int:
+    affected = (
+        _scoped_query(session, model, base_query_factory)
+        .filter(model.id.in_(ids))
+        .update({"visibility": visibility}, synchronize_session="fetch")
+    )
+    session.commit()
+    return affected

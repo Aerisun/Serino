@@ -35,7 +35,6 @@ def find_content_events(session: Session) -> list[tuple[datetime, str, str, str,
         rows = session.scalars(
             select(model)
             .where(
-                model.status == "published",
                 model.visibility == "public",
                 model.published_at.is_not(None),
             )
@@ -63,7 +62,6 @@ def find_recent_published_content(
         rows = session.scalars(
             select(model)
             .where(
-                model.status == "published",
                 model.visibility == "public",
                 model.published_at.is_not(None),
             )
@@ -107,7 +105,6 @@ def count_daily_content(session: Session, *, tz: ZoneInfo) -> dict[date, int]:
     for model in [PostEntry, DiaryEntry, ThoughtEntry, ExcerptEntry]:
         published_at_values = session.scalars(
             select(model.published_at).where(
-                model.status == "published",
                 model.visibility == "public",
                 model.published_at.is_not(None),
             )

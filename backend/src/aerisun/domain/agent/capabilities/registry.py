@@ -35,7 +35,7 @@ from aerisun.domain.agent.mcp_admin_tools import (
     bind_admin_identity_email,
     bulk_delete_admin_assets,
     bulk_delete_admin_content,
-    bulk_update_admin_content_status,
+    bulk_update_admin_content_visibility,
     check_friend_item,
     connect_telegram_webhook_item,
     create_admin_api_key,
@@ -603,15 +603,15 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         list_admin_content,
         label="后台内容列表",
         label_en="List content (admin)",
-        help_text="查看后台所有内容项（文章、日记、碎碎念、文摘），支持按状态、可见性、标签筛选和排序。",
+        help_text="查看后台所有内容项（文章、日记、碎碎念、文摘），支持按可见性、标签筛选和排序。",
         help_text_en="Browse admin content (posts, diary, thoughts, excerpts) with filters.",
         ai_usage_hint=(
             "查询后台内容列表。content_type 必传，值为 posts/diary/thoughts/excerpts 之一。"
-            "可选参数：status(draft/published/archived), visibility(public/private), "
+            "可选参数：visibility(public/private), "
             "tag(标签名), search(关键词), sort_by(created_at/updated_at/published_at), "
             "sort_order(asc/desc), page(页码,默认1), page_size(每页条数,默认20)。"
         ),
-        examples=[{"arguments": {"content_type": "posts", "status": "draft"}, "scenario": "查看草稿文章列表。"}],
+        examples=[{"arguments": {"content_type": "posts", "visibility": "private"}, "scenario": "查看私密文章列表。"}],
         domain="content",
         group_label="内容",
     ),
@@ -633,19 +633,18 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
     ),
     _tool(
         "create_admin_content",
-        "Create an admin content item with initial status and visibility.",
+        "Create an admin content item with initial visibility.",
         [CONTENT_WRITE],
         create_admin_content,
         intent="write",
         label="创建内容",
         label_en="Create content",
-        help_text="创建一条后台内容（文章、日记、碎碎念或文摘），可设置初始状态和可见性。slug 自动生成。",
-        help_text_en="Create a content item with initial status and visibility. Slug is auto-generated.",
+        help_text="创建一条后台内容（文章、日记、碎碎念或文摘），可设置初始可见性。slug 自动生成。",
+        help_text_en="Create a content item with initial visibility. Slug is auto-generated.",
         ai_usage_hint=(
             "创建后台内容。content_type 必传 (posts/diary/thoughts/excerpts)。"
             "payload 字典，可选字段：title(标题,日记和碎碎念可省略), body(正文,必传), "
-            "summary(摘要), tags(标签列表), status(draft/published/archived,默认draft), "
-            "visibility(public/private,默认public), category(分类名), "
+            "summary(摘要), tags(标签列表), visibility(public/private,默认private), category(分类名), "
             "mood(心情,仅diary/thoughts), weather(天气,仅diary)。"
             "slug 自动生成，不要传入。"
         ),
@@ -653,9 +652,9 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
             {
                 "arguments": {
                     "content_type": "posts",
-                    "payload": {"title": "新文章", "body": "正文", "status": "draft"},
+                    "payload": {"title": "新文章", "body": "正文", "visibility": "private"},
                 },
-                "scenario": "创建一篇草稿文章。",
+                "scenario": "创建一篇私密文章。",
             }
         ],
         domain="content",
@@ -665,22 +664,22 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
     ),
     _tool(
         "update_admin_content",
-        "Update an admin content item including body, status, and visibility.",
+        "Update an admin content item including body and visibility.",
         [CONTENT_WRITE],
         update_admin_content,
         intent="write",
         label="更新内容",
         label_en="Update content",
-        help_text="更新后台内容项，包括正文、状态和可见性。",
-        help_text_en="Update a content item including body, status, and visibility.",
+        help_text="更新后台内容项，包括正文和可见性。",
+        help_text_en="Update a content item including body and visibility.",
         ai_usage_hint=(
             "更新后台内容。content_type 必传 (posts/diary/thoughts/excerpts)，item_id 必传。"
             "payload 字典，可选字段与创建相同。只传需要修改的字段即可，未传字段保持不变。"
-            '切换状态：payload={"status": "published"}。切换可见性：payload={"visibility": "private"}。'
+            '公开内容：payload={"visibility": "public"}。改为私密：payload={"visibility": "private"}。'
         ),
         examples=[
             {
-                "arguments": {"content_type": "posts", "item_id": "content-id", "payload": {"status": "published"}},
+                "arguments": {"content_type": "posts", "item_id": "content-id", "payload": {"visibility": "public"}},
                 "scenario": "发布一篇文章。",
             },
             {
@@ -725,21 +724,21 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         risk_level="critical",
     ),
     _tool(
-        "bulk_update_admin_content_status",
-        "Bulk update content status for publishing, archiving, or drafting.",
+        "bulk_update_admin_content_visibility",
+        "Bulk update content visibility.",
         [CONTENT_WRITE],
-        bulk_update_admin_content_status,
+        bulk_update_admin_content_visibility,
         intent="write",
-        label="批量修改状态",
-        label_en="Bulk update status",
-        help_text="批量切换内容状态，例如发布、归档或改回草稿。",
-        help_text_en="Bulk update content status (publish, archive, or revert to draft).",
+        label="批量修改可见性",
+        label_en="Bulk update visibility",
+        help_text="批量切换内容可见性，例如公开或设为私密。",
+        help_text_en="Bulk update content visibility.",
         ai_usage_hint=(
-            "批量修改内容状态。content_type 必传，ids 必传（ID 列表），status 必传 (draft/published/archived)。"
+            "批量修改内容可见性。content_type 必传，ids 必传（ID 列表），visibility 必传 (public/private)。"
         ),
         examples=[
             {
-                "arguments": {"content_type": "posts", "ids": ["id-1", "id-2"], "status": "published"},
+                "arguments": {"content_type": "posts", "ids": ["id-1", "id-2"], "visibility": "public"},
                 "scenario": "批量发布两篇文章。",
             }
         ],
@@ -859,9 +858,9 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
             {
                 "arguments": {
                     "content_type": "posts",
-                    "items": [{"title": "导入文章", "body": "正文内容", "status": "draft"}],
+                    "items": [{"title": "导入文章", "body": "正文内容", "visibility": "private"}],
                 },
-                "scenario": "导入一篇草稿文章。",
+                "scenario": "导入一篇私密文章。",
             }
         ],
         domain="content",

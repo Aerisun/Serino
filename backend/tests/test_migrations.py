@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0004_drop_admin_email_password_hash"
+CURRENT_SCHEMA_HEAD = "0005_remove_content_status"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -65,6 +65,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0002_public_title_identity.py",
         "0003_comment_image_rate_limit.py",
         "0004_drop_admin_email_password_hash.py",
+        "0005_remove_content_status.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
@@ -83,4 +84,6 @@ def test_run_database_migrations_creates_baseline_schema_and_journal(tmp_path, m
     assert "_aerisun_data_migrations" in tables
     assert "page_display_options" not in tables
     assert "admin_email_password_hash" not in _get_columns(db_path, "site_auth_config")
+    assert "status" not in _get_columns(db_path, "posts")
+    assert "first_archived_at" not in _get_columns(db_path, "posts")
     assert _get_alembic_revision(db_path) == CURRENT_SCHEMA_HEAD

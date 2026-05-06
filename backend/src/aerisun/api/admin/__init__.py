@@ -49,6 +49,8 @@ def _build_admin_router() -> APIRouter:
                     {**data, "_content_type": content_type},
                 ),
                 prepare_update_data=normalize_content_update_state,
+                enable_bulk_status=False,
+                enable_bulk_visibility=True,
             )
         )
 

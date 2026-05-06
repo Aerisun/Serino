@@ -7,17 +7,225 @@ import { PageHeader } from "@/components/PageHeader";
 import { DataTable } from "@/components/DataTable";
 import { BulkActionBar } from "@/components/BulkActionBar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { NativeSelect } from "@/components/ui/NativeSelect";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
-import { cn } from "@/lib/utils";
+import { getBodySnippet } from "@/lib/content-snippets";
+import { cn, formatDate } from "@/lib/utils";
 import type { ContentListConfig } from "./types";
-import { DEFAULT_SORT_OPTIONS, DEFAULT_STATUS_TABS } from "./types";
+import { DEFAULT_SORT_OPTIONS, DEFAULT_VISIBILITY_TABS } from "./types";
 
 interface ContentListPageProps {
   config: ContentListConfig;
+}
+
+function contentText(value: unknown): string {
+  if (value == null) {
+    return "";
+  }
+
+  return typeof value === "string" ? value : String(value);
+}
+
+function contentId(row: ContentAdminRead): string {
+  return contentText(row.id);
+}
+
+function contentTitle(row: ContentAdminRead): string {
+  const title = contentText(row.title).trim();
+  if (title) {
+    return title;
+  }
+
+  const bodySnippet = getBodySnippet(contentText(row.body));
+  const slug = contentText(row.slug).trim();
+  return bodySnippet || slug || contentId(row);
+}
+
+function contentSummary(row: ContentAdminRead, title: string): string {
+  const summary = getBodySnippet(contentText(row.summary));
+  const bodySnippet = getBodySnippet(contentText(row.body));
+  const nextSummary = summary || bodySnippet;
+
+  return nextSummary && nextSummary !== title ? nextSummary : "";
+}
+
+interface MobileContentListProps {
+  resourceKey: string;
+  items: ContentAdminRead[];
+  isLoading?: boolean;
+  total: number;
+  page: number;
+  pageSize: number;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
+  onPageChange: (page: number) => void;
+  onRowClick: (row: ContentAdminRead) => void;
+}
+
+function MobileContentList({
+  resourceKey,
+  items,
+  isLoading,
+  total,
+  page,
+  pageSize,
+  selectedIds,
+  onSelectionChange,
+  onPageChange,
+  onRowClick,
+}: MobileContentListProps) {
+  const { t } = useI18n();
+  const totalPages = Math.ceil(total / pageSize);
+  const showTitleSummary = resourceKey === "posts" || resourceKey === "diary";
+
+  const toggleRow = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    onSelectionChange(next);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-40 rounded-[var(--admin-radius-xl)] border border-[rgba(var(--admin-border-subtle)/0.5)] bg-[rgb(var(--admin-surface-1)/0.9)] p-4 shadow-[0_16px_36px_-30px_rgb(15_23_42/0.38)] dark:bg-white/[0.04]"
+          >
+            <div className="h-4 w-2/3 animate-pulse rounded-full bg-foreground/10" />
+            <div className="mt-4 h-3 w-full animate-pulse rounded-full bg-foreground/10" />
+            <div className="mt-2 h-3 w-4/5 animate-pulse rounded-full bg-foreground/10" />
+            <div className="mt-5 flex gap-2">
+              <div className="h-7 w-16 animate-pulse rounded-full bg-foreground/10" />
+              <div className="h-7 w-16 animate-pulse rounded-full bg-foreground/10" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="rounded-[var(--admin-radius-xl)] admin-glass-strong px-5 py-12 text-center text-sm text-muted-foreground md:hidden">
+        {t("common.noData")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 md:hidden">
+      <div className="space-y-3">
+        {items.map((row) => {
+          const id = contentId(row);
+          const title = contentTitle(row);
+          const summary = contentSummary(row, title);
+          const passage = getBodySnippet(contentText(row.body), title);
+          const visibility = contentText(row.visibility);
+          const publishedAt = formatDate(
+            contentText(row.published_at) || contentText(row.updated_at),
+          );
+          const selected = selectedIds.has(id);
+
+          return (
+            <article
+              key={id}
+              role="button"
+              tabIndex={0}
+              className={cn(
+                "group rounded-[var(--admin-radius-xl)] border border-[rgba(var(--admin-border-subtle)/0.5)] bg-[rgb(var(--admin-surface-1)/0.9)] p-4 shadow-[0_16px_36px_-30px_rgb(15_23_42/0.38)] transition-[border-color,box-shadow,transform] active:translate-y-px dark:bg-white/[0.04]",
+                selected &&
+                  "ring-2 ring-[rgb(var(--admin-accent-rgb)/0.4)] shadow-[0_20px_48px_-30px_rgb(var(--admin-accent-rgb)/0.7)]",
+              )}
+              onClick={() => onRowClick(row)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onRowClick(row);
+                }
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-5 w-5 shrink-0 rounded border-gray-300"
+                  checked={selected}
+                  aria-label={title}
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={() => toggleRow(id)}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-start gap-2">
+                    {showTitleSummary ? (
+                      <h3 className="min-w-0 flex-1 break-words text-base font-semibold leading-6 text-foreground/95 line-clamp-2">
+                        {title}
+                      </h3>
+                    ) : (
+                      <p className="min-w-0 flex-1 break-words text-[13px] font-normal leading-5 text-foreground/90 line-clamp-3">
+                        {passage}
+                      </p>
+                    )}
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform group-active:translate-x-0.5" />
+                  </div>
+
+                  {showTitleSummary && summary ? (
+                    <p className="mt-3 line-clamp-2 break-words text-sm leading-6 text-muted-foreground/95">
+                      {summary}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {visibility ? <StatusBadge status={visibility} /> : null}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <Clock3 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{publishedAt}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-between rounded-[var(--admin-radius-lg)] admin-glass-strong px-3 py-3">
+          <span className="text-xs text-muted-foreground">
+            {t("common.itemsTotal").replace("{count}", String(total))}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-12 text-center text-sm">
+              {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => onPageChange(page + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function ContentListPage({ config }: ContentListPageProps) {
@@ -26,28 +234,13 @@ export default function ContentListPage({ config }: ContentListPageProps) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const initialVisibilityParam = searchParams.get("visibility") || "";
   const [page, setPage] = useState(() => Number(searchParams.get("page")) || 1);
-  const [statusFilter, setStatusFilter] = useState(
-    () => searchParams.get("status") || "",
+  const [visibilityFilter, setVisibilityFilter] = useState(() =>
+    initialVisibilityParam === "public" || initialVisibilityParam === "private"
+      ? initialVisibilityParam
+      : "",
   );
-  const [visibilityFilter, setVisibilityFilter] = useState(
-    () => searchParams.get("visibility") || "",
-  );
-  const initialFilterMode = (() => {
-    if (searchParams.get("status") === "draft") return "draft";
-    if (
-      searchParams.get("status") === "published" &&
-      searchParams.get("visibility") === "public"
-    )
-      return "public_publish";
-    if (
-      searchParams.get("status") === "archived" &&
-      searchParams.get("visibility") === "private"
-    )
-      return "private_archive";
-    return "";
-  })();
-  const [filterMode, setFilterMode] = useState(initialFilterMode);
   const [search, setSearch] = useState(() => searchParams.get("q") || "");
   const [searchDebounced, setSearchDebounced] = useState(
     () => searchParams.get("q") || "",
@@ -59,7 +252,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
 
   const [sort_by, sort_order] = sort.split(":");
   const sortOptions = config.sortOptions ?? DEFAULT_SORT_OPTIONS;
-  const statusTabs = config.statusTabs ?? DEFAULT_STATUS_TABS;
+  const visibilityTabs = config.visibilityTabs ?? DEFAULT_VISIBILITY_TABS;
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearch = (value: string) => {
@@ -68,19 +261,17 @@ export default function ContentListPage({ config }: ContentListPageProps) {
     searchTimer.current = setTimeout(() => {
       setSearchDebounced(value);
       setPage(1);
-      syncUrl(1, statusFilter, visibilityFilter, value);
+      syncUrl(1, visibilityFilter, value);
     }, 300);
   };
 
   const syncUrl = (
     p: number,
-    status: string,
     visibility: string,
     q: string,
   ) => {
     const params: Record<string, string> = {};
     if (p > 1) params.page = String(p);
-    if (status) params.status = status;
     if (visibility) params.visibility = visibility;
     if (q) params.q = q;
     setSearchParams(params, { replace: true });
@@ -88,31 +279,17 @@ export default function ContentListPage({ config }: ContentListPageProps) {
 
   const handlePageChange = (p: number) => {
     setPage(p);
-    syncUrl(p, statusFilter, visibilityFilter, searchDebounced);
+    syncUrl(p, visibilityFilter, searchDebounced);
   };
 
-  const handleStatusChange = (v: string) => {
-    let nextStatus = "";
-    let nextVisibility = "";
-    if (v === "draft") {
-      nextStatus = "draft";
-    } else if (v === "public_publish") {
-      nextStatus = "published";
-      nextVisibility = "public";
-    } else if (v === "private_archive") {
-      nextStatus = "archived";
-      nextVisibility = "private";
-    }
-    setFilterMode(v);
-    setStatusFilter(nextStatus);
+  const handleVisibilityChange = (nextVisibility: string) => {
     setVisibilityFilter(nextVisibility);
     setPage(1);
-    syncUrl(1, nextStatus, nextVisibility, searchDebounced);
+    syncUrl(1, nextVisibility, searchDebounced);
   };
 
   const params = {
     page,
-    status: statusFilter || undefined,
     visibility: visibilityFilter || undefined,
     search: searchDebounced || undefined,
     sort_by,
@@ -134,7 +311,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
       },
     });
 
-  const { mutateAsync: bulkStatus } = config.useBulkStatus({
+  const { mutateAsync: bulkVisibility } = config.useBulkVisibility({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [...config.getQueryKey()] });
@@ -155,10 +332,10 @@ export default function ContentListPage({ config }: ContentListPageProps) {
     }
   };
 
-  const handleBulkStatus = async (status: string) => {
+  const handleBulkVisibility = async (visibility: string) => {
     try {
-      const res = await bulkStatus({
-        data: { ids: Array.from(selectedIds), status },
+      const res = await bulkVisibility({
+        data: { ids: Array.from(selectedIds), visibility },
       });
       toast.success(t("common.operationSuccess") + ` (${res.data.affected})`);
       setSelectedIds(new Set());
@@ -179,12 +356,19 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         }
       />
 
-      <div className="mb-4 flex min-w-0 items-center gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex min-w-0 shrink-0 items-center gap-2">
+      <div className="mb-4 grid min-w-0 gap-3 md:flex md:items-center">
+        <Input
+          placeholder={t("common.searchPlaceholder")}
+          className="order-1 min-w-0 md:order-2 md:flex-1 lg:max-w-xs"
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+        <div className="order-2 flex min-w-0 flex-col gap-3 md:order-1 md:flex-row md:items-center">
+          <div className="flex min-w-0 shrink-0 items-center gap-2 overflow-x-auto pb-1 md:overflow-visible md:pb-0">
             <Button
-              variant={filterMode === "" ? "default" : "outline"}
-              onClick={() => handleStatusChange("")}
+              variant={visibilityFilter === "" ? "default" : "outline"}
+              className="shrink-0"
+              onClick={() => handleVisibilityChange("")}
             >
               {t("common.all")}
             </Button>
@@ -210,20 +394,16 @@ export default function ContentListPage({ config }: ContentListPageProps) {
                   : "max-w-0 opacity-0 -translate-x-2 pointer-events-none",
               )}
             >
-              {statusTabs.map((tab) => (
+              {visibilityTabs.map((tab) => (
                 <Button
                   key={tab}
                   type="button"
                   size="sm"
-                  variant="outline"
+                  variant={visibilityFilter === tab ? "default" : "outline"}
                   className="shrink-0"
-                  onClick={() => handleStatusChange(tab)}
+                  onClick={() => handleVisibilityChange(tab)}
                 >
-                  {tab === "public_publish"
-                    ? t("posts.published")
-                    : tab === "private_archive"
-                      ? t("posts.archived")
-                      : t(`posts.${tab}`)}
+                  {t(`status.${tab}`)}
                 </Button>
               ))}
             </div>
@@ -235,7 +415,7 @@ export default function ContentListPage({ config }: ContentListPageProps) {
               setPage(1);
             }}
             aria-label={t("common.sortBy")}
-            containerClassName="w-[clamp(8.5rem,38vw,13.75rem)] min-w-0 shrink-0"
+            containerClassName="w-full min-w-0 shrink-0 md:w-[clamp(8.5rem,38vw,13.75rem)]"
             className="h-9 min-w-0 rounded-md px-3 text-sm"
           >
             {sortOptions.map((opt) => (
@@ -245,12 +425,6 @@ export default function ContentListPage({ config }: ContentListPageProps) {
             ))}
           </NativeSelect>
         </div>
-        <Input
-          placeholder={t("common.searchPlaceholder")}
-          className="min-w-0 flex-1 lg:max-w-xs"
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-        />
       </div>
 
       <BulkActionBar
@@ -259,16 +433,11 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         actions={[
           {
             label: t("common.bulkPublish"),
-            onClick: () => handleBulkStatus("published"),
+            onClick: () => handleBulkVisibility("public"),
           },
           {
-            label: t("posts.archived"),
-            onClick: () => handleBulkStatus("archived"),
-            variant: "outline",
-          },
-          {
-            label: t("common.bulkDraft"),
-            onClick: () => handleBulkStatus("draft"),
+            label: t("status.private"),
+            onClick: () => handleBulkVisibility("private"),
             variant: "outline",
           },
           {
@@ -279,19 +448,34 @@ export default function ContentListPage({ config }: ContentListPageProps) {
         ]}
       />
 
-      <DataTable<ContentAdminRead>
-        columns={config.columns}
-        data={items}
+      <MobileContentList
+        resourceKey={config.resourceKey}
+        items={items}
         total={total}
         page={page}
         pageSize={pageSize}
         onPageChange={handlePageChange}
         isLoading={isLoading}
-        onRowClick={(row) => navigate(config.editPath(row.id))}
-        selectable
+        onRowClick={(row) => navigate(config.editPath(contentId(row)))}
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
       />
+
+      <div className="hidden md:block">
+        <DataTable<ContentAdminRead>
+          columns={config.columns}
+          data={items}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          isLoading={isLoading}
+          onRowClick={(row) => navigate(config.editPath(contentId(row)))}
+          selectable
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+        />
+      </div>
 
       <ConfirmDialog
         open={bulkDeleteOpen}

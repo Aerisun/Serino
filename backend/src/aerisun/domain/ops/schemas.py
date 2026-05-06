@@ -275,7 +275,7 @@ class RecentContentItem(BaseModel):
     id: str
     title: str
     content_type: str  # "post", "diary", "thought", "excerpt"
-    status: str
+    visibility: str
     updated_at: datetime
 
 
@@ -354,7 +354,7 @@ class EnhancedDashboardStats(ModelBase):
     guestbook_entries: int
     friends: int
     assets: int
-    posts_by_status: dict[str, int] = Field(default_factory=dict)
+    posts_by_visibility: dict[str, int] = Field(default_factory=dict)
     content_by_month: list[MonthlyCount] = Field(default_factory=list)
     recent_content: list[RecentContentItem] = Field(default_factory=list)
     traffic: DashboardTrafficMetrics = Field(default_factory=DashboardTrafficMetrics)

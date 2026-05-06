@@ -98,6 +98,11 @@ class BulkStatusRequest(BaseModel):
     status: str = Field(description="New status value to set")
 
 
+class BulkVisibilityRequest(BaseModel):
+    ids: list[str] = Field(description="List of item IDs to update")
+    visibility: str = Field(description="New visibility value to set")
+
+
 class BulkActionResponse(BaseModel):
     affected: int = Field(description="Number of items affected by the operation")
 

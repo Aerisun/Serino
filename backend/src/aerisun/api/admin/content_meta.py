@@ -45,7 +45,6 @@ def list_tags(
 def get_default_title(
     content_type: Literal["diary", "thoughts", "excerpts"] = Query(description="内容类型"),
     category: str | None = Query(default=None, description="内容分类"),
-    status: Literal["draft", "published", "archived"] | None = Query(default=None, description="内容状态"),
     item_id: str | None = Query(default=None, description="当前内容 ID"),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
@@ -54,7 +53,6 @@ def get_default_title(
         session,
         content_type=content_type,
         category=category,
-        status=status,
         item_id=item_id,
     )
 

@@ -60,12 +60,10 @@ export interface ContentEditorConfig {
   buildPreviewPath?: (slug: string, storageKey: string) => string;
 }
 
-type AutoTitleStatus = "draft" | "published" | "archived";
-
 const AUTO_TITLE_PATTERNS: Partial<Record<ContentType, RegExp>> = {
   diary: /^\d{1,2}年\d{1,2}月\d{1,2}日记$/,
-  thoughts: /^碎碎念[零一二三四五六七八九十百\d]+则 \(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)(?:-(草稿|归档))?$/,
-  excerpts: /^文摘[零一二三四五六七八九十百\d]+则 \(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)(?:-(草稿|归档))?$/,
+  thoughts: /^碎碎念[零一二三四五六七八九十百\d]+则 \(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)$/,
+  excerpts: /^文摘[零一二三四五六七八九十百\d]+则 \(\d{1,2}\.\d{1,2}\.\d{1,2}\.\)$/,
 };
 
 function normalizeAutoTitleCategory(value: unknown): string | undefined {
@@ -76,19 +74,9 @@ function normalizeAutoTitleCategory(value: unknown): string | undefined {
   return normalized || undefined;
 }
 
-function resolveAutoTitleStatus(
-  value: Pick<ContentCreate, "status" | "visibility">,
-): AutoTitleStatus {
-  if (value.status === "draft") {
-    return "draft";
-  }
-  return value.visibility === "public" ? "published" : "archived";
-}
-
 function buildAutoTitleValue(
   contentType: ContentType,
   suggestion: { title: string },
-  _status: AutoTitleStatus,
 ) {
   return contentType === "diary" || contentType === "thoughts" || contentType === "excerpts"
     ? suggestion.title
@@ -137,16 +125,14 @@ export function useContentEditor(config: ContentEditorConfig) {
   const [form, setFormState] = useState<ContentCreate>(config.defaultForm);
   const [isPublishedAtManual, setIsPublishedAtManualState] = useState(false);
   const [isAutoTitleEnabled, setIsAutoTitleEnabledState] = useState(isDefaultTitleContentType && isNew);
-  const autoTitleStatus = useMemo(() => resolveAutoTitleStatus(form), [form.status, form.visibility]);
   const defaultTitleParams = useMemo<GetDefaultContentTitleParams>(() => ({
     content_type: defaultTitleContentType,
-    status: autoTitleStatus,
     category:
       defaultTitleContentType === "thoughts" || defaultTitleContentType === "excerpts"
         ? normalizeAutoTitleCategory(form.category)
         : undefined,
     item_id: !isNew && id ? id : undefined,
-  }), [autoTitleStatus, defaultTitleContentType, form.category, id, isNew]);
+  }), [defaultTitleContentType, form.category, id, isNew]);
   const defaultTitleParamsKey = JSON.stringify(defaultTitleParams);
   const { data: defaultTitleSuggestion } = useGetDefaultContentTitle(
     defaultTitleParams,
@@ -264,7 +250,7 @@ export function useContentEditor(config: ContentEditorConfig) {
     if (!suggestion) {
       return;
     }
-    const suggestedTitle = buildAutoTitleValue(config.contentType, suggestion, autoTitleStatus);
+    const suggestedTitle = buildAutoTitleValue(config.contentType, suggestion);
     suggestedTitleRef.current = suggestedTitle;
     defaultTitleParamsKeyRef.current = defaultTitleParamsKey;
     if (!isDefaultTitleContentType || !hydratedRef.current || !isAutoTitleEnabled) {
@@ -277,7 +263,6 @@ export function useContentEditor(config: ContentEditorConfig) {
       return { ...prev, title: suggestedTitle };
     });
   }, [
-    autoTitleStatus,
     config.contentType,
     defaultTitleParamsKey,
     defaultTitleSuggestion?.data,
@@ -345,11 +330,9 @@ export function useContentEditor(config: ContentEditorConfig) {
 
   const buildDefaultTitleRequestParams = (
     currentForm: ContentCreate,
-    status: AutoTitleStatus,
     itemId?: string,
   ): GetDefaultContentTitleParams => ({
     content_type: defaultTitleContentType,
-    status,
     category:
       defaultTitleContentType === "thoughts" || defaultTitleContentType === "excerpts"
         ? normalizeAutoTitleCategory(currentForm.category)
@@ -367,23 +350,21 @@ export function useContentEditor(config: ContentEditorConfig) {
       return nextForm.title;
     }
 
-    const targetStatus = resolveAutoTitleStatus(nextForm);
     const params = buildDefaultTitleRequestParams(
       currentForm,
-      targetStatus,
       currentIsNew ? undefined : draftId,
     );
     const paramsKey = JSON.stringify(params);
     const currentSuggestion = defaultTitleSuggestion?.data;
 
     if (currentSuggestion && defaultTitleParamsKeyRef.current === paramsKey) {
-      return buildAutoTitleValue(config.contentType, currentSuggestion, targetStatus);
+      return buildAutoTitleValue(config.contentType, currentSuggestion);
     }
 
     const response = await getDefaultContentTitle(params);
     const fetchedSuggestion = response.data;
     defaultTitleParamsKeyRef.current = paramsKey;
-    return buildAutoTitleValue(config.contentType, fetchedSuggestion, targetStatus);
+    return buildAutoTitleValue(config.contentType, fetchedSuggestion);
   };
 
   const persist = async (options: PersistOptions = {}) => {
@@ -572,7 +553,6 @@ export function buildServerToForm(
         summary: item.summary || "",
         body: item.body,
         tags: item.tags,
-        status: item.status,
         visibility: item.visibility,
         published_at: effectivePublishedAt,
         category: item.category || "",

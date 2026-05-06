@@ -14,7 +14,6 @@ class ContentEntryRead(ModelBase):
     summary: str | None = Field(description="Brief summary or excerpt")
     body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(description="List of tag names")
-    status: str = Field(description="Publication status")
     visibility: str = Field(description="Visibility level")
     published_at: datetime | None = Field(description="Publication timestamp")
     created_at: datetime = Field(description="Creation timestamp")
@@ -51,12 +50,8 @@ class ContentCreate(BaseModel):
     summary: str | None = Field(default=None, description="Brief summary or excerpt")
     body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(default_factory=list, description="List of tag names")
-    status: Literal["draft", "published", "archived"] = Field(
-        default="draft",
-        description="Publication status: draft, public publish, or private archive",
-    )
     visibility: Literal["public", "private"] = Field(
-        default="public",
+        default="private",
         description="Visibility level: public or private",
     )
     published_at: datetime | None = Field(default=None, description="Publication timestamp")
@@ -77,7 +72,6 @@ class ContentUpdate(BaseModel):
     summary: str | None = Field(default=None, description="Brief summary or excerpt")
     body: str | None = Field(default=None, description="Full content body in Markdown")
     tags: list[str] | None = Field(default=None, description="List of tag names")
-    status: Literal["draft", "published", "archived"] | None = Field(default=None, description="Publication status")
     visibility: Literal["public", "private"] | None = Field(default=None, description="Visibility level")
     published_at: datetime | None = Field(default=None, description="Publication timestamp")
     category: str | None = Field(default=None, description="Content category name")
@@ -98,7 +92,6 @@ class ContentAdminRead(ModelBase):
     summary: str | None = Field(description="Brief summary or excerpt")
     body: str = Field(description="Full content body in Markdown")
     tags: list[str] = Field(description="List of tag names")
-    status: str = Field(description="Publication status")
     visibility: str = Field(description="Visibility level")
     published_at: datetime | None = Field(description="Publication timestamp")
     created_at: datetime = Field(description="Creation timestamp")

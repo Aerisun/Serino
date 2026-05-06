@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from aerisun.core.base import Base
 from aerisun.domain.content.models import DiaryEntry, ExcerptEntry, PostEntry, ThoughtEntry
-from aerisun.domain.content.service import normalize_content_update_state, resolve_content_bulk_state
+from aerisun.domain.content.service import normalize_content_update_state
 from aerisun.domain.crud import repository as repo
 from aerisun.domain.exceptions import ResourceNotFound, ValidationError
 
@@ -24,16 +24,16 @@ CONTENT_TYPE_BY_MODEL = {
 }
 
 
-def _is_published_public(obj: Any) -> bool:
-    return getattr(obj, "status", None) == "published" and getattr(obj, "visibility", None) == "public"
+def _is_public(obj: Any) -> bool:
+    return getattr(obj, "visibility", None) == "public"
 
 
-def _snapshot_is_published_public(snapshot: dict[str, Any]) -> bool:
-    return snapshot["status"] == "published" and snapshot["visibility"] == "public"
+def _snapshot_is_public(snapshot: dict[str, Any]) -> bool:
+    return snapshot["visibility"] == "public"
 
 
-def _became_published_public(previous: dict[str, Any], current: dict[str, Any]) -> bool:
-    return not _snapshot_is_published_public(previous) and _snapshot_is_published_public(current)
+def _became_public(previous: dict[str, Any], current: dict[str, Any]) -> bool:
+    return not _snapshot_is_public(previous) and _snapshot_is_public(current)
 
 
 def _dispatch_content_subscriptions_if_needed(
@@ -46,7 +46,7 @@ def _dispatch_content_subscriptions_if_needed(
         return
 
     if should_dispatch is None and obj is not None:
-        should_dispatch = _is_published_public(obj)
+        should_dispatch = _is_public(obj)
 
     if not should_dispatch:
         return
@@ -65,7 +65,6 @@ def _content_snapshot(obj: Any) -> dict[str, Any]:
         "item_id": str(getattr(obj, "id", "") or ""),
         "slug": str(getattr(obj, "slug", "") or ""),
         "title": str(getattr(obj, "title", "") or ""),
-        "status": getattr(obj, "status", None),
         "visibility": getattr(obj, "visibility", None),
     }
 
@@ -140,10 +139,9 @@ def create_item(
         item_id=snapshot["item_id"],
         slug=snapshot["slug"],
         title=snapshot["title"],
-        status=snapshot["status"],
         visibility=snapshot["visibility"],
     )
-    if snapshot["status"] == "published" and snapshot["visibility"] == "public":
+    if _snapshot_is_public(snapshot):
         emit_content_published(
             session,
             content_type=content_type,
@@ -166,7 +164,6 @@ def update_item(
     prepare_data: Callable[[Session, Any, dict[str, Any]], dict[str, Any]] | None = None,
 ) -> BaseModel:
     from aerisun.domain.automation.events import (
-        emit_content_archived,
         emit_content_published,
         emit_content_updated,
         emit_content_visibility_changed,
@@ -183,9 +180,7 @@ def update_item(
     current = _content_snapshot(obj)
     content_type = _content_type_for_model(model)
     changed_fields = [
-        key
-        for key in data
-        if key in {"slug", "title", "summary", "body", "status", "visibility", "tags", "published_at"}
+        key for key in data if key in {"slug", "title", "summary", "body", "visibility", "tags", "published_at"}
     ]
     emit_content_updated(
         session,
@@ -193,21 +188,12 @@ def update_item(
         item_id=current["item_id"],
         slug=current["slug"],
         title=current["title"],
-        status=current["status"],
         visibility=current["visibility"],
         changed_fields=changed_fields,
     )
-    became_public = _became_published_public(previous, current)
+    became_public = _became_public(previous, current)
     if became_public:
         emit_content_published(
-            session,
-            content_type=content_type,
-            item_id=current["item_id"],
-            slug=current["slug"],
-            title=current["title"],
-        )
-    if previous["status"] != current["status"] and current["status"] == "archived":
-        emit_content_archived(
             session,
             content_type=content_type,
             item_id=current["item_id"],
@@ -278,51 +264,78 @@ def bulk_update_status_items(
     *,
     base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
 ) -> dict[str, int]:
-    from aerisun.domain.automation.events import emit_content_status_changed
-
     if not hasattr(model, "status"):
         raise ValidationError("Model does not support status")
-    visibility: str | None = None
-    normalized_status = status
-    if hasattr(model, "visibility"):
-        normalized_status, visibility = resolve_content_bulk_state(status)
+    affected = repo.bulk_update_status(
+        session,
+        model,
+        ids,
+        status,
+        base_query_factory=base_query_factory,
+    )
+    return {"affected": affected}
+
+
+def bulk_update_visibility_items(
+    session: Session,
+    model: type[Base],
+    ids: list[str],
+    visibility: str,
+    *,
+    base_query_factory: Callable[[Session], SAQuery[Any]] | None = None,
+) -> dict[str, int]:
+    from aerisun.domain.automation.events import emit_content_published, emit_content_visibility_changed
+
+    if not hasattr(model, "visibility"):
+        raise ValidationError("Model does not support visibility")
+    if visibility not in {"public", "private"}:
+        raise ValidationError("Visibility must be public or private")
+
     should_dispatch_subscriptions = False
+    emitted_changes: list[tuple[dict[str, Any], dict[str, Any]]] = []
     if model in CONTENT_PUBLICATION_MODELS:
-        patch = {"status": normalized_status}
-        if visibility is not None:
-            patch["visibility"] = visibility
         query = session.query(model) if base_query_factory is None else base_query_factory(session)
         objects = query.filter(model.id.in_(ids)).all()
         for obj in objects:
             previous = _content_snapshot(obj)
-            normalized = normalize_content_update_state(session, obj, patch)
+            normalized = normalize_content_update_state(session, obj, {"visibility": visibility})
             for key, value in normalized.items():
                 if hasattr(type(obj), key):
                     setattr(obj, key, value)
             session.add(obj)
-            should_dispatch_subscriptions = should_dispatch_subscriptions or _became_published_public(
-                previous,
-                _content_snapshot(obj),
-            )
+            current = _content_snapshot(obj)
+            should_dispatch_subscriptions = should_dispatch_subscriptions or _became_public(previous, current)
+            emitted_changes.append((previous, current))
         session.commit()
         affected = len(objects)
     else:
-        affected = repo.bulk_update_status(
+        affected = repo.bulk_update_visibility(
             session,
             model,
             ids,
-            normalized_status,
-            visibility=visibility,
+            visibility,
             base_query_factory=base_query_factory,
         )
+
+    content_type = _content_type_for_model(model)
+    for previous, current in emitted_changes:
+        if _became_public(previous, current):
+            emit_content_published(
+                session,
+                content_type=content_type,
+                item_id=current["item_id"],
+                slug=current["slug"],
+                title=current["title"],
+            )
+        if previous["visibility"] != current["visibility"]:
+            emit_content_visibility_changed(
+                session,
+                content_type=content_type,
+                item_id=current["item_id"],
+                slug=current["slug"],
+                title=current["title"],
+                visibility=current["visibility"],
+            )
     if should_dispatch_subscriptions:
         _dispatch_content_subscriptions_if_needed(model, should_dispatch=True)
-    emit_content_status_changed(
-        session,
-        content_type=_content_type_for_model(model),
-        ids=ids,
-        status=normalized_status,
-        visibility=visibility,
-        affected=affected,
-    )
     return {"affected": affected}

@@ -4,18 +4,16 @@ from datetime import datetime
 
 from aerisun.core.db import get_session_factory
 from aerisun.core.time import BEIJING_TZ, to_beijing_datetime
-from aerisun.domain.content import service as content_service
 from aerisun.domain.content.models import ThoughtEntry
 
 ADMIN_BASE = "/api/v1/admin/thoughts"
 
 
-def _thought_payload(slug: str, title: str, *, status: str = "draft", visibility: str = "private") -> dict:
+def _thought_payload(slug: str, title: str, *, visibility: str = "private") -> dict:
     return {
         "slug": slug,
         "title": title,
         "body": f"body for {slug}",
-        "status": status,
         "visibility": visibility,
     }
 
@@ -29,14 +27,14 @@ def _beijing(value: datetime | None) -> datetime | None:
     return None if value is None else to_beijing_datetime(value)
 
 
-def test_first_public_title_ignores_draft_numbers(client, admin_headers) -> None:
+def test_first_public_title_ignores_private_auto_title_numbers(client, admin_headers) -> None:
     first_id = ""
     for index in range(1, 4):
         response = client.post(
             f"{ADMIN_BASE}/",
             json=_thought_payload(
-                f"public-title-draft-{index}",
-                f"碎碎念{['', '一', '二', '三'][index]}则 (26.4.26.)-草稿",
+                f"public-title-private-{index}",
+                f"碎碎念{['', '一', '二', '三'][index]}则 (26.4.26.)",
             ),
             headers=admin_headers,
         )
@@ -47,7 +45,6 @@ def test_first_public_title_ignores_draft_numbers(client, admin_headers) -> None
     publish_response = client.put(
         f"{ADMIN_BASE}/{first_id}",
         json={
-            "status": "published",
             "visibility": "public",
             "published_at": "2026-04-26T10:00:00+08:00",
         },
@@ -61,14 +58,10 @@ def test_first_public_title_ignores_draft_numbers(client, admin_headers) -> None
     assert _beijing(item.first_published_at) == datetime(2026, 4, 26, 10, 0, tzinfo=BEIJING_TZ)
 
 
-def test_public_to_archive_or_draft_uses_clear_backend_suffix_and_restores_public_identity(
-    client,
-    admin_headers,
-    monkeypatch,
-) -> None:
+def test_public_private_toggle_preserves_public_identity(client, admin_headers) -> None:
     create_response = client.post(
         f"{ADMIN_BASE}/",
-        json=_thought_payload("public-title-restore", "碎碎念一则 (26.4.26.)-草稿"),
+        json=_thought_payload("public-title-restore", "碎碎念一则 (26.4.26.)"),
         headers=admin_headers,
     )
     assert create_response.status_code == 201
@@ -77,7 +70,6 @@ def test_public_to_archive_or_draft_uses_clear_backend_suffix_and_restores_publi
     publish_response = client.put(
         f"{ADMIN_BASE}/{item_id}",
         json={
-            "status": "published",
             "visibility": "public",
             "published_at": "2026-04-26T11:00:00+08:00",
         },
@@ -86,35 +78,21 @@ def test_public_to_archive_or_draft_uses_clear_backend_suffix_and_restores_publi
     assert publish_response.status_code == 200
     assert publish_response.json()["title"] == "碎碎念一则 (26.4.26.)"
 
-    monkeypatch.setattr(
-        content_service,
-        "shanghai_now",
-        lambda: datetime(2026, 4, 27, 8, 0, tzinfo=BEIJING_TZ),
-    )
-    archive_response = client.put(
+    private_response = client.put(
         f"{ADMIN_BASE}/{item_id}",
         json={"visibility": "private"},
         headers=admin_headers,
     )
-    assert archive_response.status_code == 200
-    assert archive_response.json()["status"] == "archived"
-    assert archive_response.json()["title"] == "碎碎念一则 (26.4.26.)-公开转归档"
-    archived_item = _get_thought("public-title-restore")
-    assert _beijing(archived_item.published_at) == datetime(2026, 4, 27, 8, 0, tzinfo=BEIJING_TZ)
-    assert _beijing(archived_item.first_archived_at) == datetime(2026, 4, 27, 8, 0, tzinfo=BEIJING_TZ)
-
-    draft_response = client.put(
-        f"{ADMIN_BASE}/{item_id}",
-        json={"visibility": "public"},
-        headers=admin_headers,
-    )
-    assert draft_response.status_code == 200
-    assert draft_response.json()["status"] == "draft"
-    assert draft_response.json()["title"] == "碎碎念一则 (26.4.26.)-公开转草稿"
+    assert private_response.status_code == 200
+    assert private_response.json()["visibility"] == "private"
+    assert private_response.json()["title"] == "碎碎念一则 (26.4.26.)"
+    private_item = _get_thought("public-title-restore")
+    assert _beijing(private_item.published_at) == datetime(2026, 4, 26, 11, 0, tzinfo=BEIJING_TZ)
+    assert _beijing(private_item.first_published_at) == datetime(2026, 4, 26, 11, 0, tzinfo=BEIJING_TZ)
 
     restore_response = client.put(
         f"{ADMIN_BASE}/{item_id}",
-        json={"status": "published", "visibility": "public"},
+        json={"visibility": "public"},
         headers=admin_headers,
     )
     assert restore_response.status_code == 200
@@ -122,7 +100,6 @@ def test_public_to_archive_or_draft_uses_clear_backend_suffix_and_restores_publi
     item = _get_thought("public-title-restore")
     assert _beijing(item.published_at) == datetime(2026, 4, 26, 11, 0, tzinfo=BEIJING_TZ)
     assert _beijing(item.first_published_at) == datetime(2026, 4, 26, 11, 0, tzinfo=BEIJING_TZ)
-    assert _beijing(item.first_archived_at) == datetime(2026, 4, 27, 8, 0, tzinfo=BEIJING_TZ)
 
 
 def test_public_title_and_time_survive_normal_edits_but_manual_time_is_respected(
@@ -131,7 +108,7 @@ def test_public_title_and_time_survive_normal_edits_but_manual_time_is_respected
 ) -> None:
     create_response = client.post(
         f"{ADMIN_BASE}/",
-        json=_thought_payload("public-title-stable-edit", "碎碎念一则 (26.4.26.)-草稿"),
+        json=_thought_payload("public-title-stable-edit", "碎碎念一则 (26.4.26.)"),
         headers=admin_headers,
     )
     assert create_response.status_code == 201
@@ -140,7 +117,6 @@ def test_public_title_and_time_survive_normal_edits_but_manual_time_is_respected
     publish_response = client.put(
         f"{ADMIN_BASE}/{item_id}",
         json={
-            "status": "published",
             "visibility": "public",
             "published_at": "2026-04-26T12:00:00+08:00",
         },

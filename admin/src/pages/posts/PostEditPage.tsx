@@ -31,7 +31,7 @@ const editorConfig = {
   listRoute: "/posts",
   defaultForm: {
     slug: "", title: "", summary: "", body: "", tags: [],
-    status: "draft", visibility: "private", published_at: null,
+    visibility: "private", published_at: null,
     category: "",
   },
   serverToForm: buildServerToForm((item) => ({
@@ -54,7 +54,7 @@ export default function PostEditPage() {
         title={editor.pageTitle}
         actions={
           <ContentEditorHeaderActions
-            visibility={form.visibility}
+            visibility={form.visibility === "public" ? "public" : "private"}
             isSaving={isSaving}
             onToggleVisibility={() =>
               setField("visibility", form.visibility === "public" ? "private" : "public")
@@ -83,7 +83,12 @@ export default function PostEditPage() {
 
         <div className="space-y-2">
           <Label>{t("posts.body")}</Label>
-          <MarkdownEditor value={form.body} onChange={(v) => setField("body", v)} minHeight="400px" />
+          <MarkdownEditor
+            value={form.body}
+            onChange={(v) => setField("body", v)}
+            minHeight="400px"
+            mobileFullscreen
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

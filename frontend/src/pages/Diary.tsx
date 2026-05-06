@@ -129,7 +129,7 @@ const mapRemoteDiaryEntry = (
     date: formatPublishedDate(entry.published_at) || "",
     day: formatDayOfMonth(entry.published_at),
     weekday: formatWeekday(entry.published_at, lang),
-    isArchived: entry.status === "archived",
+    isArchived: entry.visibility === "private",
     weather: entry.weather ?? undefined,
     weatherLabel:
       entry.weather && weatherLabelKeys[entry.weather]
@@ -188,7 +188,7 @@ const Diary = () => {
     },
     pageSize,
     mapItem: (entry, index) => mapRemoteDiaryEntry(entry, index, t, lang),
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
 
@@ -226,8 +226,9 @@ const Diary = () => {
       description={config.description}
       metaDescription={config.metaDescription}
       width={config.width === "narrow" ? "content" : (config.width ?? "content")}
+      contentClassName="mt-0 sm:mt-10"
     >
-      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
           <input
@@ -242,7 +243,7 @@ const Diary = () => {
         </div>
       </div>
 
-      <div className="mt-10 flex flex-col gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:mt-10">
         {status === "loading" &&
           Array.from({ length: 5 }, (_, index) => (
             <div key={`diary-skeleton-${index}`} className="liquid-glass rounded-2xl px-5 py-4">

@@ -46,7 +46,7 @@ def test_read_post_returns_seeded_detail(client) -> None:
     payload = response.json()
     assert payload["slug"] == "from-zero-design-system"
     assert payload["title"] == "从零搭建个人设计系统的完整思路"
-    assert payload["status"] == "published"
+    assert "status" not in payload
     assert payload["visibility"] == "public"
 
 

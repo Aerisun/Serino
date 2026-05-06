@@ -721,7 +721,7 @@ export default function DashboardPage() {
                                 <span className="rounded-full border border-black/5 bg-white/70 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[rgb(var(--admin-accent-rgb)/0.8)] dark:border-white/10 dark:bg-white/[0.04]">
                                   {contentTypeLabel(item.content_type, t)}
                                 </span>
-                                <StatusBadge status={item.status} />
+                                <StatusBadge status={String(item.visibility || "")} />
                               </div>
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </>

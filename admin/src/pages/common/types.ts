@@ -21,7 +21,7 @@ type UseBulkMutationHook = (options?: {
   mutation?: { onSuccess?: () => void };
 }) => {
   mutateAsync: (args: {
-    data: { ids: string[]; status?: string };
+    data: { ids: string[]; visibility?: string };
   }) => Promise<{ data: { affected: number } }>;
   isPending: boolean;
 };
@@ -38,10 +38,10 @@ export interface ContentListConfig {
   columns: ColumnDef[];
   useList: UseListHook;
   useBulkDelete: UseBulkMutationHook;
-  useBulkStatus: UseBulkMutationHook;
+  useBulkVisibility: UseBulkMutationHook;
   getQueryKey: GetQueryKeyFn;
   sortOptions?: SortOption[];
-  statusTabs?: string[];
+  visibilityTabs?: string[];
 }
 
 export const DEFAULT_SORT_OPTIONS: SortOption[] = [
@@ -51,8 +51,4 @@ export const DEFAULT_SORT_OPTIONS: SortOption[] = [
   { value: "published_at:asc", labelKey: "common.sortRecordedAtAsc" },
 ];
 
-export const DEFAULT_STATUS_TABS = [
-  "draft",
-  "public_publish",
-  "private_archive",
-];
+export const DEFAULT_VISIBILITY_TABS = ["public", "private"];

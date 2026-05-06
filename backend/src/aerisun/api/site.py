@@ -70,7 +70,7 @@ PUBLIC_REVALIDATE_CACHE_CONTROL = "public, max-age=0, must-revalidate"
 _LAST_MODIFIED_BY_ETAG: dict[str, datetime] = {}
 
 
-def _can_view_archived_content(
+def _can_view_private_content(
     session: Session,
     current_user: SiteUser | None,
     current_site_session: SiteUserSession | None,
@@ -351,7 +351,7 @@ def read_posts(
         session,
         limit=limit,
         offset=offset,
-        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+        include_private=_can_view_private_content(session, current_user, current_site_session),
     )
     if request is None:
         return payload
@@ -369,7 +369,7 @@ def read_post(
     payload = get_public_post(
         session,
         slug,
-        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+        include_private=_can_view_private_content(session, current_user, current_site_session),
     )
     if request is None:
         return payload
@@ -389,7 +389,7 @@ def read_diary(
         session,
         limit=limit,
         offset=offset,
-        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+        include_private=_can_view_private_content(session, current_user, current_site_session),
     )
     if request is None:
         return payload
@@ -407,7 +407,7 @@ def read_diary_entry(
     payload = get_public_diary_entry(
         session,
         slug,
-        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+        include_private=_can_view_private_content(session, current_user, current_site_session),
     )
     if request is None:
         return payload
@@ -427,7 +427,7 @@ def read_thoughts(
         session,
         limit=limit,
         offset=offset,
-        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+        include_private=_can_view_private_content(session, current_user, current_site_session),
     )
     if request is None:
         return payload
@@ -447,7 +447,7 @@ def read_excerpts(
         session,
         limit=limit,
         offset=offset,
-        include_archived=_can_view_archived_content(session, current_user, current_site_session),
+        include_private=_can_view_private_content(session, current_user, current_site_session),
     )
     if request is None:
         return payload

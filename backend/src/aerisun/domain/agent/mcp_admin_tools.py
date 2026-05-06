@@ -190,7 +190,6 @@ def list_admin_content(
     content_type: ManagedContentType,
     page: int = 1,
     page_size: int = 20,
-    status: str | None = None,
     visibility: str | None = None,
     tag: str | None = None,
     search: str | None = None,
@@ -204,7 +203,6 @@ def list_admin_content(
             page=page,
             page_size=page_size,
             read_schema=ContentAdminRead,
-            status_filter=status,
             visibility_filter=visibility,
             tag_filter=tag,
             search=search,
@@ -320,14 +318,14 @@ def bulk_delete_admin_content(
     return _encode(crud_service.bulk_delete_items(session, _content_model(content_type), ids))
 
 
-def bulk_update_admin_content_status(
+def bulk_update_admin_content_visibility(
     session: Session,
     *,
     content_type: ManagedContentType,
     ids: list[str],
-    status: str,
+    visibility: str,
 ) -> dict[str, Any]:
-    return _encode(crud_service.bulk_update_status_items(session, _content_model(content_type), ids, status))
+    return _encode(crud_service.bulk_update_visibility_items(session, _content_model(content_type), ids, visibility))
 
 
 def list_admin_tags(session: Session) -> list[dict[str, Any]]:

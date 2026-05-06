@@ -13,7 +13,7 @@ from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.config_revisions import create_config_revision
 
 from .deps import get_current_admin
-from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest, PaginatedResponse
+from .schemas import BulkActionResponse, BulkDeleteRequest, BulkStatusRequest, BulkVisibilityRequest, PaginatedResponse
 
 
 def build_crud_router(
@@ -31,6 +31,8 @@ def build_crud_router(
     capture_before: Callable[[Session], Any] | None = None,
     capture_after: Callable[[Session], Any] | None = None,
     build_revision_summary: Callable[[str, Any, Any], str | None] | None = None,
+    enable_bulk_status: bool = True,
+    enable_bulk_visibility: bool = False,
 ) -> APIRouter:
     """Factory that returns a full CRUD router for a given SQLAlchemy model."""
 
@@ -43,7 +45,7 @@ def build_crud_router(
     def list_items(
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=20, ge=1, le=100),
-        status_filter: str | None = Query(default=None, alias="status"),
+        status_filter: str | None = Query(default=None, alias="status", include_in_schema=enable_bulk_status),
         visibility_filter: str | None = Query(default=None, alias="visibility"),
         tag: str | None = Query(default=None),
         search: str | None = Query(default=None),
@@ -58,7 +60,7 @@ def build_crud_router(
             page=page,
             page_size=page_size,
             read_schema=read_schema,
-            status_filter=status_filter,
+            status_filter=status_filter if enable_bulk_status else None,
             visibility_filter=visibility_filter,
             tag_filter=tag,
             search=search,
@@ -191,23 +193,46 @@ def build_crud_router(
     ) -> Any:
         return crud_service.bulk_delete_items(session, model, payload.ids, base_query_factory=base_query_factory)
 
-    @router.post(
-        "/bulk-status",
-        response_model=BulkActionResponse,
-        summary=f"批量更新{tag}状态",
-        operation_id=f"bulk_status_{resource}",
-    )
-    def bulk_status(
-        payload: BulkStatusRequest,
-        _admin: AdminUser = Depends(get_current_admin),
-        session: Session = Depends(get_session),
-    ) -> Any:
-        return crud_service.bulk_update_status_items(
-            session,
-            model,
-            payload.ids,
-            payload.status,
-            base_query_factory=base_query_factory,
+    if enable_bulk_status:
+
+        @router.post(
+            "/bulk-status",
+            response_model=BulkActionResponse,
+            summary=f"批量更新{tag}状态",
+            operation_id=f"bulk_status_{resource}",
         )
+        def bulk_status(
+            payload: BulkStatusRequest,
+            _admin: AdminUser = Depends(get_current_admin),
+            session: Session = Depends(get_session),
+        ) -> Any:
+            return crud_service.bulk_update_status_items(
+                session,
+                model,
+                payload.ids,
+                payload.status,
+                base_query_factory=base_query_factory,
+            )
+
+    if enable_bulk_visibility:
+
+        @router.post(
+            "/bulk-visibility",
+            response_model=BulkActionResponse,
+            summary=f"批量更新{tag}可见性",
+            operation_id=f"bulk_visibility_{resource}",
+        )
+        def bulk_visibility(
+            payload: BulkVisibilityRequest,
+            _admin: AdminUser = Depends(get_current_admin),
+            session: Session = Depends(get_session),
+        ) -> Any:
+            return crud_service.bulk_update_visibility_items(
+                session,
+                model,
+                payload.ids,
+                payload.visibility,
+                base_query_factory=base_query_factory,
+            )
 
     return router

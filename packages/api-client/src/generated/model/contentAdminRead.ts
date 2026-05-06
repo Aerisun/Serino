@@ -18,8 +18,6 @@ export interface ContentAdminRead {
   body: unknown;
   /** List of tag names */
   tags: unknown;
-  /** Publication status */
-  status: unknown;
   /** Visibility level */
   visibility: unknown;
   /** Publication timestamp */

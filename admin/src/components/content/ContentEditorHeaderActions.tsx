@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Archive, LogOut, Send } from "lucide-react";
+import { Lock, LogOut, Send } from "lucide-react";
 import { StatusVisibilityPills } from "@/components/StatusVisibilityPills";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/i18n";
@@ -16,13 +16,13 @@ interface ContentEditorHeaderActionsProps {
   extraActions?: ReactNode;
 }
 
-const draftButtonClassName =
+const exitButtonClassName =
   "bg-slate-100 text-slate-900 border-slate-200 shadow-none backdrop-blur-0 ring-0 hover:bg-slate-200 hover:text-slate-950 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-800";
 
 const publishButtonClassName =
   "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:text-white dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400";
 
-const archiveButtonClassName =
+const privateButtonClassName =
   "bg-amber-500 text-white border-amber-500 hover:bg-amber-600 hover:text-white dark:bg-amber-500 dark:text-white dark:hover:bg-amber-400";
 
 export function ContentEditorHeaderActions({
@@ -40,9 +40,9 @@ export function ContentEditorHeaderActions({
       ? "发布"
       : "Publish"
     : lang === "zh"
-      ? "存档"
-      : "Archive";
-  const ConfirmIcon = isPublic ? Send : Archive;
+      ? "保存私密"
+      : "Save Private";
+  const ConfirmIcon = isPublic ? Send : Lock;
   const hasExtraActions = extraActions != null;
 
   return (
@@ -73,7 +73,7 @@ export function ContentEditorHeaderActions({
         type="button"
         variant="secondary"
         className={cn(
-          draftButtonClassName,
+          exitButtonClassName,
           hasExtraActions && "order-2 sm:order-3",
         )}
         onClick={onExit}
@@ -86,7 +86,7 @@ export function ContentEditorHeaderActions({
         type="button"
         variant="secondary"
         className={cn(
-          isPublic ? publishButtonClassName : archiveButtonClassName,
+          isPublic ? publishButtonClassName : privateButtonClassName,
           hasExtraActions && "order-4",
         )}
         onClick={onConfirm}

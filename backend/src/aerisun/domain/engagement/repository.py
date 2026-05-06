@@ -26,7 +26,6 @@ def content_exists(session: Session, content_type: str, content_slug: str) -> bo
         session.scalar(
             select(func.count(model.id)).where(
                 model.slug == content_slug,
-                model.status == "published",
                 model.visibility == "public",
             )
         )

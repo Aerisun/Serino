@@ -11,7 +11,6 @@ const EDITOR_DRAFT_STORAGE_PREFIX = "aerisun-admin-editor-draft-v1";
 const PUBLIC_CONTENT_REFRESH_KEY = "aerisun:content-updated:v1";
 
 type SaveableContentForm = {
-  status?: string | null;
   visibility?: string | null;
   published_at?: string | null;
 };
@@ -108,7 +107,6 @@ export function buildNextContentSaveForm<T extends SaveableContentForm>(
   form: T,
   isPublishedAtManual: boolean,
 ) {
-  const nextStatus = form.visibility === "public" ? "published" : "archived";
   const nextPublishedAt =
     isPublishedAtManual && form.published_at
       ? form.published_at
@@ -116,7 +114,6 @@ export function buildNextContentSaveForm<T extends SaveableContentForm>(
 
   return {
     ...form,
-    status: nextStatus,
     published_at: nextPublishedAt,
   };
 }
@@ -173,7 +170,7 @@ export function clearEditorDraftSnapshot(contentType: EditorContentType, draftId
 
 export function hasMeaningfulEditorContent(value: Record<string, unknown>) {
   for (const [key, entry] of Object.entries(value)) {
-    if (["slug", "status", "visibility", "published_at"].includes(key)) {
+    if (["slug", "visibility", "published_at"].includes(key)) {
       continue;
     }
     if (typeof entry === "string" && entry.trim()) {

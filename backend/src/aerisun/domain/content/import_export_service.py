@@ -23,7 +23,6 @@ _ALLOWED_FIELDS = {
     "summary",
     "body",
     "tags",
-    "status",
     "visibility",
     "published_at",
     "category",
@@ -58,7 +57,7 @@ def export_content_markdown_zip(session: Session, content_type: str) -> bytes:
         for item in items:
             front = (
                 f"---\ntitle: {item.title}\nslug: {item.slug}\n"
-                f"status: {item.status}\ntags: {json.dumps(item.tags or [])}\n"
+                f"visibility: {item.visibility}\ntags: {json.dumps(item.tags or [])}\n"
                 f"created_at: {item.created_at.isoformat() if item.created_at else ''}\n---\n\n"
             )
             content = front + (item.body or "")
@@ -82,6 +81,9 @@ def import_content_json(session: Session, content_type: str, data: list[dict]) -
 
         existing = session.query(model).filter(model.slug == slug).first()
         filtered = {k: v for k, v in entry.items() if k in _ALLOWED_FIELDS}
+        legacy_status = entry.get("status")
+        if "visibility" not in filtered and legacy_status in {"published", "draft", "archived"}:
+            filtered["visibility"] = "public" if legacy_status == "published" else "private"
 
         if existing:
             for k, v in filtered.items():

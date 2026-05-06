@@ -15,7 +15,7 @@ DETAIL_CASES = [
     ("diary", "/api/v1/site/diary/{slug}"),
 ]
 
-ADMIN_EMAIL = "archive-owner@example.com"
+ADMIN_EMAIL = "private-owner@example.com"
 ADMIN_PASSWORD = "route-password"
 
 
@@ -65,14 +65,13 @@ def _login_as_site_admin(client, *, email: str = ADMIN_EMAIL, password: str = AD
     assert payload["user"]["is_admin"] is True
 
 
-def _create_archived_item(client, admin_headers: dict[str, str], *, content_type: str, slug: str) -> dict:
+def _create_private_item(client, admin_headers: dict[str, str], *, content_type: str, slug: str) -> dict:
     payload: dict[str, object] = {
         "slug": slug,
-        "title": f"Archived {content_type} title",
-        "body": f"Archived {content_type} body for owner visibility checks.",
-        "summary": f"Archived {content_type} summary",
-        "tags": ["archived"],
-        "status": "published",
+        "title": f"Private {content_type} title",
+        "body": f"Private {content_type} body for owner visibility checks.",
+        "summary": f"Private {content_type} summary",
+        "tags": ["private"],
         "visibility": "private",
         "published_at": "2026-04-03T12:00:00+00:00",
     }
@@ -88,15 +87,15 @@ def _create_archived_item(client, admin_headers: dict[str, str], *, content_type
 
     assert response.status_code == 201
     created = response.json()
-    assert created["status"] == "archived"
+    assert "status" not in created
     assert created["visibility"] == "private"
     return created
 
 
 @pytest.mark.parametrize(("content_type", "list_path"), LIST_CASES)
-def test_public_content_lists_hide_archived_items(client, admin_headers, content_type: str, list_path: str) -> None:
-    slug = f"archived-{content_type}-hidden"
-    _create_archived_item(client, admin_headers, content_type=content_type, slug=slug)
+def test_public_content_lists_hide_private_items(client, admin_headers, content_type: str, list_path: str) -> None:
+    slug = f"private-{content_type}-hidden"
+    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
 
     response = client.get(list_path)
 
@@ -105,29 +104,29 @@ def test_public_content_lists_hide_archived_items(client, admin_headers, content
 
 
 @pytest.mark.parametrize(("content_type", "list_path"), LIST_CASES)
-def test_admin_elevated_site_user_can_see_archived_items_in_lists(
+def test_admin_elevated_site_user_can_see_private_items_in_lists(
     client,
     admin_headers,
     content_type: str,
     list_path: str,
 ) -> None:
-    slug = f"archived-{content_type}-visible"
-    _create_archived_item(client, admin_headers, content_type=content_type, slug=slug)
+    slug = f"private-{content_type}-visible"
+    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
     _seed_bound_admin_email()
     _login_as_site_admin(client)
 
     response = client.get(list_path)
 
     assert response.status_code == 200
-    archived_item = next(item for item in response.json()["items"] if item["slug"] == slug)
-    assert archived_item["status"] == "archived"
-    assert archived_item["visibility"] == "private"
+    private_item = next(item for item in response.json()["items"] if item["slug"] == slug)
+    assert "status" not in private_item
+    assert private_item["visibility"] == "private"
 
 
 @pytest.mark.parametrize(("content_type", "detail_path"), DETAIL_CASES)
-def test_public_content_details_hide_archived_items(client, admin_headers, content_type: str, detail_path: str) -> None:
-    slug = f"archived-{content_type}-detail-hidden"
-    _create_archived_item(client, admin_headers, content_type=content_type, slug=slug)
+def test_public_content_details_hide_private_items(client, admin_headers, content_type: str, detail_path: str) -> None:
+    slug = f"private-{content_type}-detail-hidden"
+    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
 
     response = client.get(detail_path.format(slug=slug))
 
@@ -135,14 +134,14 @@ def test_public_content_details_hide_archived_items(client, admin_headers, conte
 
 
 @pytest.mark.parametrize(("content_type", "detail_path"), DETAIL_CASES)
-def test_admin_elevated_site_user_can_open_archived_details(
+def test_admin_elevated_site_user_can_open_private_details(
     client,
     admin_headers,
     content_type: str,
     detail_path: str,
 ) -> None:
-    slug = f"archived-{content_type}-detail-visible"
-    _create_archived_item(client, admin_headers, content_type=content_type, slug=slug)
+    slug = f"private-{content_type}-detail-visible"
+    _create_private_item(client, admin_headers, content_type=content_type, slug=slug)
     _seed_bound_admin_email()
     _login_as_site_admin(client)
 
@@ -151,5 +150,5 @@ def test_admin_elevated_site_user_can_open_archived_details(
     assert response.status_code == 200
     payload = response.json()
     assert payload["slug"] == slug
-    assert payload["status"] == "archived"
+    assert "status" not in payload
     assert payload["visibility"] == "private"

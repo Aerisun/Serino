@@ -79,7 +79,7 @@ const buildRemotePost = (
   slug: entry.slug,
   title: entry.title,
   date: formatPublishedDate(entry.published_at) || "",
-  isArchived: entry.status === "archived",
+  isArchived: entry.visibility === "private",
   category: entry.category || fallbackCategoryLabel,
   tags: entry.tags,
   likes: entry.like_count ?? 0,
@@ -175,7 +175,7 @@ const PostDetail = () => {
   const { data: response, isLoading, isError, error, refetch } = useReadPostApiV1SitePostsSlugGet(slug, {
     query: {
       enabled: !!id,
-      staleTime: 5 * 60_000,
+      staleTime: 60_000,
       gcTime: 20 * 60_000,
     },
   });
@@ -232,7 +232,7 @@ const PostDetail = () => {
       <Navbar />
       {previewPost ? <PreviewModeBadge /> : null}
 
-      <main className="mx-auto max-w-5xl px-6 pt-28 pb-20 lg:px-8">
+      <main className="mx-auto max-w-5xl px-6 pt-[5.5rem] pb-20 sm:pt-28 lg:px-8">
         <motion.button
           type="button"
           onClick={() => navigate(-1)}

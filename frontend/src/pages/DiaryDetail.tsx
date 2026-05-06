@@ -143,7 +143,7 @@ const buildRemoteDiaryEntry = (
   date: formatPublishedDate(entry.published_at) || "",
   weekday: formatWeekday(entry.published_at, lang),
   headerDate: formatEnglishHeaderDate(entry.published_at, t),
-  isArchived: entry.status === "archived",
+  isArchived: entry.visibility === "private",
   weather: entry.weather as Weather | undefined,
   mood: entry.mood ?? undefined,
   title: entry.title,
@@ -209,7 +209,7 @@ const DiaryDetail = () => {
   } = useReadDiaryEntryApiV1SiteDiarySlugGet(slug, {
     query: {
       enabled: !!id,
-      staleTime: 5 * 60_000,
+      staleTime: 60_000,
       gcTime: 20 * 60_000,
     },
   });
@@ -282,7 +282,7 @@ const DiaryDetail = () => {
       <Navbar />
       {previewEntry ? <PreviewModeBadge /> : null}
 
-      <main className="mx-auto max-w-5xl px-6 pt-28 pb-20 lg:px-8">
+      <main className="mx-auto max-w-5xl px-6 pt-[5.5rem] pb-20 sm:pt-28 lg:px-8">
         <motion.button
           type="button"
           onClick={() => navigate(-1)}

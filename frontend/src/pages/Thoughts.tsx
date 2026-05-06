@@ -43,7 +43,7 @@ const mapRemoteThought = (entry: ContentEntryRead): Thought => {
     content: entry.body || entry.summary?.trim() || "",
     date:
       entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
-    isArchived: entry.status === "archived",
+    isArchived: entry.visibility === "private",
     likes: entry.like_count ?? 0,
     comments: entry.comment_count ?? 0,
     mood: entry.mood ?? undefined,
@@ -165,7 +165,7 @@ const Thoughts = () => {
     },
     pageSize,
     mapItem: mapRemoteThought,
-    staleTime: 2 * 60_000,
+    staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
   const previewThought =
@@ -229,9 +229,10 @@ const Thoughts = () => {
       width={
         config.width === "narrow" ? "content" : (config.width ?? "content")
       }
+      contentClassName="mt-0 sm:mt-10"
     >
       {previewThought ? <PreviewModeBadge /> : null}
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
           <input
@@ -274,7 +275,7 @@ const Thoughts = () => {
         </div>
       </div>
 
-      <div className="relative mt-8">
+      <div className="relative mt-6 sm:mt-8">
         <div className="absolute bottom-0 left-5 top-0 w-px bg-[rgb(var(--shiro-divider-rgb)/0.26)]" />
 
         {viewStatus === "loading" &&

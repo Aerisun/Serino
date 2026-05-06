@@ -1,7 +1,7 @@
 import {
   useListDiary,
   useBulkDeleteDiary,
-  useBulkStatusDiary,
+  useBulkVisibilityDiary,
   getListDiaryQueryKey,
 } from "@serino/api-client/admin";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -22,12 +22,8 @@ function useDiaryListConfig(): ContentListConfig {
     columns: [
       { header: t("common.title"), accessor: "title" },
       {
-        header: t("common.status"),
-        accessor: (row) => <StatusBadge status={row.status} />,
-      },
-      {
         header: t("posts.visibility"),
-        accessor: (row) => <StatusBadge status={row.visibility} />,
+        accessor: (row) => <StatusBadge status={String(row.visibility || "")} />,
       },
       {
         header: t("posts.publishedAt"),
@@ -40,7 +36,7 @@ function useDiaryListConfig(): ContentListConfig {
     ],
     useList: useListDiary as ContentListConfig["useList"],
     useBulkDelete: useBulkDeleteDiary as ContentListConfig["useBulkDelete"],
-    useBulkStatus: useBulkStatusDiary as ContentListConfig["useBulkStatus"],
+    useBulkVisibility: useBulkVisibilityDiary as ContentListConfig["useBulkVisibility"],
     getQueryKey: getListDiaryQueryKey,
   };
 }

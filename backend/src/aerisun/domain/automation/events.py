@@ -96,7 +96,6 @@ def emit_content_created(
     item_id: str,
     slug: str,
     title: str,
-    status: str | None,
     visibility: str | None,
 ) -> None:
     _emit(
@@ -110,7 +109,6 @@ def emit_content_created(
             "content_id": item_id,
             "slug": slug,
             "title": title,
-            "status": status,
             "visibility": visibility,
         },
     )
@@ -123,7 +121,6 @@ def emit_content_updated(
     item_id: str,
     slug: str,
     title: str,
-    status: str | None,
     visibility: str | None,
     changed_fields: list[str],
 ) -> None:
@@ -138,7 +135,6 @@ def emit_content_updated(
             "content_id": item_id,
             "slug": slug,
             "title": title,
-            "status": status,
             "visibility": visibility,
             "changed_fields": changed_fields,
         },
@@ -188,30 +184,6 @@ def emit_content_bulk_deleted(
     )
 
 
-def emit_content_status_changed(
-    session,
-    *,
-    content_type: str,
-    ids: list[str],
-    status: str,
-    visibility: str | None,
-    affected: int,
-) -> None:
-    _emit(
-        session,
-        event_type="content.status_changed",
-        target_type="content_batch",
-        target_id=str(ids[0] if ids else "content-batch"),
-        payload={
-            "content_type": content_type,
-            "item_ids": ids,
-            "status": status,
-            "visibility": visibility,
-            "affected": affected,
-        },
-    )
-
-
 def emit_content_published(
     session,
     *,
@@ -223,29 +195,6 @@ def emit_content_published(
     _emit(
         session,
         event_type="content.published",
-        target_type="content",
-        target_id=item_id,
-        payload={
-            "content_type": content_type,
-            "item_id": item_id,
-            "content_id": item_id,
-            "slug": slug,
-            "title": title,
-        },
-    )
-
-
-def emit_content_archived(
-    session,
-    *,
-    content_type: str,
-    item_id: str,
-    slug: str,
-    title: str,
-) -> None:
-    _emit(
-        session,
-        event_type="content.archived",
         target_type="content",
         target_id=item_id,
         payload={

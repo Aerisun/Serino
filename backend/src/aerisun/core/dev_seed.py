@@ -856,7 +856,6 @@ DEFAULT_POSTS = [
             "对个人站来说，它同样可以帮助我把页面气质、动效速度和排版密度保持在同一条线上。"
         ),
         "tags": ["design-system", "frontend"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 21, 9, 0, tzinfo=BEIJING_TZ),
         "category": "设计",
@@ -871,7 +870,6 @@ DEFAULT_POSTS = [
             "暗色模式则更依赖 blur 与边框亮度的平衡。真正的难点不是写出效果，而是让它在不同页面里保持克制。"
         ),
         "tags": ["css", "glass", "performance"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 18, 20, 30, tzinfo=BEIJING_TZ),
         "category": "技术",
@@ -886,7 +884,6 @@ DEFAULT_POSTS = [
             "我开始更认真地处理个人表达、项目边界和长期维护成本。网站本身也是这个思路的一部分。"
         ),
         "tags": ["essay", "career"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 14, 8, 15, tzinfo=BEIJING_TZ),
         "category": "随想",
@@ -901,7 +898,6 @@ DEFAULT_POSTS = [
             "这不是某个 API 的更新，而是对页面如何被拆分、何时响应、如何组织交互的一次整体提示。"
         ),
         "tags": ["react", "architecture"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 16, 0, tzinfo=BEIJING_TZ),
         "category": "技术",
@@ -916,7 +912,6 @@ DEFAULT_POSTS = [
             "留白不是空着，而是在替阅读建立呼吸的间隔。"
         ),
         "tags": ["typography", "layout"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 9, 10, 45, tzinfo=BEIJING_TZ),
         "category": "设计",
@@ -931,7 +926,6 @@ DEFAULT_POSTS = [
             "让视线知道自己正在从哪里离开、要往哪里抵达。"
         ),
         "tags": ["animation", "react"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 6, 19, 20, tzinfo=BEIJING_TZ),
         "category": "技术",
@@ -946,7 +940,6 @@ DEFAULT_POSTS = [
             "你需要自己决定什么时候深度创作，什么时候整理，什么时候停下来复盘。"
         ),
         "tags": ["workflow", "productivity"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 3, 9, 50, tzinfo=BEIJING_TZ),
         "category": "随想",
@@ -961,7 +954,6 @@ DEFAULT_POSTS = [
             "只有这些关系成立了，深色界面才会显得稳定而不刺眼。"
         ),
         "tags": ["dark-mode", "ui"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 2, 28, 21, 5, tzinfo=BEIJING_TZ),
         "category": "设计",
@@ -979,7 +971,6 @@ DEFAULT_DIARY_ENTRIES = [
             "回来的路上看到树上的花苞终于鼓起来了，春天像是在慢慢试探地靠近。"
         ),
         "tags": ["life", "spring"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 21, 12, 0, tzinfo=BEIJING_TZ),
         "weather": "sunny",
@@ -995,7 +986,6 @@ DEFAULT_DIARY_ENTRIES = [
             "下午继续修动效节奏。一个人在雨天里工作，意外地不觉得孤单。"
         ),
         "tags": ["rain", "worklog"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 19, 14, 45, tzinfo=BEIJING_TZ),
         "weather": "rainy",
@@ -1011,7 +1001,6 @@ DEFAULT_DIARY_ENTRIES = [
             "网站里的排版为什么总能透露出作者的节奏感。或许页面其实也是一种书写。"
         ),
         "tags": ["library", "reading"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 17, 18, 10, tzinfo=BEIJING_TZ),
         "weather": "windy",
@@ -1027,7 +1016,6 @@ DEFAULT_DIARY_ENTRIES = [
             "我忽然意识到，最近网站里很多暖色过渡，其实都来自这种傍晚记忆。"
         ),
         "tags": ["commute", "sunset"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 15, 18, 40, tzinfo=BEIJING_TZ),
         "weather": "cloudy",
@@ -1043,7 +1031,6 @@ DEFAULT_DIARY_ENTRIES = [
             "却会让脑子重新变得清楚。晚上顺手把日历页的细节也对齐了一遍。"
         ),
         "tags": ["weekend", "cleanup"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 13, 11, 20, tzinfo=BEIJING_TZ),
         "weather": "sunny",
@@ -1059,7 +1046,6 @@ DEFAULT_DIARY_ENTRIES = [
             "像给页面悄悄盖上一层更柔软的光。茶喝到最后，已经有些凉了。"
         ),
         "tags": ["night", "css"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 11, 0, 35, tzinfo=BEIJING_TZ),
         "weather": "rainy",
@@ -1075,7 +1061,6 @@ DEFAULT_DIARY_ENTRIES = [
             "但有一种很稳定的秩序感。回来之后我把首页的分隔和留白又调整了一次。"
         ),
         "tags": ["bookstore", "reading"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 9, 16, 5, tzinfo=BEIJING_TZ),
         "weather": "cloudy",
@@ -1091,7 +1076,6 @@ DEFAULT_THOUGHTS = [
         "summary": "今天只是把字距从 -0.02em 调到 -0.03em，页面气质就完全不一样了。",
         "body": "设计里最迷人的地方，是那些看似只差一点点、实际却会改变整段阅读呼吸感的细节。",
         "tags": ["design", "typography"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 21, 15, 5, tzinfo=BEIJING_TZ),
         "mood": "🎨",
@@ -1105,7 +1089,6 @@ DEFAULT_THOUGHTS = [
             "还有用户什么时候该被提醒、什么时候该被放过。"
         ),
         "tags": ["product", "reflection"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 20, 10, 20, tzinfo=BEIJING_TZ),
         "mood": "💭",
@@ -1116,7 +1099,6 @@ DEFAULT_THOUGHTS = [
         "summary": "都是把零散的东西拼成一个完整且可用的整体。",
         "body": "越做越觉得前端和手工很像。你得在结构、材料、手感和最终呈现之间来回试，才能找到一个刚刚好的平衡点。",
         "tags": ["frontend", "craft"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 16, 9, 35, tzinfo=BEIJING_TZ),
         "mood": "☕",
@@ -1130,7 +1112,6 @@ DEFAULT_THOUGHTS = [
             "而是删掉什么之后页面依然成立。"
         ),
         "tags": ["ui", "editing"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 15, 9, 10, tzinfo=BEIJING_TZ),
         "mood": "✂️",
@@ -1144,7 +1125,6 @@ DEFAULT_THOUGHTS = [
             "像把一个句子的停顿放在了更对的位置。"
         ),
         "tags": ["motion", "frontend"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 13, 22, 40, tzinfo=BEIJING_TZ),
         "mood": "🌫️",
@@ -1158,7 +1138,6 @@ DEFAULT_THOUGHTS = [
             "但会让人觉得这个界面是被认真照顾过的。"
         ),
         "tags": ["details", "product"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 20, 15, tzinfo=BEIJING_TZ),
         "mood": "✨",
@@ -1172,7 +1151,6 @@ DEFAULT_THOUGHTS = [
             "这些东西会一起决定用户感受到的是催促还是邀请。"
         ),
         "tags": ["tone", "writing"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 10, 8, 25, tzinfo=BEIJING_TZ),
         "mood": "🫧",
@@ -1186,7 +1164,6 @@ DEFAULT_THOUGHTS = [
             "这比把每个角落都提前磨到极致更可靠。"
         ),
         "tags": ["shipping", "workflow"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 8, 17, 50, tzinfo=BEIJING_TZ),
         "mood": "🛠️",
@@ -1200,7 +1177,6 @@ DEFAULT_EXCERPTS = [
         "summary": "留白不是空，而是给观看者留下参与意义生成的空间。",
         "body": "最好的设计往往不是把每一个角落都填满，而是知道在哪里停下来。那个停顿本身，会让画面从有限延伸到无限。",
         "tags": ["reading", "aesthetics"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 17, 8, 0, tzinfo=BEIJING_TZ),
         "author_name": "李欧梵",
@@ -1215,7 +1191,6 @@ DEFAULT_EXCERPTS = [
             "所以极简不是偷懒，而是把判断压力提前放回设计者自己身上。"
         ),
         "tags": ["reading", "minimalism"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 15, 11, 30, tzinfo=BEIJING_TZ),
         "author_name": "Dieter Rams",
@@ -1227,7 +1202,6 @@ DEFAULT_EXCERPTS = [
         "summary": "真正改变人的，通常不是瞬间爆发，而是长期重复。",
         "body": "写作、设计、编程这些事，其实都依赖节律。你不断重复某种动作，慢慢就会在里面长出属于自己的结构和判断。",
         "tags": ["writing", "habits"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 12, 19, 45, tzinfo=BEIJING_TZ),
         "author_name": "村上春树",
@@ -1242,7 +1216,6 @@ DEFAULT_EXCERPTS = [
             "很多表面上的效率，其实只是把判断推迟到更后面。"
         ),
         "tags": ["reading", "pace"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 10, 14, 10, tzinfo=BEIJING_TZ),
         "author_name": "约翰·伯格",
@@ -1257,7 +1230,6 @@ DEFAULT_EXCERPTS = [
             "它是让系统从“可用”转向“愿意停留”的那一层温度。"
         ),
         "tags": ["reading", "interface"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 8, 11, 5, tzinfo=BEIJING_TZ),
         "author_name": "原研哉",
@@ -1272,7 +1244,6 @@ DEFAULT_EXCERPTS = [
             "关键不在像不像，而在它是否帮助用户理解层级与关系。"
         ),
         "tags": ["materials", "design"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 6, 10, 0, tzinfo=BEIJING_TZ),
         "author_name": "彼得·卒姆托",
@@ -1284,7 +1255,6 @@ DEFAULT_EXCERPTS = [
         "summary": "它不会一直提醒你自己存在，但会在需要的时候稳稳接住。",
         "body": "系统感并不意味着强烈的控制感。相反，真正成熟的结构往往很轻，它只是在背后默默让内容和行为都有了位置。",
         "tags": ["systems", "product"],
-        "status": "published",
         "visibility": "public",
         "published_at": datetime(2026, 3, 4, 9, 25, tzinfo=BEIJING_TZ),
         "author_name": "唐纳德·诺曼",

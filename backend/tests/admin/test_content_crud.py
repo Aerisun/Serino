@@ -27,8 +27,7 @@ def _make_payload(content_type: str, suffix: str = "") -> dict:
         "title": f"Test {content_type.title()} Title{suffix}",
         "body": f"Test {content_type} body content{suffix}",
         "tags": ["test"],
-        "status": "draft",
-        "visibility": "public",
+        "visibility": "private",
     }
 
 
@@ -49,29 +48,19 @@ class TestContentCRUDLifecycle:
         assert data["body"] == payload["body"]
         expected_tags = [] if content_type in TAGLESS_CONTENT_TYPES else ["test"]
         assert data["tags"] == expected_tags
-        assert data["status"] == "draft"
+        assert "status" not in data
+        assert data["visibility"] == "private"
         assert "id" in data
         assert "created_at" in data
 
-    def test_create_private_persists_as_archived(self, client, admin_headers, content_type):
+    def test_create_public_persists_visibility(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-private")
-        payload["status"] = "published"
-        payload["visibility"] = "private"
+        payload["visibility"] = "public"
         resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         assert resp.status_code == 201
         data = resp.json()
-        assert data["status"] == "archived"
-        assert data["visibility"] == "private"
-
-    def test_create_private_draft_persists_as_draft(self, client, admin_headers, content_type):
-        payload = _make_payload(content_type, "-private-draft")
-        payload["status"] = "draft"
-        payload["visibility"] = "private"
-        resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
-        assert resp.status_code == 201
-        data = resp.json()
-        assert data["status"] == "draft"
-        assert data["visibility"] == "private"
+        assert "status" not in data
+        assert data["visibility"] == "public"
 
     def test_read(self, client, admin_headers, content_type):
         # Create first
@@ -147,7 +136,7 @@ class TestContentCRUDLifecycle:
         assert resp.status_code == 409
         assert resp.json()["detail"] == f"slug '{shared_slug}' 已存在"
 
-    def test_create_published_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
+    def test_create_public_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
         calls: list[bool] = []
         monkeypatch.setattr(
             crud_service,
@@ -156,14 +145,13 @@ class TestContentCRUDLifecycle:
         )
 
         payload = _make_payload(content_type, "-publish-create")
-        payload["status"] = "published"
         payload["visibility"] = "public"
         resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
 
         assert resp.status_code == 201
         assert calls == [True]
 
-    def test_update_to_published_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
+    def test_update_to_public_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
         calls: list[bool] = []
         monkeypatch.setattr(
             crud_service,
@@ -177,7 +165,7 @@ class TestContentCRUDLifecycle:
 
         resp = client.put(
             f"{BASE}/{content_type}/{item_id}",
-            json={"status": "published", "visibility": "public"},
+            json={"visibility": "public"},
             headers=admin_headers,
         )
 
@@ -195,7 +183,6 @@ class TestContentCRUDLifecycle:
         )
 
         payload = _make_payload(content_type, "-public-edit")
-        payload["status"] = "published"
         payload["visibility"] = "public"
         create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         item_id = create_resp.json()["id"]
@@ -210,9 +197,8 @@ class TestContentCRUDLifecycle:
         assert resp.status_code == 200
         assert calls == []
 
-    def test_update_archived_private_to_public_becomes_draft(self, client, admin_headers, content_type):
+    def test_update_private_to_public_publishes(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-restore")
-        payload["status"] = "published"
         payload["visibility"] = "private"
         create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         item_id = create_resp.json()["id"]
@@ -223,23 +209,20 @@ class TestContentCRUDLifecycle:
             headers=admin_headers,
         )
         assert resp.status_code == 200
-        assert resp.json()["status"] == "draft"
         assert resp.json()["visibility"] == "public"
 
-    def test_update_archived_private_to_private_draft_stays_draft(self, client, admin_headers, content_type):
+    def test_update_private_to_private_stays_private(self, client, admin_headers, content_type):
         payload = _make_payload(content_type, "-private-draft-restore")
-        payload["status"] = "published"
         payload["visibility"] = "private"
         create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
         item_id = create_resp.json()["id"]
 
         resp = client.put(
             f"{BASE}/{content_type}/{item_id}",
-            json={"status": "draft"},
+            json={"visibility": "private"},
             headers=admin_headers,
         )
         assert resp.status_code == 200
-        assert resp.json()["status"] == "draft"
         assert resp.json()["visibility"] == "private"
 
     def test_list(self, client, admin_headers, content_type):
@@ -321,7 +304,7 @@ class TestContentBulkOperations:
         for item_id in ids:
             assert client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers).status_code == 404
 
-    def test_bulk_status(self, client, admin_headers, content_type):
+    def test_bulk_visibility(self, client, admin_headers, content_type):
         resp = client.post(
             f"{BASE}/{content_type}/",
             json=_make_payload(content_type, "-bs"),
@@ -330,18 +313,20 @@ class TestContentBulkOperations:
         item_id = resp.json()["id"]
 
         resp = client.post(
-            f"{BASE}/{content_type}/bulk-status",
-            json={"ids": [item_id], "status": "published"},
+            f"{BASE}/{content_type}/bulk-visibility",
+            json={"ids": [item_id], "visibility": "public"},
             headers=admin_headers,
         )
         assert resp.status_code == 200
         assert resp.json()["affected"] == 1
 
         resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
-        assert resp.json()["status"] == "published"
+        assert "status" not in resp.json()
         assert resp.json()["visibility"] == "public"
 
-    def test_bulk_status_publish_triggers_subscription_dispatch(self, client, admin_headers, content_type, monkeypatch):
+    def test_bulk_visibility_public_triggers_subscription_dispatch(
+        self, client, admin_headers, content_type, monkeypatch
+    ):
         calls: list[bool] = []
         monkeypatch.setattr(
             crud_service,
@@ -357,15 +342,15 @@ class TestContentBulkOperations:
         item_id = resp.json()["id"]
 
         resp = client.post(
-            f"{BASE}/{content_type}/bulk-status",
-            json={"ids": [item_id], "status": "published"},
+            f"{BASE}/{content_type}/bulk-visibility",
+            json={"ids": [item_id], "visibility": "public"},
             headers=admin_headers,
         )
 
         assert resp.status_code == 200
         assert calls[-1:] == [True]
 
-    def test_bulk_status_public_to_public_does_not_dispatch_subscription(
+    def test_bulk_visibility_public_to_public_does_not_dispatch_subscription(
         self, client, admin_headers, content_type, monkeypatch
     ):
         calls: list[bool] = []
@@ -376,7 +361,6 @@ class TestContentBulkOperations:
         )
 
         payload = _make_payload(content_type, "-bs-public-redo")
-        payload["status"] = "published"
         payload["visibility"] = "public"
         resp = client.post(
             f"{BASE}/{content_type}/",
@@ -387,15 +371,15 @@ class TestContentBulkOperations:
         calls.clear()
 
         resp = client.post(
-            f"{BASE}/{content_type}/bulk-status",
-            json={"ids": [item_id], "status": "published"},
+            f"{BASE}/{content_type}/bulk-visibility",
+            json={"ids": [item_id], "visibility": "public"},
             headers=admin_headers,
         )
 
         assert resp.status_code == 200
         assert calls == []
 
-    def test_bulk_archive_sets_private_visibility(self, client, admin_headers, content_type):
+    def test_bulk_visibility_sets_private_visibility(self, client, admin_headers, content_type):
         resp = client.post(
             f"{BASE}/{content_type}/",
             json=_make_payload(content_type, "-ba"),
@@ -404,15 +388,15 @@ class TestContentBulkOperations:
         item_id = resp.json()["id"]
 
         resp = client.post(
-            f"{BASE}/{content_type}/bulk-status",
-            json={"ids": [item_id], "status": "archived"},
+            f"{BASE}/{content_type}/bulk-visibility",
+            json={"ids": [item_id], "visibility": "private"},
             headers=admin_headers,
         )
         assert resp.status_code == 200
         assert resp.json()["affected"] == 1
 
         resp = client.get(f"{BASE}/{content_type}/{item_id}", headers=admin_headers)
-        assert resp.json()["status"] == "archived"
+        assert "status" not in resp.json()
         assert resp.json()["visibility"] == "private"
 
 

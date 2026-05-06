@@ -5,10 +5,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface RecentContentItem {
-  id: string;
-  title: string;
-  content_type: string;
+export interface BulkVisibilityRequest {
+  /** List of item IDs to update */
+  ids: string[];
+  /** New visibility value to set */
   visibility: string;
-  updated_at: string;
 }

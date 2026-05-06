@@ -428,25 +428,21 @@ def _build_aux_metrics(session: Session) -> DashboardAuxMetrics:
         published_posts=repo.count_with_filters(
             session,
             PostEntry,
-            PostEntry.status == "published",
             PostEntry.visibility == "public",
         ),
         published_diary_entries=repo.count_with_filters(
             session,
             DiaryEntry,
-            DiaryEntry.status == "published",
             DiaryEntry.visibility == "public",
         ),
         published_thoughts=repo.count_with_filters(
             session,
             ThoughtEntry,
-            ThoughtEntry.status == "published",
             ThoughtEntry.visibility == "public",
         ),
         published_excerpts=repo.count_with_filters(
             session,
             ExcerptEntry,
-            ExcerptEntry.status == "published",
             ExcerptEntry.visibility == "public",
         ),
     )
@@ -645,7 +641,7 @@ def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
     friends_count = repo.count_model(session, Friend)
     assets_count = repo.count_model(session, Asset)
 
-    posts_by_status = repo.count_by_status(session, PostEntry)
+    posts_by_visibility = repo.count_by_visibility(session, PostEntry)
 
     content_type_map = [
         (PostEntry, "posts"),
@@ -685,7 +681,7 @@ def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
                     id=row.id,
                     title=row.title,
                     content_type=type_key,
-                    status=row.status,
+                    visibility=row.visibility,
                     updated_at=row.updated_at,
                 )
             )
@@ -701,7 +697,7 @@ def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
         guestbook_entries=count_waline_records(guestbook_only=True),
         friends=friends_count,
         assets=assets_count,
-        posts_by_status=posts_by_status,
+        posts_by_visibility=posts_by_visibility,
         content_by_month=content_by_month,
         recent_content=recent_content,
         traffic=_build_traffic_metrics(session),

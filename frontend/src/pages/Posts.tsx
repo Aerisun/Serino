@@ -41,7 +41,7 @@ const mapRemotePost = (entry: ContentEntryRead): Post => ({
   title: entry.title,
   excerpt: entry.summary ?? entry.body,
   date: entry.relative_date ?? (formatPublishedDate(entry.published_at) || ""),
-  isArchived: entry.status === "archived",
+  isArchived: entry.visibility === "private",
   category: entry.category || entry.tags[0] || "",
   tags: entry.tags,
   views: entry.view_count ?? 0,
@@ -74,7 +74,7 @@ const Posts = () => {
       ...mapRemotePost(entry),
       category: entry.category || fallbackCategoryLabel,
     }),
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
 
@@ -109,7 +109,7 @@ const Posts = () => {
     void queryClient.prefetchQuery({
       queryKey: [`/api/v1/site/posts/${slug}`],
       queryFn: () => readPostApiV1SitePostsSlugGet(slug),
-      staleTime: 5 * 60_000,
+      staleTime: 60_000,
       gcTime: 20 * 60_000,
     });
   }, [queryClient]);
@@ -121,6 +121,7 @@ const Posts = () => {
       description={config.description}
       metaDescription={config.metaDescription}
       width={config.width}
+      contentClassName="mt-0 sm:mt-10"
       headerAside={
         <span className="text-xs tracking-[0.18em] text-foreground/28">
           {formatPostCount(items.length)}
@@ -128,7 +129,7 @@ const Posts = () => {
       }
     >
       <motion.div
-        className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        className="mt-3 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-center sm:justify-between"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: config.motion.duration + 0.05, delay: config.motion.delay, ease: [0.16, 1, 0.3, 1] }}
@@ -169,7 +170,7 @@ const Posts = () => {
         </div>
       </motion.div>
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         {status === "loading" &&
           Array.from({ length: 5 }, (_, index) => (
             <div

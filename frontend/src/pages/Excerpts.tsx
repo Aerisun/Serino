@@ -49,7 +49,7 @@ const mapRemoteExcerpt = (entry: ContentEntryRead): Excerpt => {
     content: entry.body,
     category: entry.category || "",
     date: formatPublishedDate(entry.published_at) || "",
-    isArchived: entry.status === "archived",
+    isArchived: entry.visibility === "private",
     comments: entry.comment_count ?? 0,
   };
 };
@@ -139,7 +139,7 @@ const Excerpts = () => {
     },
     pageSize,
     mapItem: mapRemoteExcerpt,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
     gcTime: 20 * 60_000,
   });
   const previewExcerpt =
@@ -230,9 +230,10 @@ const Excerpts = () => {
       width={
         config.width === "narrow" ? "content" : (config.width ?? "content")
       }
+      contentClassName="mt-0 sm:mt-10"
     >
       {previewExcerpt ? <PreviewModeBadge /> : null}
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="group relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/25 transition-colors group-focus-within:text-[rgb(var(--shiro-accent-rgb)/0.72)]" />
           <input
@@ -275,7 +276,7 @@ const Excerpts = () => {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2">
         {viewStatus === "loading" &&
           Array.from({ length: 6 }, (_, index) => (
             <div

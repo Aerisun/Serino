@@ -50,7 +50,7 @@ const editorConfig = {
   listRoute: "/diary",
   defaultForm: {
     slug: "", title: "", summary: "", body: "", tags: [],
-    status: "draft", visibility: "private", published_at: null,
+    visibility: "private", published_at: null,
     mood: "", weather: "", poem: "",
   },
   serverToForm: buildServerToForm((item) => ({
@@ -116,7 +116,7 @@ export default function DiaryEditPage() {
         title={editor.pageTitle}
         actions={
           <ContentEditorHeaderActions
-            visibility={form.visibility}
+            visibility={form.visibility === "public" ? "public" : "private"}
             isSaving={isSaving}
             onToggleVisibility={() =>
               setField("visibility", form.visibility === "public" ? "private" : "public")
@@ -138,7 +138,12 @@ export default function DiaryEditPage() {
         </div>
         <div className="space-y-2">
           <Label>{t("posts.body")}</Label>
-          <MarkdownEditor value={form.body} onChange={(v) => setField("body", v)} minHeight="350px" />
+          <MarkdownEditor
+            value={form.body}
+            onChange={(v) => setField("body", v)}
+            minHeight="350px"
+            mobileFullscreen
+          />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
@@ -219,7 +224,7 @@ export default function DiaryEditPage() {
             />
           </div>
         </div>
-        <div className="border-t border-border pt-6">
+        <div className="space-y-3 border-t border-border pt-4 sm:pt-6 md:grid md:grid-cols-2 md:items-start md:gap-5 md:space-y-0">
           <AutoTitleField
             value={form.title}
             onChange={(value) => setField("title", value)}
@@ -228,15 +233,15 @@ export default function DiaryEditPage() {
             switchLabel={t("common.autoTitle")}
             inputLabel={t("common.title")}
             required
+            className="md:min-w-0"
           />
-        </div>
-        <div className="pt-6">
           <PublishTimeFooter
             value={form.published_at}
             onChange={(value) => setField("published_at", value)}
             isCustom={isPublishedAtManual}
             onCustomChange={setIsPublishedAtManual}
             label={t("posts.publishedAt")}
+            className="md:min-w-0"
             deleteButton={
               !isNew && (
                 <Button

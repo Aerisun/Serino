@@ -50,7 +50,6 @@ def build_sitemap_xml(session: Session, site_url: str) -> str:
     for model, prefix, changefreq, priority in content_types:
         rows = session.execute(
             select(model.slug, model.updated_at).where(
-                model.status == "published",
                 model.visibility == "public",
             )
         ).all()

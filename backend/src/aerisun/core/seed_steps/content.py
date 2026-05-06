@@ -10,7 +10,19 @@ def seed_content_entries(session: Session, model, entries: list[dict]) -> None: 
     existing_slugs = set(session.scalars(select(model.slug)).all())
     missing_entries = [entry for entry in entries if entry["slug"] not in existing_slugs]
     if missing_entries:
-        session.add_all([model(**entry) for entry in missing_entries])
+        model_fields = set(model.__mapper__.columns.keys())
+        rows = []
+        for entry in missing_entries:
+            row = {key: value for key, value in entry.items() if key in model_fields}
+            legacy_status = entry.get("status")
+            if (
+                "visibility" in model_fields
+                and "visibility" not in row
+                and legacy_status in {"published", "draft", "archived"}
+            ):
+                row["visibility"] = "public" if legacy_status == "published" else "private"
+            rows.append(model(**row))
+        session.add_all(rows)
 
 
 def merge_page_copy(existing: PageCopy, default_item: dict) -> bool:
