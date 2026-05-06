@@ -55,14 +55,16 @@ const COPY = {
     webhookToggle: "Webhook 走代理",
     webhookToggleHint:
       "开启后，Webhook 测试、实际投递，以及 Telegram 连接这类 webhook 相关出站请求都会优先走本机代理。",
-    webhookToggleDisabled: "请先填写可用的代理端口，再决定是否让 Webhook 走代理。",
+    webhookToggleDisabled:
+      "请先填写可用的代理端口，再决定是否让 Webhook 走代理。",
     oauthToggle: "OAuth 走代理",
     oauthToggleHint:
       "开启后，Google / GitHub 的授权换 token、读取用户资料等出站请求都会优先走这份代理配置。",
-    oauthToggleDisabled: "请先填写可用的代理端口，再决定是否让 Google / GitHub 认证走代理。",
+    oauthToggleDisabled:
+      "请先填写可用的代理端口，再决定是否让 Google / GitHub 认证走代理。",
     scopeNote:
       "现在这份配置已经支持 Webhook 和 OAuth 两个作用域，后面如果还要让大模型 API 走代理，也可以继续沿用这套结构。",
-    test: "端口健康测试",
+    test: "端口测试",
     testing: "测试中...",
     saveSuccess: "代理设置已保存",
     testSuccess: "代理端口测试通过",
@@ -90,15 +92,18 @@ const COPY = {
     proxyPortHint:
       "Enter a port, host:port, or a full URL such as http://127.0.0.1:7890. Runtime will try 127.0.0.1 first and also common Docker host gateway addresses such as host.docker.internal.",
     proxyPortPlaceholder: "7890",
-    proxyPortInvalid: "Enter a port between 1 and 65535, or clear it to disable the proxy.",
+    proxyPortInvalid:
+      "Enter a port between 1 and 65535, or clear it to disable the proxy.",
     webhookToggle: "Use Proxy For Webhook",
     webhookToggleHint:
       "When enabled, webhook tests, actual deliveries, and Telegram webhook connect requests will prefer the local proxy.",
-    webhookToggleDisabled: "Configure a valid proxy port first, then decide whether webhook traffic should use it.",
+    webhookToggleDisabled:
+      "Configure a valid proxy port first, then decide whether webhook traffic should use it.",
     oauthToggle: "Use Proxy For OAuth",
     oauthToggleHint:
       "When enabled, Google / GitHub token exchange and user profile requests will prefer this proxy configuration.",
-    oauthToggleDisabled: "Configure a valid proxy port first, then decide whether Google / GitHub auth traffic should use it.",
+    oauthToggleDisabled:
+      "Configure a valid proxy port first, then decide whether Google / GitHub auth traffic should use it.",
     scopeNote:
       "This config now covers webhook and OAuth traffic. If model APIs need the proxy later, we can extend the same scope-based structure.",
     test: "Health Check",
@@ -176,7 +181,8 @@ export function ProxyConfigSection() {
     refetchOnWindowFocus: false,
   });
   const [form, setForm] = useState(EMPTY_FORM);
-  const [healthResult, setHealthResult] = useState<OutboundProxyHealthResult | null>(null);
+  const [healthResult, setHealthResult] =
+    useState<OutboundProxyHealthResult | null>(null);
   const [lastCheckOk, setLastCheckOk] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -198,7 +204,9 @@ export function ProxyConfigSection() {
   }, [data]);
 
   const save = useMutation({
-    mutationFn: async (payload: OutboundProxyConfigUpdate): Promise<OutboundProxyConfig> => {
+    mutationFn: async (
+      payload: OutboundProxyConfigUpdate,
+    ): Promise<OutboundProxyConfig> => {
       const { data } = await putProxyConfigApiV1AdminProxyConfigPut(payload);
       return {
         proxy_port: data.proxy_port ?? null,
@@ -217,7 +225,9 @@ export function ProxyConfigSection() {
 
   const test = useMutation({
     mutationFn: (payload: OutboundProxyConfigUpdate) =>
-      postProxyConfigTestApiV1AdminProxyConfigTestPost(payload).then((r) => r.data),
+      postProxyConfigTestApiV1AdminProxyConfigTestPost(payload).then(
+        (r) => r.data,
+      ),
     onSuccess: (result, variables) => {
       setHealthResult(result);
       setLastCheckOk(result.ok);
@@ -251,7 +261,10 @@ export function ProxyConfigSection() {
       form.oauth_enabled !== savedForm.oauth_enabled,
     [form, savedForm],
   );
-  const normalizedPort = useMemo(() => normalizePort(form.proxy_port), [form.proxy_port]);
+  const normalizedPort = useMemo(
+    () => normalizePort(form.proxy_port),
+    [form.proxy_port],
+  );
   const isPortBlank = form.proxy_port.trim() === "";
   const isPortValid = normalizedPort !== null || isPortBlank;
   const canSave =
@@ -320,7 +333,7 @@ export function ProxyConfigSection() {
         label: statusLabel,
         tone: statusTone,
       }}
-      testAction={(
+      testAction={
         <Button
           type="button"
           variant="outline"
@@ -336,7 +349,7 @@ export function ProxyConfigSection() {
           )}
           {test.isPending ? copy.testing : copy.test}
         </Button>
-      )}
+      }
     >
       <div className="space-y-5">
         <div className="space-y-4">
@@ -357,7 +370,9 @@ export function ProxyConfigSection() {
               disabled={save.isPending || test.isPending}
             />
             {!isPortValid ? (
-              <p className="text-xs text-amber-600 dark:text-amber-300">{copy.proxyPortInvalid}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-300">
+                {copy.proxyPortInvalid}
+              </p>
             ) : null}
           </div>
 
@@ -371,9 +386,15 @@ export function ProxyConfigSection() {
               setHealthResult(null);
               setLastCheckOk(null);
             }}
-            leading={<Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />}
+            leading={
+              <Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
+            }
             label={copy.webhookToggle}
-            description={normalizedPort ? copy.webhookToggleHint : copy.webhookToggleDisabled}
+            description={
+              normalizedPort
+                ? copy.webhookToggleHint
+                : copy.webhookToggleDisabled
+            }
             disabled={!normalizedPort || save.isPending || test.isPending}
           />
 
@@ -387,15 +408,21 @@ export function ProxyConfigSection() {
               setHealthResult(null);
               setLastCheckOk(null);
             }}
-            leading={<Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />}
+            leading={
+              <Plug className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
+            }
             label={copy.oauthToggle}
-            description={normalizedPort ? copy.oauthToggleHint : copy.oauthToggleDisabled}
+            description={
+              normalizedPort ? copy.oauthToggleHint : copy.oauthToggleDisabled
+            }
             disabled={!normalizedPort || save.isPending || test.isPending}
           />
 
           <Card surface="soft" className="border-dashed">
             <CardContent className="pt-6">
-              <p className="text-sm leading-6 text-muted-foreground">{copy.scopeNote}</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {copy.scopeNote}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -411,13 +438,19 @@ export function ProxyConfigSection() {
                   {healthResult.proxy_url}
                 </code>
               </div>
-              <p className="text-sm leading-6 text-foreground/88">{healthResult.summary}</p>
+              <p className="text-sm leading-6 text-foreground/88">
+                {healthResult.summary}
+              </p>
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                 {typeof healthResult.latency_ms === "number" ? (
-                  <span>{copy.latency}: {healthResult.latency_ms}ms</span>
+                  <span>
+                    {copy.latency}: {healthResult.latency_ms}ms
+                  </span>
                 ) : null}
                 {typeof healthResult.status_code === "number" ? (
-                  <span>{copy.statusCode}: {healthResult.status_code}</span>
+                  <span>
+                    {copy.statusCode}: {healthResult.status_code}
+                  </span>
                 ) : null}
               </div>
             </CardContent>

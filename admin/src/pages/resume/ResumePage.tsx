@@ -254,9 +254,9 @@ export default function ResumePage() {
         }
       />
 
-      <div className="mt-5 space-y-6">
-        <Card className="rounded-[1.8rem] border border-white/60 bg-[rgba(255,255,255,0.72)] shadow-[0_24px_70px_rgba(15,23,42,0.07)]">
-          <CardContent className="p-6">
+      <div className="mt-4 space-y-5 sm:mt-5 sm:space-y-6">
+        <Card className="resume-edit-surface rounded-[1.35rem] border sm:rounded-[1.8rem] sm:border-white/60 sm:bg-[rgba(255,255,255,0.72)] sm:shadow-[0_24px_70px_rgba(15,23,42,0.07)]">
+          <CardContent className="p-4 sm:p-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>姓名 / 页面标题</Label>
@@ -309,6 +309,7 @@ export default function ResumePage() {
                 onChange={(value) => setForm((p) => ({ ...p, summary: value }))}
                 minHeight="460px"
                 placeholder="使用 Markdown 编写简历正文"
+                mobileFullscreen
               />
             </div>
           </CardContent>

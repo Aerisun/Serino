@@ -96,10 +96,11 @@ export default function SiteConfigPage() {
   ] as const;
 
   return (
-    <div>
+    <div className="site-config-page">
       <PageHeader
         title={t("siteConfig.title")}
         description={t("siteConfig.description")}
+        className="site-config-page-header"
         secondary={<AdminSectionTabs items={items} className="w-fit" />}
       />
       <Suspense fallback={<SectionLoader label={t("common.loading")} />}>

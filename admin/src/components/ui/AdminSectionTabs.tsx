@@ -147,7 +147,7 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
       activeItem?.scrollIntoView({
         block: "nearest",
         inline: "nearest",
-        behavior: "smooth",
+        behavior: window.matchMedia("(max-width: 767px)").matches ? "auto" : "smooth",
       });
     });
 

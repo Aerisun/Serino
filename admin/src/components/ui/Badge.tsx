@@ -24,7 +24,7 @@ export function Badge({
   return (
     <div
       className={cn(
-        "admin-transition-fast inline-flex items-center rounded-full border border-[rgba(var(--admin-border-subtle)/0.22)] bg-[rgb(var(--admin-surface-1)/0.44)] backdrop-blur-sm px-2.5 py-1 text-xs font-semibold transition-[background-color,border-color,color,box-shadow]",
+        "admin-transition-fast inline-flex items-center whitespace-nowrap rounded-full border border-[rgba(var(--admin-border-subtle)/0.22)] bg-[rgb(var(--admin-surface-1)/0.44)] backdrop-blur-sm px-2.5 py-1 text-xs font-semibold transition-[background-color,border-color,color,box-shadow]",
         badgeVariants[variant] || badgeVariants.default,
         className,
       )}

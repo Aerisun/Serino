@@ -28,6 +28,7 @@ const PANEL_MAX_WIDTH = 352;
 const PANEL_MAX_HEIGHT = 520;
 const PANEL_VERTICAL_PADDING = 32;
 const AUTO_CLOSE_DELAY_MS = 1500;
+const MOBILE_HELP_QUERY = "(max-width: 767px)";
 
 export function LabelWithHelp({
   label,
@@ -41,7 +42,7 @@ export function LabelWithHelp({
 }: LabelWithHelpProps) {
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<{
-    top: number;
+    top?: number;
     left: number;
     width: number;
     maxHeight: number;
@@ -79,6 +80,40 @@ export function LabelWithHelp({
     }
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
+
+    if (window.matchMedia(MOBILE_HELP_QUERY).matches) {
+      const width = Math.min(320, window.innerWidth - PANEL_MARGIN * 2);
+      const left = Math.min(
+        Math.max(PANEL_MARGIN, triggerRect.left - 20),
+        window.innerWidth - PANEL_MARGIN - width,
+      );
+      const maxHeight = Math.min(
+        PANEL_MAX_HEIGHT,
+        Math.max(220, window.innerHeight * 0.48),
+      );
+      const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 0;
+      const desiredHeight = panelHeight || Math.min(280, maxHeight);
+      const availableBelow = window.innerHeight - triggerRect.bottom - PANEL_MARGIN;
+      const availableAbove = triggerRect.top - PANEL_MARGIN;
+      const openAbove = availableBelow < desiredHeight && availableAbove > availableBelow;
+      const effectiveHeight = Math.min(desiredHeight, maxHeight);
+      const top = openAbove
+        ? Math.max(PANEL_MARGIN, triggerRect.top - PANEL_OFFSET - effectiveHeight)
+        : Math.min(
+            triggerRect.bottom + PANEL_OFFSET,
+            window.innerHeight - effectiveHeight - PANEL_MARGIN,
+          );
+
+      setPanelStyle({
+        left,
+        top,
+        width,
+        maxHeight,
+        placement: openAbove ? "above" : "below",
+      });
+      return;
+    }
+
     const availableRight = Math.max(
       120,
       window.innerWidth - triggerRect.right - PANEL_MARGIN - PANEL_OFFSET,
@@ -115,7 +150,7 @@ export function LabelWithHelp({
       return;
     }
 
-    const handlePointerDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (
         panelRef.current?.contains(target) ||
@@ -136,7 +171,7 @@ export function LabelWithHelp({
       updatePosition();
     };
 
-    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleEscape);
     window.addEventListener("resize", handleWindowChange);
     window.addEventListener("scroll", handleWindowChange, true);
@@ -146,7 +181,7 @@ export function LabelWithHelp({
     });
 
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
       window.removeEventListener("resize", handleWindowChange);
       window.removeEventListener("scroll", handleWindowChange, true);
@@ -209,7 +244,7 @@ export function LabelWithHelp({
                   : undefined
               }
               className={cn(
-                "fixed z-[160] origin-top-left overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-[0_22px_56px_rgba(15,23,42,0.16)]",
+                "fixed z-[160] origin-top-left overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-[0_18px_48px_rgba(15,23,42,0.16)]",
                 panelStyle?.placement === "above" && "origin-bottom-left",
                 "transition-[opacity,transform] duration-150 ease-out",
                 panelStyle ? "opacity-100 scale-100" : "opacity-0 scale-95",

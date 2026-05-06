@@ -165,11 +165,11 @@ export function ResourceUploadField({
   return (
     <div className="space-y-2">
       {typeof label === "string" ? <Label>{label}</Label> : label}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <Button
           type="button"
           variant="outline"
-          className="shrink-0"
+          className="w-full shrink-0 justify-center sm:w-auto"
           onClick={() => setOpen(true)}
         >
           <Upload className="mr-2 h-4 w-4" />

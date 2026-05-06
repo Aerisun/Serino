@@ -93,8 +93,8 @@ const navGroups = [
   },
 ];
 
-const TOPBAR_SCROLL_DELTA = 10;
-const TOPBAR_SHOW_SCROLL_TOP = 24;
+const TOPBAR_SCROLL_DELTA = 5;
+const TOPBAR_SHOW_SCROLL_TOP = 16;
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -107,6 +107,7 @@ export default function AdminLayout() {
   const [topbarVisible, setTopbarVisible] = useState(true);
   const contentScrollRef = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef(0);
+  const scrollFrameRef = useRef<number | null>(null);
 
   const { data: moderationPending } = useQuery({
     ...pendingModerationCountQueryOptions(),
@@ -119,28 +120,54 @@ export default function AdminLayout() {
   useEffect(() => {
     const isDesktopViewport = () => window.matchMedia("(min-width: 768px)").matches;
 
-    const getActiveScrollTop = () => {
+    const getScrollMetrics = () => {
       if (isDesktopViewport()) {
-        return contentScrollRef.current?.scrollTop ?? 0;
+        const node = contentScrollRef.current;
+        const maxScrollTop = Math.max(
+          (node?.scrollHeight ?? 0) - (node?.clientHeight ?? 0),
+          0,
+        );
+        const scrollTop = Math.min(
+          Math.max(node?.scrollTop ?? 0, 0),
+          maxScrollTop,
+        );
+
+        return { scrollTop, maxScrollTop };
       }
 
-      return window.scrollY || document.documentElement.scrollTop || 0;
+      const documentElement = document.documentElement;
+      const maxScrollTop = Math.max(
+        Math.max(documentElement.scrollHeight, document.body.scrollHeight) -
+          window.innerHeight,
+        0,
+      );
+      const scrollTop = Math.min(
+        Math.max(window.scrollY || documentElement.scrollTop || 0, 0),
+        maxScrollTop,
+      );
+
+      return { scrollTop, maxScrollTop };
+    };
+
+    const setVisible = (nextVisible: boolean) => {
+      setTopbarVisible((currentVisible) =>
+        currentVisible === nextVisible ? currentVisible : nextVisible,
+      );
     };
 
     const syncTopbarVisibility = () => {
-      const nextScrollTop = Math.max(getActiveScrollTop(), 0);
-      const previousScrollTop = lastScrollTopRef.current;
-      const delta = nextScrollTop - previousScrollTop;
+      scrollFrameRef.current = null;
 
-      lastScrollTopRef.current = nextScrollTop;
+      const { scrollTop, maxScrollTop } = getScrollMetrics();
+      const delta = scrollTop - lastScrollTopRef.current;
+      lastScrollTopRef.current = scrollTop;
 
-      if (sidebarOpen) {
-        setTopbarVisible(true);
-        return;
-      }
-
-      if (nextScrollTop <= TOPBAR_SHOW_SCROLL_TOP) {
-        setTopbarVisible(true);
+      if (
+        sidebarOpen ||
+        scrollTop <= TOPBAR_SHOW_SCROLL_TOP ||
+        maxScrollTop <= TOPBAR_SHOW_SCROLL_TOP
+      ) {
+        setVisible(true);
         return;
       }
 
@@ -148,47 +175,64 @@ export default function AdminLayout() {
         return;
       }
 
-      setTopbarVisible(delta < 0);
+      setVisible(delta < 0);
     };
 
-    const handleWindowScroll = () => {
-      if (!isDesktopViewport()) {
-        syncTopbarVisibility();
+    const requestSync = () => {
+      if (scrollFrameRef.current !== null) {
+        return;
       }
-    };
 
-    const handleContentScroll = () => {
-      if (isDesktopViewport()) {
-        syncTopbarVisibility();
-      }
+      scrollFrameRef.current = window.requestAnimationFrame(syncTopbarVisibility);
     };
 
     const handleResize = () => {
-      lastScrollTopRef.current = Math.max(getActiveScrollTop(), 0);
-      setTopbarVisible(true);
+      const { scrollTop, maxScrollTop } = getScrollMetrics();
+      lastScrollTopRef.current = scrollTop;
+      if (
+        sidebarOpen ||
+        scrollTop <= TOPBAR_SHOW_SCROLL_TOP ||
+        maxScrollTop <= TOPBAR_SHOW_SCROLL_TOP
+      ) {
+        setVisible(true);
+      }
     };
 
-    lastScrollTopRef.current = Math.max(getActiveScrollTop(), 0);
+    lastScrollTopRef.current = getScrollMetrics().scrollTop;
 
-    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    window.addEventListener("scroll", requestSync, { passive: true });
     window.addEventListener("resize", handleResize);
     const contentNode = contentScrollRef.current;
-    contentNode?.addEventListener("scroll", handleContentScroll, { passive: true });
+    contentNode?.addEventListener("scroll", requestSync, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", handleWindowScroll);
+      window.removeEventListener("scroll", requestSync);
       window.removeEventListener("resize", handleResize);
-      contentNode?.removeEventListener("scroll", handleContentScroll);
+      contentNode?.removeEventListener("scroll", requestSync);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
     };
   }, [sidebarOpen]);
 
   useEffect(() => {
-    const currentScrollTop = window.matchMedia("(min-width: 768px)").matches
-      ? contentScrollRef.current?.scrollTop ?? 0
-      : window.scrollY || document.documentElement.scrollTop || 0;
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
 
-    lastScrollTopRef.current = Math.max(currentScrollTop, 0);
-    setTopbarVisible(true);
+    const resetRouteScroll = () => {
+      contentScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      lastScrollTopRef.current = 0;
+      setTopbarVisible(true);
+    };
+
+    resetRouteScroll();
+    const resetFrame = window.requestAnimationFrame(resetRouteScroll);
+
+    return () => window.cancelAnimationFrame(resetFrame);
   }, [location.pathname, location.search]);
 
   const sidebarContent = (
@@ -319,13 +363,14 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <main className="flex min-w-0 flex-1 flex-col bg-gradient-to-br from-background via-background/90 to-muted/30 md:min-h-0">
+      <main className="relative flex min-w-0 flex-1 flex-col bg-gradient-to-br from-background via-background/90 to-muted/30 md:min-h-0">
         <div
           className={cn(
-            "sticky top-0 z-10 h-14 shrink-0 admin-glass-topbar flex items-center justify-between px-4 sm:px-6 transition-[transform,margin-bottom,opacity] duration-300",
+            "fixed left-0 right-0 top-0 z-10 h-14 admin-glass-topbar flex transform-gpu items-center justify-between px-4 sm:px-6 will-change-transform transition-[transform,left] duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            collapsed ? "md:left-16" : "md:left-60",
             topbarVisible
-              ? "translate-y-0 opacity-100"
-              : "-translate-y-full -mb-14 opacity-0 pointer-events-none",
+              ? "translate-y-0"
+              : "-translate-y-[calc(100%+8px)] pointer-events-none",
           )}
         >
           <div className="flex items-center gap-3">
@@ -369,7 +414,7 @@ export default function AdminLayout() {
           ref={contentScrollRef}
           className="flex-1 overscroll-contain md:min-h-0 md:overflow-y-auto"
         >
-          <div className="min-w-0 p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
+          <div className="min-w-0 p-4 pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:p-6 md:pt-20 md:pb-6">
             <Outlet />
           </div>
         </div>

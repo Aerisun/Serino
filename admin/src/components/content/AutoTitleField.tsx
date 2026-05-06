@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/Input";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import { cn } from "@/lib/utils";
 
 interface AutoTitleFieldProps {
@@ -10,6 +11,7 @@ interface AutoTitleFieldProps {
   inputLabel: string;
   placeholder?: string;
   required?: boolean;
+  className?: string;
 }
 
 export function AutoTitleField({
@@ -21,13 +23,22 @@ export function AutoTitleField({
   inputLabel,
   placeholder,
   required = false,
+  className,
 }: AutoTitleFieldProps) {
   return (
-    <div className="flex min-w-0 items-center">
+    <div className={cn("flex min-w-0 items-center", className)}>
       <div className="flex shrink-0 items-center gap-3">
-        <span className="text-sm font-medium tracking-tight text-foreground/92">
-          {switchLabel}
-        </span>
+        <LabelWithHelp
+          label={switchLabel}
+          title={switchLabel}
+          description={
+            <>
+              <span className="block">开启：根据正文自动生成标题</span>
+              <span className="mt-1 block">关闭：显示标题输入框，使用手动填写的标题</span>
+            </>
+          }
+          className="gap-1.5 whitespace-nowrap [&>label]:tracking-tight [&>label]:text-foreground/92"
+        />
         <button
           type="button"
           role="switch"

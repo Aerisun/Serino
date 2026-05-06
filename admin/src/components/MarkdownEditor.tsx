@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Bold,
   Italic,
@@ -7,9 +8,12 @@ import {
   Link,
   Image,
   Code,
+  ChevronDown,
   List,
   Eye,
   EyeOff,
+  Maximize2,
+  PenLine,
   Upload,
   Expand,
   Minimize2,
@@ -27,6 +31,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Textarea } from "@/components/ui/Textarea";
+import { cn } from "@/lib/utils";
 import { canCompressImage, prepareImageUploadFile } from "@serino/utils/image-upload";
 import { uploadManagedAsset } from "@/lib/managedAssetUpload";
 import { extractApiErrorMessage } from "@/lib/api-error";
@@ -39,12 +44,14 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  mobileFullscreen?: boolean;
 }
 
 type InsertAction = { prefix: string; suffix: string; placeholder: string };
 type ImageSelection = { start: number; end: number; altText: string };
 
 const FIXED_IMAGE_CATEGORY = "markdown-image";
+const MOBILE_EDITOR_QUERY = "(max-width: 767px)";
 
 const ACTIONS: Record<string, InsertAction> = {
   bold: { prefix: "**", suffix: "**", placeholder: "bold text" },
@@ -57,10 +64,26 @@ const ACTIONS: Record<string, InsertAction> = {
   list: { prefix: "- ", suffix: "", placeholder: "list item" },
 };
 
-export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300px" }: MarkdownEditorProps) {
+function getIsMobileEditorViewport() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return window.matchMedia(MOBILE_EDITOR_QUERY).matches;
+}
+
+export function MarkdownEditor({
+  value,
+  onChange,
+  placeholder,
+  minHeight = "300px",
+  mobileFullscreen = false,
+}: MarkdownEditorProps) {
   const { t } = useI18n();
   const [preview, setPreview] = useState(false);
   const [autoExpand, setAutoExpand] = useState(true);
+  const [isMobileViewport, setIsMobileViewport] = useState(getIsMobileEditorViewport);
+  const [mobileComposerOpen, setMobileComposerOpen] = useState(false);
+  const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const [imageUploadMode, setImageUploadMode] = useState<"compress" | "original">("compress");
   const [imageUploading, setImageUploading] = useState(false);
@@ -68,6 +91,8 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
   const [imageNote, setImageNote] = useState("");
   const [editorHeight, setEditorHeight] = useState(minHeight);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const mobileComposerRootRef = useRef<HTMLDivElement | null>(null);
+  const touchStartYRef = useRef(0);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const pendingImageSelectionRef = useRef<ImageSelection | null>(null);
   const pendingImageFileNameRef = useRef<string>("");
@@ -75,8 +100,115 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     const parsed = Number.parseFloat(minHeight);
     return Number.isFinite(parsed) ? parsed : 300;
   }, [minHeight]);
+  const useMobileFullscreen = mobileFullscreen && isMobileViewport;
+  const mobileCharacterCount = useMemo(
+    () => Array.from(value.replace(/\s/g, "")).length,
+    [value],
+  );
+  const mobileSnippet = useMemo(() => value.trim(), [value]);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia(MOBILE_EDITOR_QUERY);
+    const handleChange = () => {
+      const matches = mediaQuery.matches;
+      setIsMobileViewport(matches);
+      if (!matches) {
+        setMobileComposerOpen(false);
+      }
+    };
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!useMobileFullscreen || !mobileComposerOpen) {
+      return;
+    }
+
+    const scrollY = window.scrollY;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscrollBehavior = document.body.style.overscrollBehavior;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyLeft = document.body.style.left;
+    const previousBodyRight = document.body.style.right;
+    const previousBodyWidth = document.body.style.width;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousHtmlOverscrollBehavior = document.documentElement.style.overscrollBehavior;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
+
+    const handleTouchStart = (event: TouchEvent) => {
+      touchStartYRef.current = event.touches[0]?.clientY ?? 0;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const root = mobileComposerRootRef.current;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!root || !target || !root.contains(target)) {
+        event.preventDefault();
+        return;
+      }
+
+      const scroller = target.closest("[data-mobile-editor-scroll]") as HTMLElement | null;
+      if (!scroller) {
+        event.preventDefault();
+        return;
+      }
+
+      const currentY = event.touches[0]?.clientY ?? touchStartYRef.current;
+      const deltaY = currentY - touchStartYRef.current;
+      const canScroll = scroller.scrollHeight > scroller.clientHeight + 1;
+      const atTop = scroller.scrollTop <= 0;
+      const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+
+      if (!canScroll || (atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener("touchstart", handleTouchStart, { capture: true, passive: true });
+    document.addEventListener("touchmove", handleTouchMove, { capture: true, passive: false });
+
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart, { capture: true });
+      document.removeEventListener("touchmove", handleTouchMove, { capture: true });
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.left = previousBodyLeft;
+      document.body.style.right = previousBodyRight;
+      document.body.style.width = previousBodyWidth;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+      window.scrollTo(0, scrollY);
+    };
+  }, [mobileComposerOpen, useMobileFullscreen]);
+
+  useEffect(() => {
+    if (!useMobileFullscreen || !mobileComposerOpen || preview) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => textareaRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [mobileComposerOpen, preview, useMobileFullscreen]);
+
+  useEffect(() => {
+    if (useMobileFullscreen && mobileComposerOpen) {
+      return;
+    }
     if (!autoExpand) {
       setEditorHeight(minHeight);
       return;
@@ -88,7 +220,7 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     textarea.style.height = "0px";
     const nextHeight = Math.max(textarea.scrollHeight, minHeightPx);
     setEditorHeight(`${nextHeight}px`);
-  }, [autoExpand, minHeight, minHeightPx, value]);
+  }, [autoExpand, minHeight, minHeightPx, mobileComposerOpen, useMobileFullscreen, value]);
 
   const insertMarkdown = useCallback((action: string) => {
     const textarea = textareaRef.current;
@@ -204,26 +336,61 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
     { action: "list", icon: List },
   ];
 
-  return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="flex items-center gap-1 border-b px-2 py-1 bg-muted/50">
-        {toolbarButtons.map(({ action, icon: Icon }) => (
-          <button
-            key={action}
-            type="button"
-            className="p-1.5 rounded hover:bg-accent transition-colors"
-            onClick={() => {
-              if (action === "image") {
-                openImageUploadDialog();
-                return;
-              }
-              insertMarkdown(action);
-            }}
-            title={action === "image" ? "上传图片" : action}
-          >
-            <Icon className="h-4 w-4" />
-          </button>
-        ))}
+  const openMobileComposer = useCallback(() => {
+    setPreview(false);
+    setMobileToolbarOpen(false);
+    setMobileComposerOpen(true);
+  }, []);
+
+  const closeMobileComposer = useCallback(() => {
+    textareaRef.current?.blur();
+    setMobileToolbarOpen(false);
+    setMobileComposerOpen(false);
+  }, []);
+
+  const toggleMobilePreview = useCallback(() => {
+    setPreview((current) => {
+      const nextPreview = !current;
+      if (nextPreview) {
+        setMobileToolbarOpen(false);
+      }
+      return nextPreview;
+    });
+  }, []);
+
+  const renderToolbar = (fullScreen = false) => (
+    <div
+      className={cn(
+        "flex items-center gap-1 border-b bg-muted/50",
+        fullScreen
+          ? "shrink-0 gap-0.5 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "px-2 py-1",
+      )}
+    >
+      {toolbarButtons.map(({ action, icon: Icon }) => (
+        <button
+          key={action}
+          type="button"
+          className={cn(
+            "shrink-0 rounded transition-colors hover:bg-accent",
+            fullScreen
+              ? "flex h-11 w-10 items-center justify-center rounded-full bg-background/65 text-foreground shadow-sm"
+              : "p-1.5",
+          )}
+          onClick={() => {
+            if (action === "image") {
+              openImageUploadDialog();
+              return;
+            }
+            insertMarkdown(action);
+          }}
+          title={action === "image" ? "上传图片" : action}
+          aria-label={action === "image" ? "上传图片" : action}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      ))}
+      {!fullScreen && (
         <div className="ml-auto">
           <button
             type="button"
@@ -234,6 +401,8 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
             {autoExpand ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
           </button>
         </div>
+      )}
+      {!fullScreen && (
         <div>
           <button
             type="button"
@@ -244,119 +413,271 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = "300p
             {preview ? t("editor.edit") : t("editor.preview")}
           </button>
         </div>
-      </div>
-      <Dialog
-        open={imageUploadOpen}
-        onOpenChange={(nextOpen) => {
-          setImageUploadOpen(nextOpen);
-          if (!nextOpen) {
-            setImageUploading(false);
-            setSelectedImageFile(null);
-            setImageNote("");
-            pendingImageSelectionRef.current = null;
-            pendingImageFileNameRef.current = "";
-            if (fileRef.current) fileRef.current.value = "";
-          }
-        }}
+      )}
+    </div>
+  );
+
+  const renderEditorBody = (fullScreen = false) => (
+    preview ? (
+      <div
+        data-mobile-editor-scroll={fullScreen ? "true" : undefined}
+        className={cn(
+          fullScreen
+            ? "h-full overflow-y-auto overscroll-none px-5 py-5"
+            : `p-4 ${autoExpand ? "overflow-visible" : "overflow-auto"}`,
+        )}
+        style={
+          fullScreen
+            ? undefined
+            : autoExpand
+              ? { minHeight }
+              : { minHeight, maxHeight: minHeight }
+        }
       >
-        <DialogContent className="max-w-xl rounded-2xl" hideCloseButton={false}>
-          <DialogHeader className="text-left">
-            <DialogTitle>上传图片</DialogTitle>
-            <DialogDescription>上传后会自动写入用户资源。</DialogDescription>
-          </DialogHeader>
+        <Suspense fallback={<div className="text-sm text-muted-foreground">{t("common.loading")}</div>}>
+          <MarkdownPreview content={value} />
+        </Suspense>
+      </div>
+    ) : (
+      <textarea
+        ref={textareaRef}
+        data-mobile-editor-scroll={fullScreen ? "true" : undefined}
+        className={cn(
+          "w-full bg-transparent outline-none",
+          fullScreen
+            ? "h-full resize-none overflow-y-auto overscroll-none px-5 py-5 font-serif text-[17px] leading-8 caret-primary selection:bg-primary/10 placeholder:text-muted-foreground/60"
+            : `p-4 font-mono text-sm ${autoExpand ? "resize-none overflow-hidden" : "resize-y overflow-auto"}`,
+        )}
+        style={
+          fullScreen
+            ? { minHeight: 0 }
+            : { minHeight, height: autoExpand ? editorHeight : minHeight }
+        }
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={fullScreen ? placeholder ?? t("editor.mobilePlaceholder") : placeholder}
+      />
+    )
+  );
 
-          <div className="grid gap-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label>上传模式</Label>
-                <NativeSelect
-                  value={imageUploadMode}
-                  onChange={(event) =>
-                    setImageUploadMode(event.target.value as "compress" | "original")
-                  }
-                >
-                  <option value="compress">{t("assets.uploadModeCompress")}</option>
-                  <option value="original">{t("assets.uploadModeOriginal")}</option>
-                </NativeSelect>
-              </div>
+  const imageUploadDialog = (
+    <Dialog
+      open={imageUploadOpen}
+      onOpenChange={(nextOpen) => {
+        setImageUploadOpen(nextOpen);
+        if (!nextOpen) {
+          setImageUploading(false);
+          setSelectedImageFile(null);
+          setImageNote("");
+          pendingImageSelectionRef.current = null;
+          pendingImageFileNameRef.current = "";
+          if (fileRef.current) fileRef.current.value = "";
+        }
+      }}
+    >
+      <DialogContent className="max-w-xl rounded-2xl" hideCloseButton={false}>
+        <DialogHeader className="text-left">
+          <DialogTitle>上传图片</DialogTitle>
+          <DialogDescription>上传后会自动写入用户资源。</DialogDescription>
+        </DialogHeader>
 
-              <div className="grid gap-2">
-                <Label>选择文件</Label>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageFileChange}
-                />
-                <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  {selectedImageFile ? selectedImageFile.name : "选择文件"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label>{t("assets.visibility")}</Label>
-                <Input value={t("assets.visibilityInternal")} disabled className="bg-muted text-muted-foreground" />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("assets.scope")}</Label>
-                <Input value={t("assets.scopeUser")} disabled className="bg-muted text-muted-foreground" />
-              </div>
-            </div>
-
+        <div className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label>{t("assets.category")}</Label>
-              <Input value={FIXED_IMAGE_CATEGORY} disabled className="bg-muted text-muted-foreground" />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>{t("assets.note")}</Label>
-              <Textarea
-                value={imageNote}
-                onChange={(e) => setImageNote(e.target.value)}
-                rows={3}
-                placeholder={t("assets.note")}
-              />
-              <p className="text-xs text-muted-foreground">{t("assets.noteHint")}</p>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setImageUploadOpen(false)}>
-                {t("common.cancel")}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => void handleImageUpload()}
-                disabled={imageUploading || !selectedImageFile}
+              <Label>上传模式</Label>
+              <NativeSelect
+                value={imageUploadMode}
+                onChange={(event) =>
+                  setImageUploadMode(event.target.value as "compress" | "original")
+                }
               >
-                {imageUploading ? t("assets.compressing") : t("common.confirm")}
+                <option value="compress">{t("assets.uploadModeCompress")}</option>
+                <option value="original">{t("assets.uploadModeOriginal")}</option>
+              </NativeSelect>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>选择文件</Label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageFileChange}
+              />
+              <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+                <Upload className="mr-2 h-4 w-4" />
+                {selectedImageFile ? selectedImageFile.name : "选择文件"}
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      {preview ? (
-        <div
-          className={`p-4 ${autoExpand ? "overflow-visible" : "overflow-auto"}`}
-          style={autoExpand ? { minHeight } : { minHeight, maxHeight: minHeight }}
-        >
-          <Suspense fallback={<div className="text-sm text-muted-foreground">{t("common.loading")}</div>}>
-            <MarkdownPreview content={value} />
-          </Suspense>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label>{t("assets.visibility")}</Label>
+              <Input value={t("assets.visibilityInternal")} disabled className="bg-muted text-muted-foreground" />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("assets.scope")}</Label>
+              <Input value={t("assets.scopeUser")} disabled className="bg-muted text-muted-foreground" />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>{t("assets.category")}</Label>
+            <Input value={FIXED_IMAGE_CATEGORY} disabled className="bg-muted text-muted-foreground" />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>{t("assets.note")}</Label>
+            <Textarea
+              value={imageNote}
+              onChange={(e) => setImageNote(e.target.value)}
+              rows={3}
+              placeholder={t("assets.note")}
+            />
+            <p className="text-xs text-muted-foreground">{t("assets.noteHint")}</p>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setImageUploadOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleImageUpload()}
+              disabled={imageUploading || !selectedImageFile}
+            >
+              {imageUploading ? t("assets.compressing") : t("common.confirm")}
+            </Button>
+          </div>
         </div>
-      ) : (
-        <textarea
-          ref={textareaRef}
-          className={`w-full p-4 font-mono text-sm bg-transparent outline-none ${autoExpand ? "resize-none overflow-hidden" : "resize-y overflow-auto"}`}
-          style={{ minHeight, height: autoExpand ? editorHeight : minHeight }}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const mobileComposer = mobileComposerOpen && useMobileFullscreen && typeof document !== "undefined"
+    ? createPortal(
+        <div
+          ref={mobileComposerRootRef}
+          className="fixed inset-x-0 z-40 overflow-hidden overscroll-none bg-background md:hidden"
+          style={{ top: "-72px", bottom: "-72px" }}
+        >
+          <div
+            className="absolute inset-x-0 flex flex-col overflow-hidden overscroll-none bg-background text-foreground"
+            style={{ top: "72px", bottom: "72px" }}
+          >
+            <div className="shrink-0 border-b border-border/70 bg-background px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-xs text-muted-foreground">
+                    {t("editor.mobileCharacterCount", { count: mobileCharacterCount })}
+                  </div>
+                </div>
+	                <div className="flex shrink-0 items-center gap-1.5">
+	                  <Button
+	                    type="button"
+	                    variant="ghost"
+	                    size="icon"
+	                    className="h-9 min-h-9 w-9 rounded-full"
+                    onClick={() => setMobileToolbarOpen((current) => !current)}
+                    title={
+                      mobileToolbarOpen
+                        ? t("editor.mobileToolbarClose")
+                        : t("editor.mobileToolbarOpen")
+                    }
+                    aria-label={
+                      mobileToolbarOpen
+                        ? t("editor.mobileToolbarClose")
+                        : t("editor.mobileToolbarOpen")
+                    }
+                    aria-expanded={mobileToolbarOpen}
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        mobileToolbarOpen && "rotate-180",
+                      )}
+                    />
+	                  </Button>
+	                  <Button
+	                    type="button"
+	                    variant="ghost"
+	                    size="sm"
+	                    className="h-9 min-h-9 rounded-full px-3"
+                    onClick={toggleMobilePreview}
+                  >
+                    {preview ? <EyeOff className="mr-1.5 h-4 w-4" /> : <Eye className="mr-1.5 h-4 w-4" />}
+                    {preview ? t("editor.mobileEdit") : t("editor.mobilePreview")}
+	                  </Button>
+	                  <Button
+	                    type="button"
+	                    size="sm"
+	                    className="h-9 min-h-9 rounded-full px-4"
+                    onClick={closeMobileComposer}
+                  >
+                    {t("common.done")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            {!preview && mobileToolbarOpen && renderToolbar(true)}
+            <div className="min-h-0 flex-1 overflow-hidden pb-[env(safe-area-inset-bottom)]">
+              {renderEditorBody(true)}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  if (useMobileFullscreen) {
+    return (
+      <>
+        <button
+          type="button"
+          className="admin-glass w-full rounded-[var(--admin-radius-lg)] px-4 py-5 text-left shadow-[var(--admin-shadow-sm)] transition-colors hover:bg-[rgb(var(--admin-surface-1)/0.78)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          onClick={openMobileComposer}
+          aria-expanded={mobileComposerOpen}
+          aria-label={t("editor.mobileOpen")}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold">
+              <PenLine className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t("editor.mobileTitle")}</span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+              <Maximize2 className="h-3.5 w-3.5" />
+              {t("editor.mobileOpen")}
+            </span>
+          </span>
+          <span
+            className="mt-4 block max-h-32 touch-pan-y overflow-y-auto overscroll-y-auto whitespace-pre-wrap pr-1 text-sm leading-6 text-foreground/80 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onClick={(event) => {
+              if (mobileSnippet) {
+                event.stopPropagation();
+              }
+            }}
+          >
+            {mobileSnippet || t("editor.mobileEmpty")}
+          </span>
+          <span className="mt-4 block text-xs text-muted-foreground">
+            {t("editor.mobileCharacterCount", { count: mobileCharacterCount })}
+          </span>
+        </button>
+        {mobileComposer}
+        {imageUploadDialog}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="overflow-hidden rounded-lg border">
+        {renderToolbar(false)}
+        {renderEditorBody(false)}
+      </div>
+      {imageUploadDialog}
+    </>
   );
 }

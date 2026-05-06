@@ -385,22 +385,25 @@ export function ProfileTab() {
   };
 
   return (
-    <Card className="mt-4 max-w-2xl">
-      <CardHeader className="gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-foreground">{t("siteConfig.profile")}</h3>
-          <p className="text-sm text-muted-foreground">{t("siteConfig.sectionDescriptions.profile")}</p>
+    <Card className="site-config-profile-card mt-4 max-w-2xl overflow-visible rounded-[1.35rem] sm:overflow-hidden sm:rounded-[var(--admin-radius-lg)]">
+      <CardHeader className="gap-2 border-b border-border/60 px-4 pb-3 pt-4 sm:gap-3 sm:px-6 sm:pb-5 sm:pt-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <h3 className="truncate text-lg font-semibold text-foreground">{t("siteConfig.profile")}</h3>
+            <p className="hidden text-sm text-muted-foreground sm:block">{t("siteConfig.sectionDescriptions.profile")}</p>
+          </div>
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            {hasChanges ? <PendingSaveBadge /> : null}
+            <DirtySaveButton
+              dirty={hasChanges}
+              saving={save.isPending}
+              onClick={() => save.mutate({ data: form })}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2 self-start">
-          {hasChanges ? <PendingSaveBadge /> : null}
-          <DirtySaveButton
-            dirty={hasChanges}
-            saving={save.isPending}
-            onClick={() => save.mutate({ data: form })}
-          />
-        </div>
+        <p className="text-sm leading-5 text-muted-foreground sm:hidden">{t("siteConfig.sectionDescriptions.profile")}</p>
       </CardHeader>
-      <CardContent className="space-y-4 pt-6">
+      <CardContent className="space-y-4 px-4 pt-3 sm:px-6 sm:pt-6">
         {(["name", "title", "role"] as const).map((key) => (
           <div key={key} className="space-y-2">
             {renderHelpLabel(key)}
