@@ -204,6 +204,50 @@ assert_runtime_css_contains() {
   rm -f "${index_file}" "${entry_file}" "${css_file}"
 }
 
+resolve_site_asset_url() {
+  local asset_path="$1"
+
+  if [[ "${asset_path}" =~ ^https?:// ]]; then
+    printf '%s' "${asset_path}"
+    return 0
+  fi
+  if [[ "${asset_path}" == /* ]]; then
+    printf '%s%s' "${SITE_URL}" "${asset_path}"
+    return 0
+  fi
+  printf '%s%s%s' "${SITE_URL}" "${ADMIN_BASE_PATH}" "${asset_path}"
+}
+
+assert_admin_css_contains() {
+  local label="$1"
+  local pattern="$2"
+  local index_file
+  local css_file
+  local css_path
+  local css_url
+
+  index_file="$(mktemp)"
+  css_file="$(mktemp)"
+
+  curl --noproxy '*' -fsS "${SITE_URL}${ADMIN_BASE_PATH}" -o "${index_file}"
+  css_path="$(grep -Eo 'href="[^"]*assets/index-[^"]+\.css"' "${index_file}" | head -n 1 | sed -E 's/^href="([^"]+)"/\1/' || true)"
+  if [[ -z "${css_path}" ]]; then
+    echo "ERROR: admin CSS asset was not found" >&2
+    rm -f "${index_file}" "${css_file}"
+    return 1
+  fi
+
+  css_url="$(resolve_site_asset_url "${css_path}")"
+  curl --noproxy '*' -fsS "${css_url}" -o "${css_file}"
+  if ! grep -Eiq "${pattern}" "${css_file}"; then
+    echo "ERROR: ${label} did not match required pattern (${pattern}): ${css_url}" >&2
+    rm -f "${index_file}" "${css_file}"
+    return 1
+  fi
+
+  rm -f "${index_file}" "${css_file}"
+}
+
 build_local_images() {
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-api:${SMOKE_TAG}" ./backend
   docker build -t "${LOCAL_IMAGE_REGISTRY}/serino-web:${SMOKE_TAG}" -f Dockerfile.caddy .
@@ -288,5 +332,7 @@ assert_body_contains "${SITE_URL}/sw.js" "service worker retirement" "registrati
 assert_body_not_contains "${SITE_URL}/registerSW.js" "service worker registration shim" "serviceWorker\\.register|navigator\\.serviceWorker"
 assert_runtime_css_contains "hero nav backdrop-filter" "\\.liquid-glass-nav-hero\\{[^}]*[;{]backdrop-filter:blur\\(24px\\)saturate\\(146%\\)"
 assert_runtime_css_contains "hero nav prefixed backdrop-filter" "\\.liquid-glass-nav-hero\\{[^}]*-webkit-backdrop-filter:blur\\(24px\\)saturate\\(146%\\)"
+assert_admin_css_contains "admin sidebar backdrop-filter" "\\.admin-glass-sidebar\\{[^}]*[;{]backdrop-filter:blur\\(var\\(--admin-blur-md\\)\\)[[:space:]]*saturate\\(var\\(--admin-saturate\\)\\)"
+assert_admin_css_contains "admin sidebar prefixed backdrop-filter" "\\.admin-glass-sidebar\\{[^}]*-webkit-backdrop-filter:blur\\(var\\(--admin-blur-md\\)\\)[[:space:]]*saturate\\(var\\(--admin-saturate\\)\\)"
 
 echo "Docker smoke test passed for ${SITE_URL}"
