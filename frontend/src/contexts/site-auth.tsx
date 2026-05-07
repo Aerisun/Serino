@@ -12,6 +12,7 @@ import {
   BellOff,
   Check,
   Github,
+  Google,
   Lock,
   Loader2,
   Mail,
@@ -77,6 +78,7 @@ function providerLabel(provider: string) {
 }
 
 function providerIcon(provider: string) {
+  if (provider === "google") return Google;
   if (provider === "github") return Github;
   return Sparkles;
 }
@@ -779,7 +781,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
               >
                 <motion.button
                   type="button"
-                  className="absolute inset-0 bg-[rgb(10_15_23/0.28)] backdrop-blur-sm"
+                  className="absolute inset-0 bg-[rgb(10_15_23/0.24)] backdrop-blur-sm dark:bg-[rgb(5_8_14/0.36)]"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -799,11 +801,11 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                   })}
                   role="dialog"
                   aria-modal="true"
-                  className="relative flex min-h-0 w-full max-w-[34rem] max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.7rem)] flex-col overflow-hidden rounded-[1.75rem] border border-[rgb(var(--shiro-border-rgb)/0.24)] bg-background/[0.88] shadow-[0_30px_90px_rgb(15_23_42/0.18)] backdrop-blur-2xl dark:bg-card/[0.92] sm:max-h-[min(calc(100dvh-3rem),48rem)] sm:rounded-[2rem]"
+                  className="site-auth-dialog relative flex min-h-0 w-full max-w-[34rem] max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.7rem)] flex-col overflow-hidden rounded-[1.75rem] backdrop-blur-2xl sm:max-h-[min(calc(100dvh-3rem),48rem)] sm:rounded-[2rem]"
                 >
-                  <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--shiro-glow-rgb)/0.7)] to-transparent" />
-                  <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgb(255_107_53/0.18),_transparent_68%)]" />
-                  <div className="absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,_rgb(66_133_244/0.18),_transparent_66%)]" />
+                  <div className="site-auth-top-line absolute inset-x-8 top-0 h-px" />
+                  <div className="site-auth-glow site-auth-glow-warm absolute -right-10 -top-10 h-40 w-40 rounded-full" />
+                  <div className="site-auth-glow site-auth-glow-cool absolute -left-10 bottom-0 h-36 w-36 rounded-full" />
 
                   <div
                     className={`relative min-h-0 flex-1 overflow-y-auto overscroll-contain ${
@@ -812,9 +814,9 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                   >
                     <div className="px-4 py-4 sm:px-6 sm:py-6">
                       <div
-                        className={`inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] px-3 py-1 text-foreground/46 ${
+                        className={`site-auth-tag inline-flex items-center gap-2 rounded-full px-3 py-1 ${
                           mode === "profile"
-                            ? "font-heading text-[0.9rem] italic tracking-[0.08em] text-[rgb(var(--shiro-accent-rgb)/0.84)]"
+                            ? "is-profile font-heading text-[0.9rem] italic tracking-[0.08em]"
                             : "text-[0.68rem] uppercase tracking-[0.24em]"
                         }`}
                       >
@@ -842,32 +844,42 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                                 type="button"
                                 onClick={enabled ? () => void handleOAuthLogin(provider) : undefined}
                                 disabled={submitting || !enabled}
-                                className={`group relative overflow-hidden rounded-[1.35rem] border px-4 py-4 text-left transition ${
-                                  enabled
-                                    ? "border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.8] hover:border-[rgb(var(--shiro-accent-rgb)/0.26)] hover:bg-background/[0.9] disabled:opacity-60"
-                                    : "border-[rgb(var(--shiro-border-rgb)/0.1)] bg-foreground/[0.04] opacity-55 cursor-not-allowed"
-                                }`}
+                                className={`site-auth-oauth-button ${
+                                  enabled ? "is-enabled" : "is-disabled"
+                                } ${
+                                  provider === "google" ? "is-google" : "is-github"
+                                } group relative overflow-hidden rounded-[1.35rem] px-4 py-4 text-left transition disabled:opacity-60`}
                               >
                                 {enabled ? (
                                   <div
                                     className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
                                     style={{
                                       background:
-                                        "linear-gradient(135deg, rgb(66 133 244 / 0.12), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.12))",
+                                        provider === "google"
+                                          ? "linear-gradient(135deg, rgb(66 133 244 / 0.13), rgb(234 67 53 / 0.08), rgb(251 188 5 / 0.08), rgb(52 168 83 / 0.13))"
+                                          : "radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.18), transparent 42%), linear-gradient(135deg, rgb(17 24 39 / 0.08), rgb(148 163 184 / 0.1))",
                                     }}
                                   />
                                 ) : null}
                                 <div className="relative flex items-center gap-3">
-                                  <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] ${
-                                    enabled ? "bg-white/80 text-foreground/78" : "bg-foreground/[0.06] text-foreground/32"
-                                  }`}>
-                                    <Icon className="h-4 w-4" />
+                                  <span
+                                    className={`site-auth-provider-icon ${
+                                      enabled ? "is-enabled" : "is-disabled"
+                                    } ${
+                                      provider === "google" ? "is-google" : "is-github"
+                                    } inline-flex h-10 w-10 items-center justify-center rounded-full`}
+                                  >
+                                    <Icon
+                                      className={
+                                        provider === "google" ? "h-5 w-5" : "h-4 w-4"
+                                      }
+                                    />
                                   </span>
                                   <div>
-                                    <div className={`text-sm font-semibold ${enabled ? "text-foreground" : "text-foreground/42"}`}>
+                                    <div className={`site-auth-provider-title text-sm font-semibold ${enabled ? "" : "is-disabled"}`}>
                                       {providerLabel(provider)}
                                     </div>
-                                    <div className={`text-xs ${enabled ? "text-foreground/46" : "text-foreground/32"}`}>
+                                    <div className={`site-auth-provider-subtitle text-xs ${enabled ? "" : "is-disabled"}`}>
                                       {enabled
                                         ? t("siteAuth.useThirdPartyDirect")
                                         : t("siteAuth.providerDisabled", { provider: providerLabel(provider) })}
@@ -883,9 +895,9 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                       {mode === "profile" ? (
                         profileEditor
                       ) : dialogEmailLoginEnabled ? (
-                        <div className="mt-5 rounded-[1.5rem] border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.76] p-4">
+                        <div className="site-auth-email-panel mt-5 rounded-[1.5rem] p-4">
                           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <Mail className="h-4 w-4 text-[rgb(var(--shiro-accent-rgb)/0.82)]" />
+                            <Mail className="site-auth-mail-icon h-4 w-4" />
                             {t("siteAuth.emailIdentityLogin")}
                           </div>
                           <div className="mt-4 space-y-3">
@@ -900,7 +912,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                                 }
                               }}
                               placeholder={t("siteAuth.emailIdentityPlaceholder")}
-                              className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
+                              className="site-auth-input w-full rounded-[1.1rem] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34"
                             />
                             {requiresAdminPassword ? (
                               <>
@@ -914,7 +926,7 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
                                     setAdminPassword(event.target.value)
                                   }
                                   placeholder={t("siteAuth.adminPasswordPlaceholder")}
-                                  className="w-full rounded-[1.1rem] border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.84] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34 focus:border-[rgb(var(--shiro-accent-rgb)/0.26)]"
+                                  className="site-auth-input w-full rounded-[1.1rem] px-4 py-3 text-sm outline-none transition placeholder:text-foreground/34"
                                 />
                               </>
                             ) : null}
