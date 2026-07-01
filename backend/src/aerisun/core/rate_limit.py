@@ -19,6 +19,7 @@ RATE_COMMENT_IMAGE_UPLOAD = (
 )
 RATE_AUTH_LOGIN = "10/minute"
 RATE_SEARCH = "30/minute"
+RATE_VISIT_BEACON = "60/minute"
 
 
 def _positive_int(value: object, fallback: int) -> int:

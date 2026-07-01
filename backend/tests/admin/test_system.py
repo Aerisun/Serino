@@ -241,6 +241,10 @@ class TestDashboardStats:
                     path="/thoughts/one",
                     ip_address="198.51.100.9",
                     user_agent="Mozilla/5.0",
+                    browser="Chrome",
+                    browser_version="120.0",
+                    os="Windows",
+                    device_type="desktop",
                     referer=None,
                     status_code=200,
                     duration_ms=42,
@@ -254,11 +258,47 @@ class TestDashboardStats:
         data = resp.json()
         assert data["total"] >= 1
         assert isinstance(data["items"], list)
-        assert data["items"][0]["path"]
-        assert "ip_address" in data["items"][0]
-        assert "duration_ms" in data["items"][0]
-        assert "status_text" in data["items"][0]
-        assert "location" in data["items"][0]
+        first = data["items"][0]
+        assert first["path"]
+        for key in ("ip_address", "duration_ms", "status_text", "location", "browser", "os", "device_type"):
+            assert key in first
+
+    def test_dashboard_visitor_breakdowns(self, client, admin_headers):
+        factory = get_session_factory()
+        now = shanghai_now()
+        with factory() as session:
+            session.add(
+                VisitRecord(
+                    visited_at=now,
+                    path="/posts/breakdown",
+                    ip_address="203.0.113.20",
+                    user_agent="Mozilla/5.0",
+                    browser="Firefox",
+                    os="Linux",
+                    device_type="mobile",
+                    referer="https://news.example.org/",
+                    referer_domain="news.example.org",
+                    visitor_id="visitor-abc",
+                    status_code=200,
+                    duration_ms=10,
+                    is_bot=False,
+                )
+            )
+            session.commit()
+
+        resp = client.get(f"{BASE}/dashboard/stats", headers=admin_headers)
+        assert resp.status_code == 200
+        visitors = resp.json()["visitors"]
+        for key in ("device_breakdown", "browser_breakdown", "referrer_breakdown"):
+            assert key in visitors
+            assert isinstance(visitors[key], list)
+
+        devices = {item["label"] for item in visitors["device_breakdown"]}
+        browsers = {item["label"] for item in visitors["browser_breakdown"]}
+        referrers = {item["label"] for item in visitors["referrer_breakdown"]}
+        assert "mobile" in devices
+        assert "Firefox" in browsers
+        assert "news.example.org" in referrers
 
     def test_dashboard_stats_without_token(self, client):
         resp = client.get(f"{BASE}/dashboard/stats")

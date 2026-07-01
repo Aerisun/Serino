@@ -169,14 +169,31 @@ class VisitRecord(Base, TimestampMixin):
         Index("ix_visit_records_path_visited_at", "path", "visited_at"),
         Index("ix_visit_records_ip_address_visited_at", "ip_address", "visited_at"),
         Index("ix_visit_records_is_bot", "is_bot"),
+        Index("ix_visit_records_device_type", "device_type"),
+        Index("ix_visit_records_visitor_id_visited_at", "visitor_id", "visited_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     visited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     path: Mapped[str] = mapped_column(String(255), nullable=False)
+    query: Mapped[str | None] = mapped_column(String(512))
     ip_address: Mapped[str] = mapped_column(String(64), nullable=False)
+    visitor_id: Mapped[str | None] = mapped_column(String(64))
     user_agent: Mapped[str | None] = mapped_column(Text)
+    browser: Mapped[str | None] = mapped_column(String(64))
+    browser_version: Mapped[str | None] = mapped_column(String(32))
+    os: Mapped[str | None] = mapped_column(String(64))
+    os_version: Mapped[str | None] = mapped_column(String(32))
+    device_type: Mapped[str | None] = mapped_column(String(16))
+    screen: Mapped[str | None] = mapped_column(String(16))
+    language: Mapped[str | None] = mapped_column(String(35))
     referer: Mapped[str | None] = mapped_column(String(500))
+    referer_domain: Mapped[str | None] = mapped_column(String(255))
+    utm_source: Mapped[str | None] = mapped_column(String(128))
+    utm_medium: Mapped[str | None] = mapped_column(String(128))
+    utm_campaign: Mapped[str | None] = mapped_column(String(128))
+    utm_term: Mapped[str | None] = mapped_column(String(128))
+    utm_content: Mapped[str | None] = mapped_column(String(128))
     status_code: Mapped[int] = mapped_column(Integer(), nullable=False)
     duration_ms: Mapped[int] = mapped_column(Integer(), nullable=False, default=0)
     is_bot: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)

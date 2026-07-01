@@ -28,7 +28,7 @@ from aerisun.domain.ops.config_revisions import (
 from aerisun.domain.ops.config_revisions import (
     restore_config_revision as _restore_config_revision,
 )
-from aerisun.domain.ops.ip_geo import lookup_ip_geolocation
+from aerisun.domain.ops.ip_geo import IpGeoResult, lookup_ip_geolocation
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     ConfigDiffLineRead,
@@ -44,8 +44,11 @@ from aerisun.domain.ops.schemas import (
     SystemInfo,
     TopPageMetric,
     TrafficTrendPoint,
+    VisitorBreakdownMetric,
     VisitorRecordRead,
 )
+from aerisun.domain.ops.user_agent import parse_user_agent
+from aerisun.domain.ops.visit_tracking import compute_visitor_id, parse_referer, parse_utm, split_path_query
 from aerisun.domain.social.models import Friend
 from aerisun.domain.waline.service import count_waline_records, list_counter_history_by_date, list_counter_stats
 
@@ -122,6 +125,21 @@ class VisitRecordPayload:
     status_code: int
     duration_ms: int
     is_bot: bool
+    query: str | None = None
+    visitor_id: str | None = None
+    browser: str | None = None
+    browser_version: str | None = None
+    os: str | None = None
+    os_version: str | None = None
+    device_type: str | None = None
+    screen: str | None = None
+    language: str | None = None
+    referer_domain: str | None = None
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
+    utm_term: str | None = None
+    utm_content: str | None = None
 
 
 class VisitRecordQueue:
@@ -191,9 +209,24 @@ class VisitRecordQueue:
                         session,
                         visited_at=payload.visited_at,
                         path=payload.path,
+                        query=payload.query,
                         ip_address=payload.ip_address,
+                        visitor_id=payload.visitor_id,
                         user_agent=payload.user_agent,
+                        browser=payload.browser,
+                        browser_version=payload.browser_version,
+                        os=payload.os,
+                        os_version=payload.os_version,
+                        device_type=payload.device_type,
+                        screen=payload.screen,
+                        language=payload.language,
                         referer=payload.referer,
+                        referer_domain=payload.referer_domain,
+                        utm_source=payload.utm_source,
+                        utm_medium=payload.utm_medium,
+                        utm_campaign=payload.utm_campaign,
+                        utm_term=payload.utm_term,
+                        utm_content=payload.utm_content,
                         status_code=payload.status_code,
                         duration_ms=payload.duration_ms,
                         is_bot=payload.is_bot,
@@ -210,6 +243,87 @@ _visit_record_queue = VisitRecordQueue()
 
 def enqueue_visit_record(payload: VisitRecordPayload) -> bool:
     return _visit_record_queue.enqueue(payload)
+
+
+_BEACON_MAX_PATH_LENGTH = 255
+_BEACON_MAX_QUERY_LENGTH = 512
+_BEACON_MAX_REFERER_LENGTH = 500
+# Cap client-reported load time at 10 minutes to discard obvious garbage
+# (e.g. a tab left open / clock skew) without rejecting the beacon.
+_BEACON_MAX_LOAD_MS = 600_000
+
+
+def _clean(value: str | None, max_length: int) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return stripped[:max_length]
+
+
+def _clamp_load_ms(value: int | None) -> int:
+    if value is None:
+        return 0
+    return max(0, min(int(value), _BEACON_MAX_LOAD_MS))
+
+
+def record_page_visit(
+    *,
+    url: str,
+    referer: str | None,
+    ip_address: str | None,
+    user_agent: str | None,
+    screen: str | None = None,
+    language: str | None = None,
+    load_ms: int | None = None,
+    current_host: str | None = None,
+) -> bool:
+    """Record a client-reported page view (SPA navigation beacon).
+
+    The frontend sends the in-app ``url`` (path + query), plus client-only
+    context (screen, language, referrer, page-load time). The IP and
+    User-Agent are taken from the request headers server-side so they cannot be
+    spoofed by the payload. ``load_ms`` is the browser-measured page load /
+    route-transition time (Performance API) and is stored as ``duration_ms``.
+    All heavy parsing (UA, UTM, referrer domain) is pure-CPU and memoised.
+    """
+
+    path, query = split_path_query(url)
+    path = path[:_BEACON_MAX_PATH_LENGTH] or "/"
+    query = _clean(query, _BEACON_MAX_QUERY_LENGTH)
+
+    normalized_referer = _clean(referer, _BEACON_MAX_REFERER_LENGTH)
+    ip = (ip_address or "unknown").strip() or "unknown"
+
+    ua_info = parse_user_agent(user_agent)
+    utm = parse_utm(query)
+    payload = VisitRecordPayload(
+        visited_at=shanghai_now(),
+        path=path,
+        query=query,
+        ip_address=ip,
+        visitor_id=compute_visitor_id(ip, user_agent),
+        user_agent=user_agent,
+        referer=normalized_referer,
+        referer_domain=parse_referer(normalized_referer, current_host=current_host),
+        status_code=200,
+        duration_ms=_clamp_load_ms(load_ms),
+        is_bot=ua_info.is_bot,
+        browser=ua_info.browser,
+        browser_version=ua_info.browser_version,
+        os=ua_info.os,
+        os_version=ua_info.os_version,
+        device_type=ua_info.device_type,
+        screen=_clean(screen, 16),
+        language=_clean(language, 35),
+        utm_source=utm.source,
+        utm_medium=utm.medium,
+        utm_campaign=utm.campaign,
+        utm_term=utm.term,
+        utm_content=utm.content,
+    )
+    return enqueue_visit_record(payload)
 
 
 async def start_visit_record_worker() -> None:
@@ -505,6 +619,71 @@ def _resolve_content_titles_for_paths(session: Session, paths: list[str]) -> dic
     return result
 
 
+def _enrich_visit_records(records: list) -> list[VisitorRecordRead]:
+    """Convert ORM visit records to read models, looking up geo once per IP.
+
+    The geolocation cache is keyed by IP, but de-duplicating here also avoids
+    repeated cache lookups / external calls when the same visitor appears many
+    times in one page of results.
+    """
+
+    geo_by_ip: dict[str, IpGeoResult] = {}
+    enriched: list[VisitorRecordRead] = []
+    for item in records:
+        geo = geo_by_ip.get(item.ip_address)
+        if geo is None:
+            geo = lookup_ip_geolocation(item.ip_address)
+            geo_by_ip[item.ip_address] = geo
+        enriched.append(
+            VisitorRecordRead(
+                id=item.id,
+                visited_at=item.visited_at,
+                path=item.path,
+                query=item.query,
+                ip_address=item.ip_address,
+                visitor_id=item.visitor_id,
+                location=geo.location_label,
+                country=geo.country,
+                region=geo.region,
+                city=geo.city,
+                isp=geo.isp,
+                owner=geo.owner,
+                status_text=_status_text(item.status_code),
+                user_agent=item.user_agent,
+                browser=item.browser,
+                browser_version=item.browser_version,
+                os=item.os,
+                os_version=item.os_version,
+                device_type=item.device_type,
+                screen=item.screen,
+                language=item.language,
+                referer=item.referer,
+                referer_domain=item.referer_domain,
+                utm_source=item.utm_source,
+                utm_medium=item.utm_medium,
+                utm_campaign=item.utm_campaign,
+                utm_term=item.utm_term,
+                utm_content=item.utm_content,
+                status_code=item.status_code,
+                duration_ms=item.duration_ms,
+                is_bot=item.is_bot,
+            )
+        )
+    return enriched
+
+
+def _to_breakdown(rows: list[tuple[str, int]]) -> list[VisitorBreakdownMetric]:
+    total = sum(count for _, count in rows)
+    return [
+        VisitorBreakdownMetric(
+            label=label,
+            count=count,
+            share=round(count / total, 4) if total else 0.0,
+        )
+        for label, count in rows
+    ]
+
+
 def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
     now = shanghai_now()
     history_days = 14
@@ -539,27 +718,18 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
         for path, views in top_page_rows
     ]
 
-    recent_visits: list[VisitorRecordRead] = []
-    for item in recent_records:
-        geo = lookup_ip_geolocation(item.ip_address)
-        status_text = _status_text(item.status_code)
-        recent_visits.append(
-            VisitorRecordRead(
-                id=item.id,
-                visited_at=item.visited_at,
-                path=item.path,
-                ip_address=item.ip_address,
-                location=geo.location_label,
-                isp=geo.isp,
-                owner=geo.owner,
-                status_text=status_text,
-                user_agent=item.user_agent,
-                referer=item.referer,
-                status_code=item.status_code,
-                duration_ms=item.duration_ms,
-                is_bot=item.is_bot,
-            )
-        )
+    recent_visits = _enrich_visit_records(list(recent_records))
+
+    breakdown_since = now - timedelta(days=14)
+    device_breakdown = _to_breakdown(
+        repo.list_visit_device_breakdown(session, since=breakdown_since, limit=_DISTRIBUTION_LIMIT)
+    )
+    browser_breakdown = _to_breakdown(
+        repo.list_visit_browser_breakdown(session, since=breakdown_since, limit=_TOP_PAGES_LIMIT)
+    )
+    referrer_breakdown = _to_breakdown(
+        repo.list_visit_referrer_breakdown(session, since=breakdown_since, limit=_TOP_PAGES_LIMIT)
+    )
 
     return DashboardVisitorMetrics(
         total_visits=total_visits,
@@ -568,6 +738,9 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
         average_request_duration_ms=average_request_duration_ms,
         top_pages=top_pages,
         history=history,
+        device_breakdown=device_breakdown,
+        browser_breakdown=browser_breakdown,
+        referrer_breakdown=referrer_breakdown,
         recent_visits=recent_visits,
         last_visit_at=repo.get_latest_visit_timestamp(session),
     )
@@ -594,26 +767,7 @@ def list_visitor_records(
         date_to=date_to,
         include_bots=include_bots,
     )
-    enriched_items: list[VisitorRecordRead] = []
-    for item in items:
-        geo = lookup_ip_geolocation(item.ip_address)
-        enriched_items.append(
-            VisitorRecordRead(
-                id=item.id,
-                visited_at=item.visited_at,
-                path=item.path,
-                ip_address=item.ip_address,
-                location=geo.location_label,
-                isp=geo.isp,
-                owner=geo.owner,
-                status_text=_status_text(item.status_code),
-                user_agent=item.user_agent,
-                referer=item.referer,
-                status_code=item.status_code,
-                duration_ms=item.duration_ms,
-                is_bot=item.is_bot,
-            )
-        )
+    enriched_items = _enrich_visit_records(list(items))
     return {
         "items": enriched_items,
         "total": total,

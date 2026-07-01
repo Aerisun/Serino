@@ -14,6 +14,8 @@ from starlette.responses import Response
 
 from aerisun.core.time import shanghai_now
 from aerisun.domain.ops.service import VisitRecordPayload, enqueue_visit_record
+from aerisun.domain.ops.user_agent import parse_user_agent
+from aerisun.domain.ops.visit_tracking import compute_visitor_id, parse_referer, parse_utm
 
 # ---------------------------------------------------------------------------
 # Context variable that holds the current request ID
@@ -116,16 +118,6 @@ _VISITOR_SKIP_EXTENSIONS = (
     ".woff2",
     ".ttf",
 )
-_BOT_MARKERS = (
-    "bot",
-    "spider",
-    "crawler",
-    "curl",
-    "wget",
-    "headless",
-    "python-requests",
-    "httpx",
-)
 
 
 def _is_public_visit_candidate(request: Request) -> bool:
@@ -138,7 +130,7 @@ def _is_public_visit_candidate(request: Request) -> bool:
     return not lowered.endswith(_VISITOR_SKIP_EXTENSIONS)
 
 
-def _get_client_ip(request: Request) -> str:
+def get_client_ip(request: Request) -> str:
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
         first = forwarded_for.split(",", 1)[0].strip()
@@ -148,13 +140,6 @@ def _get_client_ip(request: Request) -> str:
     if real_ip:
         return real_ip.strip()
     return request.client.host if request.client else "unknown"
-
-
-def _is_bot_request(user_agent: str | None) -> bool:
-    if not user_agent:
-        return False
-    lowered = user_agent.lower()
-    return any(marker in lowered for marker in _BOT_MARKERS)
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -176,10 +161,12 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         start = time.perf_counter()
         should_track_visit = _is_public_visit_candidate(request)
         visited_at = shanghai_now()
-        client_ip = _get_client_ip(request) if should_track_visit else ""
+        client_ip = get_client_ip(request) if should_track_visit else ""
         user_agent = request.headers.get("user-agent") if should_track_visit else None
         referer = request.headers.get("referer") if should_track_visit else None
-        is_bot = _is_bot_request(user_agent) if should_track_visit else False
+        language = request.headers.get("accept-language") if should_track_visit else None
+        query_string = request.url.query or None if should_track_visit else None
+        ua_info = parse_user_agent(user_agent) if should_track_visit else None
         try:
             response = await call_next(request)
             response.headers["X-Request-ID"] = rid
@@ -192,17 +179,33 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 status=response.status_code,
                 duration_ms=duration_ms,
             )
-            if should_track_visit:
+            if should_track_visit and ua_info is not None:
                 try:
+                    utm = parse_utm(query_string)
+                    language_value = language.split(",", 1)[0].strip()[:35] if language else None
                     payload = VisitRecordPayload(
                         visited_at=visited_at,
                         path=request.url.path,
+                        query=query_string[:512] if query_string else None,
                         ip_address=client_ip,
+                        visitor_id=compute_visitor_id(client_ip, user_agent),
                         user_agent=user_agent,
-                        referer=referer,
+                        referer=referer[:500] if referer else None,
+                        referer_domain=parse_referer(referer, current_host=request.url.hostname),
                         status_code=response.status_code,
                         duration_ms=int(duration_ms),
-                        is_bot=is_bot,
+                        is_bot=ua_info.is_bot,
+                        browser=ua_info.browser,
+                        browser_version=ua_info.browser_version,
+                        os=ua_info.os,
+                        os_version=ua_info.os_version,
+                        device_type=ua_info.device_type,
+                        language=language_value,
+                        utm_source=utm.source,
+                        utm_medium=utm.medium,
+                        utm_campaign=utm.campaign,
+                        utm_term=utm.term,
+                        utm_content=utm.content,
                     )
                     enqueue_visit_record(payload)
                 except Exception:

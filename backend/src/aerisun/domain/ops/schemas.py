@@ -303,16 +303,40 @@ class VisitorRecordRead(ModelBase):
     id: str
     visited_at: datetime
     path: str
+    query: str | None = None
     ip_address: str
+    visitor_id: str | None = None
     location: str | None = None
+    country: str | None = None
+    region: str | None = None
+    city: str | None = None
     isp: str | None = None
     owner: str | None = None
     status_text: str | None = None
     user_agent: str | None = None
+    browser: str | None = None
+    browser_version: str | None = None
+    os: str | None = None
+    os_version: str | None = None
+    device_type: str | None = None
+    screen: str | None = None
+    language: str | None = None
     referer: str | None = None
+    referer_domain: str | None = None
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
+    utm_term: str | None = None
+    utm_content: str | None = None
     status_code: int
     duration_ms: int
     is_bot: bool = False
+
+
+class VisitorBreakdownMetric(BaseModel):
+    label: str
+    count: int = 0
+    share: float = 0.0
 
 
 class DashboardVisitorMetrics(BaseModel):
@@ -322,6 +346,9 @@ class DashboardVisitorMetrics(BaseModel):
     average_request_duration_ms: int = 0
     top_pages: list[TopPageMetric] = Field(default_factory=list)
     history: list[TrafficTrendPoint] = Field(default_factory=list)
+    device_breakdown: list[VisitorBreakdownMetric] = Field(default_factory=list)
+    browser_breakdown: list[VisitorBreakdownMetric] = Field(default_factory=list)
+    referrer_breakdown: list[VisitorBreakdownMetric] = Field(default_factory=list)
     recent_visits: list[VisitorRecordRead] = Field(default_factory=list)
     last_visit_at: datetime | None = None
 

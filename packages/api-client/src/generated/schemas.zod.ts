@@ -643,6 +643,34 @@ export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostRespon
 
 
 /**
+ * @summary 上报页面访问
+ */
+export const reportVisitApiV1SiteInteractionsVisitPostBodyUrlMax = 2048;
+
+export const reportVisitApiV1SiteInteractionsVisitPostBodyRefererOneMax = 2048;
+
+export const reportVisitApiV1SiteInteractionsVisitPostBodyScreenOneMax = 16;
+
+export const reportVisitApiV1SiteInteractionsVisitPostBodyLanguageOneMax = 35;
+
+
+
+export const ReportVisitApiV1SiteInteractionsVisitPostBody = zod.object({
+  "url": zod.string().min(1).max(reportVisitApiV1SiteInteractionsVisitPostBodyUrlMax).describe('In-app URL (path + query) being viewed'),
+  "referer": zod.union([zod.string().max(reportVisitApiV1SiteInteractionsVisitPostBodyRefererOneMax),zod.null()]).optional().describe('Document referrer, if any'),
+  "screen": zod.union([zod.string().max(reportVisitApiV1SiteInteractionsVisitPostBodyScreenOneMax),zod.null()]).optional().describe('Screen size as WIDTHxHEIGHT'),
+  "language": zod.union([zod.string().max(reportVisitApiV1SiteInteractionsVisitPostBodyLanguageOneMax),zod.null()]).optional().describe('Navigator language'),
+  "load_ms": zod.union([zod.number(),zod.null()]).optional().describe('Client-measured page load time in milliseconds')
+})
+
+export const reportVisitApiV1SiteInteractionsVisitPostResponseAcceptedDefault = true;
+
+export const ReportVisitApiV1SiteInteractionsVisitPostResponse = zod.object({
+  "accepted": zod.boolean().default(reportVisitApiV1SiteInteractionsVisitPostResponseAcceptedDefault).describe('Whether the visit was queued for recording')
+})
+
+
+/**
  * @summary 提交互动反应
  */
 export const CreateReactionApiV1SiteInteractionsReactionsPostBody = zod.object({

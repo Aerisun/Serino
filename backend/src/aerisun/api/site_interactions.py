@@ -8,9 +8,16 @@ from aerisun.api.deps.site_auth import (
     get_current_site_user,
     get_current_site_user_optional,
 )
-from aerisun.api.public_schemas import CommentImageUploadResponse
+from aerisun.api.public_schemas import CommentImageUploadResponse, VisitBeaconIn, VisitBeaconResponse
 from aerisun.core.db import get_session
-from aerisun.core.rate_limit import RATE_WRITE_ENGAGEMENT, RATE_WRITE_REACTION, comment_image_upload_rate_limit, limiter
+from aerisun.core.logging import get_client_ip
+from aerisun.core.rate_limit import (
+    RATE_VISIT_BEACON,
+    RATE_WRITE_ENGAGEMENT,
+    RATE_WRITE_REACTION,
+    comment_image_upload_rate_limit,
+    limiter,
+)
 from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
@@ -92,6 +99,27 @@ def create_comment(
         current_user=current_user,
         current_site_session=current_site_session,
     )
+
+
+@base_router.post("/visit", response_model=VisitBeaconResponse, summary="上报页面访问")
+@limiter.limit(RATE_VISIT_BEACON)
+def report_visit(
+    request: Request,
+    payload: VisitBeaconIn,
+) -> VisitBeaconResponse:
+    from aerisun.domain.ops.service import record_page_visit
+
+    accepted = record_page_visit(
+        url=payload.url,
+        referer=payload.referer or request.headers.get("referer"),
+        ip_address=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+        screen=payload.screen,
+        language=payload.language,
+        load_ms=payload.load_ms,
+        current_host=request.url.hostname,
+    )
+    return VisitBeaconResponse(accepted=accepted)
 
 
 @base_router.post("/reactions", response_model=ReactionRead, summary="提交互动反应")

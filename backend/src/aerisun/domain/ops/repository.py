@@ -355,13 +355,43 @@ def create_visit_record(
     status_code: int,
     duration_ms: int,
     is_bot: bool,
+    query: str | None = None,
+    visitor_id: str | None = None,
+    browser: str | None = None,
+    browser_version: str | None = None,
+    os: str | None = None,
+    os_version: str | None = None,
+    device_type: str | None = None,
+    screen: str | None = None,
+    language: str | None = None,
+    referer_domain: str | None = None,
+    utm_source: str | None = None,
+    utm_medium: str | None = None,
+    utm_campaign: str | None = None,
+    utm_term: str | None = None,
+    utm_content: str | None = None,
 ) -> VisitRecord:
     record = VisitRecord(
         visited_at=visited_at,
         path=path,
+        query=query,
         ip_address=ip_address,
+        visitor_id=visitor_id,
         user_agent=user_agent,
+        browser=browser,
+        browser_version=browser_version,
+        os=os,
+        os_version=os_version,
+        device_type=device_type,
+        screen=screen,
+        language=language,
         referer=referer,
+        referer_domain=referer_domain,
+        utm_source=utm_source,
+        utm_medium=utm_medium,
+        utm_campaign=utm_campaign,
+        utm_term=utm_term,
+        utm_content=utm_content,
         status_code=status_code,
         duration_ms=duration_ms,
         is_bot=is_bot,
@@ -402,10 +432,54 @@ def count_visit_records_since(session: Session, *, since: datetime, include_bots
 
 
 def count_unique_visitors_since(session: Session, *, since: datetime, include_bots: bool = False) -> int:
-    query = session.query(func.count(func.distinct(VisitRecord.ip_address))).filter(VisitRecord.visited_at >= since)
+    # Prefer the monthly-rotating visitor fingerprint; fall back to IP for legacy
+    # rows that predate the fingerprint column.
+    identity = func.coalesce(VisitRecord.visitor_id, VisitRecord.ip_address)
+    query = session.query(func.count(func.distinct(identity))).filter(VisitRecord.visited_at >= since)
     if not include_bots:
         query = query.filter(VisitRecord.is_bot.is_(False))
     return query.scalar() or 0
+
+
+def _visit_breakdown(
+    session: Session,
+    *,
+    column,
+    since: datetime,
+    limit: int,
+    include_bots: bool = False,
+) -> list[tuple[str, int]]:
+    query = session.query(column, func.count(VisitRecord.id).label("count")).filter(
+        VisitRecord.visited_at >= since,
+        column.isnot(None),
+        column != "",
+    )
+    if not include_bots:
+        query = query.filter(VisitRecord.is_bot.is_(False))
+    query = query.group_by(column).order_by(func.count(VisitRecord.id).desc(), column.asc()).limit(limit)
+    return [(label, count) for label, count in query.all()]
+
+
+def list_visit_device_breakdown(
+    session: Session, *, since: datetime, limit: int = 10, include_bots: bool = False
+) -> list[tuple[str, int]]:
+    return _visit_breakdown(
+        session, column=VisitRecord.device_type, since=since, limit=limit, include_bots=include_bots
+    )
+
+
+def list_visit_browser_breakdown(
+    session: Session, *, since: datetime, limit: int = 10, include_bots: bool = False
+) -> list[tuple[str, int]]:
+    return _visit_breakdown(session, column=VisitRecord.browser, since=since, limit=limit, include_bots=include_bots)
+
+
+def list_visit_referrer_breakdown(
+    session: Session, *, since: datetime, limit: int = 10, include_bots: bool = False
+) -> list[tuple[str, int]]:
+    return _visit_breakdown(
+        session, column=VisitRecord.referer_domain, since=since, limit=limit, include_bots=include_bots
+    )
 
 
 def average_visit_duration_since(session: Session, *, since: datetime, include_bots: bool = False) -> int:

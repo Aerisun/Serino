@@ -38,7 +38,9 @@ import type {
   ReactionRead,
   ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetParams,
   ReadGuestbookApiV1SiteInteractionsGuestbookGetParams,
-  ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams
+  ReadReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeGetParams,
+  VisitBeaconIn,
+  VisitBeaconResponse
 } from '../model';
 
 import { customInstance } from '../../mutators/public-instance';
@@ -497,6 +499,95 @@ export const useCreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPost = 
         TContext
       > => {
       return useMutation(getCreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 上报页面访问
+ */
+export type reportVisitApiV1SiteInteractionsVisitPostResponse200 = {
+  data: VisitBeaconResponse
+  status: 200
+}
+
+export type reportVisitApiV1SiteInteractionsVisitPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type reportVisitApiV1SiteInteractionsVisitPostResponseSuccess = (reportVisitApiV1SiteInteractionsVisitPostResponse200) & {
+  headers: Headers;
+};
+export type reportVisitApiV1SiteInteractionsVisitPostResponseError = (reportVisitApiV1SiteInteractionsVisitPostResponse422) & {
+  headers: Headers;
+};
+
+export type reportVisitApiV1SiteInteractionsVisitPostResponse = (reportVisitApiV1SiteInteractionsVisitPostResponseSuccess | reportVisitApiV1SiteInteractionsVisitPostResponseError)
+
+export const getReportVisitApiV1SiteInteractionsVisitPostUrl = () => {
+
+
+
+
+  return `/api/v1/site-interactions/visit`
+}
+
+export const reportVisitApiV1SiteInteractionsVisitPost = async (visitBeaconIn: VisitBeaconIn, options?: RequestInit): Promise<reportVisitApiV1SiteInteractionsVisitPostResponse> => {
+
+  return customInstance<reportVisitApiV1SiteInteractionsVisitPostResponse>(getReportVisitApiV1SiteInteractionsVisitPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      visitBeaconIn,)
+  }
+);}
+
+
+
+
+export const getReportVisitApiV1SiteInteractionsVisitPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportVisitApiV1SiteInteractionsVisitPost>>, TError,{data: BodyType<VisitBeaconIn>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportVisitApiV1SiteInteractionsVisitPost>>, TError,{data: BodyType<VisitBeaconIn>}, TContext> => {
+
+const mutationKey = ['reportVisitApiV1SiteInteractionsVisitPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportVisitApiV1SiteInteractionsVisitPost>>, {data: BodyType<VisitBeaconIn>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportVisitApiV1SiteInteractionsVisitPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportVisitApiV1SiteInteractionsVisitPostMutationResult = NonNullable<Awaited<ReturnType<typeof reportVisitApiV1SiteInteractionsVisitPost>>>
+    export type ReportVisitApiV1SiteInteractionsVisitPostMutationBody = BodyType<VisitBeaconIn>
+    export type ReportVisitApiV1SiteInteractionsVisitPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 上报页面访问
+ */
+export const useReportVisitApiV1SiteInteractionsVisitPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportVisitApiV1SiteInteractionsVisitPost>>, TError,{data: BodyType<VisitBeaconIn>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportVisitApiV1SiteInteractionsVisitPost>>,
+        TError,
+        {data: BodyType<VisitBeaconIn>},
+        TContext
+      > => {
+      return useMutation(getReportVisitApiV1SiteInteractionsVisitPostMutationOptions(options), queryClient);
     }
     /**
  * @summary 提交互动反应

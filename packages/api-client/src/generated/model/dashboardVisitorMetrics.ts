@@ -6,6 +6,7 @@
  */
 import type { TopPageMetric } from './topPageMetric';
 import type { TrafficTrendPoint } from './trafficTrendPoint';
+import type { VisitorBreakdownMetric } from './visitorBreakdownMetric';
 import type { VisitorRecordRead } from './visitorRecordRead';
 
 export interface DashboardVisitorMetrics {
@@ -15,6 +16,9 @@ export interface DashboardVisitorMetrics {
   average_request_duration_ms?: number;
   top_pages?: TopPageMetric[];
   history?: TrafficTrendPoint[];
+  device_breakdown?: VisitorBreakdownMetric[];
+  browser_breakdown?: VisitorBreakdownMetric[];
+  referrer_breakdown?: VisitorBreakdownMetric[];
   recent_visits?: VisitorRecordRead[];
   last_visit_at?: string | null;
 }

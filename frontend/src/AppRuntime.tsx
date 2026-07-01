@@ -15,6 +15,7 @@ import { FrontendLanguageProvider } from "@/i18n";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ShiroAccentController from "@/components/ShiroAccentController";
 import ReadingProgress from "@/components/ReadingProgress";
+import PageViewTracker from "@/components/PageViewTracker";
 import { useFeatureFlags, useSiteConfig } from "@/contexts/runtime-config";
 import { lazyWithPreload } from "@/lib/lazy";
 import type { RuntimeConfigSnapshot } from "@/lib/runtime-config";
@@ -298,6 +299,7 @@ function AppContent() {
         <ShiroAccentController />
         <QueryCachePersistence />
         <ContentFreshnessManager />
+        <PageViewTracker />
         {readingProgressActive ? <ReadingProgress /> : null}
         <ErrorBoundary>
           <Suspense
