@@ -48,6 +48,7 @@ const FriendsPage = lazyAdminPage(() => import("@/pages/friends/FriendsPage"));
 const ModerationPage = lazyAdminPage(() => import("@/pages/moderation/ModerationPage"));
 const VisitorsPage = lazyAdminPage(() => import("@/pages/visitors/VisitorsPage"));
 const VisitorsUsersPage = lazyAdminPage(() => import("@/pages/visitors/VisitorsUsersPage"));
+const VisitorMonitoringPage = lazyAdminPage(() => import("@/pages/visitors/VisitorMonitoringPage"));
 const VisitorsSubscribersPage = lazyAdminPage(() => import("@/pages/visitors/VisitorsSubscribersPage"));
 const AssetsPage = lazyAdminPage(() => import("@/pages/assets/AssetsPage"));
 const McpPage = lazyAdminPage(() => import("@/pages/integrations/McpPage"));
@@ -135,6 +136,7 @@ function ProtectedRoutes() {
         <Route path="moderation" element={<RoutePage page={ModerationPage} />} />
         <Route path="visitors" element={<RoutePage page={VisitorsPage} />} />
         <Route path="visitors/users" element={<RoutePage page={VisitorsUsersPage} />} />
+        <Route path="visitors/monitoring" element={<RoutePage page={VisitorMonitoringPage} />} />
         <Route
           path="visitors/subscribers"
           element={<RoutePage page={VisitorsSubscribersPage} />}

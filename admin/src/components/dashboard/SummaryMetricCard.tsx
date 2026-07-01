@@ -7,6 +7,7 @@ interface SummaryMetricCardProps {
   hint?: string;
   icon: LucideIcon;
   tone?: "default" | "accent" | "warning";
+  compact?: boolean;
   className?: string;
 }
 
@@ -27,25 +28,57 @@ export function SummaryMetricCard({
   hint,
   icon: Icon,
   tone = "default",
+  compact = false,
   className,
 }: SummaryMetricCardProps) {
   return (
     <div
       className={cn(
-        "admin-transition-fast group relative overflow-hidden rounded-[var(--admin-radius-lg)] border p-4 transition-[background-color,border-color,color,box-shadow,transform]",
+        "admin-transition-fast group relative overflow-hidden rounded-[var(--admin-radius-lg)] border transition-[background-color,border-color,color,box-shadow,transform]",
+        compact ? "p-3" : "p-4",
         toneClasses[tone],
         "hover:bg-[rgb(var(--admin-surface-1)/0.66)] dark:hover:bg-white/[0.05]",
         className,
       )}
     >
-      <div className="relative flex items-start justify-between gap-4">
+      <div className={cn("relative flex items-start justify-between", compact ? "gap-3" : "gap-4")}>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/88">{label}</p>
-          <p className="mt-2.5 text-[1.9rem] font-semibold tracking-tight text-foreground/95">{value}</p>
-          {hint ? <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{hint}</p> : null}
+          <p
+            className={cn(
+              "font-medium uppercase tracking-[0.18em] text-muted-foreground/88",
+              compact ? "text-[10px]" : "text-[11px]",
+            )}
+          >
+            {label}
+          </p>
+          <p
+            className={cn(
+              "font-semibold tracking-tight text-foreground/95",
+              compact ? "mt-0.5 text-[1.3rem]" : "mt-2.5 text-[1.9rem]",
+            )}
+          >
+            {value}
+          </p>
+          {hint ? (
+            <p
+              className={cn(
+                "text-muted-foreground",
+                compact ? "mt-0.5 text-[11px] leading-4" : "mt-1.5 text-xs leading-5",
+              )}
+            >
+              {hint}
+            </p>
+          ) : null}
         </div>
-        <div className="rounded-full border border-black/5 bg-white/70 p-2 dark:border-white/10 dark:bg-white/[0.04]">
-          <Icon className="h-4 w-4 text-[rgb(var(--admin-accent-rgb)/0.82)]" />
+        <div
+          className={cn(
+            "rounded-full border border-black/5 bg-white/70 dark:border-white/10 dark:bg-white/[0.04]",
+            compact ? "p-1.5" : "p-2",
+          )}
+        >
+          <Icon
+            className={cn("text-[rgb(var(--admin-accent-rgb)/0.82)]", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+          />
         </div>
       </div>
     </div>
