@@ -22,6 +22,8 @@ export interface CommunityConfigRead {
   image_uploader: unknown;
   /** Whether email login is allowed for commenting */
   anonymous_enabled: unknown;
+  /** Whether comment reply feedback controls are available */
+  comment_feedback_enabled?: unknown;
   /** Moderation mode */
   moderation_mode: unknown;
   /** Default sort order */

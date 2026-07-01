@@ -28,7 +28,9 @@ import type {
   CommentCollectionRead,
   CommentCreate,
   CommentCreateResponse,
+  CommentFeedbackUpdate,
   CommentImageUploadResponse,
+  CommentRead,
   DeleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams,
   GuestbookCollectionRead,
   GuestbookCreate,
@@ -269,6 +271,94 @@ export const useCreateGuestbookApiV1SiteInteractionsGuestbookPost = <TError = Er
       return useMutation(getCreateGuestbookApiV1SiteInteractionsGuestbookPostMutationOptions(options), queryClient);
     }
     /**
+ * @summary 删除自己的留言
+ */
+export type deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponseSuccess = (deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponseError = (deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse = (deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponseSuccess | deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponseError)
+
+export const getDeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteUrl = (entryId: string,) => {
+
+
+
+
+  return `/api/v1/site-interactions/guestbook/${entryId}`
+}
+
+export const deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete = async (entryId: string, options?: RequestInit): Promise<deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse> => {
+
+  return customInstance<deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteResponse>(getDeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteUrl(entryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete>>, TError,{entryId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete>>, TError,{entryId: string}, TContext> => {
+
+const mutationKey = ['deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete>>, {entryId: string}> = (props) => {
+          const {entryId} = props ?? {};
+
+          return  deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete(entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete>>>
+
+    export type DeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除自己的留言
+ */
+export const useDeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete>>, TError,{entryId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete>>,
+        TError,
+        {entryId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
  * @summary 获取内容评论
  */
 export type readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponse200 = {
@@ -499,6 +589,184 @@ export const useCreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPost = 
         TContext
       > => {
       return useMutation(getCreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 删除自己的评论
+ */
+export type deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponseSuccess = (deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse204) & {
+  headers: Headers;
+};
+export type deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponseError = (deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse422) & {
+  headers: Headers;
+};
+
+export type deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse = (deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponseSuccess | deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponseError)
+
+export const getDeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteUrl = (commentId: string,) => {
+
+
+
+
+  return `/api/v1/site-interactions/comments/${commentId}`
+}
+
+export const deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete = async (commentId: string, options?: RequestInit): Promise<deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse> => {
+
+  return customInstance<deleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteResponse>(getDeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteUrl(commentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete>>, TError,{commentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete>>, TError,{commentId: string}, TContext> => {
+
+const mutationKey = ['deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete>>, {commentId: string}> = (props) => {
+          const {commentId} = props ?? {};
+
+          return  deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete(commentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete>>>
+
+    export type DeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 删除自己的评论
+ */
+export const useDeleteCommentApiV1SiteInteractionsCommentsCommentIdDelete = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete>>, TError,{commentId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete>>,
+        TError,
+        {commentId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 更新自己的评论反馈设置
+ */
+export type updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse200 = {
+  data: CommentRead
+  status: 200
+}
+
+export type updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponseSuccess = (updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse200) & {
+  headers: Headers;
+};
+export type updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponseError = (updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse = (updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponseSuccess | updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponseError)
+
+export const getUpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchUrl = (commentId: string,) => {
+
+
+
+
+  return `/api/v1/site-interactions/comments/${commentId}/feedback`
+}
+
+export const updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch = async (commentId: string,
+    commentFeedbackUpdate: CommentFeedbackUpdate, options?: RequestInit): Promise<updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse> => {
+
+  return customInstance<updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse>(getUpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchUrl(commentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      commentFeedbackUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch>>, TError,{commentId: string;data: BodyType<CommentFeedbackUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch>>, TError,{commentId: string;data: BodyType<CommentFeedbackUpdate>}, TContext> => {
+
+const mutationKey = ['updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch>>, {commentId: string;data: BodyType<CommentFeedbackUpdate>}> = (props) => {
+          const {commentId,data} = props ?? {};
+
+          return  updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch(commentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch>>>
+    export type UpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchMutationBody = BodyType<CommentFeedbackUpdate>
+    export type UpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 更新自己的评论反馈设置
+ */
+export const useUpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch>>, TError,{commentId: string;data: BodyType<CommentFeedbackUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch>>,
+        TError,
+        {commentId: string;data: BodyType<CommentFeedbackUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchMutationOptions(options), queryClient);
     }
     /**
  * @summary 上报页面访问

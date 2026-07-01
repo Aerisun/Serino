@@ -24,4 +24,8 @@ export interface GuestbookEntryRead {
   avatar_url?: unknown;
   /** Whether the guestbook author is the site owner */
   is_author?: unknown;
+  /** Whether the current user owns this entry */
+  owned_by_current_user?: unknown;
+  /** Whether the current user can delete this entry */
+  can_delete?: unknown;
 }

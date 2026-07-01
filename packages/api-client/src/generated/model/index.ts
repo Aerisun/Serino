@@ -204,6 +204,7 @@ export * from './commentAdminRead';
 export * from './commentCollectionRead';
 export * from './commentCreate';
 export * from './commentCreateResponse';
+export * from './commentFeedbackUpdate';
 export * from './commentImageUploadData';
 export * from './commentImageUploadResponse';
 export * from './commentRead';

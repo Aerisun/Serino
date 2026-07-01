@@ -18,4 +18,6 @@ export interface CommentCreate {
   avatar_key?: string | null;
   /** Waline login token for authenticated posting */
   auth_token?: string | null;
+  /** Whether reply feedback emails are enabled */
+  feedback_enabled?: boolean;
 }

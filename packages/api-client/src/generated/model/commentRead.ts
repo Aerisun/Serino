@@ -28,6 +28,14 @@ export interface CommentRead {
   liked?: unknown;
   /** Whether the commenter is the content author */
   is_author?: unknown;
+  /** Whether the current user owns this comment */
+  owned_by_current_user?: unknown;
+  /** Whether the current user can delete this comment */
+  can_delete?: unknown;
+  /** Whether reply feedback emails are enabled */
+  feedback_enabled?: unknown;
+  /** Whether the current user can update reply feedback for this comment */
+  can_update_feedback?: unknown;
   /** Nested reply comments */
   replies?: unknown;
 }

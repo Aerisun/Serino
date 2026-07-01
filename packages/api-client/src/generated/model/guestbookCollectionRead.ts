@@ -8,6 +8,8 @@
 export interface GuestbookCollectionRead {
   /** List of guestbook entries */
   items: unknown;
+  /** Pending entries visible to the current authenticated author */
+  pending_items?: unknown;
   /** Total number of public guestbook entries */
   total: unknown;
   /** Current page number */

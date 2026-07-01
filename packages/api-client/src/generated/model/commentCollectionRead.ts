@@ -8,8 +8,12 @@
 export interface CommentCollectionRead {
   /** List of comments */
   items: unknown;
+  /** Pending comments visible to the current authenticated author */
+  pending_items?: unknown;
   /** Total number of root comment threads */
   total: unknown;
+  /** Total number of public comments including replies */
+  comment_total: unknown;
   /** Current page number */
   page: unknown;
   /** Number of root comment threads per page */
