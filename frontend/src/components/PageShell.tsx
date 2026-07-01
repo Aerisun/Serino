@@ -50,7 +50,7 @@ const PageShell = ({
   return (
     <>
       <Navbar />
-      <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="relative flex min-h-screen min-h-[100dvh] flex-col overflow-hidden bg-background text-foreground">
         <PageMeta title={metaTitle ?? title} description={metaDescription ?? description} />
         <FallingPetals />
 
@@ -64,7 +64,7 @@ const PageShell = ({
           />
         </div>
 
-        <main className={`${widths[width]} relative mx-auto px-6 ${compactHeader ? "pt-20 pb-20 sm:pt-24" : "pt-24 pb-20 sm:pt-28"} lg:px-8 ${mainClassName}`.trim()}>
+        <main className={`${widths[width]} relative mx-auto w-full flex-1 px-6 ${compactHeader ? "pt-20 pb-20 sm:pt-24" : "pt-24 pb-20 sm:pt-28"} lg:px-8 ${mainClassName}`.trim()}>
           {hasHeader ? (
             <motion.header
               className={`relative ${compactHeader ? "pb-3 sm:pb-4" : "pb-4 sm:pb-8"}`}

@@ -19,7 +19,7 @@ const themeIcons = {
   system: Monitor,
 } as const;
 
-const footerLead = "Powered by ";
+const footerLead = "Powered by";
 const footerBrand = "Aerisun /Serino";
 const footerSeparator = "·";
 const footerTail = "All Rights Reserved";
@@ -148,18 +148,31 @@ const Footer = ({ enabled = true, className = "" }: FooterProps) => {
                 </p>
               ) : null}
 
-              <p className="min-w-0 text-foreground/28">
-                <span
-                  className="text-inherit leading-inherit text-foreground/38 italic tracking-[0.012em]"
-                  style={{ fontFamily: "'Instrument Serif', serif" }}
+              <p
+                className="inline-flex w-full min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-foreground/38 italic tracking-[0.012em]"
+                style={{ fontFamily: "'Instrument Serif', serif" }}
+              >
+                <span>{footerLead}</span>
+                <a
+                  href={footerRepoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={footerRepoAria}
+                  className="shiro-focus-ring whitespace-nowrap text-inherit underline decoration-[0.05em] underline-offset-[0.14em] transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                 >
-                  <span>{footerLead}</span>
-                  <span className="underline decoration-[0.05em] underline-offset-[0.14em]">
-                    {footerBrand}
-                  </span>
-                  <span>{footerSeparator}</span>
-                  <span>{footerTail}</span>
-                </span>
+                  {footerBrand}
+                </a>
+                <span className="text-foreground/24">{footerSeparator}</span>
+                <span>{footerTail}</span>
+                <a
+                  href={footerRepoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={footerRepoAria}
+                  className="shiro-focus-ring inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-foreground/28 no-underline transition-[color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:bg-[rgb(var(--shiro-panel-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+                >
+                  <FooterRepoIcon className="h-2.75 w-2.75" />
+                </a>
               </p>
 
               <div className="flex items-center justify-between gap-4 pt-0.5">
@@ -185,18 +198,22 @@ const Footer = ({ enabled = true, className = "" }: FooterProps) => {
             </div>
 
             <div className="hidden flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-              <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-foreground/28">
-                <span
-                  className="text-inherit leading-inherit text-foreground/38 italic tracking-[0.012em]"
-                  style={{ fontFamily: "'Instrument Serif', serif" }}
+              <p
+                className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-foreground/38 italic tracking-[0.012em]"
+                style={{ fontFamily: "'Instrument Serif', serif" }}
+              >
+                <span>{footerLead}</span>
+                <a
+                  href={footerRepoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={footerRepoAria}
+                  className="shiro-focus-ring whitespace-nowrap text-inherit underline decoration-[0.05em] underline-offset-[0.14em] transition-colors hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
                 >
-                  <span>{footerLead}</span>
-                  <span className="underline decoration-[0.05em] underline-offset-[0.14em]">
-                    {footerBrand}
-                  </span>
-                  <span className="px-1">{footerSeparator}</span>
-                  <span>{footerTail}</span>
-                </span>
+                  {footerBrand}
+                </a>
+                <span className="text-foreground/24">{footerSeparator}</span>
+                <span>{footerTail}</span>
                 <a
                   href={footerRepoHref}
                   target="_blank"
