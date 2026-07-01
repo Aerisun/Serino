@@ -1099,6 +1099,7 @@ export const enTranslations: TranslationDict = {
     "diary.poemAiSuccess": "Poem generated and filled in",
     "diary.weatherSunny": "Sunny",
     "diary.weatherCloudy": "Cloudy",
+    "diary.weatherOvercast": "Overcast",
     "diary.weatherFog": "Fog",
     "diary.weatherHaze": "Haze",
     "diary.weatherLightRain": "Light Rain",

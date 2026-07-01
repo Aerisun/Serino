@@ -62,6 +62,28 @@ class TestContentCRUDLifecycle:
         assert "status" not in data
         assert data["visibility"] == "public"
 
+    def test_diary_create_and_read_preserves_mood_and_weather(self, client, admin_headers, content_type):
+        if content_type != "diary":
+            pytest.skip("diary-specific presentation fields")
+
+        payload = _make_payload(content_type, "-mood-weather")
+        payload["mood"] = "calm"
+        payload["weather"] = "overcast"
+
+        create_resp = client.post(f"{BASE}/{content_type}/", json=payload, headers=admin_headers)
+
+        assert create_resp.status_code == 201
+        created = create_resp.json()
+        assert created["mood"] == "calm"
+        assert created["weather"] == "overcast"
+
+        read_resp = client.get(f"{BASE}/{content_type}/{created['id']}", headers=admin_headers)
+
+        assert read_resp.status_code == 200
+        read = read_resp.json()
+        assert read["mood"] == "calm"
+        assert read["weather"] == "overcast"
+
     def test_read(self, client, admin_headers, content_type):
         # Create first
         payload = _make_payload(content_type, "-read")

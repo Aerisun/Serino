@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/Select";
 import { Trash2, Eye } from "lucide-react";
 import { useContentEditor, buildServerToForm } from "@/hooks/useContentEditor";
+import { normalizeServerTextField } from "@/lib/content-editor";
 import { MOOD_OPTIONS, WEATHER_OPTIONS } from "@/lib/contentOptions";
 import { toast } from "sonner";
 
@@ -54,9 +55,9 @@ const editorConfig = {
     mood: "", weather: "", poem: "",
   },
   serverToForm: buildServerToForm((item) => ({
-    mood: item.mood || "",
-    weather: item.weather || "",
-    poem: item.poem || "",
+    mood: normalizeServerTextField(item.mood),
+    weather: normalizeServerTextField(item.weather),
+    poem: normalizeServerTextField(item.poem),
   })),
   i18nKeys: {
     newTitle: "diary.newEntry",

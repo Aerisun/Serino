@@ -15,6 +15,24 @@ type SaveableContentForm = {
   published_at?: string | null;
 };
 
+type SynchronizedStateUpdate<T> = T | ((previous: T) => T);
+
+export function applySynchronizedStateUpdate<T>(
+  target: { current: T },
+  value: SynchronizedStateUpdate<T>,
+) {
+  const next =
+    typeof value === "function"
+      ? (value as (previous: T) => T)(target.current)
+      : value;
+  target.current = next;
+  return next;
+}
+
+export function normalizeServerTextField(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export function resolvePublishedAtState(
   publishedAt: string | null | undefined,
   _updatedAt: string | null | undefined,

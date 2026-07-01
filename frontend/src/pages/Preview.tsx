@@ -6,19 +6,6 @@ import {
   Eye,
   MessageCircle,
   Tag,
-  Cloud,
-  CloudDrizzle,
-  CloudFog,
-  CloudHail,
-  CloudLightning,
-  CloudRain,
-  CloudRainWind,
-  CloudSnow,
-  CloudSunRain,
-  Haze,
-  Snowflake,
-  Sun,
-  Wind,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -34,45 +21,16 @@ import PreviewModeBadge from "@/components/PreviewModeBadge";
 import { lazyWithPreload } from "@/lib/lazy";
 import { usePreviewChannel, type ContentPreviewData } from "@/lib/preview";
 import { formatDateInBeijing } from "@/lib/time";
+import {
+  DIARY_WEATHER_ICONS,
+  getDiaryWeatherLabelKey,
+  normalizeDiaryWeather,
+} from "@/lib/diary-weather";
 
 const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
 
 const estimateReadTime = (value: string, lang: FrontendLang, minuteLabel: string) =>
   `${Math.max(1, Math.ceil(value.length / 180)).toLocaleString(lang === "zh" ? "zh-CN" : "en-US")} ${minuteLabel}`;
-
-const weatherIcons: Record<string, typeof Sun> = {
-  sunny: Sun,
-  cloudy: Cloud,
-  fog: CloudFog,
-  haze: Haze,
-  light_rain: CloudDrizzle,
-  shower: CloudSunRain,
-  rainy: CloudRain,
-  heavy_rain: CloudRainWind,
-  light_snow: CloudSnow,
-  snowy: CloudSnow,
-  heavy_snow: Snowflake,
-  sleet: CloudHail,
-  stormy: CloudLightning,
-  windy: Wind,
-};
-
-const weatherLabelKeys: Record<string, string> = {
-  sunny: "diary.weather.sunny",
-  cloudy: "diary.weather.cloudy",
-  fog: "diary.weather.fog",
-  haze: "diary.weather.haze",
-  light_rain: "diary.weather.lightRain",
-  shower: "diary.weather.shower",
-  rainy: "diary.weather.rainy",
-  heavy_rain: "diary.weather.heavyRain",
-  light_snow: "diary.weather.lightSnow",
-  snowy: "diary.weather.snowy",
-  heavy_snow: "diary.weather.heavySnow",
-  sleet: "diary.weather.sleet",
-  stormy: "diary.weather.stormy",
-  windy: "diary.weather.windy",
-};
 
 const formatEnglishHeaderDate = (
   value: string | null | undefined,
@@ -197,11 +155,10 @@ function DiaryPreview({ data }: { data: ContentPreviewData }) {
   const featureFlags = useFeatureFlags();
   const articleRef = useRef<HTMLElement>(null);
   const headerDateLabel = formatEnglishHeaderDate(data.published_at, t);
-  const WeatherIcon = data.weather ? weatherIcons[data.weather] : null;
-  const weatherLabel =
-    data.weather && weatherLabelKeys[data.weather]
-      ? t(weatherLabelKeys[data.weather])
-      : data.weather || "";
+  const weather = normalizeDiaryWeather(data.weather);
+  const WeatherIcon = weather ? DIARY_WEATHER_ICONS[weather] : null;
+  const weatherLabelKey = getDiaryWeatherLabelKey(weather);
+  const weatherLabel = weatherLabelKey ? t(weatherLabelKey) : "";
 
   useEffect(() => {
     void ArticleMarkdownRenderer.preload();

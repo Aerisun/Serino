@@ -3,19 +3,6 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
-  Cloud,
-  CloudDrizzle,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudRainWind,
-  CloudSnow,
-  CloudSunRain,
-  CloudHail,
-  Haze,
-  Snowflake,
-  Sun,
-  Wind,
 } from "lucide-react";
 import ArchiveBadge from "@/components/ArchiveBadge";
 import DecorativeVineLine from "@/components/DecorativeVineLine";
@@ -37,59 +24,15 @@ import { useReadDiaryEntryApiV1SiteDiarySlugGet } from "@serino/api-client/site"
 import type { ContentEntryRead } from "@serino/api-client/models";
 import type { BaseViewPageConfig } from "@/lib/page-config";
 import { lazyWithPreload } from "@/lib/lazy";
+import {
+  DIARY_WEATHER_ICONS,
+  getDiaryWeatherLabelKey,
+  normalizeDiaryWeather,
+  type DiaryWeather,
+} from "@/lib/diary-weather";
 
 const CommentSection = lazyWithPreload(() => import("@/components/CommentSection"));
 const ArticleMarkdownRenderer = lazyWithPreload(() => import("@/components/ArticleMarkdownRenderer"));
-
-type Weather =
-  | "sunny"
-  | "cloudy"
-  | "fog"
-  | "haze"
-  | "light_rain"
-  | "shower"
-  | "rainy"
-  | "heavy_rain"
-  | "light_snow"
-  | "snowy"
-  | "heavy_snow"
-  | "sleet"
-  | "stormy"
-  | "windy";
-
-const weatherIcons: Record<Weather, typeof Sun> = {
-  sunny: Sun,
-  cloudy: Cloud,
-  fog: CloudFog,
-  haze: Haze,
-  light_rain: CloudDrizzle,
-  shower: CloudSunRain,
-  rainy: CloudRain,
-  heavy_rain: CloudRainWind,
-  light_snow: CloudSnow,
-  snowy: CloudSnow,
-  heavy_snow: Snowflake,
-  sleet: CloudHail,
-  stormy: CloudLightning,
-  windy: Wind,
-};
-
-const weatherLabelKeys: Record<Weather, string> = {
-  sunny: "diary.weather.sunny",
-  cloudy: "diary.weather.cloudy",
-  fog: "diary.weather.fog",
-  haze: "diary.weather.haze",
-  light_rain: "diary.weather.lightRain",
-  shower: "diary.weather.shower",
-  rainy: "diary.weather.rainy",
-  heavy_rain: "diary.weather.heavyRain",
-  light_snow: "diary.weather.lightSnow",
-  snowy: "diary.weather.snowy",
-  heavy_snow: "diary.weather.heavySnow",
-  sleet: "diary.weather.sleet",
-  stormy: "diary.weather.stormy",
-  windy: "diary.weather.windy",
-};
 
 interface DiaryData {
   slug: string;
@@ -97,7 +40,7 @@ interface DiaryData {
   weekday: string;
   headerDate: string;
   isArchived: boolean;
-  weather?: Weather;
+  weather?: DiaryWeather;
   mood?: string;
   title: string;
   body: string;
@@ -144,7 +87,7 @@ const buildRemoteDiaryEntry = (
   weekday: formatWeekday(entry.published_at, lang),
   headerDate: formatEnglishHeaderDate(entry.published_at, t),
   isArchived: entry.visibility === "private",
-  weather: entry.weather as Weather | undefined,
+  weather: normalizeDiaryWeather(entry.weather),
   mood: entry.mood ?? undefined,
   title: entry.title,
   body: entry.body,
@@ -163,7 +106,7 @@ const buildPreviewDiaryEntry = (
   weekday: formatWeekday(preview.published_at ?? null, lang),
   headerDate: formatEnglishHeaderDate(preview.published_at, t),
   isArchived: false,
-  weather: preview.weather as Weather | undefined,
+  weather: normalizeDiaryWeather(preview.weather),
   mood: preview.mood ?? undefined,
   title: preview.title,
   body: preview.body || "",
@@ -256,8 +199,9 @@ const DiaryDetail = () => {
     }
   }, [entry]);
 
-  const WeatherIcon = entry?.weather ? weatherIcons[entry.weather] : null;
-  const weatherLabel = entry?.weather ? t(weatherLabelKeys[entry.weather]) : "";
+  const WeatherIcon = entry?.weather ? DIARY_WEATHER_ICONS[entry.weather] : null;
+  const weatherLabelKey = getDiaryWeatherLabelKey(entry?.weather);
+  const weatherLabel = weatherLabelKey ? t(weatherLabelKey) : "";
   const publicDiaryLabel = buildDiaryPublicLabel(entry, t("nav.diary"));
   const headerDateLabel = entry?.headerDate || "";
 

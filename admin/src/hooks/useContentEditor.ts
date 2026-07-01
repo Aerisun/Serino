@@ -14,6 +14,7 @@ import { useContentPreview } from "@/lib/useContentPreview";
 import { extractApiErrorMessage } from "@/lib/api-error";
 import {
   announcePublicContentChange,
+  applySynchronizedStateUpdate,
   buildNextContentSaveForm,
   clearEditorDraftSnapshot,
   hasMeaningfulEditorContent,
@@ -146,36 +147,15 @@ export function useContentEditor(config: ContentEditorConfig) {
   );
 
   const setForm = (value: SetStateAction<ContentCreate>) => {
-    setFormState((previous) => {
-      const next =
-        typeof value === "function"
-          ? (value as (prev: ContentCreate) => ContentCreate)(previous)
-          : value;
-      formRef.current = next;
-      return next;
-    });
+    setFormState(applySynchronizedStateUpdate(formRef, value));
   };
 
   const setIsPublishedAtManual = (value: SetStateAction<boolean>) => {
-    setIsPublishedAtManualState((previous) => {
-      const next =
-        typeof value === "function"
-          ? (value as (prev: boolean) => boolean)(previous)
-          : value;
-      manualPublishedAtRef.current = next;
-      return next;
-    });
+    setIsPublishedAtManualState(applySynchronizedStateUpdate(manualPublishedAtRef, value));
   };
 
   const setIsAutoTitleEnabled = (value: SetStateAction<boolean>) => {
-    setIsAutoTitleEnabledState((previous) => {
-      const next =
-        typeof value === "function"
-          ? (value as (prev: boolean) => boolean)(previous)
-          : value;
-      autoTitleEnabledRef.current = next;
-      return next;
-    });
+    setIsAutoTitleEnabledState(applySynchronizedStateUpdate(autoTitleEnabledRef, value));
   };
 
   const buildDraftSignature = (

@@ -1074,7 +1074,7 @@ export const zhTranslations: TranslationDict = {
   "diary.poemAiPromptPlaceholder":
     "例如：偏清冷一点、带一点春雨意象、不要太伤感",
   "diary.poemAiPromptHint":
-    "留空时会仅根据当前 Markdown 草稿内容挑选最应景的诗句。",
+    "根据当前 Markdown 草稿内容挑选最应景的诗句",
   "diary.poemAiPanelTitle": "诗句生成偏好",
   "diary.poemAiPanelAction": "按要求生成",
   "diary.poemAiResponseTitle": "当前生成结果",
@@ -1082,6 +1082,7 @@ export const zhTranslations: TranslationDict = {
   "diary.poemAiSuccess": "诗句已生成并填入",
   "diary.weatherSunny": "晴",
   "diary.weatherCloudy": "多云",
+  "diary.weatherOvercast": "阴",
   "diary.weatherFog": "雾",
   "diary.weatherHaze": "霾",
   "diary.weatherLightRain": "小雨",

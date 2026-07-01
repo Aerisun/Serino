@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/Select";
 import { Trash2, Eye } from "lucide-react";
 import { useContentEditor, buildServerToForm } from "@/hooks/useContentEditor";
+import { normalizeServerTextField } from "@/lib/content-editor";
 import { MOOD_OPTIONS } from "@/lib/contentOptions";
 
 const editorConfig = {
@@ -42,8 +43,8 @@ const editorConfig = {
     category: "", mood: "",
   },
   serverToForm: buildServerToForm((item) => ({
-    category: item.category || "",
-    mood: item.mood || "",
+    category: normalizeServerTextField(item.category),
+    mood: normalizeServerTextField(item.mood),
   })),
   i18nKeys: {
     newTitle: "thoughts.newThought",

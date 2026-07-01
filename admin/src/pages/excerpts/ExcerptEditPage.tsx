@@ -17,6 +17,7 @@ import { PublishTimeFooter } from "@/components/content/PublishTimeFooter";
 import { Label } from "@/components/ui/Label";
 import { Trash2, Eye } from "lucide-react";
 import { useContentEditor, buildServerToForm } from "@/hooks/useContentEditor";
+import { normalizeServerTextField } from "@/lib/content-editor";
 
 const editorConfig = {
   contentType: "excerpts" as const,
@@ -35,9 +36,9 @@ const editorConfig = {
     category: "", author_name: "", source: "",
   },
   serverToForm: buildServerToForm((item) => ({
-    category: item.category || "",
-    author_name: item.author_name || "",
-    source: item.source || "",
+    category: normalizeServerTextField(item.category),
+    author_name: normalizeServerTextField(item.author_name),
+    source: normalizeServerTextField(item.source),
   })),
   i18nKeys: {
     newTitle: "excerpts.newExcerpt",

@@ -57,6 +57,7 @@ export const MOOD_OPTIONS = [
 export const WEATHER_OPTIONS = [
   { value: "sunny", labelKey: "diary.weatherSunny" },
   { value: "cloudy", labelKey: "diary.weatherCloudy" },
+  { value: "overcast", labelKey: "diary.weatherOvercast" },
   { value: "fog", labelKey: "diary.weatherFog" },
   { value: "haze", labelKey: "diary.weatherHaze" },
   { value: "light_rain", labelKey: "diary.weatherLightRain" },
