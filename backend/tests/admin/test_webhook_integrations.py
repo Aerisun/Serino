@@ -10,10 +10,19 @@ from aerisun.domain.automation.service import create_webhook_subscription, dispa
 from aerisun.domain.outbound_proxy.schemas import OutboundProxyConfigUpdate
 from aerisun.domain.outbound_proxy.service import update_outbound_proxy_config
 
+CONFIGURED_PROXY_URL = "http://127.0.0.1:7890"
+
 
 class FakeResponse:
     status_code = 200
     text = "ok"
+
+
+def pin_configured_proxy(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aerisun.domain.outbound_proxy.service._select_proxy_url",
+        lambda port: f"http://127.0.0.1:{port}",
+    )
 
 
 def test_dispatch_due_webhooks_formats_feishu_payload(seeded_session, monkeypatch) -> None:
@@ -175,6 +184,7 @@ def test_webhook_test_endpoint_formats_telegram_request(client, admin_headers, m
 
 
 def test_webhook_test_endpoint_uses_configured_proxy(client, admin_headers, monkeypatch) -> None:
+    pin_configured_proxy(monkeypatch)
     update_response = client.put(
         "/api/v1/admin/proxy-config",
         headers=admin_headers,
@@ -216,7 +226,7 @@ def test_webhook_test_endpoint_uses_configured_proxy(client, admin_headers, monk
     assert response.status_code == 200
     assert response.json()["ok"] is True
     assert len(calls) == 1
-    assert calls[0]["proxy"] == "http://127.0.0.1:7890"
+    assert calls[0]["proxy"] == CONFIGURED_PROXY_URL
     assert calls[0]["trust_env"] is False
 
 
@@ -371,6 +381,7 @@ def test_webhook_telegram_connect_endpoint_detects_chat_and_sends_verification(
 
 
 def test_webhook_telegram_connect_endpoint_uses_configured_proxy(client, admin_headers, monkeypatch) -> None:
+    pin_configured_proxy(monkeypatch)
     update_response = client.put(
         "/api/v1/admin/proxy-config",
         headers=admin_headers,
@@ -423,7 +434,7 @@ def test_webhook_telegram_connect_endpoint_uses_configured_proxy(client, admin_h
     assert payload["ok"] is False
     assert payload["status"] == "awaiting_message"
     assert calls
-    assert all(call["proxy"] == "http://127.0.0.1:7890" for call in calls)
+    assert all(call["proxy"] == CONFIGURED_PROXY_URL for call in calls)
     assert all(call["trust_env"] is False for call in calls)
 
 
@@ -539,6 +550,7 @@ def test_webhook_telegram_connect_endpoint_retries_after_tls_timeout(client, adm
 
 
 def test_dispatch_due_webhooks_uses_configured_proxy(seeded_session, monkeypatch) -> None:
+    pin_configured_proxy(monkeypatch)
     update_outbound_proxy_config(
         seeded_session,
         OutboundProxyConfigUpdate(proxy_port=7890, webhook_enabled=True),
@@ -582,5 +594,5 @@ def test_dispatch_due_webhooks_uses_configured_proxy(seeded_session, monkeypatch
 
     assert processed == 1
     assert len(calls) == 1
-    assert calls[0]["proxy"] == "http://127.0.0.1:7890"
+    assert calls[0]["proxy"] == CONFIGURED_PROXY_URL
     assert calls[0]["trust_env"] is False
