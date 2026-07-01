@@ -1,7 +1,7 @@
 """Add stable visit record ordering index.
 
-Revision ID: 0007_visit_record_order_index
-Revises: 0006_visit_record_user_agent_fields
+Revision ID: 0008_visit_record_order_index
+Revises: 0007_comment_feedback_config
 Create Date: 2026-07-01
 """
 
@@ -10,8 +10,8 @@ from __future__ import annotations
 from alembic import op
 from sqlalchemy import inspect
 
-revision = "0007_visit_record_order_index"
-down_revision = "0006_visit_record_user_agent_fields"
+revision = "0008_visit_record_order_index"
+down_revision = "0007_comment_feedback_config"
 branch_labels = None
 depends_on = None
 
