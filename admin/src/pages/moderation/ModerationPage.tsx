@@ -8,15 +8,18 @@ import {
   listGuestbookApiV1AdminModerationGuestbookGet,
   moderateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePost as moderateCommentApiV1AdminModerationCommentsCommentIdModeratePost,
   moderateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModeratePost as moderateGuestbookApiV1AdminModerationGuestbookEntryIdModeratePost,
+  updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch as updateCommentFeedbackApiV1AdminModerationCommentsCommentIdFeedbackPatch,
   getListCommentsApiV1AdminModerationCommentsGetQueryKey,
   getListGuestbookApiV1AdminModerationGuestbookGetQueryKey,
   listPosts,
   listDiary,
   listThoughts,
   listExcerpts,
+  useGetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGet,
 } from "@serino/api-client/admin";
 import type {
   CommentAdminRead,
+  ContentSubscriptionConfigAdminRead,
   ContentAdminRead,
   GuestbookAdminRead,
   ListCommentsApiV1AdminModerationCommentsGetParams,
@@ -40,6 +43,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { DataTable } from "@/components/DataTable";
+import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +57,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { NativeSelect } from "@/components/ui/NativeSelect";
 import {
   Check,
+  Bell,
   History,
   RotateCcw,
   Search,
@@ -508,6 +513,56 @@ function normalizeModerationStatus(status: string) {
   return status;
 }
 
+function isCommentModerationRecord(item: ModerationRecord): item is CommentAdminRead {
+  return "content_type" in item;
+}
+
+function getModerationDeletionReason(item: ModerationRecord) {
+  const reason = "deletion_reason" in item ? item.deletion_reason : null;
+  if (reason === "self_deleted" || reason === "cascade_deleted") {
+    return reason;
+  }
+  return null;
+}
+
+function isDeletedByUserModerationRecord(item: ModerationRecord) {
+  return getModerationDeletionReason(item) !== null;
+}
+
+function getModerationDeletionReasonLabel(
+  reason: "self_deleted" | "cascade_deleted" | null,
+  t: (key: string) => string,
+) {
+  if (reason === "self_deleted") return t("moderation.deletionReasonSelf");
+  if (reason === "cascade_deleted") return t("moderation.deletionReasonCascade");
+  return "";
+}
+
+function ModerationStatusBadge({
+  item,
+  t,
+}: {
+  item: ModerationRecord;
+  t: (key: string) => string;
+}) {
+  const deletionReason = getModerationDeletionReason(item);
+  if (deletionReason) {
+    return (
+      <Badge
+        variant="outline"
+        className="border-rose-500/25 bg-rose-500/[0.08] text-rose-700 dark:text-rose-200"
+      >
+        {getModerationDeletionReasonLabel(deletionReason, t)}
+      </Badge>
+    );
+  }
+  return <StatusBadge status={normalizeModerationStatus(item.status)} />;
+}
+
+function getCommentFeedbackEnabled(item: CommentAdminRead) {
+  return item.feedback_enabled === false ? false : true;
+}
+
 function getModerationParentId(item: ModerationRecord) {
   return "parent_id" in item ? item.parent_id : null;
 }
@@ -598,7 +653,7 @@ function ThreadTree({
           <span className="text-sm font-medium">
             {getModerationAuthor(node.item, t("moderation.guest"))}
           </span>
-          <StatusBadge status={normalizeModerationStatus(node.item.status)} />
+          <ModerationStatusBadge item={node.item} t={t} />
           <Badge variant="outline">{getModerationSurface(node.item)}</Badge>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
@@ -1000,6 +1055,14 @@ function ModerationQueue({
     queryFn: () => loadItems(params),
   });
   const data = raw?.data;
+  const { data: subscriptionRaw } =
+    useGetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGet({
+      query: {
+        enabled: kind === "comments",
+      },
+    });
+  const subscriptionConfig = subscriptionRaw?.data as ContentSubscriptionConfigAdminRead | undefined;
+  const commentFeedbackAvailable = Boolean(subscriptionConfig?.comment_feedback_enabled);
 
   const moderate = useMutation({
     mutationFn: ({
@@ -1022,10 +1085,28 @@ function ModerationQueue({
     },
   });
 
+  const updateFeedback = useMutation({
+    mutationFn: ({ id, feedbackEnabled }: { id: string; feedbackEnabled: boolean }) =>
+      updateCommentFeedbackApiV1AdminModerationCommentsCommentIdFeedbackPatch(id, {
+        feedback_enabled: feedbackEnabled,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeyFn() });
+      toast.success(t("moderation.commentFeedbackSaved"));
+    },
+    onError: (error: unknown) => {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
+
   const items = data?.items ?? EMPTY_MODERATION_ITEMS;
   const total = data?.total ?? 0;
   const titleMap = useContentTitles(items);
   const selectedItem = items.find((item) => item.id === activeId) ?? null;
+  const selectedCommentItem =
+    selectedItem && kind === "comments" && isCommentModerationRecord(selectedItem)
+      ? selectedItem
+      : null;
   const treeNodes = useMemo(() => buildThreadForest(items), [items]);
   const activeThread = useMemo(
     () => (activeId ? findThreadForItem(treeNodes, activeId) : []),
@@ -1202,52 +1283,56 @@ function ModerationQueue({
                 },
                 {
                   header: t("common.status"),
-                  accessor: (row) => (
-                    <StatusBadge status={normalizeModerationStatus(row.status)} />
-                  ),
+                  accessor: (row) => <ModerationStatusBadge item={row} t={t} />,
                 },
                 {
                   header: t("common.actions"),
-                  accessor: (row) => (
-                    <div className="flex gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moderate.mutate({ id: row.id, action: "approve" });
-                        }}
-                        title={t("moderation.approve")}
-                        disabled={moderate.isPending}
-                      >
-                        <Check className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moderate.mutate({ id: row.id, action: "reject" });
-                        }}
-                        title={t("moderation.reject")}
-                        disabled={moderate.isPending}
-                      >
-                        <X className="h-4 w-4 text-orange-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTargetId(row.id);
-                        }}
-                        title={t("common.delete")}
-                        disabled={moderate.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  ),
+                  accessor: (row) => {
+                    const deletedByUser = isDeletedByUserModerationRecord(row);
+                    const stateActionTitle = deletedByUser
+                      ? t("moderation.deletedLocked")
+                      : undefined;
+                    return (
+                      <div className="flex gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moderate.mutate({ id: row.id, action: "approve" });
+                          }}
+                          title={stateActionTitle ?? t("moderation.approve")}
+                          disabled={moderate.isPending || deletedByUser}
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moderate.mutate({ id: row.id, action: "reject" });
+                          }}
+                          title={stateActionTitle ?? t("moderation.reject")}
+                          disabled={moderate.isPending || deletedByUser}
+                        >
+                          <X className="h-4 w-4 text-orange-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTargetId(row.id);
+                          }}
+                          title={t("common.delete")}
+                          disabled={moderate.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    );
+                  },
                   className: "w-28",
                 },
               ]}
@@ -1295,9 +1380,7 @@ function ModerationQueue({
                     <span className="font-medium">
                       {getModerationAuthor(selectedItem, t("moderation.guest"))}
                     </span>
-                    <StatusBadge
-                      status={normalizeModerationStatus(selectedItem.status)}
-                    />
+                    <ModerationStatusBadge item={selectedItem} t={t} />
                     <Badge variant="outline">
                       {getModerationSource(selectedItem, lang)}
                     </Badge>
@@ -1321,7 +1404,7 @@ function ModerationQueue({
                           {getModerationAuthDisplay(selectedItem, lang)}
                         </dd>
                       </div>
-                      <div className="space-y-1 sm:col-span-2">
+                      <div className="space-y-1">
                         <dt className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
                           {t("moderation.updated")}
                         </dt>
@@ -1329,6 +1412,54 @@ function ModerationQueue({
                           {formatDate(selectedItem.updated_at)}
                         </dd>
                       </div>
+                      {selectedCommentItem && commentFeedbackAvailable ? (
+                        <div className="space-y-1">
+                          <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
+                            <Bell className="h-3.5 w-3.5 text-sky-500" />
+                            <span>{t("moderation.commentFeedback")}</span>
+                            <LabelWithHelp
+                              hideLabel
+                              label={t("moderation.commentFeedback")}
+                              description={t("moderation.commentFeedbackHelp")}
+                              className="gap-0 [&_button]:h-4 [&_button]:w-4 [&_svg]:h-3 [&_svg]:w-3"
+                            />
+                          </dt>
+                          <dd className="flex max-w-[18rem] items-center justify-between gap-3 text-foreground/90">
+                            <span className="text-xs leading-5 text-muted-foreground">
+                              {getCommentFeedbackEnabled(selectedCommentItem)
+                                ? t("moderation.commentFeedbackEnabled")
+                                : t("moderation.commentFeedbackDisabled")}
+                            </span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={getCommentFeedbackEnabled(selectedCommentItem)}
+                              onClick={() =>
+                                updateFeedback.mutate({
+                                  id: selectedCommentItem.id,
+                                  feedbackEnabled: !getCommentFeedbackEnabled(selectedCommentItem),
+                                })
+                              }
+                              disabled={updateFeedback.isPending}
+                              className={cn(
+                                "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+                                getCommentFeedbackEnabled(selectedCommentItem)
+                                  ? "border-sky-400/45 bg-sky-400/28 shadow-[0_8px_22px_rgba(14,165,233,0.14)]"
+                                  : "border-border/55 bg-muted/65",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "block h-5 w-5 rounded-full bg-background shadow-sm ring-1 ring-black/5 transition-transform duration-200 dark:bg-foreground",
+                                  getCommentFeedbackEnabled(selectedCommentItem)
+                                    ? "translate-x-5"
+                                    : "translate-x-0.5",
+                                )}
+                              />
+                            </button>
+                          </dd>
+                        </div>
+                      ) : null}
                     </dl>
                   </div>
 

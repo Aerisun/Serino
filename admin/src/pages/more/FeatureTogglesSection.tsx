@@ -32,6 +32,9 @@ const SUBSCRIPTION_CONTENT_OPTIONS = [
 const DEFAULT_SUBSCRIPTION_SUBJECT_TEMPLATE = "[{site_name}] {content_title}";
 const DEFAULT_SUBSCRIPTION_BODY_TEMPLATE =
   "{site_name} 有新的{content_type_label}内容发布。\n\n{content_title}\n{content_summary}\n\n阅读链接：{content_url}\nRSS：{feed_url}";
+const DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE = "[{site_name}] {reply_author_name} 回复了你的评论";
+const DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE =
+  "{reply_author_name} 回复了你在 {site_name} 的评论。\n\n你的评论：\n{parent_comment}\n\n回复内容：\n{reply_content}\n\n查看回复：{comment_url}";
 const SUBSCRIPTION_TEMPLATE_FIELD_CLASS =
   "mx-px w-[calc(100%-2px)] max-w-full border-border/70 bg-background/72 shadow-none [backdrop-filter:none] [-webkit-backdrop-filter:none] focus:!border-[rgb(var(--admin-accent-rgb)/0.36)] focus:shadow-none focus-visible:!ring-[rgb(var(--admin-accent-rgb)/0.26)] focus-visible:!ring-offset-0";
 
@@ -43,12 +46,20 @@ interface AdvancedSubscriptionForm {
   mail_body_template: string;
 }
 
+interface CommentFeedbackForm {
+  comment_feedback_subject_template: string;
+  comment_feedback_body_template: string;
+}
+
 type SubscriptionConfigWithAdvanced = {
   enabled?: boolean;
   smtp_test_passed?: boolean;
   allowed_content_types?: string[];
   mail_subject_template?: string;
   mail_body_template?: string;
+  comment_feedback_enabled?: boolean;
+  comment_feedback_subject_template?: string;
+  comment_feedback_body_template?: string;
 };
 
 function createAdvancedSubscriptionForm(
@@ -78,6 +89,19 @@ function createAdvancedSubscriptionForm(
   };
 }
 
+function createCommentFeedbackForm(
+  config?: SubscriptionConfigWithAdvanced,
+): CommentFeedbackForm {
+  return {
+    comment_feedback_subject_template:
+      config?.comment_feedback_subject_template?.trim() ||
+      DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE,
+    comment_feedback_body_template:
+      config?.comment_feedback_body_template?.trim() ||
+      DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE,
+  };
+}
+
 function isSameAdvancedForm(
   left: AdvancedSubscriptionForm,
   right: AdvancedSubscriptionForm,
@@ -87,6 +111,16 @@ function isSameAdvancedForm(
     left.mail_body_template === right.mail_body_template &&
     left.allowed_content_types.length === right.allowed_content_types.length &&
     left.allowed_content_types.every((item, index) => item === right.allowed_content_types[index])
+  );
+}
+
+function isSameCommentFeedbackForm(
+  left: CommentFeedbackForm,
+  right: CommentFeedbackForm,
+): boolean {
+  return (
+    left.comment_feedback_subject_template === right.comment_feedback_subject_template &&
+    left.comment_feedback_body_template === right.comment_feedback_body_template
   );
 }
 
@@ -105,12 +139,18 @@ export function FeatureTogglesSection() {
   );
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [subscriptionEnabled, setSubscriptionEnabled] = useState(false);
+  const [commentFeedbackEnabled, setCommentFeedbackEnabled] = useState(false);
   const [advancedForm, setAdvancedForm] = useState<AdvancedSubscriptionForm>(() =>
     createAdvancedSubscriptionForm(),
   );
   const [savedAdvancedForm, setSavedAdvancedForm] =
     useState<AdvancedSubscriptionForm>(() => createAdvancedSubscriptionForm());
+  const [commentFeedbackForm, setCommentFeedbackForm] =
+    useState<CommentFeedbackForm>(() => createCommentFeedbackForm());
+  const [savedCommentFeedbackForm, setSavedCommentFeedbackForm] =
+    useState<CommentFeedbackForm>(() => createCommentFeedbackForm());
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [commentFeedbackExpanded, setCommentFeedbackExpanded] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -121,9 +161,13 @@ export function FeatureTogglesSection() {
   useEffect(() => {
     if (subscriptionConfig) {
       setSubscriptionEnabled(Boolean(subscriptionConfig.enabled));
+      setCommentFeedbackEnabled(Boolean(subscriptionConfig.comment_feedback_enabled));
       const nextForm = createAdvancedSubscriptionForm(subscriptionConfig);
       setAdvancedForm(nextForm);
       setSavedAdvancedForm(nextForm);
+      const nextFeedbackForm = createCommentFeedbackForm(subscriptionConfig);
+      setCommentFeedbackForm(nextFeedbackForm);
+      setSavedCommentFeedbackForm(nextFeedbackForm);
     }
   }, [subscriptionConfig]);
 
@@ -132,6 +176,12 @@ export function FeatureTogglesSection() {
       setAdvancedExpanded(false);
     }
   }, [smtpTestPassed, subscriptionEnabled]);
+
+  useEffect(() => {
+    if (!commentFeedbackEnabled) {
+      setCommentFeedbackExpanded(false);
+    }
+  }, [commentFeedbackEnabled]);
 
   const saveProfile = useUpdateProfileApiV1AdminSiteConfigProfilePut({
     mutation: {
@@ -226,6 +276,20 @@ export function FeatureTogglesSection() {
     }
   };
 
+  const handleCommentFeedbackToggle = async (nextEnabled: boolean) => {
+    const previousEnabled = commentFeedbackEnabled;
+    setCommentFeedbackEnabled(nextEnabled);
+
+    try {
+      await saveSubscription.mutateAsync({ data: { comment_feedback_enabled: nextEnabled } as any });
+      if (nextEnabled && !smtpTestPassed) {
+        toast.warning(t("siteConfig.commentFeedbackServiceNotConfigured"));
+      }
+    } catch {
+      setCommentFeedbackEnabled(previousEnabled);
+    }
+  };
+
   const toggleAllowedContentType = (contentType: SubscriptionContentType) => {
     setAdvancedForm((current) => {
       const enabled = current.allowed_content_types.includes(contentType);
@@ -259,6 +323,15 @@ export function FeatureTogglesSection() {
     }
   };
 
+  const saveCommentFeedbackSettings = async () => {
+    try {
+      await saveSubscription.mutateAsync({ data: commentFeedbackForm as any });
+      setSavedCommentFeedbackForm(commentFeedbackForm);
+    } catch {
+      // The mutation handler already provides user-facing feedback.
+    }
+  };
+
   const subscriptionStatus = smtpTestPassed
     ? t("siteConfig.contentSubscriptionAvailable")
     : t("siteConfig.contentSubscriptionUnavailable");
@@ -270,7 +343,12 @@ export function FeatureTogglesSection() {
     ? `${subscriptionStatus}${subscriptionReminder} · ${t("siteConfig.contentSubscriptionConfigHint")}`
     : t("siteConfig.contentSubscriptionSetupGuide");
   const advancedDirty = !isSameAdvancedForm(advancedForm, savedAdvancedForm);
+  const commentFeedbackDirty = !isSameCommentFeedbackForm(commentFeedbackForm, savedCommentFeedbackForm);
   const canExpandAdvanced = smtpTestPassed && subscriptionEnabled;
+  const canExpandCommentFeedback = commentFeedbackEnabled;
+  const commentFeedbackDescription = smtpTestPassed
+    ? t("siteConfig.commentFeedbackConfigHint")
+    : t("siteConfig.commentFeedbackSetupGuide");
 
   return (
     <div className="mt-4 space-y-5">
@@ -431,6 +509,121 @@ export function FeatureTogglesSection() {
                     </div>
                   ) : null
                 }
+              disabled={saveSubscription.isPending}
+            />
+
+            <AppleSwitch
+              checked={commentFeedbackEnabled}
+              onCheckedChange={(checked) => void handleCommentFeedbackToggle(checked)}
+              switchLeading={
+                canExpandCommentFeedback ? (
+                  <button
+                    type="button"
+                    aria-label={commentFeedbackExpanded ? t("common.collapse") : t("common.expand")}
+                    aria-expanded={commentFeedbackExpanded}
+                    disabled={saveSubscription.isPending}
+                    onClick={() => setCommentFeedbackExpanded((current) => !current)}
+                    className={cn(
+                      "inline-flex h-6 w-6 items-center justify-center rounded-md border border-border/70 bg-background/40 text-muted-foreground transition hover:bg-background/70 hover:text-foreground",
+                      saveSubscription.isPending && "cursor-not-allowed opacity-60",
+                      commentFeedbackExpanded && "text-foreground",
+                    )}
+                  >
+                    <ChevronRight
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        commentFeedbackExpanded && "rotate-90",
+                      )}
+                    />
+                  </button>
+                ) : null
+              }
+              label={t("siteConfig.commentFeedbackEnabled")}
+              description={commentFeedbackDescription}
+              descriptionClassName={
+                smtpTestPassed ? undefined : "text-amber-600 dark:text-amber-300"
+              }
+              expandableOpen={canExpandCommentFeedback && commentFeedbackExpanded}
+              expandableContent={
+                canExpandCommentFeedback ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="text-sm font-semibold">
+                        {t("siteConfig.commentFeedbackAdvancedTitle")}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        {commentFeedbackDirty ? <PendingSaveBadge /> : null}
+                        <DirtySaveButton
+                          dirty={commentFeedbackDirty}
+                          saving={saveSubscription.isPending}
+                          onClick={() => void saveCommentFeedbackSettings()}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="comment-feedback-subject-template">
+                        {t("siteConfig.commentFeedbackSubjectTemplate")}
+                      </Label>
+                      <Input
+                        id="comment-feedback-subject-template"
+                        value={commentFeedbackForm.comment_feedback_subject_template}
+                        onChange={(event) =>
+                          setCommentFeedbackForm((current) => ({
+                            ...current,
+                            comment_feedback_subject_template: event.target.value,
+                          }))
+                        }
+                        className={SUBSCRIPTION_TEMPLATE_FIELD_CLASS}
+                        placeholder={DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="comment-feedback-body-template">
+                        {t("siteConfig.commentFeedbackBodyTemplate")}
+                      </Label>
+                      <Textarea
+                        id="comment-feedback-body-template"
+                        rows={8}
+                        value={commentFeedbackForm.comment_feedback_body_template}
+                        onChange={(event) =>
+                          setCommentFeedbackForm((current) => ({
+                            ...current,
+                            comment_feedback_body_template: event.target.value,
+                          }))
+                        }
+                        className={SUBSCRIPTION_TEMPLATE_FIELD_CLASS}
+                        placeholder={DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE}
+                      />
+                      <div className="flex justify-start pt-1">
+                        <LabelWithHelp
+                          className="gap-1.5"
+                          label={
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {t("siteConfig.commentFeedbackPlaceholderHelpLabel")}
+                            </span>
+                          }
+                          title={t("siteConfig.commentFeedbackPlaceholderHelpTitle")}
+                          description={t("siteConfig.commentFeedbackPlaceholderHelpDescription")}
+                          usageTitle={t("siteConfig.commentFeedbackPlaceholderHelpUsageTitle")}
+                          usageItems={[
+                            t("siteConfig.commentFeedbackPlaceholderHelpSiteName"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpContentType"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpContentSlug"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpContentPath"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpParentAuthor"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpParentComment"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpReplyAuthor"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpReplyContent"),
+                            t("siteConfig.commentFeedbackPlaceholderHelpCommentUrl"),
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null
+              }
               disabled={saveSubscription.isPending}
             />
           </div>
