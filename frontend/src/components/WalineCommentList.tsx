@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowUpRight, ChevronDown, Loader2, RefreshCw, Reply, Sparkles } from "lucide-react";
+import { ArrowUpRight, Bell, BellOff, ChevronDown, Loader2, RefreshCw, Reply, Sparkles, Trash2 } from "lucide-react";
 import CommentMarkdownRenderer from "@/components/CommentMarkdownRenderer";
 import { useFrontendI18n } from "@/i18n";
 import {
@@ -141,15 +141,30 @@ const CommentReplyStream = ({
   expanded,
   onToggleReplies,
   onReply,
+  onDeleteComment,
+  onFeedbackChange,
+  busyItemIds,
+  commentFeedbackAvailable,
   t,
 }: {
   item: CommunityCommentItem;
   expanded: boolean;
   onToggleReplies: (rootId: string) => void;
   onReply: (target: ReplyTarget) => void;
+  onDeleteComment: (commentId: string) => void;
+  onFeedbackChange: (commentId: string, enabled: boolean) => void;
+  busyItemIds: Set<string>;
+  commentFeedbackAvailable: boolean;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) => {
   const replyItems = flattenReplies(item.replies ?? [], item.id, item.author_name);
+  const rootActions = buildCommentActions({
+    item,
+    busy: busyItemIds.has(item.id),
+    commentFeedbackAvailable,
+    onDelete: onDeleteComment,
+    onFeedbackChange,
+  });
 
   return (
     <article className="aerisun-comment-thread" data-comment-id={item.id}>
@@ -161,19 +176,24 @@ const CommentReplyStream = ({
         body={item.body}
         isAuthor={item.is_author}
         onReply={() => onReply({ id: item.id, name: item.author_name })}
-        actionSlot={replyItems.length ? (
-          <button
-            type="button"
-            onClick={() => onToggleReplies(item.id)}
-            className={`${communityActionClass} aerisun-comment-thread__reply-toggle`}
-            aria-expanded={expanded}
-          >
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-            {expanded
-              ? t("waline.list.collapseReplies", { count: replyItems.length })
-              : t("waline.list.expandReplies", { count: replyItems.length })}
-          </button>
-        ) : null}
+        actionSlot={
+          <>
+            {replyItems.length ? (
+              <button
+                type="button"
+                onClick={() => onToggleReplies(item.id)}
+                className={`${communityActionClass} aerisun-comment-thread__reply-toggle`}
+                aria-expanded={expanded}
+              >
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                {expanded
+                  ? t("waline.list.collapseReplies", { count: replyItems.length })
+                  : t("waline.list.expandReplies", { count: replyItems.length })}
+              </button>
+            ) : null}
+            {rootActions}
+          </>
+        }
       />
 
       {replyItems.length ? (
@@ -199,6 +219,13 @@ const CommentReplyStream = ({
                       targetId: reply.replyToId,
                     }}
                     onReply={() => onReply({ id: reply.id, name: reply.author_name })}
+                    actionSlot={buildCommentActions({
+                      item: reply,
+                      busy: busyItemIds.has(reply.id),
+                      commentFeedbackAvailable,
+                      onDelete: onDeleteComment,
+                      onFeedbackChange,
+                    })}
                   />
                 </div>
               ))}
@@ -226,6 +253,81 @@ const StatusStream = ({
   </section>
 );
 
+const FeedbackAction = ({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onChange: (checked: boolean) => void;
+}) => {
+  const { t } = useFrontendI18n();
+  const Icon = checked ? Bell : BellOff;
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`${communityActionClass} disabled:cursor-not-allowed disabled:opacity-50`}
+      title={checked ? t("waline.list.feedbackOn") : t("waline.list.feedbackOff")}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {checked ? t("waline.list.feedbackOnShort") : t("waline.list.feedbackOffShort")}
+    </button>
+  );
+};
+
+const DeleteAction = ({
+  disabled,
+  onDelete,
+}: {
+  disabled: boolean;
+  onDelete: () => void;
+}) => {
+  const { t } = useFrontendI18n();
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onDelete}
+      className={`${communityActionClass} text-red-500/70 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+      {t("waline.list.delete")}
+    </button>
+  );
+};
+
+const buildCommentActions = ({
+  item,
+  busy,
+  commentFeedbackAvailable,
+  onDelete,
+  onFeedbackChange,
+}: {
+  item: CommunityCommentItem;
+  busy: boolean;
+  commentFeedbackAvailable: boolean;
+  onDelete: (commentId: string) => void;
+  onFeedbackChange: (commentId: string, enabled: boolean) => void;
+}) => (
+  <>
+    {commentFeedbackAvailable && item.can_update_feedback ? (
+      <FeedbackAction
+        checked={item.feedback_enabled ?? true}
+        disabled={busy}
+        onChange={(enabled) => onFeedbackChange(item.id, enabled)}
+      />
+    ) : null}
+    {item.can_delete ? (
+      <DeleteAction disabled={busy} onDelete={() => onDelete(item.id)} />
+    ) : null}
+  </>
+);
+
 /* ── Main list component ── */
 
 export interface WalineCommentListProps {
@@ -243,9 +345,14 @@ export interface WalineCommentListProps {
   pendingComments: CommunityCommentItem[];
   pendingGuestbookEntries: CommunityGuestbookItem[];
   hasMoreEntries: boolean;
+  busyItemIds: Set<string>;
+  commentFeedbackAvailable: boolean;
 
   /* Callbacks */
   onReply: (target: ReplyTarget) => void;
+  onDeleteComment: (commentId: string) => void;
+  onDeleteGuestbookEntry: (entryId: string) => void;
+  onFeedbackChange: (commentId: string, enabled: boolean) => void;
   onLoadMore: () => void;
   onRetry: () => void;
 
@@ -266,7 +373,12 @@ const WalineCommentList = ({
   pendingComments,
   pendingGuestbookEntries,
   hasMoreEntries,
+  busyItemIds,
+  commentFeedbackAvailable,
   onReply,
+  onDeleteComment,
+  onDeleteGuestbookEntry,
+  onFeedbackChange,
   onLoadMore,
   onRetry,
   guestbookLoadingLabel,
@@ -384,6 +496,12 @@ const WalineCommentList = ({
                   body={item.body}
                   isAuthor={item.is_author}
                   pending
+                  actionSlot={item.can_delete ? (
+                    <DeleteAction
+                      disabled={busyItemIds.has(item.id)}
+                      onDelete={() => onDeleteGuestbookEntry(item.id)}
+                    />
+                  ) : null}
                 />
               ))}
             />
@@ -401,6 +519,12 @@ const WalineCommentList = ({
                     body={item.body}
                     isAuthor={item.is_author}
                     website={item.website}
+                    actionSlot={item.can_delete ? (
+                      <DeleteAction
+                        disabled={busyItemIds.has(item.id)}
+                        onDelete={() => onDeleteGuestbookEntry(item.id)}
+                      />
+                    ) : null}
                   />
                 </article>
               ))}
@@ -421,7 +545,15 @@ const WalineCommentList = ({
                   authorName={item.author_name}
                   createdAt={item.created_at}
                   body={item.body}
+                  isAuthor={item.is_author}
                   pending
+                  actionSlot={buildCommentActions({
+                    item,
+                    busy: busyItemIds.has(item.id),
+                    commentFeedbackAvailable,
+                    onDelete: onDeleteComment,
+                    onFeedbackChange,
+                  })}
                 />
               ))}
             />
@@ -436,6 +568,10 @@ const WalineCommentList = ({
                   expanded={expandedThreadIds.has(item.id)}
                   onToggleReplies={toggleThreadReplies}
                   onReply={onReply}
+                  onDeleteComment={onDeleteComment}
+                  onFeedbackChange={onFeedbackChange}
+                  busyItemIds={busyItemIds}
+                  commentFeedbackAvailable={commentFeedbackAvailable}
                   t={t}
                 />
               ))}

@@ -49,6 +49,7 @@ export const ReadCommunityConfigApiV1SiteCommunityConfigGetResponse = zod.object
   "emoji_presets": zod.unknown().describe('Emoji preset CDN URLs'),
   "image_uploader": zod.unknown().describe('Image uploads allowed'),
   "anonymous_enabled": zod.unknown().describe('Whether email login is allowed for commenting'),
+  "comment_feedback_enabled": zod.unknown().optional().describe('Whether comment reply feedback controls are available'),
   "moderation_mode": zod.unknown().describe('Moderation mode'),
   "default_sorting": zod.unknown().describe('Default sort order'),
   "page_size": zod.unknown().describe('Initial comments loaded per batch'),
@@ -565,6 +566,7 @@ export const ReadGuestbookApiV1SiteInteractionsGuestbookGetQueryParams = zod.obj
 
 export const ReadGuestbookApiV1SiteInteractionsGuestbookGetResponse = zod.object({
   "items": zod.unknown().describe('List of guestbook entries'),
+  "pending_items": zod.unknown().optional().describe('Pending entries visible to the current authenticated author'),
   "total": zod.unknown().describe('Total number of public guestbook entries'),
   "page": zod.unknown().describe('Current page number'),
   "page_size": zod.unknown().describe('Number of guestbook entries per page'),
@@ -591,6 +593,14 @@ export const CreateGuestbookApiV1SiteInteractionsGuestbookPostResponse = zod.obj
 
 
 /**
+ * @summary 删除自己的留言
+ */
+export const DeleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDeleteParams = zod.object({
+  "entry_id": zod.string()
+})
+
+
+/**
  * @summary 获取内容评论
  */
 export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetParams = zod.object({
@@ -612,7 +622,9 @@ export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetQueryPar
 
 export const ReadCommentsApiV1SiteInteractionsCommentsContentTypeSlugGetResponse = zod.object({
   "items": zod.unknown().describe('List of comments'),
+  "pending_items": zod.unknown().optional().describe('Pending comments visible to the current authenticated author'),
   "total": zod.unknown().describe('Total number of root comment threads'),
+  "comment_total": zod.unknown().describe('Total number of public comments including replies'),
   "page": zod.unknown().describe('Current page number'),
   "page_size": zod.unknown().describe('Number of root comment threads per page'),
   "has_more": zod.unknown().describe('Whether more root comment threads can be loaded')
@@ -627,19 +639,61 @@ export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostParams
   "slug": zod.string()
 })
 
+export const createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostBodyFeedbackEnabledDefault = true;
+
 export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostBody = zod.object({
   "author_name": zod.string().describe('Comment author display name'),
   "author_email": zod.union([zod.string(),zod.null()]).optional().describe('Comment author email address'),
   "body": zod.string().describe('Comment body text'),
   "parent_id": zod.union([zod.string(),zod.null()]).optional().describe('Parent comment ID for replies'),
   "avatar_key": zod.union([zod.string(),zod.null()]).optional().describe('Selected comment avatar preset key'),
-  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting')
+  "auth_token": zod.union([zod.string(),zod.null()]).optional().describe('Waline login token for authenticated posting'),
+  "feedback_enabled": zod.boolean().default(createCommentApiV1SiteInteractionsCommentsContentTypeSlugPostBodyFeedbackEnabledDefault).describe('Whether reply feedback emails are enabled')
 })
 
 export const CreateCommentApiV1SiteInteractionsCommentsContentTypeSlugPostResponse = zod.object({
   "item": zod.unknown().describe('Created comment'),
   "accepted": zod.unknown().describe('Whether the comment was auto-approved')
 })
+
+
+/**
+ * @summary 删除自己的评论
+ */
+export const DeleteCommentApiV1SiteInteractionsCommentsCommentIdDeleteParams = zod.object({
+  "comment_id": zod.string()
+})
+
+
+/**
+ * @summary 更新自己的评论反馈设置
+ */
+export const UpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchParams = zod.object({
+  "comment_id": zod.string()
+})
+
+export const UpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchBody = zod.object({
+  "feedback_enabled": zod.boolean().describe('Whether reply feedback emails are enabled')
+})
+
+export const UpdateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatchResponse = zod.object({
+  "id": zod.unknown().describe('Unique comment identifier'),
+  "parent_id": zod.unknown().describe('Parent comment ID for threaded replies'),
+  "author_name": zod.unknown().describe('Comment author display name'),
+  "body": zod.unknown().describe('Comment body text'),
+  "status": zod.unknown().describe('Moderation status'),
+  "created_at": zod.unknown().describe('Comment creation timestamp'),
+  "avatar": zod.unknown().optional().describe('Avatar identifier or key'),
+  "avatar_url": zod.unknown().optional().describe('Full avatar image URL'),
+  "like_count": zod.unknown().optional().describe('Number of likes on this comment'),
+  "liked": zod.unknown().optional().describe('Whether the current user liked this comment'),
+  "is_author": zod.unknown().optional().describe('Whether the commenter is the content author'),
+  "owned_by_current_user": zod.unknown().optional().describe('Whether the current user owns this comment'),
+  "can_delete": zod.unknown().optional().describe('Whether the current user can delete this comment'),
+  "feedback_enabled": zod.unknown().optional().describe('Whether reply feedback emails are enabled'),
+  "can_update_feedback": zod.unknown().optional().describe('Whether the current user can update reply feedback for this comment'),
+  "replies": zod.unknown().optional().describe('Nested reply comments')
+}).describe('Created comment')
 
 
 /**
@@ -2399,6 +2453,9 @@ export const GetContentSubscriptionConfigApiV1AdminSubscriptionsConfigGetRespons
   "allowed_content_types": zod.unknown().describe('Content types users can subscribe to'),
   "mail_subject_template": zod.unknown().describe('Email subject template'),
   "mail_body_template": zod.unknown().describe('Email body template'),
+  "comment_feedback_enabled": zod.unknown().describe('Whether comment reply feedback emails are enabled'),
+  "comment_feedback_subject_template": zod.unknown().describe('Comment feedback email subject template'),
+  "comment_feedback_body_template": zod.unknown().describe('Comment feedback email body template'),
   "subscriber_count": zod.unknown().optional().describe('Number of active subscribers'),
   "created_at": zod.unknown().describe('Creation time'),
   "updated_at": zod.unknown().describe('Last update time')
@@ -2426,7 +2483,10 @@ export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutBody
   "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled'),
   "allowed_content_types": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Content types users can subscribe to'),
   "mail_subject_template": zod.union([zod.string(),zod.null()]).optional().describe('Email subject template'),
-  "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template')
+  "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template'),
+  "comment_feedback_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether comment reply feedback emails are enabled'),
+  "comment_feedback_subject_template": zod.union([zod.string(),zod.null()]).optional().describe('Comment feedback email subject template'),
+  "comment_feedback_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Comment feedback email body template')
 })
 
 export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResponse = zod.object({
@@ -2451,6 +2511,9 @@ export const UpdateContentSubscriptionConfigApiV1AdminSubscriptionsConfigPutResp
   "allowed_content_types": zod.unknown().describe('Content types users can subscribe to'),
   "mail_subject_template": zod.unknown().describe('Email subject template'),
   "mail_body_template": zod.unknown().describe('Email body template'),
+  "comment_feedback_enabled": zod.unknown().describe('Whether comment reply feedback emails are enabled'),
+  "comment_feedback_subject_template": zod.unknown().describe('Comment feedback email subject template'),
+  "comment_feedback_body_template": zod.unknown().describe('Comment feedback email body template'),
   "subscriber_count": zod.unknown().optional().describe('Number of active subscribers'),
   "created_at": zod.unknown().describe('Creation time'),
   "updated_at": zod.unknown().describe('Last update time')
@@ -2484,7 +2547,10 @@ export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostB
   "smtp_use_ssl": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether implicit SSL is enabled'),
   "allowed_content_types": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Content types users can subscribe to'),
   "mail_subject_template": zod.union([zod.string(),zod.null()]).optional().describe('Email subject template'),
-  "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template')
+  "mail_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Email body template'),
+  "comment_feedback_enabled": zod.union([zod.boolean(),zod.null()]).optional().describe('Whether comment reply feedback emails are enabled'),
+  "comment_feedback_subject_template": zod.union([zod.string(),zod.null()]).optional().describe('Comment feedback email subject template'),
+  "comment_feedback_body_template": zod.union([zod.string(),zod.null()]).optional().describe('Comment feedback email body template')
 })
 
 export const TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostResponse = zod.object({
@@ -3250,6 +3316,36 @@ export const ModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModerat
   "auth_provider": zod.unknown().optional().describe('Normalized auth provider'),
   "body": zod.unknown(),
   "status": zod.unknown(),
+  "feedback_enabled": zod.unknown().optional().describe('Whether reply feedback emails are enabled'),
+  "deletion_reason": zod.unknown().optional().describe('Reason when a public self-delete rejected this item'),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
+})
+
+
+/**
+ * @summary 修改评论反馈设置
+ */
+export const UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchParams = zod.object({
+  "comment_id": zod.string()
+})
+
+export const UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchBody = zod.object({
+  "feedback_enabled": zod.boolean().describe('Whether reply feedback emails are enabled')
+})
+
+export const UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse = zod.object({
+  "id": zod.unknown(),
+  "content_type": zod.unknown(),
+  "content_slug": zod.unknown(),
+  "parent_id": zod.unknown(),
+  "author_name": zod.unknown(),
+  "author_email": zod.unknown(),
+  "auth_provider": zod.unknown().optional().describe('Normalized auth provider'),
+  "body": zod.unknown(),
+  "status": zod.unknown(),
+  "feedback_enabled": zod.unknown().optional().describe('Whether reply feedback emails are enabled'),
+  "deletion_reason": zod.unknown().optional().describe('Reason when a public self-delete rejected this item'),
   "created_at": zod.unknown(),
   "updated_at": zod.unknown()
 })
@@ -3304,6 +3400,7 @@ export const ModerateGuestbookEndpointApiV1AdminModerationGuestbookEntryIdModera
   "website": zod.unknown(),
   "body": zod.unknown(),
   "status": zod.unknown(),
+  "deletion_reason": zod.unknown().optional().describe('Reason when a public self-delete rejected this item'),
   "created_at": zod.unknown(),
   "updated_at": zod.unknown()
 })

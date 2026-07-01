@@ -478,6 +478,17 @@ export const enTranslations: TranslationDict = {
     "moderation.approved": "Approved",
     "moderation.rejected": "Rejected",
     "moderation.deleteConfirm": "Delete?",
+    "moderation.deletionReason": "Deletion note",
+    "moderation.deletionReasonSelf": "Self deleted",
+    "moderation.deletionReasonCascade": "Indirectly deleted",
+    "moderation.deletedLocked":
+      "This item was deleted by a user and kept for audit. It can only be permanently deleted by an admin.",
+    "moderation.commentFeedback": "Comment feedback",
+    "moderation.commentFeedbackHelp":
+      "When enabled, the comment author receives an email after someone replies and the reply is approved.",
+    "moderation.commentFeedbackEnabled": "Reply email reminders enabled",
+    "moderation.commentFeedbackDisabled": "Reply email reminders disabled",
+    "moderation.commentFeedbackSaved": "Comment feedback setting saved",
 
     // assets
     "assets.title": "Assets",
@@ -1252,6 +1263,41 @@ export const enTranslations: TranslationDict = {
     "siteConfig.contentSubscriptionSave": "Save Subscription Settings",
     "siteConfig.contentSubscriptionSaveHint":
       "SMTP host, port, and sender email are the minimum required fields before delivery jobs can send messages.",
+    "siteConfig.commentFeedbackEnabled": "Enable Comment Feedback",
+    "siteConfig.commentFeedbackConfigHint":
+      "After someone replies to a user's comment and the reply is approved, an email reminder is sent with the template below.",
+    "siteConfig.commentFeedbackSetupGuide":
+      "You can save comment feedback settings now; reminders will not be sent until SMTP test passes.",
+    "siteConfig.commentFeedbackServiceNotConfigured":
+      "Comment feedback email service is not configured",
+    "siteConfig.commentFeedbackAdvancedTitle": "Comment feedback email settings",
+    "siteConfig.commentFeedbackSubjectTemplate": "Feedback email subject template",
+    "siteConfig.commentFeedbackBodyTemplate": "Feedback email body template",
+    "siteConfig.commentFeedbackPlaceholderHelpLabel": "Placeholder Guide",
+    "siteConfig.commentFeedbackPlaceholderHelpTitle":
+      "Comment feedback template placeholders",
+    "siteConfig.commentFeedbackPlaceholderHelpDescription":
+      "Use the following placeholders in comment feedback subject and body templates. They are replaced with real values when sending emails.",
+    "siteConfig.commentFeedbackPlaceholderHelpUsageTitle":
+      "Placeholder list",
+    "siteConfig.commentFeedbackPlaceholderHelpSiteName":
+      "{site_name}: Site name",
+    "siteConfig.commentFeedbackPlaceholderHelpContentType":
+      "{content_type}: Content type key",
+    "siteConfig.commentFeedbackPlaceholderHelpContentSlug":
+      "{content_slug}: Content slug",
+    "siteConfig.commentFeedbackPlaceholderHelpContentPath":
+      "{content_path}: Page path",
+    "siteConfig.commentFeedbackPlaceholderHelpParentAuthor":
+      "{parent_author_name}: Author of the original comment",
+    "siteConfig.commentFeedbackPlaceholderHelpParentComment":
+      "{parent_comment}: Original comment body",
+    "siteConfig.commentFeedbackPlaceholderHelpReplyAuthor":
+      "{reply_author_name}: Reply author name",
+    "siteConfig.commentFeedbackPlaceholderHelpReplyContent":
+      "{reply_content}: Reply body",
+    "siteConfig.commentFeedbackPlaceholderHelpCommentUrl":
+      "{comment_url}: Clickable reply anchor URL",
     "siteConfig.smtpHost": "SMTP Host",
     "siteConfig.smtpPort": "SMTP Port",
     "siteConfig.smtpAuthMode": "Auth Mode",

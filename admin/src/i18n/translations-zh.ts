@@ -461,6 +461,17 @@ export const zhTranslations: TranslationDict = {
   "moderation.approved": "已通过",
   "moderation.rejected": "已拒绝",
   "moderation.deleteConfirm": "确认删除？",
+  "moderation.deletionReason": "删除说明",
+  "moderation.deletionReasonSelf": "自行删除",
+  "moderation.deletionReasonCascade": "间接删除",
+  "moderation.deletedLocked":
+    "该内容由用户删除留痕，只能由管理员彻底删除，不能重新通过。",
+  "moderation.commentFeedback": "评论反馈",
+  "moderation.commentFeedbackHelp":
+    "开启后，如果别人回复这条评论并通过审核，会向评论作者当前绑定邮箱发送提醒。",
+  "moderation.commentFeedbackEnabled": "已开启回复邮件提醒",
+  "moderation.commentFeedbackDisabled": "已关闭回复邮件提醒",
+  "moderation.commentFeedbackSaved": "评论反馈设置已保存",
 
   // assets
   "assets.title": "资源",
@@ -964,7 +975,8 @@ export const zhTranslations: TranslationDict = {
   "dashboard.visitorsUv7d": "7 天访客",
   "dashboard.visitorsUv7dHint": "观察近一周访客变化",
   "dashboard.visitorsAvgDuration": "平均加载耗时",
-  "dashboard.visitorsAvgDurationHint": "访客端页面加载耗时（浏览器 Performance API 上报）",
+  "dashboard.visitorsAvgDurationHint":
+    "访客端页面加载耗时（浏览器 Performance API 上报）",
   "dashboard.visitorsTrendEyebrow": "访客趋势",
   "dashboard.visitorsTrendTitle": "近 14 天访问趋势",
   "dashboard.visitorsTrendDescription": "按天查看公共页面访问次数变化。",
@@ -1107,8 +1119,7 @@ export const zhTranslations: TranslationDict = {
   "diary.poemAiPromptLabel": "定制要求",
   "diary.poemAiPromptPlaceholder":
     "例如：偏清冷一点、带一点春雨意象、不要太伤感",
-  "diary.poemAiPromptHint":
-    "根据当前 Markdown 草稿内容挑选最应景的诗句",
+  "diary.poemAiPromptHint": "根据当前 Markdown 草稿内容挑选最应景的诗句",
   "diary.poemAiPanelTitle": "诗句生成偏好",
   "diary.poemAiPanelAction": "按要求生成",
   "diary.poemAiResponseTitle": "当前生成结果",
@@ -1212,6 +1223,37 @@ export const zhTranslations: TranslationDict = {
   "siteConfig.contentSubscriptionSave": "保存订阅设置",
   "siteConfig.contentSubscriptionSaveHint":
     "SMTP Host、端口、发件地址至少需要填写完整，订阅邮件任务才会真正发出。",
+  "siteConfig.commentFeedbackEnabled": "开启评论反馈",
+  "siteConfig.commentFeedbackConfigHint":
+    "别人回复用户评论并通过审核后，会按下面模板发送邮件提醒。",
+  "siteConfig.commentFeedbackSetupGuide":
+    "可先保存评论反馈配置；邮箱未完成试发前不会实际发送提醒。",
+  "siteConfig.commentFeedbackServiceNotConfigured": "评论反馈邮件服务未配置",
+  "siteConfig.commentFeedbackAdvancedTitle": "评论反馈邮件配置",
+  "siteConfig.commentFeedbackSubjectTemplate": "反馈邮件标题模板",
+  "siteConfig.commentFeedbackBodyTemplate": "反馈邮件正文模板",
+  "siteConfig.commentFeedbackPlaceholderHelpLabel": "可用占位符说明",
+  "siteConfig.commentFeedbackPlaceholderHelpTitle": "评论反馈模板占位符说明",
+  "siteConfig.commentFeedbackPlaceholderHelpDescription":
+    "在评论反馈邮件标题和正文中可使用以下占位符，发送时系统会自动替换为对应内容。",
+  "siteConfig.commentFeedbackPlaceholderHelpUsageTitle": "占位符列表",
+  "siteConfig.commentFeedbackPlaceholderHelpSiteName": "{site_name}：站点名称",
+  "siteConfig.commentFeedbackPlaceholderHelpContentType":
+    "{content_type}：评论所在内容类型",
+  "siteConfig.commentFeedbackPlaceholderHelpContentSlug":
+    "{content_slug}：评论所在内容标识",
+  "siteConfig.commentFeedbackPlaceholderHelpContentPath":
+    "{content_path}：评论所在页面路径",
+  "siteConfig.commentFeedbackPlaceholderHelpParentAuthor":
+    "{parent_author_name}：被回复评论的作者",
+  "siteConfig.commentFeedbackPlaceholderHelpParentComment":
+    "{parent_comment}：被回复评论内容",
+  "siteConfig.commentFeedbackPlaceholderHelpReplyAuthor":
+    "{reply_author_name}：回复者名称",
+  "siteConfig.commentFeedbackPlaceholderHelpReplyContent":
+    "{reply_content}：回复内容",
+  "siteConfig.commentFeedbackPlaceholderHelpCommentUrl":
+    "{comment_url}：可点击的回复定位链接",
   "siteConfig.smtpHost": "SMTP 主机",
   "siteConfig.smtpPort": "SMTP 端口",
   "siteConfig.smtpAuthMode": "认证方式",

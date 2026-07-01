@@ -42,4 +42,10 @@ export interface ContentSubscriptionConfigAdminUpdate {
   mail_subject_template?: string | null;
   /** Email body template */
   mail_body_template?: string | null;
+  /** Whether comment reply feedback emails are enabled */
+  comment_feedback_enabled?: boolean | null;
+  /** Comment feedback email subject template */
+  comment_feedback_subject_template?: string | null;
+  /** Comment feedback email body template */
+  comment_feedback_body_template?: string | null;
 }

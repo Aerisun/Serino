@@ -48,6 +48,12 @@ export interface ContentSubscriptionConfigAdminRead {
   mail_subject_template: unknown;
   /** Email body template */
   mail_body_template: unknown;
+  /** Whether comment reply feedback emails are enabled */
+  comment_feedback_enabled: unknown;
+  /** Comment feedback email subject template */
+  comment_feedback_subject_template: unknown;
+  /** Comment feedback email body template */
+  comment_feedback_body_template: unknown;
   /** Number of active subscribers */
   subscriber_count?: unknown;
   /** Creation time */

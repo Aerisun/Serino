@@ -17,6 +17,8 @@ class GuestbookEntryRead(ModelBase):
     avatar: str | None = Field(default=None, description="Avatar identifier or key")
     avatar_url: str | None = Field(default=None, description="Full avatar image URL")
     is_author: bool = Field(default=False, description="Whether the guestbook author is the site owner")
+    owned_by_current_user: bool = Field(default=False, description="Whether the current user owns this entry")
+    can_delete: bool = Field(default=False, description="Whether the current user can delete this entry")
 
 
 class GuestbookCreate(ModelBase):
@@ -30,6 +32,10 @@ class GuestbookCreate(ModelBase):
 
 class GuestbookCollectionRead(ModelBase):
     items: list[GuestbookEntryRead] = Field(description="List of guestbook entries")
+    pending_items: list[GuestbookEntryRead] = Field(
+        default_factory=list,
+        description="Pending entries visible to the current authenticated author",
+    )
     total: int = Field(description="Total number of public guestbook entries")
     page: int = Field(description="Current page number")
     page_size: int = Field(description="Number of guestbook entries per page")
@@ -53,12 +59,24 @@ class CommentRead(ModelBase):
     like_count: int = Field(default=0, description="Number of likes on this comment")
     liked: bool = Field(default=False, description="Whether the current user liked this comment")
     is_author: bool = Field(default=False, description="Whether the commenter is the content author")
+    owned_by_current_user: bool = Field(default=False, description="Whether the current user owns this comment")
+    can_delete: bool = Field(default=False, description="Whether the current user can delete this comment")
+    feedback_enabled: bool = Field(default=True, description="Whether reply feedback emails are enabled")
+    can_update_feedback: bool = Field(
+        default=False,
+        description="Whether the current user can update reply feedback for this comment",
+    )
     replies: list[CommentRead] = Field(default_factory=list, description="Nested reply comments")
 
 
 class CommentCollectionRead(ModelBase):
     items: list[CommentRead] = Field(description="List of comments")
+    pending_items: list[CommentRead] = Field(
+        default_factory=list,
+        description="Pending comments visible to the current authenticated author",
+    )
     total: int = Field(description="Total number of root comment threads")
+    comment_total: int = Field(description="Total number of public comments including replies")
     page: int = Field(description="Current page number")
     page_size: int = Field(description="Number of root comment threads per page")
     has_more: bool = Field(description="Whether more root comment threads can be loaded")
@@ -71,6 +89,11 @@ class CommentCreate(ModelBase):
     parent_id: str | None = Field(default=None, description="Parent comment ID for replies")
     avatar_key: str | None = Field(default=None, description="Selected comment avatar preset key")
     auth_token: str | None = Field(default=None, description="Waline login token for authenticated posting")
+    feedback_enabled: bool = Field(default=True, description="Whether reply feedback emails are enabled")
+
+
+class CommentFeedbackUpdate(ModelBase):
+    feedback_enabled: bool = Field(description="Whether reply feedback emails are enabled")
 
 
 class CommentCreateResponse(ModelBase):

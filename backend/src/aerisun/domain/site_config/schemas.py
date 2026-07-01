@@ -134,6 +134,10 @@ class CommunityConfigRead(ModelBase):
     emoji_presets: list[str] = Field(description="Emoji preset CDN URLs")
     image_uploader: bool = Field(description="Image uploads allowed")
     anonymous_enabled: bool = Field(description="Whether email login is allowed for commenting")
+    comment_feedback_enabled: bool = Field(
+        default=False,
+        description="Whether comment reply feedback controls are available",
+    )
     moderation_mode: str = Field(description="Moderation mode")
     default_sorting: str = Field(description="Default sort order")
     page_size: int = Field(description="Initial comments loaded per batch")

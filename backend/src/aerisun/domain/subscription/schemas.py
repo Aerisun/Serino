@@ -56,6 +56,9 @@ class ContentSubscriptionConfigAdminRead(ModelBase):
     allowed_content_types: list[str] = Field(description="Content types users can subscribe to")
     mail_subject_template: str = Field(description="Email subject template")
     mail_body_template: str = Field(description="Email body template")
+    comment_feedback_enabled: bool = Field(description="Whether comment reply feedback emails are enabled")
+    comment_feedback_subject_template: str = Field(description="Comment feedback email subject template")
+    comment_feedback_body_template: str = Field(description="Comment feedback email body template")
     subscriber_count: int = Field(default=0, description="Number of active subscribers")
     created_at: datetime = Field(description="Creation time")
     updated_at: datetime = Field(description="Last update time")
@@ -82,6 +85,18 @@ class ContentSubscriptionConfigAdminUpdate(BaseModel):
     allowed_content_types: list[str] | None = Field(default=None, description="Content types users can subscribe to")
     mail_subject_template: str | None = Field(default=None, description="Email subject template")
     mail_body_template: str | None = Field(default=None, description="Email body template")
+    comment_feedback_enabled: bool | None = Field(
+        default=None,
+        description="Whether comment reply feedback emails are enabled",
+    )
+    comment_feedback_subject_template: str | None = Field(
+        default=None,
+        description="Comment feedback email subject template",
+    )
+    comment_feedback_body_template: str | None = Field(
+        default=None,
+        description="Comment feedback email body template",
+    )
 
 
 class ContentSubscriptionTestResult(BaseModel):

@@ -16,6 +16,10 @@ export interface CommentAdminRead {
   auth_provider?: unknown;
   body: unknown;
   status: unknown;
+  /** Whether reply feedback emails are enabled */
+  feedback_enabled?: unknown;
+  /** Reason when a public self-delete rejected this item */
+  deletion_reason?: unknown;
   created_at: unknown;
   updated_at: unknown;
 }

@@ -13,12 +13,16 @@ from aerisun.domain.exceptions import StateConflict, ValidationError
 
 WALINE_GUESTBOOK_PATH = "/guestbook"
 WALINE_REACTION_COLUMNS = tuple(f"reaction{index}" for index in range(9))
+WALINE_DELETION_REASON_SELF = "self_deleted"
+WALINE_DELETION_REASON_CASCADE = "cascade_deleted"
+WALINE_DELETION_REASONS = {WALINE_DELETION_REASON_SELF, WALINE_DELETION_REASON_CASCADE}
 
 
 @dataclass(slots=True)
 class WalineCommentRecord:
     id: int
     user_id: int | None
+    site_user_id: str | None
     comment: str
     inserted_at: datetime
     ip: str
@@ -34,6 +38,9 @@ class WalineCommentRecord:
     url: str
     avatar_key: str | None
     avatar_url: str | None
+    feedback_enabled: bool
+    feedback_sent_at: datetime | None
+    deletion_reason: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -185,6 +192,7 @@ def ensure_waline_schema(connection: sqlite3.Connection) -> None:
             "like" INTEGER DEFAULT NULL,
             ua TEXT,
             url VARCHAR(255) NOT NULL DEFAULT '',
+            deletion_reason VARCHAR(40) DEFAULT NULL,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -251,6 +259,15 @@ def ensure_waline_schema(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE wl_comment ADD COLUMN avatar VARCHAR(255) DEFAULT NULL")
     if "avatar_key" not in comment_columns:
         connection.execute("ALTER TABLE wl_comment ADD COLUMN avatar_key VARCHAR(80) DEFAULT NULL")
+    if "site_user_id" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN site_user_id VARCHAR(36) DEFAULT NULL")
+    if "feedback_enabled" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN feedback_enabled INTEGER NOT NULL DEFAULT 1")
+    if "feedback_sent_at" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN feedback_sent_at TEXT DEFAULT NULL")
+    if "deletion_reason" not in comment_columns:
+        connection.execute("ALTER TABLE wl_comment ADD COLUMN deletion_reason VARCHAR(40) DEFAULT NULL")
+    connection.execute("CREATE INDEX IF NOT EXISTS idx_wl_comment_site_user_id ON wl_comment (site_user_id)")
 
 
 def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
@@ -258,6 +275,7 @@ def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
     return WalineCommentRecord(
         id=int(row["id"]),
         user_id=row["user_id"],
+        site_user_id=str(row["site_user_id"]) if "site_user_id" in columns and row["site_user_id"] else None,
         comment=row["comment"] or "",
         inserted_at=_parse_sql_timestamp(row["insertedAt"]),
         ip=row["ip"] or "",
@@ -273,6 +291,17 @@ def _row_to_record(row: sqlite3.Row) -> WalineCommentRecord:
         url=row["url"] or "",
         avatar_key=str(row["avatar_key"]) if "avatar_key" in columns and row["avatar_key"] else None,
         avatar_url=str(row["avatar"]) if "avatar" in columns and row["avatar"] else None,
+        feedback_enabled=bool(row["feedback_enabled"]) if "feedback_enabled" in columns else True,
+        feedback_sent_at=(
+            _parse_sql_timestamp(str(row["feedback_sent_at"]))
+            if "feedback_sent_at" in columns and row["feedback_sent_at"]
+            else None
+        ),
+        deletion_reason=(
+            str(row["deletion_reason"])
+            if "deletion_reason" in columns and row["deletion_reason"] in WALINE_DELETION_REASONS
+            else None
+        ),
         created_at=_parse_sql_timestamp(row["createdAt"]),
         updated_at=_parse_sql_timestamp(row["updatedAt"]),
     )
@@ -689,6 +718,53 @@ def update_waline_comment_avatars(
         connection.commit()
 
 
+def update_waline_comment_feedback(
+    *,
+    record_id: int,
+    feedback_enabled: bool,
+    db_path: Path | None = None,
+) -> WalineCommentRecord | None:
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        if row is None:
+            return None
+        connection.execute(
+            """
+            UPDATE wl_comment
+            SET feedback_enabled = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (1 if feedback_enabled else 0, record_id),
+        )
+        connection.commit()
+        updated = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        return _row_to_record(updated) if updated is not None else None
+
+
+def mark_waline_feedback_sent(
+    *,
+    record_id: int,
+    sent_at: datetime | None = None,
+    db_path: Path | None = None,
+) -> WalineCommentRecord | None:
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        if row is None:
+            return None
+        timestamp = _to_sql_timestamp(sent_at)
+        connection.execute(
+            """
+            UPDATE wl_comment
+            SET feedback_sent_at = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (timestamp, record_id),
+        )
+        connection.commit()
+        updated = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        return _row_to_record(updated) if updated is not None else None
+
+
 def sync_site_user_comment_profile(
     *,
     site_user_id: str,
@@ -746,8 +822,10 @@ def create_waline_record(
     status: str,
     url: str,
     parent_id: int | None = None,
+    site_user_id: str | None = None,
     avatar_key: str | None = None,
     avatar_url: str | None = None,
+    feedback_enabled: bool = True,
     created_at: datetime | None = None,
     updated_at: datetime | None = None,
     inserted_at: datetime | None = None,
@@ -768,8 +846,10 @@ def create_waline_record(
             url=url,
             parent_id=parent_id,
             root_id=root_id,
+            site_user_id=site_user_id,
             avatar_key=avatar_key,
             avatar_url=avatar_url,
+            feedback_enabled=feedback_enabled,
             created_at=created_at,
             updated_at=updated_at,
             inserted_at=inserted_at,
@@ -777,11 +857,13 @@ def create_waline_record(
         cursor = connection.execute(
             """
             INSERT INTO wl_comment (
-                user_id, comment, insertedAt, ip, link, mail, nick, pid, rid,
-                sticky, status, "like", ua, url, avatar, avatar_key, createdAt, updatedAt
+                user_id, site_user_id, comment, insertedAt, ip, link, mail, nick, pid, rid,
+                sticky, status, "like", ua, url, avatar, avatar_key,
+                feedback_enabled, deletion_reason, createdAt, updatedAt
             ) VALUES (
-                :user_id, :comment, :insertedAt, :ip, :link, :mail, :nick, :pid, :rid,
-                :sticky, :status, :like, :ua, :url, :avatar, :avatar_key, :createdAt, :updatedAt
+                :user_id, :site_user_id, :comment, :insertedAt, :ip, :link, :mail, :nick, :pid, :rid,
+                :sticky, :status, :like, :ua, :url, :avatar, :avatar_key,
+                :feedback_enabled, :deletion_reason, :createdAt, :updatedAt
             )
             """,
             row,
@@ -830,6 +912,46 @@ def list_waline_record_tree(record_id: int, db_path: Path | None = None) -> list
         return [_row_to_record(row) for row in rows]
 
 
+def mark_waline_record_tree_rejected(
+    *,
+    record_id: int,
+    root_reason: str = WALINE_DELETION_REASON_SELF,
+    child_reason: str = WALINE_DELETION_REASON_CASCADE,
+    db_path: Path | None = None,
+) -> WalineCommentRecord | None:
+    if root_reason not in WALINE_DELETION_REASONS or child_reason not in WALINE_DELETION_REASONS:
+        raise ValidationError("Invalid deletion reason")
+
+    with connect_waline_db(db_path) as connection:
+        row = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        if row is None:
+            return None
+
+        ids = _collect_descendant_ids(connection, record_id)
+        child_ids = [item_id for item_id in ids if item_id != record_id]
+        connection.execute(
+            """
+            UPDATE wl_comment
+            SET status = 'spam', deletion_reason = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (root_reason, record_id),
+        )
+        if child_ids:
+            placeholders = ",".join("?" for _ in child_ids)
+            connection.execute(
+                f"""
+                UPDATE wl_comment
+                SET status = 'spam', deletion_reason = ?, updatedAt = CURRENT_TIMESTAMP
+                WHERE id IN ({placeholders})
+                """,
+                [child_reason, *child_ids],
+            )
+        connection.commit()
+        updated = connection.execute("SELECT * FROM wl_comment WHERE id = ?", (record_id,)).fetchone()
+        return _row_to_record(updated) if updated else None
+
+
 def waline_comment_body_references(text: str, db_path: Path | None = None) -> bool:
     needle = str(text or "").strip()
     if not needle:
@@ -866,6 +988,8 @@ def moderate_waline_record(
 
         normalized = _normalize_status(action)
         if action == "approve":
+            if row["deletion_reason"] in WALINE_DELETION_REASONS:
+                raise ValidationError("Deleted-by-user comments cannot be approved again")
             normalized = "approved"
         elif action == "reject":
             normalized = "spam"
@@ -873,7 +997,12 @@ def moderate_waline_record(
         connection.execute(
             """
             UPDATE wl_comment
-            SET status = ?, updatedAt = CURRENT_TIMESTAMP
+            SET status = ?,
+                deletion_reason = CASE
+                    WHEN deletion_reason IN ('self_deleted', 'cascade_deleted') THEN deletion_reason
+                    ELSE NULL
+                END,
+                updatedAt = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
             (normalized, record_id),
@@ -893,8 +1022,10 @@ def make_waline_comment_row(
     url: str,
     parent_id: int | None = None,
     root_id: int | None = None,
+    site_user_id: str | None = None,
     avatar_key: str | None = None,
     avatar_url: str | None = None,
+    feedback_enabled: bool = True,
     created_at: datetime | None = None,
     updated_at: datetime | None = None,
     inserted_at: datetime | None = None,
@@ -903,6 +1034,7 @@ def make_waline_comment_row(
 ) -> dict[str, object]:
     return {
         "user_id": None,
+        "site_user_id": site_user_id,
         "comment": comment,
         "insertedAt": _to_sql_timestamp(inserted_at or created_at),
         "ip": ip,
@@ -918,6 +1050,8 @@ def make_waline_comment_row(
         "url": url,
         "avatar": avatar_url,
         "avatar_key": avatar_key,
+        "feedback_enabled": 1 if feedback_enabled else 0,
+        "deletion_reason": None,
         "createdAt": _to_sql_timestamp(created_at),
         "updatedAt": _to_sql_timestamp(updated_at),
     }

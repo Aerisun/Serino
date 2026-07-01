@@ -1459,6 +1459,22 @@
               "default": 20,
               "title": "Page Size"
             }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
           }
         ],
         "responses": {
@@ -1542,6 +1558,57 @@
         }
       }
     },
+    "/api/v1/site-interactions/guestbook/{entry_id}": {
+      "delete": {
+        "tags": [
+          "site-interactions"
+        ],
+        "summary": "删除自己的留言",
+        "operationId": "delete_guestbook_entry_api_v1_site_interactions_guestbook__entry_id__delete",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/site-interactions/comments/{content_type}/{slug}": {
       "get": {
         "tags": [
@@ -1589,6 +1656,22 @@
               "minimum": 1,
               "default": 20,
               "title": "Page Size"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
             }
           }
         ],
@@ -1674,6 +1757,126 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CommentCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-interactions/comments/{comment_id}": {
+      "delete": {
+        "tags": [
+          "site-interactions"
+        ],
+        "summary": "删除自己的评论",
+        "operationId": "delete_comment_api_v1_site_interactions_comments__comment_id__delete",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Comment Id"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/site-interactions/comments/{comment_id}/feedback": {
+      "patch": {
+        "tags": [
+          "site-interactions"
+        ],
+        "summary": "更新自己的评论反馈设置",
+        "operationId": "update_comment_feedback_api_v1_site_interactions_comments__comment_id__feedback_patch",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Comment Id"
+            }
+          },
+          {
+            "name": "aerisun_site_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aerisun Site Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentFeedbackUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentRead",
+                  "description": "Created comment"
                 }
               }
             }
@@ -8515,6 +8718,64 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ModerateAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentAdminRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/moderation/comments/{comment_id}/feedback": {
+      "patch": {
+        "tags": [
+          "admin",
+          "admin-moderation"
+        ],
+        "summary": "修改评论反馈设置",
+        "operationId": "update_comment_feedback_endpoint_api_v1_admin_moderation_comments__comment_id__feedback_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Comment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentFeedbackUpdate"
               }
             }
           }
@@ -17956,6 +18217,14 @@
           "status": {
             "title": "Status"
           },
+          "feedback_enabled": {
+            "title": "Feedback Enabled",
+            "description": "Whether reply feedback emails are enabled"
+          },
+          "deletion_reason": {
+            "title": "Deletion Reason",
+            "description": "Reason when a public self-delete rejected this item"
+          },
           "created_at": {
             "title": "Created At"
           },
@@ -17984,9 +18253,17 @@
             "title": "Items",
             "description": "List of comments"
           },
+          "pending_items": {
+            "title": "Pending Items",
+            "description": "Pending comments visible to the current authenticated author"
+          },
           "total": {
             "title": "Total",
             "description": "Total number of root comment threads"
+          },
+          "comment_total": {
+            "title": "Comment Total",
+            "description": "Total number of public comments including replies"
           },
           "page": {
             "title": "Page",
@@ -18005,6 +18282,7 @@
         "required": [
           "items",
           "total",
+          "comment_total",
           "page",
           "page_size",
           "has_more"
@@ -18070,6 +18348,12 @@
             ],
             "title": "Auth Token",
             "description": "Waline login token for authenticated posting"
+          },
+          "feedback_enabled": {
+            "type": "boolean",
+            "title": "Feedback Enabled",
+            "description": "Whether reply feedback emails are enabled",
+            "default": true
           }
         },
         "type": "object",
@@ -18095,6 +18379,20 @@
           "accepted"
         ],
         "title": "CommentCreateResponse"
+      },
+      "CommentFeedbackUpdate": {
+        "properties": {
+          "feedback_enabled": {
+            "type": "boolean",
+            "title": "Feedback Enabled",
+            "description": "Whether reply feedback emails are enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feedback_enabled"
+        ],
+        "title": "CommentFeedbackUpdate"
       },
       "CommentImageUploadData": {
         "properties": {
@@ -18174,6 +18472,22 @@
           "is_author": {
             "title": "Is Author",
             "description": "Whether the commenter is the content author"
+          },
+          "owned_by_current_user": {
+            "title": "Owned By Current User",
+            "description": "Whether the current user owns this comment"
+          },
+          "can_delete": {
+            "title": "Can Delete",
+            "description": "Whether the current user can delete this comment"
+          },
+          "feedback_enabled": {
+            "title": "Feedback Enabled",
+            "description": "Whether reply feedback emails are enabled"
+          },
+          "can_update_feedback": {
+            "title": "Can Update Feedback",
+            "description": "Whether the current user can update reply feedback for this comment"
           },
           "replies": {
             "title": "Replies",
@@ -18326,6 +18640,10 @@
           "anonymous_enabled": {
             "title": "Anonymous Enabled",
             "description": "Whether email login is allowed for commenting"
+          },
+          "comment_feedback_enabled": {
+            "title": "Comment Feedback Enabled",
+            "description": "Whether comment reply feedback controls are available"
           },
           "moderation_mode": {
             "title": "Moderation Mode",
@@ -19514,6 +19832,18 @@
             "title": "Mail Body Template",
             "description": "Email body template"
           },
+          "comment_feedback_enabled": {
+            "title": "Comment Feedback Enabled",
+            "description": "Whether comment reply feedback emails are enabled"
+          },
+          "comment_feedback_subject_template": {
+            "title": "Comment Feedback Subject Template",
+            "description": "Comment feedback email subject template"
+          },
+          "comment_feedback_body_template": {
+            "title": "Comment Feedback Body Template",
+            "description": "Comment feedback email body template"
+          },
           "subscriber_count": {
             "title": "Subscriber Count",
             "description": "Number of active subscribers"
@@ -19550,6 +19880,9 @@
           "allowed_content_types",
           "mail_subject_template",
           "mail_body_template",
+          "comment_feedback_enabled",
+          "comment_feedback_subject_template",
+          "comment_feedback_body_template",
           "created_at",
           "updated_at"
         ],
@@ -19779,6 +20112,42 @@
             ],
             "title": "Mail Body Template",
             "description": "Email body template"
+          },
+          "comment_feedback_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Feedback Enabled",
+            "description": "Whether comment reply feedback emails are enabled"
+          },
+          "comment_feedback_subject_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Feedback Subject Template",
+            "description": "Comment feedback email subject template"
+          },
+          "comment_feedback_body_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment Feedback Body Template",
+            "description": "Comment feedback email body template"
           }
         },
         "type": "object",
@@ -21076,6 +21445,10 @@
           "status": {
             "title": "Status"
           },
+          "deletion_reason": {
+            "title": "Deletion Reason",
+            "description": "Reason when a public self-delete rejected this item"
+          },
           "created_at": {
             "title": "Created At"
           },
@@ -21101,6 +21474,10 @@
           "items": {
             "title": "Items",
             "description": "List of guestbook entries"
+          },
+          "pending_items": {
+            "title": "Pending Items",
+            "description": "Pending entries visible to the current authenticated author"
           },
           "total": {
             "title": "Total",
@@ -21251,6 +21628,14 @@
           "is_author": {
             "title": "Is Author",
             "description": "Whether the guestbook author is the site owner"
+          },
+          "owned_by_current_user": {
+            "title": "Owned By Current User",
+            "description": "Whether the current user owns this entry"
+          },
+          "can_delete": {
+            "title": "Can Delete",
+            "description": "Whether the current user can delete this entry"
           }
         },
         "type": "object",

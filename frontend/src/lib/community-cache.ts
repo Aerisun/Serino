@@ -15,7 +15,9 @@ interface CacheEnvelope<T> {
 
 interface CommunityPagePayload<T> {
   items: T[];
+  pendingItems: T[];
   hasMore: boolean;
+  total: number;
   page: number;
   pageSize: number;
 }
@@ -23,6 +25,7 @@ interface CommunityPagePayload<T> {
 interface PageCacheParams {
   page: number;
   pageSize: number;
+  viewerKey: string;
 }
 
 interface CommentPageCacheParams extends PageCacheParams {
@@ -128,11 +131,14 @@ const loadCachedValue = async <T,>(
   return request;
 };
 
-const buildGuestbookCacheKey = ({ page, pageSize }: PageCacheParams) =>
-  `${COMMUNITY_CACHE_KEY_PREFIX}guestbook:${page}:${pageSize}`;
+const buildGuestbookCacheKey = ({ page, pageSize, viewerKey }: PageCacheParams) =>
+  `${COMMUNITY_CACHE_KEY_PREFIX}guestbook:${viewerKey}:${page}:${pageSize}`;
 
-const buildCommentCacheKey = ({ surface, slug, page, pageSize }: CommentPageCacheParams) =>
-  `${COMMUNITY_CACHE_KEY_PREFIX}${surface}:${encodeURIComponent(slug)}:${page}:${pageSize}`;
+const buildCommentCacheKey = ({ surface, slug, page, pageSize, viewerKey }: CommentPageCacheParams) =>
+  `${COMMUNITY_CACHE_KEY_PREFIX}${surface}:${encodeURIComponent(slug)}:${viewerKey}:${page}:${pageSize}`;
+
+const readCommentTotal = (data: { comment_total?: unknown; total?: unknown }) =>
+  Number(data.comment_total ?? data.total ?? 0);
 
 export const readCachedGuestbookPage = (params: PageCacheParams) =>
   readCachedValue<CommunityPagePayload<CommunityGuestbookItem>>(buildGuestbookCacheKey(params));
@@ -154,7 +160,9 @@ export const primeGuestbookPage = async (
 
       return {
         items: (response.data.items ?? []) as CommunityGuestbookItem[],
+        pendingItems: (response.data.pending_items ?? []) as CommunityGuestbookItem[],
         hasMore: Boolean(response.data.has_more),
+        total: Number(response.data.total ?? 0),
         page: params.page,
         pageSize: params.pageSize,
       };
@@ -180,7 +188,9 @@ export const primeCommentPage = async (
 
       return {
         items: (response.data.items ?? []) as CommunityCommentItem[],
+        pendingItems: (response.data.pending_items ?? []) as CommunityCommentItem[],
         hasMore: Boolean(response.data.has_more),
+        total: readCommentTotal(response.data),
         page: params.page,
         pageSize: params.pageSize,
       };

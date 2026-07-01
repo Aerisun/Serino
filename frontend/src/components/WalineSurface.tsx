@@ -3,6 +3,9 @@ import { PencilLine, Sparkles } from "lucide-react";
 import {
   createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost,
   createGuestbookApiV1SiteInteractionsGuestbookPost,
+  deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete,
+  deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete,
+  updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch,
   uploadCommentImageApiV1SiteInteractionsCommentImagePost,
 } from "@serino/api-client/site-interactions";
 import {
@@ -29,6 +32,7 @@ import {
   buildAvatarPresets,
   buildDefaultAvatarPreset,
   collectAvatarUsage,
+  countCommentTree,
   EMOJI_CHOICES,
   insertTextAtSelection,
   normalizeName,
@@ -49,7 +53,9 @@ import "./WalineSurface.css";
 
 interface CommunityPageSnapshot<T> {
   items: T[];
+  pendingItems: T[];
   hasMore: boolean;
+  total: number;
   page: number;
 }
 
@@ -74,11 +80,49 @@ const sanitizeMarkdownImageAlt = (value: string) =>
 
 const countCommentImages = (body: string) => body.match(COMMENT_MARKDOWN_IMAGE_RE)?.length ?? 0;
 
+const removeCommentFromTree = (items: CommunityCommentItem[], commentId: string): CommunityCommentItem[] =>
+  items
+    .filter((item) => item.id !== commentId)
+    .map((item) => ({
+      ...item,
+      replies: removeCommentFromTree(item.replies ?? [], commentId),
+    }));
+
+const findCommentInTree = (
+  items: CommunityCommentItem[],
+  commentId: string,
+): CommunityCommentItem | null => {
+  for (const item of items) {
+    if (item.id === commentId) {
+      return item;
+    }
+    const found = findCommentInTree(item.replies ?? [], commentId);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+};
+
+const updateCommentInTree = (
+  items: CommunityCommentItem[],
+  commentId: string,
+  updater: (item: CommunityCommentItem) => CommunityCommentItem,
+): CommunityCommentItem[] =>
+  items.map((item) => {
+    const nextItem = item.id === commentId ? updater(item) : item;
+    return {
+      ...nextItem,
+      replies: updateCommentInTree(nextItem.replies ?? [], commentId, updater),
+    };
+  });
+
 export interface WalineSurfaceProps {
   surface: CommunitySurface;
   slug?: string;
   className?: string;
   communityConfig?: CommunityConfig | null;
+  onVisibleCountChange?: (count: number) => void;
 }
 
 const WalineSurface = ({
@@ -86,6 +130,7 @@ const WalineSurface = ({
   slug,
   className,
   communityConfig,
+  onVisibleCountChange,
 }: WalineSurfaceProps) => {
   const prefersReducedMotion = useReducedMotionPreference();
   const { t } = useFrontendI18n();
@@ -123,8 +168,11 @@ const WalineSurface = ({
   const [guestbookEntries, setGuestbookEntries] = useState<CommunityGuestbookItem[]>([]);
   const [loadedPageCount, setLoadedPageCount] = useState(1);
   const [hasMoreEntries, setHasMoreEntries] = useState(false);
+  const [entryTotal, setEntryTotal] = useState(0);
   const [pendingComments, setPendingComments] = useState<CommunityCommentItem[]>([]);
   const [pendingGuestbookEntries, setPendingGuestbookEntries] = useState<CommunityGuestbookItem[]>([]);
+  const [feedbackEnabled, setFeedbackEnabled] = useState(true);
+  const [busyItemIds, setBusyItemIds] = useState<Set<string>>(() => new Set());
   const [draft, setDraft] = useState<DraftState>(() => {
     const storedDraft = readStoredDraft(storageKey);
     return {
@@ -171,7 +219,7 @@ const WalineSurface = ({
 
     let active = true;
     setLoadingConfig(true);
-    void loadCommunityConfig()
+    void loadCommunityConfig({ cache: "no-store" })
       .then((nextConfig) => {
         if (!active) return;
         setConfig(nextConfig);
@@ -189,6 +237,7 @@ const WalineSurface = ({
 
   const resolvedConfig = config ?? DEFAULT_COMMUNITY_CONFIG;
   const imageUploadsEnabled = resolvedConfig.image_uploader;
+  const commentFeedbackAvailable = !isGuestbook && resolvedConfig.comment_feedback_enabled;
   const requiresAuthentication = true;
   const commentEmailLoginEnabled = resolvedConfig.anonymous_enabled && siteAuthEmailLoginEnabled;
   const oauthProviderLabels = useMemo(
@@ -217,6 +266,7 @@ const WalineSurface = ({
         : null,
     [siteUser],
   );
+  const viewerCacheKey = authSession ? `user:${authSession.objectId}` : "anon";
   const [avatarPresets, setAvatarPresets] = useState<import("@/lib/community-config").AvatarPreset[]>([]);
   const defaultAvatarPreset = useMemo(
     () => buildDefaultAvatarPreset(draft.email || draft.name),
@@ -264,19 +314,27 @@ const WalineSurface = ({
     const orderedPages = [...pages].sort((left, right) => left.page - right.page);
     const lastPage = orderedPages.at(-1);
     const mergedItems = orderedPages.flatMap((page) => page.items);
+    const pendingItems = orderedPages.find((page) => page.page === 1)?.pendingItems ?? [];
 
     if (isGuestbook) {
       setGuestbookEntries(
         sortGuestbookEntries(mergedItems as CommunityGuestbookItem[], resolvedConfig.default_sorting),
       );
+      setPendingGuestbookEntries(
+        sortGuestbookEntries(pendingItems as CommunityGuestbookItem[], resolvedConfig.default_sorting),
+      );
     } else {
       setComments(
         sortComments(mergedItems as CommunityCommentItem[], resolvedConfig.default_sorting),
+      );
+      setPendingComments(
+        sortComments(pendingItems as CommunityCommentItem[], resolvedConfig.default_sorting),
       );
     }
 
     setLoadedPageCount(lastPage?.page ?? 1);
     setHasMoreEntries(Boolean(lastPage?.hasMore));
+    setEntryTotal(lastPage?.total ?? 0);
   }, [isGuestbook, resolvedConfig.default_sorting]);
 
   const readCachedPages = useCallback((requestedPageCount: number) => {
@@ -284,13 +342,14 @@ const WalineSurface = ({
 
     for (let page = 1; page <= requestedPageCount; page += 1) {
       const cached = isGuestbook
-        ? readCachedGuestbookPage({ page, pageSize: initialPageSize })
+        ? readCachedGuestbookPage({ page, pageSize: initialPageSize, viewerKey: viewerCacheKey })
         : slug
           ? readCachedCommentPage({
               surface,
               slug,
               page,
               pageSize: initialPageSize,
+              viewerKey: viewerCacheKey,
             })
           : null;
 
@@ -300,7 +359,9 @@ const WalineSurface = ({
 
       pages.push({
         items: cached.items,
+        pendingItems: cached.pendingItems ?? [],
         hasMore: cached.hasMore,
+        total: cached.total ?? (isGuestbook ? cached.items.length : countCommentTree(cached.items as CommunityCommentItem[])),
         page: cached.page,
       });
 
@@ -310,7 +371,7 @@ const WalineSurface = ({
     }
 
     return pages;
-  }, [initialPageSize, isGuestbook, slug, surface]);
+  }, [initialPageSize, isGuestbook, slug, surface, viewerCacheKey]);
 
   const fetchEntryPage = useCallback(async (
     page: number,
@@ -318,13 +379,15 @@ const WalineSurface = ({
   ): Promise<CommunityPageSnapshot<CommunityCommentItem> | CommunityPageSnapshot<CommunityGuestbookItem>> => {
     if (isGuestbook) {
       const payload = await primeGuestbookPage(
-        { page, pageSize: initialPageSize },
+        { page, pageSize: initialPageSize, viewerKey: viewerCacheKey },
         { forceNetwork },
       );
 
       return {
         items: payload.items,
+        pendingItems: payload.pendingItems ?? [],
         hasMore: payload.hasMore,
+        total: payload.total,
         page: payload.page,
       };
     }
@@ -339,16 +402,19 @@ const WalineSurface = ({
         slug,
         page,
         pageSize: initialPageSize,
+        viewerKey: viewerCacheKey,
       },
       { forceNetwork },
     );
 
     return {
       items: payload.items,
+      pendingItems: payload.pendingItems ?? [],
       hasMore: payload.hasMore,
+      total: payload.total,
       page: payload.page,
     };
-  }, [initialPageSize, isGuestbook, slug, surface, t]);
+  }, [initialPageSize, isGuestbook, slug, surface, t, viewerCacheKey]);
 
   const loadEntries = useCallback(async (
     requestedPageCount = 1,
@@ -666,7 +732,11 @@ const WalineSurface = ({
         };
         const response = await createGuestbookApiV1SiteInteractionsGuestbookPost(payload as never);
         const created = response.data.item as CommunityGuestbookItem;
-        setPendingGuestbookEntries((current) => [created, ...current]);
+        if (created.status === "pending") {
+          setPendingGuestbookEntries((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+        } else {
+          setEntryTotal((current) => current + 1);
+        }
       } else {
         const payload = {
           author_name: authorName,
@@ -674,10 +744,15 @@ const WalineSurface = ({
           body: bodyForSubmit,
           parent_id: replyTarget?.id ?? null,
           avatar_key: avatarKey,
+          ...(commentFeedbackAvailable ? { feedback_enabled: feedbackEnabled } : {}),
         };
         const response = await createCommentApiV1SiteInteractionsCommentsContentTypeSlugPost(surface, slug ?? "", payload as never);
         const created = response.data.item as CommunityCommentItem;
-        setPendingComments((current) => [created, ...current]);
+        if (created.status === "pending") {
+          setPendingComments((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+        } else {
+          setEntryTotal((current) => current + 1);
+        }
       }
 
       setDraft((current) => ({ ...current, body: "" }));
@@ -696,9 +771,119 @@ const WalineSurface = ({
     } finally {
       setSubmitting(false);
     }
-  }, [authSession, draft, imageLimitMessageKey, isGuestbook, loadEntries, loadedPageCount, pendingCommentImages, requiresAuthentication, replyTarget, slug, surface, t]);
+  }, [authSession, commentFeedbackAvailable, draft, feedbackEnabled, imageLimitMessageKey, isGuestbook, loadEntries, loadedPageCount, pendingCommentImages, requiresAuthentication, replyTarget, slug, surface, t]);
+
+  const setItemBusy = useCallback((itemId: string, busy: boolean) => {
+    setBusyItemIds((current) => {
+      const next = new Set(current);
+      if (busy) {
+        next.add(itemId);
+      } else {
+        next.delete(itemId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    if (!window.confirm(t("waline.list.confirmDeleteComment"))) {
+      return;
+    }
+    setItemBusy(commentId, true);
+    setSubmitError(null);
+    const deletedComment = findCommentInTree(comments, commentId);
+    const deletedApprovedCount = deletedComment ? countCommentTree([deletedComment]) : 0;
+    try {
+      await deleteCommentApiV1SiteInteractionsCommentsCommentIdDelete(commentId);
+      setComments((current) => removeCommentFromTree(current, commentId));
+      setPendingComments((current) => removeCommentFromTree(current, commentId));
+      if (deletedApprovedCount > 0) {
+        setEntryTotal((current) => Math.max(0, current - deletedApprovedCount));
+      }
+      invalidateCommunityEntryCache(surface, slug);
+      startTransition(() => {
+        void loadEntries(loadedPageCount, {
+          silent: true,
+          forceNetwork: true,
+        });
+      });
+    } catch (error) {
+      setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
+    } finally {
+      setItemBusy(commentId, false);
+    }
+  }, [comments, loadEntries, loadedPageCount, setItemBusy, slug, surface, t]);
+
+  const handleDeleteGuestbookEntry = useCallback(async (entryId: string) => {
+    if (!window.confirm(t("waline.list.confirmDeleteGuestbook"))) {
+      return;
+    }
+    setItemBusy(entryId, true);
+    setSubmitError(null);
+    const deletedApprovedEntry = guestbookEntries.some((item) => item.id === entryId);
+    try {
+      await deleteGuestbookEntryApiV1SiteInteractionsGuestbookEntryIdDelete(entryId);
+      setGuestbookEntries((current) => current.filter((item) => item.id !== entryId));
+      setPendingGuestbookEntries((current) => current.filter((item) => item.id !== entryId));
+      if (deletedApprovedEntry) {
+        setEntryTotal((current) => Math.max(0, current - 1));
+      }
+      invalidateCommunityEntryCache(surface, slug);
+      startTransition(() => {
+        void loadEntries(loadedPageCount, {
+          silent: true,
+          forceNetwork: true,
+        });
+      });
+    } catch (error) {
+      setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
+    } finally {
+      setItemBusy(entryId, false);
+    }
+  }, [guestbookEntries, loadEntries, loadedPageCount, setItemBusy, slug, surface, t]);
+
+  const handleFeedbackChange = useCallback(async (commentId: string, enabled: boolean) => {
+    if (!commentFeedbackAvailable) {
+      return;
+    }
+    setItemBusy(commentId, true);
+    setSubmitError(null);
+    const updateLocal = (item: CommunityCommentItem): CommunityCommentItem => ({
+      ...item,
+      feedback_enabled: enabled,
+    });
+    setComments((current) => updateCommentInTree(current, commentId, updateLocal));
+    setPendingComments((current) => updateCommentInTree(current, commentId, updateLocal));
+    try {
+      const response = await updateCommentFeedbackApiV1SiteInteractionsCommentsCommentIdFeedbackPatch(
+        commentId,
+        { feedback_enabled: enabled } as never,
+      );
+      const updated = response.data as CommunityCommentItem;
+      setComments((current) => updateCommentInTree(current, commentId, () => updated));
+      setPendingComments((current) => updateCommentInTree(current, commentId, () => updated));
+      invalidateCommunityEntryCache(surface, slug);
+    } catch (error) {
+      const rollback = (item: CommunityCommentItem): CommunityCommentItem => ({
+        ...item,
+        feedback_enabled: !enabled,
+      });
+      setComments((current) => updateCommentInTree(current, commentId, rollback));
+      setPendingComments((current) => updateCommentInTree(current, commentId, rollback));
+      setSubmitError(resolveApiError(error, t("waline.common.requestFailed")));
+    } finally {
+      setItemBusy(commentId, false);
+    }
+  }, [commentFeedbackAvailable, setItemBusy, slug, surface, t]);
 
   const selectedPreset = avatarPresets.find((preset) => preset.key === draft.avatarKey) ?? avatarPresets[0] ?? null;
+  const visibleEntryCount = entryTotal + (
+    isGuestbook ? pendingGuestbookEntries.length : countCommentTree(pendingComments)
+  );
+  useEffect(() => {
+    onVisibleCountChange?.(visibleEntryCount);
+  }, [onVisibleCountChange, visibleEntryCount]);
+
   const toggleAvatarPicker = useCallback(() => {
     setAvatarPickerOpen((current) => {
       if (!current) {
@@ -745,6 +930,9 @@ const WalineSurface = ({
             onLogout={handleLogout}
             draft={draft}
             onFieldChange={handleFieldChange}
+            feedbackEnabled={feedbackEnabled}
+            commentFeedbackAvailable={commentFeedbackAvailable}
+            onFeedbackEnabledChange={setFeedbackEnabled}
             composerOpen={composerOpen}
             isGuestbook={isGuestbook}
             replyTarget={replyTarget}
@@ -794,7 +982,12 @@ const WalineSurface = ({
         pendingComments={pendingComments}
         pendingGuestbookEntries={pendingGuestbookEntries}
         hasMoreEntries={hasMoreEntries}
+        busyItemIds={busyItemIds}
+        commentFeedbackAvailable={commentFeedbackAvailable}
         onReply={setReplyTarget}
+        onDeleteComment={(commentId) => void handleDeleteComment(commentId)}
+        onDeleteGuestbookEntry={(entryId) => void handleDeleteGuestbookEntry(entryId)}
+        onFeedbackChange={(commentId, enabled) => void handleFeedbackChange(commentId, enabled)}
         onLoadMore={loadMoreEntries}
         onRetry={() => void loadEntries(loadedPageCount, { forceNetwork: true })}
         guestbookLoadingLabel={guestbookLoadingLabel}

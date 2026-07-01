@@ -77,6 +77,7 @@ import type {
   BulkStatusRequest,
   BulkVisibilityRequest,
   CommentAdminRead,
+  CommentFeedbackUpdate,
   CommunityConfigAdminRead,
   CommunityConfigUpdate,
   ConfigRevisionDetailRead,
@@ -10467,6 +10468,96 @@ export const useModerateCommentEndpointApiV1AdminModerationCommentsCommentIdMode
         TContext
       > => {
       return useMutation(getModerateCommentEndpointApiV1AdminModerationCommentsCommentIdModeratePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 修改评论反馈设置
+ */
+export type updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse200 = {
+  data: CommentAdminRead
+  status: 200
+}
+
+export type updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponseSuccess = (updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse200) & {
+  headers: Headers;
+};
+export type updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponseError = (updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse422) & {
+  headers: Headers;
+};
+
+export type updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse = (updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponseSuccess | updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponseError)
+
+export const getUpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchUrl = (commentId: string,) => {
+
+
+
+
+  return `/api/v1/admin/moderation/comments/${commentId}/feedback`
+}
+
+export const updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch = async (commentId: string,
+    commentFeedbackUpdate: CommentFeedbackUpdate, options?: RequestInit): Promise<updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse> => {
+
+  return customInstance<updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchResponse>(getUpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchUrl(commentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      commentFeedbackUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch>>, TError,{commentId: string;data: BodyType<CommentFeedbackUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch>>, TError,{commentId: string;data: BodyType<CommentFeedbackUpdate>}, TContext> => {
+
+const mutationKey = ['updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch>>, {commentId: string;data: BodyType<CommentFeedbackUpdate>}> = (props) => {
+          const {commentId,data} = props ?? {};
+
+          return  updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch(commentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchMutationResult = NonNullable<Awaited<ReturnType<typeof updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch>>>
+    export type UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchMutationBody = BodyType<CommentFeedbackUpdate>
+    export type UpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 修改评论反馈设置
+ */
+export const useUpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch>>, TError,{commentId: string;data: BodyType<CommentFeedbackUpdate>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatch>>,
+        TError,
+        {commentId: string;data: BodyType<CommentFeedbackUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCommentFeedbackEndpointApiV1AdminModerationCommentsCommentIdFeedbackPatchMutationOptions(options), queryClient);
     }
     /**
  * @summary 获取留言审核列表

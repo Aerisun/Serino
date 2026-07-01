@@ -337,6 +337,7 @@ export const warmGuestbookPage = async () => {
       1,
       config.page_size ?? DEFAULT_COMMUNITY_CONFIG.page_size,
     ),
+    viewerKey: "anon",
   });
 };
 

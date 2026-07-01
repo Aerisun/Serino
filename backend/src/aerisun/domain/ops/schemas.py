@@ -22,6 +22,8 @@ class CommentAdminRead(ModelBase):
     auth_provider: str | None = Field(default=None, description="Normalized auth provider")
     body: str
     status: str
+    feedback_enabled: bool = Field(default=True, description="Whether reply feedback emails are enabled")
+    deletion_reason: str | None = Field(default=None, description="Reason when a public self-delete rejected this item")
     created_at: datetime
     updated_at: datetime
 
@@ -34,6 +36,7 @@ class GuestbookAdminRead(ModelBase):
     website: str | None
     body: str
     status: str
+    deletion_reason: str | None = Field(default=None, description="Reason when a public self-delete rejected this item")
     created_at: datetime
     updated_at: datetime
 

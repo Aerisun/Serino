@@ -14,6 +14,8 @@ export interface GuestbookAdminRead {
   website: unknown;
   body: unknown;
   status: unknown;
+  /** Reason when a public self-delete rejected this item */
+  deletion_reason?: unknown;
   created_at: unknown;
   updated_at: unknown;
 }

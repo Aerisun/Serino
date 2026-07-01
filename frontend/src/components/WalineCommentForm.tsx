@@ -1,4 +1,4 @@
-import { type RefObject } from "react";
+import { useId, useState, type RefObject } from "react";
 import {
   ArrowUpRight,
   CornerDownRight,
@@ -9,7 +9,6 @@ import {
   PencilLine,
   Send,
   Smile,
-  Sparkles,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -46,6 +45,37 @@ interface PendingCommentImagePreview {
   alt: string;
 }
 
+const CommentFeedbackHelp = () => {
+  const { t } = useFrontendI18n();
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[rgb(var(--shiro-border-rgb)/0.2)] text-[0.68rem] font-semibold text-foreground/45 transition hover:border-[rgb(var(--shiro-accent-rgb)/0.24)] hover:text-[rgb(var(--shiro-accent-rgb)/0.82)]"
+        aria-label={t("waline.form.feedbackHelpAria")}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((current) => !current)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+      >
+        ?
+      </button>
+      {open ? (
+        <span
+          id={panelId}
+          role="tooltip"
+          className="absolute bottom-[calc(100%+0.55rem)] left-0 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.18)] bg-background/[0.96] px-3.5 py-3 text-left text-xs leading-5 text-foreground/68 shadow-[0_18px_48px_rgb(15_23_42/0.14)] backdrop-blur-xl dark:bg-card/[0.98]"
+        >
+          {t("waline.form.feedbackHelp")}
+        </span>
+      ) : null}
+    </span>
+  );
+};
+
 export interface WalineCommentFormProps {
   /* Auth */
   authLoading: boolean;
@@ -61,6 +91,9 @@ export interface WalineCommentFormProps {
   /* Draft state */
   draft: DraftState;
   onFieldChange: (field: keyof DraftState, value: string) => void;
+  feedbackEnabled: boolean;
+  commentFeedbackAvailable: boolean;
+  onFeedbackEnabledChange: (enabled: boolean) => void;
 
   /* Composer toggle */
   composerOpen: boolean;
@@ -125,6 +158,9 @@ const WalineCommentForm = ({
   onOpenLogin,
   draft,
   onFieldChange,
+  feedbackEnabled,
+  commentFeedbackAvailable,
+  onFeedbackEnabledChange,
   composerOpen,
   isGuestbook,
   replyTarget,
@@ -176,20 +212,6 @@ const WalineCommentForm = ({
           className={emojiPickerOpen || avatarPickerOpen ? "overflow-visible" : "overflow-hidden"}
         >
           <div ref={avatarPickerRef} className="space-y-4">
-            {showEditorControls && replyTarget ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.72] px-4 py-3 text-sm text-foreground/48 dark:bg-card/[0.82]">
-                <Sparkles className="h-4 w-4" />
-                <button
-                  type="button"
-                  onClick={() => scrollToCommentTarget(replyTarget.id)}
-                  className="aerisun-comment-context"
-                >
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                  {t("waline.form.replyingTo", { name: replyTarget.name })}
-                </button>
-              </div>
-            ) : null}
-
             {/* Auth status section */}
             {authLoading ? (
               <div className="rounded-2xl border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.7] px-4 py-3 text-sm text-foreground/48 dark:bg-card/[0.78]">
@@ -439,13 +461,43 @@ const WalineCommentForm = ({
                   </div>
                 ) : null}
 
-                {/* Footer: hint + submit */}
+                {/* Footer: feedback + submit */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs leading-6 text-foreground/42">
-                    {authSession
-                      ? t("waline.form.submitQueuedHint")
-                      : t("waline.form.loginBeforeSubmitHint")}
-                  </p>
+                  <div className="min-w-0">
+                    {!isGuestbook && commentFeedbackAvailable ? (
+                      <div className="inline-flex items-center gap-2 rounded-full border border-[rgb(var(--shiro-border-rgb)/0.16)] bg-background/[0.58] px-2.5 py-1.5 text-xs text-foreground/56 dark:bg-card/[0.66]">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={feedbackEnabled}
+                          onClick={() => onFeedbackEnabledChange(!feedbackEnabled)}
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition ${
+                            feedbackEnabled
+                              ? "border-[rgb(var(--shiro-accent-rgb)/0.28)] bg-[rgb(var(--shiro-accent-rgb)/0.18)]"
+                              : "border-[rgb(var(--shiro-border-rgb)/0.24)] bg-foreground/[0.06]"
+                          }`}
+                        >
+                          <span
+                            className={`block h-4 w-4 rounded-full bg-background shadow-sm transition-transform dark:bg-foreground ${
+                              feedbackEnabled ? "translate-x-4" : "translate-x-0.5"
+                            }`}
+                          />
+                        </button>
+                        <span className="whitespace-nowrap">{t("waline.form.feedbackLabel")}</span>
+                        <CommentFeedbackHelp />
+                      </div>
+                    ) : (
+                      <p className="text-xs leading-6 text-foreground/42">
+                        {authSession
+                          ? t("waline.form.submitQueuedHint")
+                          : t("waline.form.loginBeforeSubmitHint")}
+                      </p>
+                    )}
+                  </div>
+                  <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+                    <span className="text-xs leading-6 text-foreground/42">
+                      {t("waline.form.selfDeleteHint")}
+                    </span>
                   <button
                     type="button"
                     onClick={onSubmit}
@@ -461,6 +513,7 @@ const WalineCommentForm = ({
                           ? t("waline.form.submitReply")
                           : t("waline.form.submitComment")}
                   </button>
+                  </div>
                 </div>
               </>
             ) : null}

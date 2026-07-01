@@ -665,7 +665,14 @@ def get_community_config(session: Session) -> CommunityConfigRead:
     config = repo.find_community_config(session)
     if config is None:
         raise ResourceNotFound("community config is missing")
-    return CommunityConfigRead.model_validate(config)
+    from aerisun.domain.subscription.service import get_subscription_config_orm
+
+    subscription_config = get_subscription_config_orm(session)
+    return CommunityConfigRead.model_validate(config).model_copy(
+        update={
+            "comment_feedback_enabled": bool(subscription_config.comment_feedback_enabled),
+        }
+    )
 
 
 def get_resume(session: Session) -> ResumeRead:

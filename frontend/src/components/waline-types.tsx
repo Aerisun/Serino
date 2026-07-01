@@ -15,8 +15,15 @@ export interface CommunityCommentItem {
   like_count?: number;
   liked?: boolean;
   is_author?: boolean;
+  owned_by_current_user?: boolean;
+  can_delete?: boolean;
+  feedback_enabled?: boolean;
+  can_update_feedback?: boolean;
   replies: CommunityCommentItem[];
 }
+
+export const countCommentTree = (items: CommunityCommentItem[]): number =>
+  items.reduce((total, item) => total + 1 + countCommentTree(item.replies ?? []), 0);
 
 export interface CommunityGuestbookItem {
   id: string;
@@ -28,6 +35,8 @@ export interface CommunityGuestbookItem {
   avatar?: string | null;
   avatar_url?: string | null;
   is_author?: boolean;
+  owned_by_current_user?: boolean;
+  can_delete?: boolean;
 }
 
 export interface DraftState {
