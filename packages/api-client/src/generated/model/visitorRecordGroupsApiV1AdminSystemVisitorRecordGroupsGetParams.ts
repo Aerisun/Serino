@@ -19,4 +19,7 @@ path?: string | null;
 ip?: string | null;
 date_from?: string | null;
 date_to?: string | null;
+include_total?: boolean;
+resolve_geo?: boolean;
+warm_geo?: boolean;
 };

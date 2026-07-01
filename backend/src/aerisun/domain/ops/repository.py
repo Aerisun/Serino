@@ -59,6 +59,27 @@ def _visit_order_columns():
     return (VisitRecord.visited_at.desc(), VisitRecord.id.desc())
 
 
+def _visit_record_after_cursor_filter(visited_at: datetime, record_id: str):
+    return or_(
+        VisitRecord.visited_at < visited_at,
+        and_(VisitRecord.visited_at == visited_at, VisitRecord.id < record_id),
+    )
+
+
+def _visit_record_at_or_after_cursor_filter(visited_at: datetime, record_id: str):
+    return or_(
+        VisitRecord.visited_at < visited_at,
+        and_(VisitRecord.visited_at == visited_at, VisitRecord.id <= record_id),
+    )
+
+
+def _visit_record_before_cursor_filter(visited_at: datetime, record_id: str):
+    return or_(
+        VisitRecord.visited_at > visited_at,
+        and_(VisitRecord.visited_at == visited_at, VisitRecord.id > record_id),
+    )
+
+
 def _build_visit_record_group_subquery(
     session: Session,
     *,
@@ -538,7 +559,19 @@ def find_visit_record_groups_paginated(
     ip: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    include_total: bool = True,
 ) -> tuple[list[VisitRecordGroupSummary], int]:
+    if not include_total:
+        return _scan_visit_record_groups_page(
+            session,
+            page=page,
+            page_size=page_size,
+            path=path,
+            ip=ip,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
     groups = _build_visit_record_group_subquery(
         session,
         path=path,
@@ -564,6 +597,179 @@ def find_visit_record_groups_paginated(
         )
         for row in rows
     ], int(total)
+
+
+def _scan_visit_record_groups_page(
+    session: Session,
+    *,
+    page: int,
+    page_size: int,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> tuple[list[VisitRecordGroupSummary], int]:
+    target_start = (page - 1) * page_size
+    target_end = target_start + page_size
+
+    group_index = -1
+    summaries: list[VisitRecordGroupSummary] = []
+    pending_newest = None
+    has_more = False
+    reached_end = False
+
+    while True:
+        newest = (
+            pending_newest
+            if pending_newest is not None
+            else _find_first_visit_group_row(
+                session,
+                path=path,
+                ip=ip,
+                date_from=date_from,
+                date_to=date_to,
+            )
+        )
+        if newest is None:
+            reached_end = True
+            break
+
+        group_index += 1
+        next_newest = _find_first_visit_group_row(
+            session,
+            cursor=(newest.visited_at, str(newest.id)),
+            exclude_ip_address=str(newest.ip_address),
+            path=path,
+            ip=ip,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+        if group_index >= target_start:
+            summaries.append(
+                _summarize_visit_record_group(
+                    session,
+                    group_number=group_index + 1,
+                    newest=newest,
+                    next_group_newest=next_newest,
+                    path=path,
+                    ip=ip,
+                    date_from=date_from,
+                    date_to=date_to,
+                )
+            )
+
+        if next_newest is None:
+            reached_end = True
+            break
+        if group_index + 1 >= target_end:
+            has_more = True
+            break
+        pending_newest = next_newest
+
+    if reached_end:
+        total = group_index + 1 if group_index >= 0 else 0
+    else:
+        total = target_start + len(summaries) + (1 if has_more else 0)
+    return summaries, total
+
+
+def _find_first_visit_group_row(
+    session: Session,
+    *,
+    cursor: tuple[datetime, str] | None = None,
+    exclude_ip_address: str | None = None,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    query = _apply_visit_filters(
+        session.query(
+            VisitRecord.id.label("id"),
+            VisitRecord.ip_address.label("ip_address"),
+            VisitRecord.visited_at.label("visited_at"),
+        ),
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+        include_bots=True,
+    )
+    if cursor is not None:
+        query = query.filter(_visit_record_after_cursor_filter(*cursor))
+    if exclude_ip_address is not None:
+        query = query.filter(VisitRecord.ip_address != exclude_ip_address)
+    return query.order_by(*_visit_order_columns()).first()
+
+
+def _visit_record_group_filter(
+    newest,
+    next_group_newest,
+):
+    filters = [
+        VisitRecord.ip_address == newest.ip_address,
+        _visit_record_at_or_after_cursor_filter(newest.visited_at, str(newest.id)),
+    ]
+    if next_group_newest is not None:
+        filters.append(_visit_record_before_cursor_filter(next_group_newest.visited_at, str(next_group_newest.id)))
+    return and_(*filters)
+
+
+def _summarize_visit_record_group(
+    session: Session,
+    *,
+    group_number: int,
+    newest,
+    next_group_newest,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> VisitRecordGroupSummary:
+    group_filter = _visit_record_group_filter(newest, next_group_newest)
+    aggregate_query = _apply_visit_filters(
+        session.query(
+            func.count(VisitRecord.id).label("record_count"),
+            func.sum(case((VisitRecord.status_code < 400, 1), else_=0)).label("ok_count"),
+            func.sum(case((VisitRecord.status_code >= 400, 1), else_=0)).label("error_count"),
+        ),
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+        include_bots=True,
+    ).filter(group_filter)
+    aggregate = aggregate_query.one()
+    oldest = (
+        _apply_visit_filters(
+            session.query(
+                VisitRecord.id.label("id"),
+                VisitRecord.visited_at.label("visited_at"),
+            ),
+            path=path,
+            ip=ip,
+            date_from=date_from,
+            date_to=date_to,
+            include_bots=True,
+        )
+        .filter(group_filter)
+        .order_by(VisitRecord.visited_at.asc(), VisitRecord.id.asc())
+        .first()
+    )
+    oldest_record_id = str(oldest.id) if oldest is not None else str(newest.id)
+    oldest_visited_at = oldest.visited_at if oldest is not None else newest.visited_at
+    return VisitRecordGroupSummary(
+        group_number=group_number,
+        ip_address=str(newest.ip_address),
+        record_count=int(aggregate.record_count or 0),
+        newest_record_id=str(newest.id),
+        oldest_record_id=oldest_record_id,
+        newest_visited_at=newest.visited_at,
+        oldest_visited_at=oldest_visited_at,
+        ok_count=int(aggregate.ok_count or 0),
+        error_count=int(aggregate.error_count or 0),
+    )
 
 
 def _visit_record_boundary_filter(newest: VisitRecord, oldest: VisitRecord):

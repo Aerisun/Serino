@@ -28,7 +28,7 @@ from aerisun.domain.ops.config_revisions import (
 from aerisun.domain.ops.config_revisions import (
     restore_config_revision as _restore_config_revision,
 )
-from aerisun.domain.ops.ip_geo import IpGeoResult, lookup_ip_geolocation
+from aerisun.domain.ops.ip_geo import IpGeoResult, get_cached_ip_geolocation, lookup_ip_geolocation
 from aerisun.domain.ops.schemas import (
     AuditLogRead,
     ConfigDiffLineRead,
@@ -60,6 +60,7 @@ _TOP_PAGES_LIMIT = 10
 _DISTRIBUTION_LIMIT = 5
 _VISIT_RECORD_QUEUE_MAXSIZE = 1000
 _VISIT_RECORD_QUEUE_DRAIN_TIMEOUT_SECONDS = 5.0
+_VISIT_GEO_WARM_MAX_IPS = 50
 
 _CONTENT_PATH_TO_TYPE: dict[str, str] = {
     "posts": "posts",
@@ -495,11 +496,27 @@ def record_daily_traffic_snapshot(
     return changed
 
 
-def _build_traffic_metrics(session: Session) -> DashboardTrafficMetrics:
-    _seed_missing_traffic_history(session)
-    record_daily_traffic_snapshot(session, commit=True)
+def _build_traffic_metrics(
+    session: Session,
+    *,
+    include_details: bool = True,
+    refresh_snapshot: bool = True,
+) -> DashboardTrafficMetrics:
+    if refresh_snapshot:
+        _seed_missing_traffic_history(session)
+        record_daily_traffic_snapshot(session, commit=True)
 
     end_date = beijing_today()
+    latest_snapshots = repo.list_latest_traffic_snapshots(session, as_of_date=end_date)
+    total_views = sum(item.cumulative_views for item in latest_snapshots)
+    last_snapshot_at = repo.get_latest_traffic_snapshot_timestamp(session)
+
+    if not include_details:
+        return DashboardTrafficMetrics(
+            total_views=total_views,
+            last_snapshot_at=last_snapshot_at,
+        )
+
     start_date = end_date - timedelta(days=_TRAFFIC_HISTORY_DAYS - 1)
     snapshots = repo.list_traffic_snapshots_between(session, start_date=start_date, end_date=end_date)
 
@@ -508,9 +525,6 @@ def _build_traffic_metrics(session: Session) -> DashboardTrafficMetrics:
         daily_totals[snapshot.snapshot_date] = daily_totals.get(snapshot.snapshot_date, 0) + snapshot.daily_views
 
     history = [TrafficTrendPoint(date=day, views=daily_totals.get(day, 0)) for day in sorted(daily_totals)]
-
-    latest_snapshots = repo.list_latest_traffic_snapshots(session, as_of_date=end_date)
-    total_views = sum(item.cumulative_views for item in latest_snapshots)
 
     ranked_page_urls = [item.url for item in latest_snapshots if item.url and item.url != "/guestbook"]
     resolved_titles = _resolve_content_titles_for_paths(session, ranked_page_urls)
@@ -526,7 +540,6 @@ def _build_traffic_metrics(session: Session) -> DashboardTrafficMetrics:
         if item.url and item.url != "/guestbook"
     ]
 
-    last_snapshot_at = repo.get_latest_traffic_snapshot_timestamp(session)
     return DashboardTrafficMetrics(
         total_views=total_views,
         top_pages=ranked_pages[:_TOP_PAGES_LIMIT],
@@ -620,7 +633,7 @@ def _resolve_content_titles_for_paths(session: Session, paths: list[str]) -> dic
     return result
 
 
-def _enrich_visit_records(records: list) -> list[VisitorRecordRead]:
+def _enrich_visit_records(records: list, *, resolve_geo: bool = True) -> list[VisitorRecordRead]:
     """Convert ORM visit records to read models, looking up geo once per IP.
 
     The geolocation cache is keyed by IP, but de-duplicating here also avoids
@@ -633,7 +646,10 @@ def _enrich_visit_records(records: list) -> list[VisitorRecordRead]:
     for item in records:
         geo = geo_by_ip.get(item.ip_address)
         if geo is None:
-            geo = lookup_ip_geolocation(item.ip_address)
+            if resolve_geo:
+                geo = lookup_ip_geolocation(item.ip_address)
+            else:
+                geo = get_cached_ip_geolocation(item.ip_address) or IpGeoResult()
             geo_by_ip[item.ip_address] = geo
         enriched.append(
             VisitorRecordRead(
@@ -673,6 +689,17 @@ def _enrich_visit_records(records: list) -> list[VisitorRecordRead]:
     return enriched
 
 
+def warm_visit_record_geo_cache(ip_addresses: list[str]) -> None:
+    warmed: set[str] = set()
+    for ip_address in ip_addresses:
+        if ip_address in warmed:
+            continue
+        warmed.add(ip_address)
+        lookup_ip_geolocation(ip_address)
+        if len(warmed) >= _VISIT_GEO_WARM_MAX_IPS:
+            break
+
+
 def _to_breakdown(rows: list[tuple[str, int]]) -> list[VisitorBreakdownMetric]:
     total = sum(count for _, count in rows)
     return [
@@ -685,8 +712,28 @@ def _to_breakdown(rows: list[tuple[str, int]]) -> list[VisitorBreakdownMetric]:
     ]
 
 
-def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
+def _build_visitor_metrics(
+    session: Session,
+    *,
+    include_details: bool = True,
+    resolve_geo: bool = True,
+) -> DashboardVisitorMetrics:
     now = shanghai_now()
+    total_visits = repo.count_visit_records_since(session, since=datetime.fromtimestamp(0, BEIJING_TZ))
+    unique_visitors_24h = repo.count_unique_visitors_since(session, since=now - timedelta(hours=24))
+    unique_visitors_7d = repo.count_unique_visitors_since(session, since=now - timedelta(days=7))
+    average_request_duration_ms = repo.average_visit_duration_since(session, since=now - timedelta(days=7))
+    last_visit_at = repo.get_latest_visit_timestamp(session)
+
+    if not include_details:
+        return DashboardVisitorMetrics(
+            total_visits=total_visits,
+            unique_visitors_24h=unique_visitors_24h,
+            unique_visitors_7d=unique_visitors_7d,
+            average_request_duration_ms=average_request_duration_ms,
+            last_visit_at=last_visit_at,
+        )
+
     history_days = 14
     start_date = now.date() - timedelta(days=history_days - 1)
     history_rows = repo.list_visit_history_by_day(session, start_date=start_date, end_date=now.date())
@@ -702,10 +749,6 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
         )
 
     recent_records, _ = repo.find_visit_records_paginated(session, page=1, page_size=10)
-    total_visits = repo.count_visit_records_since(session, since=datetime.fromtimestamp(0, BEIJING_TZ))
-    unique_visitors_24h = repo.count_unique_visitors_since(session, since=now - timedelta(hours=24))
-    unique_visitors_7d = repo.count_unique_visitors_since(session, since=now - timedelta(days=7))
-    average_request_duration_ms = repo.average_visit_duration_since(session, since=now - timedelta(days=7))
     top_page_rows = repo.list_visit_top_pages(session, since=now - timedelta(days=14), limit=_TOP_PAGES_LIMIT)
     resolved_titles = _resolve_content_titles_for_paths(session, [path for path, _ in top_page_rows])
     top_total = sum(views for _, views in top_page_rows)
@@ -719,7 +762,7 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
         for path, views in top_page_rows
     ]
 
-    recent_visits = _enrich_visit_records(list(recent_records))
+    recent_visits = _enrich_visit_records(list(recent_records), resolve_geo=resolve_geo)
 
     breakdown_since = now - timedelta(days=14)
     device_breakdown = _to_breakdown(
@@ -743,7 +786,7 @@ def _build_visitor_metrics(session: Session) -> DashboardVisitorMetrics:
         browser_breakdown=browser_breakdown,
         referrer_breakdown=referrer_breakdown,
         recent_visits=recent_visits,
-        last_visit_at=repo.get_latest_visit_timestamp(session),
+        last_visit_at=last_visit_at,
     )
 
 
@@ -785,6 +828,8 @@ def list_visitor_record_groups(
     ip: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    include_total: bool = True,
+    resolve_geo: bool = True,
 ) -> dict:
     items, total = repo.find_visit_record_groups_paginated(
         session,
@@ -794,10 +839,11 @@ def list_visitor_record_groups(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
+        include_total=include_total,
     )
     boundary_ids = {item.newest_record_id for item in items} | {item.oldest_record_id for item in items}
     boundary_records = repo.find_visit_records_by_ids(session, boundary_ids)
-    enriched_by_id = {item.id: item for item in _enrich_visit_records(boundary_records)}
+    enriched_by_id = {item.id: item for item in _enrich_visit_records(boundary_records, resolve_geo=resolve_geo)}
     groups = [
         VisitorRecordGroupRead(
             id=f"{item.newest_record_id}:{item.oldest_record_id}",
@@ -860,7 +906,7 @@ def cleanup_old_visit_records(session: Session, *, retention_days: int = 30) -> 
     return deleted
 
 
-def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
+def get_dashboard_stats(session: Session, *, summary_only: bool = False) -> EnhancedDashboardStats:
     """Aggregate dashboard statistics from all domains."""
     now = shanghai_now()
     six_months_ago = now - timedelta(days=180)
@@ -872,31 +918,34 @@ def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
     friends_count = repo.count_model(session, Friend)
     assets_count = repo.count_model(session, Asset)
 
-    posts_by_visibility = repo.count_by_visibility(session, PostEntry)
+    posts_by_visibility: dict[str, int] = {}
+    content_by_month: list[MonthlyCount] = []
+    if not summary_only:
+        posts_by_visibility = repo.count_by_visibility(session, PostEntry)
 
-    content_type_map = [
-        (PostEntry, "posts"),
-        (DiaryEntry, "diary"),
-        (ThoughtEntry, "thoughts"),
-        (ExcerptEntry, "excerpts"),
-    ]
-    month_data: dict[str, dict[str, int]] = {}
-    for model, type_key in content_type_map:
-        rows = repo.count_by_month(session, model, since=six_months_ago)
-        for month_str, count in rows:
-            if month_str not in month_data:
-                month_data[month_str] = {
-                    "posts": 0,
-                    "diary": 0,
-                    "thoughts": 0,
-                    "excerpts": 0,
-                }
-            month_data[month_str][type_key] = count
+        content_type_map = [
+            (PostEntry, "posts"),
+            (DiaryEntry, "diary"),
+            (ThoughtEntry, "thoughts"),
+            (ExcerptEntry, "excerpts"),
+        ]
+        month_data: dict[str, dict[str, int]] = {}
+        for model, type_key in content_type_map:
+            rows = repo.count_by_month(session, model, since=six_months_ago)
+            for month_str, count in rows:
+                if month_str not in month_data:
+                    month_data[month_str] = {
+                        "posts": 0,
+                        "diary": 0,
+                        "thoughts": 0,
+                        "excerpts": 0,
+                    }
+                month_data[month_str][type_key] = count
 
-    content_by_month = sorted(
-        [MonthlyCount(month=m, **counts) for m, counts in month_data.items()],
-        key=lambda x: x.month,
-    )
+        content_by_month = sorted(
+            [MonthlyCount(month=m, **counts) for m, counts in month_data.items()],
+            key=lambda x: x.month,
+        )
 
     recent_type_map = [
         (PostEntry, "post"),
@@ -931,8 +980,16 @@ def get_dashboard_stats(session: Session) -> EnhancedDashboardStats:
         posts_by_visibility=posts_by_visibility,
         content_by_month=content_by_month,
         recent_content=recent_content,
-        traffic=_build_traffic_metrics(session),
-        visitors=_build_visitor_metrics(session),
+        traffic=_build_traffic_metrics(
+            session,
+            include_details=not summary_only,
+            refresh_snapshot=not summary_only,
+        ),
+        visitors=_build_visitor_metrics(
+            session,
+            include_details=not summary_only,
+            resolve_geo=not summary_only,
+        ),
         aux_metrics=_build_aux_metrics(session),
     )
 

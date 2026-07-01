@@ -94,6 +94,7 @@ import type {
   ContentSubscriptionTestResult,
   ContentTitleSuggestionRead,
   ContentUpdate,
+  DashboardStatsApiV1AdminSystemDashboardStatsGetParams,
   DeriveAiSchemaRequest,
   DeriveAiSchemaResponse,
   EnhancedDashboardStats,
@@ -13608,24 +13609,38 @@ export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponse200 = {
   status: 200
 }
 
+export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
 export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponseSuccess = (dashboardStatsApiV1AdminSystemDashboardStatsGetResponse200) & {
   headers: Headers;
 };
-;
+export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponseError = (dashboardStatsApiV1AdminSystemDashboardStatsGetResponse422) & {
+  headers: Headers;
+};
 
-export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponse = (dashboardStatsApiV1AdminSystemDashboardStatsGetResponseSuccess)
+export type dashboardStatsApiV1AdminSystemDashboardStatsGetResponse = (dashboardStatsApiV1AdminSystemDashboardStatsGetResponseSuccess | dashboardStatsApiV1AdminSystemDashboardStatsGetResponseError)
 
-export const getDashboardStatsApiV1AdminSystemDashboardStatsGetUrl = () => {
+export const getDashboardStatsApiV1AdminSystemDashboardStatsGetUrl = (params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/v1/admin/system/dashboard/stats`
+  return stringifiedParams.length > 0 ? `/api/v1/admin/system/dashboard/stats?${stringifiedParams}` : `/api/v1/admin/system/dashboard/stats`
 }
 
-export const dashboardStatsApiV1AdminSystemDashboardStatsGet = async ( options?: RequestInit): Promise<dashboardStatsApiV1AdminSystemDashboardStatsGetResponse> => {
+export const dashboardStatsApiV1AdminSystemDashboardStatsGet = async (params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams, options?: RequestInit): Promise<dashboardStatsApiV1AdminSystemDashboardStatsGetResponse> => {
 
-  return customInstance<dashboardStatsApiV1AdminSystemDashboardStatsGetResponse>(getDashboardStatsApiV1AdminSystemDashboardStatsGetUrl(),
+  return customInstance<dashboardStatsApiV1AdminSystemDashboardStatsGetResponse>(getDashboardStatsApiV1AdminSystemDashboardStatsGetUrl(params),
   {
     ...options,
     method: 'GET'
@@ -13638,23 +13653,23 @@ export const dashboardStatsApiV1AdminSystemDashboardStatsGet = async ( options?:
 
 
 
-export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryKey = () => {
+export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryKey = (params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams,) => {
     return [
-    `/api/v1/admin/system/dashboard/stats`
+    `/api/v1/admin/system/dashboard/stats`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryOptions = <TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryOptions = <TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<HTTPValidationError>>(params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>> = ({ signal }) => dashboardStatsApiV1AdminSystemDashboardStatsGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>> = ({ signal }) => dashboardStatsApiV1AdminSystemDashboardStatsGet(params, { signal, ...requestOptions });
 
 
 
@@ -13664,11 +13679,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type DashboardStatsApiV1AdminSystemDashboardStatsGetQueryResult = NonNullable<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>>
-export type DashboardStatsApiV1AdminSystemDashboardStatsGetQueryError = ErrorType<unknown>
+export type DashboardStatsApiV1AdminSystemDashboardStatsGetQueryError = ErrorType<HTTPValidationError>
 
 
-export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>> & Pick<
+export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  DashboardStatsApiV1AdminSystemDashboardStatsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>,
           TError,
@@ -13677,8 +13692,8 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>> & Pick<
+export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>,
           TError,
@@ -13687,20 +13702,20 @@ export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Await
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary 获取仪表盘统计
  */
 
-export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useDashboardStatsApiV1AdminSystemDashboardStatsGet<TData = Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: DashboardStatsApiV1AdminSystemDashboardStatsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dashboardStatsApiV1AdminSystemDashboardStatsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryOptions(options)
+  const queryOptions = getDashboardStatsApiV1AdminSystemDashboardStatsGetQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

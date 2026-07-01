@@ -78,3 +78,15 @@ def lookup_ip_geolocation(ip: str) -> IpGeoResult:
 
     _CACHE[ip] = (now + timedelta(seconds=settings.ip_geo_cache_ttl_seconds), result)
     return result
+
+
+def get_cached_ip_geolocation(ip: str) -> IpGeoResult | None:
+    settings = get_settings()
+    if not settings.ip_geo_enabled or not _is_public_ip(ip):
+        return IpGeoResult()
+
+    now = shanghai_now()
+    cached = _CACHE.get(ip)
+    if cached and cached[0] > now:
+        return cached[1]
+    return None

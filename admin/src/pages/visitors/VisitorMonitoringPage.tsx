@@ -1,6 +1,7 @@
-import { Fragment, useCallback, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryOptions,
   useSystemInfoApiV1AdminSystemInfoGet,
   useVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet,
   useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet,
@@ -72,6 +73,10 @@ type PaginatedResponse<T> = {
 
 const PAGE_SIZE = 20;
 const DETAIL_PAGE_SIZE = 20;
+const VISITOR_GROUP_PREFETCH_PAGES = 3;
+const VISITOR_GROUP_STALE_MS = 30_000;
+const GEO_REFRESH_DELAY_MS = 1_600;
+const GEO_REFRESH_MAX_ATTEMPTS = 2;
 
 function formatDateTime(value: string) {
   const formatted = formatDateTimeInBeijing(value, "en-US", {
@@ -370,7 +375,9 @@ function VisitorGroupRecordRows({
 
 export default function VisitorMonitoringPage() {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const geoRefreshAttemptsRef = useRef<Record<string, number>>({});
 
   const { data: systemInfo } = useSystemInfoApiV1AdminSystemInfoGet();
   const frontendUrl = resolveFrontendUrl(systemInfo?.data?.site_url);
@@ -378,13 +385,63 @@ export default function VisitorMonitoringPage() {
   const stats = dashboardStats as EnhancedDashboardStats | undefined;
   const visitors = stats?.visitors;
 
-  const groupsQuery = useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet({
-    page,
-    page_size: PAGE_SIZE,
+  const groupQueryParams = useMemo(
+    () => ({
+      page,
+      page_size: PAGE_SIZE,
+      include_total: false,
+      resolve_geo: false,
+    }),
+    [page],
+  );
+  const groupsQuery = useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet(groupQueryParams, {
+    query: {
+      gcTime: 5 * 60_000,
+      placeholderData: keepPreviousData,
+      staleTime: VISITOR_GROUP_STALE_MS,
+    },
   });
+  const groupsFetching = groupsQuery.isFetching;
+  const refetchGroups = groupsQuery.refetch;
   const groupsData = groupsQuery.data?.data as PaginatedResponse<VisitorRecordGroup> | undefined;
   const groups = groupsData?.items ?? [];
   const total = groupsData?.total ?? 0;
+  const hasMissingGeo = groups.some(
+    (group) => !group.newest_record.location || !group.oldest_record.location,
+  );
+  const geoRefreshKey = `${page}:${groups.map((group) => group.id).join("|")}`;
+
+  useEffect(() => {
+    if (!groupsData || groupsFetching) return;
+    for (let offset = 1; offset <= VISITOR_GROUP_PREFETCH_PAGES; offset += 1) {
+      const nextPage = page + offset;
+      void queryClient.prefetchQuery(
+        getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryOptions(
+          {
+            ...groupQueryParams,
+            page: nextPage,
+          },
+          {
+            query: {
+              gcTime: 5 * 60_000,
+              staleTime: VISITOR_GROUP_STALE_MS,
+            },
+          },
+        ),
+      );
+    }
+  }, [groupQueryParams, groupsData, groupsFetching, page, queryClient]);
+
+  useEffect(() => {
+    if (!groups.length || !hasMissingGeo || groupsFetching) return;
+    const attempts = geoRefreshAttemptsRef.current[geoRefreshKey] ?? 0;
+    if (attempts >= GEO_REFRESH_MAX_ATTEMPTS) return;
+    geoRefreshAttemptsRef.current[geoRefreshKey] = attempts + 1;
+    const timer = window.setTimeout(() => {
+      void refetchGroups();
+    }, GEO_REFRESH_DELAY_MS * (attempts + 1));
+    return () => window.clearTimeout(timer);
+  }, [geoRefreshKey, groups.length, groupsFetching, hasMissingGeo, refetchGroups]);
 
   const deviceTypeLabel = useCallback(
     (value?: string | null) => {
@@ -451,7 +508,7 @@ export default function VisitorMonitoringPage() {
           </h3>
         </div>
         <DataTable
-          isLoading={groupsQuery.isLoading}
+          isLoading={groupsQuery.isLoading && groups.length === 0}
           columns={[
             { header: t("dashboard.visitorsColumnTime"), accessor: () => null, className: "min-w-[9rem]" },
             { header: t("dashboard.visitorsColumnIp"), accessor: () => null, className: "min-w-[9rem]" },

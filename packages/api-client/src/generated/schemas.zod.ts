@@ -4146,6 +4146,12 @@ export const RestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestore
 /**
  * @summary 获取仪表盘统计
  */
+export const dashboardStatsApiV1AdminSystemDashboardStatsGetQuerySummaryOnlyDefault = false;
+
+export const DashboardStatsApiV1AdminSystemDashboardStatsGetQueryParams = zod.object({
+  "summary_only": zod.boolean().default(dashboardStatsApiV1AdminSystemDashboardStatsGetQuerySummaryOnlyDefault)
+})
+
 export const DashboardStatsApiV1AdminSystemDashboardStatsGetResponse = zod.object({
   "posts": zod.unknown(),
   "diary_entries": zod.unknown(),
@@ -4199,7 +4205,9 @@ export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageD
 export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageSizeDefault = 20;
 export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageSizeMax = 100;
 
-
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryIncludeTotalDefault = true;
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryResolveGeoDefault = true;
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryWarmGeoDefault = true;
 
 export const VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryParams = zod.object({
   "page": zod.number().min(1).default(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageDefault),
@@ -4207,7 +4215,10 @@ export const VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryParam
   "path": zod.union([zod.string(),zod.null()]).optional(),
   "ip": zod.union([zod.string(),zod.null()]).optional(),
   "date_from": zod.union([zod.string(),zod.null()]).optional(),
-  "date_to": zod.union([zod.string(),zod.null()]).optional()
+  "date_to": zod.union([zod.string(),zod.null()]).optional(),
+  "include_total": zod.boolean().default(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryIncludeTotalDefault),
+  "resolve_geo": zod.boolean().default(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryResolveGeoDefault),
+  "warm_geo": zod.boolean().default(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryWarmGeoDefault)
 })
 
 export const VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse = zod.object({

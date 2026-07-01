@@ -82,6 +82,27 @@ class TestDashboardStats:
         ):
             assert key in visitors
 
+    def test_dashboard_stats_summary_only_skips_heavy_details(self, client, admin_headers, monkeypatch):
+        def fail_refresh(*args, **kwargs):  # pragma: no cover - should not be reached
+            raise AssertionError("summary dashboard should not refresh traffic snapshots")
+
+        def fail_geo_lookup(ip_address: str):  # pragma: no cover - should not be reached
+            raise AssertionError(f"summary dashboard should not resolve geo for {ip_address}")
+
+        monkeypatch.setattr(ops_service, "record_daily_traffic_snapshot", fail_refresh)
+        monkeypatch.setattr(ops_service, "lookup_ip_geolocation", fail_geo_lookup)
+
+        resp = client.get(f"{BASE}/dashboard/stats", headers=admin_headers, params={"summary_only": True})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "posts" in data
+        assert "recent_content" in data
+        assert data["traffic"]["history"] == []
+        assert data["traffic"]["top_pages"] == []
+        assert data["visitors"]["recent_visits"] == []
+        assert data["visitors"]["top_pages"] == []
+
     def test_dashboard_stats_returns_traffic_analytics(self, client, admin_headers):
         _reset_waline_counters()
         set_counter_value(url="/posts/alpha", pageview_count=120, reaction_counts={0: 8})
@@ -335,6 +356,129 @@ class TestDashboardStats:
         second_group = second_page.json()["items"][0]
         assert second_group["ip_address"] == "198.51.100.42"
         assert second_group["record_count"] == 1
+
+    def test_list_visitor_record_groups_fast_mode_returns_page_before_exact_total(self, client, admin_headers):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/fast-{uuid4().hex}"
+        with factory() as session:
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=index),
+                        path=f"{marker}/{slug}",
+                        ip_address=ip_address,
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=10 + index,
+                        is_bot=False,
+                    )
+                    for index, (ip_address, slug) in enumerate(
+                        [
+                            ("198.51.100.81", "a"),
+                            ("198.51.100.82", "b"),
+                            ("198.51.100.83", "c"),
+                        ]
+                    )
+                ]
+            )
+            session.commit()
+
+        first_page = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page": 1, "page_size": 1, "include_total": False},
+        )
+        second_page = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page": 2, "page_size": 1, "include_total": False},
+        )
+        last_page = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page": 3, "page_size": 1, "include_total": False},
+        )
+
+        assert first_page.status_code == 200
+        assert [item["ip_address"] for item in first_page.json()["items"]] == ["198.51.100.81"]
+        assert first_page.json()["total"] == 2
+        assert second_page.status_code == 200
+        assert [item["ip_address"] for item in second_page.json()["items"]] == ["198.51.100.82"]
+        assert second_page.json()["total"] == 3
+        assert last_page.status_code == 200
+        assert [item["ip_address"] for item in last_page.json()["items"]] == ["198.51.100.83"]
+        assert last_page.json()["total"] == 3
+
+    def test_list_visitor_record_groups_can_skip_blocking_geo_lookup(self, client, admin_headers, monkeypatch):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/no-geo-{uuid4().hex}"
+        with factory() as session:
+            session.add(
+                VisitRecord(
+                    visited_at=now,
+                    path=f"{marker}/public-ip",
+                    ip_address="8.8.8.8",
+                    user_agent="Mozilla/5.0",
+                    status_code=200,
+                    duration_ms=10,
+                    is_bot=False,
+                )
+            )
+            session.commit()
+
+        def fail_lookup(ip_address: str):  # pragma: no cover - should not be reached
+            raise AssertionError(f"blocking geo lookup called for {ip_address}")
+
+        monkeypatch.setattr(ops_service, "lookup_ip_geolocation", fail_lookup)
+        resp = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "resolve_geo": False, "warm_geo": False},
+        )
+
+        assert resp.status_code == 200
+        first = resp.json()["items"][0]["newest_record"]
+        assert first["ip_address"] == "8.8.8.8"
+        assert first["location"] is None
+
+    def test_list_visitor_record_groups_warms_geo_cache_after_fast_response(self, client, admin_headers, monkeypatch):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/warm-geo-{uuid4().hex}"
+        with factory() as session:
+            session.add(
+                VisitRecord(
+                    visited_at=now,
+                    path=f"{marker}/public-ip",
+                    ip_address="8.8.4.4",
+                    user_agent="Mozilla/5.0",
+                    status_code=200,
+                    duration_ms=10,
+                    is_bot=False,
+                )
+            )
+            session.commit()
+
+        warmed: list[str] = []
+
+        def fake_lookup(ip_address: str):
+            warmed.append(ip_address)
+            return ops_service.IpGeoResult(country="United States")
+
+        monkeypatch.setattr(ops_service, "lookup_ip_geolocation", fake_lookup)
+        resp = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "resolve_geo": False},
+        )
+
+        assert resp.status_code == 200
+        first = resp.json()["items"][0]["newest_record"]
+        assert first["ip_address"] == "8.8.4.4"
+        assert first["location"] is None
+        assert warmed == ["8.8.4.4"]
 
     def test_list_visitor_record_groups_keeps_interrupted_ips_separate(self, client, admin_headers):
         factory = get_session_factory()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
@@ -104,6 +104,7 @@ from aerisun.domain.ops.service import list_visitor_record_group_records as _lis
 from aerisun.domain.ops.service import list_visitor_record_groups as _list_visitor_record_groups
 from aerisun.domain.ops.service import list_visitor_records as _list_visitor_records
 from aerisun.domain.ops.service import restore_config_revision as _restore_config_revision
+from aerisun.domain.ops.service import warm_visit_record_geo_cache as _warm_visit_record_geo_cache
 
 from .deps import get_current_admin
 from .integrations_schemas import AdminAgentUsageRead, FeedLinkCollectionRead, FeedLinkRead
@@ -459,10 +460,11 @@ def restore_backup_commit(
 
 @router.get("/dashboard/stats", response_model=EnhancedDashboardStats, summary="获取仪表盘统计")
 def dashboard_stats(
+    summary_only: bool = Query(default=False),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> Any:
-    return _get_dashboard_stats(session)
+    return _get_dashboard_stats(session, summary_only=summary_only)
 
 
 @router.get("/visitor-records", response_model=PaginatedResponse[VisitorRecordRead], summary="获取访客访问记录")
@@ -493,16 +495,20 @@ def visitor_records(
     summary="获取按连续 IP 聚合的访客访问记录",
 )
 def visitor_record_groups(
+    background_tasks: BackgroundTasks,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     path: str | None = Query(default=None),
     ip: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    include_total: bool = Query(default=True),
+    resolve_geo: bool = Query(default=True),
+    warm_geo: bool = Query(default=True),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    return _list_visitor_record_groups(
+    result = _list_visitor_record_groups(
         session,
         page=page,
         page_size=page_size,
@@ -510,7 +516,14 @@ def visitor_record_groups(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
+        include_total=include_total,
+        resolve_geo=resolve_geo,
     )
+    if not resolve_geo and warm_geo:
+        ip_addresses = sorted({item.ip_address for item in result["items"]})
+        if ip_addresses:
+            background_tasks.add_task(_warm_visit_record_geo_cache, ip_addresses)
+    return result
 
 
 @router.get(

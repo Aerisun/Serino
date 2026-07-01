@@ -246,6 +246,7 @@ export * from './contentSubscriptionTestResult';
 export * from './contentTitleSuggestionRead';
 export * from './contentUpdate';
 export * from './dashboardAuxMetrics';
+export * from './dashboardStatsApiV1AdminSystemDashboardStatsGetParams';
 export * from './dashboardTrafficMetrics';
 export * from './dashboardVisitorMetrics';
 export * from './deleteReactionApiV1SiteInteractionsReactionsContentTypeSlugReactionTypeDeleteParams';
