@@ -188,7 +188,7 @@ const SearchModal = ({ open, onClose }: SearchModalProps) => {
                           </div>
                           {item.snippet && (
                             <p
-                              className="mt-0.5 text-xs font-body text-foreground/30 line-clamp-2"
+                              className="mt-0.5 text-xs font-body text-foreground/30 line-clamp-2 break-words [&_mark]:rounded-sm [&_mark]:bg-yellow-200/80 [&_mark]:px-0.5 [&_mark]:text-foreground"
                               dangerouslySetInnerHTML={{ __html: item.snippet }}
                             />
                           )}
