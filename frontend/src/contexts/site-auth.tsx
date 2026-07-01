@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useResetPendingOnPageRestore } from "@serino/utils/oauth-navigation";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -127,6 +128,12 @@ export function SiteAuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, []);
+
+  const resetOAuthRedirectPending = useCallback(() => {
+    setSubmitting(false);
+  }, []);
+
+  useResetPendingOnPageRestore(resetOAuthRedirectPending);
 
   useEffect(() => {
     void refresh();

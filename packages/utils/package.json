@@ -11,6 +11,7 @@
     "./sentry": "./src/sentry.ts",
     "./preview": "./src/preview.ts",
     "./image-upload": "./src/image-upload.ts",
+    "./oauth-navigation": "./src/oauth-navigation.ts",
     "./i18n": "./src/i18n.tsx"
   },
   "dependencies": {

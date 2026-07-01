@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useResetPendingOnPageRestore } from "@serino/utils/oauth-navigation";
 import { useSearchParams } from "react-router-dom";
 import {
   getListAdminIdentitiesApiV1AdminVisitorsAdminIdentitiesGetQueryKey,
@@ -373,6 +374,15 @@ export default function VisitorsPage() {
   const [expandedProviders, setExpandedProviders] = useState<
     Record<VisitorOAuthProvider, boolean>
   >(buildEmptyExpandedProviders);
+
+  const resetOAuthRedirectPending = useCallback(() => {
+    testingProviderRef.current = null;
+    bindingProviderRef.current = null;
+    setTestingProvider(null);
+    setBindingProvider(null);
+  }, []);
+
+  useResetPendingOnPageRestore(resetOAuthRedirectPending);
 
   const configQuery = useGetVisitorAuthConfigApiV1AdminVisitorsConfigGet();
   const config = configQuery.data?.data ?? null;

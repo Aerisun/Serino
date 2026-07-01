@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useResetPendingOnPageRestore } from "@serino/utils/oauth-navigation";
 import { getAdminLoginOptions } from "./adminAuthApi";
 import { useAuth } from "./useAuth";
 import {
@@ -86,6 +87,12 @@ export default function LoginPage() {
   const [adminEmailPassword, setAdminEmailPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
+
+  const resetOAuthRedirectPending = useCallback(() => {
+    setAdminLoading(false);
+  }, []);
+
+  useResetPendingOnPageRestore(resetOAuthRedirectPending);
 
   const oauthProviders = useMemo(
     () =>
