@@ -46,6 +46,22 @@ class ContentSubscriptionConfig(Base, TimestampMixin):
             "RSS：{feed_url}"
         ),
     )
+    comment_feedback_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    comment_feedback_subject_template: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="[{site_name}] {reply_author_name} 回复了你的评论",
+    )
+    comment_feedback_body_template: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default=(
+            "{reply_author_name} 回复了你在 {site_name} 的评论。\n\n"
+            "你的评论：\n{parent_comment}\n\n"
+            "回复内容：\n{reply_content}\n\n"
+            "查看回复：{comment_url}"
+        ),
+    )
 
 
 class ContentSubscriber(Base, TimestampMixin):

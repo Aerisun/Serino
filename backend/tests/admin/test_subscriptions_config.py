@@ -58,6 +58,9 @@ def test_admin_subscription_config_roundtrip(client, admin_headers) -> None:
             "allowed_content_types": ["posts", "diary"],
             "mail_subject_template": "[{site_name}] {content_title}",
             "mail_body_template": "{site_name} -> {content_title} ({content_url})",
+            "comment_feedback_enabled": True,
+            "comment_feedback_subject_template": "[{site_name}] {reply_author_name}",
+            "comment_feedback_body_template": "{reply_content}\n{comment_url}",
         },
     )
 
@@ -73,6 +76,9 @@ def test_admin_subscription_config_roundtrip(client, admin_headers) -> None:
     assert payload["allowed_content_types"] == ["diary", "posts"]
     assert payload["mail_subject_template"] == "[{site_name}] {content_title}"
     assert payload["mail_body_template"] == "{site_name} -> {content_title} ({content_url})"
+    assert payload["comment_feedback_enabled"] is True
+    assert payload["comment_feedback_subject_template"] == "[{site_name}] {reply_author_name}"
+    assert payload["comment_feedback_body_template"] == "{reply_content}\n{comment_url}"
 
 
 def test_updating_smtp_config_resets_smtp_test_status(client, admin_headers) -> None:
@@ -111,6 +117,19 @@ def test_enabling_subscription_without_smtp_test_passed_is_allowed_for_admin_tog
     assert response.status_code == 200
     assert response.json()["enabled"] is True
     assert response.json()["smtp_test_passed"] is False
+
+
+def test_comment_feedback_template_rejects_unknown_placeholder(client, admin_headers) -> None:
+    response = client.put(
+        f"{ADMIN_BASE}/config",
+        headers=admin_headers,
+        json={
+            "comment_feedback_subject_template": "{unknown}",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "不支持的占位符" in response.json()["detail"]
 
 
 def test_dispatch_content_subscription_notifications_sends_matching_emails(seeded_session, monkeypatch) -> None:

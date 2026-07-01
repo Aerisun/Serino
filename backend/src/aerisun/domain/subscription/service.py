@@ -60,6 +60,13 @@ DEFAULT_BODY_TEMPLATE = (
     "阅读链接：{content_url}\n"
     "RSS：{feed_url}"
 )
+DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE = "[{site_name}] {reply_author_name} 回复了你的评论"
+DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE = (
+    "{reply_author_name} 回复了你在 {site_name} 的评论。\n\n"
+    "你的评论：\n{parent_comment}\n\n"
+    "回复内容：\n{reply_content}\n\n"
+    "查看回复：{comment_url}"
+)
 
 TEMPLATE_ALLOWED_KEYS = {
     "site_name",
@@ -69,6 +76,17 @@ TEMPLATE_ALLOWED_KEYS = {
     "content_summary",
     "content_url",
     "feed_url",
+}
+COMMENT_FEEDBACK_TEMPLATE_ALLOWED_KEYS = {
+    "site_name",
+    "content_type",
+    "content_slug",
+    "content_path",
+    "parent_author_name",
+    "parent_comment",
+    "reply_author_name",
+    "reply_content",
+    "comment_url",
 }
 
 DEFAULT_ALLOWED_CONTENT_TYPES = ["posts", "diary", "thoughts", "excerpts"]
@@ -138,17 +156,22 @@ def _config_allowed_content_types(config: ContentSubscriptionConfig) -> list[str
     return _normalize_allowed_content_types(configured)
 
 
-def _validate_template(template: str, *, field_name: str) -> str:
+def _validate_template(
+    template: str,
+    *,
+    field_name: str,
+    allowed_keys: set[str] = TEMPLATE_ALLOWED_KEYS,
+) -> str:
     normalized = (template or "").strip()
     if not normalized:
         raise ValidationError(f"{field_name}不能为空")
 
     formatter = Formatter()
     placeholders = {field_name for _, field_name, _, _ in formatter.parse(normalized) if field_name}
-    invalid = sorted(placeholders - TEMPLATE_ALLOWED_KEYS)
+    invalid = sorted(placeholders - allowed_keys)
     if invalid:
         raise ValidationError(
-            f"{field_name}包含不支持的占位符：{', '.join(invalid)}。可用占位符：{', '.join(sorted(TEMPLATE_ALLOWED_KEYS))}"
+            f"{field_name}包含不支持的占位符：{', '.join(invalid)}。可用占位符：{', '.join(sorted(allowed_keys))}"
         )
     return normalized
 
@@ -190,6 +213,9 @@ def _default_config_payload() -> dict[str, object]:
         "allowed_content_types": list(DEFAULT_ALLOWED_CONTENT_TYPES),
         "mail_subject_template": DEFAULT_SUBJECT_TEMPLATE,
         "mail_body_template": DEFAULT_BODY_TEMPLATE,
+        "comment_feedback_enabled": False,
+        "comment_feedback_subject_template": DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE,
+        "comment_feedback_body_template": DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE,
     }
 
 
@@ -426,6 +452,18 @@ def _apply_subscription_updates(
         updates["mail_body_template"] = _validate_template(
             str(updates.get("mail_body_template") or ""),
             field_name="邮件正文模板",
+        )
+    if "comment_feedback_subject_template" in updates:
+        updates["comment_feedback_subject_template"] = _validate_template(
+            str(updates.get("comment_feedback_subject_template") or ""),
+            field_name="评论反馈邮件标题模板",
+            allowed_keys=COMMENT_FEEDBACK_TEMPLATE_ALLOWED_KEYS,
+        )
+    if "comment_feedback_body_template" in updates:
+        updates["comment_feedback_body_template"] = _validate_template(
+            str(updates.get("comment_feedback_body_template") or ""),
+            field_name="评论反馈邮件正文模板",
+            allowed_keys=COMMENT_FEEDBACK_TEMPLATE_ALLOWED_KEYS,
         )
     next_tls = bool(updates.get("smtp_use_tls", config.smtp_use_tls))
     next_ssl = bool(updates.get("smtp_use_ssl", config.smtp_use_ssl))
@@ -943,6 +981,124 @@ def _send_email(
         server.send_message(message)
 
 
+def _build_comment_feedback_message(
+    *,
+    config: ContentSubscriptionConfig,
+    recipient: str,
+    site_name: str,
+    context: dict[str, str],
+) -> EmailMessage:
+    msg = EmailMessage()
+    from_name = config.smtp_from_name.strip() or site_name
+    subject_template = _validate_template(
+        config.comment_feedback_subject_template or DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE,
+        field_name="评论反馈邮件标题模板",
+        allowed_keys=COMMENT_FEEDBACK_TEMPLATE_ALLOWED_KEYS,
+    )
+    body_template = _validate_template(
+        config.comment_feedback_body_template or DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE,
+        field_name="评论反馈邮件正文模板",
+        allowed_keys=COMMENT_FEEDBACK_TEMPLATE_ALLOWED_KEYS,
+    )
+
+    msg["Subject"] = _render_template(subject_template, context)
+    msg["From"] = f"{from_name} <{config.smtp_from_email}>"
+    msg["To"] = recipient
+    if config.smtp_reply_to.strip():
+        msg["Reply-To"] = config.smtp_reply_to.strip()
+
+    msg.set_content(_render_template(body_template, context))
+    return msg
+
+
+def _comment_feedback_recipient(session: Session, parent_record) -> str | None:
+    from aerisun.domain.waline.service import normalize_comment_mail
+
+    if parent_record.site_user_id:
+        site_user = session.get(SiteUser, parent_record.site_user_id)
+        if site_user is not None:
+            return _normalize_email(site_user.email)
+
+    fallback_email = normalize_comment_mail(parent_record.mail)
+    if not fallback_email or fallback_email.endswith("@waline.local"):
+        return None
+    return _normalize_email(fallback_email)
+
+
+def send_comment_feedback_notification(session: Session, *, reply_record) -> bool:
+    from aerisun.domain.waline.service import (
+        get_waline_record_by_id,
+        mark_waline_feedback_sent,
+        normalize_comment_mail,
+        parse_comment_path,
+    )
+
+    if reply_record.pid is None or reply_record.status != "approved":
+        return False
+    if reply_record.feedback_sent_at is not None:
+        return False
+
+    config = get_subscription_config_orm(session)
+    if not config.comment_feedback_enabled:
+        return False
+    if not config.smtp_test_passed or not _smtp_ready(config):
+        logger.warning("Comment feedback is enabled but SMTP is not ready; skipping reply %s", reply_record.id)
+        return False
+
+    parent = get_waline_record_by_id(record_id=reply_record.pid)
+    if parent is None or parent.status != "approved" or not parent.feedback_enabled:
+        return False
+
+    if parent.site_user_id and reply_record.site_user_id and parent.site_user_id == reply_record.site_user_id:
+        return False
+    if normalize_comment_mail(parent.mail) and normalize_comment_mail(parent.mail) == normalize_comment_mail(
+        reply_record.mail
+    ):
+        return False
+
+    try:
+        recipient = _comment_feedback_recipient(session, parent)
+    except ValidationError:
+        return False
+    if not recipient:
+        return False
+
+    settings = get_settings()
+    site = site_config_repo.find_site_profile(session)
+    site_name = (
+        (site.title if site is not None else "").strip() or (site.name if site is not None else "").strip() or "Aerisun"
+    )
+    site_url = (settings.site_url or "https://example.com").rstrip("/")
+    content_type, content_slug = parse_comment_path(reply_record.url)
+    comment_url = f"{site_url}{reply_record.url}#comment-{reply_record.id}"
+    context = {
+        "site_name": site_name,
+        "content_type": content_type,
+        "content_slug": content_slug,
+        "content_path": reply_record.url,
+        "parent_author_name": parent.nick or "访客",
+        "parent_comment": parent.comment,
+        "reply_author_name": reply_record.nick or "访客",
+        "reply_content": reply_record.comment,
+        "comment_url": comment_url,
+    }
+    message = _build_comment_feedback_message(
+        config=config,
+        recipient=recipient,
+        site_name=site_name,
+        context=context,
+    )
+
+    try:
+        _send_email(config=config, message=message)
+    except Exception as exc:
+        logger.warning("Comment feedback email failed for reply %s", reply_record.id, exc_info=exc)
+        return False
+
+    mark_waline_feedback_sent(record_id=reply_record.id, sent_at=utcnow())
+    return True
+
+
 def send_subscription_test_email(
     session: Session,
     payload: ContentSubscriptionConfigAdminUpdate,
@@ -970,6 +1126,13 @@ def send_subscription_test_email(
         allowed_content_types=list(current.allowed_content_types or DEFAULT_ALLOWED_CONTENT_TYPES),
         mail_subject_template=current.mail_subject_template or DEFAULT_SUBJECT_TEMPLATE,
         mail_body_template=current.mail_body_template or DEFAULT_BODY_TEMPLATE,
+        comment_feedback_enabled=bool(current.comment_feedback_enabled),
+        comment_feedback_subject_template=(
+            current.comment_feedback_subject_template or DEFAULT_COMMENT_FEEDBACK_SUBJECT_TEMPLATE
+        ),
+        comment_feedback_body_template=(
+            current.comment_feedback_body_template or DEFAULT_COMMENT_FEEDBACK_BODY_TEMPLATE
+        ),
     )
     updates = payload.model_dump(exclude_unset=True, exclude={"enabled"})
     _apply_subscription_updates(test_config, updates)

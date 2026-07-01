@@ -4,6 +4,7 @@ from aerisun.core.db import get_session_factory
 from aerisun.core.dev_seed import seed_development_data
 from aerisun.core.settings import get_settings
 from aerisun.domain.site_config.models import CommunityConfig
+from aerisun.domain.subscription.service import get_subscription_config_orm
 
 
 def test_seed_reference_data_normalizes_community_comment_config(client) -> None:
@@ -14,6 +15,8 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
         assert config is not None
         config.server_url = "http://localhost:8360/"
         config.surfaces = list(config.surfaces[:3])
+        subscription_config = get_subscription_config_orm(session)
+        subscription_config.comment_feedback_enabled = True
         session.commit()
     finally:
         session.close()
@@ -52,6 +55,7 @@ def test_seed_reference_data_normalizes_community_comment_config(client) -> None
     assert payload["provider"] == "waline"
     assert payload["anonymous_enabled"] is True
     assert payload["moderation_mode"] == "all_pending"
+    assert payload["comment_feedback_enabled"] is True
     assert payload["default_sorting"] == "latest"
     assert payload["page_size"] == 20
     assert "comment_image_rate_limit_count" not in payload

@@ -139,6 +139,21 @@ def test_admin_moderation_uses_waline_storage(client) -> None:
     filtered_payload = filtered.json()
     assert filtered_payload["total"] == 1
     assert filtered_payload["items"][0]["author_name"] == "Reader One"
+    assert filtered_payload["items"][0]["feedback_enabled"] is True
+    assert filtered_payload["items"][0]["deletion_reason"] is None
+
+    feedback_update = client.patch(
+        f"/api/v1/admin/moderation/comments/{root_id}/feedback",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"feedback_enabled": False},
+    )
+    assert feedback_update.status_code == 200
+    assert feedback_update.json()["feedback_enabled"] is False
+
+    with connect_waline_db(waline_db) as connection:
+        row = connection.execute("SELECT feedback_enabled FROM wl_comment WHERE id = ?", (root_id,)).fetchone()
+        assert row is not None
+        assert row["feedback_enabled"] == 0
 
     response = client.post(
         f"/api/v1/admin/moderation/comments/{reply_id}/moderate",

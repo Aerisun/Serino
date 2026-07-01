@@ -152,6 +152,24 @@ def _bind_admin_identity_by_email(*, email: str) -> None:
         )
 
 
+def _configure_comment_feedback(*, enabled: bool = True) -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.subscription.service import get_subscription_config_orm
+
+    factory = get_session_factory()
+    with factory() as session:
+        config = get_subscription_config_orm(session)
+        config.comment_feedback_enabled = enabled
+        config.smtp_test_passed = True
+        config.smtp_host = "smtp.example.com"
+        config.smtp_port = 587
+        config.smtp_from_email = "no-reply@example.com"
+        config.smtp_from_name = "Aerisun Test"
+        config.smtp_use_tls = False
+        config.smtp_use_ssl = False
+        session.commit()
+
+
 def _seed_public_comment(
     *,
     nick: str,
@@ -264,6 +282,7 @@ def test_read_comments_returns_nested_items(client) -> None:
     payload = response.json()
     assert len(payload["items"]) == 1
     assert payload["total"] == 1
+    assert payload["comment_total"] == 2
     assert payload["page"] == 1
     assert payload["page_size"] == 20
     assert payload["has_more"] is False
@@ -324,6 +343,184 @@ def test_create_comment_accepts_pending_item(client) -> None:
     assert payload["item"]["status"] == "pending"
     assert payload["item"]["author_name"] == "Pytest Reader"
     assert payload["item"]["avatar_url"].startswith("https://api.dicebear.com/")
+    assert payload["item"]["feedback_enabled"] is True
+    assert payload["item"]["owned_by_current_user"] is True
+    assert payload["item"]["can_delete"] is True
+
+
+def test_current_user_can_read_own_pending_comment_after_refresh(client) -> None:
+    _login_site_user(client, email="pending-owner@example.com", display_name="Pending Owner")
+
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "刷新后仍然看得到。",
+        },
+    )
+    assert response.status_code == 200
+
+    owner_listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+    assert owner_listing.status_code == 200
+    assert any(item["body"] == "刷新后仍然看得到。" for item in owner_listing.json()["pending_items"])
+
+    client.cookies.clear()
+    anonymous_listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+    assert anonymous_listing.status_code == 200
+    assert all(item["body"] != "刷新后仍然看得到。" for item in anonymous_listing.json()["pending_items"])
+
+    _login_site_user(client, email="pending-other@example.com", display_name="Pending Other")
+    other_listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+    assert other_listing.status_code == 200
+    assert all(item["body"] != "刷新后仍然看得到。" for item in other_listing.json()["pending_items"])
+
+
+def test_current_user_can_read_own_pending_guestbook_after_refresh(client) -> None:
+    _login_site_user(client, email="guest-pending-owner@example.com", display_name="Guest Pending Owner")
+
+    response = client.post(
+        "/api/v1/site-interactions/guestbook",
+        json={
+            "name": "Ignored Name",
+            "email": "ignored@example.com",
+            "body": "这条待审核留言刷新后还在。",
+        },
+    )
+    assert response.status_code == 200
+
+    owner_listing = client.get("/api/v1/site-interactions/guestbook")
+    assert owner_listing.status_code == 200
+    assert any(item["body"] == "这条待审核留言刷新后还在。" for item in owner_listing.json()["pending_items"])
+
+    client.cookies.clear()
+    anonymous_listing = client.get("/api/v1/site-interactions/guestbook")
+    assert anonymous_listing.status_code == 200
+    assert all(item["body"] != "这条待审核留言刷新后还在。" for item in anonymous_listing.json()["pending_items"])
+
+
+def test_user_can_delete_own_comment_tree_but_not_others(client, admin_headers) -> None:
+    _update_community_config(moderation_mode="no_review")
+    _login_site_user(client, email="delete-owner@example.com", display_name="Delete Owner")
+    root_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "准备被整串删除的根评论。",
+        },
+    )
+    assert root_response.status_code == 200
+    root_id = root_response.json()["item"]["id"]
+
+    client.cookies.clear()
+    _login_site_user(client, email="delete-replier@example.com", display_name="Delete Replier")
+    reply_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "根评论删除时我也会被删除。",
+            "parent_id": root_id,
+        },
+    )
+    assert reply_response.status_code == 200
+    reply_id = reply_response.json()["item"]["id"]
+
+    forbidden = client.delete(f"/api/v1/site-interactions/comments/{root_id}")
+    assert forbidden.status_code == 403
+
+    client.cookies.clear()
+    _login_site_user(client, email="delete-owner@example.com", display_name="Delete Owner")
+    deleted = client.delete(f"/api/v1/site-interactions/comments/{root_id}")
+    assert deleted.status_code == 204
+
+    listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
+    assert listing.status_code == 200
+    flattened = _flatten_comments(listing.json()["items"])
+    assert all(item["id"] not in {root_id, reply_id} for item in flattened)
+
+    rejected = client.get(
+        "/api/v1/admin/moderation/comments?status=rejected&page_size=100",
+        headers=admin_headers,
+    )
+    assert rejected.status_code == 200
+    rejected_items = {item["id"]: item for item in rejected.json()["items"]}
+    assert rejected_items[root_id]["deletion_reason"] == "self_deleted"
+    assert rejected_items[reply_id]["deletion_reason"] == "cascade_deleted"
+
+    restore = client.post(
+        f"/api/v1/admin/moderation/comments/{root_id}/moderate",
+        headers=admin_headers,
+        json={"action": "approve"},
+    )
+    assert restore.status_code == 422
+
+
+def test_user_can_delete_own_guestbook_but_not_others(client, admin_headers) -> None:
+    _login_site_user(client, email="guest-delete-owner@example.com", display_name="Guest Delete Owner")
+    response = client.post(
+        "/api/v1/site-interactions/guestbook",
+        json={
+            "name": "Ignored Name",
+            "email": "ignored@example.com",
+            "body": "准备被自己删除的留言。",
+        },
+    )
+    assert response.status_code == 200
+    entry_id = response.json()["item"]["id"]
+
+    client.cookies.clear()
+    _login_site_user(client, email="guest-delete-other@example.com", display_name="Guest Delete Other")
+    forbidden = client.delete(f"/api/v1/site-interactions/guestbook/{entry_id}")
+    assert forbidden.status_code == 403
+
+    client.cookies.clear()
+    _login_site_user(client, email="guest-delete-owner@example.com", display_name="Guest Delete Owner")
+    deleted = client.delete(f"/api/v1/site-interactions/guestbook/{entry_id}")
+    assert deleted.status_code == 204
+
+    listing = client.get("/api/v1/site-interactions/guestbook")
+    assert listing.status_code == 200
+    assert all(item["id"] != entry_id for item in listing.json()["pending_items"])
+
+    rejected = client.get(
+        "/api/v1/admin/moderation/guestbook?status=rejected&page_size=100",
+        headers=admin_headers,
+    )
+    assert rejected.status_code == 200
+    rejected_items = {item["id"]: item for item in rejected.json()["items"]}
+    assert rejected_items[entry_id]["deletion_reason"] == "self_deleted"
+
+
+def test_user_can_update_own_comment_feedback_switch(client) -> None:
+    _login_site_user(client, email="feedback-switch@example.com", display_name="Feedback Switch")
+
+    response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "我可以改反馈开关。",
+        },
+    )
+    assert response.status_code == 200
+    comment_id = response.json()["item"]["id"]
+
+    update = client.patch(
+        f"/api/v1/site-interactions/comments/{comment_id}/feedback",
+        json={"feedback_enabled": False},
+    )
+    assert update.status_code == 200
+    assert update.json()["feedback_enabled"] is False
+
+    client.cookies.clear()
+    _login_site_user(client, email="feedback-switch-other@example.com", display_name="Feedback Switch Other")
+    forbidden = client.patch(
+        f"/api/v1/site-interactions/comments/{comment_id}/feedback",
+        json={"feedback_enabled": True},
+    )
+    assert forbidden.status_code == 403
 
 
 def test_create_comment_skips_moderation_when_disabled(client) -> None:
@@ -347,6 +544,131 @@ def test_create_comment_skips_moderation_when_disabled(client) -> None:
     listing = client.get("/api/v1/site-interactions/comments/posts/from-zero-design-system")
     assert listing.status_code == 200
     assert any(item["body"] == "这条评论应当直接通过。" for item in _flatten_comments(listing.json()["items"]))
+
+
+def test_comment_feedback_email_sends_immediately_without_moderation(client, monkeypatch) -> None:
+    sent_messages = []
+    monkeypatch.setattr(
+        "aerisun.domain.subscription.service._send_email",
+        lambda *, config, message: sent_messages.append(message),
+    )
+    _configure_comment_feedback(enabled=True)
+    _update_community_config(moderation_mode="no_review")
+    _login_site_user(client, email="feedback-parent@example.com", display_name="Feedback Parent")
+    parent_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "请回复我。",
+        },
+    )
+    assert parent_response.status_code == 200
+    parent_id = parent_response.json()["item"]["id"]
+
+    client.cookies.clear()
+    _login_site_user(client, email="feedback-replier@example.com", display_name="Feedback Replier")
+    reply_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "我来回复你。",
+            "parent_id": parent_id,
+        },
+    )
+    assert reply_response.status_code == 200
+
+    assert len(sent_messages) == 1
+    message = sent_messages[0]
+    assert message["To"] == "feedback-parent@example.com"
+    assert "Feedback Replier" in message["Subject"]
+    body = message.get_content()
+    assert "请回复我。" in body
+    assert "我来回复你。" in body
+    assert f"#comment-{reply_response.json()['item']['id']}" in body
+
+
+def test_comment_feedback_email_waits_for_approval(client, admin_headers, monkeypatch) -> None:
+    sent_messages = []
+    monkeypatch.setattr(
+        "aerisun.domain.subscription.service._send_email",
+        lambda *, config, message: sent_messages.append(message),
+    )
+    _configure_comment_feedback(enabled=True)
+    _update_community_config(moderation_mode="no_review")
+    _login_site_user(client, email="approval-parent@example.com", display_name="Approval Parent")
+    parent_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "等审核回复。",
+        },
+    )
+    assert parent_response.status_code == 200
+    parent_id = parent_response.json()["item"]["id"]
+
+    _update_community_config(moderation_mode="all_pending")
+    client.cookies.clear()
+    _login_site_user(client, email="approval-replier@example.com", display_name="Approval Replier")
+    reply_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "这条回复先待审。",
+            "parent_id": parent_id,
+        },
+    )
+    assert reply_response.status_code == 200
+    reply_id = reply_response.json()["item"]["id"]
+    assert sent_messages == []
+
+    approve = client.post(
+        f"/api/v1/admin/moderation/comments/{reply_id}/moderate",
+        headers=admin_headers,
+        json={"action": "approve"},
+    )
+    assert approve.status_code == 200
+    assert len(sent_messages) == 1
+    assert sent_messages[0]["To"] == "approval-parent@example.com"
+
+
+def test_comment_feedback_email_respects_parent_switch(client, monkeypatch) -> None:
+    sent_messages = []
+    monkeypatch.setattr(
+        "aerisun.domain.subscription.service._send_email",
+        lambda *, config, message: sent_messages.append(message),
+    )
+    _configure_comment_feedback(enabled=True)
+    _update_community_config(moderation_mode="no_review")
+    _login_site_user(client, email="quiet-parent@example.com", display_name="Quiet Parent")
+    parent_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "不想收邮件。",
+            "feedback_enabled": False,
+        },
+    )
+    assert parent_response.status_code == 200
+    parent_id = parent_response.json()["item"]["id"]
+
+    client.cookies.clear()
+    _login_site_user(client, email="quiet-replier@example.com", display_name="Quiet Replier")
+    reply_response = client.post(
+        "/api/v1/site-interactions/comments/posts/from-zero-design-system",
+        json={
+            "author_name": "Ignored Name",
+            "author_email": "ignored@example.com",
+            "body": "不会触发邮件。",
+            "parent_id": parent_id,
+        },
+    )
+    assert reply_response.status_code == 200
+    assert sent_messages == []
 
 
 def test_read_comments_marks_email_bound_admin_identity(client) -> None:

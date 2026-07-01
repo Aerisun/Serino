@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from aerisun.api.deps.site_auth import (
@@ -22,6 +22,8 @@ from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
     CommentCreateResponse,
+    CommentFeedbackUpdate,
+    CommentRead,
     GuestbookCollectionRead,
     GuestbookCreate,
     GuestbookCreateResponse,
@@ -31,12 +33,16 @@ from aerisun.domain.engagement.schemas import (
 from aerisun.domain.engagement.service import (
     create_public_comment,
     create_public_guestbook_entry,
+    delete_public_comment,
+    delete_public_guestbook_entry,
     list_public_comments,
     list_public_guestbook_entries,
     read_public_reaction,
     register_public_reaction,
     remove_public_reaction,
+    update_public_comment_feedback,
 )
+from aerisun.domain.exceptions import ResourceNotFound
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
 
 base_router = APIRouter()
@@ -48,8 +54,9 @@ def read_guestbook(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
 ) -> GuestbookCollectionRead:
-    return list_public_guestbook_entries(session, page=page, page_size=page_size)
+    return list_public_guestbook_entries(session, page=page, page_size=page_size, current_user=current_user)
 
 
 @base_router.post("/guestbook", response_model=GuestbookCreateResponse, summary="提交留言")
@@ -69,6 +76,21 @@ def create_guestbook(
     )
 
 
+@base_router.delete("/guestbook/{entry_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除自己的留言")
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def delete_guestbook_entry(
+    request: Request,
+    entry_id: str,
+    session: Session = Depends(get_session),
+    current_user: SiteUser = Depends(get_current_site_user),
+) -> None:
+    try:
+        waline_id = int(entry_id)
+    except ValueError as err:
+        raise ResourceNotFound("Guestbook entry not found") from err
+    delete_public_guestbook_entry(session, waline_id, current_user=current_user)
+
+
 @base_router.get("/comments/{content_type}/{slug}", response_model=CommentCollectionRead, summary="获取内容评论")
 def read_comments(
     content_type: str,
@@ -76,8 +98,9 @@ def read_comments(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     session: Session = Depends(get_session),
+    current_user: SiteUser | None = Depends(get_current_site_user_optional),
 ) -> CommentCollectionRead:
-    return list_public_comments(session, content_type, slug, page=page, page_size=page_size)
+    return list_public_comments(session, content_type, slug, page=page, page_size=page_size, current_user=current_user)
 
 
 @base_router.post("/comments/{content_type}/{slug}", response_model=CommentCreateResponse, summary="发表评论")
@@ -99,6 +122,41 @@ def create_comment(
         current_user=current_user,
         current_site_session=current_site_session,
     )
+
+
+@base_router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除自己的评论")
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def delete_comment(
+    request: Request,
+    comment_id: str,
+    session: Session = Depends(get_session),
+    current_user: SiteUser = Depends(get_current_site_user),
+) -> None:
+    try:
+        waline_id = int(comment_id)
+    except ValueError as err:
+        raise ResourceNotFound("Comment not found") from err
+    delete_public_comment(session, waline_id, current_user=current_user)
+
+
+@base_router.patch(
+    "/comments/{comment_id}/feedback",
+    response_model=CommentRead,
+    summary="更新自己的评论反馈设置",
+)
+@limiter.limit(RATE_WRITE_ENGAGEMENT)
+def update_comment_feedback(
+    request: Request,
+    comment_id: str,
+    payload: CommentFeedbackUpdate,
+    session: Session = Depends(get_session),
+    current_user: SiteUser = Depends(get_current_site_user),
+) -> CommentRead:
+    try:
+        waline_id = int(comment_id)
+    except ValueError as err:
+        raise ResourceNotFound("Comment not found") from err
+    return update_public_comment_feedback(session, waline_id, payload, current_user=current_user)
 
 
 @base_router.post("/visit", response_model=VisitBeaconResponse, summary="上报页面访问")

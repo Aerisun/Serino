@@ -11,8 +11,10 @@ from aerisun.domain.engagement.service import (
     list_admin_guestbook,
     moderate_comment,
     moderate_guestbook_entry,
+    update_admin_comment_feedback,
 )
 from aerisun.domain.exceptions import ResourceNotFound
+from aerisun.domain.engagement.schemas import CommentFeedbackUpdate
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
 
@@ -65,6 +67,20 @@ def moderate_comment_endpoint(
     if result is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return result
+
+
+@router.patch("/comments/{comment_id}/feedback", response_model=CommentAdminRead, summary="修改评论反馈设置")
+def update_comment_feedback_endpoint(
+    comment_id: str,
+    payload: CommentFeedbackUpdate,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> CommentAdminRead:
+    try:
+        waline_id = int(comment_id)
+    except ValueError as err:
+        raise ResourceNotFound("Comment not found") from err
+    return update_admin_comment_feedback(session, waline_id, payload)
 
 
 @router.get("/guestbook", response_model=PaginatedResponse[GuestbookAdminRead], summary="获取留言审核列表")

@@ -15,6 +15,7 @@ from aerisun.domain.engagement.schemas import (
     CommentCollectionRead,
     CommentCreate,
     CommentCreateResponse,
+    CommentFeedbackUpdate,
     CommentRead,
     GuestbookCollectionRead,
     GuestbookCreate,
@@ -23,7 +24,7 @@ from aerisun.domain.engagement.schemas import (
     ReactionCreate,
     ReactionRead,
 )
-from aerisun.domain.exceptions import ResourceNotFound, StateConflict
+from aerisun.domain.exceptions import PermissionDenied, ResourceNotFound, StateConflict
 from aerisun.domain.exceptions import ValidationError as DomainValidationError
 from aerisun.domain.site_auth import repository as site_auth_repo
 from aerisun.domain.site_auth.models import SiteUser, SiteUserSession
@@ -40,8 +41,10 @@ from aerisun.domain.waline.service import (
     get_waline_record_by_id,
     list_all_waline_records,
     list_records_for_url,
+    mark_waline_record_tree_rejected,
     normalize_comment_mail,
     normalize_comment_nick,
+    update_waline_comment_feedback,
     update_waline_comment_avatars,
     upsert_waline_nick_identity,
 )
@@ -158,6 +161,29 @@ def _site_user_id_from_avatar_key(avatar_key: str | None) -> str | None:
         return None
     site_user_id = normalized_avatar_key.removeprefix("site-user-").strip()
     return site_user_id or None
+
+
+def _record_owned_by_current_user(record, current_user: SiteUser | None) -> bool:
+    if current_user is None:
+        return False
+
+    if getattr(record, "site_user_id", None) == current_user.id:
+        return True
+
+    if _site_user_id_from_avatar_key(getattr(record, "avatar_key", None)) == current_user.id:
+        return True
+
+    return _email_key(getattr(record, "mail", None)) == _email_key(current_user.email)
+
+
+def _pending_records_for_current_user(records: list, current_user: SiteUser | None) -> list:
+    if current_user is None:
+        return []
+    return [
+        record
+        for record in records
+        if record.status == "pending" and _record_owned_by_current_user(record, current_user)
+    ]
 
 
 def _is_bound_admin_comment(
@@ -545,12 +571,27 @@ def _paginate_items(items: list, page: int, page_size: int) -> tuple[list, int, 
     return items[start:end], total, end < total
 
 
-def _guestbook_entry_from_waline(session: Session, item) -> GuestbookEntryRead:
+def _dispatch_comment_feedback_if_ready(session: Session, reply_record) -> None:
+    if reply_record.pid is None or reply_record.status != "approved":
+        return
+
+    from aerisun.domain.subscription.service import send_comment_feedback_notification
+
+    send_comment_feedback_notification(session, reply_record=reply_record)
+
+
+def _guestbook_entry_from_waline(
+    session: Session,
+    item,
+    *,
+    current_user: SiteUser | None = None,
+) -> GuestbookEntryRead:
     is_author = _is_bound_admin_comment(
         session,
         email=item.mail,
         avatar_key=item.avatar_key,
     )
+    owned_by_current_user = _record_owned_by_current_user(item, current_user)
     fallback_name = item.nick or "访客"
     fallback_avatar_url = item.avatar_url or _avatar_for_name(fallback_name)
     display_name, display_avatar_url = _resolve_public_admin_profile(
@@ -569,6 +610,8 @@ def _guestbook_entry_from_waline(session: Session, item) -> GuestbookEntryRead:
         avatar=item.avatar_key or fallback_avatar_url,
         avatar_url=display_avatar_url,
         is_author=is_author,
+        owned_by_current_user=owned_by_current_user,
+        can_delete=owned_by_current_user,
     )
 
 
@@ -577,17 +620,27 @@ def list_public_guestbook_entries(
     *,
     page: int = 1,
     page_size: int = 20,
+    current_user: SiteUser | None = None,
 ) -> GuestbookCollectionRead:
     _ensure_comment_avatar_assignments(session, build_comment_path("guestbook", "guestbook"))
     sorting = _resolve_comment_sorting(session)
-    items = list_all_waline_records(status="approved", guestbook_only=True)
+    records = list_all_waline_records(status=None, guestbook_only=True)
+    items = [item for item in records if item.status == "approved"]
     mapped = _sort_guestbook_entries(
-        [_guestbook_entry_from_waline(session, item) for item in items],
+        [_guestbook_entry_from_waline(session, item, current_user=current_user) for item in items],
+        sorting,
+    )
+    pending_items = _sort_guestbook_entries(
+        [
+            _guestbook_entry_from_waline(session, item, current_user=current_user)
+            for item in _pending_records_for_current_user(records, current_user)
+        ],
         sorting,
     )
     paged_items, total, has_more = _paginate_items(mapped, page, page_size)
     return GuestbookCollectionRead(
         items=paged_items,
+        pending_items=pending_items,
         total=total,
         page=page,
         page_size=page_size,
@@ -650,6 +703,7 @@ def create_public_guestbook_entry(
         link=website,
         status=entry_status,
         url=build_comment_path("guestbook", "guestbook"),
+        site_user_id=current_user.id if current_user is not None else None,
         avatar_key=avatar_key,
         avatar_url=avatar_url,
     )
@@ -675,12 +729,20 @@ def create_public_guestbook_entry(
                 email=entry.mail,
                 avatar_key=entry.avatar_key,
             ),
+            owned_by_current_user=_record_owned_by_current_user(entry, current_user),
+            can_delete=_record_owned_by_current_user(entry, current_user),
         ),
         accepted=True,
     )
 
 
-def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
+def _build_waline_comment_tree(
+    session: Session,
+    items,
+    *,
+    current_user: SiteUser | None = None,
+    include_orphan_replies: bool = False,
+) -> list[CommentRead]:
     by_parent: dict[int | None, list] = defaultdict(list)
     for item in items:
         by_parent[item.pid].append(item)
@@ -699,6 +761,7 @@ def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
             fallback_avatar_url=raw_avatar,
             is_author=is_author,
         )
+        owned_by_current_user = _record_owned_by_current_user(node, current_user)
         return CommentRead(
             id=str(node.id),
             parent_id=str(node.pid) if node.pid is not None else None,
@@ -711,10 +774,24 @@ def _build_waline_comment_tree(session: Session, items) -> list[CommentRead]:
             like_count=node.like,
             liked=False,
             is_author=is_author,
+            owned_by_current_user=owned_by_current_user,
+            can_delete=owned_by_current_user,
+            feedback_enabled=bool(getattr(node, "feedback_enabled", True)),
+            can_update_feedback=owned_by_current_user,
             replies=[convert(child) for child in by_parent.get(node.id, [])],
         )
 
     roots = by_parent.get(None, [])
+    if include_orphan_replies:
+        item_ids = {item.id for item in items}
+        roots = [
+            *roots,
+            *[
+                item
+                for item in items
+                if item.pid is not None and item.pid not in item_ids
+            ],
+        ]
     return [convert(root) for root in roots]
 
 
@@ -725,22 +802,38 @@ def list_public_comments(
     *,
     page: int = 1,
     page_size: int = 20,
+    current_user: SiteUser | None = None,
 ) -> CommentCollectionRead:
     if not repo.content_exists(session, content_type, content_slug):
         raise ResourceNotFound(f"{content_type} content with slug '{content_slug}' was not found")
 
     url = build_comment_path(content_type, content_slug)
     _ensure_comment_avatar_assignments(session, url)
-    items = list_records_for_url(
+    records = list_records_for_url(
         url=url,
-        status="approved",
+        status=None,
         order="asc",
     )
-    threads = _sort_comment_threads(_build_waline_comment_tree(session, items), _resolve_comment_sorting(session))
+    approved_records = [item for item in records if item.status == "approved"]
+    threads = _sort_comment_threads(
+        _build_waline_comment_tree(session, approved_records, current_user=current_user),
+        _resolve_comment_sorting(session),
+    )
+    pending_threads = _sort_comment_threads(
+        _build_waline_comment_tree(
+            session,
+            _pending_records_for_current_user(records, current_user),
+            current_user=current_user,
+            include_orphan_replies=True,
+        ),
+        _resolve_comment_sorting(session),
+    )
     paged_items, total, has_more = _paginate_items(threads, page, page_size)
     return CommentCollectionRead(
         items=paged_items,
+        pending_items=pending_threads,
         total=total,
+        comment_total=len(approved_records),
         page=page,
         page_size=page_size,
         has_more=has_more,
@@ -817,8 +910,10 @@ def create_public_comment(
         status=item_status,
         url=url,
         parent_id=parent_id,
+        site_user_id=current_user.id if current_user is not None else None,
         avatar_key=avatar_key,
         avatar_url=avatar_url,
+        feedback_enabled=bool(payload.feedback_enabled),
     )
     if item.status == "pending":
         emit_comment_pending(
@@ -829,6 +924,9 @@ def create_public_comment(
             author_name=item.nick or "访客",
             body_preview=(item.comment or "")[:240],
         )
+    else:
+        _dispatch_comment_feedback_if_ready(session, item)
+    owned_by_current_user = _record_owned_by_current_user(item, current_user)
     return CommentCreateResponse(
         item=CommentRead(
             id=str(item.id),
@@ -846,10 +944,79 @@ def create_public_comment(
                 email=item.mail,
                 avatar_key=item.avatar_key,
             ),
+            owned_by_current_user=owned_by_current_user,
+            can_delete=owned_by_current_user,
+            feedback_enabled=bool(item.feedback_enabled),
+            can_update_feedback=owned_by_current_user,
             replies=[],
         ),
         accepted=True,
     )
+
+
+def delete_public_comment(
+    session: Session,
+    comment_id: int,
+    *,
+    current_user: SiteUser,
+) -> None:
+    record = get_waline_record_by_id(record_id=comment_id)
+    if record is None or record.url == build_comment_path("guestbook", "guestbook"):
+        raise ResourceNotFound("Comment not found")
+    if not _record_owned_by_current_user(record, current_user):
+        raise PermissionDenied("只能删除自己发布的评论。")
+
+    result = mark_waline_record_tree_rejected(record_id=comment_id)
+    if result is None:
+        raise ResourceNotFound("Comment not found")
+
+
+def delete_public_guestbook_entry(
+    session: Session,
+    entry_id: int,
+    *,
+    current_user: SiteUser,
+) -> None:
+    record = get_waline_record_by_id(record_id=entry_id)
+    if record is None or record.url != build_comment_path("guestbook", "guestbook"):
+        raise ResourceNotFound("Guestbook entry not found")
+    if not _record_owned_by_current_user(record, current_user):
+        raise PermissionDenied("只能删除自己发布的留言。")
+
+    result = mark_waline_record_tree_rejected(record_id=entry_id)
+    if result is None:
+        raise ResourceNotFound("Guestbook entry not found")
+
+
+def update_public_comment_feedback(
+    session: Session,
+    comment_id: int,
+    payload: CommentFeedbackUpdate,
+    *,
+    current_user: SiteUser,
+) -> CommentRead:
+    record = get_waline_record_by_id(record_id=comment_id)
+    if record is None or record.url == build_comment_path("guestbook", "guestbook"):
+        raise ResourceNotFound("Comment not found")
+    if not _record_owned_by_current_user(record, current_user):
+        raise PermissionDenied("只能修改自己评论的反馈设置。")
+
+    updated = update_waline_comment_feedback(
+        record_id=comment_id,
+        feedback_enabled=payload.feedback_enabled,
+    )
+    if updated is None:
+        raise ResourceNotFound("Comment not found")
+
+    items = _build_waline_comment_tree(
+        session,
+        [updated],
+        current_user=current_user,
+        include_orphan_replies=True,
+    )
+    if not items:
+        raise ResourceNotFound("Comment not found")
+    return items[0]
 
 
 def register_public_reaction(session: Session, payload: ReactionCreate) -> ReactionRead:
@@ -1060,6 +1227,8 @@ def _comment_admin_read_from_waline(session: Session, record):
         ),
         body=record.comment,
         status=record.status,
+        feedback_enabled=bool(record.feedback_enabled),
+        deletion_reason=record.deletion_reason,
         created_at=record.inserted_at,
         updated_at=record.updated_at,
     )
@@ -1081,6 +1250,7 @@ def _guestbook_admin_read_from_waline(session: Session, record):
         website=record.link,
         body=record.comment,
         status=record.status,
+        deletion_reason=record.deletion_reason,
         created_at=record.inserted_at,
         updated_at=record.updated_at,
     )
@@ -1204,7 +1374,27 @@ def moderate_comment(session: Session, comment_id: int, action: str, reason: str
     if action == "delete":
         _cleanup_deleted_comment_images(session, deleted_records)
         return None
+    if action == "approve":
+        _dispatch_comment_feedback_if_ready(session, result)
     return _comment_admin_read_from_waline(session, result)
+
+
+def update_admin_comment_feedback(
+    session: Session,
+    comment_id: int,
+    payload: CommentFeedbackUpdate,
+):
+    record = get_waline_record_by_id(record_id=comment_id)
+    if record is None or record.url == build_comment_path("guestbook", "guestbook"):
+        raise ResourceNotFound("Comment not found")
+
+    updated = update_waline_comment_feedback(
+        record_id=comment_id,
+        feedback_enabled=payload.feedback_enabled,
+    )
+    if updated is None:
+        raise ResourceNotFound("Comment not found")
+    return _comment_admin_read_from_waline(session, updated)
 
 
 def moderate_guestbook_entry(session: Session, entry_id: int, action: str, reason: str | None = None):

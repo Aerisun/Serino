@@ -682,6 +682,9 @@ def _capture_subscriptions_config(session: Session) -> dict[str, Any]:
             "allowed_content_types": list(config.allowed_content_types or []),
             "mail_subject_template": config.mail_subject_template,
             "mail_body_template": config.mail_body_template,
+            "comment_feedback_enabled": config.comment_feedback_enabled,
+            "comment_feedback_subject_template": config.comment_feedback_subject_template,
+            "comment_feedback_body_template": config.comment_feedback_body_template,
         }
     )
 

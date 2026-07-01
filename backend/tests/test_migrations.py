@@ -9,7 +9,7 @@ from alembic.script import ScriptDirectory
 from aerisun.core.db import dispose_engine, run_database_migrations
 from aerisun.core.settings import get_settings
 
-CURRENT_SCHEMA_HEAD = "0006_visit_record_user_agent_fields"
+CURRENT_SCHEMA_HEAD = "0007_comment_feedback_config"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,6 +67,7 @@ def test_active_alembic_history_is_reset_to_single_production_baseline_head() ->
         "0004_drop_admin_email_password_hash.py",
         "0005_remove_content_status.py",
         "0006_visit_record_user_agent_fields.py",
+        "0007_comment_feedback_config.py",
     ]
     assert not (BACKEND_ROOT / "alembic" / "legacy_versions").exists()
 
