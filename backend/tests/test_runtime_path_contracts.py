@@ -1577,6 +1577,15 @@ def test_installer_runtime_paths_follow_serino_system_layout():
     assert "__AERISUN_APP_ROOT__" in service_text
     assert "__AERISUN_COMPOSE_PROJECT_NAME__" in service_text
     assert "__AERISUN_RENDERED_COMPOSE_FILE__" in service_text
+    assert (
+        'SERINO_PROXY_FIREWALL_UNIT="${SERINO_PROXY_FIREWALL_UNIT:-mihomo-docker-proxy-firewall.service}"'
+        in common_text
+    )
+    assert (
+        'SERINO_PROXY_FIREWALL_DROPIN_NAME="${SERINO_PROXY_FIREWALL_DROPIN_NAME:-proxy-firewall.conf}"' in common_text
+    )
+    assert "install_proxy_firewall_systemd_dropin" in common_text
+    assert "ExecStartPost=/bin/systemctl restart %s" in common_text
     assert "__SERINO_SYSTEMD_UNIT__" in upgrade_service_text
     assert "__SERINO_BIN_LINK__" in upgrade_service_text
     assert "ExecStart=__SERINO_BIN_LINK__ upgrade --check" in upgrade_service_text
@@ -1662,6 +1671,12 @@ make_temp_file() {{
 }}
 
 run_as_root() {{
+  if [[ "$1" == systemctl && "$2" == cat ]]; then
+    return 1
+  fi
+  if [[ "$1" == rm && "$2" == "-f" ]]; then
+    return 0
+  fi
   if [[ "$1" == install && "$2" == "-m" && "$3" == "0644" ]]; then
     cp "$4" '{systemd_dir}'/"$(basename "$5")"
     return 0
@@ -1679,6 +1694,86 @@ cat '{systemd_dir}/serino-upgrade.service'
 
     assert f"ExecStart={tmp_path}/bin/sercli upgrade --check" in completed
     assert f"ExecStart={tmp_path}/bin/sercli upgrade\n" not in completed
+
+
+def test_proxy_firewall_dropin_restarts_firewall_unit_after_serino_start(tmp_path: Path):
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+
+    completed = run_installer_bash(
+        f"""
+source installer/lib/common.sh
+
+SERINO_SYSTEMD_UNIT='serino.service'
+SERINO_PROXY_FIREWALL_UNIT='mihomo-docker-proxy-firewall.service'
+SERINO_PROXY_FIREWALL_DROPIN_NAME='proxy-firewall.conf'
+
+make_temp_file() {{
+  mktemp '{tmp_path}/dropin.XXXXXX'
+}}
+
+map_systemd_path() {{
+  local target="$1"
+  printf '%s/%s' '{systemd_dir}' "${{target#/etc/systemd/system/}}"
+}}
+
+run_as_root() {{
+  if [[ "$1" == systemctl && "$2" == cat && "$3" == "${{SERINO_PROXY_FIREWALL_UNIT}}" ]]; then
+    return 0
+  fi
+  if [[ "$1" == install && "$2" == "-d" ]]; then
+    mkdir -p "$(map_systemd_path "${{@: -1}}")"
+    return 0
+  fi
+  if [[ "$1" == install && "$2" == "-m" && "$3" == "0644" ]]; then
+    mkdir -p "$(dirname "$(map_systemd_path "$5")")"
+    cp "$4" "$(map_systemd_path "$5")"
+    return 0
+  fi
+  printf 'unexpected run_as_root call: %s\\n' "$*" >&2
+  return 1
+}}
+
+install_proxy_firewall_systemd_dropin
+cat '{systemd_dir}/serino.service.d/proxy-firewall.conf'
+"""
+    ).strip()
+
+    assert completed == "[Service]\nExecStartPost=/bin/systemctl restart mihomo-docker-proxy-firewall.service"
+
+
+def test_proxy_firewall_dropin_is_removed_when_firewall_unit_is_missing(tmp_path: Path):
+    systemd_dir = tmp_path / "systemd"
+    stale_dropin = systemd_dir / "serino.service.d" / "proxy-firewall.conf"
+    stale_dropin.parent.mkdir(parents=True)
+    stale_dropin.write_text("[Service]\nExecStartPost=/bin/systemctl restart stale.service\n", encoding="utf-8")
+
+    run_installer_bash(
+        f"""
+source installer/lib/common.sh
+
+SERINO_SYSTEMD_UNIT='serino.service'
+SERINO_PROXY_FIREWALL_UNIT='mihomo-docker-proxy-firewall.service'
+SERINO_PROXY_FIREWALL_DROPIN_NAME='proxy-firewall.conf'
+
+run_as_root() {{
+  if [[ "$1" == systemctl && "$2" == cat && "$3" == "${{SERINO_PROXY_FIREWALL_UNIT}}" ]]; then
+    return 1
+  fi
+  if [[ "$1" == rm && "$2" == "-f" ]]; then
+    local target="$3"
+    rm -f '{systemd_dir}'/"${{target#/etc/systemd/system/}}"
+    return 0
+  fi
+  printf 'unexpected run_as_root call: %s\\n' "$*" >&2
+  return 1
+}}
+
+install_proxy_firewall_systemd_dropin
+"""
+    )
+
+    assert not stale_dropin.exists()
 
 
 def test_release_workflow_refreshes_bitiful_installer_cache():

@@ -16,6 +16,8 @@ SERINO_SERVICE_GROUP="${SERINO_SERVICE_GROUP:-serino}"
 SERINO_SYSTEMD_UNIT="${SERINO_SYSTEMD_UNIT:-serino.service}"
 SERINO_SYSTEMD_UPGRADE_SERVICE="${SERINO_SYSTEMD_UPGRADE_SERVICE:-serino-upgrade.service}"
 SERINO_SYSTEMD_UPGRADE_TIMER="${SERINO_SYSTEMD_UPGRADE_TIMER:-serino-upgrade.timer}"
+SERINO_PROXY_FIREWALL_UNIT="${SERINO_PROXY_FIREWALL_UNIT:-mihomo-docker-proxy-firewall.service}"
+SERINO_PROXY_FIREWALL_DROPIN_NAME="${SERINO_PROXY_FIREWALL_DROPIN_NAME:-proxy-firewall.conf}"
 SERINO_BIN_LINK="${SERINO_BIN_LINK:-$([[ "${AERISUN_APP_ROOT}" == "/opt/serino" ]] && printf '%s' '/usr/local/bin/sercli' || printf '%s' "${AERISUN_BIN_ROOT}/sercli")}"
 SERINO_MAINTENANCE_LOCK_FILE="${SERINO_MAINTENANCE_LOCK_FILE:-/run/lock/serino-maintenance.lock}"
 SERINO_RUNTIME_UID=""
@@ -530,6 +532,27 @@ ensure_system_layout() {
   write_service_account_marker
 }
 
+install_proxy_firewall_systemd_dropin() {
+  local proxy_unit="${SERINO_PROXY_FIREWALL_UNIT:-}"
+  local dropin_dir="/etc/systemd/system/${SERINO_SYSTEMD_UNIT}.d"
+  local dropin_file="${dropin_dir}/${SERINO_PROXY_FIREWALL_DROPIN_NAME}"
+  local dropin_tmp=""
+
+  [[ -n "${proxy_unit}" ]] || return 0
+
+  if ! run_as_root systemctl cat "${proxy_unit}" >/dev/null 2>&1; then
+    run_as_root rm -f "${dropin_file}" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  dropin_tmp="$(make_temp_file)"
+  printf '[Service]\nExecStartPost=/bin/systemctl restart %s\n' "${proxy_unit}" >"${dropin_tmp}"
+  run_as_root install -d -o root -g root -m 0755 "${dropin_dir}"
+  run_as_root install -m 0644 "${dropin_tmp}" "${dropin_file}"
+  rm -f "${dropin_tmp}"
+  log_info "已配置 ${SERINO_SYSTEMD_UNIT} 启动后刷新 ${proxy_unit}。"
+}
+
 install_systemd_units() {
   local source_root="${1:-${AERISUN_TEMPLATE_ROOT}}"
   local service_template="${source_root}/installer/systemd/serino.service"
@@ -581,6 +604,7 @@ PY
   run_as_root install -m 0644 "${service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UNIT}"
   run_as_root install -m 0644 "${upgrade_service_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_SERVICE}"
   run_as_root install -m 0644 "${timer_tmp}" "/etc/systemd/system/${SERINO_SYSTEMD_UPGRADE_TIMER}"
+  install_proxy_firewall_systemd_dropin
   rm -f "${service_tmp}" "${upgrade_service_tmp}" "${timer_tmp}"
   run_as_root systemctl daemon-reload
 }
