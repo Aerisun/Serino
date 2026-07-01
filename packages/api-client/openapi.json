@@ -10556,15 +10556,275 @@
               ],
               "title": "Date To"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_VisitorRecordRead_"
+                }
+              }
+            }
           },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/system/visitor-record-groups": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "获取按连续 IP 聚合的访客访问记录",
+        "operationId": "visitor_record_groups_api_v1_admin_system_visitor_record_groups_get",
+        "security": [
           {
-            "name": "include_bots",
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Include Bots"
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          },
+          {
+            "name": "ip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ip"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_VisitorRecordGroupRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/system/visitor-record-groups/{newest_record_id}/{oldest_record_id}/records": {
+      "get": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "获取连续 IP 聚合段内的访客访问记录",
+        "operationId": "visitor_record_group_records_api_v1_admin_system_visitor_record_groups__newest_record_id___oldest_record_id__records_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "newest_record_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Newest Record Id"
+            }
+          },
+          {
+            "name": "oldest_record_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Oldest Record Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          },
+          {
+            "name": "ip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ip"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
             }
           }
         ],
@@ -23232,6 +23492,34 @@
         ],
         "title": "PaginatedResponse[SocialLinkAdminRead]"
       },
+      "PaginatedResponse_VisitorRecordGroupRead_": {
+        "properties": {
+          "items": {
+            "title": "Items",
+            "description": "Page of result items"
+          },
+          "total": {
+            "title": "Total",
+            "description": "Total number of items matching the query"
+          },
+          "page": {
+            "title": "Page",
+            "description": "Current page number (1-based)"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedResponse[VisitorRecordGroupRead]"
+      },
       "PaginatedResponse_VisitorRecordRead_": {
         "properties": {
           "items": {
@@ -25498,6 +25786,44 @@
           "label"
         ],
         "title": "VisitorBreakdownMetric"
+      },
+      "VisitorRecordGroupRead": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "ip_address": {
+            "title": "Ip Address"
+          },
+          "record_count": {
+            "title": "Record Count"
+          },
+          "newest_record": {},
+          "oldest_record": {},
+          "newest_visited_at": {
+            "title": "Newest Visited At"
+          },
+          "oldest_visited_at": {
+            "title": "Oldest Visited At"
+          },
+          "ok_count": {
+            "title": "Ok Count"
+          },
+          "error_count": {
+            "title": "Error Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ip_address",
+          "record_count",
+          "newest_record",
+          "oldest_record",
+          "newest_visited_at",
+          "oldest_visited_at"
+        ],
+        "title": "VisitorRecordGroupRead"
       },
       "VisitorRecordRead": {
         "properties": {

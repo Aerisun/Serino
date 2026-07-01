@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from aerisun.core.db import get_session
+from aerisun.domain.engagement.schemas import CommentFeedbackUpdate
 from aerisun.domain.engagement.service import (
     list_admin_comments,
     list_admin_guestbook,
@@ -14,7 +15,6 @@ from aerisun.domain.engagement.service import (
     update_admin_comment_feedback,
 )
 from aerisun.domain.exceptions import ResourceNotFound
-from aerisun.domain.engagement.schemas import CommentFeedbackUpdate
 from aerisun.domain.iam.models import AdminUser
 from aerisun.domain.ops.schemas import CommentAdminRead, GuestbookAdminRead, ModerateAction
 

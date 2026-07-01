@@ -163,6 +163,7 @@ import type {
   PaginatedResponseResumeBasicsAdminRead,
   PaginatedResponseSiteUserAdminRead,
   PaginatedResponseSocialLinkAdminRead,
+  PaginatedResponseVisitorRecordGroupRead,
   PaginatedResponseVisitorRecordRead,
   PasswordChangeRequest,
   PoemAdminRead,
@@ -193,6 +194,8 @@ import type {
   TelegramWebhookConnectWrite,
   TestContentSubscriptionConfigApiV1AdminSubscriptionsConfigTestPostParams,
   UpdateMcpConfigApiV1AdminIntegrationsMcpConfigPutParams,
+  VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams,
+  VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams,
   VisitorRecordsApiV1AdminSystemVisitorRecordsGetParams,
   WebhookDeadLetterRead,
   WebhookDeliveryRead,
@@ -13822,6 +13825,270 @@ export function useVisitorRecordsApiV1AdminSystemVisitorRecordsGet<TData = Await
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getVisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取按连续 IP 聚合的访客访问记录
+ */
+export type visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse200 = {
+  data: PaginatedResponseVisitorRecordGroupRead
+  status: 200
+}
+
+export type visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponseSuccess = (visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse200) & {
+  headers: Headers;
+};
+export type visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponseError = (visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse422) & {
+  headers: Headers;
+};
+
+export type visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse = (visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponseSuccess | visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponseError)
+
+export const getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetUrl = (params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/system/visitor-record-groups?${stringifiedParams}` : `/api/v1/admin/system/visitor-record-groups`
+}
+
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet = async (params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams, options?: RequestInit): Promise<visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse> => {
+
+  return customInstance<visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse>(getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryKey = (params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams,) => {
+    return [
+    `/api/v1/admin/system/visitor-record-groups`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryOptions = <TData = Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError = ErrorType<HTTPValidationError>>(params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>> = ({ signal }) => visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryResult = NonNullable<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>>
+export type VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params: undefined |  VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>,
+          TError,
+          Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>,
+          TError,
+          Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取按连续 IP 聚合的访客访问记录
+ */
+
+export function useVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError = ErrorType<HTTPValidationError>>(
+ params?: VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getVisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+/**
+ * @summary 获取连续 IP 聚合段内的访客访问记录
+ */
+export type visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse200 = {
+  data: PaginatedResponseVisitorRecordRead
+  status: 200
+}
+
+export type visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponseSuccess = (visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse200) & {
+  headers: Headers;
+};
+export type visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponseError = (visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse422) & {
+  headers: Headers;
+};
+
+export type visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse = (visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponseSuccess | visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponseError)
+
+export const getVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetUrl = (newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/system/visitor-record-groups/${newestRecordId}/${oldestRecordId}/records?${stringifiedParams}` : `/api/v1/admin/system/visitor-record-groups/${newestRecordId}/${oldestRecordId}/records`
+}
+
+export const visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet = async (newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams, options?: RequestInit): Promise<visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse> => {
+
+  return customInstance<visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse>(getVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetUrl(newestRecordId,oldestRecordId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryKey = (newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams,) => {
+    return [
+    `/api/v1/admin/system/visitor-record-groups/${newestRecordId}/${oldestRecordId}/records`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryOptions = <TData = Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError = ErrorType<HTTPValidationError>>(newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryKey(newestRecordId,oldestRecordId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>> = ({ signal }) => visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet(newestRecordId,oldestRecordId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(newestRecordId && oldestRecordId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryResult = NonNullable<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>>
+export type VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryError = ErrorType<HTTPValidationError>
+
+
+export function useVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ newestRecordId: string,
+    oldestRecordId: string,
+    params: undefined |  VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>,
+          TError,
+          Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>,
+          TError,
+          Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取连续 IP 聚合段内的访客访问记录
+ */
+
+export function useVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet<TData = Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError = ErrorType<HTTPValidationError>>(
+ newestRecordId: string,
+    oldestRecordId: string,
+    params?: VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getVisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryOptions(newestRecordId,oldestRecordId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

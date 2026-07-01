@@ -44,8 +44,8 @@ from aerisun.domain.waline.service import (
     mark_waline_record_tree_rejected,
     normalize_comment_mail,
     normalize_comment_nick,
-    update_waline_comment_feedback,
     update_waline_comment_avatars,
+    update_waline_comment_feedback,
     upsert_waline_nick_identity,
 )
 
@@ -786,11 +786,7 @@ def _build_waline_comment_tree(
         item_ids = {item.id for item in items}
         roots = [
             *roots,
-            *[
-                item
-                for item in items
-                if item.pid is not None and item.pid not in item_ids
-            ],
+            *[item for item in items if item.pid is not None and item.pid not in item_ids],
         ]
     return [convert(root) for root in roots]
 

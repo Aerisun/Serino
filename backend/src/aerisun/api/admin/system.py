@@ -92,6 +92,7 @@ from aerisun.domain.ops.schemas import (
     ConfigRevisionRestoreWrite,
     EnhancedDashboardStats,
     SystemInfo,
+    VisitorRecordGroupRead,
     VisitorRecordRead,
 )
 from aerisun.domain.ops.service import get_config_revision_detail as _get_config_revision_detail
@@ -99,6 +100,8 @@ from aerisun.domain.ops.service import get_dashboard_stats as _get_dashboard_sta
 from aerisun.domain.ops.service import get_system_info as _get_system_info
 from aerisun.domain.ops.service import list_audit_logs as _list_audit_logs
 from aerisun.domain.ops.service import list_config_revisions as _list_config_revisions
+from aerisun.domain.ops.service import list_visitor_record_group_records as _list_visitor_record_group_records
+from aerisun.domain.ops.service import list_visitor_record_groups as _list_visitor_record_groups
 from aerisun.domain.ops.service import list_visitor_records as _list_visitor_records
 from aerisun.domain.ops.service import restore_config_revision as _restore_config_revision
 
@@ -470,7 +473,6 @@ def visitor_records(
     ip: str | None = Query(default=None),
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
-    include_bots: bool = Query(default=False),
     _admin: AdminUser = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -482,7 +484,62 @@ def visitor_records(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
-        include_bots=include_bots,
+    )
+
+
+@router.get(
+    "/visitor-record-groups",
+    response_model=PaginatedResponse[VisitorRecordGroupRead],
+    summary="获取按连续 IP 聚合的访客访问记录",
+)
+def visitor_record_groups(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    path: str | None = Query(default=None),
+    ip: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    return _list_visitor_record_groups(
+        session,
+        page=page,
+        page_size=page_size,
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@router.get(
+    "/visitor-record-groups/{newest_record_id}/{oldest_record_id}/records",
+    response_model=PaginatedResponse[VisitorRecordRead],
+    summary="获取连续 IP 聚合段内的访客访问记录",
+)
+def visitor_record_group_records(
+    newest_record_id: str,
+    oldest_record_id: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    path: str | None = Query(default=None),
+    ip: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    return _list_visitor_record_group_records(
+        session,
+        newest_record_id=newest_record_id,
+        oldest_record_id=oldest_record_id,
+        page=page,
+        page_size=page_size,
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
     )
 
 
