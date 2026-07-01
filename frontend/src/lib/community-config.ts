@@ -28,6 +28,7 @@ export interface CommunityConfig {
   meta: Array<"nick" | "mail" | "link">;
   required_meta: Array<"nick" | "mail">;
   anonymous_enabled: boolean;
+  comment_feedback_enabled: boolean;
   moderation_mode: string;
   default_sorting: CommunityCommentSort;
   image_uploader: boolean;
@@ -45,6 +46,7 @@ interface CommunityConfigResponse {
   meta?: Array<"nick" | "mail" | "link">;
   required_meta?: Array<"nick" | "mail">;
   anonymous_enabled?: boolean;
+  comment_feedback_enabled?: boolean;
   moderation_mode?: string;
   default_sorting?: CommunityCommentSort;
   image_uploader?: boolean;
@@ -72,6 +74,7 @@ const DEFAULT_WALINE_COMMUNITY_CONFIG: CommunityConfig = {
   meta: ["nick", "mail", "link"],
   required_meta: ["nick"],
   anonymous_enabled: true,
+  comment_feedback_enabled: false,
   moderation_mode: "all_pending",
   default_sorting: "latest",
   image_uploader: false,
@@ -206,6 +209,7 @@ const normalizeCommunityConfig = (payload: unknown): CommunityConfig => {
     meta,
     required_meta: record.required_meta ?? DEFAULT_WALINE_COMMUNITY_CONFIG.required_meta,
     anonymous_enabled: record.anonymous_enabled ?? DEFAULT_WALINE_COMMUNITY_CONFIG.anonymous_enabled,
+    comment_feedback_enabled: Boolean(record.comment_feedback_enabled),
     moderation_mode: normalizeModerationMode(record.moderation_mode),
     default_sorting: normalizeCommentSorting(record.default_sorting),
     image_uploader: record.image_uploader ?? DEFAULT_WALINE_COMMUNITY_CONFIG.image_uploader,
@@ -280,13 +284,14 @@ const writeStoredCommunityConfig = (value: CommunityConfig) => {
 };
 
 export async function loadCommunityConfig(init?: RequestInit): Promise<CommunityConfig> {
-  const cached = readStoredCommunityConfig();
+  const forceNetwork = init?.cache === "no-store" || init?.cache === "reload";
+  const cached = forceNetwork ? null : readStoredCommunityConfig();
   if (cached) {
     hintCommunityConnections(cached);
     return cached;
   }
 
-  if (inflightCommunityConfigRequest) {
+  if (!forceNetwork && inflightCommunityConfigRequest) {
     return inflightCommunityConfigRequest;
   }
 

@@ -6,6 +6,8 @@ import { transition } from "@/config";
 import { useFrontendI18n } from "@/i18n";
 import { useContentReaction, type ContentReactionSurface } from "@/hooks/use-content-reaction";
 import { useReducedMotionPreference } from "@/lib/useReducedMotion";
+import { countCommentTree, type CommunityCommentItem } from "@/components/waline-types";
+import { readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGet } from "@serino/api-client/site-interactions";
 
 type CommentSurface = ContentReactionSurface | "guestbook";
 
@@ -72,6 +74,7 @@ const CommentSection = ({
   const location = useLocation();
   const { id } = useParams();
   const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
 
   const contentContext = useMemo(
     () => resolveCommentContext(contentType, contentSlug, location.pathname, id),
@@ -92,6 +95,37 @@ const CommentSection = ({
     setShowComments(!isCollapsible && contentContext !== null);
   }, [contentContext, isCollapsible]);
 
+  useEffect(() => {
+    let active = true;
+    setCommentCount(0);
+
+    if (!contentContext || contentContext.contentType === "guestbook") {
+      return () => {
+        active = false;
+      };
+    }
+
+    readCommentsApiV1SiteInteractionsCommentsContentTypeSlugGet(
+      contentContext.contentType,
+      contentContext.slug,
+      { page: 1, page_size: 1 },
+    )
+      .then((response) => {
+        if (!active) {
+          return;
+        }
+        const pendingItems = (response.data.pending_items ?? []) as CommunityCommentItem[];
+        setCommentCount(
+          Number(response.data.comment_total ?? response.data.total ?? 0) + countCommentTree(pendingItems),
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [contentContext]);
+
   const body = contentContext ? (
     shouldLoadSurface ? (
       <Suspense
@@ -104,6 +138,7 @@ const CommentSection = ({
         <WalineSurface
           surface={contentContext.contentType}
           slug={contentContext.contentType === "guestbook" ? undefined : contentContext.slug}
+          onVisibleCountChange={setCommentCount}
         />
       </Suspense>
     ) : null
@@ -169,7 +204,9 @@ const CommentSection = ({
           }`}
         >
           <MessageCircle className={`h-4 w-4 ${showComments ? "fill-[rgb(var(--shiro-panel-rgb)/0.34)]" : ""}`} />
-          {showComments ? t("comments.collapse") : t("comments.expand")}
+          <span className="tabular-nums">{commentCount}</span>
+          <span className="h-4 w-px bg-[rgb(var(--shiro-border-rgb)/0.22)]" aria-hidden="true" />
+          <span>{showComments ? t("comments.collapse") : t("comments.expand")}</span>
         </button>
       </div>
 
