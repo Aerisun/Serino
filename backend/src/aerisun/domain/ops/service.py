@@ -45,6 +45,7 @@ from aerisun.domain.ops.schemas import (
     TopPageMetric,
     TrafficTrendPoint,
     VisitorBreakdownMetric,
+    VisitorRecordGroupRead,
     VisitorRecordRead,
 )
 from aerisun.domain.ops.user_agent import parse_user_agent
@@ -755,7 +756,6 @@ def list_visitor_records(
     ip: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
-    include_bots: bool = False,
 ) -> dict:
     items, total = repo.find_visit_records_paginated(
         session,
@@ -765,7 +765,84 @@ def list_visitor_records(
         ip=ip,
         date_from=date_from,
         date_to=date_to,
-        include_bots=include_bots,
+        include_bots=True,
+    )
+    enriched_items = _enrich_visit_records(list(items))
+    return {
+        "items": enriched_items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def list_visitor_record_groups(
+    session: Session,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> dict:
+    items, total = repo.find_visit_record_groups_paginated(
+        session,
+        page=page,
+        page_size=page_size,
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    boundary_ids = {item.newest_record_id for item in items} | {item.oldest_record_id for item in items}
+    boundary_records = repo.find_visit_records_by_ids(session, boundary_ids)
+    enriched_by_id = {item.id: item for item in _enrich_visit_records(boundary_records)}
+    groups = [
+        VisitorRecordGroupRead(
+            id=f"{item.newest_record_id}:{item.oldest_record_id}",
+            ip_address=item.ip_address,
+            record_count=item.record_count,
+            newest_record=enriched_by_id[item.newest_record_id],
+            oldest_record=enriched_by_id[item.oldest_record_id],
+            newest_visited_at=item.newest_visited_at,
+            oldest_visited_at=item.oldest_visited_at,
+            ok_count=item.ok_count,
+            error_count=item.error_count,
+        )
+        for item in items
+        if item.newest_record_id in enriched_by_id and item.oldest_record_id in enriched_by_id
+    ]
+    return {
+        "items": groups,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+def list_visitor_record_group_records(
+    session: Session,
+    *,
+    newest_record_id: str,
+    oldest_record_id: str,
+    page: int = 1,
+    page_size: int = 20,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> dict:
+    items, total = repo.find_visit_records_for_group_paginated(
+        session,
+        newest_record_id=newest_record_id,
+        oldest_record_id=oldest_record_id,
+        page=page,
+        page_size=page_size,
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
     )
     enriched_items = _enrich_visit_records(list(items))
     return {

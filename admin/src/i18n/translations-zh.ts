@@ -1005,10 +1005,11 @@ export const zhTranslations: TranslationDict = {
   "dashboard.visitorsDetailDuration": "加载耗时",
   "dashboard.visitorsDetailReferrer": "来源",
   "dashboard.visitorsDetailVisitorId": "访客标识",
+  "dashboard.visitorsGroupCount": "连续 {count} 次",
+  "dashboard.visitorsGroupFirstVisit": "首次访问",
   "dashboard.visitorsEmptyTitle": "暂无访客趋势数据",
   "dashboard.visitorsEmptyDescription":
     "站点产生公共页面访问后，会在这里显示趋势。",
-  "dashboard.visitorsIncludeBots": "显示机器人访问",
   "dashboard.greetingMorning": "早上好",
   "dashboard.greetingAfternoon": "下午好",
   "dashboard.greetingEvening": "晚上好",

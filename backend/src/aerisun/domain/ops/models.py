@@ -166,6 +166,7 @@ class VisitRecord(Base, TimestampMixin):
     __tablename__ = "visit_records"
     __table_args__ = (
         Index("ix_visit_records_visited_at", "visited_at"),
+        Index("ix_visit_records_visited_at_id", "visited_at", "id"),
         Index("ix_visit_records_path_visited_at", "path", "visited_at"),
         Index("ix_visit_records_ip_address_visited_at", "ip_address", "visited_at"),
         Index("ix_visit_records_is_bot", "is_bot"),

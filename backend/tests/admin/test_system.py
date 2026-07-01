@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 import time
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import aerisun.domain.ops.service as ops_service
 from aerisun.core.db import get_session_factory
@@ -262,6 +263,224 @@ class TestDashboardStats:
         assert first["path"]
         for key in ("ip_address", "duration_ms", "status_text", "location", "browser", "os", "device_type"):
             assert key in first
+
+    def test_list_visitor_record_groups_paginates_by_consecutive_ip_segments(self, client, admin_headers):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/page-{uuid4().hex}"
+        with factory() as session:
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=now,
+                        path=f"{marker}/a-1",
+                        ip_address="198.51.100.41",
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=10,
+                        is_bot=False,
+                    ),
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=1),
+                        path=f"{marker}/a-2",
+                        ip_address="198.51.100.41",
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=11,
+                        is_bot=False,
+                    ),
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=2),
+                        path=f"{marker}/a-3",
+                        ip_address="198.51.100.41",
+                        user_agent="Mozilla/5.0",
+                        status_code=500,
+                        duration_ms=12,
+                        is_bot=False,
+                    ),
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=3),
+                        path=f"{marker}/b-1",
+                        ip_address="198.51.100.42",
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=13,
+                        is_bot=False,
+                    ),
+                ]
+            )
+            session.commit()
+
+        first_page = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page": 1, "page_size": 1},
+        )
+        second_page = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page": 2, "page_size": 1},
+        )
+
+        assert first_page.status_code == 200
+        assert second_page.status_code == 200
+        assert first_page.json()["total"] == 2
+        first_group = first_page.json()["items"][0]
+        assert first_group["ip_address"] == "198.51.100.41"
+        assert first_group["record_count"] == 3
+        assert first_group["ok_count"] == 2
+        assert first_group["error_count"] == 1
+        assert first_group["newest_record"]["path"] == f"{marker}/a-1"
+        assert first_group["oldest_record"]["path"] == f"{marker}/a-3"
+        second_group = second_page.json()["items"][0]
+        assert second_group["ip_address"] == "198.51.100.42"
+        assert second_group["record_count"] == 1
+
+    def test_list_visitor_record_groups_keeps_interrupted_ips_separate(self, client, admin_headers):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/interrupted-{uuid4().hex}"
+        rows = [
+            ("198.51.100.51", "a-1"),
+            ("198.51.100.51", "a-2"),
+            ("198.51.100.52", "b-1"),
+            ("198.51.100.51", "a-3"),
+            ("198.51.100.51", "a-4"),
+        ]
+        with factory() as session:
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=index),
+                        path=f"{marker}/{slug}",
+                        ip_address=ip_address,
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=10 + index,
+                        is_bot=False,
+                    )
+                    for index, (ip_address, slug) in enumerate(rows)
+                ]
+            )
+            session.commit()
+
+        resp = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page_size": 10},
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 3
+        assert [(item["ip_address"], item["record_count"]) for item in data["items"]] == [
+            ("198.51.100.51", 2),
+            ("198.51.100.52", 1),
+            ("198.51.100.51", 2),
+        ]
+
+    def test_list_visitor_record_groups_treats_bot_rows_as_regular_visits(self, client, admin_headers):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/bots-{uuid4().hex}"
+        with factory() as session:
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=now,
+                        path=f"{marker}/a-new",
+                        ip_address="198.51.100.61",
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=10,
+                        is_bot=False,
+                    ),
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=1),
+                        path=f"{marker}/bot",
+                        ip_address="198.51.100.62",
+                        user_agent="Crawler",
+                        status_code=200,
+                        duration_ms=11,
+                        is_bot=True,
+                    ),
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=2),
+                        path=f"{marker}/a-old",
+                        ip_address="198.51.100.61",
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=12,
+                        is_bot=False,
+                    ),
+                ]
+            )
+            session.commit()
+
+        resp = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page_size": 10},
+        )
+
+        assert resp.status_code == 200
+        assert [(item["ip_address"], item["record_count"]) for item in resp.json()["items"]] == [
+            ("198.51.100.61", 1),
+            ("198.51.100.62", 1),
+            ("198.51.100.61", 1),
+        ]
+
+    def test_list_visitor_record_group_records_stays_within_group_boundaries(self, client, admin_headers):
+        factory = get_session_factory()
+        now = shanghai_now()
+        marker = f"/visitor-groups/details-{uuid4().hex}"
+        rows = [
+            ("198.51.100.71", "a-1"),
+            ("198.51.100.71", "a-2"),
+            ("198.51.100.72", "b-1"),
+            ("198.51.100.71", "a-3"),
+        ]
+        with factory() as session:
+            session.add_all(
+                [
+                    VisitRecord(
+                        visited_at=now - timedelta(minutes=index),
+                        path=f"{marker}/{slug}",
+                        ip_address=ip_address,
+                        user_agent="Mozilla/5.0",
+                        status_code=200,
+                        duration_ms=10 + index,
+                        is_bot=False,
+                    )
+                    for index, (ip_address, slug) in enumerate(rows)
+                ]
+            )
+            session.commit()
+
+        groups_resp = client.get(
+            f"{BASE}/visitor-record-groups",
+            headers=admin_headers,
+            params={"path": marker, "page_size": 10},
+        )
+        assert groups_resp.status_code == 200
+        first_group = groups_resp.json()["items"][0]
+
+        detail_first_page = client.get(
+            f"{BASE}/visitor-record-groups/{first_group['newest_record']['id']}/{first_group['oldest_record']['id']}/records",
+            headers=admin_headers,
+            params={"path": marker, "page": 1, "page_size": 1},
+        )
+        detail_all = client.get(
+            f"{BASE}/visitor-record-groups/{first_group['newest_record']['id']}/{first_group['oldest_record']['id']}/records",
+            headers=admin_headers,
+            params={"path": marker, "page_size": 10},
+        )
+
+        assert detail_first_page.status_code == 200
+        assert detail_first_page.json()["total"] == 2
+        assert [item["path"] for item in detail_first_page.json()["items"]] == [f"{marker}/a-1"]
+        assert detail_all.status_code == 200
+        assert [item["path"] for item in detail_all.json()["items"]] == [f"{marker}/a-1", f"{marker}/a-2"]
 
     def test_dashboard_visitor_breakdowns(self, client, admin_headers):
         factory = get_session_factory()

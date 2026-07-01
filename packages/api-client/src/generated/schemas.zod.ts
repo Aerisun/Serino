@@ -4075,7 +4075,7 @@ export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageDefault = 1
 export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageSizeDefault = 20;
 export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageSizeMax = 100;
 
-export const visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryIncludeBotsDefault = false;
+
 
 export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryParams = zod.object({
   "page": zod.number().min(1).default(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryPageDefault),
@@ -4083,11 +4083,69 @@ export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetQueryParams = zod.ob
   "path": zod.union([zod.string(),zod.null()]).optional(),
   "ip": zod.union([zod.string(),zod.null()]).optional(),
   "date_from": zod.union([zod.string(),zod.null()]).optional(),
-  "date_to": zod.union([zod.string(),zod.null()]).optional(),
-  "include_bots": zod.boolean().default(visitorRecordsApiV1AdminSystemVisitorRecordsGetQueryIncludeBotsDefault)
+  "date_to": zod.union([zod.string(),zod.null()]).optional()
 })
 
 export const VisitorRecordsApiV1AdminSystemVisitorRecordsGetResponse = zod.object({
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 获取按连续 IP 聚合的访客访问记录
+ */
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageDefault = 1;
+
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageSizeDefault = 20;
+export const visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageSizeMax = 100;
+
+
+
+export const VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageSizeMax).default(visitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetQueryPageSizeDefault),
+  "path": zod.union([zod.string(),zod.null()]).optional(),
+  "ip": zod.union([zod.string(),zod.null()]).optional(),
+  "date_from": zod.union([zod.string(),zod.null()]).optional(),
+  "date_to": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const VisitorRecordGroupsApiV1AdminSystemVisitorRecordGroupsGetResponse = zod.object({
+  "items": zod.unknown().describe('Page of result items'),
+  "total": zod.unknown().describe('Total number of items matching the query'),
+  "page": zod.unknown().describe('Current page number (1-based)'),
+  "page_size": zod.unknown().describe('Number of items per page')
+})
+
+
+/**
+ * @summary 获取连续 IP 聚合段内的访客访问记录
+ */
+export const VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetParams = zod.object({
+  "newest_record_id": zod.string(),
+  "oldest_record_id": zod.string()
+})
+
+export const visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryPageDefault = 1;
+
+export const visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryPageSizeDefault = 20;
+export const visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryPageSizeMax = 100;
+
+
+
+export const VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryParams = zod.object({
+  "page": zod.number().min(1).default(visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryPageDefault),
+  "page_size": zod.number().min(1).max(visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryPageSizeMax).default(visitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetQueryPageSizeDefault),
+  "path": zod.union([zod.string(),zod.null()]).optional(),
+  "ip": zod.union([zod.string(),zod.null()]).optional(),
+  "date_from": zod.union([zod.string(),zod.null()]).optional(),
+  "date_to": zod.union([zod.string(),zod.null()]).optional()
+})
+
+export const VisitorRecordGroupRecordsApiV1AdminSystemVisitorRecordGroupsNewestRecordIdOldestRecordIdRecordsGetResponse = zod.object({
   "items": zod.unknown().describe('Page of result items'),
   "total": zod.unknown().describe('Total number of items matching the query'),
   "page": zod.unknown().describe('Current page number (1-based)'),

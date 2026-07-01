@@ -30,8 +30,13 @@ interface DataTableProps<T> {
   selectable?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
+  renderCells?: (row: T, context: { expanded: boolean }) => React.ReactNode;
   renderExpandedRow?: (row: T) => React.ReactNode;
+  renderExpandedRows?: (row: T, context: { colSpan: number; expanded: boolean }) => React.ReactNode;
   getRowClassName?: (row: T) => string | undefined;
+  expandOnRowClick?: boolean | ((row: T) => boolean);
+  getExpandCellClassName?: (row: T, expanded: boolean) => string | undefined;
+  getExpandButtonClassName?: (row: T, expanded: boolean) => string | undefined;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -46,12 +51,17 @@ export function DataTable<T extends { id: string }>({
   selectable,
   selectedIds,
   onSelectionChange,
+  renderCells,
   renderExpandedRow,
+  renderExpandedRows,
   getRowClassName,
+  expandOnRowClick,
+  getExpandCellClassName,
+  getExpandButtonClassName,
 }: DataTableProps<T>) {
   const { t } = useI18n();
   const totalPages = Math.ceil(total / pageSize);
-  const hasExpandedRow = Boolean(renderExpandedRow);
+  const hasExpandedRow = Boolean(renderExpandedRow || renderExpandedRows);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const allPageSelected =
@@ -81,7 +91,7 @@ export function DataTable<T extends { id: string }>({
   };
 
   const toggleExpanded = (id: string) => {
-    if (!renderExpandedRow) return;
+    if (!hasExpandedRow) return;
     setExpandedIds((current) => {
       const next = new Set(current);
       if (next.has(id)) {
@@ -91,6 +101,18 @@ export function DataTable<T extends { id: string }>({
       }
       return next;
     });
+  };
+
+  const shouldExpandOnRowClick = (row: T) => {
+    if (!hasExpandedRow || !expandOnRowClick) return false;
+    return typeof expandOnRowClick === "function" ? expandOnRowClick(row) : expandOnRowClick;
+  };
+
+  const handleRowClick = (row: T) => {
+    onRowClick?.(row);
+    if (shouldExpandOnRowClick(row)) {
+      toggleExpanded(row.id);
+    }
   };
 
   const colSpan = columns.length + (selectable ? 1 : 0) + (hasExpandedRow ? 1 : 0);
@@ -142,26 +164,28 @@ export function DataTable<T extends { id: string }>({
               </TableCell>
             </TableRow>
           ) : (
-            data.map((row) => (
-              <Fragment key={row.id}>
+            data.map((row) => {
+              const expanded = expandedIds.has(row.id);
+              return (
+                <Fragment key={row.id}>
                 <TableRow
-                  className={cn(onRowClick ? "cursor-pointer" : "", getRowClassName?.(row))}
-                  onClick={() => onRowClick?.(row)}
+                  className={cn((onRowClick || shouldExpandOnRowClick(row)) ? "cursor-pointer" : "", getRowClassName?.(row))}
+                  onClick={() => handleRowClick(row)}
                 >
                   {hasExpandedRow && (
                     <TableCell
-                      className="w-10"
+                      className={cn("w-10", getExpandCellClassName?.(row, expanded))}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className={cn("h-8 w-8", getExpandButtonClassName?.(row, expanded))}
                         onClick={() => toggleExpanded(row.id)}
-                        aria-label={expandedIds.has(row.id) ? t("common.collapse") : t("common.expand")}
+                        aria-label={expanded ? t("common.collapse") : t("common.expand")}
                       >
-                        {expandedIds.has(row.id) ? (
+                        {expanded ? (
                           <ChevronUp className="h-4 w-4" />
                         ) : (
                           <ChevronDown className="h-4 w-4" />
@@ -182,23 +206,28 @@ export function DataTable<T extends { id: string }>({
                       />
                     </TableCell>
                   )}
-                  {columns.map((col, i) => (
-                    <TableCell key={i} className={col.className}>
-                      {typeof col.accessor === "function"
-                        ? col.accessor(row)
-                        : (row[col.accessor] as React.ReactNode)}
-                    </TableCell>
-                  ))}
+                  {renderCells
+                    ? renderCells(row, { expanded })
+                    : columns.map((col, i) => (
+                        <TableCell key={i} className={col.className}>
+                          {typeof col.accessor === "function"
+                            ? col.accessor(row)
+                            : (row[col.accessor] as React.ReactNode)}
+                        </TableCell>
+                      ))}
                 </TableRow>
-                {hasExpandedRow && expandedIds.has(row.id) ? (
+                {hasExpandedRow && expanded && renderExpandedRows ? (
+                  renderExpandedRows(row, { colSpan, expanded })
+                ) : hasExpandedRow && expanded && renderExpandedRow ? (
                   <TableRow>
                     <TableCell colSpan={colSpan} className="bg-muted/20 px-4 py-0">
                       {renderExpandedRow(row)}
                     </TableCell>
                   </TableRow>
                 ) : null}
-              </Fragment>
-            ))
+                </Fragment>
+              );
+            })
           )}
         </TableBody>
       </Table>

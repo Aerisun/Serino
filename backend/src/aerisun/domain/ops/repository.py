@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import Session
 
 from aerisun.core.time import beijing_date, beijing_day_bounds, beijing_today, normalize_shanghai_datetime
@@ -17,6 +18,19 @@ from aerisun.domain.ops.models import (
     TrafficDailySnapshot,
     VisitRecord,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class VisitRecordGroupSummary:
+    group_number: int
+    ip_address: str
+    record_count: int
+    newest_record_id: str
+    oldest_record_id: str
+    newest_visited_at: datetime
+    oldest_visited_at: datetime
+    ok_count: int
+    error_count: int
 
 
 def _apply_visit_filters(
@@ -39,6 +53,91 @@ def _apply_visit_filters(
     if not include_bots:
         query = query.filter(VisitRecord.is_bot.is_(False))
     return query
+
+
+def _visit_order_columns():
+    return (VisitRecord.visited_at.desc(), VisitRecord.id.desc())
+
+
+def _build_visit_record_group_subquery(
+    session: Session,
+    *,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    base_query = _apply_visit_filters(
+        session.query(
+            VisitRecord.id.label("id"),
+            VisitRecord.ip_address.label("ip_address"),
+            VisitRecord.visited_at.label("visited_at"),
+            VisitRecord.status_code.label("status_code"),
+        ),
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+        include_bots=True,
+    )
+    base = base_query.subquery()
+    base_order = (base.c.visited_at.desc(), base.c.id.desc())
+    previous_ip = func.lag(base.c.ip_address).over(order_by=base_order)
+    starts_group = case(
+        (previous_ip.is_(None), 1),
+        (base.c.ip_address != previous_ip, 1),
+        else_=0,
+    ).label("starts_group")
+    marked = select(
+        base.c.id,
+        base.c.ip_address,
+        base.c.visited_at,
+        base.c.status_code,
+        starts_group,
+    ).subquery()
+    marked_order = (marked.c.visited_at.desc(), marked.c.id.desc())
+    group_number = func.sum(marked.c.starts_group).over(order_by=marked_order, rows=(None, 0)).label("group_number")
+    grouped = select(
+        marked.c.id,
+        marked.c.ip_address,
+        marked.c.visited_at,
+        marked.c.status_code,
+        group_number,
+    ).subquery()
+    newest_rank = (
+        func.row_number()
+        .over(partition_by=grouped.c.group_number, order_by=(grouped.c.visited_at.desc(), grouped.c.id.desc()))
+        .label("newest_rank")
+    )
+    oldest_rank = (
+        func.row_number()
+        .over(partition_by=grouped.c.group_number, order_by=(grouped.c.visited_at.asc(), grouped.c.id.asc()))
+        .label("oldest_rank")
+    )
+    ranked = select(
+        grouped.c.id,
+        grouped.c.ip_address,
+        grouped.c.visited_at,
+        grouped.c.status_code,
+        grouped.c.group_number,
+        newest_rank,
+        oldest_rank,
+    ).subquery()
+    return (
+        select(
+            ranked.c.group_number.label("group_number"),
+            ranked.c.ip_address.label("ip_address"),
+            func.count(ranked.c.id).label("record_count"),
+            func.max(case((ranked.c.newest_rank == 1, ranked.c.id), else_=None)).label("newest_record_id"),
+            func.max(case((ranked.c.oldest_rank == 1, ranked.c.id), else_=None)).label("oldest_record_id"),
+            func.max(ranked.c.visited_at).label("newest_visited_at"),
+            func.min(ranked.c.visited_at).label("oldest_visited_at"),
+            func.sum(case((ranked.c.status_code < 400, 1), else_=0)).label("ok_count"),
+            func.sum(case((ranked.c.status_code >= 400, 1), else_=0)).label("error_count"),
+        )
+        .group_by(ranked.c.group_number, ranked.c.ip_address)
+        .subquery()
+    )
 
 
 def find_audit_logs_paginated(
@@ -420,7 +519,111 @@ def find_visit_records_paginated(
         include_bots=include_bots,
     )
     total = query.count()
-    items = list(query.order_by(VisitRecord.visited_at.desc()).offset((page - 1) * page_size).limit(page_size).all())
+    items = list(query.order_by(*_visit_order_columns()).offset((page - 1) * page_size).limit(page_size).all())
+    return items, total
+
+
+def find_visit_records_by_ids(session: Session, record_ids: set[str]) -> list[VisitRecord]:
+    if not record_ids:
+        return []
+    return list(session.query(VisitRecord).filter(VisitRecord.id.in_(record_ids)).all())
+
+
+def find_visit_record_groups_paginated(
+    session: Session,
+    *,
+    page: int,
+    page_size: int,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> tuple[list[VisitRecordGroupSummary], int]:
+    groups = _build_visit_record_group_subquery(
+        session,
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    total = session.execute(select(func.count()).select_from(groups)).scalar_one()
+    rows = session.execute(
+        select(groups).order_by(groups.c.group_number.asc()).offset((page - 1) * page_size).limit(page_size)
+    ).mappings()
+    return [
+        VisitRecordGroupSummary(
+            group_number=int(row["group_number"]),
+            ip_address=str(row["ip_address"]),
+            record_count=int(row["record_count"]),
+            newest_record_id=str(row["newest_record_id"]),
+            oldest_record_id=str(row["oldest_record_id"]),
+            newest_visited_at=row["newest_visited_at"],
+            oldest_visited_at=row["oldest_visited_at"],
+            ok_count=int(row["ok_count"] or 0),
+            error_count=int(row["error_count"] or 0),
+        )
+        for row in rows
+    ], int(total)
+
+
+def _visit_record_boundary_filter(newest: VisitRecord, oldest: VisitRecord):
+    after_newest_or_self = or_(
+        VisitRecord.visited_at < newest.visited_at,
+        and_(VisitRecord.visited_at == newest.visited_at, VisitRecord.id <= newest.id),
+    )
+    before_oldest_or_self = or_(
+        VisitRecord.visited_at > oldest.visited_at,
+        and_(VisitRecord.visited_at == oldest.visited_at, VisitRecord.id >= oldest.id),
+    )
+    return and_(after_newest_or_self, before_oldest_or_self)
+
+
+def find_visit_records_for_group_paginated(
+    session: Session,
+    *,
+    newest_record_id: str,
+    oldest_record_id: str,
+    page: int,
+    page_size: int,
+    path: str | None = None,
+    ip: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> tuple[list[VisitRecord], int]:
+    newest = session.get(VisitRecord, newest_record_id)
+    oldest = session.get(VisitRecord, oldest_record_id)
+    if newest is None or oldest is None or newest.ip_address != oldest.ip_address:
+        return [], 0
+
+    boundary_ids = {newest_record_id, oldest_record_id}
+    visible_boundary_count = (
+        _apply_visit_filters(
+            session.query(VisitRecord.id),
+            path=path,
+            ip=ip,
+            date_from=date_from,
+            date_to=date_to,
+            include_bots=True,
+        )
+        .filter(VisitRecord.id.in_(boundary_ids))
+        .count()
+    )
+    if visible_boundary_count != len(boundary_ids):
+        return [], 0
+
+    query = _apply_visit_filters(
+        session.query(VisitRecord),
+        path=path,
+        ip=ip,
+        date_from=date_from,
+        date_to=date_to,
+        include_bots=True,
+    ).filter(
+        VisitRecord.ip_address == newest.ip_address,
+        _visit_record_boundary_filter(newest, oldest),
+    )
+    total = query.count()
+    items = list(query.order_by(*_visit_order_columns()).offset((page - 1) * page_size).limit(page_size).all())
     return items, total
 
 

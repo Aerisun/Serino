@@ -333,6 +333,18 @@ class VisitorRecordRead(ModelBase):
     is_bot: bool = False
 
 
+class VisitorRecordGroupRead(ModelBase):
+    id: str
+    ip_address: str
+    record_count: int
+    newest_record: VisitorRecordRead
+    oldest_record: VisitorRecordRead
+    newest_visited_at: datetime
+    oldest_visited_at: datetime
+    ok_count: int = 0
+    error_count: int = 0
+
+
 class VisitorBreakdownMetric(BaseModel):
     label: str
     count: int = 0
