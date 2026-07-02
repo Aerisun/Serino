@@ -600,12 +600,18 @@ export const enTranslations: TranslationDict = {
     "system.recoveryKeyExported": "Recovery password set",
     "system.recoveryKeyRotated": "Recovery key rotated",
     "system.setRecoveryPassword": "Set Recovery Password",
+    "system.resetRecoveryPassword": "Reset Recovery Password",
     "system.confirmSetRecoveryPassword": "Confirm",
+    "system.confirmResetRecoveryPassword": "Confirm Reset",
     "system.recoveryPasswordSet": "Recovery password has been set",
     "system.setRecoveryPasswordDescription":
       "This password is never stored in plaintext. Use a password you can keep long term; if it is forgotten, old backups cannot be recovered.",
+    "system.resetRecoveryPasswordDescription":
+      "When the remote backup machine is empty or overwrite has been selected, a new recovery password can be set for the new backup history.",
     "system.recoveryPasswordImportantWarning":
       "Important: this password is required for disaster recovery. If it is forgotten, old backups cannot be decrypted.",
+    "system.resetRecoveryPasswordImportantWarning":
+      "After reset, new backups use the new recovery password. Older backups still require their original password and recovery key.",
     "system.recoveryPasswordConfirm": "Enter recovery password again",
     "system.recoveryPasswordMismatch": "The two recovery passwords do not match",
     "system.testBackupConfig": "Test Config",
@@ -620,7 +626,10 @@ export const enTranslations: TranslationDict = {
     "system.fixedBackupDirectory": "Fixed Backup Directory",
     "system.backupProbeLatency": "Check Time",
     "system.backupConfigTestStatus": "Test Result",
+    "system.backupConfigTestPending": "Pending",
+    "system.backupConfigTestChecking": "Checking",
     "system.backupConfigTestOk": "Reachable",
+    "system.backupConfigTestInvalid": "Invalid",
     "system.backupConfigTestLatency": "Latency",
     "system.recoveryKeyRequiredBeforeSave":
       "Before the first backup can be configured, set a recovery password. Saving is blocked until that step is complete.",
@@ -653,6 +662,7 @@ export const enTranslations: TranslationDict = {
     "system.copyBootstrapCommand": "Copy Command",
     "system.backupBootstrapCommandReady": "Temporary command generated",
     "system.backupBootstrapCommandCopied": "Command copied",
+    "system.copyCommandFailed": "Copy failed. Select and copy the command manually.",
     "system.backupBootstrapRevoked": "Temporary command revoked",
     "system.backupBootstrapHostRequired": "Enter the backup machine address first",
     "system.backupBootstrapCommandEmpty":
@@ -677,7 +687,7 @@ export const enTranslations: TranslationDict = {
       "Transport, credentials, and scheduling",
     "system.backupsTabs.records": "Records",
     "system.backupsTabs.recordsDescription":
-      "Queues, runs, and restoreable commits",
+      "Queues, archive points, and restoreable commits",
     "system.backupConnectTitle": "Connect Backup Machine",
     "system.backupForeignHistoryWarning":
       "This backup machine already has another backup history. To avoid data mixing, Serino will not write to it directly.",
@@ -686,13 +696,22 @@ export const enTranslations: TranslationDict = {
     "system.backupOverwriteHistoryConfirm":
       "Overwrite the remote backup history? Serino will archive the old history first, then create a new history for this site.",
     "system.backupOverwriteHistoryDone": "Remote history overwritten",
+    "system.backupOverwriteHistoryIntentConfirm":
+      "Overwrite the remote backup history? After you set the recovery password and start backup, Serino will archive the old history and create a new one.",
+    "system.backupOverwriteHistoryIntentReady": "Remote overwrite selected",
     "system.backupRestoreRemoteHistoryPending":
-      "Disaster recovery import still needs recovery password and backup-version selection. This version blocks direct writes first.",
+      "Enter the recovery password, then choose a backup version to restore.",
     "system.recoveryPasswordTitle": "Set Recovery Password",
     "system.recoveryPasswordReadyDescription":
       "The recovery password is set. It cannot be set again while continuing the same backup history.",
+    "system.recoveryPasswordCanResetForNewHistory":
+      "The remote backup machine is empty or overwrite has been selected, so a new recovery password can be set for the new backup history.",
+    "system.recoveryPasswordRequiredForNewRemote":
+      "A new backup history will be created for this backup machine. Local old backup records will be abandoned; set a new recovery password.",
     "system.recoveryPasswordRequiredDescription":
       "Set a recovery password before creating or overwriting backup history. Disaster recovery will require it.",
+    "system.recoveryPasswordBlockedUntilBackupReady":
+      "Finish backup machine detection first. If existing history is found, choose restore or overwrite before setting the recovery password.",
     "system.recoveryPasswordAlreadySet": "Already Set",
     "system.forgotRecoveryPassword": "Forgot Password?",
     "system.forgotRecoveryPasswordDescription":
@@ -706,7 +725,7 @@ export const enTranslations: TranslationDict = {
     "system.startBackupNow": "Start Backup",
     "system.resetBackupSystem": "Reset Backup System",
     "system.resetBackupSystemDescription":
-      "Clear local backup settings, recovery password state, queues, and run records, then start setup again. Content data is not deleted.",
+      "Clear local backup settings, recovery password state, queues, and archive points, then start setup again. Content data is not deleted.",
     "system.resetBackupSystemConfirm":
       "Reset the local backup system? This clears local backup settings and recovery password state, but does not delete site content.",
     "system.resetBackupSystemDone": "Local backup system reset",
@@ -730,7 +749,7 @@ export const enTranslations: TranslationDict = {
     "system.backupSetupStepCredential":
       "Saving will automatically confirm or generate the local recovery key directory.",
     "system.backupSetupStepVerify":
-      "After saving, open Records and trigger one manual backup to confirm that run records and commit records appear.",
+      "After saving, open Records and trigger one manual backup to confirm that archive points and commit records appear.",
     "system.siteSlug": "Site Slug",
     "system.siteSlugDescription":
       "Used for the remote site directory. In most cases, keeping aerisun is fine.",
@@ -790,7 +809,7 @@ export const enTranslations: TranslationDict = {
     "system.syncStatusCardDescription":
       "Shows the most recent enqueue, sync result, and error message.",
     "system.queueRecords": "Queue Records",
-    "system.runRecords": "Run Records",
+    "system.runRecords": "Archive Points",
     "system.commitRecords": "Commit Records",
     "system.latestCommit": "Latest Commit",
     "system.queueDepth": "Pending Queue Depth",
@@ -806,7 +825,7 @@ export const enTranslations: TranslationDict = {
     "system.missingFingerprint": "Fingerprint not configured",
     "system.recordsNeedSetupTitle": "There is nothing to show in Records yet",
     "system.recordsNeedSetupDescription":
-      "Complete the SFTP settings and the recovery key directory in Setup first. After saving, trigger one manual backup and the run and commit records will start to appear.",
+      "Complete the SFTP settings and the recovery key directory in Setup first. After saving, trigger one manual backup and the archive points and commit records will start to appear.",
     "system.triggerKind": "Trigger",
     "system.retryCount": "Retry Count",
     "system.nextRetryAt": "Next Retry",

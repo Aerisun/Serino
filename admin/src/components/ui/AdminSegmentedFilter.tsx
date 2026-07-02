@@ -19,6 +19,33 @@ interface AdminSegmentedFilterProps {
   className?: string;
 }
 
+function scrollActiveItemIntoHorizontalView(
+  node: HTMLDivElement,
+  activeItem: HTMLElement,
+  behavior: ScrollBehavior,
+) {
+  const itemLeft = activeItem.offsetLeft;
+  const itemRight = itemLeft + activeItem.offsetWidth;
+  const visibleLeft = node.scrollLeft;
+  const visibleRight = visibleLeft + node.clientWidth;
+  let nextLeft = visibleLeft;
+
+  if (itemLeft < visibleLeft) {
+    nextLeft = itemLeft;
+  } else if (itemRight > visibleRight) {
+    nextLeft = itemRight - node.clientWidth;
+  }
+
+  if (nextLeft === visibleLeft) {
+    return;
+  }
+  if (typeof node.scrollTo === "function") {
+    node.scrollTo({ left: nextLeft, behavior });
+  } else {
+    node.scrollLeft = nextLeft;
+  }
+}
+
 export function AdminSegmentedFilter({
   value,
   onValueChange,
@@ -54,11 +81,9 @@ export function AdminSegmentedFilter({
     const frame = window.requestAnimationFrame(() => {
       const activeItem = node.querySelector<HTMLElement>("[aria-selected='true']");
 
-      activeItem?.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-        behavior: "smooth",
-      });
+      if (activeItem) {
+        scrollActiveItemIntoHorizontalView(node, activeItem, "smooth");
+      }
     });
 
     return () => window.cancelAnimationFrame(frame);

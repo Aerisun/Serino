@@ -230,8 +230,11 @@ def find_due_backup_queue_item(session: Session, *, now: datetime) -> BackupQueu
     )
 
 
-def list_backup_commits(session: Session) -> list[BackupCommit]:
-    return list(session.query(BackupCommit).order_by(BackupCommit.created_at.desc()).all())
+def list_backup_commits(session: Session, *, include_retention_tombstones: bool = False) -> list[BackupCommit]:
+    query = session.query(BackupCommit)
+    if not include_retention_tombstones:
+        query = query.filter(BackupCommit.trigger_kind != "retention-pruned")
+    return list(query.order_by(BackupCommit.created_at.desc()).all())
 
 
 def create_backup_commit(session: Session, **kwargs) -> BackupCommit:
@@ -242,6 +245,12 @@ def create_backup_commit(session: Session, **kwargs) -> BackupCommit:
 
 def get_backup_commit(session: Session, commit_id: str) -> BackupCommit | None:
     return session.get(BackupCommit, commit_id)
+
+
+def clear_backup_history_records(session: Session, *, job_name: str) -> None:
+    session.query(BackupQueueItem).delete(synchronize_session=False)
+    session.query(BackupCommit).delete(synchronize_session=False)
+    session.query(SyncRun).filter(SyncRun.job_name == job_name).delete(synchronize_session=False)
 
 
 def list_backup_recovery_keys(session: Session, *, credential_ref: str) -> list[BackupRecoveryKey]:
@@ -351,9 +360,7 @@ def find_running_sync_run(session: Session, *, job_name: str) -> SyncRun | None:
 
 
 def reset_backup_sync_records(session: Session, *, credential_ref: str, job_name: str) -> None:
-    session.query(BackupQueueItem).delete(synchronize_session=False)
-    session.query(BackupCommit).delete(synchronize_session=False)
-    session.query(SyncRun).filter(SyncRun.job_name == job_name).delete(synchronize_session=False)
+    clear_backup_history_records(session, job_name=job_name)
     session.query(BackupRecoveryKey).filter(BackupRecoveryKey.credential_ref == credential_ref).delete(
         synchronize_session=False
     )

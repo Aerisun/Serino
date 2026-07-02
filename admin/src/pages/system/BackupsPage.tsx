@@ -12,13 +12,11 @@ import {
   usePauseBackupSyncApiV1AdminSystemBackupSyncPausePost,
   useRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost,
   useResumeBackupSyncApiV1AdminSystemBackupSyncResumePost,
-  useRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost,
   useTriggerBackupSyncApiV1AdminSystemBackupSyncRunsPost,
   useUpdateBackupSyncConfigApiV1AdminSystemBackupSyncConfigPut,
 } from "@serino/api-client/admin";
 import type {
   BackupCommitRead,
-  BackupQueueItemRead,
   BackupRunRead,
   BackupSyncConfig,
   BackupSyncConfigUpdate,
@@ -30,12 +28,16 @@ import {
   exportBackupRecoveryKey,
   getBackupBootstrapClaim,
   overwriteRemoteBackupHistory,
+  previewRemoteBackupHistoryImport,
   probeBackupMachineConnection,
   revokeBackupBootstrapClaim,
   resetBackupSyncSystem,
+  restoreRemoteBackupHistory,
   testBackupSyncConfig,
   type BackupBootstrapClaimRead,
   type BackupCredentialEnsureRead,
+  type BackupRemoteHistoryCommitRead,
+  type BackupRemoteHistoryImportPreviewRead,
   type BackupSyncConfigTestResult,
 } from "@/pages/system/api";
 import { DataTable } from "@/components/DataTable";
@@ -54,6 +56,7 @@ import {
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { LabelWithHelp } from "@/components/ui/LabelWithHelp";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Tabs, TabsContent } from "@/components/ui/Tabs";
 import { Textarea } from "@/components/ui/Textarea";
 import { useI18n } from "@/i18n";
@@ -89,6 +92,49 @@ const DEFAULT_BACKUP_CREDENTIAL_DIR = `.store/secrets/backup-sync/${DEFAULT_BACK
 const BACKUP_BOOTSTRAP_TTL_MINUTES = 10;
 const REMOTE_CLEANUP_COMMAND =
   "sudo bash -c 'set -euo pipefail\nuserdel -r serino-backup >/dev/null 2>&1 || true\nrm -rf /srv/serino-backups\necho \"Serino backup user and backup data have been removed.\"'";
+const RUNTIME_RESTORE_INTERRUPTED_ERROR =
+  "Backup run was interrupted by a runtime restore";
+
+function isRuntimeRestoreInterruption(value: string | null | undefined) {
+  return value === RUNTIME_RESTORE_INTERRUPTED_ERROR;
+}
+
+function getVisibleRunMessage(row: BackupRunRead, fallback: string) {
+  const message = isRuntimeRestoreInterruption(row.message) ? null : row.message;
+  const lastError = isRuntimeRestoreInterruption(row.last_error)
+    ? null
+    : row.last_error;
+  return message || lastError || fallback;
+}
+
+async function copyTextToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // HTTP admin pages on LAN IPs are not secure contexts, so Clipboard API can be blocked.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  textarea.style.left = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("Copy command was rejected");
+    }
+  } finally {
+    textarea.remove();
+  }
+}
 
 const emptyForm: BackupSyncConfigUpdate = {
   enabled: true,
@@ -136,11 +182,17 @@ export default function BackupsPage() {
   const [bootstrapSecondsLeft, setBootstrapSecondsLeft] = useState(0);
   const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
   const [resetCommand, setResetCommand] = useState(REMOTE_CLEANUP_COMMAND);
+  const [remoteImportDialogOpen, setRemoteImportDialogOpen] = useState(false);
+  const [remoteImportPassphrase, setRemoteImportPassphrase] = useState("");
+  const [remoteImportPreview, setRemoteImportPreview] =
+    useState<BackupRemoteHistoryImportPreviewRead | null>(null);
+  const [selectedRemoteCommitId, setSelectedRemoteCommitId] = useState("");
+  const [remoteHistoryOverwriteAccepted, setRemoteHistoryOverwriteAccepted] =
+    useState(false);
 
   const { data: configRaw, isLoading: isConfigLoading } =
     useGetBackupSyncConfigApiV1AdminSystemBackupSyncConfigGet();
-  const { data: queueRaw, isLoading: _isQueueLoading } =
-    useListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet();
+  useListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGet();
   const { data: runsRaw, isLoading: isRunsLoading } =
     useListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGet();
   const { data: commitsRaw, isLoading: isCommitsLoading } =
@@ -154,7 +206,6 @@ export default function BackupsPage() {
         archived_recovery_key_count?: number;
       })
     | undefined;
-  const queue = (queueRaw?.data as BackupQueueItemRead[] | undefined) ?? [];
   const runs = (runsRaw?.data as BackupRunRead[] | undefined) ?? [];
   const commits = (commitsRaw?.data as BackupCommitRead[] | undefined) ?? [];
 
@@ -177,6 +228,20 @@ export default function BackupsPage() {
           getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey(),
       }),
     ]);
+  };
+
+  const clearBackupHistoryCache = () => {
+    const clearDataList = (queryKey: readonly unknown[]) => {
+      queryClient.setQueryData(queryKey, (current: unknown) => {
+        if (current && typeof current === "object" && "data" in current) {
+          return { ...current, data: [] };
+        }
+        return { data: [] };
+      });
+    };
+    clearDataList(getListBackupSyncQueueApiV1AdminSystemBackupSyncQueueGetQueryKey());
+    clearDataList(getListBackupSyncRunsApiV1AdminSystemBackupSyncRunsGetQueryKey());
+    clearDataList(getListBackupSyncCommitsApiV1AdminSystemBackupSyncCommitsGetQueryKey());
   };
 
   useEffect(() => {
@@ -268,21 +333,6 @@ export default function BackupsPage() {
     },
   });
 
-  const retryRun =
-    useRetryBackupSyncApiV1AdminSystemBackupSyncRunsRunIdRetryPost({
-      mutation: {
-        onSuccess: async () => {
-          toast.success(t("system.backupSyncRetried"));
-          await invalidateAll();
-        },
-        onError: (error: any) => {
-          toast.error(
-            extractApiErrorMessage(error, t("common.operationFailed")),
-          );
-        },
-      },
-    });
-
   const restoreCommit =
     useRestoreBackupCommitApiV1AdminSystemBackupSyncCommitsCommitIdRestorePost({
       mutation: {
@@ -322,6 +372,9 @@ export default function BackupsPage() {
     onSuccess: (result) => {
       setConfigTestResult(result);
       setConfigTestMode("probe");
+      if (result.remote_history_state !== "foreign") {
+        setRemoteHistoryOverwriteAccepted(false);
+      }
       toast.success(
         result.ok
           ? t("system.backupProbeSuccess")
@@ -331,6 +384,7 @@ export default function BackupsPage() {
     onError: (error: any) => {
       setConfigTestResult(null);
       setConfigTestMode(null);
+      setRemoteHistoryOverwriteAccepted(false);
       toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     },
   });
@@ -341,6 +395,9 @@ export default function BackupsPage() {
     onSuccess: (result) => {
       setConfigTestResult(result);
       setConfigTestMode("full");
+      if (result.remote_history_state !== "foreign") {
+        setRemoteHistoryOverwriteAccepted(false);
+      }
       toast.success(
         result.ok
           ? t("system.backupConfigTestSuccess")
@@ -350,6 +407,22 @@ export default function BackupsPage() {
     onError: (error: any) => {
       setConfigTestResult(null);
       setConfigTestMode(null);
+      setRemoteHistoryOverwriteAccepted(false);
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
+
+  const overwriteRemoteHistoryMutation = useMutation({
+    mutationFn: async (payload: BackupSyncConfigUpdate) =>
+      overwriteRemoteBackupHistory(normalizeBackupConfigPayload(payload)),
+    onSuccess: (result) => {
+      setConfigTestResult(result);
+      setConfigTestMode("full");
+      setRemoteHistoryOverwriteAccepted(false);
+      clearBackupHistoryCache();
+      toast.success(t("system.backupOverwriteHistoryDone"));
+    },
+    onError: (error: any) => {
       toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
     },
   });
@@ -389,15 +462,47 @@ export default function BackupsPage() {
     },
   });
 
-  const latestRun = runs[0];
-  const activeQueueItem = queue.find(
-    (item) =>
-      item.status === "queued" ||
-      item.status === "running" ||
-      item.status === "retrying",
-  );
+  const remoteHistoryPreviewMutation = useMutation({
+    mutationFn: async (passphrase: string) =>
+      previewRemoteBackupHistoryImport({
+        config: buildConfigPayload(true),
+        passphrase,
+      }),
+    onSuccess: (preview) => {
+      setRemoteImportPreview(preview);
+      setSelectedRemoteCommitId(preview.commits[0]?.id ?? "");
+      toast.success(t("system.backupRemoteHistoryPreviewReady"));
+    },
+    onError: (error: any) => {
+      setRemoteImportPreview(null);
+      setSelectedRemoteCommitId("");
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
 
-  const configuredTransportMode = config?.transport_mode ?? "sftp";
+  const remoteHistoryRestoreMutation = useMutation({
+    mutationFn: async () =>
+      restoreRemoteBackupHistory({
+        config: buildConfigPayload(true),
+        passphrase: remoteImportPassphrase,
+        commit_id: selectedRemoteCommitId,
+      }),
+    onSuccess: async () => {
+      setRemoteImportDialogOpen(false);
+      setRemoteImportPassphrase("");
+      setRemoteImportPreview(null);
+      setSelectedRemoteCommitId("");
+      setConfigTestResult(null);
+      setConfigTestMode(null);
+      toast.success(t("system.backupRemoteHistoryRestored"));
+      await invalidateAll();
+    },
+    onError: (error: any) => {
+      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+    },
+  });
+
+  const latestRun = runs[0];
 
   const sectionItems = [
     {
@@ -420,6 +525,7 @@ export default function BackupsPage() {
   ) => {
     setConfigTestResult(null);
     setConfigTestMode(null);
+    setRemoteHistoryOverwriteAccepted(false);
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -464,6 +570,15 @@ export default function BackupsPage() {
             };
           });
           if (nextClaim.status === "succeeded") {
+            const nextPayload = {
+              ...form,
+              remote_host: nextClaim.remote_host,
+              remote_port: nextClaim.remote_port,
+              remote_path: nextClaim.remote_path,
+              remote_username: nextClaim.remote_username,
+              credential_ref: nextClaim.credential_ref,
+              site_slug: nextClaim.site_slug,
+            };
             setForm((current) => ({
               ...current,
               remote_host: nextClaim.remote_host,
@@ -475,6 +590,9 @@ export default function BackupsPage() {
             }));
             if (previousStatus !== "succeeded") {
               toast.success(t("system.backupBootstrapConnected"));
+              void testConfigMutation.mutateAsync(nextPayload).catch(() => {
+                // Mutation onError renders the user-facing error.
+              });
             }
           }
         })
@@ -526,6 +644,42 @@ export default function BackupsPage() {
     site_slug: DEFAULT_BACKUP_SITE_SLUG,
   });
 
+  const resultAllowsRecoveryPassword = (result: BackupSyncConfigTestResult) =>
+    Boolean(
+      result.ok &&
+        (result.remote_history_state === "empty" ||
+          result.remote_history_state === "current" ||
+          (result.remote_history_state === "foreign" &&
+            remoteHistoryOverwriteAccepted)),
+    );
+
+  const resultStartsNewRemoteHistory = (result: BackupSyncConfigTestResult) =>
+    Boolean(
+      (result.ok &&
+        result.remote_history_state === "empty" &&
+        localBackupHistoryExists) ||
+        (result.remote_history_state === "foreign" &&
+          remoteHistoryOverwriteAccepted),
+    );
+
+  const recoveryPasswordReadyForResult = (result: BackupSyncConfigTestResult) =>
+    Boolean(
+      canPersistBackupConfig && !resultStartsNewRemoteHistory(result),
+    );
+
+  const requireRecoveryPasswordBeforeOperation = (
+    result: BackupSyncConfigTestResult,
+  ) => {
+    if (!resultAllowsRecoveryPassword(result)) {
+      return false;
+    }
+    if (!recoveryPasswordReadyForResult(result)) {
+      toast.error(t("system.recoveryKeyRequiredBeforeSave"));
+      return false;
+    }
+    return true;
+  };
+
   const prepareCredential = async (force = false) => {
     setIsEnsuringCredential(true);
     try {
@@ -550,9 +704,13 @@ export default function BackupsPage() {
 
   const handleSaveAndRun = async () => {
     await prepareCredential();
-    await updateConfig.mutateAsync({
-      data: buildConfigPayload(true),
-    });
+    if (remoteHistoryIsForeign && remoteHistoryOverwriteAccepted) {
+      await overwriteRemoteHistoryMutation.mutateAsync(buildConfigPayload(true));
+    } else {
+      await updateConfig.mutateAsync({
+        data: buildConfigPayload(true),
+      });
+    }
     await triggerSync.mutateAsync();
     toast.success(t("system.firstBackupStarted"));
   };
@@ -561,15 +719,15 @@ export default function BackupsPage() {
     const result = await testConfigMutation.mutateAsync(
       buildConfigPayload(true),
     );
-    if (!result.ok || result.remote_history_state === "foreign") {
-      return;
-    }
-    if (!canPersistBackupConfig) {
-      openRecoveryKeyDialog("export");
+    if (!requireRecoveryPasswordBeforeOperation(result)) {
       return;
     }
     await prepareCredential();
-    await updateConfig.mutateAsync({ data: buildConfigPayload(true) });
+    if (result.remote_history_state === "foreign" && remoteHistoryOverwriteAccepted) {
+      await overwriteRemoteHistoryMutation.mutateAsync(buildConfigPayload(true));
+    } else {
+      await updateConfig.mutateAsync({ data: buildConfigPayload(true) });
+    }
     toast.success(t("system.backupConfigSaved"));
   };
 
@@ -598,8 +756,12 @@ export default function BackupsPage() {
     if (!bootstrapClaim?.setup_command) {
       return;
     }
-    await navigator.clipboard.writeText(bootstrapClaim.setup_command);
-    toast.success(t("system.backupBootstrapCommandCopied"));
+    try {
+      await copyTextToClipboard(bootstrapClaim.setup_command);
+      toast.success(t("system.backupBootstrapCommandCopied"));
+    } catch {
+      toast.error(t("system.copyCommandFailed"));
+    }
   };
 
   const handleRevokeBootstrapCommand = async () => {
@@ -611,6 +773,10 @@ export default function BackupsPage() {
 
   const handleStartBackup = async () => {
     if (config?.enabled) {
+      if (!canPersistBackupConfig) {
+        toast.error(t("system.recoveryKeyRequiredBeforeSave"));
+        return;
+      }
       await triggerSync.mutateAsync();
       return;
     }
@@ -618,39 +784,49 @@ export default function BackupsPage() {
       configTestMode === "full" && configTestResult?.ok
         ? configTestResult
         : await testConfigMutation.mutateAsync(buildConfigPayload(true));
-    if (!result.ok || result.remote_history_state === "foreign") {
-      return;
-    }
-    if (!canPersistBackupConfig) {
-      openRecoveryKeyDialog("export");
+    if (!requireRecoveryPasswordBeforeOperation(result)) {
       return;
     }
     await handleSaveAndRun();
   };
 
-  const handleOverwriteRemoteHistory = async () => {
-    if (!canPersistBackupConfig) {
-      openRecoveryKeyDialog("export");
+  const handleRestoreRemoteHistory = () => {
+    setRemoteImportPassphrase("");
+    setRemoteImportPreview(null);
+    setSelectedRemoteCommitId("");
+    setRemoteImportDialogOpen(true);
+  };
+
+  const handleAcceptOverwriteRemoteHistory = () => {
+    if (!window.confirm(t("system.backupOverwriteHistoryIntentConfirm"))) {
       return;
     }
-    if (!window.confirm(t("system.backupOverwriteHistoryConfirm"))) {
-      return;
-    }
+    setRemoteHistoryOverwriteAccepted(true);
+    toast.success(t("system.backupOverwriteHistoryIntentReady"));
+  };
+
+  const handlePreviewRemoteHistoryImport = async () => {
     try {
-      const result = await overwriteRemoteBackupHistory(
-        buildConfigPayload(true),
-      );
-      setConfigTestResult(result);
-      setConfigTestMode("full");
-      toast.success(t("system.backupOverwriteHistoryDone"));
-    } catch (error: any) {
-      toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
+      await remoteHistoryPreviewMutation.mutateAsync(remoteImportPassphrase);
+    } catch {
+      // Mutation onError renders the user-facing error.
     }
   };
 
-  const handleRestoreRemoteHistory = () => {
-    toast.error(t("system.backupRestoreRemoteHistoryPending"));
+  const handleRestoreSelectedRemoteHistory = async () => {
+    if (!selectedRemoteCommitId) {
+      toast.error(t("system.selectBackupVersionRequired"));
+      return;
+    }
+    try {
+      await remoteHistoryRestoreMutation.mutateAsync();
+    } catch {
+      // Mutation onError renders the user-facing error.
+    }
   };
+
+  const remoteCommitLabel = (commit: BackupRemoteHistoryCommitRead) =>
+    `${formatDate(commit.created_at)} · ${commit.id.slice(0, 8)}`;
 
   const handleResetBackupSystem = async () => {
     if (!window.confirm(t("system.resetBackupSystemConfirm"))) {
@@ -704,6 +880,10 @@ export default function BackupsPage() {
       setCredentialInfo(updated);
       setRecoveryKeyDelivered(true);
       setKeyDialogOpen(false);
+      if (shouldInitializeNewRemoteHistoryAfterPassword) {
+        await overwriteRemoteHistoryMutation.mutateAsync(buildConfigPayload(true));
+        await invalidateAll();
+      }
       toast.success(t("system.recoveryPasswordSet"));
     } catch (error: any) {
       toast.error(extractApiErrorMessage(error, t("common.operationFailed")));
@@ -726,6 +906,44 @@ export default function BackupsPage() {
   );
   const remoteHistoryIsForeign =
     configTestResult?.remote_history_state === "foreign";
+  const remoteHistoryIsEmpty = configTestResult?.remote_history_state === "empty";
+  const localBackupHistoryExists = commits.length > 0;
+  const emptyRemoteWithLocalHistory = Boolean(
+    configTestResult?.ok && remoteHistoryIsEmpty && localBackupHistoryExists,
+  );
+  const newRemoteHistoryRequested = Boolean(
+    emptyRemoteWithLocalHistory ||
+      (remoteHistoryIsForeign && remoteHistoryOverwriteAccepted),
+  );
+  const backupMachineAllowsRecoveryPassword = Boolean(
+    configTestResult?.ok &&
+      (configTestResult.remote_history_state === "empty" ||
+        configTestResult.remote_history_state === "current" ||
+        (remoteHistoryIsForeign && remoteHistoryOverwriteAccepted)),
+  );
+  const canResetRecoveryPasswordForNewHistory = Boolean(
+    canPersistBackupConfig &&
+      backupMachineAllowsRecoveryPassword &&
+      newRemoteHistoryRequested,
+  );
+  const canUseRecoveryPasswordForTarget = Boolean(
+    canPersistBackupConfig && !newRemoteHistoryRequested,
+  );
+  const shouldInitializeNewRemoteHistoryAfterPassword = Boolean(
+    configTestResult?.ok && newRemoteHistoryRequested,
+  );
+  const recoveryPasswordActionEnabled = Boolean(
+    backupMachineAllowsRecoveryPassword &&
+      (!canUseRecoveryPasswordForTarget || canResetRecoveryPasswordForNewHistory),
+  );
+  const recoveryPasswordActionLabel = canResetRecoveryPasswordForNewHistory
+    ? t("system.resetRecoveryPassword")
+    : canUseRecoveryPasswordForTarget
+      ? t("system.recoveryPasswordAlreadySet")
+      : t("system.setRecoveryPassword");
+  const backupMachineConflictResolved = Boolean(
+    configTestResult?.ok && (!remoteHistoryIsForeign || remoteHistoryOverwriteAccepted),
+  );
   const isProbeResult = configTestMode === "probe";
   const probeNeedsBootstrap = Boolean(
     isProbeResult &&
@@ -748,6 +966,25 @@ export default function BackupsPage() {
       : t("system.backupConfigTestFailed");
   const backupMachineStatusTone =
     !configTestResult?.ok && !probeNeedsBootstrap ? "error" : "default";
+  const backupConfigStatusTone = testConfigMutation.isPending
+    ? "checking"
+    : configTestResult?.ok && backupMachineConflictResolved
+      ? "available"
+      : configTestResult
+        ? "invalid"
+        : "pending";
+  const backupConfigStatusLabel =
+    backupConfigStatusTone === "checking"
+      ? t("system.backupConfigTestChecking")
+      : backupConfigStatusTone === "available"
+        ? t("system.backupConfigTestOk")
+        : backupConfigStatusTone === "invalid"
+          ? t("system.backupConfigTestInvalid")
+          : t("system.backupConfigTestPending");
+  const latestRunVisibleError =
+    isRuntimeRestoreInterruption(latestRun?.last_error)
+      ? null
+      : latestRun?.last_error;
   const backupMachineLatencyLabel = isProbeResult
     ? t("system.backupProbeLatency")
     : t("system.backupConfigTestLatency");
@@ -759,11 +996,13 @@ export default function BackupsPage() {
     triggerSync.isPending ||
     pauseSync.isPending ||
     resumeSync.isPending ||
-    retryRun.isPending ||
     restoreCommit.isPending ||
     probeConnectionMutation.isPending ||
     createBootstrapClaimMutation.isPending ||
-    revokeBootstrapClaimMutation.isPending;
+    revokeBootstrapClaimMutation.isPending ||
+    overwriteRemoteHistoryMutation.isPending ||
+    remoteHistoryPreviewMutation.isPending ||
+    remoteHistoryRestoreMutation.isPending;
   const backupMachineHost = String(form.remote_host ?? "").trim();
   const canUseBackupActions =
     !isConfigLoading &&
@@ -773,42 +1012,25 @@ export default function BackupsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t("system.backups")}
+        title={
+          <span className="inline-flex flex-wrap items-baseline gap-x-5 gap-y-1">
+            <span>{t("system.backups")}</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {config?.encrypt_runtime_data
+                ? t("system.runtimeEncryptionEnabled")
+                : t("system.runtimeEncryptionDisabled")}
+            </span>
+          </span>
+        }
         description={t("system.backupsDescription")}
         secondary={
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
             <div className="xl:min-w-[420px] xl:max-w-xl">
               <AdminSectionTabs
                 items={sectionItems}
                 value={section}
                 onValueChange={(value) => setSection(value as BackupsSection)}
                 className="w-fit"
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <HeaderMetric
-                title={t("system.queueDepth")}
-                value={String(
-                  queue.filter((item) => item.status !== "completed").length,
-                )}
-                hint={
-                  activeQueueItem
-                    ? `${t("common.status")} · ${t(`status.${activeQueueItem.status}`)}`
-                    : t("system.noPendingQueue")
-                }
-              />
-              <HeaderMetric
-                title={t("system.transportMode")}
-                value={
-                  configuredTransportMode === "sftp"
-                    ? t("system.transportSftp")
-                    : configuredTransportMode
-                }
-                hint={
-                  config?.encrypt_runtime_data
-                    ? t("system.runtimeEncryptionEnabled")
-                    : t("system.runtimeEncryptionDisabled")
-                }
               />
             </div>
           </div>
@@ -824,6 +1046,10 @@ export default function BackupsPage() {
             <CardHeader>
               <div className="flex justify-end">
                 <div className="flex flex-wrap items-center justify-end gap-2">
+                  <BackupConfigStatusIndicator
+                    label={backupConfigStatusLabel}
+                    tone={backupConfigStatusTone}
+                  />
                   {hasConfigChanges ? (
                     <span className="rounded-full border border-[rgb(var(--admin-accent-rgb)/0.22)] bg-[rgb(var(--admin-accent-rgb)/0.08)] px-3 py-1 text-xs text-[rgb(var(--admin-accent-rgb)/0.95)]">
                       {t("common.pendingSave")}
@@ -915,9 +1141,7 @@ export default function BackupsPage() {
                 title={t("system.backupDetectTitle")}
                 meta={backupMachineConnectionMeta}
                 metaTone={probeNeedsBootstrap ? "warning" : "muted"}
-                complete={Boolean(
-                  configTestResult?.ok && !remoteHistoryIsForeign,
-                )}
+                complete={backupMachineConflictResolved}
               >
                 {configTestResult ? (
                   <div
@@ -962,6 +1186,7 @@ export default function BackupsPage() {
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="w-fit"
                             onClick={handleRestoreRemoteHistory}
                           >
                             <RotateCcw className="mr-2 h-4 w-4" />
@@ -969,12 +1194,20 @@ export default function BackupsPage() {
                           </Button>
                           <Button
                             type="button"
-                            variant="destructive"
+                            variant={
+                              remoteHistoryOverwriteAccepted
+                                ? "default"
+                                : "outline"
+                            }
                             size="sm"
-                            onClick={() => void handleOverwriteRemoteHistory()}
+                            className="w-fit"
+                            onClick={handleAcceptOverwriteRemoteHistory}
+                            disabled={isBusy || remoteHistoryOverwriteAccepted}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {t("system.overwriteRemoteHistory")}
+                            {remoteHistoryOverwriteAccepted
+                              ? t("system.backupOverwriteHistoryIntentReady")
+                              : t("system.overwriteRemoteHistory")}
                           </Button>
                         </div>
                       </div>
@@ -1059,24 +1292,39 @@ export default function BackupsPage() {
                   />
                 }
                 meta={
-                  canPersistBackupConfig
-                    ? t("system.recoveryPasswordReadyDescription")
-                    : undefined
+                  canUseRecoveryPasswordForTarget
+                    ? canResetRecoveryPasswordForNewHistory
+                      ? t("system.recoveryPasswordCanResetForNewHistory")
+                      : t("system.recoveryPasswordReadyDescription")
+                    : emptyRemoteWithLocalHistory
+                      ? t("system.recoveryPasswordRequiredForNewRemote")
+                    : backupMachineAllowsRecoveryPassword
+                      ? remoteHistoryOverwriteAccepted
+                        ? t("system.backupOverwriteHistoryIntentReady")
+                        : undefined
+                      : t("system.recoveryPasswordBlockedUntilBackupReady")
                 }
                 complete={canPersistBackupConfig}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
-                    variant={canPersistBackupConfig ? "outline" : "default"}
+                    variant={
+                      canUseRecoveryPasswordForTarget &&
+                      !canResetRecoveryPasswordForNewHistory
+                        ? "outline"
+                        : "default"
+                    }
                     className="gap-2"
-                    onClick={() => openRecoveryKeyDialog("export")}
-                    disabled={isBusy || canPersistBackupConfig}
+                    onClick={() =>
+                      openRecoveryKeyDialog(
+                        canPersistBackupConfig ? "rotate" : "export",
+                      )
+                    }
+                    disabled={isBusy || !recoveryPasswordActionEnabled}
                   >
                     <KeyRound className="h-4 w-4" />
-                    {canPersistBackupConfig
-                      ? t("system.recoveryPasswordAlreadySet")
-                      : t("system.setRecoveryPassword")}
+                    {recoveryPasswordActionLabel}
                   </Button>
                   <Button
                     type="button"
@@ -1342,34 +1590,13 @@ export default function BackupsPage() {
                         header: t("system.completed"),
                         accessor: (row) => formatDate(row.finished_at),
                       },
-                      {
-                        header: t("common.actions"),
-                        accessor: (row) =>
-                          row.status === "failed" ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                retryRun.mutate({ runId: row.id });
-                              }}
-                            >
-                              <RotateCcw className="mr-1 h-4 w-4" />
-                              {t("system.retryRun")}
-                            </Button>
-                          ) : (
-                            "-"
-                          ),
-                      },
                     ]}
                     data={runs}
                     total={runs.length}
                     isLoading={isRunsLoading}
                     renderExpandedRow={(row) => (
                       <div className="space-y-2 py-4 text-sm">
-                        <div>
-                          {row.message || row.last_error || t("system.none")}
-                        </div>
+                        <div>{getVisibleRunMessage(row, t("system.none"))}</div>
                         <code className="block whitespace-pre-wrap break-all text-xs text-muted-foreground">
                           {JSON.stringify(row.stats_json ?? {}, null, 2)}
                         </code>
@@ -1381,27 +1608,137 @@ export default function BackupsPage() {
             </TabsContent>
           </Tabs>
 
-          {latestRun?.last_error ? (
+          {latestRunVisibleError ? (
             <Card surface="soft" className="border-red-200/60">
               <CardContent className="p-4 text-sm text-red-600">
-                {latestRun.last_error}
+                {latestRunVisibleError}
               </CardContent>
             </Card>
           ) : null}
         </TabsContent>
       </Tabs>
 
+      <Dialog
+        open={remoteImportDialogOpen}
+        onOpenChange={(open) => {
+          setRemoteImportDialogOpen(open);
+          if (!open) {
+            setRemoteImportPassphrase("");
+            setRemoteImportPreview(null);
+            setSelectedRemoteCommitId("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl rounded-2xl">
+          <DialogHeader className="text-left">
+            <DialogTitle>{t("system.remoteHistoryImportTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("system.remoteHistoryImportDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Field label={t("system.recoveryKeyPassword")}>
+              <Input
+                type="password"
+                autoComplete="current-password"
+                value={remoteImportPassphrase}
+                onChange={(event) => {
+                  setRemoteImportPassphrase(event.target.value);
+                  setRemoteImportPreview(null);
+                  setSelectedRemoteCommitId("");
+                }}
+                placeholder="********"
+              />
+            </Field>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handlePreviewRemoteHistoryImport()}
+                disabled={
+                  remoteHistoryPreviewMutation.isPending ||
+                  remoteImportPassphrase.length < 8
+                }
+              >
+                {remoteHistoryPreviewMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                {t("system.verifyRecoveryPassword")}
+              </Button>
+            </div>
+
+            {remoteImportPreview ? (
+              <div className="space-y-4 rounded-[var(--admin-radius-md)] border border-border/70 bg-muted/30 p-4">
+                {remoteImportPreview.commits.length > 0 ? (
+                  <Field label={t("system.selectBackupVersion")}>
+                    <NativeSelect
+                      value={selectedRemoteCommitId}
+                      onChange={(event) =>
+                        setSelectedRemoteCommitId(event.target.value)
+                      }
+                    >
+                      {remoteImportPreview.commits.map((commit) => (
+                        <option key={commit.id} value={commit.id}>
+                          {remoteCommitLabel(commit)}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </Field>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    {t("system.remoteHistoryNoVersions")}
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setRemoteImportDialogOpen(false)}
+                    disabled={remoteHistoryRestoreMutation.isPending}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => void handleRestoreSelectedRemoteHistory()}
+                    disabled={
+                      remoteHistoryRestoreMutation.isPending ||
+                      !selectedRemoteCommitId
+                    }
+                  >
+                    {remoteHistoryRestoreMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                    )}
+                    {t("system.restoreSelectedBackupVersion")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={keyDialogOpen} onOpenChange={setKeyDialogOpen}>
         <DialogContent className="max-w-2xl rounded-2xl">
           <DialogHeader className="text-left">
-            <DialogTitle>{t("system.setRecoveryPassword")}</DialogTitle>
+            <DialogTitle>
+              {keyDialogMode === "rotate"
+                ? t("system.resetRecoveryPassword")
+                : t("system.setRecoveryPassword")}
+            </DialogTitle>
             <DialogDescription>
-              {t("system.setRecoveryPasswordDescription")}
+              {keyDialogMode === "rotate"
+                ? t("system.resetRecoveryPasswordDescription")
+                : t("system.setRecoveryPasswordDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="rounded-[var(--admin-radius-md)] border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-950 dark:text-amber-100">
-              {t("system.recoveryPasswordImportantWarning")}
+              {keyDialogMode === "rotate"
+                ? t("system.resetRecoveryPasswordImportantWarning")
+                : t("system.recoveryPasswordImportantWarning")}
             </div>
             <form
               className="space-y-4"
@@ -1473,7 +1810,9 @@ export default function BackupsPage() {
                   {isRecoveryKeyPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  {t("system.confirmSetRecoveryPassword")}
+                  {keyDialogMode === "rotate"
+                    ? t("system.confirmResetRecoveryPassword")
+                    : t("system.confirmSetRecoveryPassword")}
                 </Button>
               </div>
             </form>
@@ -1501,8 +1840,11 @@ export default function BackupsPage() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  void navigator.clipboard.writeText(resetCommand);
-                  toast.success(t("system.backupCleanupCommandCopied"));
+                  void copyTextToClipboard(resetCommand)
+                    .then(() =>
+                      toast.success(t("system.backupCleanupCommandCopied")),
+                    )
+                    .catch(() => toast.error(t("system.copyCommandFailed")));
                 }}
               >
                 <Copy className="mr-2 h-4 w-4" />
@@ -1598,22 +1940,47 @@ function SetupRow({
   );
 }
 
-function HeaderMetric({
-  title,
-  value,
-  hint,
+function BackupConfigStatusIndicator({
+  label,
+  tone,
 }: {
-  title: string;
-  value: string;
-  hint: string;
+  label: ReactNode;
+  tone: "pending" | "available" | "invalid" | "checking";
 }) {
+  const toneClassName =
+    tone === "pending"
+      ? {
+          shell:
+            "border-slate-400/20 bg-slate-500/8 text-slate-600 dark:text-slate-300",
+          dot: "bg-slate-400 shadow-[0_0_0_4px_rgba(148,163,184,0.12),0_0_14px_rgba(148,163,184,0.28)]",
+        }
+      : tone === "available"
+        ? {
+            shell:
+              "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+            dot: "bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.16),0_0_18px_rgba(34,197,94,0.6)]",
+          }
+        : tone === "checking"
+          ? {
+              shell:
+                "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+              dot: "bg-amber-500 animate-pulse shadow-[0_0_0_4px_rgba(245,158,11,0.14),0_0_16px_rgba(245,158,11,0.45)]",
+            }
+          : {
+              shell:
+                "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+              dot: "bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.14),0_0_16px_rgba(244,63,94,0.45)]",
+            };
+
   return (
-    <div className="min-w-0 rounded-[var(--admin-radius-lg)] border border-[rgba(var(--admin-border-strong)/var(--admin-border-strong-alpha))] bg-[rgb(var(--admin-surface-1)/0.34)] px-4 py-3">
-      <div className="text-xs text-muted-foreground">{title}</div>
-      <div className="mt-1 truncate text-base font-semibold text-foreground/95">
-        {value}
-      </div>
-      <div className="mt-1 truncate text-xs text-muted-foreground">{hint}</div>
+    <div
+      className={cn(
+        "inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-medium",
+        toneClassName.shell,
+      )}
+    >
+      <span className={cn("h-2.5 w-2.5 rounded-full", toneClassName.dot)} />
+      <span>{label}</span>
     </div>
   );
 }

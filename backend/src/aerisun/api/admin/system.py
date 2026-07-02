@@ -62,6 +62,9 @@ from aerisun.domain.ops.backup_sync import (
     pause_backup_sync as _pause_backup_sync,
 )
 from aerisun.domain.ops.backup_sync import (
+    preview_remote_backup_history_import as _preview_remote_backup_history_import,
+)
+from aerisun.domain.ops.backup_sync import (
     probe_backup_machine_connection as _probe_backup_machine_connection,
 )
 from aerisun.domain.ops.backup_sync import (
@@ -72,6 +75,9 @@ from aerisun.domain.ops.backup_sync import (
 )
 from aerisun.domain.ops.backup_sync import (
     restore_backup_snapshot as _restore_backup_snapshot,
+)
+from aerisun.domain.ops.backup_sync import (
+    restore_remote_backup_history as _restore_remote_backup_history,
 )
 from aerisun.domain.ops.backup_sync import (
     resume_backup_sync as _resume_backup_sync,
@@ -103,6 +109,9 @@ from aerisun.domain.ops.schemas import (
     BackupCredentialExportRead,
     BackupCredentialExportWrite,
     BackupQueueItemRead,
+    BackupRemoteHistoryImportPreviewRead,
+    BackupRemoteHistoryImportWrite,
+    BackupRemoteHistoryRestoreWrite,
     BackupRunRead,
     BackupSnapshotRead,
     BackupSyncConfig,
@@ -423,6 +432,32 @@ def probe_backup_machine_connection(
     session: Session = Depends(get_session),
 ) -> BackupSyncConfigTestRead:
     return _probe_backup_machine_connection(session, payload)
+
+
+@router.post(
+    "/backup-sync/remote-history/import/preview",
+    response_model=BackupRemoteHistoryImportPreviewRead,
+    summary="验证恢复密码并列出远端备份历史",
+)
+def preview_remote_backup_history_import(
+    payload: BackupRemoteHistoryImportWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupRemoteHistoryImportPreviewRead:
+    return _preview_remote_backup_history_import(session, payload)
+
+
+@router.post(
+    "/backup-sync/remote-history/import/restore",
+    response_model=BackupCommitRead,
+    summary="使用恢复密码从远端备份历史恢复",
+)
+def restore_remote_backup_history(
+    payload: BackupRemoteHistoryRestoreWrite,
+    _admin: AdminUser = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> BackupCommitRead:
+    return _restore_remote_backup_history(session, payload)
 
 
 @router.post(

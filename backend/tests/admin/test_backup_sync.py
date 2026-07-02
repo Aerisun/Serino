@@ -6,6 +6,7 @@ import subprocess
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urlparse
 
 import pytest
@@ -13,6 +14,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import x25519
 
 from aerisun.core.settings import get_settings
+from aerisun.domain.exceptions import ValidationError
 
 BASE = "/api/v1/admin/system"
 RECOVERY_PASSPHRASE = "correct horse battery staple"
@@ -25,6 +27,13 @@ class FakeBackupTransport:
         self.manifests: dict[str, dict] = {}
         self.commits: dict[str, dict] = {}
         self.downloaded_chunk_batches: list[list[str]] = []
+        self.deleted_chunks: list[str] = []
+        self.deleted_manifests: list[str] = []
+        self.deleted_commits: list[str] = []
+        self.fail_delete_commits: set[str] = set()
+        self.fail_delete_chunks: set[str] = set()
+        self.repo_identity: dict | None = None
+        self.recovery_keyring: dict | None = None
 
     def begin_session(self) -> dict[str, str]:
         return {"session_id": "fake-session", "site_slug": "test-site"}
@@ -62,6 +71,22 @@ class FakeBackupTransport:
     def read_chunk(self, digest: str) -> bytes:
         return self.chunks[digest]
 
+    def delete_chunk(self, digest: str) -> None:
+        if digest in self.fail_delete_chunks:
+            raise RuntimeError(f"cannot delete remote chunk {digest}")
+        self.deleted_chunks.append(digest)
+        self.chunks.pop(digest, None)
+
+    def delete_manifest(self, digest: str) -> None:
+        self.deleted_manifests.append(digest)
+        self.manifests.pop(digest, None)
+
+    def delete_commit(self, commit_id: str, *, created_at: str) -> None:
+        if commit_id in self.fail_delete_commits:
+            raise RuntimeError(f"cannot delete remote commit {commit_id}")
+        self.deleted_commits.append(commit_id)
+        self.commits.pop(commit_id, None)
+
     def download_chunks(self, digests: list[str], destination_dir: Path) -> dict[str, Path]:
         self.downloaded_chunk_batches.append(list(digests))
         destination_dir.mkdir(parents=True, exist_ok=True)
@@ -71,6 +96,18 @@ class FakeBackupTransport:
             path.write_bytes(self.chunks[digest])
             paths[digest] = path
         return paths
+
+    def fetch_repo_identity(self) -> dict | None:
+        return self.repo_identity
+
+    def write_repo_identity(self, payload: dict) -> None:
+        self.repo_identity = dict(payload)
+
+    def fetch_recovery_keyring(self) -> dict | None:
+        return self.recovery_keyring
+
+    def write_recovery_keyring(self, payload: dict) -> None:
+        self.recovery_keyring = json.loads(json.dumps(payload))
 
 
 def test_sftp_mkdirs_keep_batch_running_when_parent_exists(monkeypatch) -> None:
@@ -145,6 +182,47 @@ def test_sftp_has_chunks_treats_unlisted_digests_as_missing(monkeypatch) -> None
         f"-ls /remote/current/catalog/chunks/aa/aa/{existing_digest}",
         f"-ls /remote/current/catalog/chunks/bb/bb/{missing_digest}",
     ]
+
+
+def test_sftp_fetch_recovery_keyring_reports_connection_failure(monkeypatch) -> None:
+    from aerisun.domain.ops.backup_sync import SftpTransport
+
+    def fake_run(args, *, input, text, capture_output, check):
+        return subprocess.CompletedProcess(args, 255, "", "Permission denied (publickey).")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    transport = SftpTransport(
+        host="backup.example.test",
+        port=22,
+        username="serino-backup",
+        remote_root="/srv/serino-backups",
+        site_slug="site",
+    )
+
+    with pytest.raises(ValidationError, match="无法使用 serino-backup"):
+        transport.fetch_recovery_keyring()
+
+
+def test_sftp_delete_commit_reports_index_delete_failure(monkeypatch) -> None:
+    from aerisun.domain.ops.backup_sync import SftpTransport
+
+    def fake_run(args, *, input, text, capture_output, check):
+        assert "rm /remote/current/catalog/commit-index/commit-1.json" in input
+        return subprocess.CompletedProcess(args, 255, "", "Permission denied")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    transport = SftpTransport(
+        host="backup.example.test",
+        port=22,
+        username="serino-backup",
+        remote_root="/remote",
+        site_slug="site",
+    )
+
+    with pytest.raises(ValidationError, match="Permission denied"):
+        transport.delete_commit("commit-1", created_at="2026-07-03T00:00:00+08:00")
 
 
 def test_atomic_sqlite_replace_removes_stale_sidecars(tmp_path: Path) -> None:
@@ -260,7 +338,14 @@ def _assert_runtime_sentinels(label: str) -> None:
     ) == f"pack-{label}"
 
 
-def _configure_backup(client, admin_headers, *, credential_ref: str = "default", encrypt_runtime_data: bool = True):
+def _configure_backup(
+    client,
+    admin_headers,
+    *,
+    credential_ref: str = "default",
+    encrypt_runtime_data: bool = True,
+    max_retention_count: int = 0,
+):
     app_settings = get_settings()
     _write_backup_credentials(app_settings.secrets_dir, credential_ref)
 
@@ -301,6 +386,7 @@ def _configure_backup(client, admin_headers, *, credential_ref: str = "default",
             "encrypt_runtime_data": encrypt_runtime_data,
             "max_retries": 2,
             "retry_backoff_seconds": 60,
+            "max_retention_count": max_retention_count,
         },
     )
     assert update_response.status_code == 200
@@ -321,9 +407,94 @@ def _trigger_backup(client, admin_headers) -> tuple[str, dict]:
     return commits[0]["id"], commits[0]
 
 
+def _remote_history_import_payload(*, passphrase: str = RECOVERY_PASSPHRASE, commit_id: str | None = None) -> dict:
+    payload = {
+        "config": {
+            "enabled": True,
+            "paused": False,
+            "interval_minutes": 60,
+            "transport_mode": "sftp",
+            "site_slug": "test-site",
+            "remote_host": "backup.example.com",
+            "remote_port": 22,
+            "remote_path": "/srv/aerisun/backup",
+            "remote_username": "backup-user",
+            "credential_ref": "default",
+            "encrypt_runtime_data": True,
+            "max_retries": 2,
+            "retry_backoff_seconds": 60,
+        },
+        "passphrase": passphrase,
+    }
+    if commit_id is not None:
+        payload["commit_id"] = commit_id
+    return payload
+
+
 def _corrupt_first_chunk(fake_transport: FakeBackupTransport, entry: dict) -> None:
     digest = entry["chunks"][0]["digest"]
     fake_transport.chunks[digest] = b"corrupted-" + fake_transport.chunks[digest]
+
+
+def _commit_chunk_digests(commit: dict) -> set[str]:
+    from aerisun.domain.ops.backup_sync import _manifest_chunk_digests
+
+    return set(_manifest_chunk_digests({"datasets": commit["datasets"]}))
+
+
+def test_trigger_backup_sync_uses_queue_item_id_before_dispatch(monkeypatch) -> None:
+    from aerisun.domain.ops import backup_sync
+
+    dispatch_started = False
+
+    class DetachedAfterDispatchQueueItem:
+        @property
+        def id(self) -> str:
+            if dispatch_started:
+                raise AssertionError("queue item id was read after dispatch detached the object")
+            return "queue-1"
+
+    class FakeSession:
+        def expire_all(self) -> None:
+            pass
+
+        def refresh(self, _item) -> None:
+            pass
+
+    created_at = datetime(2026, 1, 1)
+    run = SimpleNamespace(
+        id="run-1",
+        job_name="backup-sync",
+        status="completed",
+        transport="sftp",
+        trigger_kind="manual",
+        queue_item_id="queue-1",
+        commit_id="commit-1",
+        stats_json={},
+        retry_count=0,
+        next_retry_at=None,
+        last_error=None,
+        started_at=None,
+        finished_at=created_at,
+        message="Backup sync completed",
+        created_at=created_at,
+        updated_at=created_at,
+    )
+
+    def fake_dispatch_backup_sync():
+        nonlocal dispatch_started
+        dispatch_started = True
+
+    monkeypatch.setattr(
+        backup_sync, "ensure_backup_queue_item", lambda session, trigger_kind, force: DetachedAfterDispatchQueueItem()
+    )
+    monkeypatch.setattr(backup_sync, "dispatch_backup_sync", fake_dispatch_backup_sync)
+    monkeypatch.setattr(backup_sync.repo, "get_backup_queue_item", lambda session, queue_item_id: object())
+    monkeypatch.setattr(backup_sync.repo, "list_sync_runs", lambda session: [run])
+
+    payload = backup_sync.trigger_backup_sync(FakeSession())
+
+    assert payload.id == "run-1"
 
 
 def _bootstrap_claim_payload(**overrides) -> dict:
@@ -381,6 +552,10 @@ def test_backup_bootstrap_claim_generates_safe_temporary_script(client, admin_he
     assert "BEGIN PRIVATE KEY" not in script
     assert "Authorization" not in script
     assert RECOVERY_PASSPHRASE not in script
+    assert "备份机已成功连接！" in script
+    assert "请您返回后台管理界面稍等片刻，那边正在检测..." in script
+    assert "Backup machine is connected." not in script
+    assert "Test and Start Backup" not in script
 
     result_response = client.post(
         _result_path(claim),
@@ -439,6 +614,10 @@ def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_heade
     _write_runtime_sentinels("backup", include_automation_pack=False)
     first_key = _configure_backup(client, admin_headers, encrypt_runtime_data=True)
     _write_runtime_sentinels("backup")
+    runtime_file = app_settings.data_dir / "data" / "custom-runtime" / "settings.json"
+    runtime_file.parent.mkdir(parents=True, exist_ok=True)
+    runtime_file.write_text(json.dumps({"label": "runtime-backup"}) + "\n", encoding="utf-8")
+    runtime_stale_file = app_settings.data_dir / "data" / "custom-runtime" / "stale-after-backup.json"
 
     commit_id, commit = _trigger_backup(client, admin_headers)
     assert commit["datasets"]["aerisun_db"]["encryption"]["scheme"] == "x25519-aesgcm"
@@ -446,6 +625,7 @@ def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_heade
     assert commit["datasets"]["workflow_db"]["encryption"]["scheme"] == "x25519-aesgcm"
     assert commit["datasets"]["secrets"]["encryption"]["scheme"] == "x25519-aesgcm"
     assert commit["datasets"]["automation_packs"]["encryption"]["scheme"] == "x25519-aesgcm"
+    assert commit["datasets"]["runtime_files"]["encryption"]["scheme"] == "x25519-aesgcm"
     assert commit["datasets"]["media"]["files"]
     assert commit["datasets"]["media"]["files"][0]["encryption"]["scheme"] == "x25519-aesgcm"
 
@@ -481,6 +661,8 @@ def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_heade
     (app_settings.data_dir / "automation" / "packs" / "backup_probe_pack" / "backup-marker.txt").write_text(
         "pack-damaged", encoding="utf-8"
     )
+    runtime_file.write_text(json.dumps({"label": "runtime-damaged"}) + "\n", encoding="utf-8")
+    runtime_stale_file.write_text(json.dumps({"label": "runtime-stale"}) + "\n", encoding="utf-8")
     app_settings.db_path.unlink(missing_ok=True)
     app_settings.waline_db_path.unlink(missing_ok=True)
     app_settings.workflow_db_path.unlink(missing_ok=True)
@@ -493,6 +675,14 @@ def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_heade
     assert restore_response.json()["restored_at"] is not None
     assert fake_transport.downloaded_chunk_batches
     _assert_runtime_sentinels("backup")
+    assert json.loads(runtime_file.read_text(encoding="utf-8")) == {"label": "runtime-backup"}
+    assert not runtime_stale_file.exists()
+    restored_commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert restored_commits_response.status_code == 200
+    restored_commits = restored_commits_response.json()
+    assert len(restored_commits) == 1
+    assert restored_commits[0]["id"] == commit_id
+    assert restored_commits[0]["restored_at"] is not None
     assert (app_settings.secrets_dir / "backup-sync" / "default" / "secrets_x25519.pem").exists()
     assert (
         app_settings.secrets_dir
@@ -507,10 +697,351 @@ def test_backup_sync_endpoints_create_run_commit_and_restore(client, admin_heade
     assert rerun_response.json()["status"] == "completed"
 
 
+def test_rotating_backup_recovery_key_keeps_existing_remote_history_current(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.begin_session",
+        lambda self, timeout_seconds=None: {"session_id": "fake-session", "site_slug": "test-site"},
+    )
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.probe_write_access",
+        lambda self, timeout_seconds=None: None,
+    )
+    monkeypatch.setattr(
+        "aerisun.domain.ops.backup_sync.SftpTransport.fetch_repo_identity",
+        lambda self: fake_transport.fetch_repo_identity(),
+    )
+
+    first_key = _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _write_runtime_sentinels("rotation-before")
+    first_commit_id, _first_commit = _trigger_backup(client, admin_headers)
+    original_repo_id = fake_transport.repo_identity["repo_id"]
+
+    rotate_response = client.post(
+        f"{BASE}/backup-sync/recovery-key/export",
+        headers=admin_headers,
+        json={
+            "credential_ref": "default",
+            "site_slug": "test-site",
+            "passphrase": RECOVERY_PASSPHRASE,
+            "rotate": True,
+        },
+    )
+    assert rotate_response.status_code == 200
+    assert first_key["secrets_fingerprint"] in rotate_response.json()["archived_fingerprints"]
+    acknowledge_response = client.post(
+        f"{BASE}/backup-sync/recovery-key/acknowledge",
+        headers=admin_headers,
+        json={"credential_ref": "default"},
+    )
+    assert acknowledge_response.status_code == 200
+
+    test_response = client.post(
+        f"{BASE}/backup-sync/config/test",
+        headers=admin_headers,
+        json={
+            "enabled": True,
+            "paused": False,
+            "interval_minutes": 60,
+            "transport_mode": "sftp",
+            "site_slug": "test-site",
+            "remote_host": "backup.example.com",
+            "remote_port": 22,
+            "remote_path": "/srv/aerisun/backup",
+            "remote_username": "backup-user",
+            "credential_ref": "default",
+            "encrypt_runtime_data": True,
+            "max_retries": 2,
+            "retry_backoff_seconds": 60,
+        },
+    )
+    assert test_response.status_code == 200
+    assert test_response.json()["remote_history_state"] == "current"
+
+    _write_runtime_sentinels("rotation-after")
+    run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
+    assert run_response.status_code == 201
+    assert run_response.json()["status"] == "completed"
+    assert run_response.json()["commit_id"] != first_commit_id
+    assert fake_transport.repo_identity["repo_id"] == original_repo_id
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    assert len(commits_response.json()) == 2
+
+
+def test_remote_history_import_restores_with_recovery_password_without_local_key(
+    client, admin_headers, monkeypatch
+) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    app_settings = get_settings()
+    _write_runtime_sentinels("remote-history", include_automation_pack=False)
+    _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _write_runtime_sentinels("remote-history")
+    commit_id, _commit = _trigger_backup(client, admin_headers)
+    assert fake_transport.recovery_keyring is not None
+
+    reset_response = client.post(f"{BASE}/backup-sync/reset", headers=admin_headers)
+    assert reset_response.status_code == 200
+    assert not (app_settings.secrets_dir / "backup-sync" / "default" / "secrets_x25519.pem").exists()
+    _write_runtime_sentinels("damaged")
+
+    wrong_password_response = client.post(
+        f"{BASE}/backup-sync/remote-history/import/preview",
+        headers=admin_headers,
+        json=_remote_history_import_payload(passphrase="wrong password"),
+    )
+    assert wrong_password_response.status_code == 422
+    assert "恢复密码" in wrong_password_response.json()["detail"]
+
+    preview_response = client.post(
+        f"{BASE}/backup-sync/remote-history/import/preview",
+        headers=admin_headers,
+        json=_remote_history_import_payload(),
+    )
+    assert preview_response.status_code == 200
+    preview_payload = preview_response.json()
+    assert preview_payload["remote_repo_id"] == fake_transport.repo_identity["repo_id"]
+    assert preview_payload["key_fingerprints"]
+    assert preview_payload["commits"][0]["id"] == commit_id
+
+    restore_response = client.post(
+        f"{BASE}/backup-sync/remote-history/import/restore",
+        headers=admin_headers,
+        json=_remote_history_import_payload(commit_id=commit_id),
+    )
+    assert restore_response.status_code == 200
+    assert restore_response.json()["id"] == commit_id
+    assert restore_response.json()["restored_at"] is not None
+    _assert_runtime_sentinels("remote-history")
+    assert (app_settings.secrets_dir / "backup-sync" / "default" / "secrets_x25519.pem").exists()
+
+    restored_commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert restored_commits_response.status_code == 200
+    restored_commits = restored_commits_response.json()
+    assert len(restored_commits) == 1
+    assert restored_commits[0]["id"] == commit_id
+    assert restored_commits[0]["restored_at"] is not None
+
+
+def test_remote_history_import_backfills_missing_keyring_from_original_service(
+    client, admin_headers, monkeypatch
+) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("legacy-remote")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    commit_id, _commit = _trigger_backup(client, admin_headers)
+
+    fake_transport.recovery_keyring = None
+    preview_response = client.post(
+        f"{BASE}/backup-sync/remote-history/import/preview",
+        headers=admin_headers,
+        json=_remote_history_import_payload(),
+    )
+
+    assert preview_response.status_code == 200
+    assert fake_transport.recovery_keyring is not None
+    preview_payload = preview_response.json()
+    assert preview_payload["key_fingerprints"]
+    assert preview_payload["commits"][0]["id"] == commit_id
+
+
+def test_remote_history_import_does_not_backfill_keyring_for_foreign_local_key(
+    client, admin_headers, monkeypatch
+) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("foreign-legacy-remote")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _trigger_backup(client, admin_headers)
+
+    fake_transport.recovery_keyring = None
+    fake_transport.repo_identity["repo_id"] = "foreign-repo-id"
+    preview_response = client.post(
+        f"{BASE}/backup-sync/remote-history/import/preview",
+        headers=admin_headers,
+        json=_remote_history_import_payload(),
+    )
+
+    assert preview_response.status_code == 422
+    assert "不匹配" in preview_response.json()["detail"]
+    assert fake_transport.recovery_keyring is None
+
+
+def test_remote_history_import_reports_unrecoverable_legacy_history_without_local_key(
+    client, admin_headers, monkeypatch
+) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("legacy-without-keyring")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _trigger_backup(client, admin_headers)
+
+    reset_response = client.post(f"{BASE}/backup-sync/reset", headers=admin_headers)
+    assert reset_response.status_code == 200
+    fake_transport.recovery_keyring = None
+
+    preview_response = client.post(
+        f"{BASE}/backup-sync/remote-history/import/preview",
+        headers=admin_headers,
+        json=_remote_history_import_payload(),
+    )
+
+    assert preview_response.status_code == 422
+    detail = preview_response.json()["detail"]
+    assert "不能仅凭密码恢复" in detail
+    assert "请先设置恢复密码，然后再创建备份" not in detail
+
+
+def test_initializing_new_remote_history_discards_local_backup_history(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("old-local-history")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=True)
+    _trigger_backup(client, admin_headers)
+    fake_transport.repo_identity = None
+
+    before_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert before_response.status_code == 200
+    assert len(before_response.json()) == 1
+
+    overwrite_response = client.post(
+        f"{BASE}/backup-sync/remote-history/overwrite",
+        headers=admin_headers,
+        json=_remote_history_import_payload()["config"],
+    )
+
+    assert overwrite_response.status_code == 200
+    payload = overwrite_response.json()
+    assert payload["remote_history_state"] == "current"
+    assert fake_transport.repo_identity is not None
+    after_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert after_response.status_code == 200
+    assert after_response.json() == []
+    config_response = client.get(f"{BASE}/backup-sync/config", headers=admin_headers)
+    assert config_response.status_code == 200
+    assert config_response.json()["recovery_key_ready"] is True
+
+
+def test_retention_prunes_remote_manifest_and_unreferenced_chunks(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    app_settings = get_settings()
+    _write_runtime_sentinels("retention-one")
+    stable_media = app_settings.media_dir / "stable.bin"
+    stable_media.write_bytes(b"shared-media-payload")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=1)
+
+    first_commit_id, first_commit = _trigger_backup(client, admin_headers)
+    first_manifest_digest = first_commit["manifest_digest"]
+    first_chunks = _commit_chunk_digests(first_commit)
+
+    _write_runtime_sentinels("retention-two")
+    stable_media.write_bytes(b"shared-media-payload")
+    second_commit_id, second_commit = _trigger_backup(client, admin_headers)
+    second_chunks = _commit_chunk_digests(second_commit)
+
+    assert second_commit_id != first_commit_id
+    assert first_commit_id in fake_transport.deleted_commits
+    assert first_commit_id not in fake_transport.commits
+    assert first_manifest_digest in fake_transport.deleted_manifests
+    assert first_manifest_digest not in fake_transport.manifests
+
+    first_only_chunks = first_chunks - second_chunks
+    shared_chunks = first_chunks & second_chunks
+    assert first_only_chunks
+    assert shared_chunks
+    assert first_only_chunks <= set(fake_transport.deleted_chunks)
+    assert all(digest not in fake_transport.chunks for digest in first_only_chunks)
+    assert all(digest in fake_transport.chunks for digest in shared_chunks)
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    commits = commits_response.json()
+    assert [commit["id"] for commit in commits] == [second_commit_id]
+
+
+def test_retention_keeps_history_when_remote_commit_delete_fails(client, admin_headers, monkeypatch) -> None:
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("retention-fail-one")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=1)
+    first_commit_id, first_commit = _trigger_backup(client, admin_headers)
+    first_manifest_digest = first_commit["manifest_digest"]
+    first_chunks = _commit_chunk_digests(first_commit)
+    fake_transport.fail_delete_commits.add(first_commit_id)
+
+    _write_runtime_sentinels("retention-fail-two")
+    second_run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
+    assert second_run_response.status_code == 201
+    assert second_run_response.json()["status"] == "completed"
+
+    commits_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert commits_response.status_code == 200
+    commit_ids = {commit["id"] for commit in commits_response.json()}
+    assert first_commit_id in commit_ids
+    assert second_run_response.json()["commit_id"] in commit_ids
+
+    assert first_commit_id in fake_transport.commits
+    assert first_manifest_digest in fake_transport.manifests
+    assert first_manifest_digest not in fake_transport.deleted_manifests
+    assert all(digest in fake_transport.chunks for digest in first_chunks)
+    assert not (first_chunks & set(fake_transport.deleted_chunks))
+
+
+def test_retention_retries_hidden_object_cleanup_after_chunk_delete_failure(client, admin_headers, monkeypatch) -> None:
+    from aerisun.core.db import get_session_factory
+    from aerisun.domain.ops import backup_sync
+    from aerisun.domain.ops.models import BackupCommit
+
+    fake_transport = FakeBackupTransport()
+    monkeypatch.setattr("aerisun.domain.ops.backup_sync.build_transport", lambda config, credentials: fake_transport)
+
+    _write_runtime_sentinels("retention-retry-one")
+    _configure_backup(client, admin_headers, encrypt_runtime_data=False, max_retention_count=1)
+    first_commit_id, first_commit = _trigger_backup(client, admin_headers)
+    first_chunks = _commit_chunk_digests(first_commit)
+    blocked_chunk = next(iter(first_chunks))
+    fake_transport.fail_delete_chunks.add(blocked_chunk)
+
+    _write_runtime_sentinels("retention-retry-two")
+    second_run_response = client.post(f"{BASE}/backup-sync/runs", headers=admin_headers)
+    assert second_run_response.status_code == 201
+
+    visible_response = client.get(f"{BASE}/backup-sync/commits", headers=admin_headers)
+    assert visible_response.status_code == 200
+    assert [commit["id"] for commit in visible_response.json()] == [second_run_response.json()["commit_id"]]
+    assert blocked_chunk in fake_transport.chunks
+
+    with get_session_factory()() as session:
+        hidden = session.get(BackupCommit, first_commit_id)
+        assert hidden is not None
+        assert hidden.trigger_kind == backup_sync.BACKUP_RETENTION_TOMBSTONE_TRIGGER
+
+        config = backup_sync.get_or_create_backup_sync_config(session)
+        fake_transport.fail_delete_chunks.clear()
+        backup_sync._enforce_retention(config, fake_transport)
+        session.expire_all()
+        assert session.get(BackupCommit, first_commit_id) is None
+
+    assert blocked_chunk in fake_transport.deleted_chunks
+    assert blocked_chunk not in fake_transport.chunks
+
+
 @pytest.mark.parametrize(
     ("dataset_key", "expected_detail"),
     [
         ("aerisun_db", "Downloaded backup chunk digest mismatch"),
+        ("runtime_files", "Downloaded backup chunk digest mismatch"),
         ("media", "Downloaded backup chunk digest mismatch"),
     ],
 )

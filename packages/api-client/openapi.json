@@ -10302,6 +10302,100 @@
         ]
       }
     },
+    "/api/v1/admin/system/backup-sync/remote-history/import/preview": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "验证恢复密码并列出远端备份历史",
+        "operationId": "preview_remote_backup_history_import_api_v1_admin_system_backup_sync_remote_history_import_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupRemoteHistoryImportWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRemoteHistoryImportPreviewRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/system/backup-sync/remote-history/import/restore": {
+      "post": {
+        "tags": [
+          "admin",
+          "admin-system"
+        ],
+        "summary": "使用恢复密码从远端备份历史恢复",
+        "operationId": "restore_remote_backup_history_api_v1_admin_system_backup_sync_remote_history_import_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupRemoteHistoryRestoreWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupCommitRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/system/backup-sync/remote-history/overwrite": {
       "post": {
         "tags": [
@@ -18204,6 +18298,131 @@
           "updated_at"
         ],
         "title": "BackupQueueItemRead"
+      },
+      "BackupRemoteHistoryCommitRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "remote_commit_id": {
+            "type": "string",
+            "title": "Remote Commit Id"
+          },
+          "manifest_digest": {
+            "type": "string",
+            "title": "Manifest Digest"
+          },
+          "backup_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Path"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "remote_commit_id",
+          "manifest_digest",
+          "created_at"
+        ],
+        "title": "BackupRemoteHistoryCommitRead"
+      },
+      "BackupRemoteHistoryImportPreviewRead": {
+        "properties": {
+          "remote_repo_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Repo Id"
+          },
+          "site_slug": {
+            "type": "string",
+            "title": "Site Slug"
+          },
+          "credential_ref": {
+            "type": "string",
+            "title": "Credential Ref"
+          },
+          "key_fingerprints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Fingerprints"
+          },
+          "commits": {
+            "items": {
+              "$ref": "#/components/schemas/BackupRemoteHistoryCommitRead"
+            },
+            "type": "array",
+            "title": "Commits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_slug",
+          "credential_ref"
+        ],
+        "title": "BackupRemoteHistoryImportPreviewRead"
+      },
+      "BackupRemoteHistoryImportWrite": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/BackupSyncConfigUpdate"
+          },
+          "passphrase": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Passphrase"
+          }
+        },
+        "type": "object",
+        "required": [
+          "config",
+          "passphrase"
+        ],
+        "title": "BackupRemoteHistoryImportWrite"
+      },
+      "BackupRemoteHistoryRestoreWrite": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/BackupSyncConfigUpdate"
+          },
+          "passphrase": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Passphrase"
+          },
+          "commit_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Commit Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "config",
+          "passphrase",
+          "commit_id"
+        ],
+        "title": "BackupRemoteHistoryRestoreWrite"
       },
       "BackupRunRead": {
         "properties": {

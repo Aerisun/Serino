@@ -206,6 +206,31 @@ class BackupSyncConfigTestRead(BaseModel):
     local_repo_id: str | None = None
 
 
+class BackupRemoteHistoryImportWrite(BaseModel):
+    config: BackupSyncConfigUpdate
+    passphrase: str = Field(min_length=8)
+
+
+class BackupRemoteHistoryRestoreWrite(BackupRemoteHistoryImportWrite):
+    commit_id: str = Field(min_length=1)
+
+
+class BackupRemoteHistoryCommitRead(BaseModel):
+    id: str
+    remote_commit_id: str
+    manifest_digest: str
+    backup_path: str | None = None
+    created_at: datetime
+
+
+class BackupRemoteHistoryImportPreviewRead(BaseModel):
+    remote_repo_id: str | None = None
+    site_slug: str
+    credential_ref: str
+    key_fingerprints: list[str] = Field(default_factory=list)
+    commits: list[BackupRemoteHistoryCommitRead] = Field(default_factory=list)
+
+
 class BackupBootstrapClaimCreate(BaseModel):
     remote_host: str = Field(min_length=1, max_length=255)
     remote_port: int = Field(default=22, ge=1, le=65535)

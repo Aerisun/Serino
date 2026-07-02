@@ -70,6 +70,7 @@ const navGroups = [
       { to: "/moderation", icon: Shield, labelKey: "nav.moderation" },
       { to: "/visitors", icon: User, labelKey: "nav.visitors" },
       { to: "/assets", icon: Image, labelKey: "nav.assets" },
+      { to: "/system/backups", icon: Database, labelKey: "nav.backups" },
     ],
   },
   {
@@ -87,7 +88,6 @@ const navGroups = [
         icon: ClipboardList,
         labelKey: "nav.auditLog",
       },
-      { to: "/system/backups", icon: Database, labelKey: "nav.backups" },
       { to: "/system/info", icon: Info, labelKey: "nav.systemInfo" },
     ],
   },

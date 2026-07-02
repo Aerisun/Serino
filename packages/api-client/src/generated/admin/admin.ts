@@ -66,6 +66,9 @@ import type {
   BackupCredentialExportRead,
   BackupCredentialExportWrite,
   BackupQueueItemRead,
+  BackupRemoteHistoryImportPreviewRead,
+  BackupRemoteHistoryImportWrite,
+  BackupRemoteHistoryRestoreWrite,
   BackupRunRead,
   BackupSnapshotRead,
   BackupSyncConfig,
@@ -12943,6 +12946,184 @@ export const useProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnection
         TContext
       > => {
       return useMutation(getProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 验证恢复密码并列出远端备份历史
+ */
+export type previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse200 = {
+  data: BackupRemoteHistoryImportPreviewRead
+  status: 200
+}
+
+export type previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponseSuccess = (previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse200) & {
+  headers: Headers;
+};
+export type previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponseError = (previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse422) & {
+  headers: Headers;
+};
+
+export type previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse = (previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponseSuccess | previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponseError)
+
+export const getPreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/remote-history/import/preview`
+}
+
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost = async (backupRemoteHistoryImportWrite: BackupRemoteHistoryImportWrite, options?: RequestInit): Promise<previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse> => {
+
+  return customInstance<previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse>(getPreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupRemoteHistoryImportWrite,)
+  }
+);}
+
+
+
+
+export const getPreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost>>, TError,{data: BodyType<BackupRemoteHistoryImportWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost>>, TError,{data: BodyType<BackupRemoteHistoryImportWrite>}, TContext> => {
+
+const mutationKey = ['previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost>>, {data: BodyType<BackupRemoteHistoryImportWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostMutationResult = NonNullable<Awaited<ReturnType<typeof previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost>>>
+    export type PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostMutationBody = BodyType<BackupRemoteHistoryImportWrite>
+    export type PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 验证恢复密码并列出远端备份历史
+ */
+export const usePreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost>>, TError,{data: BodyType<BackupRemoteHistoryImportWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost>>,
+        TError,
+        {data: BodyType<BackupRemoteHistoryImportWrite>},
+        TContext
+      > => {
+      return useMutation(getPreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary 使用恢复密码从远端备份历史恢复
+ */
+export type restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse200 = {
+  data: BackupCommitRead
+  status: 200
+}
+
+export type restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponseSuccess = (restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse200) & {
+  headers: Headers;
+};
+export type restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponseError = (restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse422) & {
+  headers: Headers;
+};
+
+export type restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse = (restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponseSuccess | restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponseError)
+
+export const getRestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostUrl = () => {
+
+
+
+
+  return `/api/v1/admin/system/backup-sync/remote-history/import/restore`
+}
+
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost = async (backupRemoteHistoryRestoreWrite: BackupRemoteHistoryRestoreWrite, options?: RequestInit): Promise<restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse> => {
+
+  return customInstance<restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse>(getRestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backupRemoteHistoryRestoreWrite,)
+  }
+);}
+
+
+
+
+export const getRestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostMutationOptions = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost>>, TError,{data: BodyType<BackupRemoteHistoryRestoreWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost>>, TError,{data: BodyType<BackupRemoteHistoryRestoreWrite>}, TContext> => {
+
+const mutationKey = ['restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost>>, {data: BodyType<BackupRemoteHistoryRestoreWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostMutationResult = NonNullable<Awaited<ReturnType<typeof restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost>>>
+    export type RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostMutationBody = BodyType<BackupRemoteHistoryRestoreWrite>
+    export type RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostMutationError = ErrorType<HTTPValidationError>
+
+    /**
+ * @summary 使用恢复密码从远端备份历史恢复
+ */
+export const useRestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost = <TError = ErrorType<HTTPValidationError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost>>, TError,{data: BodyType<BackupRemoteHistoryRestoreWrite>}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost>>,
+        TError,
+        {data: BodyType<BackupRemoteHistoryRestoreWrite>},
+        TContext
+      > => {
+      return useMutation(getRestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostMutationOptions(options), queryClient);
     }
     /**
  * @summary 归档并覆盖远端备份历史

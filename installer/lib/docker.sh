@@ -144,7 +144,18 @@ normalize_compose_output_line() {
   local line="$1"
 
   line="${line//$'\r'/}"
-  line="$(printf '%s' "${line}" | sed -E $'s/\x1B\\[[0-9;?]*[ -/]*[@-~]//g')"
+  if command_exists python3; then
+    line="$(
+      python3 - "${line}" <<'PY'
+import re
+import sys
+
+print(re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]", "", sys.argv[1]), end="")
+PY
+    )"
+  else
+    line="$(printf '%s' "${line}" | sed -E $'s/\x1B\\[[0-9;?]*[ -/]*[@-~]//g')"
+  fi
   printf '%s' "${line}"
 }
 

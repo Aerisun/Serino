@@ -42,6 +42,33 @@ interface AdminSectionTabsValueProps extends AdminSectionTabsBaseProps {
 
 type AdminSectionTabsProps = AdminSectionTabsLinkProps | AdminSectionTabsValueProps;
 
+function scrollActiveItemIntoHorizontalView(
+  node: HTMLDivElement,
+  activeItem: HTMLElement,
+  behavior: ScrollBehavior,
+) {
+  const itemLeft = activeItem.offsetLeft;
+  const itemRight = itemLeft + activeItem.offsetWidth;
+  const visibleLeft = node.scrollLeft;
+  const visibleRight = visibleLeft + node.clientWidth;
+  let nextLeft = visibleLeft;
+
+  if (itemLeft < visibleLeft) {
+    nextLeft = itemLeft;
+  } else if (itemRight > visibleRight) {
+    nextLeft = itemRight - node.clientWidth;
+  }
+
+  if (nextLeft === visibleLeft) {
+    return;
+  }
+  if (typeof node.scrollTo === "function") {
+    node.scrollTo({ left: nextLeft, behavior });
+  } else {
+    node.scrollLeft = nextLeft;
+  }
+}
+
 function getItemClassName({
   active,
   disabled,
@@ -144,11 +171,13 @@ export function AdminSectionTabs(props: AdminSectionTabsProps) {
         "[aria-pressed='true'], [aria-current='page']",
       );
 
-      activeItem?.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-        behavior: window.matchMedia("(max-width: 767px)").matches ? "auto" : "smooth",
-      });
+      if (activeItem) {
+        scrollActiveItemIntoHorizontalView(
+          node,
+          activeItem,
+          window.matchMedia("(max-width: 767px)").matches ? "auto" : "smooth",
+        );
+      }
     });
 
     return () => window.cancelAnimationFrame(frame);

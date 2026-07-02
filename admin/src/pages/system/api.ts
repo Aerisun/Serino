@@ -4,16 +4,26 @@ import {
   exportBackupRecoveryKeyApiV1AdminSystemBackupSyncRecoveryKeyExportPost,
   getConfigRevisionDetailApiV1AdminSystemConfigRevisionsRevisionIdGet,
   listConfigRevisionsApiV1AdminSystemConfigRevisionsGet,
+  overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost,
+  previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost,
+  probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost,
   restoreConfigRevisionApiV1AdminSystemConfigRevisionsRevisionIdRestorePost,
+  restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost,
   testBackupSyncConfigApiV1AdminSystemBackupSyncConfigTestPost,
 } from "@serino/api-client/admin";
 import type {
+  BackupCommitRead,
   BackupCredentialAcknowledgeWrite,
   BackupCredentialEnsureRead,
   BackupCredentialEnsureWrite,
   BackupCredentialExportRead,
   BackupCredentialExportWrite,
+  BackupRemoteHistoryCommitRead,
+  BackupRemoteHistoryImportPreviewRead as GeneratedBackupRemoteHistoryImportPreviewRead,
+  BackupRemoteHistoryImportWrite,
+  BackupRemoteHistoryRestoreWrite,
   BackupSyncConfigTestRead,
+  BackupSyncConfigTestReadRemoteHistoryState,
   BackupSyncConfigUpdate,
   ConfigDiffLineRead,
   ConfigRevisionDetailRead,
@@ -37,7 +47,7 @@ export type ConfigRevisionListParams = ListConfigRevisionsApiV1AdminSystemConfig
 export type RestoreRevisionPayload = ConfigRevisionRestoreWrite;
 
 export type BackupBootstrapClaimStatus = "pending" | "succeeded" | "failed" | "expired" | "revoked";
-export type BackupRemoteHistoryState = "unreachable" | "empty" | "current" | "foreign" | "unknown";
+export type BackupRemoteHistoryState = BackupSyncConfigTestReadRemoteHistoryState;
 
 export type BackupSyncConfigTestResult = BackupSyncConfigTestRead & {
   remote_history_state?: BackupRemoteHistoryState;
@@ -81,6 +91,15 @@ export type BackupSystemResetRead = {
   config: unknown;
   remote_cleanup_command: string;
 };
+
+export type { BackupRemoteHistoryCommitRead };
+export type BackupRemoteHistoryImportPreviewRead =
+  GeneratedBackupRemoteHistoryImportPreviewRead & {
+    key_fingerprints: string[];
+    commits: BackupRemoteHistoryCommitRead[];
+  };
+export type BackupRemoteHistoryImportPayload = BackupRemoteHistoryImportWrite;
+export type BackupRemoteHistoryRestorePayload = BackupRemoteHistoryRestoreWrite;
 
 export function listConfigRevisions(
   params: ConfigRevisionListParams,
@@ -133,10 +152,9 @@ export function testBackupSyncConfig(payload: BackupSyncConfigUpdate): Promise<B
 export function probeBackupMachineConnection(
   payload: BackupSyncConfigUpdate,
 ): Promise<BackupSyncConfigTestResult> {
-  return adminApiRequest<BackupSyncConfigTestResult>("/api/v1/admin/system/backup-sync/connection/probe", {
-    method: "POST",
-    body: payload,
-  });
+  return probeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionProbePost(payload).then(
+    ({ data }) => data,
+  );
 }
 
 export function createBackupBootstrapClaim(
@@ -160,10 +178,27 @@ export function revokeBackupBootstrapClaim(claimId: string): Promise<BackupBoots
 }
 
 export function overwriteRemoteBackupHistory(payload: BackupSyncConfigUpdate): Promise<BackupSyncConfigTestResult> {
-  return adminApiRequest<BackupSyncConfigTestResult>("/api/v1/admin/system/backup-sync/remote-history/overwrite", {
-    method: "POST",
-    body: payload,
-  });
+  return overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePost(payload).then(
+    ({ data }) => data,
+  );
+}
+
+export function previewRemoteBackupHistoryImport(
+  payload: BackupRemoteHistoryImportPayload,
+): Promise<BackupRemoteHistoryImportPreviewRead> {
+  return previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPost(
+    payload,
+  ).then(({ data }) => ({
+    ...data,
+    key_fingerprints: data.key_fingerprints ?? [],
+    commits: data.commits ?? [],
+  }));
+}
+
+export function restoreRemoteBackupHistory(payload: BackupRemoteHistoryRestorePayload): Promise<BackupCommitRead> {
+  return restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePost(payload).then(
+    ({ data }) => data,
+  );
 }
 
 export function resetBackupSyncSystem(): Promise<BackupSystemResetRead> {

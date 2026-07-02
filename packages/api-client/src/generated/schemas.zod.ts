@@ -4069,6 +4069,113 @@ export const ProbeBackupMachineConnectionApiV1AdminSystemBackupSyncConnectionPro
 
 
 /**
+ * @summary 验证恢复密码并列出远端备份历史
+ */
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEnabledDefault = false;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigPausedDefault = false;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigIntervalMinutesDefault = 60;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigTransportModeDefault = `sftp`;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigSiteSlugDefault = `aerisun`;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEncryptRuntimeDataDefault = true;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetriesDefault = 3;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigRetryBackoffSecondsDefault = 300;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetentionCountDefault = 0;
+export const previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyPassphraseMin = 8;
+
+
+
+export const PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBody = zod.object({
+  "config": zod.object({
+  "enabled": zod.boolean().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEnabledDefault),
+  "paused": zod.boolean().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigPausedDefault),
+  "interval_minutes": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigIntervalMinutesDefault),
+  "transport_mode": zod.string().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigTransportModeDefault),
+  "site_slug": zod.string().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigSiteSlugDefault),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional(),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigEncryptRuntimeDataDefault),
+  "max_retries": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyConfigMaxRetentionCountDefault)
+}),
+  "passphrase": zod.string().min(previewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostBodyPassphraseMin)
+})
+
+export const PreviewRemoteBackupHistoryImportApiV1AdminSystemBackupSyncRemoteHistoryImportPreviewPostResponse = zod.object({
+  "remote_repo_id": zod.union([zod.string(),zod.null()]).optional(),
+  "site_slug": zod.string(),
+  "credential_ref": zod.string(),
+  "key_fingerprints": zod.array(zod.string()).optional(),
+  "commits": zod.array(zod.object({
+  "id": zod.string(),
+  "remote_commit_id": zod.string(),
+  "manifest_digest": zod.string(),
+  "backup_path": zod.union([zod.string(),zod.null()]).optional(),
+  "created_at": zod.string().datetime({})
+})).optional()
+})
+
+
+/**
+ * @summary 使用恢复密码从远端备份历史恢复
+ */
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEnabledDefault = false;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigPausedDefault = false;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigIntervalMinutesDefault = 60;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigTransportModeDefault = `sftp`;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigSiteSlugDefault = `aerisun`;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEncryptRuntimeDataDefault = true;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetriesDefault = 3;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigRetryBackoffSecondsDefault = 300;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetentionCountDefault = 0;
+export const restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyPassphraseMin = 8;
+
+
+
+
+export const RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBody = zod.object({
+  "config": zod.object({
+  "enabled": zod.boolean().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEnabledDefault),
+  "paused": zod.boolean().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigPausedDefault),
+  "interval_minutes": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigIntervalMinutesDefault),
+  "transport_mode": zod.string().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigTransportModeDefault),
+  "site_slug": zod.string().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigSiteSlugDefault),
+  "remote_host": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_port": zod.union([zod.number(),zod.null()]).optional(),
+  "remote_path": zod.union([zod.string(),zod.null()]).optional(),
+  "remote_username": zod.union([zod.string(),zod.null()]).optional(),
+  "credential_ref": zod.union([zod.string(),zod.null()]).optional(),
+  "encrypt_runtime_data": zod.boolean().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigEncryptRuntimeDataDefault),
+  "max_retries": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetriesDefault),
+  "retry_backoff_seconds": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigRetryBackoffSecondsDefault),
+  "max_retention_count": zod.number().default(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyConfigMaxRetentionCountDefault)
+}),
+  "passphrase": zod.string().min(restoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostBodyPassphraseMin),
+  "commit_id": zod.string().min(1)
+})
+
+export const RestoreRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryImportRestorePostResponse = zod.object({
+  "id": zod.unknown(),
+  "transport": zod.unknown(),
+  "trigger_kind": zod.unknown(),
+  "site_slug": zod.unknown(),
+  "remote_commit_id": zod.unknown(),
+  "manifest_digest": zod.unknown(),
+  "backup_path": zod.unknown(),
+  "datasets": zod.unknown(),
+  "stats_json": zod.unknown(),
+  "snapshot_started_at": zod.unknown(),
+  "snapshot_finished_at": zod.unknown(),
+  "restored_at": zod.unknown(),
+  "created_at": zod.unknown(),
+  "updated_at": zod.unknown()
+})
+
+
+/**
  * @summary 归档并覆盖远端备份历史
  */
 export const overwriteRemoteBackupHistoryApiV1AdminSystemBackupSyncRemoteHistoryOverwritePostBodyEnabledDefault = false;

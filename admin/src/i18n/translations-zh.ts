@@ -580,11 +580,17 @@ export const zhTranslations: TranslationDict = {
   "system.recoveryKeyExported": "已设置恢复密码",
   "system.recoveryKeyRotated": "已更换恢复钥匙",
   "system.setRecoveryPassword": "设置恢复密码",
+  "system.resetRecoveryPassword": "重新设置恢复密码",
   "system.confirmSetRecoveryPassword": "确认设置",
+  "system.confirmResetRecoveryPassword": "确认重新设置",
   "system.recoveryPasswordSet": "恢复密码已设置",
   "system.setRecoveryPasswordDescription": "",
+  "system.resetRecoveryPasswordDescription":
+    "远端为空或已选择覆盖远端历史时，可以为新的备份历史重新设置恢复密码。",
   "system.recoveryPasswordImportantWarning":
     "非常重要：恢复密码用于灾后恢复。只可以设置一次 !!! \n 忘记的话需要重置备份系统，否则灾后无法恢复备份",
+  "system.resetRecoveryPasswordImportantWarning":
+    "重新设置后，之后创建的新备份会使用新恢复密码。旧备份仍需要旧密码和旧恢复钥匙才能恢复。",
   "system.recoveryPasswordConfirm": "再次输入恢复密码",
   "system.recoveryPasswordMismatch": "两次输入的恢复密码不一致",
   "system.testBackupConfig": "测试配置",
@@ -599,7 +605,10 @@ export const zhTranslations: TranslationDict = {
   "system.fixedBackupDirectory": "固定备份目录",
   "system.backupProbeLatency": "检测耗时",
   "system.backupConfigTestStatus": "测试结果",
+  "system.backupConfigTestPending": "待测试",
+  "system.backupConfigTestChecking": "检查中",
   "system.backupConfigTestOk": "可连接",
+  "system.backupConfigTestInvalid": "无效",
   "system.backupConfigTestLatency": "连接耗时",
   "system.recoveryKeyRequiredBeforeSave":
     "第一次建立备份前，必须先设置恢复密码。完成这一步之后才能保存备份配置。",
@@ -631,6 +640,7 @@ export const zhTranslations: TranslationDict = {
   "system.copyBootstrapCommand": "复制命令",
   "system.backupBootstrapCommandReady": "临时命令已生成",
   "system.backupBootstrapCommandCopied": "命令已复制",
+  "system.copyCommandFailed": "复制失败，请手动选择命令复制",
   "system.backupBootstrapRevoked": "临时命令已撤销",
   "system.backupBootstrapHostRequired": "请先填写备份机地址",
   "system.backupBootstrapCommandEmpty": "生成后会显示一行可复制的临时命令。",
@@ -652,22 +662,43 @@ export const zhTranslations: TranslationDict = {
   "system.backupsTabs.settings": "设置",
   "system.backupsTabs.settingsDescription": "接入方式、凭据与自动同步",
   "system.backupsTabs.records": "记录",
-  "system.backupsTabs.recordsDescription": "队列、运行与可恢复提交",
+  "system.backupsTabs.recordsDescription": "队列、存档点与可恢复提交",
   "system.backupConnectTitle": "连接备份机",
   "system.backupForeignHistoryWarning":
     "这台备份机上已有另一套备份历史。为避免数据混乱，不能直接继续写入。",
-  "system.restoreThisHistory": "恢复这套历史",
+  "system.restoreThisHistory": "从备份机历史恢复数据",
   "system.overwriteRemoteHistory": "覆盖远端历史",
   "system.backupOverwriteHistoryConfirm":
     "确认覆盖远端备份历史？系统会先归档旧历史，再为当前站点创建新的备份历史。",
   "system.backupOverwriteHistoryDone": "已覆盖远端历史",
+  "system.backupOverwriteHistoryIntentConfirm":
+    "选择覆盖远端历史？设置恢复密码并开始备份时，系统会先归档旧历史，再创建新的备份历史。",
+  "system.backupOverwriteHistoryIntentReady": "已选择覆盖远端历史",
   "system.backupRestoreRemoteHistoryPending":
-    "灾后恢复导入流程还需要输入恢复密码并选择备份版本，当前版本先阻止直接写入。",
+    "请输入恢复密码，验证通过后选择备份版本进行恢复。",
+  "system.remoteHistoryImportTitle": "恢复远端备份历史",
+  "system.remoteHistoryImportDescription":
+    "输入第一次设置的恢复密码，验证通过后选择一个备份版本恢复。系统只读取备份机数据，不会覆盖远端历史。",
+  "system.verifyRecoveryPassword": "验证恢复密码",
+  "system.backupRemoteHistoryPreviewReady": "恢复密码验证通过",
+  "system.backupRemoteHistoryRestored": "已从远端备份历史恢复",
+  "system.remoteRepoId": "远端历史 ID",
+  "system.recoveryKeyCount": "恢复钥匙数量",
+  "system.selectBackupVersion": "选择备份版本",
+  "system.selectBackupVersionRequired": "请选择一个备份版本",
+  "system.restoreSelectedBackupVersion": "恢复所选版本",
+  "system.remoteHistoryNoVersions": "未找到可恢复的备份版本",
   "system.recoveryPasswordTitle": "设置恢复密码",
   "system.recoveryPasswordReadyDescription":
     "恢复密码已设置。继续当前备份历史时不能重新设置，避免旧备份无法恢复。",
+  "system.recoveryPasswordCanResetForNewHistory":
+    "远端备份机为空或已选择覆盖远端历史，可以为新的备份历史重新设置恢复密码。",
+  "system.recoveryPasswordRequiredForNewRemote":
+    "将为这台备份机创建新的备份历史。本机旧备份记录会作废，请重新设置恢复密码。",
   "system.recoveryPasswordRequiredDescription":
     "新建或覆盖备份历史前需要设置恢复密码。以后灾后恢复必须使用它。",
+  "system.recoveryPasswordBlockedUntilBackupReady":
+    "请先完成备份机检测；如果检测到已有历史，请先选择恢复或覆盖远端历史。",
   "system.recoveryPasswordAlreadySet": "已设置",
   "system.forgotRecoveryPassword": "忘记密码？",
   "system.forgotRecoveryPasswordDescription":
@@ -681,7 +712,7 @@ export const zhTranslations: TranslationDict = {
   "system.startBackupNow": "开始备份",
   "system.resetBackupSystem": "重置备份系统",
   "system.resetBackupSystemDescription":
-    "清空本机保存的备份配置、恢复密码状态、队列和运行记录，然后从第一步重新接入。不会删除正文数据。",
+    "清空本机保存的备份配置、恢复密码状态、队列和存档点，然后从第一步重新接入。不会删除正文数据。",
   "system.resetBackupSystemConfirm":
     "确认重置本机备份系统？这会清空本机备份配置和恢复密码状态，但不会删除站点正文数据。",
   "system.resetBackupSystemDone": "本机备份系统已重置",
@@ -704,7 +735,7 @@ export const zhTranslations: TranslationDict = {
   "system.backupSetupStepCredential":
     "保存时系统会自动确认或生成本机恢复密钥目录。",
   "system.backupSetupStepVerify":
-    "保存后去“记录”页手动创建一次备份，确认运行记录和提交记录都能出现。",
+    "保存后去“记录”页手动创建一次备份，确认存档点和提交记录都能出现。",
   "system.siteSlug": "站点标识",
   "system.siteSlugDescription": "用于远端站点目录命名，通常保持 aerisun 即可。",
   "system.remoteSiteDirectoryLabel": "远端站点目录名",
@@ -761,7 +792,7 @@ export const zhTranslations: TranslationDict = {
   "system.syncStatusCardDescription":
     "这里显示最近一次入队、同步结果和错误信息。",
   "system.queueRecords": "待同步队列",
-  "system.runRecords": "运行记录",
+  "system.runRecords": "存档点",
   "system.commitRecords": "提交记录",
   "system.latestCommit": "最近一次提交",
   "system.queueDepth": "待处理队列数",
@@ -777,7 +808,7 @@ export const zhTranslations: TranslationDict = {
   "system.missingFingerprint": "尚未填写密钥指纹",
   "system.recordsNeedSetupTitle": "记录页暂时还不会有内容",
   "system.recordsNeedSetupDescription":
-    "先在“设置”页填好 SFTP 信息和恢复密钥目录；保存后再手动创建一次备份，就会开始出现运行记录和提交记录。",
+    "先在“设置”页填好 SFTP 信息和恢复密钥目录；保存后再手动创建一次备份，就会开始出现存档点和提交记录。",
   "system.triggerKind": "触发来源",
   "system.retryCount": "重试次数",
   "system.nextRetryAt": "下次重试",

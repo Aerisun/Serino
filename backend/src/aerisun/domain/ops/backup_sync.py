@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import json
 import logging
@@ -16,6 +17,7 @@ import tempfile
 import threading
 import time
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
@@ -47,6 +49,10 @@ from aerisun.domain.ops.schemas import (
     BackupCredentialExportRead,
     BackupCredentialExportWrite,
     BackupQueueItemRead,
+    BackupRemoteHistoryCommitRead,
+    BackupRemoteHistoryImportPreviewRead,
+    BackupRemoteHistoryImportWrite,
+    BackupRemoteHistoryRestoreWrite,
     BackupRunRead,
     BackupSnapshotRead,
     BackupSyncConfig,
@@ -67,6 +73,7 @@ BACKUP_BOOTSTRAP_DEFAULT_CREDENTIAL_REF = "aerisun-backup-source"
 BACKUP_BOOTSTRAP_SSH_KEY_NAME = "serino_backup_ed25519"
 BACKUP_REPO_IDENTITY_VERSION = 1
 BACKUP_SYNC_CONFIG_TEST_TIMEOUT_SECONDS = 3
+BACKUP_RETENTION_TOMBSTONE_TRIGGER = "retention-pruned"
 
 _restore_lock = threading.Lock()
 _restore_in_progress = threading.Event()
@@ -74,6 +81,13 @@ _restore_in_progress = threading.Event()
 _SFTP_UNSAFE_RE = re.compile(r"[\n\r]")
 _SSH_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _SSH_HOST_UNSAFE_RE = re.compile(r"[\s/@]")
+_REMOTE_MISSING_MARKERS = (
+    "no such file",
+    "not found",
+    "couldn't stat remote file",
+    "cannot stat",
+    "does not exist",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +166,11 @@ def _sha256_file(path: Path) -> str:
 
 def _sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+def _remote_path_is_missing(output: str) -> bool:
+    lowered = output.lower()
+    return any(marker in lowered for marker in _REMOTE_MISSING_MARKERS)
 
 
 def _load_pem_bytes(path: Path) -> bytes:
@@ -253,6 +272,56 @@ def _decrypt_private_key_from_escrow(payload: dict[str, Any], *, passphrase: str
         base64.b64decode(payload["ciphertext"]),
         None,
     )
+
+
+def _decrypt_remote_recovery_keyring(keyring: dict[str, Any], *, passphrase: str) -> list[tuple[str, str, bytes, str]]:
+    entries: list[tuple[str, str, bytes, str]] = []
+    for item in keyring.get("keys") or []:
+        fingerprint = str(item.get("secrets_fingerprint") or "")
+        public_pem = str(item.get("secrets_public_pem") or "")
+        encrypted_payload = item.get("encrypted_private_payload") or {}
+        status = str(item.get("status") or "archived")
+        if not fingerprint or not public_pem or not encrypted_payload:
+            continue
+        try:
+            private_pem = _decrypt_private_key_from_escrow(encrypted_payload, passphrase=passphrase)
+            public_key = serialization.load_pem_public_key(public_pem.encode("utf-8"))
+            if not isinstance(public_key, x25519.X25519PublicKey):
+                continue
+            if _fingerprint_public_key(public_key.public_bytes_raw()) != fingerprint:
+                continue
+            private_key = serialization.load_pem_private_key(private_pem, password=None)
+            if not isinstance(private_key, x25519.X25519PrivateKey):
+                continue
+        except Exception:
+            continue
+        entries.append((status, fingerprint, private_pem, public_pem))
+    if not entries:
+        raise ValidationError("恢复密码不正确，无法解开远端恢复钥匙包。")
+    return entries
+
+
+def _install_remote_recovery_keyring(keyring: dict[str, Any], *, passphrase: str, credential_ref: str) -> list[str]:
+    entries = _decrypt_remote_recovery_keyring(keyring, passphrase=passphrase)
+    active_entry = next((entry for entry in entries if entry[0] == "active"), entries[0])
+    key_dir = _credential_dir(credential_ref)
+    key_dir.mkdir(parents=True, exist_ok=True)
+    fingerprints: list[str] = []
+    for status, fingerprint, private_pem, public_pem in entries:
+        fingerprints.append(fingerprint)
+        if (status, fingerprint, private_pem, public_pem) == active_entry:
+            private_path = _current_private_key_path(credential_ref)
+            public_path = _current_public_key_path(credential_ref)
+        else:
+            archive_key_dir = _archive_key_dir(credential_ref, fingerprint)
+            archive_key_dir.mkdir(parents=True, exist_ok=True)
+            private_path = _archive_private_key_path(credential_ref, fingerprint)
+            public_path = _archive_public_key_path(credential_ref, fingerprint)
+        private_path.write_bytes(private_pem)
+        os.chmod(private_path, 0o600)
+        public_path.write_text(public_pem, encoding="utf-8")
+        os.chmod(public_path, 0o644)
+    return sorted(set(fingerprints))
 
 
 def ensure_backup_credentials(
@@ -533,6 +602,49 @@ def _repo_identity_payload(config, credentials: BackupCredentialBundle) -> dict[
     }
 
 
+def _remote_recovery_keyring_payload(session: Session, config) -> dict[str, Any]:
+    credential_ref = str(config.credential_ref)
+    keys: list[dict[str, Any]] = []
+    for recovery_key in repo.list_backup_recovery_keys(session, credential_ref=credential_ref):
+        keys.append(
+            {
+                "status": recovery_key.status,
+                "secrets_fingerprint": recovery_key.secrets_fingerprint,
+                "secrets_public_pem": recovery_key.secrets_public_pem,
+                "encrypted_private_payload": copy.deepcopy(recovery_key.encrypted_private_payload or {}),
+                "archived_at": recovery_key.archived_at.isoformat() if recovery_key.archived_at else None,
+                "last_exported_at": recovery_key.last_exported_at.isoformat()
+                if recovery_key.last_exported_at
+                else None,
+            }
+        )
+    if not keys:
+        raise ValidationError("请先设置恢复密码，然后再创建备份。")
+    return {
+        "version": 1,
+        "site_slug": str(config.site_slug),
+        "credential_ref": credential_ref,
+        "created_at": _utcnow().isoformat(),
+        "keys": keys,
+    }
+
+
+def _repo_ids_from_keyring(keyring: dict[str, Any], *, site_slug: str, credential_ref: str) -> set[str]:
+    repo_ids: set[str] = set()
+    for item in keyring.get("keys") or []:
+        fingerprint = str(item.get("secrets_fingerprint") or "").strip()
+        if not fingerprint:
+            continue
+        repo_ids.add(
+            _local_repo_id(
+                site_slug=site_slug,
+                credential_ref=credential_ref,
+                recovery_key_fingerprint=fingerprint,
+            )
+        )
+    return repo_ids
+
+
 def _active_local_repo_id(session: Session, *, site_slug: str, credential_ref: str | None) -> str | None:
     if not credential_ref:
         return None
@@ -544,6 +656,38 @@ def _active_local_repo_id(session: Session, *, site_slug: str, credential_ref: s
         credential_ref=credential_ref,
         recovery_key_fingerprint=active.secrets_fingerprint,
     )
+
+
+def _accepted_local_repo_ids(session: Session, *, site_slug: str, credential_ref: str | None) -> set[str]:
+    if not credential_ref:
+        return set()
+    ids: set[str] = set()
+    for recovery_key in repo.list_backup_recovery_keys(session, credential_ref=credential_ref):
+        if not recovery_key.secrets_fingerprint:
+            continue
+        ids.add(
+            _local_repo_id(
+                site_slug=site_slug,
+                credential_ref=credential_ref,
+                recovery_key_fingerprint=recovery_key.secrets_fingerprint,
+            )
+        )
+    return ids
+
+
+def _accepted_runtime_repo_ids(*, site_slug: str, credential_ref: str | None) -> set[str]:
+    if not credential_ref:
+        return set()
+    ids: set[str] = set()
+    for _status, fingerprint, _private_pem, _public_pem in _iter_runtime_key_material(credential_ref):
+        ids.add(
+            _local_repo_id(
+                site_slug=site_slug,
+                credential_ref=credential_ref,
+                recovery_key_fingerprint=fingerprint,
+            )
+        )
+    return ids
 
 
 def _fingerprint_openssh_public_key(public_key: str) -> str:
@@ -948,10 +1092,10 @@ install -m 0600 -o "$REMOTE_USER" -g "$REMOTE_GROUP" "$TEMP_AUTH" "$AUTHORIZED_K
 rm -f "$TEMP_AUTH"
 
 REPORTED=1
-post_result succeeded "backup machine is connected"
+post_result succeeded "备份机已成功连接"
 cat <<'MESSAGE'
-Backup machine is connected.
-Return to the Serino admin page and click "Test and Start Backup".
+备份机已成功连接！
+请您返回后台管理界面稍等片刻，那边正在检测...
 MESSAGE
 """
 
@@ -1093,6 +1237,11 @@ def _inspect_remote_history(session: Session, *, config, transport) -> dict[str,
         site_slug=str(config.site_slug),
         credential_ref=str(config.credential_ref) if config.credential_ref else None,
     )
+    accepted_repo_ids = _accepted_local_repo_ids(
+        session,
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref) if config.credential_ref else None,
+    )
     if not hasattr(transport, "fetch_repo_identity"):
         return {
             "remote_history_state": "unknown",
@@ -1109,7 +1258,7 @@ def _inspect_remote_history(session: Session, *, config, transport) -> dict[str,
             "local_repo_id": local_repo_id,
         }
     remote_repo_id = str(identity.get("repo_id") or "")
-    if local_repo_id and remote_repo_id == local_repo_id:
+    if remote_repo_id and remote_repo_id in accepted_repo_ids:
         return {
             "remote_history_state": "current",
             "remote_history_summary": "发现当前站点的备份历史，可继续增量备份。",
@@ -1130,6 +1279,11 @@ def _history_from_identity(session: Session, *, config, identity: dict[str, Any]
         site_slug=str(config.site_slug),
         credential_ref=str(config.credential_ref) if config.credential_ref else None,
     )
+    accepted_repo_ids = _accepted_local_repo_ids(
+        session,
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref) if config.credential_ref else None,
+    )
     if identity is None:
         return {
             "remote_history_state": "empty",
@@ -1138,7 +1292,7 @@ def _history_from_identity(session: Session, *, config, identity: dict[str, Any]
             "local_repo_id": local_repo_id,
         }
     remote_repo_id = str(identity.get("repo_id") or "")
-    if local_repo_id and remote_repo_id == local_repo_id:
+    if remote_repo_id and remote_repo_id in accepted_repo_ids:
         return {
             "remote_history_state": "current",
             "remote_history_summary": "发现当前站点的备份历史，可继续增量备份。",
@@ -1295,6 +1449,8 @@ def overwrite_remote_backup_history(session: Session, payload: BackupSyncConfigU
         transport.archive_current_repo(remote_repo_id=remote_repo_id)
     if hasattr(transport, "write_repo_identity"):
         transport.write_repo_identity(_repo_identity_payload(config, credentials))
+    repo.clear_backup_history_records(session, job_name=BACKUP_JOB_NAME)
+    session.commit()
     latency_ms = int((time.perf_counter() - started_at) * 1000)
     local_repo_id = _local_repo_id(
         site_slug=str(config.site_slug),
@@ -1313,6 +1469,167 @@ def overwrite_remote_backup_history(session: Session, payload: BackupSyncConfigU
         remote_repo_id=local_repo_id,
         local_repo_id=local_repo_id,
     )
+
+
+def _remote_history_transport(config) -> BackupTransport:
+    return build_transport(config, None)  # type: ignore[arg-type]
+
+
+def _require_remote_recovery_keyring(transport: BackupTransport) -> dict[str, Any]:
+    if not hasattr(transport, "fetch_recovery_keyring"):
+        raise ValidationError("当前传输层不支持灾后恢复钥匙包读取。")
+    keyring = transport.fetch_recovery_keyring()
+    if keyring is None:
+        raise ValidationError("远端备份历史缺少恢复钥匙包。请在原服务升级后重新创建一次备份，再进行灾后恢复。")
+    return keyring
+
+
+def _resolve_remote_recovery_keyring(
+    session: Session,
+    *,
+    config,
+    transport: BackupTransport,
+    passphrase: str,
+    identity: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    try:
+        return _require_remote_recovery_keyring(transport)
+    except ValidationError as exc:
+        if "缺少恢复钥匙包" not in str(exc):
+            raise
+    try:
+        keyring = _remote_recovery_keyring_payload(session, config)
+    except ValidationError as exc:
+        if "请先设置恢复密码" in str(exc):
+            raise ValidationError(
+                "远端备份历史缺少恢复钥匙包，当前机器也没有这批备份的恢复钥匙记录，"
+                "不能仅凭密码恢复。请在创建这批备份的原服务升级后重新创建一次备份，"
+                "或选择已经包含恢复钥匙包的备份历史。"
+            ) from exc
+        raise
+    identity_payload = identity
+    if identity_payload is None and hasattr(transport, "fetch_repo_identity"):
+        identity_payload = transport.fetch_repo_identity()
+    remote_repo_id = str((identity_payload or {}).get("repo_id") or "").strip()
+    if remote_repo_id:
+        local_repo_ids = _repo_ids_from_keyring(
+            keyring,
+            site_slug=str(config.site_slug),
+            credential_ref=str(config.credential_ref),
+        )
+        if remote_repo_id not in local_repo_ids:
+            raise ValidationError(
+                "远端备份历史缺少恢复钥匙包，且本机恢复钥匙与远端历史不匹配。请回到创建这批备份的原服务升级后重新创建一次备份。"
+            )
+    _decrypt_remote_recovery_keyring(keyring, passphrase=passphrase)
+    if not hasattr(transport, "write_recovery_keyring"):
+        raise ValidationError("当前传输层不支持灾后恢复钥匙包写入。")
+    transport.write_recovery_keyring(keyring)
+    return keyring
+
+
+def _parse_backup_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    text = str(value or "").replace("Z", "+00:00")
+    return datetime.fromisoformat(text)
+
+
+def _remote_history_commit_read(item: dict[str, Any]) -> BackupRemoteHistoryCommitRead:
+    return BackupRemoteHistoryCommitRead(
+        id=str(item["commit_id"]),
+        remote_commit_id=str(item.get("remote_commit_id") or item["commit_id"]),
+        manifest_digest=str(item["manifest_digest"]),
+        backup_path=item.get("backup_path"),
+        created_at=_parse_backup_datetime(item["created_at"]),
+    )
+
+
+def preview_remote_backup_history_import(
+    session: Session, payload: BackupRemoteHistoryImportWrite
+) -> BackupRemoteHistoryImportPreviewRead:
+    config = _config_object_from_payload(payload.config)
+    _validate_config(config)
+    transport = _remote_history_transport(config)
+    identity = transport.fetch_repo_identity() if hasattr(transport, "fetch_repo_identity") else None
+    keyring = _resolve_remote_recovery_keyring(
+        session,
+        config=config,
+        transport=transport,
+        passphrase=payload.passphrase,
+        identity=identity,
+    )
+    key_fingerprints = [
+        fingerprint
+        for _status, fingerprint, _private_pem, _public_pem in _decrypt_remote_recovery_keyring(
+            keyring, passphrase=payload.passphrase
+        )
+    ]
+    commits = [_remote_history_commit_read(item) for item in transport.list_commits()]
+    return BackupRemoteHistoryImportPreviewRead(
+        remote_repo_id=str(identity.get("repo_id")) if identity else None,
+        site_slug=str(keyring.get("site_slug") or config.site_slug),
+        credential_ref=str(keyring.get("credential_ref") or config.credential_ref),
+        key_fingerprints=sorted(set(key_fingerprints)),
+        commits=commits,
+    )
+
+
+def _remote_backup_commit_restore_record(
+    config, commit_payload: dict[str, Any], manifest: dict[str, Any]
+) -> dict[str, Any]:
+    created_at = _parse_backup_datetime(commit_payload.get("created_at") or manifest.get("created_at"))
+    return {
+        "id": str(commit_payload.get("commit_id") or manifest["commit_id"]),
+        "transport": str(manifest.get("transport") or config.transport_mode),
+        "trigger_kind": str(manifest.get("trigger_kind") or "remote-history-import"),
+        "site_slug": str(manifest.get("site_slug") or config.site_slug),
+        "remote_commit_id": str(
+            commit_payload.get("remote_commit_id") or commit_payload.get("commit_id") or manifest["commit_id"]
+        ),
+        "manifest_digest": str(commit_payload["manifest_digest"]),
+        "backup_path": commit_payload.get("backup_path"),
+        "datasets": copy.deepcopy(manifest.get("datasets") or {}),
+        "stats_json": {},
+        "snapshot_started_at": _parse_backup_datetime(manifest.get("created_at") or created_at),
+        "snapshot_finished_at": created_at,
+        "restored_at": None,
+        "created_at": created_at,
+        "updated_at": created_at,
+    }
+
+
+def restore_remote_backup_history(session: Session, payload: BackupRemoteHistoryRestoreWrite) -> BackupCommitRead:
+    config = _config_object_from_payload(payload.config)
+    _validate_config(config)
+    transport = _remote_history_transport(config)
+    keyring = _resolve_remote_recovery_keyring(
+        session,
+        config=config,
+        transport=transport,
+        passphrase=payload.passphrase,
+    )
+    credential_ref = str(keyring.get("credential_ref") or config.credential_ref)
+    _install_remote_recovery_keyring(keyring, passphrase=payload.passphrase, credential_ref=credential_ref)
+    credentials = load_backup_credentials(credential_ref)
+    commit_payload = transport.fetch_commit(payload.commit_id)
+    manifest = transport.fetch_manifest(commit_payload["manifest_digest"])
+    commit_record = _remote_backup_commit_restore_record(config, commit_payload, manifest)
+    response = BackupCommitRead.model_validate(SimpleNamespace(**commit_record))
+    session.close()
+    _restore_from_manifest(manifest, transport, credentials)
+    restored_at = _utcnow()
+    try:
+        with get_session_factory()() as restored_session:
+            _repair_restored_backup_runtime_state(restored_session, restored_at=restored_at)
+            restored_commit = repo.get_backup_commit(restored_session, commit_record["id"])
+            if restored_commit is None:
+                restored_commit = repo.create_backup_commit(restored_session, **commit_record)
+            restored_commit.restored_at = restored_at
+            restored_session.commit()
+    except Exception:
+        logger.warning("Failed to persist remote backup import restore marker", exc_info=True)
+    return response.model_copy(update={"restored_at": restored_at})
 
 
 def reset_backup_sync_system(session: Session) -> BackupSystemResetRead:
@@ -1414,6 +1731,7 @@ def collect_dataset_versions() -> dict[str, Any]:
         if automation_packs_root.exists()
         else []
     )
+    runtime_files = [relative for _path, relative in _iter_runtime_files(settings)]
     return {
         "aerisun_db": _path_info(settings.db_path),
         "waline_db": _path_info(settings.waline_db_path),
@@ -1429,6 +1747,10 @@ def collect_dataset_versions() -> dict[str, Any]:
         "automation_packs": {
             "file_count": len(automation_pack_files),
             "paths_digest": _sha256_bytes("\n".join(automation_pack_files).encode("utf-8")),
+        },
+        "runtime_files": {
+            "file_count": len(runtime_files),
+            "paths_digest": _sha256_bytes("\n".join(runtime_files).encode("utf-8")),
         },
     }
 
@@ -1466,11 +1788,12 @@ def ensure_backup_queue_item(session: Session, *, trigger_kind: str, force: bool
 
 def trigger_backup_sync(session: Session) -> BackupRunRead:
     queue_item = ensure_backup_queue_item(session, trigger_kind="manual", force=False)
+    queue_item_id = queue_item.id
     dispatch_backup_sync()
     session.expire_all()
-    refreshed = repo.get_backup_queue_item(session, queue_item.id)
+    refreshed = repo.get_backup_queue_item(session, queue_item_id)
     run = next(
-        (item for item in repo.list_sync_runs(session) if item.queue_item_id == queue_item.id),
+        (item for item in repo.list_sync_runs(session) if item.queue_item_id == queue_item_id),
         None,
     )
     if run is None:
@@ -1642,24 +1965,111 @@ def _mark_run_completed(
             )
 
 
+def _chunk_digests_from_commit(commit) -> set[str]:
+    return set(_manifest_chunk_digests({"datasets": copy.deepcopy(commit.datasets or {})}))
+
+
+def _delete_remote_manifests(transport: BackupTransport, digests: set[str]) -> bool:
+    if not digests:
+        return True
+    if hasattr(transport, "delete_manifests"):
+        try:
+            transport.delete_manifests(sorted(digests))
+            return True
+        except Exception:
+            logger.warning("Failed to delete remote backup manifests in batch", exc_info=True)
+    if not hasattr(transport, "delete_manifest"):
+        return False
+    ok = True
+    for digest in sorted(digests):
+        try:
+            transport.delete_manifest(digest)
+        except Exception:
+            ok = False
+            logger.warning("Failed to delete remote backup manifest %s", digest, exc_info=True)
+    return ok
+
+
+def _delete_remote_chunks(transport: BackupTransport, digests: set[str]) -> bool:
+    if not digests:
+        return True
+    if hasattr(transport, "delete_chunks"):
+        try:
+            transport.delete_chunks(sorted(digests))
+            return True
+        except Exception:
+            logger.warning("Failed to delete remote backup chunks in batch", exc_info=True)
+    if not hasattr(transport, "delete_chunk"):
+        return False
+    ok = True
+    for digest in sorted(digests):
+        try:
+            transport.delete_chunk(digest)
+        except Exception:
+            ok = False
+            logger.warning("Failed to delete remote backup chunk %s", digest, exc_info=True)
+    return ok
+
+
+def _delete_remote_commit_index(transport: BackupTransport, commit) -> bool:
+    if not hasattr(transport, "delete_commit"):
+        logger.warning("Backup transport cannot delete remote commits; retention cleanup skipped for %s", commit.id)
+        return False
+    try:
+        transport.delete_commit(commit.remote_commit_id, created_at=commit.created_at.isoformat())
+        return True
+    except Exception:
+        logger.warning("Failed to delete remote commit %s; local backup history kept", commit.id, exc_info=True)
+        return False
+
+
 def _enforce_retention(config, transport: BackupTransport) -> None:
-    """Delete oldest backup commits that exceed max_retention_count."""
+    """Delete oldest backup commits and remote objects that exceed max_retention_count."""
     max_count = getattr(config, "max_retention_count", 0)
     if not max_count or max_count <= 0:
         return
     session_factory = get_session_factory()
     with session_factory() as session:
-        all_commits = repo.list_backup_commits(session)
-        if len(all_commits) <= max_count:
+        all_records = repo.list_backup_commits(session, include_retention_tombstones=True)
+        visible_commits = [
+            commit for commit in all_records if commit.trigger_kind != BACKUP_RETENTION_TOMBSTONE_TRIGGER
+        ]
+        tombstones = [commit for commit in all_records if commit.trigger_kind == BACKUP_RETENTION_TOMBSTONE_TRIGGER]
+        if len(visible_commits) <= max_count and not tombstones:
             return
-        to_remove = all_commits[max_count:]
+        to_remove = visible_commits[max_count:]
+        retained = visible_commits[:max_count]
+        removed: list[Any] = []
+        protected = list(retained)
         for commit in to_remove:
-            if hasattr(transport, "delete_commit"):
-                try:
-                    transport.delete_commit(commit.remote_commit_id, created_at=commit.created_at.isoformat())
-                except Exception:
-                    logger.warning("Failed to delete remote commit %s", commit.id, exc_info=True)
-            session.delete(commit)
+            if _delete_remote_commit_index(transport, commit):
+                commit.trigger_kind = BACKUP_RETENTION_TOMBSTONE_TRIGGER
+                commit.backup_path = None
+                removed.append(commit)
+            else:
+                protected.append(commit)
+        cleanup_candidates = [*tombstones, *removed]
+        if not cleanup_candidates:
+            return
+
+        protected_manifest_digests = {commit.manifest_digest for commit in protected}
+        protected_chunk_digests: set[str] = set()
+        for commit in protected:
+            protected_chunk_digests.update(_chunk_digests_from_commit(commit))
+        stale_manifest_digests = {
+            commit.manifest_digest
+            for commit in cleanup_candidates
+            if commit.manifest_digest not in protected_manifest_digests
+        }
+        stale_chunk_digests: set[str] = set()
+        for commit in cleanup_candidates:
+            stale_chunk_digests.update(_chunk_digests_from_commit(commit))
+        stale_chunk_digests.difference_update(protected_chunk_digests)
+        manifests_removed = _delete_remote_manifests(transport, stale_manifest_digests)
+        chunks_removed = _delete_remote_chunks(transport, stale_chunk_digests)
+        if manifests_removed and chunks_removed:
+            for commit in cleanup_candidates:
+                session.delete(commit)
         session.commit()
 
 
@@ -1672,6 +2082,7 @@ def _execute_run(*, run_id: str, queue_item_id: str) -> None:
         if queue_item is None:
             raise ResourceNotFound("Backup queue item not found")
         credentials = load_backup_credentials(config.credential_ref)
+        recovery_keyring = _remote_recovery_keyring_payload(session, config)
 
     prepared = prepare_run_artifacts(credentials, encrypt_runtime_data=bool(config.encrypt_runtime_data))
     uploaded_chunk_digests: list[str] = []
@@ -1679,6 +2090,8 @@ def _execute_run(*, run_id: str, queue_item_id: str) -> None:
         transport = build_transport(config, credentials)
         transport.begin_session()
         _ensure_remote_repo_identity(config, credentials, transport)
+        if hasattr(transport, "write_recovery_keyring"):
+            transport.write_recovery_keyring(recovery_keyring)
         commit_id = str(uuid.uuid4())
         manifest = build_manifest(
             commit_id=commit_id,
@@ -1876,6 +2289,28 @@ def prepare_run_artifacts(
         )
     )
 
+    runtime_files_tar = temp_dir / "runtime-files.tar"
+    _tar_runtime_files(settings, runtime_files_tar)
+    runtime_files_zst = temp_dir / "runtime-files.tar.zst"
+    _zstd_compress_file(runtime_files_tar, runtime_files_zst)
+    runtime_files_payload_path, runtime_files_encryption = _prepare_runtime_payload(
+        runtime_files_zst,
+        temp_dir=temp_dir,
+        temp_name="runtime-files.tar.zst.enc",
+        public_key=runtime_public_key,
+        aad=b"datasets/runtime-files.tar.zst",
+    )
+    files.append(
+        _prepare_file(
+            runtime_files_payload_path,
+            "datasets/runtime-files.tar.zst",
+            chunk_root=temp_dir,
+            dataset_kind="runtime_files",
+            compression="zstd",
+            encryption=runtime_files_encryption,
+        )
+    )
+
     for media_path in sorted(settings.media_dir.rglob("*")):
         if not media_path.is_file():
             continue
@@ -1968,6 +2403,96 @@ def _tar_directory(source_dir: Path, dest_tar: Path, *, exclude_prefixes: tuple[
 
 def _tar_secrets_dir(source_dir: Path, dest_tar: Path) -> None:
     _tar_directory(source_dir, dest_tar, exclude_prefixes=("backup-sync/",))
+
+
+def _runtime_relative_prefix(settings, path: Path) -> str | None:
+    try:
+        return path.expanduser().resolve().relative_to(settings.data_dir.expanduser().resolve()).as_posix()
+    except ValueError:
+        return None
+
+
+def _runtime_relative_is_excluded(settings, relative: str) -> bool:
+    relative_path = PurePosixPath(relative)
+    parts = relative_path.parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        return True
+    if parts[0].startswith("."):
+        return True
+
+    excluded_dirs = (
+        settings.media_dir,
+        settings.secrets_dir,
+        settings.backup_sync_tmp_dir,
+        settings.data_dir / "automation" / "packs",
+        settings.data_dir / ".ssh",
+    )
+    for excluded_dir in excluded_dirs:
+        prefix = _runtime_relative_prefix(settings, excluded_dir)
+        if prefix and (relative == prefix or relative.startswith(f"{prefix}/")):
+            return True
+
+    excluded_files: set[str] = set()
+    for sqlite_path in (settings.db_path, settings.waline_db_path, settings.workflow_db_path):
+        for candidate in (sqlite_path, *_sqlite_sidecar_paths(sqlite_path)):
+            candidate_relative = _runtime_relative_prefix(settings, candidate)
+            if candidate_relative:
+                excluded_files.add(candidate_relative)
+    return relative in excluded_files
+
+
+def _iter_runtime_files(settings) -> list[tuple[Path, str]]:
+    data_root = settings.data_dir.expanduser().resolve()
+    if not data_root.exists():
+        return []
+    files: list[tuple[Path, str]] = []
+    for item in sorted(data_root.rglob("*")):
+        if item.is_symlink() or not item.is_file():
+            continue
+        try:
+            relative = item.resolve().relative_to(data_root).as_posix()
+        except ValueError:
+            continue
+        if _runtime_relative_is_excluded(settings, relative):
+            continue
+        files.append((item, relative))
+    return files
+
+
+def _tar_runtime_files(settings, dest_tar: Path) -> None:
+    settings.data_dir.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(dest_tar, "w") as archive:
+        for path, relative in _iter_runtime_files(settings):
+            archive.add(path, arcname=relative)
+
+
+def _restore_runtime_files_from_stage(staging_dir: Path, settings) -> None:
+    data_root = settings.data_dir.expanduser().resolve()
+    data_root.mkdir(parents=True, exist_ok=True)
+    staged_files: list[tuple[Path, str]] = []
+    for item in sorted(staging_dir.rglob("*")):
+        if not item.is_file():
+            continue
+        relative = item.relative_to(staging_dir).as_posix()
+        if _runtime_relative_is_excluded(settings, relative):
+            raise ValidationError(f"Backup runtime_files contains excluded path: {relative}")
+        staged_files.append((item, relative))
+
+    current_dirs: set[Path] = set()
+    for path, _relative in _iter_runtime_files(settings):
+        current_dirs.add(path.parent)
+        path.unlink(missing_ok=True)
+
+    for source, relative in staged_files:
+        target_path = (data_root / relative).resolve()
+        if data_root != target_path and not str(target_path).startswith(f"{data_root}{os.sep}"):
+            raise ValidationError("Refusing to restore runtime file outside data directory")
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target_path)
+
+    for directory in sorted(current_dirs, key=lambda item: len(item.parts), reverse=True):
+        with suppress(OSError):
+            directory.rmdir()
 
 
 def _restore_tar_directory(source_tar: Path, target_dir: Path) -> None:
@@ -2130,6 +2655,7 @@ def build_manifest(
             "datasets/workflow.db.zst": "workflow_db",
             "datasets/secrets.tar.zst.enc": "secrets",
             "datasets/automation-packs.tar.zst": "automation_packs",
+            "datasets/runtime-files.tar.zst": "runtime_files",
         }[prepared_file.relative_path]
         file_payload["target_path"] = prepared_file.relative_path.split("/", 1)[1]
         datasets[key] = file_payload
@@ -2164,8 +2690,13 @@ def _ensure_remote_repo_identity(config, credentials: BackupCredentialBundle, tr
     if current is None:
         transport.write_repo_identity(expected)
         return
-    if current.get("repo_id") != expected["repo_id"]:
-        raise ValidationError("远端备份历史属于另一套 Serino。请先在后台选择恢复这套历史或覆盖远端历史。")
+    accepted_repo_ids = _accepted_runtime_repo_ids(
+        site_slug=str(config.site_slug),
+        credential_ref=str(config.credential_ref) if config.credential_ref else None,
+    )
+    accepted_repo_ids.add(expected["repo_id"])
+    if current.get("repo_id") not in accepted_repo_ids:
+        raise ValidationError("远端备份历史属于另一套 Serino。请先在后台选择从备份机历史恢复数据或覆盖远端历史。")
 
 
 class SftpTransport:
@@ -2304,6 +2835,9 @@ class SftpTransport:
     def _repo_identity_path(self) -> str:
         return f"{self._site_root()}/repo.json"
 
+    def _recovery_keyring_path(self) -> str:
+        return f"{self._catalog_root()}/recovery-keyring.json"
+
     def _human_commit_dir(self, commit_id: str, created_at: str) -> str:
         dt = datetime.fromisoformat(created_at)
         return f"{self._commits_root()}/{dt:%Y/%m/%d}/{dt:%Y%m%dT%H%M%SZ}-{commit_id}"
@@ -2342,15 +2876,7 @@ class SftpTransport:
                     return False, None, "远端备份仓库身份文件无法解析。"
 
             output = f"{proc.stderr or ''}\n{proc.stdout or ''}".strip()
-            lowered = output.lower()
-            missing_markers = (
-                "no such file",
-                "not found",
-                "couldn't stat remote file",
-                "cannot stat",
-                "does not exist",
-            )
-            if any(marker in lowered for marker in missing_markers):
+            if _remote_path_is_missing(output):
                 return True, None, None
             return (
                 False,
@@ -2368,6 +2894,33 @@ class SftpTransport:
         finally:
             tmp_path.unlink(missing_ok=True)
 
+    def fetch_recovery_keyring(self) -> dict[str, Any] | None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_path = Path(temp_dir) / "recovery-keyring.json"
+            proc = self._run_batch([f"get {self._recovery_keyring_path()} {local_path}"], check=False)
+            if proc.returncode != 0:
+                output = f"{proc.stderr or ''}\n{proc.stdout or ''}".strip()
+                if _remote_path_is_missing(output):
+                    return None
+                detail = output or "SFTP command failed"
+                raise ValidationError(f"无法使用 serino-backup 连接备份机，请先执行临时接入命令。{detail}")
+            if not local_path.exists():
+                return None
+            try:
+                return json.loads(local_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise ValidationError("远端恢复钥匙包无法解析。") from exc
+
+    def write_recovery_keyring(self, payload: dict[str, Any]) -> None:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
+            tmp.write(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            tmp_path = Path(tmp.name)
+        try:
+            self._mkdirs(self._catalog_root())
+            self._run_batch([f"put {tmp_path} {self._recovery_keyring_path()}"])
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
     def archive_current_repo(self, *, remote_repo_id: str | None = None) -> str:
         safe_repo_id = re.sub(r"[^A-Za-z0-9._-]", "-", remote_repo_id or "unknown")[:48] or "unknown"
         archive_dir = f"{self._archive_root()}/{_utcnow():%Y%m%dT%H%M%S}-{safe_repo_id}"
@@ -2375,6 +2928,15 @@ class SftpTransport:
         self._run_batch([f"rename {self._site_root()} {archive_dir}"], check=False)
         self.begin_session()
         return archive_dir
+
+    def _remove_remote_path(self, path: str, *, allow_missing: bool = True) -> bool:
+        proc = self._run_batch([f"rm {path}"], check=False)
+        if proc.returncode == 0:
+            return True
+        output = f"{proc.stderr or ''}\n{proc.stdout or ''}".strip()
+        if allow_missing and _remote_path_is_missing(output):
+            return False
+        raise ValidationError(output or "SFTP command failed")
 
     def has_chunk(self, digest: str) -> bool:
         proc = self._run_batch([f"ls {self._chunk_path(digest)}"], check=False)
@@ -2454,10 +3016,29 @@ class SftpTransport:
         """Remove a commit's index entry and human-readable directory from remote."""
         index_path = self._commit_index_path(commit_id)
         commit_dir = self._human_commit_dir(commit_id, created_at)
-        self._run_batch(
-            [f"rm {index_path}", f"rm {commit_dir}/manifest.json"],
-            check=False,
-        )
+        self._remove_remote_path(index_path)
+        try:
+            self._remove_remote_path(f"{commit_dir}/manifest.json")
+        except Exception:
+            logger.warning("Failed to delete remote backup commit marker %s", commit_id, exc_info=True)
+
+    def delete_manifest(self, digest: str) -> None:
+        self._remove_remote_path(self._manifest_path(digest))
+
+    def delete_manifests(self, digests: list[str]) -> None:
+        if not digests:
+            return
+        for digest in digests:
+            self.delete_manifest(digest)
+
+    def delete_chunk(self, digest: str) -> None:
+        self._remove_remote_path(self._chunk_path(digest))
+
+    def delete_chunks(self, digests: list[str]) -> None:
+        if not digests:
+            return
+        for digest in digests:
+            self.delete_chunk(digest)
 
     def list_commits(self) -> list[dict[str, Any]]:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2502,6 +3083,7 @@ def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
     commit = repo.get_backup_commit(session, commit_id)
     if commit is None:
         raise ResourceNotFound("Backup commit not found")
+    commit_record = _backup_commit_restore_record(commit)
     config = get_or_create_backup_sync_config(session)
     credentials = load_backup_credentials(config.credential_ref)
     transport = build_transport(config, credentials)
@@ -2515,12 +3097,33 @@ def restore_backup_commit(session: Session, commit_id: str) -> BackupCommitRead:
         with get_session_factory()() as restored_session:
             _repair_restored_backup_runtime_state(restored_session, restored_at=restored_at)
             restored_commit = repo.get_backup_commit(restored_session, commit_id)
+            if restored_commit is None:
+                restored_commit = repo.create_backup_commit(restored_session, **commit_record)
             if restored_commit is not None:
                 restored_commit.restored_at = restored_at
             restored_session.commit()
     except Exception:
         logger.warning("Failed to persist backup restored_at after runtime restore", exc_info=True)
     return response.model_copy(update={"restored_at": restored_at})
+
+
+def _backup_commit_restore_record(commit) -> dict[str, Any]:
+    return {
+        "id": commit.id,
+        "transport": commit.transport,
+        "trigger_kind": commit.trigger_kind,
+        "site_slug": commit.site_slug,
+        "remote_commit_id": commit.remote_commit_id,
+        "manifest_digest": commit.manifest_digest,
+        "backup_path": commit.backup_path,
+        "datasets": copy.deepcopy(commit.datasets or {}),
+        "stats_json": copy.deepcopy(commit.stats_json or {}),
+        "snapshot_started_at": commit.snapshot_started_at,
+        "snapshot_finished_at": commit.snapshot_finished_at,
+        "restored_at": commit.restored_at,
+        "created_at": commit.created_at,
+        "updated_at": commit.updated_at,
+    }
 
 
 def restore_backup_snapshot(session: Session, snapshot_id: str) -> BackupSnapshotRead:
@@ -2558,6 +3161,7 @@ def _restore_from_manifest(
     staging_media: Path | None = None
     staging_secrets: Path | None = None
     staging_packs: Path | None = None
+    staging_runtime_files: Path | None = None
     media_swapped = False
     secrets_swapped = False
     packs_swapped = False
@@ -2591,12 +3195,21 @@ def _restore_from_manifest(
             if automation_packs_entry
             else None
         )
+        runtime_files_entry = datasets.get("runtime_files")
+        runtime_files_zst = (
+            _materialize_manifest_payload(
+                temp_dir, runtime_files_entry, transport, credentials, chunk_cache=chunk_cache
+            )
+            if runtime_files_entry
+            else None
+        )
 
         aerisun_restore = temp_dir / "aerisun.restore.sqlite"
         waline_restore = temp_dir / "waline.restore.sqlite"
         workflow_restore = temp_dir / "workflow.restore.sqlite"
         secrets_tar = temp_dir / "secrets.tar"
         automation_packs_tar = temp_dir / "automation-packs.tar"
+        runtime_files_tar = temp_dir / "runtime-files.tar"
 
         _zstd_decompress_file(aerisun_zst, aerisun_restore)
         _zstd_decompress_file(waline_zst, waline_restore)
@@ -2605,6 +3218,8 @@ def _restore_from_manifest(
         _zstd_decompress_file(secrets_zst, secrets_tar)
         if automation_packs_zst is not None:
             _zstd_decompress_file(automation_packs_zst, automation_packs_tar)
+        if runtime_files_zst is not None:
+            _zstd_decompress_file(runtime_files_zst, runtime_files_tar)
 
         # Materialize and verify every non-database payload before swapping runtime data.
         staging_media = settings.media_dir.parent / f".media-staging-{uuid.uuid4().hex}"
@@ -2632,6 +3247,11 @@ def _restore_from_manifest(
             staging_packs = automation_packs_root.parent / f".packs-staging-{uuid.uuid4().hex}"
             staging_packs.mkdir(parents=True, exist_ok=True)
             _restore_tar_directory(automation_packs_tar, staging_packs)
+
+        if runtime_files_zst is not None:
+            staging_runtime_files = temp_dir / "runtime-files-staging"
+            staging_runtime_files.mkdir(parents=True, exist_ok=True)
+            _restore_tar_directory(runtime_files_tar, staging_runtime_files)
 
         # --- Atomic swap: databases via temp file + os.replace ---
         dispose_engine()
@@ -2668,6 +3288,10 @@ def _restore_from_manifest(
             packs_swapped = True
             if old_packs.exists():
                 shutil.rmtree(old_packs, ignore_errors=True)
+
+        # --- Misc runtime files: synchronize the snapshot for non-specialized store files. ---
+        if staging_runtime_files is not None:
+            _restore_runtime_files_from_stage(staging_runtime_files, settings)
     finally:
         _restore_in_progress.clear()
         if staging_media is not None and not media_swapped and staging_media.exists():
@@ -2676,6 +3300,8 @@ def _restore_from_manifest(
             shutil.rmtree(staging_secrets, ignore_errors=True)
         if staging_packs is not None and not packs_swapped and staging_packs.exists():
             shutil.rmtree(staging_packs, ignore_errors=True)
+        if staging_runtime_files is not None and staging_runtime_files.exists():
+            shutil.rmtree(staging_runtime_files, ignore_errors=True)
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
