@@ -12,16 +12,51 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 FIXTURES_DIR = (
     Path(__file__).resolve().parent.parent.parent / "packages" / "api-client" / "src" / "__tests__" / "fixtures"
 )
+FIXTURE_TIMESTAMP_KEYS = {"created_at", "updated_at", "expires_at", "timestamp"}
+FIXTURE_TIMESTAMP_VALUES = {
+    "expires_at": "2026-01-02T00:00:00+08:00",
+}
+FIXTURE_DEFAULT_TIMESTAMP = "2026-01-01T00:00:00+08:00"
+
+
+def _stable_fixture_uuid(path: tuple[str, ...]) -> str:
+    return str(uuid5(NAMESPACE_URL, "aerisun-contract-fixture:" + ".".join(path)))
+
+
+def _is_uuid_like(value: str) -> bool:
+    try:
+        UUID(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _normalize_fixture_data(data: dict | list | str | int | float | bool | None, path: tuple[str, ...] = ()):
+    if isinstance(data, list):
+        return [_normalize_fixture_data(item, (*path, str(index))) for index, item in enumerate(data)]
+    if isinstance(data, dict):
+        return {key: _normalize_fixture_value(key, value, (*path, key)) for key, value in data.items()}
+    return data
+
+
+def _normalize_fixture_value(key: str, value, path: tuple[str, ...]):
+    if isinstance(value, str) and _is_uuid_like(value):
+        return _stable_fixture_uuid(path)
+    if key in FIXTURE_TIMESTAMP_KEYS and isinstance(value, str):
+        return FIXTURE_TIMESTAMP_VALUES.get(key, FIXTURE_DEFAULT_TIMESTAMP)
+    return _normalize_fixture_data(value, path)
 
 
 def _write_fixture(name: str, data: dict | list) -> None:
     FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
     dest = FIXTURES_DIR / f"{name}.json"
-    dest.write_text(json.dumps(data, indent=2, default=str, ensure_ascii=False) + "\n")
+    normalized = _normalize_fixture_data(data)
+    dest.write_text(json.dumps(normalized, indent=2, default=str, ensure_ascii=False) + "\n")
 
 
 # ---------------------------------------------------------------------------
