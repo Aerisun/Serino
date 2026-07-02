@@ -239,7 +239,8 @@ class TestAgentUsage:
 
         response = client.get("/api/agent/usage", headers={"Authorization": f"Bearer {raw_key}"})
         assert response.status_code == 200
-        tool_names = {item["name"] for item in response.json()["mcp"]["tools"]}
+        tools = response.json()["mcp"]["tools"]
+        tool_names = {item["name"] for item in tools}
         assert {
             "get_subscription_config",
             "list_subscription_subscribers",
@@ -264,6 +265,10 @@ class TestAgentUsage:
             "list_backup_snapshots",
             "export_content",
         }.issubset(tool_names)
+        get_admin_me = next(item for item in tools if item["name"] == "get_admin_me")
+        assert get_admin_me["examples"][0]["requires"] == [
+            "exactly one configured admin user or an admin_user_id argument"
+        ]
 
     def test_workflow_planning_context_uses_full_backend_capability_catalog(self, seeded_session):
         settings = get_settings()

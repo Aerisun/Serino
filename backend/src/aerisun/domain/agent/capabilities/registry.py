@@ -1666,7 +1666,13 @@ _CAPABILITIES: tuple[AgentCapabilityDefinition, ...] = (
         help_text="获取当前登录管理员的个人信息和权限。",
         help_text_en="Get the current admin user's profile and permissions.",
         ai_usage_hint="获取管理员信息。可选参数：admin_user_id(不传则返回当前管理员)。返回管理员名、角色和权限列表。",
-        examples=[{"arguments": {}, "scenario": "获取当前管理员信息。"}],
+        examples=[
+            {
+                "arguments": {},
+                "scenario": "获取当前管理员信息。",
+                "requires": ["exactly one configured admin user or an admin_user_id argument"],
+            }
+        ],
         domain="auth",
         group_label="认证",
     ),

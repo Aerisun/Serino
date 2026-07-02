@@ -91,11 +91,8 @@ resolve_release_version_value() {
 }
 
 resolve_runtime_environment_value() {
-  if [[ "${AERISUN_INSTALL_CHANNEL:-stable}" == "dev" ]]; then
-    printf '%s' "development"
-    return 0
-  fi
-
+  # Install channel controls which release payload is fetched; released stacks
+  # should still boot with the production runtime contract.
   printf '%s' "production"
 }
 

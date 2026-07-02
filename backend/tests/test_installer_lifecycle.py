@@ -295,7 +295,7 @@ cat '{daemon_file}'
     assert '"buildkit": true' in completed.stdout
 
 
-def test_runtime_environment_value_follows_install_channel() -> None:
+def test_runtime_environment_value_stays_production_for_release_channels() -> None:
     completed = run_project_bash(
         """
 source installer/lib/common.sh
@@ -315,7 +315,7 @@ printf '\\n'
 
     assert completed.stdout.strip().splitlines() == [
         "production",
-        "development",
+        "production",
         "production",
     ]
 
@@ -348,7 +348,7 @@ grep '^AERISUN_ENVIRONMENT=' '{env_file}'
 """
     )
 
-    assert completed.stdout.strip() == "AERISUN_ENVIRONMENT=development"
+    assert completed.stdout.strip() == "AERISUN_ENVIRONMENT=production"
 
 
 def test_install_main_runs_schema_baseline_and_background_pipeline_in_order() -> None:
