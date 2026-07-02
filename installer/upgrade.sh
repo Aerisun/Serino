@@ -15,6 +15,19 @@ UPTIME_STARTED_AT_FILENAME=".serino-uptime-started-at"
 UPGRADE_ROLLBACK_STAGE=""
 UPGRADE_ROLLBACK_BACKUP_DIR=""
 
+reload_installer_libraries() {
+  # install_release_payload replaces the installer directory while this shell is
+  # still running, so subsequent upgrade steps must use the newly unpacked libs.
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/lib/common.sh"
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/lib/download.sh"
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/lib/env.sh"
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/lib/docker.sh"
+}
+
 backup_current_installation() {
   local backup_dir="$1"
   run_as_root mkdir -p "${backup_dir}"
@@ -230,6 +243,7 @@ main() {
         "${target_image_tag}"
     )" &&
     install_release_payload "${bundle_dir}" &&
+    reload_installer_libraries &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_REGISTRY" "${active_registry}" &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_IMAGE_TAG" "${target_image_tag}" &&
     set_env_value "${AERISUN_ENV_FILE}" "AERISUN_RELEASE_VERSION" "${target_image_tag}" &&

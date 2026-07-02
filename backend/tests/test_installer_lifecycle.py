@@ -695,6 +695,7 @@ download_release_asset() { record download_release_asset; }
 stop_serino_service() { record stop_serino_service; }
 backup_current_installation() { record backup_current_installation; }
 install_release_payload() { record install_release_payload; }
+reload_installer_libraries() { record reload_installer_libraries; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
 validate_release_compose_configuration() { record validate_release_compose_configuration; }
@@ -811,6 +812,7 @@ seed_persistent_uptime_marker() { :; }
       printf '%s' "$1"
     }
 install_release_payload() { record install_release_payload; }
+reload_installer_libraries() { record reload_installer_libraries; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
 validate_release_compose_configuration() { record validate_release_compose_configuration; }
@@ -846,6 +848,7 @@ main v2.0.0
         "stop_serino_service",
         "backup_current_installation:/var/backups/serino/upgrade-20260408112233",
         "install_release_payload",
+        "reload_installer_libraries",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
         "set_env_value:AERISUN_RELEASE_VERSION=v2.0.0",
@@ -905,6 +908,7 @@ resolve_active_registry() {
   printf '%s' "$1"
 }
 install_release_payload() { record install_release_payload; }
+reload_installer_libraries() { record reload_installer_libraries; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { record normalize_production_env_file; }
 validate_release_compose_configuration() {
@@ -932,6 +936,7 @@ main v2.0.0
         "stop_serino_service",
         "backup_current_installation:/var/backups/serino/upgrade-20260408112233",
         "install_release_payload",
+        "reload_installer_libraries",
         "set_env_value:AERISUN_IMAGE_REGISTRY=registry.example.com/next",
         "set_env_value:AERISUN_IMAGE_TAG=v2.0.0",
         "set_env_value:AERISUN_RELEASE_VERSION=v2.0.0",
@@ -981,6 +986,7 @@ stop_serino_service() { :; }
 backup_current_installation() { :; }
 resolve_active_registry() { printf '%s' "$1"; }
 install_release_payload() { :; }
+reload_installer_libraries() { :; }
 set_env_value() { record "set_env_value:$2=$3"; }
 normalize_production_env_file() { :; }
 validate_release_compose_configuration() { :; }
